@@ -6,7 +6,7 @@
 *.out
 
 #ignore jobs files but create folder
-jobs/*
+#jobs/*
 !jobs/git_ignored_folder.txt
 
 

@@ -2,7 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ef2853a1-70f8-49c2-bf36-7b1653ef5187" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../.idea/uiDesigner.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
