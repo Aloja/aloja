@@ -5,6 +5,9 @@
 *.swp
 *.out
 
+#ignore jobs files
+jobs/*
+
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
