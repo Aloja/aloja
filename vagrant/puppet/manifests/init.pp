@@ -55,12 +55,29 @@ mysql_user { 'vagrant@%':
   password_hash => mysql_password('vagrant'),
 }
 
+mysql_user { 'vagrant@localhost':
+  ensure                   => 'present',
+  max_connections_per_hour => '0',
+  max_queries_per_hour     => '0',
+  max_updates_per_hour     => '0',
+  max_user_connections     => '0',
+  password_hash => mysql_password('vagrant'),
+}
+
 mysql_grant { 'vagrant@%/*.*':
   ensure     => 'present',
   options    => ['GRANT'],
   privileges => ['ALL'],
   table      => '*.*',
   user       => 'vagrant@%',
+}
+
+mysql_grant { 'vagrant@localhost/*.*':
+  ensure     => 'present',
+  options    => ['GRANT'],
+  privileges => ['ALL'],
+  table      => '*.*',
+  user       => 'vagrant@localhost',
 }
 
 #database_user { 'vagrant@%':

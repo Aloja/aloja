@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ef2853a1-70f8-49c2-bf36-7b1653ef5187" name="Default" comment="commit jobs folder&#10;">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/.name" afterPath="$PROJECT_DIR$/../shell/.idea/.name" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../aloja-web/.idea/dictionaries/npm.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/inc/common.php" afterPath="$PROJECT_DIR$/../aloja-web/inc/common.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/puppet/manifests/init.pp" afterPath="$PROJECT_DIR$/puppet/manifests/init.pp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/puppet/modules/php/manifests/init.pp" afterPath="$PROJECT_DIR$/puppet/modules/php/manifests/init.pp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/misc.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -81,10 +81,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="init.pp" pinned="false" current="false" current-in-tab="false">
+      <file leaf-file-name="init.pp" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/puppet/manifests/init.pp">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="36" column="7" selection-start="656" selection-end="656" vertical-scroll-proportion="0.0" vertical-offset="486" max-vertical-offset="1512">
+            <state line="79" column="34" selection-start="1720" selection-end="1720" vertical-scroll-proportion="0.8932806" vertical-offset="970" max-vertical-offset="1872">
               <folding />
             </state>
           </provider>
@@ -126,10 +126,10 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="init.pp" pinned="false" current="true" current-in-tab="true">
+      <file leaf-file-name="init.pp" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/puppet/modules/php/manifests/init.pp">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="3" column="76" selection-start="182" selection-end="182" vertical-scroll-proportion="0.13012049" vertical-offset="0" max-vertical-offset="990">
+            <state line="17" column="34" selection-start="533" selection-end="563" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="990">
               <folding />
             </state>
           </provider>
@@ -177,8 +177,8 @@
         <option value="$PROJECT_DIR$/puppet/modules/nginx/files/localhost" />
         <option value="$PROJECT_DIR$/../vagrant-docker/Dockerfile" />
         <option value="$PROJECT_DIR$/Vagrantfile" />
-        <option value="$PROJECT_DIR$/puppet/manifests/init.pp" />
         <option value="$PROJECT_DIR$/puppet/modules/php/manifests/init.pp" />
+        <option value="$PROJECT_DIR$/puppet/manifests/init.pp" />
       </list>
     </option>
   </component>
@@ -786,7 +786,7 @@
       <workItem from="1404293011303" duration="1401000" />
       <workItem from="1404296669793" duration="14000" />
       <workItem from="1404297236786" duration="159000" />
-      <workItem from="1404297585414" duration="5868000" />
+      <workItem from="1404297585414" duration="8242000" />
     </task>
     <task id="LOCAL-00001" summary="small test&#10;">
       <created>1404293069817</created>
@@ -808,17 +808,21 @@
       <created>1404299709458</created>
       <updated>1404299709458</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="commit jobs folder&#10;">
+      <created>1404313663594</created>
+      <updated>1404313663594</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="78316000" />
+    <option name="totallyTimeSpent" value="80690000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="394" y="204" width="1311" height="912" extended-state="0" />
     <editor active="false" />
     <layout>
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32955974" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32955974" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="8" side_tool="false" content_ui="tabs" />
@@ -827,7 +831,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3299363" sideWeight="0.50039524" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.44402516" sideWeight="0.49960473" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.44402516" sideWeight="0.49960473" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32909784" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="true" content_ui="tabs" />
@@ -1232,16 +1236,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/puppet/manifests/init.pp">
+    <entry file="file://$PROJECT_DIR$/puppet/modules/php/manifests/init.pp">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="36" column="7" selection-start="656" selection-end="656" vertical-scroll-proportion="0.0" vertical-offset="486" max-vertical-offset="1512">
+        <state line="17" column="34" selection-start="533" selection-end="563" vertical-scroll-proportion="0.0" vertical-offset="0" max-vertical-offset="990">
           <folding />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/puppet/modules/php/manifests/init.pp">
+    <entry file="file://$PROJECT_DIR$/puppet/manifests/init.pp">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="3" column="76" selection-start="182" selection-end="182" vertical-scroll-proportion="0.13012049" vertical-offset="0" max-vertical-offset="990">
+        <state line="79" column="34" selection-start="1720" selection-end="1720" vertical-scroll-proportion="0.8932806" vertical-offset="970" max-vertical-offset="1872">
           <folding />
         </state>
       </provider>
