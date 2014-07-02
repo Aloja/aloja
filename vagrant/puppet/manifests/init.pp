@@ -29,6 +29,10 @@ include nginx, php #, mysql
 
 #include '::mysql::server'
 
+class { '::mysql::client':
+#require => Exec['apt-get update'],
+}
+
 class { '::mysql::server':
 #root_password => 'vagrant',
   override_options => {
@@ -38,7 +42,8 @@ class { '::mysql::server':
       #'query_cache_size' => '64M'
     }
   },
-  require => Exec['apt-get update'],
+  #require => Exec['apt-get update'],
+  restart => true,
 }
 
 mysql_user { 'vagrant@%':
@@ -47,27 +52,25 @@ mysql_user { 'vagrant@%':
   max_queries_per_hour     => '0',
   max_updates_per_hour     => '0',
   max_user_connections     => '0',
+  password_hash => mysql_password('vagrant'),
 }
 
-#mysql_grant { 'vagrant@%/*.*':
-#  ensure     => 'present',
-#  options    => ['GRANT'],
-#  privileges => ['ALL'],
-#  table      => '*.*',
-#  user       => 'vagrant@%',
-#  password_hash => mysql_password('vagrant'),
+mysql_grant { 'vagrant@%/*.*':
+  ensure     => 'present',
+  options    => ['GRANT'],
+  privileges => ['ALL'],
+  table      => '*.*',
+  user       => 'vagrant@%',
+}
+
+#database_user { 'vagrant@%':
+#  password_hash   => mysql_password('vagrant')
+#}
+#database_grant { 'vagrant@%/*':
+#  privileges  => ['ALL'],
 #}
 
-database_user { 'vagrant@%':
-  password_hash   => mysql_password('vagrant')
-}
-database_grant { 'vagrant@%/*':
-  privileges  => ['ALL'],
-}
 
-class { '::mysql::client':
-  require => Exec['apt-get update'],
-}
 
 
 #TODO make path puppet relative
