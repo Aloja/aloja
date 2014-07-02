@@ -6,8 +6,8 @@
 *.out
 
 #ignore jobs files but create folder
-#jobs/*
-!jobs/git_ignored_folder.txt
+jobs/*
+!jobs/.git_ignored_folder
 
 
 ### Intellij ###
