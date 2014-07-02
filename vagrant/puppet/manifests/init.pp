@@ -48,21 +48,21 @@ mysql_user { 'vagrant@%':
   max_user_connections     => '0',
 }
 
-mysql_grant { 'vagrant@%/*.*':
-  ensure     => 'present',
-  options    => ['GRANT'],
-  privileges => ['ALL'],
-  table      => '*.*',
-  user       => 'vagrant@%',
-  password_hash => mysql_password('vagrant'),
-}
+#mysql_grant { 'vagrant@%/*.*':
+#  ensure     => 'present',
+#  options    => ['GRANT'],
+#  privileges => ['ALL'],
+#  table      => '*.*',
+#  user       => 'vagrant@%',
+#  password_hash => mysql_password('vagrant'),
+#}
 
-#database_user { 'vagrant@%':
-#  password_hash   => mysql_password('vagrant')
-#}
-#database_grant { 'vagrant@%/*':
-#  privileges  => ['ALL'],
-#}
+database_user { 'vagrant@%':
+  password_hash   => mysql_password('vagrant')
+}
+database_grant { 'vagrant@%/*':
+  privileges  => ['ALL'],
+}
 
 class { '::mysql::client':
   require => Exec['apt-get update'],
