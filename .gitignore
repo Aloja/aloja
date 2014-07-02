@@ -5,8 +5,9 @@
 *.swp
 *.out
 
-#ignore jobs files
+#ignore jobs files but create folder
 jobs/*
+!jobs/git_ignored_folder.txt
 
 
 ### Intellij ###
