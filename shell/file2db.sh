@@ -25,8 +25,8 @@ fi
 #TABLE MANIPULATION
 #MYSQL_ARGS="-uroot --local-infile -f -b --show-warnings " #--show-warnings -B
 
-#MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
-MYSQL_CREDENTIALS="-u npm -pquete -h gallactica "
+MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
+#MYSQL_CREDENTIALS="-u npm -paaa -h gallactica "
 
 MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
 DB="aloja2"
