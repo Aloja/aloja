@@ -34,6 +34,7 @@ class { '::mysql::server':
   override_options => {
     'mysqld' => {
       'bind-address' => '0.0.0.0',
+      #'skip-external-locking ' => '',
       #'query_cache_size' => '64M'
     }
   },
