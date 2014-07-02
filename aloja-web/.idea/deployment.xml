@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="PublishConfigData" promptOnRemoteOverwrite="CHECK_CONTENT" serverName="minerva-home" notifyRemoteChanges="true" showNewOnSourceInSync="false">
+    <serverData>
+      <paths name="local for vagrant">
+        <serverdata>
+          <mappings>
+            <mapping deploy="$PROJECT_DIR$" local="$PROJECT_DIR$" web="/" />
+          </mappings>
+        </serverdata>
+      </paths>
+      <paths name="minerva-home">
+        <serverdata>
+          <mappings>
+            <mapping deploy="/aloja-web" local="$PROJECT_DIR$" web="/aloja-web" />
+          </mappings>
+        </serverdata>
+      </paths>
+    </serverData>
+  </component>
+</project>
+
