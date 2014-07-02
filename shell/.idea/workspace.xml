@@ -2,8 +2,13 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a56a4c57-18e8-495d-91b5-09e9572e4a6f" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/dictionaries/npm.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/res/datatables/media/js/jquery.csv2table.js" afterPath="$PROJECT_DIR$/../aloja-web/res/datatables/media/js/jquery.csv2table.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" />
     </list>
     <ignored path="qsub.iws" />
     <ignored path=".idea/workspace.xml" />
@@ -74,7 +79,7 @@
       <file leaf-file-name="file2db.sh" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/file2db.sh">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="38" column="21" selection-start="1164" selection-end="1164" vertical-scroll-proportion="0.9121622" vertical-offset="144" max-vertical-offset="5742">
+            <state line="10" column="24" selection-start="365" selection-end="365" vertical-scroll-proportion="0.06081081" vertical-offset="144" max-vertical-offset="5742">
               <folding />
             </state>
           </provider>
@@ -135,6 +140,7 @@
         <option value="$PROJECT_DIR$/job_history.py" />
         <option value="$PROJECT_DIR$/create_db.sh" />
         <option value="$PROJECT_DIR$/file2db.sh" />
+        <option value="$PROJECT_DIR$/../.gitignore" />
       </list>
     </option>
   </component>
@@ -685,17 +691,21 @@
       <workItem from="1403269628295" duration="1216000" />
       <workItem from="1403518537709" duration="1928000" />
       <workItem from="1404124258398" duration="689000" />
-      <workItem from="1404293090642" duration="129000" />
+      <workItem from="1404293090642" duration="620000" />
     </task>
     <task id="LOCAL-00001" summary="idea files&#10;">
       <created>1404293210245</created>
       <updated>1404293210245</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="idea files&#10;">
+      <created>1404293223752</created>
+      <updated>1404293223752</updated>
+    </task>
+    <option name="localTasksCounter" value="3" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="384921000" />
+    <option name="totallyTimeSpent" value="385412000" />
   </component>
   <component name="TodoView" selected-index="0">
     <todo-panel id="selected-file">
@@ -721,7 +731,7 @@
     <frame x="614" y="113" width="1222" height="1059" extended-state="0" />
     <editor active="false" />
     <layout>
-      <window_info id="Changes" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32908705" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32908705" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32911393" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -893,9 +903,16 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/../.gitignore">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="8" column="13" selection-start="86" selection-end="86" vertical-scroll-proportion="0.24827586" vertical-offset="0" max-vertical-offset="810">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/file2db.sh">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="38" column="21" selection-start="1164" selection-end="1164" vertical-scroll-proportion="0.9121622" vertical-offset="144" max-vertical-offset="5742">
+        <state line="10" column="24" selection-start="365" selection-end="365" vertical-scroll-proportion="0.06081081" vertical-offset="144" max-vertical-offset="5742">
           <folding />
         </state>
       </provider>

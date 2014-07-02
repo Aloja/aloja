@@ -5,14 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd9fcf23-6fb4-4ec8-9e14-8624f0104a89" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../.idea/dictionaries/npm.xml" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../vagrant/.idea/dictionaries/npm.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../shell/.idea/dictionaries/npm.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/res/datatables/media/js/jquery.csv2table.js" afterPath="$PROJECT_DIR$/res/datatables/media/js/jquery.csv2table.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.idea/misc.xml" afterPath="$PROJECT_DIR$/../.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/misc.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/vcs.xml" afterPath="$PROJECT_DIR$/../shell/.idea/vcs.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/vcs.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/vcs.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/misc.xml" afterPath="$PROJECT_DIR$/../shell/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" />
@@ -147,7 +143,7 @@
       <file leaf-file-name="common.php" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/inc/common.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="32" selection-start="672" selection-end="672" vertical-scroll-proportion="0.17833553" vertical-offset="441" max-vertical-offset="9990">
+            <state line="34" column="11" selection-start="747" selection-end="747" vertical-scroll-proportion="0.22589168" vertical-offset="441" max-vertical-offset="9990">
               <folding />
             </state>
           </provider>
@@ -687,12 +683,12 @@
       <workItem from="1403269635257" duration="1198000" />
       <workItem from="1403518541736" duration="8192000" />
       <workItem from="1403717650291" duration="1891000" />
-      <workItem from="1404293142121" duration="55000" />
+      <workItem from="1404293142121" duration="568000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="288490000" />
+    <option name="totallyTimeSpent" value="289003000" />
   </component>
   <component name="TodoView" selected-index="0">
     <todo-panel id="selected-file">
@@ -1127,7 +1123,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/inc/common.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="32" selection-start="672" selection-end="672" vertical-scroll-proportion="0.17833553" vertical-offset="441" max-vertical-offset="9990">
+        <state line="34" column="11" selection-start="747" selection-end="747" vertical-scroll-proportion="0.22589168" vertical-offset="441" max-vertical-offset="9990">
           <folding />
         </state>
       </provider>
