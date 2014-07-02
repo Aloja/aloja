@@ -5,6 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd9fcf23-6fb4-4ec8-9e14-8624f0104a89" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/.idea/dictionaries/npm.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/inc/common.php" afterPath="$PROJECT_DIR$/inc/common.php" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/puppet/manifests/init.pp" afterPath="$PROJECT_DIR$/../vagrant/puppet/manifests/init.pp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" />
@@ -139,7 +143,7 @@
       <file leaf-file-name="common.php" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/inc/common.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="34" column="11" selection-start="747" selection-end="747" vertical-scroll-proportion="0.22529644" vertical-offset="441" max-vertical-offset="9990">
+            <state line="31" column="43" selection-start="599" selection-end="599" vertical-scroll-proportion="0.24476987" vertical-offset="441" max-vertical-offset="9990">
               <folding />
             </state>
           </provider>
@@ -212,8 +216,8 @@
     </include_path>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="404" />
-    <option name="y" value="151" />
+    <option name="x" value="577" />
+    <option name="y" value="148" />
     <option name="width" value="1264" />
     <option name="height" value="963" />
   </component>
@@ -682,11 +686,17 @@
       <workItem from="1404293142121" duration="701000" />
       <workItem from="1404296674501" duration="10000" />
       <workItem from="1404297241665" duration="151000" />
+      <workItem from="1404314246152" duration="677000" />
     </task>
+    <task id="LOCAL-00001" summary="change to 127.0.0.1">
+      <created>1404314348325</created>
+      <updated>1404314348325</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="289297000" />
+    <option name="totallyTimeSpent" value="289974000" />
   </component>
   <component name="TodoView" selected-index="0">
     <todo-panel id="selected-file">
@@ -709,12 +719,13 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="404" y="151" width="1264" height="963" extended-state="0" />
-    <editor active="true" />
+    <frame x="577" y="148" width="1264" height="963" extended-state="0" />
+    <editor active="false" />
     <layout>
-      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.32978722" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32880098" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.44799054" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -750,6 +761,8 @@
     <option name="myTodoPanelSettings">
       <TodoPanelSettings />
     </option>
+    <MESSAGE value="change to 127.0.0.1" />
+    <option name="LAST_COMMIT_MESSAGE" value="change to 127.0.0.1" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -1121,7 +1134,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/inc/common.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="34" column="11" selection-start="747" selection-end="747" vertical-scroll-proportion="0.22529644" vertical-offset="441" max-vertical-offset="9990">
+        <state line="31" column="43" selection-start="599" selection-end="599" vertical-scroll-proportion="0.24476987" vertical-offset="441" max-vertical-offset="9990">
           <folding />
         </state>
       </provider>

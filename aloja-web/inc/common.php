@@ -29,7 +29,7 @@ function init_db() {
     if (!in_dev()) {
         $db = new PDO('mysql:host=localhost;dbname=aloja2;', 'root', '');
     } else {
-        $db = new PDO('mysql:host=127.0.0.1;dbname=aloja2;', 'vagrant', 'vagrant');
+        $db = new PDO('mysql:host=localhost;dbname=aloja2;', 'vagrant', 'vagrant');
         //$db = new PDO('mysql:host=127.0.0.1;port=3307;dbname=aloja2;', 'npm', 'aaa');
     }
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

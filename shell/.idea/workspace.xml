@@ -2,10 +2,10 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="a56a4c57-18e8-495d-91b5-09e9572e4a6f" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/.name" afterPath="$PROJECT_DIR$/.idea/.name" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../aloja-web/.idea/dictionaries/npm.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/inc/common.php" afterPath="$PROJECT_DIR$/../aloja-web/inc/common.php" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/puppet/manifests/init.pp" afterPath="$PROJECT_DIR$/../vagrant/puppet/manifests/init.pp" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/puppet/modules/php/manifests/init.pp" afterPath="$PROJECT_DIR$/../vagrant/puppet/modules/php/manifests/init.pp" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/misc.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/misc.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" />
@@ -694,7 +694,7 @@
       <workItem from="1404124258398" duration="689000" />
       <workItem from="1404293090642" duration="1395000" />
       <workItem from="1404296673911" duration="10000" />
-      <workItem from="1404297240696" duration="1306000" />
+      <workItem from="1404297240696" duration="1969000" />
     </task>
     <task id="LOCAL-00001" summary="idea files&#10;">
       <created>1404293210245</created>
@@ -712,7 +712,7 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="387503000" />
+    <option name="totallyTimeSpent" value="388166000" />
   </component>
   <component name="TodoView" selected-index="0">
     <todo-panel id="selected-file">
