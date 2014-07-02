@@ -4,7 +4,19 @@
     <bookmark url="file://$PROJECT_DIR$/charts1.php" line="43" mnemonic="9" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="cd9fcf23-6fb4-4ec8-9e14-8624f0104a89" name="Default" comment="" />
+    <list default="true" id="cd9fcf23-6fb4-4ec8-9e14-8624f0104a89" name="Default" comment="">
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../.idea/dictionaries/npm.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../vagrant/.idea/dictionaries/npm.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/res/datatables/media/js/jquery.csv2table.js" afterPath="$PROJECT_DIR$/res/datatables/media/js/jquery.csv2table.js" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.idea/misc.xml" afterPath="$PROJECT_DIR$/../.idea/misc.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/misc.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/misc.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/vcs.xml" afterPath="$PROJECT_DIR$/../shell/.idea/vcs.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/vcs.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/vcs.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
+      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" />
+    </list>
     <ignored path="aloja-web.iws" />
     <ignored path=".idea/workspace.xml" />
     <option name="TRACKING_ENABLED" value="true" />
@@ -108,7 +120,7 @@
       <file leaf-file-name="counters.php" pinned="false" current="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/counters.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="65" column="65" selection-start="2854" selection-end="2854" vertical-scroll-proportion="-22.0" vertical-offset="576" max-vertical-offset="5274">
+            <state line="65" column="65" selection-start="2854" selection-end="2854" vertical-scroll-proportion="0.0" vertical-offset="576" max-vertical-offset="5274">
               <folding />
             </state>
           </provider>
@@ -135,7 +147,7 @@
       <file leaf-file-name="common.php" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/inc/common.php">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="32" column="32" selection-start="672" selection-end="672" vertical-scroll-proportion="0.22765599" vertical-offset="441" max-vertical-offset="9990">
+            <state line="32" column="32" selection-start="672" selection-end="672" vertical-scroll-proportion="0.17833553" vertical-offset="441" max-vertical-offset="9990">
               <folding />
             </state>
           </provider>
@@ -165,6 +177,9 @@
     <FindUsagesManager>
       <setting name="OPEN_NEW_TAB" value="false" />
     </FindUsagesManager>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
   </component>
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
@@ -205,8 +220,8 @@
     </include_path>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="530" />
-    <option name="y" value="92" />
+    <option name="x" value="404" />
+    <option name="y" value="93" />
     <option name="width" value="1264" />
     <option name="height" value="963" />
   </component>
@@ -259,7 +274,7 @@
       </profile-state>
     </entry>
   </component>
-  <component name="ProjectLevelVcsManager" settingsEditedManually="false">
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
     <OptionsSetting value="true" id="Remove" />
     <OptionsSetting value="true" id="Checkout" />
@@ -292,7 +307,7 @@
     <property name="options.splitter.main.proportions" value="0.3" />
     <property name="options.lastSelected" value="Configurable.PHP.Debug" />
     <property name="MemberChooser.sorted" value="false" />
-    <property name="last_opened_file_path" value="/mnt/minerva/www" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="MemberChooser.showClasses" value="true" />
     <property name="GoToClass.includeLibraries" value="false" />
     <property name="options.searchVisible" value="true" />
@@ -672,11 +687,12 @@
       <workItem from="1403269635257" duration="1198000" />
       <workItem from="1403518541736" duration="8192000" />
       <workItem from="1403717650291" duration="1891000" />
+      <workItem from="1404293142121" duration="55000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="288435000" />
+    <option name="totallyTimeSpent" value="288490000" />
   </component>
   <component name="TodoView" selected-index="0">
     <todo-panel id="selected-file">
@@ -699,7 +715,7 @@
     </todo-panel>
   </component>
   <component name="ToolWindowManager">
-    <frame x="530" y="92" width="1264" height="963" extended-state="0" />
+    <frame x="404" y="93" width="1264" height="963" extended-state="0" />
     <editor active="false" />
     <layout>
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -710,7 +726,6 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.44799054" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19385342" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32880098" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32799014" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
@@ -724,6 +739,7 @@
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="File Transfer" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.19385342" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="6" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32552403" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
     </layout>
@@ -1104,14 +1120,14 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/counters.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="65" column="65" selection-start="2854" selection-end="2854" vertical-scroll-proportion="-22.0" vertical-offset="576" max-vertical-offset="5274">
+        <state line="65" column="65" selection-start="2854" selection-end="2854" vertical-scroll-proportion="0.0" vertical-offset="576" max-vertical-offset="5274">
           <folding />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/inc/common.php">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="32" column="32" selection-start="672" selection-end="672" vertical-scroll-proportion="0.22765599" vertical-offset="441" max-vertical-offset="9990">
+        <state line="32" column="32" selection-start="672" selection-end="672" vertical-scroll-proportion="0.17833553" vertical-offset="441" max-vertical-offset="9990">
           <folding />
         </state>
       </provider>
