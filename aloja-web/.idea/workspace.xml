@@ -5,10 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="cd9fcf23-6fb4-4ec8-9e14-8624f0104a89" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../shell/.idea/dictionaries/npm.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/res/datatables/media/js/jquery.csv2table.js" afterPath="$PROJECT_DIR$/res/datatables/media/js/jquery.csv2table.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/misc.xml" afterPath="$PROJECT_DIR$/../shell/.idea/misc.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../.idea/uiDesigner.xml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/../jobs/test.txt" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../vagrant/.idea/workspace.xml" />
@@ -683,12 +681,12 @@
       <workItem from="1403269635257" duration="1198000" />
       <workItem from="1403518541736" duration="8192000" />
       <workItem from="1403717650291" duration="1891000" />
-      <workItem from="1404293142121" duration="568000" />
+      <workItem from="1404293142121" duration="701000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="289003000" />
+    <option name="totallyTimeSpent" value="289136000" />
   </component>
   <component name="TodoView" selected-index="0">
     <todo-panel id="selected-file">

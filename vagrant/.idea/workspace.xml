@@ -2,10 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="ef2853a1-70f8-49c2-bf36-7b1653ef5187" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../shell/.idea/dictionaries/npm.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../.gitignore" afterPath="$PROJECT_DIR$/../.gitignore" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/res/datatables/media/js/jquery.csv2table.js" afterPath="$PROJECT_DIR$/../aloja-web/res/datatables/media/js/jquery.csv2table.js" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/misc.xml" afterPath="$PROJECT_DIR$/../shell/.idea/misc.xml" />
+      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/../.idea/uiDesigner.xml" />
+      <change type="DELETED" beforePath="$PROJECT_DIR$/../jobs/test.txt" afterPath="" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../aloja-web/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/../shell/.idea/workspace.xml" afterPath="$PROJECT_DIR$/../shell/.idea/workspace.xml" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
@@ -75,7 +73,7 @@
       <file leaf-file-name="Vagrantfile" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/Vagrantfile">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="11" column="3" selection-start="360" selection-end="360" vertical-scroll-proportion="0.39679357" vertical-offset="0" max-vertical-offset="2880">
+            <state line="11" column="3" selection-start="360" selection-end="360" vertical-scroll-proportion="0.47710842" vertical-offset="0" max-vertical-offset="2880">
               <folding />
             </state>
           </provider>
@@ -184,10 +182,10 @@
   </component>
   <component name="PhpWorkspaceProjectConfiguration" backward_compatibility_performed="true" />
   <component name="ProjectFrameBounds">
-    <option name="x" value="292" />
-    <option name="y" value="180" />
+    <option name="x" value="427" />
+    <option name="y" value="167" />
     <option name="width" value="1311" />
-    <option name="height" value="902" />
+    <option name="height" value="912" />
   </component>
   <component name="ProjectLevelVcsManager" settingsEditedManually="true">
     <OptionsSetting value="true" id="Add" />
@@ -242,7 +240,7 @@
       <console-settings />
     </option>
   </component>
-  <component name="RunManager" selected="Bash.vagrant suspend">
+  <component name="RunManager" selected="Bash.vagrant up">
     <configuration default="true" type="Remote" factoryName="Remote">
       <option name="USE_SOCKET_TRANSPORT" value="true" />
       <option name="SERVER_MODE" value="false" />
@@ -650,7 +648,7 @@
       <workItem from="1403270545917" duration="10615000" />
       <workItem from="1403518544466" duration="6126000" />
       <workItem from="1404292086208" duration="231000" />
-      <workItem from="1404293011303" duration="699000" />
+      <workItem from="1404293011303" duration="1336000" />
     </task>
     <task id="LOCAL-00001" summary="small test&#10;">
       <created>1404293069817</created>
@@ -660,13 +658,13 @@
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="71573000" />
+    <option name="totallyTimeSpent" value="72210000" />
   </component>
   <component name="ToolWindowManager">
-    <frame x="292" y="180" width="1311" height="902" extended-state="0" />
+    <frame x="427" y="167" width="1311" height="912" extended-state="0" />
     <editor active="false" />
     <layout>
-      <window_info id="Changes" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.3299363" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
+      <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3299363" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Palette" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
@@ -675,7 +673,7 @@
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3299363" sideWeight="0.50039524" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.44472682" sideWeight="0.49960473" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.44402516" sideWeight="0.49960473" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32909784" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Remote Host" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="true" content_ui="tabs" />
@@ -1087,7 +1085,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/Vagrantfile">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="11" column="3" selection-start="360" selection-end="360" vertical-scroll-proportion="0.39679357" vertical-offset="0" max-vertical-offset="2880">
+        <state line="11" column="3" selection-start="360" selection-end="360" vertical-scroll-proportion="0.47710842" vertical-offset="0" max-vertical-offset="2880">
           <folding />
         </state>
       </provider>
