@@ -19,7 +19,7 @@ exec { 'apt-get update':
 #    path => '/usr/bin'
 #}
 
-package { ['python-software-properties', 'vim', 'git', 'mysql_client']:
+package { ['python-software-properties', 'vim', 'git']:
   ensure => present,
   require => Exec['apt-get update'],
 }
@@ -54,6 +54,7 @@ mysql_grant { 'vagrant@%/*.*':
   privileges => ['ALL'],
   table      => '*.*',
   user       => 'vagrant@%',
+  password_hash => mysql_password('vagrant'),
 }
 
 #database_user { 'vagrant@%':
