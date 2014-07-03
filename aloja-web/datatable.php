@@ -140,25 +140,6 @@ try {
             /* Add event listeners to the two range filtering inputs */
             $('#min').keyup( function() { oTable.fnDraw(); } );
             $('#max').keyup( function() { oTable.fnDraw(); } );
-
-            
-            function getCookie(cname) {
-      		  var name = cname + "=";
-      		  var ca = document.cookie.split(';');
-      		  for(var i=0; i<ca.length; i++) {
-      		     var c = ca[i].trim();
-      		     if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
-      		  }
-      		  return "";
-      		}
-
-            if(getCookie('rememberme') != "true") {
-    			document.cookie="rememberme=true";
-    		  	$("#welcomeModal").modal({
-    				show: true,
-    		  		backdrop: 'static'
-    			});
-    		}
         } );
 
     </script>
