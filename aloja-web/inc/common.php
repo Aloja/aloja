@@ -394,7 +394,7 @@ function make_HTML_header($title = 'HiBench Executions on Hadoop') {
     <meta http-equiv="content-type" content="text/html; charset=utf-8" />
     <title>'.$title.'</title>
     <style type="text/css" title="currentStyle">
-        @import "res/css.css";
+        @import "css/styles.css";
     </style>
     ';
     return $HTML_header;
@@ -403,19 +403,19 @@ function make_HTML_header($title = 'HiBench Executions on Hadoop') {
 function include_datatables() {
     return
         '<style type="text/css">
-        @import "res/datatables/media/css/demo_table.css";
-        @import "res/datatables/media/css/jquery.dataTables.css";
-        @import "res/datatables/extras/ColReorder/media/css/ColReorder.css";
-        @import "res/datatables/extras/TableTools/media/css/TableTools.css";
-        @import "res/datatables/extras/ColVis/media/css/ColVis.css";
+        @import "js/datatables/media/css/demo_table.css";
+        @import "js/datatables/media/css/jquery.dataTables.css";
+        @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables/extras/TableTools/media/css/TableTools.css";
+        @import "js/datatables/extras/ColVis/media/css/ColVis.css";
     </style>
     <script type="text/javascript" language="javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script type="text/javascript" language="javascript" src="res/datatables/media/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" language="javascript" src="res/datatables/extras/FixedHeader/js/FixedHeader.nightly.min.js"></script>
-    <script type="text/javascript" language="javascript" src="res/datatables/extras/ColReorder/media/js/ColReorder.nightly.min.js"></script>
-    <script type="text/javascript" language="javascript" src="res/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
-    <script type="text/javascript" language="javascript" src="res/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
-    <script type="text/javascript" language="javascript" src="res/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
+    <script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" language="javascript" src="js/datatables/extras/FixedHeader/js/FixedHeader.nightly.min.js"></script>
+    <script type="text/javascript" language="javascript" src="js/datatables/extras/ColReorder/media/js/ColReorder.nightly.min.js"></script>
+    <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
+    <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
+    <script type="text/javascript" language="javascript" src="js/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
     ';
 }
 
