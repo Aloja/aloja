@@ -436,7 +436,26 @@ function make_header ($title = 'HiBench Executions on Hadoop', $message = null) 
                         <a target="blank" href="http://www.bscmsrc.eu/"><img src="img/bsc-msrc_logo.png"></a>
                     </td>
                 </tr>
-            </table>';
+            </table>
+    <div class="modal fade" id="welcomeModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+        <h4 class="modal-title">Welcome to <strong>ALOJA</strong></h4>
+      </div>
+      <div class="modal-body">
+        <p><strong>ALOJA</strong> is a project to explore Hadoop\'s performance under different Software parameters, Hardware, Cloud or On-Premise, and Job types.
+            This site is a <strong>DEMO</strong>, and it is under constant development and it is in the process of being documented.
+            For inquiries, feature requests or bug reports please contact us at: <a href="mailto:aloja@bsc.es" target="_top">aloja@bsc.es</a></p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+            ';
 
     if ($message) {
         $header .="\n<div><h2 style=\"color: red; text-align: center;\"></br>$message</h2></div>\n";

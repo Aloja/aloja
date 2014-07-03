@@ -164,23 +164,6 @@ try {
     </script>
 
     <?=make_header('HiBench Executions on Hadoop', $message)?>
-    <div class="modal fade" id="welcomeModal">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title">Welcome to ALOJA</h4>
-      </div>
-      <div class="modal-body">
-        <p>Welcome to ALOJA, a project to explore Hadoop's performance under different Software parameters, Hardware, Cloud or On-Premise, and Job types. This site is a DEMO, and it is under constant development and it is in the process of being documented.
-		  For inquiries, feature requests or bug reports please contact us at: <a href="mailto:aloja@bsc.es" target="_top">aloja@bsc.es</a></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
     <?=make_navigation('HiBench Runs Details')?>
     <?=make_datatables_help()?>
     <form action="charts1.php" target="_blank">
