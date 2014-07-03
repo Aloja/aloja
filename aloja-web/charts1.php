@@ -654,19 +654,23 @@ if ($charts) {
                 ?>
             </div>
     </form>
-<!--    <div id="links_for_caching" style="color: lightgrey;">-->
-<!--        Other links:-->
-<!--        <a href="--><?//=modify_url(array('hosts'=>'Master'))?><!--" style="color: lightgrey;">Master</a>&nbsp;-->
-<!--        --><?php
-//        $host_rows = get_hosts($clusters);
-//        foreach ($host_rows as $host_row) {
-//            echo '<a href="'.modify_url(array('hosts'=>$host_row['host_name'])).'" style="color: lightgrey;">'.$host_row['host_name'].'</a>&nbsp;';
-//        }
-//        ?>
-<!--        <a href="--><?//=modify_url(array('aggr'=>'SUM'))?><!--" style="color: lightgrey;">SUM</a>&nbsp;-->
-<!--        </br></br>-->
-<!--    </div>-->
+    <?php
+    /*
 
+    <div id="links_for_caching" style="color: lightgrey;">
+        Other links:
+        <a href="<?=modify_url(array('hosts'=>'Master'))?>" style="color: lightgrey;">Master</a>&nbsp;
+        <?php
+        $host_rows = get_hosts($clusters);
+        foreach ($host_rows as $host_row) {
+            echo '<a href="'.modify_url(array('hosts'=>$host_row['host_name'])).'" style="color: lightgrey;">'.$host_row['host_name'].'</a>&nbsp;';
+        }
+        ?>
+        <a href="<?=modify_url(array('aggr'=>'SUM'))?>" style="color: lightgrey;">SUM</a>&nbsp;
+        </br></br>
+    </div>
+   */
+    ?>
 <?php
 }
 echo $footer;
