@@ -464,7 +464,8 @@ function make_header ($title = 'HiBench Executions on Hadoop', $message = null) 
     return $header;
 }
 
-$footer = '        <div id="copyright">
+$footer = '
+		<div id="copyright">
             <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="http://www.bscmsrc.eu/bscmsrc/drupal/sites/default/files/bsc-logo.jpg" alt="BSC logo" /></a>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
             <a target="blank" href="http://research.microsoft.com/"><img height="35" src="http://www.bscmsrc.eu/bscmsrc/drupal/sites/default/files/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
@@ -480,6 +481,28 @@ $footer = '        <div id="copyright">
         ga(\'create\', \'UA-47802380-2\', \'bsc.es\');
         ga(\'send\', \'pageview\');
         </script>
+		<script type="text/javascript">
+		  $(document).ready(function() {
+		
+            function getCookie(cname) {
+           		var name = cname + "=";
+          		var ca = document.cookie.split(\';\');
+          		for(var i=0; i<ca.length; i++) {
+          		  var c = ca[i].trim();
+          		  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+          		}
+          		return "";
+          	}
+
+            if(getCookie(\'rememberme\') != "true") {
+        		document.cookie="rememberme=true";
+        		$("#welcomeModal").modal({
+        			show: true,
+        		  	backdrop: \'static\'
+        		});
+        	}
+		  });
+		</script>
     </body>
 </html>';
 
