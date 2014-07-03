@@ -14,10 +14,15 @@ DROP_DB_FIRST=""
 first_host=""
 hostn=""
 
-#Check if to use a special version of sar or the system one (for ubuntu)
-if [[ "$HOSTNAME" == "darchi" ]] ; then
-  sadf="/home/npoggi/scratch/sysstat-10.0.3/sadf"
-  #sadf="$CUR_DIR/sar/sadf"
+#Check if to use a special version of sar or the system one
+#nico pc
+#if [[ "$HOSTNAME" == "darchi" ]] ; then
+if [[ ! -z $(lsb_release -a|grep Arch) ]] ; then
+  sadf="$CUR_DIR/sar/archlinux/sadf"
+#ubuntu
+elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
+  sadf="$CUR_DIR/sar/ubuntu/sadf"
+#other
 else
   sadf="/usr/bin/sadf"
 fi

@@ -9,6 +9,8 @@
 jobs/*
 !jobs/.git_ignored_folder
 
+#vagrant
+vagrant/.vagrant/*
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
