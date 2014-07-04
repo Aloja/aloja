@@ -33,6 +33,12 @@ try {
         $aggr = 'AVG';
     }
 
+    if (get_GET_string('detail')) {
+        $detail = get_GET_int('detail');
+    } else {
+        $detail = 10;
+    }
+
     if ($aggr == 'AVG') {
         $aggr_text = "Average";
     } elseif ($aggr == 'SUM') {
@@ -92,7 +98,8 @@ try {
 
         $where_VMSTATS  = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') ";
 
-        $group_by   = ' GROUP BY date ORDER by date'; //UNIX_TIMESTAMP(date) DIV 1
+        $where_sampling = "round(time/$detail)";
+        $group_by       = " GROUP BY $where_sampling ORDER by time";
 
         $group_by_vmstats = ' GROUP BY time ORDER by time';
         $group_by_BWM = ' GROUP BY unix_timestamp ORDER by unix_timestamp';
@@ -102,7 +109,7 @@ try {
                 'metric'    => "ALL",
                 'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,
                                 maps map,shuffle,merge,reduce,waste FROM JOB_status
-                                WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, date;",
+                                WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, time;",
                 'fields'    => array('map', 'shuffle', 'reduce', 'waste', 'merge'),
                 'title'     => "Job exectution history $exec_title ",
                 'percentage'=> false,
@@ -111,7 +118,7 @@ try {
             ),
             'cpu' => array(
                 'metric'    => "CPU",
-                'query'     => "SELECT $aggr(`%user`) `%user`, $aggr(`%system`) `%system`, $aggr(`%steal`) `%steal`, $aggr(`%iowait`)
+                'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%user`) `%user`, $aggr(`%system`) `%system`, $aggr(`%steal`) `%steal`, $aggr(`%iowait`)
                             `%iowait`, $aggr(`%nice`) `%nice` FROM SAR_cpu $where $group_by;",
                 'fields'    => array('%user', '%system', '%steal', '%iowait', '%nice'),
                 'title'     => "CPU Utilization ($aggr_text, $hosts) $exec_title ",
@@ -121,7 +128,7 @@ try {
             ),
             'load' => array(
                 'metric'    => "CPU",
-                'query' => "SELECT $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
                         FROM SAR_load $where $group_by;",
                 'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
                 'title'     => "CPU Load Averge ($aggr_text, $hosts) $exec_title ",
@@ -131,7 +138,7 @@ try {
             ),
             'load_queues' => array(
                 'metric'    => "CPU",
-                'query' => "SELECT $aggr(`runq-sz`) `runq-sz`, $aggr(`blocked`) `blocked`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`runq-sz`) `runq-sz`, $aggr(`blocked`) `blocked`
                         FROM SAR_load $where $group_by;",
                 'fields'    => array('runq-sz', 'blocked'),
                 'title'     => "CPU Queues ($aggr_text, $hosts) $exec_title ",
@@ -141,7 +148,7 @@ try {
             ),
             'load_tasks' => array(
                 'metric'    => "CPU",
-                'query' => "SELECT $aggr(`plist-sz`) `plist-sz` FROM SAR_load $where $group_by;",
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM SAR_load $where $group_by;",
                 'fields'    => array('plist-sz'),
                 'title'     => "Number of tasks for CPUs ($aggr_text, $hosts) $exec_title ",
                 'percentage'=> false,
@@ -150,7 +157,7 @@ try {
             ),
             'switches' => array(
                 'metric'    => "CPU",
-                'query'     => "SELECT $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM SAR_switches $where $group_by;",
+                'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM SAR_switches $where $group_by;",
                 'fields'    => array('proc/s', 'cswch/s'),
                 'title'     => "CPU Context Switches ($aggr_text, $hosts) $exec_title ",
                 'percentage'=> false,
@@ -159,7 +166,7 @@ try {
             ),
             'interrupts' => array(
                 'metric'    => "CPU",
-                'query' => "SELECT $aggr(`intr/s`) `intr/s` FROM SAR_interrupts $where $group_by;",
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM SAR_interrupts $where $group_by;",
                 'fields'    => array('intr/s'),
                 'title'     => "CPU Interrupts ($aggr_text, $hosts) $exec_title ",
                 'percentage'=> false,
@@ -168,7 +175,7 @@ try {
             ),
             'memory_util' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT  $aggr(kbmemfree)*1024 kbmemfree, $aggr(kbmemused)*1024 kbmemused
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbmemfree)*1024 kbmemfree, $aggr(kbmemused)*1024 kbmemused
                                 FROM SAR_memory_util $where $group_by;",
                 'fields'    => array('kbmemfree', 'kbmemused'),
                 'title'     => "Memory Utilization ($aggr_text, $hosts) $exec_title ",
@@ -178,7 +185,7 @@ try {
             ),
             'memory_util_det' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT  $aggr(kbbuffers)*1024 kbbuffers,  $aggr(kbcommit)*1024 kbcommit, $aggr(kbcached)*1024 kbcached,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbbuffers)*1024 kbbuffers,  $aggr(kbcommit)*1024 kbcommit, $aggr(kbcached)*1024 kbcached,
                                 $aggr(kbactive)*1024 kbactive, $aggr(kbinact)*1024 kbinact
                                 FROM SAR_memory_util $where $group_by;",
                 'fields'    => array('kbcached', 'kbbuffers', 'kbinact', 'kbcommit',  'kbactive'), //
@@ -188,7 +195,7 @@ try {
                 'negative'  => false,
             ),
 //            'memory_util3' => array(
-//                'query' => "SELECT $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
+//                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
 //                'fields'    => array('%memused', '%commit',),
 //                'title'     => "Memory Utilization % ($aggr_text, $hosts) $exec_title ",
 //                'percentage'=> true,
@@ -197,7 +204,7 @@ try {
 //            ),
             'memory' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
                             FROM SAR_memory $where $group_by;",
                 'fields'    => array('frmpg/s','bufpg/s','campg/s'),
                 'title'     => "Memory Stats ($aggr_text, $hosts) $exec_title ",
@@ -207,7 +214,7 @@ try {
             ),
             'io_pagging_disk' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
                             FROM SAR_io_paging $where $group_by;",
                 'fields'    => array('pgpgin/s', 'pgpgout/s'),
                 'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
@@ -217,7 +224,7 @@ try {
             ),
             'io_pagging' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
                             $aggr(`pgscank/s`) `pgscank/s`, $aggr(`pgscand/s`) `pgscand/s`, $aggr(`pgsteal/s`) `pgsteal/s`
                             FROM SAR_io_paging $where $group_by;",
                 'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
@@ -228,7 +235,7 @@ try {
             ),
             'io_pagging_vmeff' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
                 'fields'    => array('%vmeff'),
                 'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
                 'percentage'=> ($aggr == 'SUM' ? '300':100),
@@ -237,7 +244,7 @@ try {
             ),
             'io_transactions' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
                             FROM SAR_io_rate $where $group_by;",
                 'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
                 'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
@@ -247,7 +254,7 @@ try {
             ),
             'io_bytes' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
                             FROM SAR_io_rate $where $group_by;",
                 'fields'    => array('KB_read/s', 'KB_wrtn/s'),
                 'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
@@ -258,7 +265,7 @@ try {
 // All fields
 //            'block_devices' => array(
 //                'metric'    => "Disk",
-//                'query' => "SELECT #$aggr(`tps`) `tps`, $aggr(`rd_sec/s`) `rd_sec/s`, $aggr(`wr_sec/s`) `wr_sec/s`,
+//                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, #$aggr(`tps`) `tps`, $aggr(`rd_sec/s`) `rd_sec/s`, $aggr(`wr_sec/s`) `wr_sec/s`,
 //                                   $aggr(`avgrq-sz`) `avgrq-sz`, $aggr(`avgqu-sz`) `avgqu-sz`, $aggr(`await`) `await`,
 //                                   $aggr(`svctm`) `svctm`, $aggr(`%util`) `%util`
 //                            FROM (
@@ -283,7 +290,7 @@ try {
 //            ),
             'block_devices_util' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`%util_SUM`) `%util_SUM`, $aggr(`%util_MAX`) `%util_MAX`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%util_SUM`) `%util_SUM`, $aggr(`%util_MAX`) `%util_MAX`
                             FROM (
                                 select
                                 id_exec, host, date,
@@ -300,7 +307,7 @@ try {
             ),
             'block_devices_await' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`await_SUM`) `await_SUM`, $aggr(`await_MAX`) `await_MAX`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`await_SUM`) `await_SUM`, $aggr(`await_MAX`) `await_MAX`
                             FROM (
                                 select
                                 id_exec, host, date,
@@ -317,7 +324,7 @@ try {
             ),
             'block_devices_svctm' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`svctm_SUM`) `svctm_SUM`, $aggr(`svctm_MAX`) `svctm_MAX`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`svctm_SUM`) `svctm_SUM`, $aggr(`svctm_MAX`) `svctm_MAX`
                             FROM (
                                 select
                                 id_exec, host, date,
@@ -334,7 +341,7 @@ try {
             ),
             'block_devices_queues' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`avgrq-sz`) `avg-req-size`, $aggr(`avgqu-sz`) `avg-queue-size`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`avgrq-sz`) `avg-req-size`, $aggr(`avgqu-sz`) `avg-queue-size`
                             FROM (
                                 select
                                 id_exec, host, date,
@@ -351,7 +358,7 @@ try {
             ),
             'vmstats_io' => array(
                 'metric'    => "Disk",
-                'query' => "SELECT $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
+                'query' => "SELECT time, $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
                             FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
                 'fields'    => array('KB_IN', 'KB_OUT'),
                 'title'     => "VMSTATS KB I/O  ($aggr_text, $hosts) $exec_title ",
@@ -361,7 +368,7 @@ try {
             ),
             'vmstats_rb' => array(
                 'metric'    => "CPU",
-                'query' => "SELECT $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+                'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
                 'fields'    => array('runnable procs', 'sleep procs'),
                 'title'     => "VMSTATS Processes (r-b)  ($aggr_text, $hosts) $exec_title ",
                 'percentage'=> false,
@@ -370,7 +377,7 @@ try {
             ),
             'vmstats_memory' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT  $aggr(`buff`) `buff`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`buff`) `buff`,
                                     $aggr(`cache`) `cache`,
                                     $aggr(`free`) `free`,
                                     $aggr(`swpd`) `swpd`
@@ -383,7 +390,7 @@ try {
             ),
             'net_devices_kbs' => array(
                 'metric'    => "Network",
-                'query' => "SELECT $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxMB/s_NET', 'txMB/s_NET'),
                 'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
@@ -393,7 +400,7 @@ try {
             ),
             'net_devices_kbs_local' => array(
                 'metric'    => "Network",
-                'query' => "SELECT $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxMB/s_LOCAL', 'txMB/s_LOCAL'),
                 'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
@@ -403,7 +410,7 @@ try {
             ),
             'net_devices_pcks' => array(
                 'metric'    => "Network",
-                'query' => "SELECT $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
                 'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
@@ -413,7 +420,7 @@ try {
             ),
             'net_devices_pcks_local' => array(
                 'metric'    => "Network",
-                'query' => "SELECT $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
                 'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
@@ -423,7 +430,7 @@ try {
             ),
             'net_sockets_pcks' => array(
                 'metric'    => "Network",
-                'query' => "SELECT $aggr(`totsck`) `totsck`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`totsck`) `totsck`,
                                    $aggr(`tcpsck`) `tcpsck`,
                                    $aggr(`udpsck`) `udpsck`,
                                    $aggr(`rawsck`) `rawsck`,
@@ -438,7 +445,7 @@ try {
             ),
             'net_erros' => array(
                 'metric'    => "Network",
-                'query' => "SELECT $aggr(`rxerr/s`) `rxerr/s`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`rxerr/s`) `rxerr/s`,
                                    $aggr(`txerr/s`) `txerr/s`,
                                    $aggr(`coll/s`) `coll/s`,
                                    $aggr(`rxdrop/s`) `rxdrop/s`,
@@ -456,7 +463,7 @@ try {
             ),
             'bwm_in_out_total' => array(
                 'metric'    => "Network",
-                'query' => "SELECT  $aggr(`bytes_in`)/(1024*1024) `MB_in`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`bytes_in`)/(1024*1024) `MB_in`,
                                     $aggr(`bytes_out`)/(1024*1024) `MB_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('MB_in', 'MB_out'),
@@ -467,7 +474,7 @@ try {
             ),
             'bwm_packets_total' => array(
                 'metric'    => "Network",
-                'query' => "SELECT  $aggr(`packets_in`) `packets_in`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`packets_in`) `packets_in`,
                                     $aggr(`packets_out`) `packets_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('packets_in', 'packets_out'),
@@ -478,7 +485,7 @@ try {
             ),
             'bwm_errors_total' => array(
                 'metric'    => "Network",
-                'query' => "SELECT  $aggr(`errors_in`) `errors_in`,
+                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`errors_in`) `errors_in`,
                                     $aggr(`errors_out`) `errors_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('errors_in', 'errors_out'),
@@ -628,6 +635,18 @@ if ($charts) {
                                 echo '<option value="SUM"'.(($aggr == "SUM") ? ' SELECTED':'').'>SUM</option>';
                                 ?>
                             </select>
+                            &nbsp;&nbsp;&nbsp;
+                            Detail: <select name="detail">
+                                <?php
+                                echo '<option value="1"'.(($detail == "1") ? ' SELECTED':'').'>1</option>';
+                                echo '<option value="3"'.(($detail == "3") ? ' SELECTED':'').'>3</option>';
+                                echo '<option value="5"'.(($detail == "5") ? ' SELECTED':'').'>5</option>';
+                                echo '<option value="10"'.(($detail == "10") ? ' SELECTED':'').'>10</option>';
+                                echo '<option value="20"'.(($detail == "20") ? ' SELECTED':'').'>20</option>';
+                                echo '<option value="30"'.(($detail == "30") ? ' SELECTED':'').'>30</option>';
+                                echo '<option value="60"'.(($detail == "60") ? ' SELECTED':'').'>60</option>';
+                                ?>
+                            </select> secs.
                             <!--<input type="submit" value="submit">-->
                     </div>
 
