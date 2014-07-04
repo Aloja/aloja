@@ -101,8 +101,10 @@ try {
         $where_sampling = "round(time/$detail)";
         $group_by       = " GROUP BY $where_sampling ORDER by time";
 
-        $group_by_vmstats = ' GROUP BY time ORDER by time';
-        $group_by_BWM = ' GROUP BY unix_timestamp ORDER by unix_timestamp';
+        $group_by_vmstats = " GROUP BY $where_sampling ORDER by time";
+
+        $where_sampling_BWM = "round(unix_timestamp/$detail)";
+        $group_by_BWM = " GROUP BY $where_sampling_BWM ORDER by unix_timestamp";
 
         $charts[$exec] = array(
             'job_status' => array(
@@ -377,7 +379,7 @@ try {
             ),
             'vmstats_memory' => array(
                 'metric'    => "Memory",
-                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`buff`) `buff`,
+                'query' => "SELECT time,  $aggr(`buff`) `buff`,
                                     $aggr(`cache`) `cache`,
                                     $aggr(`free`) `free`,
                                     $aggr(`swpd`) `swpd`
@@ -434,7 +436,7 @@ try {
                                    $aggr(`tcpsck`) `tcpsck`,
                                    $aggr(`udpsck`) `udpsck`,
                                    $aggr(`rawsck`) `rawsck`,
-                                   $aggr(`ip-frag`) `ipfrag`,
+                                   $aggr(`ip-frag`) `ip-frag`,
                                    $aggr(`tcp-tw`) `tcp-time-wait`
                             FROM SAR_net_sockets $where $group_by;",
                 'fields'    => array('totsck', 'tcpsck', 'udpsck', 'rawsck', 'ip-frag', 'tcp-time-wait'),
@@ -463,7 +465,8 @@ try {
             ),
             'bwm_in_out_total' => array(
                 'metric'    => "Network",
-                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`bytes_in`)/(1024*1024) `MB_in`,
+                'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                                    $aggr(`bytes_in`)/(1024*1024) `MB_in`,
                                     $aggr(`bytes_out`)/(1024*1024) `MB_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('MB_in', 'MB_out'),
@@ -474,7 +477,8 @@ try {
             ),
             'bwm_packets_total' => array(
                 'metric'    => "Network",
-                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`packets_in`) `packets_in`,
+                'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                                    $aggr(`packets_in`) `packets_in`,
                                     $aggr(`packets_out`) `packets_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('packets_in', 'packets_out'),
@@ -485,7 +489,8 @@ try {
             ),
             'bwm_errors_total' => array(
                 'metric'    => "Network",
-                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(`errors_in`) `errors_in`,
+                'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                                    $aggr(`errors_in`) `errors_in`,
                                     $aggr(`errors_out`) `errors_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('errors_in', 'errors_out'),
