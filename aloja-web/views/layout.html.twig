@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+	{% block meta %}
+	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	{% endblock %}
+	<title>{{ title|default('ALOJA: a systematic study of hadoop development variables to enable automated characterization of cost-effectiveness') }}</title>
+	{% block stylesheet %}
+	<style type="text/css" title="currentStyle">
+		@import "css/bootstrap.min.css";
+		@import "css/styles.css";
+	</style>
+	{% endblock %}
+	<script>
+        (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+        })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
+        ga('create', 'UA-47802380-2', 'bsc.es');
+        ga('send', 'pageview');
+    </script>
+</head>
+<body id="main">
+	{% block body %}
+	<div id="container">
+		<!-- container -->
+		<table width="100%" style="border-bottom: 2px solid #B0BED9;"
+			border="0">
+			<tr>
+				<td valign="bottom">
+					<span style="font-size: 1.5em; color: #4E6CA3;">
+						<strong>{{ title|default('HiBench Executions on Hadoop') }}</strong>
+					</span>
+				</td>
+				<td align="right">
+				  <a target="blank" href="http://www.bscmsrc.eu/">
+					<img src="img/bsc-msrc_logo.png">
+				  </a>
+				</td>
+			</tr>
+		</table>
+		<div class="modal fade" id="welcomeModal">
+			<div class="modal-dialog">
+				<div class="modal-content">
+					<div class="modal-header">
+						<button type="button" class="close" data-dismiss="modal">
+							<span aria-hidden="true">&times;</span><span class="sr-only">Close</span>
+						</button>
+						<h4 class="modal-title">
+							Welcome to <strong>ALOJA</strong>
+						</h4>
+					</div>
+					<div class="modal-body">
+						<p>
+							<strong>ALOJA</strong> is a project to explore Hadoop\'s
+							performance under different Software parameters, Hardware, Cloud
+							or On-Premise, and Job types. This site is a <strong>DEMO</strong>,
+							and it is under constant development and it is in the process of
+							being documented. For inquiries, feature requests or bug reports
+							please contact us at: <a href="mailto:aloja@bsc.es" target="_top">aloja@bsc.es</a>
+						</p>
+					</div>
+					<div class="modal-footer">
+						<button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+					</div>
+				</div><!-- /.modal-content -->
+			</div><!-- /.modal-dialog -->
+		</div><!-- /.modal -->
+		{% block messages %} 
+			{% if message is defined and message != '' %}
+			<div>
+				<h2 style="color: red; text-align:center;">
+					</br>{{ message }}
+				</h2>
+			</div>
+			{% endif %} 
+		{% endblock %}
+		{% block navigation %}
+		<div id="navigation" style="text-align: center; width: 80%; margin-left: auto; margin-right: auto;">
+        	<h1>
+              <strong>Navigation:</strong>
+           	 	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="datatable.php">̣<span {% if selected is defined and selected == 'HiBench Runs Details' %}style="font-weight: bold;"{% endif %}>HiBench Runs Details</span></a>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php"><span {% if selected is defined and selected == 'Hadoop Job Counters' %}style="font-weight: bold;"{% endif %}>Hadoop Job Counters</span></a>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="perf_by_cost.php?bench=terasort"><span {% if selected is defined and selected == 'Cost Evaluation' %}style="font-weight: bold;"{% endif %}>Cost Evaluation</span></a>
+            	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}"><span {% if selected is defined and selected == 'Performance charts' %}style="font-weight: bold;"{% endif %}>Performance charts</span></a>
+        	</h1>{# '.(isset($execs) && $execs ? make_execs($execs):'random=1').'#}
+    	</div>
+    	{% endblock %}
+    	{% block content %}
+    	{% endblock %}
+	</div><!-- /container -->
+	{% endblock %}
+	{% block footer %}
+	<div id="copyright">
+       <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="http://www.bscmsrc.eu/bscmsrc/drupal/sites/default/files/bsc-logo.jpg" alt="BSC logo" /></a>
+       &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+       <a target="blank" href="http://research.microsoft.com/"><img height="35" src="http://www.bscmsrc.eu/bscmsrc/drupal/sites/default/files/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
+       <div class="content">
+		 <p>Contact us at: <a href="mailto:aloja@bsc.es">aloja@bsc.es</a></p>
+		 <p>Copyright 2014 © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
+       </div>
+    </div>
+	{% endblock %}
+	{% block javascript %}
+	<!-- Le javascript
+    ================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript">
+		  $(document).ready(function() {
+		
+            function getCookie(cname) {
+           		var name = cname + "=";
+          		var ca = document.cookie.split(';');
+          		for(var i=0; i<ca.length; i++) {
+          		  var c = ca[i].trim();
+          		  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+          		}
+          		return "";
+          	}
+
+            if(getCookie('rememberme') != "true") {
+        		document.cookie="rememberme=true";
+        		$("#welcomeModal").modal({
+        			show: true,
+        		  	backdrop: 'static'
+        		});
+        	}
+		  });
+	</script>
+	{% endblock %}
+</body>
+</html>
