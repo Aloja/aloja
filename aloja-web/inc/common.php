@@ -1,7 +1,5 @@
 <?php
 
-require_once('vendor/autoload.php');
-
 function in_dev() {
     if ($_SERVER['SERVER_NAME'] == 'minerva.bsc.es' ||
         $_SERVER['SERVER_NAME'] == 'hadoop.bsc.es'
@@ -11,18 +9,11 @@ function in_dev() {
         return true;
 }
 
-$loader = new Twig_Loader_Filesystem('views/');
-$twig = null;
-
 if (in_dev()) {
     ini_set('display_errors', 'On');
     error_reporting(E_ALL);
     ini_set('memory_limit', '256M');
-    
-    $twig = new Twig_Environment($loader, array('debug' => true));
 }
-$twig = new Twig_Environment($loader);
-
 
 $message = null;
 $db = null;

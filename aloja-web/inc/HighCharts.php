@@ -258,27 +258,12 @@ class HighCharts {
         return $JS;
     }
 
-    /**
-     * Select the data format XY or Y
-     * @param $field
-     * @return string
-     */
+
     private function generateData($field)
     {
-        $return = '';
-        if (isset(current($this->getRows())['time'])) {
-            //"data: [[161.2, 0], [167.5, 10], [159.5, 30],  ]".
-            foreach ($this->getRows() as $row) {
-                $return .= "[{$row['time']},{$row[$field]}],";
-            }
-            $return = substr($return, 0, -1); //remove trailling coma
-
-        } else {
-            //data: [0,0,0,0,1,1,1]
-            $return = join(',', array_column($this->getRows(), $field));
-        }
-
-        return $return;
+        //"data: [[161.2, 0], [167.5, 10], [159.5, 30],  ]".
+        //data: [0,0,0,0,1,1,1]
+        return join(',', array_column($this->getRows(), $field));
     }
 
 } 
