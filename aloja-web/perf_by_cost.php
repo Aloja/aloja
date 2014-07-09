@@ -15,17 +15,6 @@ try {
         $bench_where = "";
     }
 
-
-//    $query = "
-//    select bench, exe_time, (exe_time/3600)*cost_hour cost,
-//exe_time -(select avg(exe_time) from execs e join clusters c using (id_cluster) where exe_time < 5000 $bench_where )
-// exe_time_std,
-// (exe_time/3600)*(if(locate('_SSD', exec) > 0, cost_hour*2.5, cost_hour))*(if(locate('_IB_', exec) > 0, 1.5, 1)) - (select avg((exe_time/3600)*cost_hour) from execs e join clusters c using (id_cluster) where exe_time < 5000 $bench_where )
-// cost_std,
-//exec from execs e join clusters c using (id_cluster)
-//where (exe_time/3600)*cost_hour < 100 and exe_time < 5000 $bench_where;
-//";
-
     if (isset($_GET['cost_hour_HDD_ETH'])) {
         $cost_hour_HDD_ETH = $_GET['cost_hour_HDD_ETH'];
     } else {
@@ -62,7 +51,7 @@ try {
         $cost_hour_HDD_IB = 11.6;
     }
 
-    $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 and exe_time > 100 and exe_time < 10000";
+    $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs";
     $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where )";
     $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where )";
     $max_exe_time = "(select max(exe_time) from execs e where $outliers $bench_where )";
@@ -117,9 +106,6 @@ $min_exe_time min_exe_time, $max_exe_time max_exe_time, $min_exe_time min_exe_ti
 from execs e
 where $outliers $bench_where and substr(exec, 1, 8) > '20131220';
 ";
-
-
-    echo "<!-- $query -->";
 
     $rows = get_rows($query);
 
