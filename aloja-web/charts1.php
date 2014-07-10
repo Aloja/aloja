@@ -503,9 +503,10 @@ try {
 
         $has_records = false; //of any chart
         foreach ($charts[$exec] as $key_type=>$chart) {
-            if ($chart['metric'] == 'ALL' || $metric == $chart['metric']) {
+            if ($chart['metric'] == 'ALL' || $metric == $chart['metric']) { 
                 $charts[$exec][$key_type]['chart'] = new HighCharts();
                 $charts[$exec][$key_type]['chart']->setTitle($chart['title']);
+                $charts[$exec][$key_type]['chart']->setSubtitle($exec_title);
                 $charts[$exec][$key_type]['chart']->setPercentage($chart['percentage']);
                 $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                 $charts[$exec][$key_type]['chart']->setFields($chart['fields']);
