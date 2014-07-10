@@ -140,16 +140,17 @@
     </script>
     {% endblock %}
     {% block content %}
-      Click on a <strong>benchmark name</strong> to see execution details.</br>
-      Select different rows and <strong>click compare</strong>, to compare charts.</br>
-      <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>
+      Click on a <strong>benchmark name</strong> to see execution details.<br />
+      Select different rows and <strong>click compare</strong>, to compare charts.<br />
+      <strong>Search</strong> to filter results. Shift+Click to order by multiple columns<br />
 
       <form action="charts1.php" target="_blank">
           {% set style_table = '' %}
 		  {% if message is not defined or message is null %}
 			  <div id="loading" style="height: 400px; text-align: center; font-size: 2em;">
-	            </br></br></br></br></br></br>
-	            <blink>Loading...</blink>
+	            <br /><br /><br /><br /><br /><br />
+	            Loading data...<br /><br />
+	            <img src="img/icon.load.gif" />
 	        </div>
 	        {% set style_table = 'style="display: none;"' %}
 		  {% endif %}
@@ -178,7 +179,7 @@
             </tbody>
         </table>
     </div>
-    </br></br>
+    <br /><br />
 
     <div id="chart"></div>
 
