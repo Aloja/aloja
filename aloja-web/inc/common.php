@@ -31,6 +31,10 @@ $id_exec_rows = null;
 
 $cache_path = '/tmp';
 
+function make_tooltip($tooltip)
+{
+	return '<img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'.$tooltip.'"></img>';
+}
 
 function init_db() {
     global $db;
@@ -303,6 +307,10 @@ function generate_table($csv, $show_in_result, $precision = null, $type = null) 
     $table_fields = "<thead>\n\t<tr>\n";
     $table_fields .= "\t\t<th></th>\n";
     foreach ($show_in_result as $key_name=>$column_name) {
+    	if($column_name == 'IO SFac')
+    		$column_name.=make_tooltip('The number of streams to merge at once while sorting files. This determines the number of open file handles.');
+    	else if($column_name == 'IO FBuf')
+    		$column_name.=make_tooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.');
         $table_fields .= "\t\t<th>$column_name</th>\n";
     }
     $table_fields .= "\t</tr>\n";
@@ -349,6 +357,20 @@ function generate_table($csv, $show_in_result, $precision = null, $type = null) 
                     $value = date('YmdHis', round($value_row[$key_name]/1000));
                 } else {
                     $value = $value_row[$key_name];
+                    $tooltip = null;
+                    if($key_name == 'net')
+                    	$tooltip = ($value == 'ETH') ? 'Ethernet' : 'Infiniband';
+                    else if($key_name == 'disk') {
+                    	if($value == 'SSD')
+                    		$tooltip = 'Solid-state disk';
+                    	else if($value == 'HDD')
+                    		$tooltip = 'Hard disk';
+                    	else
+                    		$tooltip = substr($value, 2) . ' remote(s)';
+                    }
+                    
+                    if(isset($tooltip))
+                    	$value.=make_tooltip($tooltip);
                 }
             } else {
                 if ($key_name == 'JOBID') {
