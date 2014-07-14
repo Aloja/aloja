@@ -28,8 +28,8 @@ body, html {
     width: 95%;
 }
 
-#content {
-
+#copyright .content {
+	margin-top: -3.3em;
 }
 
 #main #container {
