@@ -58,7 +58,8 @@ try {
     $blk_sizes      = read_params('blk_sizes');
     $comps          = read_params('comps');
     $id_clusters    = read_params('id_clusters');
-    $mapss           = read_params('mapss');
+    $mapss          = read_params('mapss');
+    $replications   = read_params('replications');
     
     $concat_config = join(',\'_\',', $configurations);
 
@@ -332,7 +333,7 @@ echo "]
                                                 <option value="RL3"   <?php if (in_array( 'RL3', $disks)) echo "SELECTED"; ?>>RL3</option>
                                                 <option value="R1"   <?php if (in_array( 'R1', $disks)) echo "SELECTED"; ?>>R1</option>
                                                 <option value="R2"   <?php if (in_array( 'R2', $disks)) echo "SELECTED"; ?>>R2</option>
-                                                <option value="R3"   <?php if (in_array( 'R1', $disks)) echo "SELECTED"; ?>>R3</option>
+                                                <option value="R3"   <?php if (in_array( 'R3', $disks)) echo "SELECTED"; ?>>R3</option>
                                                 <!--                                    <option value="RR1"   --><?php //if (in_array( 'RR1', $disks)) echo "SELECTED"; ?><!-->RR1</option>-->
                                                 <!--                                    <option value="RR2"   --><?php //if (in_array( 'RR2', $disks)) echo "SELECTED"; ?><!-->RR2</option>-->
                                                 <!--                                    <option value="RR3"   --><?php //if (in_array( 'RR1', $disks)) echo "SELECTED"; ?><!-->RR3</option>-->
@@ -375,6 +376,18 @@ echo "]
                                                 <option value="2"   <?php if (in_array( '2', $comps)) echo "SELECTED"; ?>>BZIP2</option>
                                                 <option value="3"   <?php if (in_array( '3', $comps)) echo "SELECTED"; ?>>Snappy</option>
                                                 <option value="None"   <?php if (!$comps) echo "SELECTED"; ?>>Disabled</option>
+                                            </select>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>
+                                            Replication:</br>
+                                            <select name="replications[]" multiple size="2">
+                                                <option value="1"    <?php if (in_array('1', $replications)) echo "SELECTED"; ?>>1</option>
+                                                <option value="2"    <?php if (in_array('2', $replications)) echo "SELECTED"; ?>>2</option>
+                                                <option value="3"    <?php if (in_array('3', $replications)) echo "SELECTED"; ?>>3</option>
+
+                                                <option value="None"   <?php if (!$replications) echo "SELECTED"; ?>>Disabled</option>
                                             </select>
                                         </td>
                                     </tr>
