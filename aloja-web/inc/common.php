@@ -11,17 +11,19 @@ function in_dev() {
         return true;
 }
 
-$loader = new Twig_Loader_Filesystem('views/');
-$twig = null;
+
 
 if (in_dev()) {
     ini_set('display_errors', 'On');
     error_reporting(E_ALL);
     ini_set('memory_limit', '256M');
     
-    $twig = new Twig_Environment($loader, array('debug' => true));
-}
-$twig = new Twig_Environment($loader);
+    require_once('config.sample.php');
+} else
+	require_once('config.php');
+
+$loader = new Twig_Loader_Filesystem('views/');
+$twig = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
 
 
 $message = null;
@@ -39,12 +41,12 @@ function make_tooltip($tooltip)
 function init_db() {
     global $db;
 
-    if (!in_dev()) {
-        $db = new PDO('mysql:host=localhost;dbname=aloja2;', 'root', '');
-    } else {
-        $db = new PDO('mysql:host=localhost;dbname=aloja2;', 'vagrant', 'vagrant');
+//     if (!in_dev()) {
+//         $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
+//     } else {
+        $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
         //$db = new PDO('mysql:host=127.0.0.1;port=3307;dbname=aloja2;', 'npm', 'aaa');
-    }
+  //  }
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 }
