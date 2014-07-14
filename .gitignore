@@ -12,6 +12,8 @@ jobs/*
 #vagrant
 vagrant/.vagrant/*
 
+test.php
+
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
 
