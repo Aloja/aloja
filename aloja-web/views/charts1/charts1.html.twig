@@ -23,6 +23,34 @@
 
                 {{ chartsJS | raw }}
 
+                //Bugfix trick
+                $("[id^=collapse]").removeClass("in");
+                $("#collapse0").addClass("in");
+                $(".indicator:first").removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+
+                $("#chartsCollapse").collapse({
+					toggle: false
+                });
+
+                $("#chartsCollapse").on('shown.bs.collapse hidden.bs.collapse', function() {
+					$("[id^=collapse]").each(function() {
+						if($(this).hasClass("in")) {
+							var element = $(this).parent().find(".indicator").first();
+							if(element.hasClass("glyphicon-chevron-down"))
+								element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+						} else {
+							var element = $(this).parent().find(".indicator").first();
+							if(element.hasClass("glyphicon-chevron-up"))
+								element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+						}
+					});
+                });
+
+                $("#chartsCollapse").on('hidden.bs.collapse', function() {
+                    console.log($(this));
+					$(this).find('.indicator').first().hasClass("glyphicon-chevron-up")
+					  .removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+                });
             });
         </script>
     {% endblock %}

@@ -144,12 +144,21 @@ body, html {
 }
 
 .group_border {
-    border: 1px solid #E1E1E8;
+    border: 2px solid #E1E1E8;
     -webkit-border-radius: 6px;
     -moz-border-radius: 6px;
     border-radius: 6px;
 }
 
+.group .group_title {
+	text-align: center;
+	font-size: 1.3em;
+}
+
 .display {
     text-align: right;
+}
+
+.panel-heading .indicator:hover {
+	cursor: pointer;
 }
