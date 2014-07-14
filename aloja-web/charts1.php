@@ -114,6 +114,7 @@ try {
                                 WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, time;",
                 'fields'    => array('map', 'shuffle', 'reduce', 'waste', 'merge'),
                 'title'     => "Job exectution history $exec_title ",
+                'group_title' => 'Job exectution history',
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -124,6 +125,7 @@ try {
                             `%iowait`, $aggr(`%nice`) `%nice` FROM SAR_cpu $where $group_by;",
                 'fields'    => array('%user', '%system', '%steal', '%iowait', '%nice'),
                 'title'     => "CPU Utilization ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'CPU Utilization '."($aggr_text, $hosts)",
                 'percentage'=> ($aggr == 'SUM' ? '300':100),
                 'stacked'   => true,
                 'negative'  => false,
@@ -134,6 +136,7 @@ try {
                         FROM SAR_load $where $group_by;",
                 'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
                 'title'     => "CPU Load Averge ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'CPU Load Averge '."($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -144,6 +147,7 @@ try {
                         FROM SAR_load $where $group_by;",
                 'fields'    => array('runq-sz', 'blocked'),
                 'title'     => "CPU Queues ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'CPU Queues '."($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -153,6 +157,7 @@ try {
                 'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM SAR_load $where $group_by;",
                 'fields'    => array('plist-sz'),
                 'title'     => "Number of tasks for CPUs ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Number of tasks for CPUs '."($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -162,6 +167,7 @@ try {
                 'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM SAR_switches $where $group_by;",
                 'fields'    => array('proc/s', 'cswch/s'),
                 'title'     => "CPU Context Switches ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'CPU Context Switches'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -171,6 +177,7 @@ try {
                 'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM SAR_interrupts $where $group_by;",
                 'fields'    => array('intr/s'),
                 'title'     => "CPU Interrupts ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'CPU Interrupts '."($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -181,6 +188,7 @@ try {
                                 FROM SAR_memory_util $where $group_by;",
                 'fields'    => array('kbmemfree', 'kbmemused'),
                 'title'     => "Memory Utilization ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Memory Utilization'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => true,
                 'negative'  => false,
@@ -192,6 +200,7 @@ try {
                                 FROM SAR_memory_util $where $group_by;",
                 'fields'    => array('kbcached', 'kbbuffers', 'kbinact', 'kbcommit',  'kbactive'), //
                 'title'     => "Memory Utilization Details ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Memory Utilization Details'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => true,
                 'negative'  => false,
@@ -210,6 +219,7 @@ try {
                             FROM SAR_memory $where $group_by;",
                 'fields'    => array('frmpg/s','bufpg/s','campg/s'),
                 'title'     => "Memory Stats ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Memory Stats'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false, //este tiene valores negativos...
@@ -220,6 +230,7 @@ try {
                             FROM SAR_io_paging $where $group_by;",
                 'fields'    => array('pgpgin/s', 'pgpgout/s'),
                 'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'I/O Paging IN/OUT to disk'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -231,6 +242,7 @@ try {
                             FROM SAR_io_paging $where $group_by;",
                 'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
                 'title'     => "I/O Paging ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'I/O Paging'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -240,6 +252,7 @@ try {
                 'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
                 'fields'    => array('%vmeff'),
                 'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'I/O Paging %vmeff'." ($aggr_text, $hosts)",
                 'percentage'=> ($aggr == 'SUM' ? '300':100),
                 'stacked'   => false,
                 'negative'  => false,
@@ -250,6 +263,7 @@ try {
                             FROM SAR_io_rate $where $group_by;",
                 'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
                 'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'I/O Transactions/s'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -260,6 +274,7 @@ try {
                             FROM SAR_io_rate $where $group_by;",
                 'fields'    => array('KB_read/s', 'KB_wrtn/s'),
                 'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'KB R/W'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -303,6 +318,7 @@ try {
                             ) t $where $group_by;",
                 'fields'    => array('%util_SUM', '%util_MAX'),
                 'title'     => "Disk Uitlization percentage (All DEVs, $aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Disk Uitlization percentage'." (All DEVs, $aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -320,6 +336,7 @@ try {
                             ) t $where $group_by;",
                 'fields'    => array('await_SUM', 'await_MAX'),
                 'title'     => "Disk request wait time in ms (All DEVs, $aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Disk request wait time in ms'." (All DEVs, $aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -337,6 +354,7 @@ try {
                             ) t $where $group_by;",
                 'fields'    => array('svctm_SUM', 'svctm_MAX'),
                 'title'     => "Disk service time in ms (All DEVs, $aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Disk service time in ms'." (All DEVs, $aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -354,6 +372,7 @@ try {
                             ) t $where $group_by;",
                 'fields'    => array('avg-req-size', 'avg-queue-size'),
                 'title'     => "Disk req and queue sizes ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Disk req and queue sizes'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -363,7 +382,8 @@ try {
                 'query' => "SELECT time, $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
                             FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
                 'fields'    => array('KB_IN', 'KB_OUT'),
-                'title'     => "VMSTATS KB I/O  ($aggr_text, $hosts) $exec_title ",
+                'title'     => "VMSTATS KB I/O ($aggr_text, $hosts) $exec_title ",
+            	'group_title' => 'VMSTATS KB I/O'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -372,7 +392,8 @@ try {
                 'metric'    => "CPU",
                 'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
                 'fields'    => array('runnable procs', 'sleep procs'),
-                'title'     => "VMSTATS Processes (r-b)  ($aggr_text, $hosts) $exec_title ",
+                'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
+            	'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -385,7 +406,8 @@ try {
                                     $aggr(`swpd`) `swpd`
                                     FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
                 'fields'    => array('buff', 'cache', 'free', 'swpd'),
-                'title'     => "VMSTATS Processes (r-b)  ($aggr_text, $hosts) $exec_title ",
+                'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
+            	'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => true,
                 'negative'  => false,
@@ -396,6 +418,7 @@ try {
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxMB/s_NET', 'txMB/s_NET'),
                 'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'MB/s received and transmitted'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -406,6 +429,7 @@ try {
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxMB/s_LOCAL', 'txMB/s_LOCAL'),
                 'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'MB/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -416,6 +440,7 @@ try {
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
                 'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -426,6 +451,7 @@ try {
                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                 'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
                 'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Packets/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -441,6 +467,7 @@ try {
                             FROM SAR_net_sockets $where $group_by;",
                 'fields'    => array('totsck', 'tcpsck', 'udpsck', 'rawsck', 'ip-frag', 'tcp-time-wait'),
                 'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -459,6 +486,7 @@ try {
                             FROM SAR_net_errors $where $group_by;",
                 'fields'    => array('rxerr/s', 'txerr/s', 'coll/s', 'rxdrop/s', 'txdrop/s', 'txcarr/s', 'rxfram/s', 'rxfifo/s', 'txfifo/s'),
                 'title'     => "Network errors ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'Network errors'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -470,7 +498,8 @@ try {
                                     $aggr(`bytes_out`)/(1024*1024) `MB_out`
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('MB_in', 'MB_out'),
-                'title'     => "BW Monitor NG Total Bytes IN/OUT ($aggr_text, $hosts) $exec_title ",
+                'title'     => "BW Monitor NG Total Bytes IN/OUT ($aggr_text, $hosts) $exec_title",
+                'group_title' => 'BW Monitor NG Total Bytes IN/OUT'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -483,6 +512,7 @@ try {
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('packets_in', 'packets_out'),
                 'title'     => "BW Monitor NG Total packets IN/OUT ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'BW Monitor NG Total packets IN/OUT'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -495,6 +525,7 @@ try {
                                     FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                 'fields'    => array('errors_in', 'errors_out'),
                 'title'     => "BW Monitor NG Total errors IN/OUT ($aggr_text, $hosts) $exec_title ",
+                'group_title' => 'BW Monitor NG Total errors IN/OUT'." ($aggr_text, $hosts)",
                 'percentage'=> false,
                 'stacked'   => false,
                 'negative'  => false,
@@ -503,9 +534,10 @@ try {
 
         $has_records = false; //of any chart
         foreach ($charts[$exec] as $key_type=>$chart) {
-            if ($chart['metric'] == 'ALL' || $metric == $chart['metric']) {
+            if ($chart['metric'] == 'ALL' || $metric == $chart['metric']) { 
                 $charts[$exec][$key_type]['chart'] = new HighCharts();
                 $charts[$exec][$key_type]['chart']->setTitle($chart['title']);
+                $charts[$exec][$key_type]['chart']->setSubtitle($exec_title);
                 $charts[$exec][$key_type]['chart']->setPercentage($chart['percentage']);
                 $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                 $charts[$exec][$key_type]['chart']->setFields($chart['fields']);
@@ -552,149 +584,82 @@ try {
     $message .= $e->getMessage()."\n";
 }
 
-?>
-
-<?=make_HTML_header('Job details/s Execution details')?>
-        <?=HighCharts::getHeader()?>
-        <script>
-            Highcharts.setOptions({
-                colors: ["#7cb5ec", "#90ee7e", '#8085e9', "#DF5353", "#f7a35c", "#aaeeee",  "#55BF3B",  "#7798BF", "#aaeeee"]
-                //colors: ['#7cb5ec','#434348','#90ed7d','#f7a35c','#8085e9','#f15c80','#e4d354','#8085e8','#8d4653','#91e8e1']
-                //colors: ['#058DC7', '#50B432', '#ED561B', '#DDDF00', '#24CBE5', '#64E572', '#FF9655', '#FFF263', '#6AF9C4']
-                //colors: ["#7cb5ec", "#90ee7e", "#7798BF", "#f7a35c", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"]
-                //colors: ["#DDDF0D", "#7798BF", "#55BF3B", "#DF5353", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"]
-                //colors: ["#DDDF0D", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"]
-                //colors: ["#f45b5b", "#8085e9", "#8d4654", "#7798BF", "#aaeeee", "#ff0066", "#eeaaee", "#55BF3B", "#DF5353", "#7798BF", "#aaeeee"]
-            });
-
-            $(document).ready(function() {
-                $('select').change(function() {
-                    $(this).parents('form').submit();
-                });
-
-<?php
+$chartsJS = '';
 if ($charts) {
-    reset($charts);
-    $current_chart = current($charts);
+	reset($charts);
+	$current_chart = current($charts);
 
-    foreach ($current_chart as $chart_type=>$chart) {
-        foreach ($execs as $exec) {
-            if (isset($charts[$exec][$chart_type]['chart'])) {
-                //make Y axis all the same when comparing
-                $charts[$exec][$chart_type]['chart']->setMax($chart_details[$chart_type]['max']);
-                //the same for max X (plus 10%)
-                $charts[$exec][$chart_type]['chart']->setMaxX(($exec_details[$exec]['max_time']*1.007));
-                //print the JS
-                echo $charts[$exec][$chart_type]['chart']->getChartJS()."\n\n";
-            }
-        }
-    }
+	foreach ($current_chart as $chart_type=>$chart) {
+		foreach ($execs as $exec) {
+			if (isset($charts[$exec][$chart_type]['chart'])) {
+				//make Y axis all the same when comparing
+				$charts[$exec][$chart_type]['chart']->setMax($chart_details[$chart_type]['max']);
+				//the same for max X (plus 10%)
+				$charts[$exec][$chart_type]['chart']->setMaxX(($exec_details[$exec]['max_time']*1.007));
+				//print the JS
+				$chartsJS .= $charts[$exec][$chart_type]['chart']->getChartJS()."\n\n";
+			}
+		}
+	}
 }
-?>
-            });
-        </script>
-<?php
-echo make_header('HiBench Execution Performance Charts', $message);
-echo make_navigation();
-if ($charts) {
-?>
-    <form method="GET" >
-            <div id="charts" style="width: 95%;">
-                <div id="navigation" style="text-align: center;">
-                    <h2>
-                        <strong>Job/s details:</strong>
-<!--                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=SUMMARY--><?//=make_execs($execs)?><!--">Job Counters</a>-->
-<!--                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=HISTORY--><?//=make_execs($execs)?><!--">Job History</a>-->
-<!--                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=TASKS--><?//=make_execs($execs)?><!--">Job Tasks</a>-->
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=TASKS<?=make_execs($execs)?>">Tasks & Counters</a>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Metrics:</strong>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="<?=modify_url(array('metric'=>'CPU'))?>"><?=($metric == 'CPU' ? '<strong>CPU</strong>':'CPU')?></a>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="<?=modify_url(array('metric'=>'Memory'))?>"><?=($metric == 'Memory' ? '<strong>Memory</strong>':'Memory')?></a>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="<?=modify_url(array('metric'=>'Network'))?>"><?=($metric == 'Network' ? '<strong>Network</strong>':'Network')?></a>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="<?=modify_url(array('metric'=>'Disk'))?>"><?=($metric == 'Disk' ? '<strong>Disk I/O</strong>':'Disk I/O')?></a>
-                        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Buffers
-                    </h2>
-                    <div id="filters" style="text-align: right;">
 
-                            <?php
-                            foreach ($execs as $exec) {
-                                echo '<input type="hidden" name="execs[]" value="'.$exec.'">';
-                            }
-                            ?>
-                            <input type="hidden" name="metric" value="<?=$metric?>">
-                            <strong>Filters:</strong> &nbsp;&nbsp;&nbsp;
-                            Hosts <select name="hosts">
-                                <?php
-                                $host_rows = get_hosts($clusters);
-                                echo '<option value="Slaves"'.(($hosts == "Slaves") ? ' SELECTED':'').'>All Slaves</option>';
-                                echo '<option value="Master"'.(($hosts == "Master") ? ' SELECTED':'').'>Master</option>';
-                                foreach ($host_rows as $host_row) {
-                                    echo '<option value="'.$host_row['host_name'].'"'.(($hosts == $host_row['host_name']) ? ' SELECTED':'').'>'.$host_row['host_name'].'</option>';
-                                }
-                                ?>
-                            </select>
-                            &nbsp;&nbsp;&nbsp;
-                            Aggregation <select name="aggr">
-                                <?php
-                                echo '<option value="AVG"'.(($aggr == "AVG") ? ' SELECTED':'').'>AVG</option>';
-                                echo '<option value="SUM"'.(($aggr == "SUM") ? ' SELECTED':'').'>SUM</option>';
-                                ?>
-                            </select>
-                            &nbsp;&nbsp;&nbsp;
-                            Detail: <select name="detail">
-                                <?php
-                                echo '<option value="1"'.(($detail == "1") ? ' SELECTED':'').'>1</option>';
-                                echo '<option value="3"'.(($detail == "3") ? ' SELECTED':'').'>3</option>';
-                                echo '<option value="5"'.(($detail == "5") ? ' SELECTED':'').'>5</option>';
-                                echo '<option value="10"'.(($detail == "10") ? ' SELECTED':'').'>10</option>';
-                                echo '<option value="20"'.(($detail == "20") ? ' SELECTED':'').'>20</option>';
-                                echo '<option value="30"'.(($detail == "30") ? ' SELECTED':'').'>30</option>';
-                                echo '<option value="60"'.(($detail == "60") ? ' SELECTED':'').'>60</option>';
-                                ?>
-                            </select> secs.
-                            <!--<input type="submit" value="submit">-->
-                    </div>
-
-                </div>
-                </br>
-                <?php
-                reset($charts);
-                $current_chart = current($charts);
-                foreach ($current_chart as $chart_type=>$chart) {
-                    $first = true;
-                    foreach ($execs as $exec) {
-                        if (isset($charts[$exec][$chart_type]['chart'])) {
-                            if ($first) {
-                                echo '<div class="group_border">';
-                                $first = false;
-                            }
-                            //echo $charts[$exec][$chart_type]['chart']->getContainer($exec_details[$exec]['size'])."\n\n";
-                            echo $charts[$exec][$chart_type]['chart']->getContainer(100)."\n\n";
-                            echo "<br/>";
-                        }
-                    }
-                    if (!$first) echo '</div><br/>';
-                }
-                ?>
-            </div>
-    </form>
-    <?php
-    /*
-
-    <div id="links_for_caching" style="color: lightgrey;">
-        Other links:
-        <a href="<?=modify_url(array('hosts'=>'Master'))?>" style="color: lightgrey;">Master</a>&nbsp;
-        <?php
-        $host_rows = get_hosts($clusters);
-        foreach ($host_rows as $host_row) {
-            echo '<a href="'.modify_url(array('hosts'=>$host_row['host_name'])).'" style="color: lightgrey;">'.$host_row['host_name'].'</a>&nbsp;';
-        }
-        ?>
-        <a href="<?=modify_url(array('aggr'=>'SUM'))?>" style="color: lightgrey;">SUM</a>&nbsp;
-        </br></br>
-    </div>
-   */
-    ?>
-<?php
+$htmlData = '<div class="panel-group" id="chartsCollapse">';
+$i = 0;
+if(isset($charts) && sizeof($charts)>0) {
+	reset($charts);
+	$current_chart = current($charts);
+	foreach ($current_chart as $chart_type => $chart) {
+		$first = true;
+		foreach ($execs as $exec) {
+			if (isset($charts[$exec][$chart_type]['chart'])) {
+				if ($first) {
+					$htmlData .= '<div class="panel panel-default">
+									    <div class="panel-heading">
+							              <i data-toggle="collapse" data-parent="#accordion" href="#collapse'.$i.'" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+									      <h4 class="panel-title">
+									        <a data-toggle="collapse" data-parent="#accordion" href="#collapse'.$i.'">
+									          '.$charts[$exec][$chart_type]['group_title'].'
+									        </a>
+									      </h4>
+									    </div>
+									    <div id="collapse'.$i.'" class="panel-collapse collapse in">
+									      <div class="panel-body">';
+					//$htmlData .= '<div class="group"><p class="group_title">'.$charts[$exec][$chart_type]['group_title'].'</p>'.'<div class="group_border">';
+					$first = false;
+				}
+				//echo $charts[$exec][$chart_type]['chart']->getContainer($exec_details[$exec]['size'])."\n\n";
+				$htmlData .= $charts[$exec][$chart_type]['chart']->getContainer(100)."\n\n";
+				$htmlData .= "<br/>";
+			}
+			$i++;
+		}
+		if (!$first) $htmlData .= '</div></div></div>'; //$htmlData .= '</div></div><br/>';
+	}
 }
-echo $footer;
+$htmlData .= '</div>';
+
+if(!isset($exec))
+	$exec = '';
+echo $twig->render('charts1/charts1.html.twig',
+		array('selected' => 'Performance charts',
+				'show_in_result' => count($show_in_result),
+				'message' => $message,
+				'title' => 'Job details/s Execution details',
+				'chartsJS' => $chartsJS,
+				'charts' => $charts,
+				'metric' => $metric,
+				'execs' => $execs,
+				'make_execs' => make_execs($execs),
+				'aggr' => $aggr,
+				'modifyUrl' => array(
+						modify_url(array('metric'=>'CPU')),
+						modify_url(array('metric'=>'Memory')),
+						modify_url(array('metric'=>'Network')),
+						modify_url(array('metric'=>'Disk'))
+						),
+				'hosts' => $hosts,
+				'host_rows' => get_hosts($clusters),
+				'htmlData' => $htmlData,
+				'detail' => $detail,
+				//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
+		));

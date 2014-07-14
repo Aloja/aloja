@@ -75,7 +75,7 @@ try {
               WHERE 1 $filter_execs $where_configs
               GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
               ;";
-
+              
     $rows_config = get_rows($query);
 
     //get the result rows
