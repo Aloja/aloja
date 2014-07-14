@@ -30,12 +30,12 @@
 			<tr>
 				<td valign="bottom">
 					<span style="font-size: 1.5em; color: #4E6CA3;">
-						<strong>{{ title|default('HiBench Executions on Hadoop') }}</strong>
+						<strong>{{ title|default('ALOJA: HiBench Executions on Hadoop') }}</strong>
 					</span>
 				</td>
 				<td align="right">
 				  <a target="blank" href="http://www.bscmsrc.eu/">
-					<img src="img/bsc-logo_big.jpeg" style="width: 25%;">
+					<img src="img/bsc-logo_big.jpeg" style="width: 300px;">
 				  </a>
 				</td>
 			</tr>
@@ -57,7 +57,11 @@
 							performance under different Software parameters, Hardware, Cloud
 							or On-Premise, and Job types. This site is a <strong>DEMO</strong>,
 							and it is under constant development and it is in the process of
-							being documented. For inquiries, feature requests or bug reports
+							being documented.
+							<br /><br />
+							For more details, visit our <a href="index.php">welcome page</a>.
+							<br /><br />
+							For inquiries, feature requests or bug reports
 							please contact us at: <a href="mailto:aloja@bsc.es" target="_top">aloja@bsc.es</a>
 						</p>
 					</div>
@@ -80,6 +84,7 @@
 		<div id="navigation" style="text-align: center; width: 80%; margin-left: auto; margin-right: auto;">
         	<h1>
               <strong>Navigation:</strong>
+                &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="index.php"><span {% if selected is defined and selected == 'Welcome' %}style="font-weight: bold;"{% endif %}>Welcome</span></a>
            	 	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="datatable.php">̣<span {% if selected is defined and selected == 'HiBench Runs Details' %}style="font-weight: bold;"{% endif %}>HiBench Runs Details</span></a>
             	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php"><span {% if selected is defined and selected == 'Hadoop Job Counters' %}style="font-weight: bold;"{% endif %}>Hadoop Job Counters</span></a>
             	&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="perf_by_cost.php?bench=terasort"><span {% if selected is defined and selected == 'Cost Evaluation' %}style="font-weight: bold;"{% endif %}>Cost Evaluation</span></a>
@@ -97,7 +102,7 @@
        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
        <a target="blank" href="http://research.microsoft.com/"><img height="35" src="img/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
        <div class="content">
-		 <p>Contact us at: <a href="mailto:aloja@bsc.es">aloja@bsc.es</a></p>
+		 <p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a></p>
 		 <p>Copyright 2014 © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
        </div>
     </div>
