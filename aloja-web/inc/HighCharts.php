@@ -20,6 +20,7 @@ class HighCharts {
         <script src="//code.highcharts.com/modules/exporting.js"></script>
         <script src="//rawgithub.com/highslide-software/export-csv/master/export-csv.js"></script>
         <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+        <script src="https://rawgithub.com/highslide-software/draggable-legend/master/draggable-legend.js"></script>
 ';
     /*
      DOWN sample http://jsfiddle.net/sveinn_st/FMJAL/
