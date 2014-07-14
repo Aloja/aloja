@@ -138,8 +138,9 @@ foreach ($rows as $row) {
 
 echo $twig->render('perf_by_cost/perf_by_cost.html.twig',
 		array('selected' => 'Cost Evaluation',
+                'message' => $message,
+                'highcharts_js' => HighCharts::getHeader(),
 				'show_in_result' => count($show_in_result),
-				'message' => $message,
 				'seriesData' => $seriesData,
 				'bench' => $bench,
 				'cost_hour_SSD_IB' => $cost_hour_SSD_IB,
@@ -150,4 +151,5 @@ echo $twig->render('perf_by_cost/perf_by_cost.html.twig',
 				'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
 				'title' => 'Normalized Price by Performance of Hadoop Hibench Executions'
 				//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
-		));
+        )
+);
