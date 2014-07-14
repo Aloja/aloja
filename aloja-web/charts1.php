@@ -606,7 +606,7 @@ echo $twig->render('charts1/charts1.html.twig',
 				'execs' => $execs,
 				'make_execs' => make_execs($execs),
 				'aggr' => $aggr,
-				'modifyURL' => array(
+				'modifyUrl' => array(
 						modify_url(array('metric'=>'CPU')),
 						modify_url(array('metric'=>'Memory')),
 						modify_url(array('metric'=>'Network')),
