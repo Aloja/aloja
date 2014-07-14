@@ -5,13 +5,12 @@ require_once('vendor/autoload.php');
 function in_dev() {
     if ($_SERVER['SERVER_NAME'] == 'minerva.bsc.es' ||
         $_SERVER['SERVER_NAME'] == 'hadoop.bsc.es'
-    )
+    ) {
         return false;
-    else
+    } else {
         return true;
+    }
 }
-
-
 
 if (in_dev()) {
     ini_set('display_errors', 'On');
@@ -19,17 +18,18 @@ if (in_dev()) {
     ini_set('memory_limit', '256M');
     
     require_once('config.sample.php');
-} else
+} else {
 	require_once('config.php');
+}
 
 $loader = new Twig_Loader_Filesystem('views/');
-$twig = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
+$twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
 
 
-$message = null;
-$db = null;
-$exec_rows = null;
-$id_exec_rows = null;
+$message        = null;
+$db             = null;
+$exec_rows      = null;
+$id_exec_rows   = null;
 
 $cache_path = '/tmp';
 
@@ -41,12 +41,8 @@ function make_tooltip($tooltip)
 function init_db() {
     global $db;
 
-//     if (!in_dev()) {
-//         $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
-//     } else {
-        $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
-        //$db = new PDO('mysql:host=127.0.0.1;port=3307;dbname=aloja2;', 'npm', 'aaa');
-  //  }
+    $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
+
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 }
