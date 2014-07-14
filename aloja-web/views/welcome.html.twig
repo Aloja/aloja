@@ -1,0 +1,50 @@
+{% extends "layout.html.twig" %}
+  {% block stylesheet %}
+    {{ parent() }}
+    <style type="text/css">
+      @import "css/main.css"
+    </style>
+  {% endblock %}
+  {% block content %}
+		<div class="inside" style="margin: 1em;">
+			<p>
+				<strong>ALOJA</strong> is a project to explore Hadoop's performance
+				under different software parameters, hardware, cloud or on-premise,
+				and job types. This site is a <strong>DEMO</strong>, and it is under
+				constant development and it is in the process of being documented.
+				<br />For inquiries, feature requests or bug reports please contact us at:
+				<a href="mailto:aloja@bsc.es" target="_top">aloja@bsc.es</a>
+			</p>
+			<p>
+			  This portal is divided into four major sections:
+			  <ul>
+			     <li>
+			       <a href="datatable.php"><b>HiBench Runs Details</b></a>: in this section you can find all of the benchmark executions done and its generic results.
+			       Also it offers a link to a series of drawings in order to explore more deeply the execution results. Those links corresponds to the benchmark selection for section four draws.
+			     </li>
+			     <li>
+			       <a href="counters.php"><b>Hadoop Job Counters</b></a>: here details of each job execution can be found, such as the number of mappers and reducers and job submission and completion times, among others. It offers a more deep exploration of each of this basic parameters.
+			     </li>
+			     <li>
+			       <a href="perf_by_cost.php"><b>Cost Evaluation</b></a>: this section is intended to show the best cost-effective configurations of hardware and software. Here all of the hardware configurations for each benchmark tested are shown on a draw evaluating the best cost-effective configurations. To provide the cost details it allows the user to specify his cost of each hardware configuration, such as HDD/SSD and infiniband/ethernet network cost per hour.
+			     </li>
+			     <li>
+			       <a href="charts1.php?random=1"><b>Performance Charts</b></a>: this section shows the details of each benchmark execution with several draws focusing on network, CPU, disk I/O or memory. It also allow to do compairsons between several benchmarks and configurations.
+			     </li>
+			  </ul>
+			</p>
+		</div>
+   {% endblock %}
+
+	{% block javascript %}
+	<!-- Le javascript
+    ================================================== -->
+	<!-- Placed at the end of the document so the pages load faster -->
+	<script type="text/javascript" src="js/jquery.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript">
+		  $(document).ready(function() {
+            document.cookie="rememberme=true";
+		  });
+	</script>
+    {% endblock %}
