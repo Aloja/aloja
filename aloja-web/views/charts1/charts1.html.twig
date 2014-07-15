@@ -64,10 +64,10 @@
                    <strong>Job/s details:</strong>
                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=TASKS{{ make_execs | raw }}">Tasks & Counters</a>
                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Metrics:</strong>
-                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl[0] | raw }}"><span {% if metric == 'CPU' %}style="font-weight:bold;"{% endif %}>CPU</span></a>
-                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl[1] | raw }}"><span {% if metric == 'Memory' %}style="font-weight:bold;"{% endif %}>Memory</span></a>
-                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl[2] | raw }}"><span {% if metric == 'Network' %}style="font-weight:bold;"{% endif %}>Network</span></a>
-                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl[3] | raw }}"><span {% if metric == 'Disk' %}style="font-weight:bold;"{% endif %}>Disk I/O</span></a>
+                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'metric': 'CPU'}) }}"><span {% if metric == 'CPU' %}style="font-weight:bold;"{% endif %}>CPU</span></a>
+                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'metric': 'Memory'}) }}"><span {% if metric == 'Memory' %}style="font-weight:bold;"{% endif %}>Memory</span></a>
+                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'metric': 'Network'}) }}"><span {% if metric == 'Network' %}style="font-weight:bold;"{% endif %}>Network</span></a>
+                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'metric': 'Disk'}) }}"><span {% if metric == 'Disk' %}style="font-weight:bold;"{% endif %}>Disk I/O</span></a>
                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Buffers
                </h2>
                <div id="filters" style="text-align: right;">

@@ -106,12 +106,6 @@ echo $twig->render('counters/counters.html.twig',
 				'type' => $type,
 				'make_execs' => (isset($execs)) ? make_execs($execs) : 'random=1',
 				'execs' => $execs,
-				'modifyUrls' => array(modify_url(array('type'=>'SUMMARY')), 
-									  modify_url(array('type'=>'MAP')),
-									  modify_url(array('type'=>'REDUCE')),
-									  modify_url(array('type'=>'FILE-IO')),
-									  modify_url(array('type'=>'DETAIL')),
-									  modify_url(array('type'=>'TASKS')))
 				//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
 		));
 ?>

@@ -418,159 +418,7 @@ function make_execs(array $execs) {
     return $return;
 }
 
-function make_HTML_header($title = 'HiBench Executions on Hadoop') {
-    $HTML_header =
-'<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html>
-<head>
-    <meta http-equiv="content-type" content="text/html; charset=utf-8" />
-    <title>'.$title.'</title>
-    <style type="text/css" title="currentStyle">
-    	@import "css/bootstrap.min.css";
-        @import "css/styles.css";
-    </style>
-    ';
-    return $HTML_header;
-}
-
-function include_datatables() {
-    return
-        '<style type="text/css">
-        @import "js/datatables/media/css/demo_table.css";
-        @import "js/datatables/media/css/jquery.dataTables.css";
-        @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
-        @import "js/datatables/extras/TableTools/media/css/TableTools.css";
-        @import "js/datatables/extras/ColVis/media/css/ColVis.css";
-    </style>
-    <script type="text/javascript" language="javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-    <script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
-    <script type="text/javascript" language="javascript" src="js/datatables/extras/FixedHeader/js/FixedHeader.nightly.min.js"></script>
-    <script type="text/javascript" language="javascript" src="js/datatables/extras/ColReorder/media/js/ColReorder.nightly.min.js"></script>
-    <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
-    <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
-    <script type="text/javascript" language="javascript" src="js/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
-    ';
-}
-
-
-function make_header ($title = 'HiBench Executions on Hadoop', $message = null) {
-    $header = '
-</head>
-<body id="main">
-<div id="container">
-    <table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
-                <tr>
-                    <td valign="bottom">
-                        <span style="font-size: 1.5em;color: #4E6CA3;">
-                            <strong>'.$title.'</strong>
-                        </span></td>
-                    <td align="right">
-                        <a target="blank" href="http://www.bscmsrc.eu/"><img src="img/bsc-msrc_logo.png"></a>
-                    </td>
-                </tr>
-            </table>
-    <div class="modal fade" id="welcomeModal">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title">Welcome to <strong>ALOJA</strong></h4>
-      </div>
-      <div class="modal-body">
-        <p><strong>ALOJA</strong> is a project to explore Hadoop\'s performance under different Software parameters, Hardware, Cloud or On-Premise, and Job types.
-            This site is under constant development and in the process of being documented.
-            For inquiries, feature requests or bug reports please contact us at: <a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a></p>
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
-            ';
-
-    if ($message) {
-        $header .="\n<div><h2 style=\"color: red; text-align: center;\"></br>$message</h2></div>\n";
-    }
-
-    return $header;
-}
-
-$footer = '
-		<div id="copyright">
-            <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="http://www.bscmsrc.eu/bscmsrc/drupal/sites/default/files/bsc-logo.jpg" alt="BSC logo" /></a>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-            <a target="blank" href="http://research.microsoft.com/"><img height="35" src="http://www.bscmsrc.eu/bscmsrc/drupal/sites/default/files/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
-
-            <div class="content">
-				<p>Contact us at: <a href="mailto:aloja@bsc.es">aloja@bsc.es</a></p>
-				<p>Copyright 2014 © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a> </p></div>
-            </div>
-		<script type="text/javascript" src="js/bootstrap.min.js"></script>
-        <script>
-        (function(i,s,o,g,r,a,m){i[\'GoogleAnalyticsObject\']=r;i[r]=i[r]||function(){
-            (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-            m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-        })(window,document,\'script\',\'//www.google-analytics.com/analytics.js\',\'ga\');
-        ga(\'create\', \'UA-47802380-2\', \'bsc.es\');
-        ga(\'send\', \'pageview\');
-        </script>
-		<script type="text/javascript">
-		  $(document).ready(function() {
-		
-            function getCookie(cname) {
-           		var name = cname + "=";
-          		var ca = document.cookie.split(\';\');
-          		for(var i=0; i<ca.length; i++) {
-          		  var c = ca[i].trim();
-          		  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
-          		}
-          		return "";
-          	}
-
-            if(getCookie(\'rememberme\') != "true") {
-        		document.cookie="rememberme=true";
-        		$("#welcomeModal").modal({
-        			show: true,
-        		  	backdrop: \'static\'
-        		});
-        	}
-		  });
-		</script>
-    </body>
-</html>';
-
-function make_navigation($selected = '') {
-    global $execs;
-    $navigation = '    <div id="navigation" style="text-align: center; width: 80%; margin-left: auto; margin-right: auto;">
-        <h1>
-            <strong>Navigation:</strong>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="datatable.php">'.($selected == 'HiBench Runs Details' ? '<strong>HiBench Runs Details</strong>':'HiBench Runs Details').'</a>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php">'.($selected == 'Hadoop Job Counters' ? '<strong>Hadoop Job Counters</strong>':'Hadoop Job Counters').'</a>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="perf_by_cost.php?bench=terasort">'.($selected == 'Cost Evaluation' ? '<strong>Cost Evaluation</strong>':'Cost Evaluation').'</a>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="charts1.php?'.(isset($execs) && $execs ? make_execs($execs):'random=1').'">'.($selected == 'Performance Charts' ? '<strong>Performance Charts</strong>':'Performance Charts').'</a>
-        </h1>
-    </div>';
-
-    return $navigation;
-}
-
-function make_datatables_help(){
-    return 'Click on a <strong>benchmark name</strong> to see execution details.</br>
-    Select different rows and <strong>click compare</strong>, to compare charts.</br>
-    <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>';
-}
-
-function make_loading(){
-    return '        <div id="loading" style="height: 400px; text-align: center; font-size: 2em;">
-            </br></br></br></br></br></br>
-            <blink>Loading...</blink>
-        </div>';
-}
-
-
 //copied functions
-
 function url_origin($s, $use_forwarded_host=false)
 {
     $ssl = (!empty($s['HTTPS']) && $s['HTTPS'] == 'on') ? true:false;
@@ -581,14 +429,14 @@ function url_origin($s, $use_forwarded_host=false)
     $host = ($use_forwarded_host && isset($s['HTTP_X_FORWARDED_HOST'])) ? $s['HTTP_X_FORWARDED_HOST'] : (isset($s['HTTP_HOST']) ? $s['HTTP_HOST'] : $s['SERVER_NAME']);
     return $protocol . '://' . $host ;//. $port;
 }
+
 function full_url($s, $use_forwarded_host=false)
 {
     return url_origin($s, $use_forwarded_host) . $s['REQUEST_URI'];
 }
 
-function modify_url($mod)
-{
-    $url = full_url($_SERVER);
+$function = new Twig_SimpleFunction('modifyUrl', function ($mod) {
+	$url = full_url($_SERVER);
 
     $query = explode("&", $_SERVER['QUERY_STRING']);
     if (!$_SERVER['QUERY_STRING']) {$queryStart = "?";} else {$queryStart = "&";}
@@ -625,4 +473,5 @@ function modify_url($mod)
     }
 
     return $url;
-}
+});
+$twig->addFunction($function);
