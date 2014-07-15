@@ -1,8 +1,10 @@
 {% extends "layout.html.twig" %}
   {% block stylesheet %}
     {{ parent() }}
+{#     <style type="text/css" src="//cdn.jsdelivr.net/jquery.magnific-popup/0.9.9/magnific-popup.css"></style>#}
     <style type="text/css">
-      @import "css/main.css"
+      @import "css/main.css";
+      @import "//cdn.jsdelivr.net/jquery.magnific-popup/0.9.9/magnific-popup.css";
     </style>
   {% endblock %}
   {% block content %}
@@ -16,30 +18,79 @@
 				<a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a>
 			</p>
 			<p>
-			  This portal is divided into four major sections:
-			  <ul>
-			     <li>
-			       <a href="datatable.php"><b>HiBench Runs Details</b></a>: in this section you can find all of the benchmark executions done and its generic results.
-			       Also it offers a link to a series of drawings in order to explore more deeply the execution results. Those links corresponds to the benchmark selection for section four draws.
-			       <br />
-			       <img src="img/screenshots/datatable.jpeg" style="display: block; margin-left: auto; margin-right: auto; max-width: 10%;" />
-			     </li>
-			     <li>
-			       <a href="counters.php"><b>Hadoop Job Counters</b></a>: here details of each job execution can be found, such as the number of mappers and reducers and job submission and completion times, among others. It offers a more deep exploration of each of this basic parameters.
-			       <br />
-			       <img src="img/screenshots/counters.jpeg" style="display: block; margin-left: auto; margin-right: auto; max-width: 10%;" />
-			     </li>
-			     <li>
-			       <a href="perf_by_cost.php"><b>Cost Evaluation</b></a>: this section is intended to show the best cost-effective configurations of hardware and software. Here all of the hardware configurations for each benchmark tested are shown on a draw evaluating the best cost-effective configurations. To provide the cost details it allows the user to specify his cost of each hardware configuration, such as HDD/SSD and infiniband/ethernet network cost per hour.
-			       <br />
-			       <img src="img/screenshots/costs.jpeg" style="display: block; margin-left: auto; margin-right: auto; max-width: 10%;" />
-			     </li>
-			     <li>
-			       <a href="charts1.php?random=1"><b>Performance Charts</b></a>: this section shows the details of each benchmark execution with several draws focusing on network, CPU, disk I/O or memory. It also allow to do compairsons between several benchmarks and configurations.
-			       <br />
-			       <img src="img/screenshots/charts1.jpeg" style="display: block; margin-left: auto; margin-right: auto; max-width: 10%;" />
-			     </li>
-			  </ul>
+			  This portal is divided into the following sections:
+			  <table id="about" class="table table-stripped">
+			   <thead>
+			     <th>Section</th>
+			     <th>Description</th>
+			     <th>Sample screenshot</th>
+			   </thead>
+			   <tbody>
+				   <tr>
+				     <td><a href="datatable.php"><b>HiBench Runs Details</b></a></td>
+				     <td>
+				       In this section you can find all of the benchmark executions done and its generic results.
+				       Also it offers a link to a series of drawings in order to explore more deeply the execution results. Those tdnks corresponds to the benchmark selection for section four draws.
+				     </td>
+				     <td>
+				       <a class="image-popup-vertical-fit" href="img/screenshots/datatable.jpeg">
+				          <img src="img/screenshots/datatable.jpeg" style="width: 60%;" />
+				       </a>
+				     </td>
+				   </tr>
+				   <tr>
+				     <td>
+				       <a href="config_improvement.php"><b>Config improvement</b></a>
+				     </td>
+				     <td>
+				       In this section you can find the improvements depending on the choosen configuration for each of the benchmarks.
+				       It is possible to select all the possible combinations between benchmarks and configurations.
+				     </td>
+				     <td>
+				       <a class="image-popup-vertical-fit" href="img/screenshots/configimprovement.png">
+				          <img src="img/screenshots/configimprovement.png" style="width: 60%;" />
+				       </a>
+				     </td>
+				   </tr>
+				   <tr>
+				     <td><a href="counters.php"><b>Hadoop Job Counters</b></a></td>
+				     <td>
+				       Here details of each job execution can be found, such as the number of mappers and reducers and job submission and completion times, among others. It offers a more deep exploration of each of this basic parameters.  
+				     </td>
+				     <td>
+				       <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
+				          <img src="img/screenshots/counters.jpeg" style="width: 60%;" />
+				       </a>
+				     </td>
+				   </tr>
+				   <tr>
+				     <td>
+				        <a href="perf_by_cost.php"><b>Cost Evaluation</b></a>
+				     </td>
+				     <td>
+				       This section is intended to show the best cost-effective configurations of hardware and software. Here all of the hardware configurations for each benchmark tested are shown on a draw evaluating the best cost-effective configurations. To provide the cost details it allows the user to specify his cost of each hardware configuration, such as HDD/SSD and infiniband/ethernet network cost per hour.
+				     </td>
+				     <td>
+				       <a class="image-popup-vertical-fit" href="img/screenshots/costs.jpeg">
+				          <img src="img/screenshots/costs.jpeg" style="width: 60%;" />
+				       </a>
+				     </td>
+				   </tr>
+				   <tr>
+				     <td>
+				       <a href="charts1.php?random=1"><b>Performance Charts</b></a>
+				     </td>
+				     <td>
+				       This section shows the details of each benchmark execution with several draws focusing on network, CPU, disk I/O or memory. It also allow to do compairsons between several benchmarks and configurations.
+				     </td>
+				     <td>
+					     <a class="image-popup-vertical-fit" href="img/screenshots/charts1.jpeg">
+					        <img  src="img/screenshots/charts1.jpeg" style="width: 60%;" />
+					     </a>
+				     </td>
+				   </tr>
+			   </tbody>
+			  </table>
 			</p>
 		</div>
    {% endblock %}
@@ -48,11 +99,22 @@
 	<!-- Le javascript
     ================================================== -->
 	<!-- Placed at the end of the document so the pages load faster -->
-	<script type="text/javascript" src="js/jquery.min.js"></script>
-	<script type="text/javascript" src="js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="//cdn.jsdelivr.net/jquery.magnific-popup/0.9.9/jquery.magnific-popup.min.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
             document.cookie="rememberme=true";
+
+            $('.image-popup-vertical-fit').magnificPopup({
+                type: 'image',
+                closeOnContentClick: true,
+                mainClass: 'mfp-img-mobile',
+                image: {
+                  verticalFit: true
+                }
+                
+             });
 		  });
 	</script>
     {% endblock %}

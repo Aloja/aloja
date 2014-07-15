@@ -4,7 +4,25 @@
 	color: black;
 }
 
-ul li {
-	margin-top: 1em;
-	margin-bottom: 1em;
+#about {
+	width: 80%;
+	display: block;
+	margin-left: auto;
+	margin-right: auto;
+}
+#about td:first-child {
+	width: 13%;
+}
+
+#about td:nth-child(2) {
+	width: 47%;
+}
+
+#about td:nth-child(3) {
+	width: 40%;
+}
+
+.image-popup-vertical-fit {
+	cursor: -webkit-zoom-in;
+	cursor: -moz-zoom-in;
 }
