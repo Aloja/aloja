@@ -1,6 +1,7 @@
 <?php
 
 require_once('vendor/autoload.php');
+require_once('inc/Aloja_Twig_Extension.php');
 
 function in_dev() {
     if ($_SERVER['SERVER_NAME'] == 'minerva.bsc.es' ||
@@ -24,7 +25,7 @@ if (in_dev()) {
 
 $loader = new Twig_Loader_Filesystem('views/');
 $twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
-
+$twig->addExtension(new Aloja_Twig_Extension());
 
 $message        = null;
 $db             = null;
@@ -32,11 +33,6 @@ $exec_rows      = null;
 $id_exec_rows   = null;
 
 $cache_path = '/tmp';
-
-function make_tooltip($tooltip)
-{
-	return '<img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'.$tooltip.'"></img>';
-}
 
 function init_db() {
     global $db;
@@ -72,7 +68,7 @@ if (in_dev())
     } else {
         if (!$db) init_db();
 
-if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
+// if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
 
         try {
             $sth = $db->prepare($sql);
@@ -299,6 +295,69 @@ function generate_show($show_in_result, $csv, $offset) {
     return $show_in_result;
 }
 
+function generateJSONTable($csv, $show_in_result, $precision = null, $type = null) {
+
+	$jsonData = array();
+	
+	$i = 0;
+	foreach ($csv as $key_row=>$value_row) {
+		$jsonRow = array();
+		$jsonRow[] = $value_row['id_exec'];
+		foreach ($show_in_result as $key_name=>$column_name) {
+			if ($precision !== null && is_numeric($value_row[$key_name])) {
+				$value_row[$key_name] = round($value_row[$key_name], $precision);
+			}
+
+			if (!$type) {
+				if ($key_name == 'bench') {
+					$jsonRow[] = $value_row[$key_name];
+				} elseif ($key_name == 'init_time') {
+					$jsonRow[] = date('YmdHis', strtotime($value_row['end_time']));
+				} elseif ($key_name == 'exe_time') {
+					$jsonRow[] = round($value_row['exe_time']);
+				} elseif ($key_name == 'files') {
+					$jsonRow[] = $value_row['exec'];
+				} elseif ($key_name == 'prv') {
+					$jsonRow[] = $value_row['id_exec'];
+				} elseif ($key_name == 'version') {
+					$jsonRow[] = "1.0.3";
+				} elseif ($key_name == 'cost') {
+					$jsonRow[] = number_format($value_row['cost'], 2);
+				} elseif ($key_name == 'id_cluster') {
+					if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
+					else $jsonRow[] = "Local 1";
+				} elseif (stripos($key_name, 'BYTES') !== false) {
+					$jsonRow[] = round(($value_row[$key_name])/(1024*1024));
+				} elseif ($key_name == 'FINISH_TIME') {
+					$jsonRow[] = date('YmdHis', round($value_row[$key_name]/1000));
+				} else {
+					$jsonRow[] = $value_row[$key_name];
+				}
+			} else {
+				if ($key_name == 'JOBID') {
+					$jsonRow[] = $value_row[$key_name];
+				} elseif (stripos($key_name, 'BYTES') !== false) {
+					$jsonRow[] = round(($value_row[$key_name])/(1024*1024));
+				} elseif (stripos($key_name, 'TIME') !== false){
+					$jsonRow[] = substr($value_row[$key_name], -8);
+				} elseif (strpos($key_name, 'JOBNAME') !== false){
+					if (strlen($value_row[$key_name]) > 15)
+						$jsonRow[] = substr($value_row[$key_name], 0, 15).'.';
+					else
+						$jsonRow[] = $value_row[$key_name];
+				} else {
+					$jsonRow[] = $value_row[$key_name];
+				}
+
+			}
+		}
+		$jsonData[] = $jsonRow;
+		$i++;
+	}
+
+	return json_encode($jsonData);
+}
+	
 function generate_table($csv, $show_in_result, $precision = null, $type = null) {
 
     if (!$csv) {
@@ -417,61 +476,3 @@ function make_execs(array $execs) {
     }
     return $return;
 }
-
-//copied functions
-function url_origin($s, $use_forwarded_host=false)
-{
-    $ssl = (!empty($s['HTTPS']) && $s['HTTPS'] == 'on') ? true:false;
-    $sp = strtolower($s['SERVER_PROTOCOL']);
-    $protocol = substr($sp, 0, strpos($sp, '/')) . (($ssl) ? 's' : '');
-    $port = $s['SERVER_PORT'];
-    //$port = ((!$ssl && $port=='80') || ($ssl && $port=='443')) ? '' : ':'.$port;
-    $host = ($use_forwarded_host && isset($s['HTTP_X_FORWARDED_HOST'])) ? $s['HTTP_X_FORWARDED_HOST'] : (isset($s['HTTP_HOST']) ? $s['HTTP_HOST'] : $s['SERVER_NAME']);
-    return $protocol . '://' . $host ;//. $port;
-}
-
-function full_url($s, $use_forwarded_host=false)
-{
-    return url_origin($s, $use_forwarded_host) . $s['REQUEST_URI'];
-}
-
-$function = new Twig_SimpleFunction('modifyUrl', function ($mod) {
-	$url = full_url($_SERVER);
-
-    $query = explode("&", $_SERVER['QUERY_STRING']);
-    if (!$_SERVER['QUERY_STRING']) {$queryStart = "?";} else {$queryStart = "&";}
-    // modify/delete data
-    foreach($query as $q)
-    {
-        if ($q) {
-            list($key, $value) = explode("=", $q);
-            if(array_key_exists($key, $mod))
-            {
-                if($mod[$key])
-                {
-                    $url = preg_replace('/'.$key.'='.$value.'/', $key.'='.$mod[$key], $url);
-                }
-                else
-                {
-                    $url = preg_replace('/&?'.$key.'='.$value.'/', '', $url);
-                }
-            }
-        }
-    }
-    // add new data
-    foreach($mod as $key => $value)
-    {
-        if($value && !preg_match('/'.$key.'=/', $url))
-        {
-            $url .= $queryStart.$key.'='.$value;
-        }
-    }
-
-    //remove first directory to fix "redirection" in hadoop.bsc.es
-    if (strpos($url, '.php')) {
-        $url = substr($url, strpos($url, basename($url)));
-    }
-
-    return $url;
-});
-$twig->addFunction($function);
