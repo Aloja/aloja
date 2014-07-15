@@ -8,18 +8,25 @@
     </style>
   {% endblock %}
   {% block content %}
-		<div class="inside" style="margin: 1em;">
+		<div class="inside" style="margin: 1em auto; width: 80%">
 			<p>
-				<strong>ALOJA</strong> is a project to explore Hadoop's performance
-				under different software parameters, hardware, cloud or on-premise,
-				and job types. This site is a <strong>DEMO</strong>, and it is under
-				constant development and it is in the process of being documented.
-				<br />For inquiries, feature requests or bug reports please contact us at:
-				<a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a>
+                <br/>
+            <h5>Welcome to the <strong>ALOJA</strong> project,</h5>
+
+            <h5><strong>ALOJA</strong> is an inniciative of the
+                <a href="http://www.bscmsrc.eu/" target="_blank"> BSC-MSR</a> research center in Barcelona to explore
+                Hadoop's performance under different deployment scenarios.
+                This site is under constant development and it is in the process of being documented.
+                <br/><br/> Feel free to browse the site, the
+                <a href="https://github.com/Aloja/aloja" target="_blank">code</a>,
+                and send inquiries, feature requests or bug reports to:
+                <a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a>
+                </br></br>
+                <strong>Site's content:</strong>
+            </h5>
 			</p>
 			<p>
-			  This portal is divided into the following sections:
-			  <table id="about" class="table table-stripped">
+			  <table id="about" class="table table-stripped" style="width: 90%">
 			   <thead>
 			     <th>Section</th>
 			     <th>Description</th>
@@ -27,10 +34,13 @@
 			   </thead>
 			   <tbody>
 				   <tr>
-				     <td><a href="datatable.php"><b>HiBench Runs Details</b></a></td>
+				     <td style="white-space: nowrap;"><a href="datatable.php"><b>Benchmark Executions</b></a></td>
 				     <td>
-				       In this section you can find all of the benchmark executions done and its generic results.
-				       Also it offers a link to a series of drawings in order to explore more deeply the execution results. Those tdnks corresponds to the benchmark selection for section four draws.
+				         This sections presents the benchmark execution repository.
+                         It features more than 4000
+                         executions and counting.
+                         This tool allows you to browse, filter, search, and select distinct executions to compare and
+                         analyse its execution details.
 				     </td>
 				     <td>
 				       <a class="image-popup-vertical-fit" href="img/screenshots/datatable.jpeg">
@@ -43,8 +53,9 @@
 				       <a href="config_improvement.php"><b>Config improvement</b></a>
 				     </td>
 				     <td>
-				       In this section you can find the improvements depending on the choosen configuration for each of the benchmarks.
-				       It is possible to select all the possible combinations between benchmarks and configurations.
+				       The Configuration Improvement sections evaluates the SPEED-UP improvement by different Hardware
+                         and Software configurations of the Hadoop executions.  The page allow to filter and group
+                         results according to their execution configurations.
 				     </td>
 				     <td>
 				       <a class="image-popup-vertical-fit" href="img/screenshots/configimprovement.png">
@@ -53,22 +64,14 @@
 				     </td>
 				   </tr>
 				   <tr>
-				     <td><a href="counters.php"><b>Hadoop Job Counters</b></a></td>
-				     <td>
-				       Here details of each job execution can be found, such as the number of mappers and reducers and job submission and completion times, among others. It offers a more deep exploration of each of this basic parameters.  
-				     </td>
-				     <td>
-				       <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
-				          <img src="img/screenshots/counters.jpeg" style="width: 60%;" />
-				       </a>
-				     </td>
-				   </tr>
-				   <tr>
 				     <td>
 				        <a href="perf_by_cost.php"><b>Cost Evaluation</b></a>
 				     </td>
 				     <td>
-				       This section is intended to show the best cost-effective configurations of hardware and software. Here all of the hardware configurations for each benchmark tested are shown on a draw evaluating the best cost-effective configurations. To provide the cost details it allows the user to specify his cost of each hardware configuration, such as HDD/SSD and infiniband/ethernet network cost per hour.
+				       The Cost/Performance evaluation tool, presents a cloud of points of the different Hadoop
+                         executions and evaluates the cost-effectiveness of both the Hardware e.g., SSDs, InfiniBand
+                         to the Hadoop configuration e.g., Number of concurrent mappers, replication, or compression.
+
 				     </td>
 				     <td>
 				       <a class="image-popup-vertical-fit" href="img/screenshots/costs.jpeg">
@@ -81,7 +84,7 @@
 				       <a href="charts1.php?random=1"><b>Performance Charts</b></a>
 				     </td>
 				     <td>
-				       This section shows the details of each benchmark execution with several draws focusing on network, CPU, disk I/O or memory. It also allow to do compairsons between several benchmarks and configurations.
+				       This section shows the details of each benchmark execution with several draws focusing on network, CPU, disk I/O or memory. It also allow to do comparisons between several benchmarks and configurations.
 				     </td>
 				     <td>
 					     <a class="image-popup-vertical-fit" href="img/screenshots/charts1.jpeg">
@@ -89,6 +92,17 @@
 					     </a>
 				     </td>
 				   </tr>
+                   <tr>
+                       <td><a href="counters.php"><b>Hadoop Job Counters</b></a></td>
+                       <td>
+                           Here details of each job execution can be found, such as the number of mappers and reducers and job submission and completion times, among others. It offers a more deep exploration of each of this basic parameters.
+                       </td>
+                       <td>
+                           <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
+                               <img src="img/screenshots/counters.jpeg" style="width: 60%;" />
+                           </a>
+                       </td>
+                   </tr>
 			   </tbody>
 			  </table>
 			</p>

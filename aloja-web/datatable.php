@@ -17,7 +17,7 @@ try {
 }
 
 echo $twig->render('datatable/datatable.html.twig',
-		array('selected' => 'HiBench Runs Details',
+		array('selected' => 'Benchmark Executions',
 			  'show_in_result' => count($show_in_result),
 			  'table_fields' => $table_fields,
 			  'message' => $message
