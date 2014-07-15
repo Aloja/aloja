@@ -651,12 +651,6 @@ echo $twig->render('charts1/charts1.html.twig',
 				'execs' => $execs,
 				'make_execs' => make_execs($execs),
 				'aggr' => $aggr,
-				'modifyUrl' => array(
-						modify_url(array('metric'=>'CPU')),
-						modify_url(array('metric'=>'Memory')),
-						modify_url(array('metric'=>'Network')),
-						modify_url(array('metric'=>'Disk'))
-						),
 				'hosts' => $hosts,
 				'host_rows' => get_hosts($clusters),
 				'htmlData' => $htmlData,

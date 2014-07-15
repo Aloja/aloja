@@ -145,13 +145,13 @@
         <div id="navigation" style="text-align: center;">
 	        <h2>
 	            <strong>JOB COUNTER TYPES:</strong>
-	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrls[0] }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
-	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrls[1] }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
-	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrls[2] }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>
-	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrls[3] }}"><span {% if type == 'FILE-IO' %}style="font-weight: bold;"{% endif %}>FILE-IO</span></a>
-	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrls[4] }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAIL</span></a>
+	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
+	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'type': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
+	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'type': 'REDUCE'}) }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>
+	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'type': 'FILE-IO'}) }}"><span {% if type == 'FILE-IO' %}style="font-weight: bold;"{% endif %}>FILE-IO</span></a>
+	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'type': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAIL</span></a>
 	            {% if execs is defined %}
-	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrls[5] }}"><span {% if type == 'TASKS' %}style="font-weight: bold;"{% endif %}>JOB/S TASKS</span></a>
+	            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'type': 'TASK'}) }}"><span {% if type == 'TASKS' %}style="font-weight: bold;"{% endif %}>JOB/S TASKS</span></a>
 	            {% endif %}
 	        </h2>
 	    </div>
