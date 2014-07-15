@@ -537,7 +537,6 @@ try {
             if ($chart['metric'] == 'ALL' || $metric == $chart['metric']) { 
                 $charts[$exec][$key_type]['chart'] = new HighCharts();
                 $charts[$exec][$key_type]['chart']->setTitle($chart['title']);
-                $charts[$exec][$key_type]['chart']->setSubtitle($exec_title);
                 $charts[$exec][$key_type]['chart']->setPercentage($chart['percentage']);
                 $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                 $charts[$exec][$key_type]['chart']->setFields($chart['fields']);

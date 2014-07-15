@@ -12,7 +12,6 @@ class HighCharts {
     protected $max;
     protected $min;
     protected $maxX;
-    protected $subtitle;
 
     static $header =
         '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
@@ -52,23 +51,6 @@ class HighCharts {
     public function getTitle()
     {
         return $this->title;
-    }
-
-    public function setSubtitle($exec_title)
-    {
-    	$subtitle = '';
-    	$explanation = preg_split('~ID_[0-9]+~',$exec_title)[1];
-    	$explanation = explode('_',$explanation);
-    	
-    	$subtitle .= substr($explanation[3],1).' mappers ';
-    	$subtitle .= substr($explanation[5],1).' reducers';
-		 
-    	$this->subtitle = $subtitle;
-    }
-    
-    public function getSubtitle()
-    {
-    	return $this->subtitle;
     }
     
     public function setFields($fields)
@@ -186,7 +168,7 @@ class HighCharts {
                         //x: -20 //center
                     },
                     subtitle: {
-                        text: '".$this->getSubtitle()."<br />Click and drag to zoom',
+                        text: 'Click and drag to zoom',
                         style: {
                             fontSize: '10px'
                         }
