@@ -5,13 +5,12 @@ require_once('vendor/autoload.php');
 function in_dev() {
     if ($_SERVER['SERVER_NAME'] == 'minerva.bsc.es' ||
         $_SERVER['SERVER_NAME'] == 'hadoop.bsc.es'
-    )
+    ) {
         return false;
-    else
+    } else {
         return true;
+    }
 }
-
-
 
 if (in_dev()) {
     ini_set('display_errors', 'On');
@@ -19,17 +18,18 @@ if (in_dev()) {
     ini_set('memory_limit', '256M');
     
     require_once('config.sample.php');
-} else
+} else {
 	require_once('config.php');
+}
 
 $loader = new Twig_Loader_Filesystem('views/');
-$twig = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
+$twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
 
 
-$message = null;
-$db = null;
-$exec_rows = null;
-$id_exec_rows = null;
+$message        = null;
+$db             = null;
+$exec_rows      = null;
+$id_exec_rows   = null;
 
 $cache_path = '/tmp';
 
@@ -41,12 +41,8 @@ function make_tooltip($tooltip)
 function init_db() {
     global $db;
 
-//     if (!in_dev()) {
-//         $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
-//     } else {
-        $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
-        //$db = new PDO('mysql:host=127.0.0.1;port=3307;dbname=aloja2;', 'npm', 'aaa');
-  //  }
+    $db = new PDO(DB_CONN_CHAIN, MYSQL_USER, MYSQL_PWD);
+
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
 }
@@ -96,7 +92,8 @@ if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
     return $rows;
 }
 
-$filter_execs = "AND exe_time between 200 AND 20000 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+$filter_execs_max_time = "AND exe_time < 10000";
 function get_execs() {
     global $filter_execs;
     $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
@@ -482,7 +479,7 @@ function make_header ($title = 'HiBench Executions on Hadoop', $message = null) 
       <div class="modal-body">
         <p><strong>ALOJA</strong> is a project to explore Hadoop\'s performance under different Software parameters, Hardware, Cloud or On-Premise, and Job types.
             This site is under constant development and in the process of being documented.
-            For inquiries, feature requests or bug reports please contact us at: <a href="mailto:aloja@bsc.es" target="_top">aloja@bsc.es</a></p>
+            For inquiries, feature requests or bug reports please contact us at: <a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a></p>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>

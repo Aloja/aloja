@@ -12,6 +12,9 @@ jobs/*
 #vagrant
 vagrant/.vagrant/*
 
+#test PHP file to check the configuration (insecure in production)
+test.php
+
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
 
