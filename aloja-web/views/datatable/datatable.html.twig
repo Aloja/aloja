@@ -9,6 +9,13 @@
         @import "js/datatables/extras/ColVis/media/css/ColVis.css";
     </style>
 {% endblock %}
+	{% block messages %} 
+		<div>
+			<h2 style="color: red; text-align:center;">
+				</br><span id="err_message"></span>
+			</h2>
+		</div>
+	{% endblock %}
     {% block content %}
       Click on a <strong>benchmark name</strong> to see execution details.<br />
       Select different rows and <strong>click compare</strong>, to compare charts.<br />
@@ -40,15 +47,12 @@
 			  {% endautoescape %}
 			</tr>
 			<tr>
-			   <th><input type="text" value="\" class="search_init" style="visibility: hidden;"></th>
+			   <th><input type="text" value="" class="search_init" style="visibility: hidden;"></th>
 			   {% for key_name,column_name in show_in_result %}
-			   <th><input type="text" value="filter col" class="search_init"</th>
+			   <th><input type="text" value="filter col" class="search_init"></th>
 			   {% endfor %}
 			</tr>
 		  </thead>
-		  <tfoot>
-		  
-		  </tfoot>
 {#            {{ table_fields | raw }}#}
         </table>
 
@@ -87,6 +91,7 @@
     <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
     <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
     <script type="text/javascript" language="javascript" src="js/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
+    <script type="text/javascript" language="javascript" src="js/utils.js"></script>
     <script type="text/javascript" charset="utf-8">
         //parse querystring
         $.urlParam = function(name){
@@ -170,7 +175,10 @@
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
                 "oSearch": {"sSearch": $.urlParam('search')},
-                "bDeferRender": true,
+                "deferRender": true,
+//                 "bServerSide": true,
+                "bProcessing": true,
+                "sAjaxSource": "getDatatableData.php",
                 "aaSorting": [[ {{ show_in_result | length }}, "desc" ]],
                 "iDisplayLength": 10,
                 "sDom": 'C<"clear">lfrtip<"clear"><"clear">T', //"sDom": 'C<"clear">lfrtip',
@@ -190,7 +198,7 @@
                 },
                 "sPaginationType": "full_numbers",
                 "oTableTools": {
-                    "sSwfPath": "../datatables/datatables/media/swf/copy_csv_xls_pdf.swf"
+                    "sSwfPath": "js/datatables/media/swf/copy_csv_xls_pdf.swf"
                 },
                 "aLengthMenu": [
                     [10, 25, 50, 100, 200, -1],
@@ -199,8 +207,48 @@
                 "fnInitComplete": function(oSettings, json) {
                     $('#benchmarks').show();
                     $('#loading').hide();
-                }
+                    $(".tooltip2").each(function() {
+						$(this).tooltip();
+                    });
+                },
+                "fnRowCallback": function( nRow, aData, iDisplayIndex ) {
+                    $('td:eq(0)', nRow).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
+					$('td:eq(2)', nRow).html('<a href="charts1.php?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
 
+					//tooltip on row 5 and 6
+					var tooltip = '';
+					if(aData[6] == 'ETH')
+						tooltip = 'Ethernet';
+					else
+						tooltip = 'Infiniband';
+					$('td:eq(5)', nRow).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
+
+					if(aData[7] == 'HDD')
+						tooltip = 'Hard disk';
+					else if(aData[7] == 'SSD')
+						tooltip = 'Solid-state disk';
+					else
+						tooltip = aData[7].substring(2) + ' remote(s)';
+							
+					$('td:eq(6)', nRow).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
+					
+					//link to files
+					var string = aData[15];
+					var value = string.substring(0, strpos(aData[15], '/'));
+					$('td:eq(14)', nRow).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+
+					//link to paraver
+					$('td:eq(15)', nRow).html('<a href="exp2prv.php?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
+	                return nRow;
+                },
+//                 "fnPreDrawCallback": function(oSettings) {
+//                     var aoData = oSettings.aoData;
+//                     if(aoData.length == 0) {
+//                         $("#err_message").text('ERROR: no results for query!');
+//                         $("#loading").hide();
+//                         return false;
+//                     }
+//                  }
             } );
 
             /* Add event listeners to the two range filtering inputs */

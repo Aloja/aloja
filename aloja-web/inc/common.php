@@ -68,7 +68,7 @@ if (in_dev())
     } else {
         if (!$db) init_db();
 
-// if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
+ //if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
 
         try {
             $sth = $db->prepare($sql);
@@ -355,7 +355,7 @@ function generateJSONTable($csv, $show_in_result, $precision = null, $type = nul
 		$i++;
 	}
 
-	return json_encode($jsonData);
+	return json_encode(array('aaData' => $jsonData));
 }
 	
 function generate_table($csv, $show_in_result, $precision = null, $type = null) {
@@ -467,12 +467,4 @@ function generate_table($csv, $show_in_result, $precision = null, $type = null) 
     $table_fields .= "\t</tr>\n</tfoot>\n";
     */
     return $table_fields;
-}
-
-function make_execs(array $execs) {
-    $return = '';
-    foreach ($execs as $exec) {
-        $return .= '&execs[]='.$exec;
-    }
-    return $return;
 }

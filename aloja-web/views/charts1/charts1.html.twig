@@ -62,7 +62,7 @@
            <div id="navigation" style="text-align: center;">
                <h2>
                    <strong>Job/s details:</strong>
-                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=TASKS{{ make_execs | raw }}">Tasks & Counters</a>
+                   &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="counters.php?type=TASKS{{ makeExecs(execs) }}">Tasks & Counters</a>
                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<strong>Metrics:</strong>
                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'metric': 'CPU'}) }}"><span {% if metric == 'CPU' %}style="font-weight:bold;"{% endif %}>CPU</span></a>
                    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="{{ modifyUrl({'metric': 'Memory'}) }}"><span {% if metric == 'Memory' %}style="font-weight:bold;"{% endif %}>Memory</span></a>
