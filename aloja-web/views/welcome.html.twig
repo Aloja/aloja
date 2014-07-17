@@ -9,103 +9,133 @@
   {% endblock %}
   {% block content %}
 		<div class="inside" style="margin: 1em auto; width: 80%">
-			<p>
-                <br/>
-            <h5>Welcome to the <strong>ALOJA</strong> project,</h5>
 
-            <h5><strong>ALOJA</strong> is an inniciative of the
-                <a href="http://www.bscmsrc.eu/" target="_blank"> BSC-MSR</a> research center in Barcelona to explore
-                Hadoop's performance under different deployment scenarios.
-                This site is under constant development and it is in the process of being documented.
-                <br/><br/> Feel free to browse the site, the
-                <a href="https://github.com/Aloja/aloja" target="_blank">code</a>,
-                and send inquiries, feature requests or bug reports to:
-                <a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a>
-                </br></br>
-                <strong>Site's content:</strong>
-            </h5>
-			</p>
-			<p>
-			  <table id="about" class="table table-stripped" style="width: 90%">
-			   <thead>
-			     <th>Section</th>
-			     <th>Description</th>
-			     <th>Sample screenshot</th>
-			   </thead>
-			   <tbody>
-				   <tr>
-				     <td style="white-space: nowrap;"><a href="datatable.php"><b>Benchmark Executions</b></a></td>
-				     <td>
-				         This sections presents the benchmark execution repository.
-                         It features more than 4000
-                         executions and counting.
-                         This tool allows you to browse, filter, search, and select distinct executions to compare and
-                         analyse its execution details.
-				     </td>
-				     <td>
-				       <a class="image-popup-vertical-fit" href="img/screenshots/datatable.jpeg">
-				          <img src="img/screenshots/datatable.jpeg" style="width: 60%;" />
-				       </a>
-				     </td>
-				   </tr>
-				   <tr>
-				     <td>
-				       <a href="config_improvement.php"><b>Config improvement</b></a>
-				     </td>
-				     <td>
-				       The Configuration Improvement sections evaluates the SPEED-UP improvement by different Hardware
-                         and Software configurations of the Hadoop executions.  The page allow to filter and group
-                         results according to their execution configurations.
-				     </td>
-				     <td>
-				       <a class="image-popup-vertical-fit" href="img/screenshots/configimprovement.png">
-				          <img src="img/screenshots/configimprovement.png" style="width: 60%;" />
-				       </a>
-				     </td>
-				   </tr>
-				   <tr>
-				     <td>
-				        <a href="perf_by_cost.php"><b>Cost Evaluation</b></a>
-				     </td>
-				     <td>
-				       The Cost/Performance evaluation tool, presents a cloud of points of the different Hadoop
-                         executions and evaluates the cost-effectiveness of both the Hardware e.g., SSDs, InfiniBand
-                         to the Hadoop configuration e.g., Number of concurrent mappers, replication, or compression.
+            <a href="https://github.com/Aloja/aloja" target="_blank">
+                <img style="position: absolute; top: 80; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
+            </a>
 
-				     </td>
-				     <td>
-				       <a class="image-popup-vertical-fit" href="img/screenshots/costs.jpeg">
-				          <img src="img/screenshots/costs.jpeg" style="width: 60%;" />
-				       </a>
-				     </td>
-				   </tr>
-				   <tr>
-				     <td>
-				       <a href="charts1.php?random=1"><b>Performance Charts</b></a>
-				     </td>
-				     <td>
-				       This section shows the details of each benchmark execution with several draws focusing on network, CPU, disk I/O or memory. It also allow to do comparisons between several benchmarks and configurations.
-				     </td>
-				     <td>
-					     <a class="image-popup-vertical-fit" href="img/screenshots/charts1.jpeg">
-					        <img  src="img/screenshots/charts1.jpeg" style="width: 60%;" />
-					     </a>
-				     </td>
-				   </tr>
-                   <tr>
-                       <td><a href="counters.php"><b>Hadoop Job Counters</b></a></td>
-                       <td>
-                           Here details of each job execution can be found, such as the number of mappers and reducers and job submission and completion times, among others. It offers a more deep exploration of each of this basic parameters.
-                       </td>
-                       <td>
-                           <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
-                               <img src="img/screenshots/counters.jpeg" style="width: 60%;" />
-                           </a>
-                       </td>
-                   </tr>
-			   </tbody>
-			  </table>
-			</p>
+            <table>
+                <tr>
+                    <td>
+                        <p>
+                            <br/>
+                        <h4>Welcome to the <strong>ALOJA</strong> project,</h4>
+
+                        <h5><strong>ALOJA</strong> is an inniciative of the
+                            <a href="http://www.bscmsrc.eu/" target="_blank"> BSC-MSR</a> research center in Barcelona to explore
+                            Hadoop's performance under different deployment scenarios.
+                            <br/><br/>This site is under constant development and it is in the process of being documented.
+                            Feel free to browse the site, the
+                            <a href="https://github.com/Aloja/aloja" target="_blank">code</a>,
+                            and send inquiries, feature requests or bug reports to:
+                            <a href="mailto:hadoop@bsc.es" target="_top">hadoop@bsc.es</a>
+                            </br></br></br>
+                            <strong>Site's content:</strong>
+                        </h5>
+                        </p>
+                    </td>
+
+                    <td>
+                        <img src="img/imatge_web.png" width="250">
+                    </td>
+                </tr>
+            </table>
+
+          <table id="about" class="table table-stripped" style="width: 90%">
+           <thead>
+             <th>Section</th>
+             <th>Description</th>
+             <th>Sample screenshot</th>
+           </thead>
+           <tbody>
+               <tr>
+                 <td style="white-space: nowrap;"><a href="datatable.php"><b>Benchmark Executions</b></a></td>
+                 <td>
+                     This sections presents the benchmark execution repository.
+                     It features more than 4000
+                     executions and counting.</br>
+                     This tool allows you to browse, filter, search, and select distinct executions to compare and
+                     analyse its execution details.
+                 </td>
+                 <td>
+                   <a class="image-popup-vertical-fit" href="img/screenshots/datatable.jpeg">
+                      <img src="img/screenshots/datatable.jpeg" style="width: 80%;" />
+                   </a>
+                 </td>
+               </tr>
+               <tr>
+                 <td>
+                   <a href="config_improvement.php"><b>Config improvement</b></a>
+                 </td>
+                 <td>
+                   The Configuration Improvement sections evaluates the SPEED-UP improvement by different Hardware
+                     and Software configurations of the Hadoop executions.</br>
+                     The page allows to filter and group
+                     results according to their execution configurations.
+                 </td>
+                 <td>
+                   <a class="image-popup-vertical-fit" href="img/screenshots/configimprovement.png">
+                      <img src="img/screenshots/configimprovement.png" style="width: 60%;" />
+                   </a>
+                 </td>
+               </tr>
+               <tr>
+                 <td>
+                    <a href="perf_by_cost.php"><b>Cost Evaluation</b></a>
+                 </td>
+                 <td>
+                   The Cost/Performance evaluation tool, presents a cloud of points of the different Hadoop
+                     executions and evaluates the cost-effectiveness of both:</br>
+                     </br>
+                     - the Hardware e.g., SSDs, InfiniBand </br>
+                     - to the Hadoop configuration e.g., Number of concurrent mappers, replication, or compression.
+
+                 </td>
+                 <td>
+                   <a class="image-popup-vertical-fit" href="img/screenshots/costs.jpeg">
+                      <img src="img/screenshots/costs.jpeg" style="width: 60%;" />
+                   </a>
+                 </td>
+               </tr>
+               <tr>
+                 <td>
+                   <a href="charts1.php?random=1"><b>Performance Charts</b></a>
+                 </td>
+                 <td>
+                   The Performance Charts sections allows first to get a visual glance at the full Hadoop execution
+                     of the selected runs by analyzing each of the Hadoop phases: map, merge, shuffle, and reduce.
+                   It also allows to dig deeper into the performance metrics and results for the executions,
+                     in order to understand the amount of resources use, and contrast visually the difference
+                     between the selected executions. </br>
+                     Analysing: CPU utilization, # of processes and context switches, Memory and Paging, Networking,
+                     and the I/O subsystem.
+                 </td>
+                 <td>
+                     <a class="image-popup-vertical-fit" href="img/screenshots/charts1.jpeg">
+                        <img  src="img/screenshots/charts1.jpeg" style="width: 90%;" />
+                     </a>
+                 </td>
+               </tr>
+               <tr>
+                   <td><a href="counters.php"><b>Hadoop Job Counters</b></a></td>
+                   <td>
+                       The Hadoop Job Counters sections allows to browse the counters output at each of the Hadoop
+                       executions, filter them, and to order by a specific counter the selected runs (or all).
+                        </br>
+                       The section presents the summary of all the Job execution counters,
+                       Map and Reduce specific counters, and the I/O subsystem counters.
+                       </br>
+                       It also features the details by task: to understand the running time of each Map or Reduce
+                       process.
+                   </td>
+                   <td>
+                       <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
+                           <img src="img/screenshots/counters.jpeg" style="width: 90%;" />
+                       </a>
+                   </td>
+               </tr>
+           </tbody>
+          </table>
 		</div>
    {% endblock %}
 
