@@ -172,6 +172,12 @@
                 }
             } );
 
+            $('#benchmarks').on('column-visibility.dt', function ( e, settings, column, state ) {
+                console.log(
+                    'Column '+ column +' has changed to '+ (state ? 'visible' : 'hidden')
+                );
+            } );
+            
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
                 "oSearch": {"sSearch": $.urlParam('search')},
@@ -207,48 +213,49 @@
                 "fnInitComplete": function(oSettings, json) {
                     $('#benchmarks').show();
                     $('#loading').hide();
+                },
+                "fnDrawCallback": function( oSettings) {
                     $(".tooltip2").each(function() {
 						$(this).tooltip();
                     });
                 },
                 "fnRowCallback": function( nRow, aData, iDisplayIndex ) {
-                    $('td:eq(0)', nRow).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
-					$('td:eq(2)', nRow).html('<a href="charts1.php?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
-
-					//tooltip on row 5 and 6
-					var tooltip = '';
-					if(aData[6] == 'ETH')
-						tooltip = 'Ethernet';
-					else
-						tooltip = 'Infiniband';
-					$('td:eq(5)', nRow).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
-
-					if(aData[7] == 'HDD')
-						tooltip = 'Hard disk';
-					else if(aData[7] == 'SSD')
-						tooltip = 'Solid-state disk';
-					else
-						tooltip = aData[7].substring(2) + ' remote(s)';
-							
-					$('td:eq(6)', nRow).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
-					
-					//link to files
-					var string = aData[15];
-					var value = string.substring(0, strpos(aData[15], '/'));
-					$('td:eq(14)', nRow).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
-
-					//link to paraver
-					$('td:eq(15)', nRow).html('<a href="exp2prv.php?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
+                    $('td', nRow).each(function(index, value) {
+                        
+                        //Correction because first row doesn't really exist
+                        if(index > 0) 
+                            index += 1;
+                        
+                    	var headTitle = $("#benchmarks thead tr:first-child th:nth-child("+index+")").text();
+                    	if(headTitle == 'Benchmark')
+        					$(this).html('<a href="charts1.php?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
+                    	else if(headTitle == '')
+                            $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
+                    	else if(headTitle == 'Net') {
+        					var tooltip = '';
+        					if(aData[6] == 'ETH')
+        						tooltip = 'Ethernet';
+        					else
+        						tooltip = 'Infiniband';
+        					$(this).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
+                       	} else if(headTitle == 'Disk') {
+        					if(aData[7] == 'HDD')
+        						tooltip = 'Hard disk';
+        					else if(aData[7] == 'SSD')
+        						tooltip = 'Solid-state disk';
+        					else
+        						tooltip = aData[7].substring(2) + ' remote(s)';
+        					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
+                        } else if(headTitle == 'Files') {
+        					var string = aData[15];
+        					var value = string.substring(0, strpos(aData[15], '/'));
+        					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+                        } else if(headTitle == 'PARAVER')
+        					$(this).html('<a href="exp2prv.php?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
+                    });
+                    
 	                return nRow;
                 },
-//                 "fnPreDrawCallback": function(oSettings) {
-//                     var aoData = oSettings.aoData;
-//                     if(aoData.length == 0) {
-//                         $("#err_message").text('ERROR: no results for query!');
-//                         $("#loading").hide();
-//                         return false;
-//                     }
-//                  }
             } );
 
             /* Add event listeners to the two range filtering inputs */
