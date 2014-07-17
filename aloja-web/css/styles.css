@@ -162,3 +162,7 @@ body, html {
 .panel-heading .indicator:hover {
 	cursor: pointer;
 }
+
+#navigation h1 a,#navigation h2 a {
+	margin-left: 1.5em;
+}

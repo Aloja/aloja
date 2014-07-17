@@ -84,12 +84,12 @@
 		<div id="navigation" style="text-align: center; width: 95%; margin-left: auto; margin-right: auto;">
         	<h1>
               <strong>Navigation:</strong>
-                &nbsp;&nbsp;&nbsp;<a href="index.php"><span {% if selected is defined and selected == 'About' %}style="font-weight: bold;"{% endif %}>About</span></a>
-                &nbsp;&nbsp;&nbsp;<a href="datatable.php"><span {% if selected is defined and selected == 'Benchmark Executions' %}style="font-weight: bold;"{% endif %}>Benchmark Executions</span></a>
-                &nbsp;&nbsp;&nbsp;<a href="config_improvement.php"><span {% if selected is defined and selected == 'Config Improvement' %}style="font-weight: bold;"{% endif %}>Config Improvement</span></a>
-            	&nbsp;&nbsp;&nbsp;<a href="perf_by_cost.php?bench=terasort"><span {% if selected is defined and selected == 'Cost Evaluation' %}style="font-weight: bold;"{% endif %}>Cost/Perf Evaluation</span></a>
-            	&nbsp;&nbsp;&nbsp;<a href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}"><span {% if selected is defined and selected == 'Performance charts' %}style="font-weight: bold;"{% endif %}>Performance charts</span></a>
-                &nbsp;&nbsp;&nbsp;<a href="counters.php"><span {% if selected is defined and selected == 'Hadoop Job Counters' %}style="font-weight: bold;"{% endif %}>Hadoop Job Counters</span></a>
+                <a href="index.php"><span {% if selected is defined and selected == 'About' %}style="font-weight: bold;"{% endif %}>About</span></a>
+                <a href="datatable.php"><span {% if selected is defined and selected == 'Benchmark Executions' %}style="font-weight: bold;"{% endif %}>Benchmark Executions</span></a>
+                <a href="config_improvement.php"><span {% if selected is defined and selected == 'Config Improvement' %}style="font-weight: bold;"{% endif %}>Config Improvement</span></a>
+            	<a href="perf_by_cost.php?bench=terasort"><span {% if selected is defined and selected == 'Cost Evaluation' %}style="font-weight: bold;"{% endif %}>Cost/Perf Evaluation</span></a>
+            	<a href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}"><span {% if selected is defined and selected == 'Performance charts' %}style="font-weight: bold;"{% endif %}>Performance charts</span></a>
+                <a href="counters.php"><span {% if selected is defined and selected == 'Hadoop Job Counters' %}style="font-weight: bold;"{% endif %}>Hadoop Job Counters</span></a>
         	</h1>{# '.(isset($execs) && $execs ? make_execs($execs):'random=1').'#}
     	</div>
     	{% endblock %}
