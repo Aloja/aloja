@@ -17,9 +17,9 @@ class HighCharts {
         '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
         <script src="//code.highcharts.com/highcharts.js"></script>
         <script src="//code.highcharts.com/modules/exporting.js"></script>
-        <script src="//rawgithub.com/highslide-software/export-csv/master/export-csv.js"></script>
         <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
-        <script src="https://rawgithub.com/highslide-software/draggable-legend/master/draggable-legend.js"></script>
+        <script src="js/datatables/extras/export-csv/export-csv.js"></script>
+        <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>
 ';
     /*
      DOWN sample http://jsfiddle.net/sveinn_st/FMJAL/
