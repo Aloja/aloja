@@ -17,7 +17,7 @@
                             text: 'Average speedup by config group to average execution time by benchmark'
                         },
                         subtitle: {
-                            //text: 'subtitle'
+                            text: 'From {{ count }} distinct executions'
                         },
                         xAxis: {
                             categories: [{{ categories|raw }}
@@ -27,57 +27,57 @@
                     }
                 },
                 yAxis: {
-            min: 0,
-                //max: 1,
-                    title: {
-                useHTML: true,
-                        text: '&#8678; Slower &nbsp;&nbsp;&nbsp; Execution time Speedup over average for benchmark (more is better) &nbsp;&nbsp;&nbsp; Faster &#8680;',
-                //align: 'high'
-            },
-            labels: {
-                overflow: 'justify'
-            },
-            plotBands: [
-                {
-                    from: 0,
-                    to: 1,
-                    color: 'rgba(255, 170, 213, .2)'
+                    min: 0,
+                        //max: 1,
+                            title: {
+                        useHTML: true,
+                                text: '&#8678; Slower &nbsp;&nbsp;&nbsp; Execution time Speedup over average for benchmark (more is better) &nbsp;&nbsp;&nbsp; Faster &#8680;',
+                        //align: 'high'
+                    },
+                    labels: {
+                        overflow: 'justify'
+                    },
+                    plotBands: [
+                        {
+                            from: 0,
+                            to: 1,
+                            color: 'rgba(255, 170, 213, .2)'
+                        },
+                        {
+                            from: 1,
+                            to: 10,
+                            color: 'rgba(100, 170, 255, .2)'
+                        }]
                 },
-                {
-                    from: 1,
-                    to: 10,
-                    color: 'rgba(100, 170, 255, .2)'
-                }]
-        },
-        tooltip: {
-            //valueSuffix: ' millions'
-        },
-        plotOptions: {
-            bar: {
-                dataLabels: {
-                    enabled: true
-                }
-            }
-        },
-        legend: {
-            layout: 'vertical',
-                    align: 'right',
-                    verticalAlign: 'top',
-                    x: -5,
-                    y: 100,
-                    floating: true,
-                    borderWidth: 1,
-                    backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
-                    shadow: true,
-                    title: {
-                text: ':: Drag Legend ::',
-            },
-            draggable: true,
-        },
-        credits: {
-            enabled: false
-        },
-        series: [{{ series|raw }}]
+                tooltip: {
+                    //valueSuffix: ' millions'
+                },
+                plotOptions: {
+                    bar: {
+                        dataLabels: {
+                            enabled: true
+                        }
+                    }
+                },
+                legend: {
+                    layout: 'vertical',
+                            align: 'right',
+                            verticalAlign: 'top',
+                            x: -5,
+                            y: 100,
+                            floating: true,
+                            borderWidth: 1,
+                            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
+                            shadow: true,
+                            title: {
+                        text: ':: Drag Legend ::',
+                    },
+                    draggable: true,
+                },
+                credits: {
+                    enabled: false
+                },
+                series: [{{ series|raw }}]
         });
     });
 
@@ -90,7 +90,7 @@
             <table width="80%" align="center">
                 <tr>
                     <td>
-                        <div id="chart" style="width: 800px; height: 600px; margin: 0 auto"></div>
+                        <div id="chart" style="width: 800px; height: 700px; margin: 0 auto"></div>
                     </td>
                     <td width="30">
                         &nbsp;
@@ -152,7 +152,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                Clusters:</br>
+                                                Clusters: (CL)</br>
                                                 <select name="id_clusters[]" multiple >
                                                     <option value="1"    {% if '1' in id_clusters %}SELECTED{% endif %}>Local</option>
                                                     <option value="2"    {% if '2' in id_clusters %}SELECTED{% endif %}>Azure</option>
@@ -162,7 +162,7 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                Maps:</br>
+                                                Maps: (m)</br>
                                                 <select name="mapss[]" multiple >
                                                     <option value="4"    {% if '4' in mapss %}SELECTED{% endif %}>4</option>
                                                     <option value="6"    {% if '6' in mapss %}SELECTED{% endif %}>6</option>
@@ -178,8 +178,8 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                Compression:</br>
-                                                <select name="comps[]" multiple size="2">
+                                                Compression: (c)</br>
+                                                <select name="comps[]" multiple >
                                                     <option value="0"    {% if '0' in comps %}SELECTED{% endif %}>None</option>
                                                     <option value="1"   {% if '1' in comps %}SELECTED{% endif %}>ZLIB</option>
                                                     <option value="2"   {% if '2' in comps %}SELECTED{% endif %}>BZIP2</option>
@@ -190,8 +190,8 @@
                                         </tr>
                                         <tr>
                                             <td>
-                                                Replication:</br>
-                                                <select name="replications[]" multiple size="2">
+                                                Replication: (r)</br>
+                                                <select name="replications[]" multiple >
                                                     <option value="1"    {% if '1' in replications %}SELECTED{% endif %}>1</option>
                                                     <option value="2"    {% if '2' in replications %}SELECTED{% endif %}>2</option>
                                                     <option value="3"    {% if '3' in replications %}SELECTED{% endif %}>3</option>
@@ -199,6 +199,45 @@
                                                 </select>
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td>
+                                                Block size: (b)</br>
+                                                <select name="blk_sizes[]" multiple>
+                                                    <option value="32"    {% if '32' in blk_sizes %}SELECTED{% endif %}>32MB</option>
+                                                    <option value="64"    {% if '64' in blk_sizes %}SELECTED{% endif %}>64MB</option>
+                                                    <option value="128"    {% if '128' in blk_sizes %}SELECTED{% endif %}>128MB</option>
+                                                    <option value="256"    {% if '256' in blk_sizes %}SELECTED{% endif %}>256MB</option>
+                                                    <option value="None"   {% if not blk_sizes %}SELECTED{% endif %}>Disabled</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                I/O Sort Factor:  (i)</br>
+                                                <select name="iosfs[]" multiple>
+                                                    <option value="5"    {% if '5' in iosfs %}SELECTED{% endif %}>5</option>
+                                                    <option value="10"    {% if '10' in iosfs %}SELECTED{% endif %}>10</option>
+                                                    <option value="20"    {% if '20' in iosfs %}SELECTED{% endif %}>20</option>
+                                                    <option value="50"    {% if '50' in iosfs %}SELECTED{% endif %}>50</option>
+                                                    <option value="None"   {% if not iosfs %}SELECTED{% endif %}>Disabled</option>
+                                                </select>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>
+                                                I/O Sort Factor: (I) </br>
+                                                <select name="iofilebufs[]" multiple>
+                                                    <option value="1024"    {% if '1024' in iofilebufs %}SELECTED{% endif %}>1KB</option>
+                                                    <option value="4096"    {% if '4096' in iofilebufs %}SELECTED{% endif %}>4KB</option>
+                                                    <option value="16384"    {% if '16384' in iofilebufs %}SELECTED{% endif %}>16KB</option>
+                                                    <option value="32768"    {% if '32768' in iofilebufs %}SELECTED{% endif %}>32KB</option>
+                                                    <option value="65536"    {% if '65536' in iofilebufs %}SELECTED{% endif %}>64KB</option>
+                                                    <option value="131072"    {% if '131072' in iofilebufs %}SELECTED{% endif %}>128KB</option>
+                                                    <option value="262144"    {% if '262144' in iofilebufs %}SELECTED{% endif %}>256KB</option>
+                                                    <option value="None"   {% if not iofilebufs %}SELECTED{% endif %}>Disabled</option>
+                                                </select>
+                                            </td>
+                                        </tr>                                        
                                         <tr>
                                             <td>
 

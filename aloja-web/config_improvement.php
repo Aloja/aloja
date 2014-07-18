@@ -14,7 +14,7 @@ function delete_none($array) {
 
 
 function read_params($item_name) {
-    global $where_configs, $configurations;
+    global $where_configs, $configurations, $concat_config;
 
     $single_item_name = substr($item_name, 0, -1);
 
@@ -36,6 +36,22 @@ function read_params($item_name) {
     if ($items) {
         if ($item_name != 'benchs') {
             $configurations[] = $single_item_name;
+            if ($concat_config) $concat_config .= ",'_',";
+
+            if ($item_name == 'id_clusters') {
+                $conf_prefix = 'CL';
+            } elseif ($item_name == 'iofilebufs') {
+                $conf_prefix = 'I';
+            } else {
+                $conf_prefix = substr($single_item_name, 0, 1);
+            }
+
+            //avoid alphanumeric fields
+            if (!in_array($item_name, array('nets', 'disks'))) {
+                $concat_config .= "'".$conf_prefix."', $single_item_name";
+            } else {
+                $concat_config .= " $single_item_name";
+            }
         }
         $where_configs .=
             ' AND '.
@@ -51,6 +67,7 @@ try {
 
     $configurations = array();
     $where_configs = '';
+    $concat_config = "";
 
     $benchs         = read_params('benchs');
     $nets           = read_params('nets');
@@ -60,8 +77,12 @@ try {
     $id_clusters    = read_params('id_clusters');
     $mapss          = read_params('mapss');
     $replications   = read_params('replications');
+    $iosfs          = read_params('iosfs');
+    $iofilebufs     = read_params('iofilebufs');
+
     
-    $concat_config = join(',\'_\',', $configurations);
+    //$concat_config = join(',\'_\',', $configurations);
+    //$concat_config = substr($concat_config, 1);
 
     //make sure there are some defaults
     if (!$concat_config) {
@@ -109,8 +130,10 @@ try {
 }
 
 $categories = '';
+$count = 0;
 foreach ($rows_config as $row_config) {
-    $categories .= "'{$row_config['conf']}_{$row_config['num']}',";
+    $categories .= "'{$row_config['conf']} #{$row_config['num']}',";
+    $count += $row_config['num'];
 }
 
 $series = '';
@@ -143,19 +166,22 @@ if ($rows) {
 }
 echo $twig->render('config_improvement/config_improvement.html.twig',
      array('selected' => 'Config Improvement',
-            'message' => $message,
-            'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
-            'highcharts_js' => HighCharts::getHeader(),
-            'categories' => $categories,
-            'series' => $series,
-            'benchs' => $benchs,
-            'nets' => $nets,
-            'disks' => $disks,
-            'blk_sizes' => $blk_sizes,
-            'comps' => $comps,
-            'id_clusters' => $id_clusters,
-            'mapss' => $mapss,
-            'replications' => $replications,
+        'message' => $message,
+        'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
+        'highcharts_js' => HighCharts::getHeader(),
+        'categories' => $categories,
+        'series' => $series,
+        'benchs' => $benchs,
+        'nets' => $nets,
+        'disks' => $disks,
+        'blk_sizes' => $blk_sizes,
+        'comps' => $comps,
+        'id_clusters' => $id_clusters,
+        'mapss' => $mapss,
+        'replications' => $replications,
+        'iosfs' => $iosfs,
+        'iofilebufs' => $iofilebufs,
+        'count' => $count,
      )
 );
 
