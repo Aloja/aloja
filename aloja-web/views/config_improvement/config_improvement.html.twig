@@ -87,10 +87,10 @@
        {{ parent() }}
         <div id="navigation" style="text-align: center; vertical-align: top;">
 
-            <table width="80%" align="center">
+            <table width="90%" align="center">
                 <tr>
-                    <td>
-                        <div id="chart" style="width: 800px; height: 700px; margin: 0 auto"></div>
+                    <td valign="top">
+                        <div id="chart" style="width: 800px; height: 600px; margin: 0 auto"></div>
                     </td>
                     <td width="30">
                         &nbsp;
@@ -123,6 +123,14 @@
 
                                                 </select>
                                             </td>
+                                            <td>
+                                                Clusters: (CL)</br>
+                                                <select name="id_clusters[]" multiple >
+                                                    <option value="1"    {% if '1' in id_clusters %}SELECTED{% endif %}>Local</option>
+                                                    <option value="2"    {% if '2' in id_clusters %}SELECTED{% endif %}>Azure</option>
+                                                    <option value="None"   {% if not id_clusters %}SELECTED{% endif %}>Disabled</option>
+                                                </select>
+                                            </td>
                                         </tr>
                                         <tr>
                                             <td>
@@ -133,8 +141,6 @@
                                                     <option value="None"   {% if not nets %}SELECTED{% endif %}>Disabled</option>
                                                 </select>
                                             </td>
-                                        </tr>
-                                        <tr>
                                             <td>
                                                 Disks:</br>
                                                 <select name="disks[]" multiple>
@@ -147,16 +153,6 @@
                                                     <option value="R2"   {% if 'R2' in disks %}SELECTED{% endif %}>R2</option>
                                                     <option value="R3"   {% if 'R3' in disks %}SELECTED{% endif %}>R3</option>
                                                     <option value="None"   {% if not disks %}SELECTED{% endif %}>Disabled</option>
-                                                </select>
-                                            </td>
-                                        </tr>
-                                        <tr>
-                                            <td>
-                                                Clusters: (CL)</br>
-                                                <select name="id_clusters[]" multiple >
-                                                    <option value="1"    {% if '1' in id_clusters %}SELECTED{% endif %}>Local</option>
-                                                    <option value="2"    {% if '2' in id_clusters %}SELECTED{% endif %}>Azure</option>
-                                                    <option value="None"   {% if not id_clusters %}SELECTED{% endif %}>Disabled</option>
                                                 </select>
                                             </td>
                                         </tr>
@@ -175,8 +171,6 @@
                                                     <option value="None"   {% if not mapss %}SELECTED{% endif %}>Disabled</option>
                                                 </select>
                                             </td>
-                                        </tr>
-                                        <tr>
                                             <td>
                                                 Compression: (c)</br>
                                                 <select name="comps[]" multiple >
@@ -198,8 +192,6 @@
                                                     <option value="None"   {% if not replications %}SELECTED{% endif %}>Disabled</option>
                                                 </select>
                                             </td>
-                                        </tr>
-                                        <tr>
                                             <td>
                                                 Block size: (b)</br>
                                                 <select name="blk_sizes[]" multiple>
@@ -222,8 +214,6 @@
                                                     <option value="None"   {% if not iosfs %}SELECTED{% endif %}>Disabled</option>
                                                 </select>
                                             </td>
-                                        </tr>
-                                        <tr>
                                             <td>
                                                 I/O Sort Factor: (I) </br>
                                                 <select name="iofilebufs[]" multiple>
@@ -237,12 +227,8 @@
                                                     <option value="None"   {% if not iofilebufs %}SELECTED{% endif %}>Disabled</option>
                                                 </select>
                                             </td>
-                                        </tr>                                        
-                                        <tr>
-                                            <td>
-
-                                            </td>
                                         </tr>
+
                                     </table>
                             </form>
                         </div>
