@@ -99,6 +99,13 @@ try {
               
     $rows_config = get_rows($query);
 
+    $height = 600;
+
+    if (count($rows_config) > 4) {
+        $num_configs = count($rows_config);
+        $height = round($height + (10*($num_configs-4)));
+    }
+
     //get the result rows
     $query = "SELECT #count(*),
               concat($concat_config) conf, bench,
@@ -182,6 +189,7 @@ echo $twig->render('config_improvement/config_improvement.html.twig',
         'iosfs' => $iosfs,
         'iofilebufs' => $iofilebufs,
         'count' => $count,
+        'height' => $height,
      )
 );
 
