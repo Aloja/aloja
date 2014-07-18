@@ -13,7 +13,7 @@
       {{ parent() }}
         <div id="navigation" style="text-align: center;">
 	        <h2>
-	            <strong>JOB COUNTER TYPES:</strong>
+	            <strong>Job counter types:</strong>
 	            <a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
 	            <a href="{{ modifyUrl({'type': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
 	            <a href="{{ modifyUrl({'type': 'REDUCE'}) }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>

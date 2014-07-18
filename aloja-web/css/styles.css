@@ -93,12 +93,12 @@ body, html {
     clear: both;
 }
 
-#main a {
+#main a:not(.navlink) {
     color: #0063DC;
     text-decoration: none;
 }
 
-#main a:hover {
+#main a:not(.navlink):hover {
     text-decoration: underline;
 }
 
@@ -165,4 +165,17 @@ body, html {
 
 #navigation h1 a,#navigation h2 a {
 	margin-left: 1.5em;
+}
+
+nav a {
+	text-decoration: none;	
+}
+
+nav a:hover {
+	text-decoration: none;
+	color: grey;
+}
+
+a.navbar-brand {
+	color: yellow;
 }

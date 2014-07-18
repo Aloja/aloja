@@ -25,12 +25,11 @@
 	{% block body %}
 	<div id="container">
 		<!-- container -->
-		<table width="100%" style="border-bottom: 2px solid #B0BED9;"
-			border="0">
+		<table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
 			<tr>
-				<td valign="bottom">
+				<td valign="bottom"d>
 					<span style="font-size: 1.5em; color: #4E6CA3;">
-						<strong>{{ title|default('ALOJA, Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
+						<strong>{{ title|default('Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
 					</span>
 				</td>
 				<td align="right">
@@ -71,7 +70,55 @@
 				</div><!-- /.modal-content -->
 			</div><!-- /.modal-dialog -->
 		</div><!-- /.modal -->
-		{% block messages %} 
+		{% block navigation %}
+		<nav class="navbar navbar-default" role="navigation">
+		  <div class="container-fluid">
+		    <!-- Brand and toggle get grouped for better mobile display -->
+		    <div class="navbar-header">
+		      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+		        <span class="sr-only">Toggle navigation</span>
+		        <span class="icon-bar"></span>
+		        <span class="icon-bar"></span>
+		        <span class="icon-bar"></span>
+		      </button>
+		      <a class="navbar-brand navlink" href="index.php">ALOJA</a>
+		    </div>
+		
+		    <!-- Collect the nav links, forms, and other content for toggling -->
+		    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+		      <ul class="nav navbar-nav">
+		        <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}>
+		          <a class="navlink" href="datatable.php"><span >Benchmark Executions</span></a>
+		        </li>
+		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
+		          <a class="navlink" href="config_improvement.php">Config Improvement</a>
+		        </li>
+		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
+		          <a class="navlink" href="perf_by_cost.php?bench=terasort">Cost Evaluation</a>
+		        </li>
+		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
+		          <a class="navlink" href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
+		        </li>
+		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
+		          <a class="navlink" href="counters.php">Hadoop Job Counters</a>
+		        </li>
+		      </ul>
+		      <ul class="nav navbar-nav navbar-right">
+{# 		         <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}>#}
+{# 		          <a class="navlink" href="#">Publications</a>#}
+{# 		         </li>#}
+		         <li>
+		          <a class="navlink" href="http://hadoop.bsc.es/blog">Blog</a>
+		        </li>
+		        <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>
+		          <a class="navlink" href="index.php">About</a>
+		        </li>
+		      </ul>
+		    </div><!-- /.navbar-collapse -->
+		  </div><!-- /.container-fluid -->
+		</nav>
+    	{% endblock %}
+    			{% block messages %} 
 			{% if message is defined and message != '' %}
 			<div>
 				<h2 style="color: red; text-align:center;">
@@ -80,19 +127,6 @@
 			</div>
 			{% endif %} 
 		{% endblock %}
-		{% block navigation %}
-		<div id="navigation" style="text-align: center; width: 95%; margin-left: auto; margin-right: auto;">
-        	<h1>
-              <strong>Navigation:</strong>
-                <a href="index.php"><span {% if selected is defined and selected == 'About' %}style="font-weight: bold;"{% endif %}>About</span></a>
-                <a href="datatable.php"><span {% if selected is defined and selected == 'Benchmark Executions' %}style="font-weight: bold;"{% endif %}>Benchmark Executions</span></a>
-                <a href="config_improvement.php"><span {% if selected is defined and selected == 'Config Improvement' %}style="font-weight: bold;"{% endif %}>Config Improvement</span></a>
-            	<a href="perf_by_cost.php?bench=terasort"><span {% if selected is defined and selected == 'Cost Evaluation' %}style="font-weight: bold;"{% endif %}>Cost/Perf Evaluation</span></a>
-            	<a href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}"><span {% if selected is defined and selected == 'Performance charts' %}style="font-weight: bold;"{% endif %}>Performance charts</span></a>
-                <a href="counters.php"><span {% if selected is defined and selected == 'Hadoop Job Counters' %}style="font-weight: bold;"{% endif %}>Hadoop Job Counters</span></a>
-        	</h1>{# '.(isset($execs) && $execs ? make_execs($execs):'random=1').'#}
-    	</div>
-    	{% endblock %}
     	{% block content %}
     	{% endblock %}
 	</div><!-- /container -->
