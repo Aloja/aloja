@@ -104,3 +104,6 @@ local.properties
 
 # TeXlipse plugin
 .texlipse
+
+#composer
+composer.lock
