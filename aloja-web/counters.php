@@ -94,6 +94,7 @@ echo $twig->render('counters/counters.html.twig',
 				'show_in_result' => $show_in_result,
 				//'table_fields' => $table_fields,
 				'message' => $message,
+                'title' => 'Hadoop Jobs and Tasks Execution Counters',
 				'type' => $type,
 				'execs' => $execs,
 				'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : ''

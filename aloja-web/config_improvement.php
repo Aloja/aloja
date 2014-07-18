@@ -144,6 +144,7 @@ if ($rows) {
 echo $twig->render('config_improvement/config_improvement.html.twig',
      array('selected' => 'Config Improvement',
             'message' => $message,
+            'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
             'highcharts_js' => HighCharts::getHeader(),
             'categories' => $categories,
             'series' => $series,

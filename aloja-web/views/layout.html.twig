@@ -29,7 +29,7 @@
 			<tr>
 				<td valign="bottom"d>
 					<span style="font-size: 1.5em; color: #4E6CA3;">
-						<strong>{{ title|default('Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
+						<strong>{{ title|default('ALOJA, Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
 					</span>
 				</td>
 				<td align="right">
@@ -38,6 +38,8 @@
 				  </a>
 				</td>
 			</tr>
+            <tr><td style="height: 10px;"></td><td></td>
+            </tr>
 		</table>
 		<div class="modal fade" id="welcomeModal">
 			<div class="modal-dialog">
@@ -81,20 +83,23 @@
 		        <span class="icon-bar"></span>
 		        <span class="icon-bar"></span>
 		      </button>
-		      <a class="navbar-brand navlink" href="index.php">ALOJA</a>
+		      <a class="navbar-brand navlink " href="index.php" >ALOJA</a>
 		    </div>
 		
 		    <!-- Collect the nav links, forms, and other content for toggling -->
 		    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
 		      <ul class="nav navbar-nav">
+                  <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>
+                      <a class="navlink" href="index.php"><span >About</span></a>
+                  </li>
 		        <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}>
 		          <a class="navlink" href="datatable.php"><span >Benchmark Executions</span></a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
 		          <a class="navlink" href="config_improvement.php">Config Improvement</a>
 		        </li>
-		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-		          <a class="navlink" href="perf_by_cost.php?bench=terasort">Cost Evaluation</a>
+		        <li {% if selected is defined and selected == 'Cost/Perf Evaluation' %}class="active"{% endif %}>
+		          <a class="navlink" href="perf_by_cost.php?bench=terasort">Cost/Perf Evaluation</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
 		          <a class="navlink" href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
@@ -104,14 +109,14 @@
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
-{# 		         <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}>#}
-{# 		          <a class="navlink" href="#">Publications</a>#}
-{# 		         </li>#}
-		         <li>
+ 		         {#<li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}>#}
+ 		          {#<a class="navlink" href="#">Publications</a>#}
+ 		         {#</li>#}
+		        <li>
 		          <a class="navlink" href="http://hadoop.bsc.es/blog">Blog</a>
 		        </li>
-		        <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>
-		          <a class="navlink" href="index.php">About</a>
+		        <li>
+                    <a class="navlink" href="http://www.bscmsrc.eu" target="_blank">BSC-MSR Centre</a>
 		        </li>
 		      </ul>
 		    </div><!-- /.navbar-collapse -->

@@ -149,7 +149,7 @@ echo $twig->render('perf_by_cost/perf_by_cost.html.twig',
 				'cost_hour_HDD_ETH' => $cost_hour_HDD_ETH,
 				'cost_hour_HDD_IB' => $cost_hour_HDD_IB,
 				'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
-				'title' => 'Normalized Price by Performance of Hadoop Hibench Executions'
+				'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions'
 				//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         )
 );
