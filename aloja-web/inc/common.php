@@ -25,6 +25,7 @@ if (in_dev()) {
 
 $loader = new Twig_Loader_Filesystem('views/');
 $twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
+$twig->addExtension(new Twig_Extension_Debug());
 $twig->addExtension(new Aloja_Twig_Extension());
 
 $message        = null;
@@ -62,12 +63,12 @@ function get_rows($sql) {
         ($rows = unserialize(gzuncompress($rows)))
     ) {
 
-//if (in_dev()) echo "<!--CACHED: $sql --->\n";
-
+if (in_dev() && ENABLE_DEBUG) echo "<!--CACHED: $sql --->\n";
+        
     } else {
         if (!$db) init_db();
 
-//if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
+if (in_dev() && ENABLE_DEBUG) echo "<!--NO CACHE: $sql --->\n";
 
         try {
             $sth = $db->prepare($sql);
@@ -258,9 +259,9 @@ $show_in_result = array(
     'disk' => 'Disk',
     'maps' => 'Maps',
     'iosf' => 'IO SFac',
-    'replication' => 'Rep',
+    'replication' => 'Replicas',
     'iofilebuf' => 'IO FBuf',
-    'comp' => 'Comp',
+    'comp' => 'Compression',
     'blk_size' => 'Blk size',
     'id_cluster' => 'Cluster',
     'files' => 'Files',

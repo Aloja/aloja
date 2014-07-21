@@ -1,10 +1,12 @@
 {% extends "layout.html.twig" %}
 {% block javascript %}
 		{{ parent() }}
-		<script src="js/highcharts.js"></script>
-        <script src="js/exporting.js"></script>
-        <script src="js/export-csv.js"></script>
-        <script src="js/no-data-to-display.js"></script>
+		<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+        <script src="//code.highcharts.com/highcharts.js"></script>
+        <script src="//code.highcharts.com/modules/exporting.js"></script>
+        <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+        <script src="js/datatables/extras/export-csv/export-csv.js"></script>
+        <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>
 	    <script>
             Highcharts.setOptions({
                 colors: ["#7cb5ec", "#90ee7e", '#8085e9', "#DF5353", "#f7a35c", "#aaeeee",  "#55BF3B",  "#7798BF", "#aaeeee"]
@@ -102,6 +104,39 @@
                </div>
            </div>
            </br>
-           {{ htmlData | raw }}
+           <div class="panel-group" id="chartsCollapse">
+           {% set i = 0 %}
+           {% if charts|length > 0 %}
+             {% for chart_type,chart in charts|first %}                          
+                {% set first = true %}
+                {% for exec in execs %}
+                   {% if charts[exec][chart_type]['chart'] is defined %}
+                     {% if first == true %}
+                        <div class="panel panel-default">
+							<div class="panel-heading">
+							    <i data-toggle="collapse" data-parent="#accordion" href="#collapse{{ i }}" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+								<h4 class="panel-title">
+								 <a data-toggle="collapse" data-parent="#accordion" href="#collapse{{ i }}">
+									   {{ charts[exec][chart_type]['group_title'] }}
+								 </a>
+								 </h4>
+						    </div>
+							<div id="collapse{{ i }}" class="panel-collapse collapse in">
+								<div class="panel-body">
+							{% set first = false %}
+                     {% endif %}
+                     <div id="{{ charts[exec][chart_type]['chart'].getGuid() }}" align="left" style="width: 100%; height: 250px;"></div>
+                     <br />
+                   {% endif %}
+                   {% set i = i + 1 %}
+                {% endfor %}
+                {% if first != true %}
+                   			   </div>
+                   		    </div>
+                   	  </div>
+                {% endif %}
+             {% endfor %}
+           {% endif %}
+		   </div>
           {% endif %}
     {% endblock %}

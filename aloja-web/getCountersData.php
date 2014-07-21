@@ -96,6 +96,7 @@ try {
 		for($i = 0; $i<18; ++$i)
 			$noData[] = 'No Data found';
 		
+		ob_start('ob_gzhandler');
 		echo json_encode(array('aaData' => $noData));
     }
 
