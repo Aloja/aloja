@@ -63,12 +63,18 @@ function get_rows($sql) {
         ($rows = unserialize(gzuncompress($rows)))
     ) {
 
-	if (in_dev()) 
+/*	if (in_dev()) 
 		echo "<!--CACHED: $sql --->\n";
     } else {
         if (!$db) init_db();
 
- 		if (in_dev() && ENABLE_DEBUG) echo "<!--NO CACHE: $sql --->\n";
+ 		if (in_dev() && ENABLE_DEBUG) echo "<!--NO CACHE: $sql --->\n";*/
+//if (in_dev()) echo "<!--CACHED: $sql --->\n";
+
+    } else {
+        if (!$db) init_db();
+
+//if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
 
         try {
             $sth = $db->prepare($sql);
@@ -259,9 +265,9 @@ $show_in_result = array(
     'disk' => 'Disk',
     'maps' => 'Maps',
     'iosf' => 'IO SFac',
-    'replication' => 'Replicas',
+    'replication' => 'Rep',
     'iofilebuf' => 'IO FBuf',
-    'comp' => 'Compression',
+    'comp' => 'Comp',
     'blk_size' => 'Blk size',
     'id_cluster' => 'Cluster',
     'files' => 'Files',
