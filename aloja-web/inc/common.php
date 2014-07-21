@@ -259,9 +259,9 @@ $show_in_result = array(
     'disk' => 'Disk',
     'maps' => 'Maps',
     'iosf' => 'IO SFac',
-    'replication' => 'Replicas',
+    'replication' => 'Rep',
     'iofilebuf' => 'IO FBuf',
-    'comp' => 'Compression',
+    'comp' => 'Comp',
     'blk_size' => 'Blk size',
     'id_cluster' => 'Cluster',
     'files' => 'Files',
@@ -330,9 +330,17 @@ function generateJSONTable($csv, $show_in_result, $precision = null, $type = nul
 					$jsonRow[] = round(($value_row[$key_name])/(1024*1024));
 				} elseif ($key_name == 'FINISH_TIME') {
 					$jsonRow[] = date('YmdHis', round($value_row[$key_name]/1000));
-				} else {
+				} elseif ($key_name == 'comp') {
+					if($value_row[$key_name] == 0)
+						$jsonRow[] = 'No compression';
+					elseif($value_row[$key_name] == 1)
+						$jsonRow[] = 'ZLIB';
+					elseif($value_row[$key_name] == 2)
+						$jsonRow[] = 'BZIP2';
+					else
+						$jsonRow[] = 'Snappy';
+				} else
 					$jsonRow[] = $value_row[$key_name];
-				}
 			} else {
 				if ($key_name == 'JOBID') {
 					$jsonRow[] = $value_row[$key_name];
