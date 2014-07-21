@@ -41,7 +41,31 @@
 			      {% set column_name = column_name ~ makeTooltip('The number of streams to merge at once while sorting files. This determines the number of open file handles.') %} 
 			    {% elseif column_name == 'IO FBuf' %}
 			      {% set column_name = column_name ~ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') %} 
-			    {% endif %}
+			    {% elseif column_name == 'Exe Time' %}
+			      {% set column_name = column_name ~ makeTooltip('Execution time.') %}
+			    {% elseif column_name == 'Running Cost $' %}
+			      {% set column_name = column_name ~ makeTooltip('Cost on USD dependant of running time and hardware configuration.') %}
+			    {% elseif column_name == 'Replicas' %}
+			      {% set column_name = column_name ~ makeTooltip('Number of replicas.') %}
+			    {% elseif column_name == 'Maps' %}
+			      {% set column_name = column_name ~ makeTooltip('Number of hadoop mappers used.') %}        
+			    {% elseif column_name == 'Disk' %}
+			      {% set column_name = column_name ~ makeTooltip('Kind of disks used.') %}
+			    {% elseif column_name == 'Net' %}
+			      {% set column_name = column_name ~ makeTooltip('Network.') %}
+			    {% elseif column_name == 'Rep' %}
+			      {% set column_name = column_name ~ makeTooltip('Number of replicas.') %}
+			    {% elseif column_name == 'Compression' %}
+			      {% set column_name = column_name ~ makeTooltip('Compression algorithm.') %}
+			    {% elseif column_name == 'Blk size' %}
+			      {% set column_name = column_name ~ makeTooltip('Hadoop HDFS block size.') %}
+			    {% elseif column_name == 'Cluster' %}
+			      {% set column_name = column_name ~ makeTooltip('Kind of cluster.') %}
+			    {% elseif column_name == 'Files' %}
+			      {% set column_name = column_name ~ makeTooltip('Download execution files and logs.') %}
+			    {% elseif column_name == 'PARAVER' %}
+			      {% set column_name = column_name ~ makeTooltip('Download files to view execution details with PARAVER analysis tool.') %}
+			   {% endif %}
 			    <th>{{ column_name }}</th>   
 			  {% endfor %}
 			  {% endautoescape %}
@@ -249,8 +273,9 @@
         					var string = aData[15];
         					var value = string.substring(0, strpos(aData[15], '/'));
         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
-                        } else if(headTitle == 'PARAVER')
+                        } else if(headTitle == 'PARAVER') {
         					$(this).html('<a href="exp2prv.php?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
+                        }
                     });
                     
 	                return nRow;
