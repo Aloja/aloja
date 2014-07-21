@@ -12,6 +12,7 @@ try {
 		throw new Exception("No results for query!");
 	}
 	header('Content-Type: application/json');
+	ob_start('ob_gzhandler');
 	echo $jsonData;
 
 } catch(Exception $e) {

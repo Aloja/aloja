@@ -602,41 +602,6 @@ if ($charts) {
 	}
 }
 
-$htmlData = '<div class="panel-group" id="chartsCollapse">';
-$i = 0;
-if(isset($charts) && sizeof($charts)>0) {
-	reset($charts);
-	$current_chart = current($charts);
-	foreach ($current_chart as $chart_type => $chart) {
-		$first = true;
-		foreach ($execs as $exec) {
-			if (isset($charts[$exec][$chart_type]['chart'])) {
-				if ($first) {
-					$htmlData .= '<div class="panel panel-default">
-									    <div class="panel-heading">
-							              <i data-toggle="collapse" data-parent="#accordion" href="#collapse'.$i.'" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-									      <h4 class="panel-title">
-									        <a data-toggle="collapse" data-parent="#accordion" href="#collapse'.$i.'">
-									          '.$charts[$exec][$chart_type]['group_title'].'
-									        </a>
-									      </h4>
-									    </div>
-									    <div id="collapse'.$i.'" class="panel-collapse collapse in">
-									      <div class="panel-body">';
-					//$htmlData .= '<div class="group"><p class="group_title">'.$charts[$exec][$chart_type]['group_title'].'</p>'.'<div class="group_border">';
-					$first = false;
-				}
-				//echo $charts[$exec][$chart_type]['chart']->getContainer($exec_details[$exec]['size'])."\n\n";
-				$htmlData .= $charts[$exec][$chart_type]['chart']->getContainer(100)."\n\n";
-				$htmlData .= "<br/>";
-			}
-			$i++;
-		}
-		if (!$first) $htmlData .= '</div></div></div>'; //$htmlData .= '</div></div><br/>';
-	}
-}
-$htmlData .= '</div>';
-
 if(!isset($exec))
 	$exec = '';
 echo $twig->render('charts1/charts1.html.twig',
@@ -652,7 +617,6 @@ echo $twig->render('charts1/charts1.html.twig',
 				'aggr' => $aggr,
 				'hosts' => $hosts,
 				'host_rows' => get_hosts($clusters),
-				'htmlData' => $htmlData,
 				'detail' => $detail,
 				//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
 		));
