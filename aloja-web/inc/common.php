@@ -62,12 +62,12 @@ function get_rows($sql) {
         ($rows = unserialize(gzuncompress($rows)))
     ) {
 
-if (in_dev()) echo "<!--CACHED: $sql --->\n";
+//if (in_dev()) echo "<!--CACHED: $sql --->\n";
 
     } else {
         if (!$db) init_db();
 
- if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
+//if (in_dev()) echo "<!--NO CACHE: $sql --->\n";
 
         try {
             $sth = $db->prepare($sql);
