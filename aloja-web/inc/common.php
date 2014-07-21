@@ -332,7 +332,7 @@ function generateJSONTable($csv, $show_in_result, $precision = null, $type = nul
 					$jsonRow[] = date('YmdHis', round($value_row[$key_name]/1000));
 				} elseif ($key_name == 'comp') {
 					if($value_row[$key_name] == 0)
-						$jsonRow[] = 'No comp.';
+						$jsonRow[] = 'None';
 					elseif($value_row[$key_name] == 1)
 						$jsonRow[] = 'ZLIB';
 					elseif($value_row[$key_name] == 2)
