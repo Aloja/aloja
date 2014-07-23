@@ -35,4 +35,12 @@ class nginx {
       File['default-nginx-disable'],
     ],
   }
+  # Nginx global settings file
+  file { 'vagrant-nginx-settingsl':
+    path => '/etc/nginx/nginx.conf',
+    ensure => file,
+    source => "puppet:///modules/nginx/settings_${environment}",
+    require => Package['nginx'],
+    notify => Service['nginx'],
+  }
 }
