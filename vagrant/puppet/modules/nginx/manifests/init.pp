@@ -14,7 +14,7 @@ class nginx {
   file { 'vagrant-nginx':
     path => '/etc/nginx/sites-available/localhost',
     ensure => file,
-    source => 'puppet:///modules/nginx/localhost',
+    source => "puppet:///modules/nginx/localhost_${environment}",
     require => Package['nginx'],
     notify => Service['nginx'],
   }
