@@ -33,7 +33,7 @@ Congratulations, everything is ready!
 
 You can access the website locally in this url: http://127.0.0.1:8080/aloja-web/index.php
 
-### Filling up some date in database
+### Filling up some data in database
 To be able to see the charts with data it is necessary to fill up the MySQL database with the jobs logs.  
 Go inside `jobs` directory and run the following command:
 ./../shell/file2db.sh
