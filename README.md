@@ -1,13 +1,3 @@
-ALOJA
-=====
-
-ALOJA is an initiative of the [BSC-MSR](http://www.bscmsrc.eu/) research centre in Barcelona to explore Hadoop's performance under different deployment scenarios.
-
-For more information:
-
-- Website: http://hadoop.bsc.es/
-- Blog: http://hadoop.bsc.es/blog/
-- Email: hadoop@bsc.es
 
 ## Local Installation
 
@@ -16,6 +6,9 @@ For more information:
 Before installing ALOJA you need the following packages:
 
 - Vagrant: http://www.vagrantup.com/downloads.html
+- Sysstats package (apt-get install sysstat on debian-based distributions)
+- gawk package for awk 
+- puppet
 
 ### Installation
 
@@ -39,6 +32,18 @@ When the previous command finishes, the virtual machine should be up and running
 Congratulations, everything is ready!
 
 You can access the website locally in this url: http://127.0.0.1:8080/aloja-web/index.php
+
+### Filling up some date in database
+To be able to see the charts with data it is necessary to fill up the MySQL database with the jobs logs.  
+Go inside `jobs` directory and run the following command:
+./../shell/file2db.sh
+This will take logs data inside the jobs directory to fill up the database.  
+
+**If you are not using ubuntu** first of all you'll ned to execute the following steps:  
+Go into `shell/sar/ubuntu/` directory and run the following commands:  
+`./configure && make`  
+`./sar`    
+`./sadf`  
 
 ### MySQL Access
 
