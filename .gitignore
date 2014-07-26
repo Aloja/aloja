@@ -11,7 +11,8 @@ jobs/*
 
 #vagrant
 vagrant/.vagrant/*
-
+#vagrnat keys
+vagrant/keys
 
 #test PHP file to check the configuration (insecure in production)
 test.php
