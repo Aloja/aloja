@@ -149,10 +149,11 @@ class HighCharts {
 
         $JS =
 
-"                $('#{$this->getGuid()}').highcharts({
+"               window.chart_{$this->getGuid()} = new Highcharts.Chart({
                     chart: {
                         zoomType: 'x',
-                        spacingRight: 20
+                        spacingRight: 20,
+                        renderTo: '{$this->getGuid()}'
                     },
                     credits: {
                         enabled: false
