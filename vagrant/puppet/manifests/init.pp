@@ -1,8 +1,8 @@
-exec { 'set_document_root':
-  command => 'ln -fs /vagrant/workspace/* /var/www',
-  onlyif => '[ ! -h /var/www ]',
-  path => '/usr/bin:/bin',
-}
+#exec { 'set_document_root':
+#  command => 'ln -fs /vagrant/workspace/* /var/www',
+#  onlyif => '[ ! -h /var/www ]',
+#  path => '/usr/bin:/bin',
+#}
 
 file { '/var/www/':
   ensure => 'directory',
