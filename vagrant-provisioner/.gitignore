@@ -1,0 +1,7 @@
+
+#vagrant
+.vagrant/*
+
+#for security
+settings_secured.yaml
+keys/*
