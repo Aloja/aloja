@@ -9,9 +9,7 @@ settings = YAML.load_file 'conf/settings_secured.yml'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-Vagrant.configure(2) do |config|
     config.vm.box = 'azure'
-
     config.vm.provider :azure do |azure|
 
       azure.subscription_id = settings['subscription_id']
@@ -21,9 +19,9 @@ Vagrant.configure(2) do |config|
       azure.ssh_private_key_file = settings['ssh_private_key_file']
       azure.ssh_certificate_file = settings['ssh_certificate_file']
 
-      #azure.cloud_service_name = settings['cloud_service_name'] # optional. A new one will be generated if not provided.
-      #azure.storage_acct_name = settings['storage_acct_name'] # optional. A new one will be generated if not provided.
-      #azure.deployment_name = settings['deployment_name'] # defaults to cloud_service_name
+      azure.cloud_service_name = settings['cloud_service_name'] # optional. A new one will be generated if not provided.
+      azure.storage_acct_name = settings['storage_acct_name'] # optional. A new one will be generated if not provided.
+      azure.deployment_name = settings['deployment_name'] # defaults to cloud_service_name
 
       azure.vm_image = settings['vm_image']
       azure.vm_size = settings['vm_size']
@@ -44,8 +42,8 @@ Vagrant.configure(2) do |config|
       azure.tcp_endpoints = settings['tcp_endpoints'] # opens the Remote Desktop internal port that listens on public port 53389. Without this, you cannot RDP to a Windows VM.
    end
 
-    config.ssh.username = settings['vm_user'] # the one used to create the VM
-    config.ssh.password = settings['vm_password'] # the one used to create the VM
+  config.ssh.username = settings['vm_user'] # the one used to create the VM
+  config.ssh.password = settings['vm_password'] # the one used to create the VM
 
   config.vm.host_name = "vagrant"
 
