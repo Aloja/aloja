@@ -3,7 +3,7 @@
 server {
   listen 80;
   server_name _;
-  root /var/www/;
+  root /var/www/aloja-web;
 
   index index.html index.php;
   autoindex on;
