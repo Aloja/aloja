@@ -24,7 +24,11 @@ if (in_dev()) {
 }
 
 $loader = new Twig_Loader_Filesystem('views/');
-$twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
+$twig = null;
+if(ENABLE_DEBUG) {
+	$twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
+} else
+	$twig = new Twig_Environment($loader, array('cache' => '/tmp/twigcache'));
 $twig->addExtension(new Twig_Extension_Debug());
 $twig->addExtension(new Aloja_Twig_Extension());
 
