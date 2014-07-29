@@ -14,7 +14,7 @@ class nginx {
   file { 'vagrant-nginx':
     path => '/etc/nginx/sites-available/localhost',
     ensure => file,
-    source => 'puppet:///modules/nginx/localhost',
+    source => "puppet:///modules/nginx/localhost_${environment}",
     require => Package['nginx'],
     notify => Service['nginx'],
   }
@@ -34,5 +34,13 @@ class nginx {
       File['vagrant-nginx'],
       File['default-nginx-disable'],
     ],
+  }
+  # Nginx global settings file
+  file { 'vagrant-nginx-settingsl':
+    path => '/etc/nginx/nginx.conf',
+    ensure => file,
+    source => "puppet:///modules/nginx/settings_${environment}",
+    require => Package['nginx'],
+    notify => Service['nginx'],
   }
 }

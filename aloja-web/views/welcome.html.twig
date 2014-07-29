@@ -57,7 +57,7 @@
                        Brief video showcasting ALOJA's main online features.
                    </td>
                    <td>
-                       <iframe width="250" height="150" src="//www.youtube.com/embed/Wym1BYZhilQ" frameborder="0" allowfullscreen></iframe>
+                       <a class="popup-youtube" href="https://www.youtube.com/watch?v=Wym1BYZhilQ"><img src="img/videocaption.jpeg" /></a>
                    </td>
                </tr>
                <tr>
@@ -171,6 +171,16 @@
                 }
                 
              });
+
+            $('.popup-youtube').magnificPopup({
+                disableOn: 700,
+                type: 'iframe',
+                mainClass: 'mfp-fade',
+                removalDelay: 160,
+                preloader: false,
+
+                fixedContentPos: false
+              });
 		  });
 	</script>
     {% endblock %}

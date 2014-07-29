@@ -12,6 +12,7 @@ class php {
     require => Package['php5-fpm'],
   }
 
+ if $environment == 'dev' {
   file {'/etc/php5/fpm/conf.d/90-overrides.ini':
     ensure => present,
     owner => root, group => root, mode => 444,
@@ -32,6 +33,18 @@ xdebug.remote_host=10.0.2.2 ; IDE-Environments IP, from vagrant box.
 ",
 
   }
+ } else {
+  file {'/etc/php5/fpm/conf.d/90-overrides.ini':
+    ensure => present,
+    owner => root, group => root, mode => 444,
+    notify => Service['php5-fpm'],
+    content => "
+	xdebug.default_enable = 0
+	xdebug.remote_enable = 0
+	
+",
+  }
+ }
 
 #
 #  # Use a custom mysql configuration file
