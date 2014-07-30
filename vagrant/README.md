@@ -1,4 +1,4 @@
-## Howto build management certificate keys for Vagrant
+## Howto build management certificate keys for Azure
 
 1. Create RSA private key  
 `openssl genrsa -out management.key 2048`  
@@ -15,6 +15,6 @@
 5. Create the Management Certificate file. This will be the Management Certificate .cer file you need to upload to the Management Certificates section of the Azure portal.  
 `openssl x509 -inform pem -in mgmkey.pem -outform der -out management.cer`
 
-Upload management.cer to your Windows Azure account, and use the "mgmkey.pem" file as your management certificate for Vagrant.
+Upload management.cer to your Windows Azure account, and use the "mgmkey.pem" file as your management certificate in Vagrantfile.
 
 *Kudos to https://github.com/pkgcloud/pkgcloud/blob/master/docs/providers/azure.md#azure-management-certificates*
