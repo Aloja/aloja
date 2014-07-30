@@ -1,0 +1,35 @@
+---
+cluster:
+  cluster_name: al-1-a7-0
+  vm_size: 'a7'
+servers:
+  - vm_name: 'al-a7-001'
+    ssh_port: 22001
+    storage_acct_name: al1a70001
+  - vm_name: 'al-a7-002'
+    ssh_port: 22002
+    storage_acct_name: al1a70002
+  - vm_name: 'al-a7-002'
+    ssh_port: 22002
+    storage_acct_name: al1a70002
+  - vm_name: 'al-a7-003'
+    ssh_port: 22003
+    storage_acct_name: al1a70003
+  - vm_name: 'al-a7-003'
+    ssh_port: 22003
+    storage_acct_name: al1a70003
+  - vm_name: 'al-a7-004'
+    ssh_port: 22004
+    storage_acct_name: al1a70004
+  - vm_name: 'al-a7-005'
+    ssh_port: 22005
+    storage_acct_name: al1a70005
+  - vm_name: 'al-a7-006'
+    ssh_port: 22006
+    storage_acct_name: al1a70006
+  - vm_name: 'al-a7-007'
+    ssh_port: 22007
+    storage_acct_name: al1a70007
+  - vm_name: 'al-a7-008'
+    ssh_port: 22008
+    storage_acct_name: al1a70008
