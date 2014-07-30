@@ -21,7 +21,7 @@ server {
     fastcgi_read_timeout 60; # Set fairly high for debugging
     fastcgi_intercept_errors off;
     fastcgi_cache aloja;
-    fastcgi_cache_valid 200 1440m;
+    fastcgi_cache_valid any 1y;
   }
 
   include /etc/nginx/mime.types;
