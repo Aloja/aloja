@@ -2,6 +2,7 @@
 
 require_once 'inc/common.php';
 require_once 'inc/HighCharts.php';
+require_once 'inc/configFiltersUtils.php';
 
 $message = '';
 
@@ -51,11 +52,26 @@ try {
         $cost_hour_HDD_IB = 11.6;
     }
 
+    $configurations = array();
+    $where_configs = '';
+    $concat_config = "";
+    
+    $benchs         = read_params('benchs',$where_configs,$configurations,$concat_config);
+    $nets           = read_params('nets',$where_configs,$configurations,$concat_config);
+    $disks          = read_params('disks',$where_configs,$configurations,$concat_config);
+    $blk_sizes      = read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+    $comps          = read_params('comps',$where_configs,$configurations,$concat_config);
+    $id_clusters    = read_params('id_clusters',$where_configs,$configurations,$concat_config);
+    $mapss          = read_params('mapss',$where_configs,$configurations,$concat_config);
+    $replications   = read_params('replications',$where_configs,$configurations,$concat_config);
+    $iosfs          = read_params('iosfs',$where_configs,$configurations,$concat_config);
+    $iofilebufs     = read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+    
     $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
-    $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where )";
-    $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where )";
-    $max_exe_time = "(select max(exe_time) from execs e where $outliers $bench_where )";
-    $min_exe_time = "(select min(exe_time) from execs e where $outliers $bench_where )";
+    $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
+    $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
+    $max_exe_time = "(select max(exe_time) from execs e where $outliers $bench_where $where_configs )";
+    $min_exe_time = "(select min(exe_time) from execs e where $outliers $bench_where $where_configs )";
     $cost_per_run = "(exe_time/3600)*
 (
     if(locate('_SSD_', exec) > 0,
@@ -90,10 +106,10 @@ try {
        )
     )
 )";
-    $avg_cost_per_run = "(select avg($cost_per_run) from execs e where $outliers $bench_where )";
-    $std_cost_per_run = "(select std($cost_per_run) from execs e where $outliers $bench_where )";
-    $max_cost_per_run = "(select max($cost_per_run) from execs e where $outliers $bench_where )";
-    $min_cost_per_run = "(select min($cost_per_run) from execs e where $outliers $bench_where )";
+    $avg_cost_per_run = "(select avg($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+    $std_cost_per_run = "(select std($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+    $max_cost_per_run = "(select max($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+    $min_cost_per_run = "(select min($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
 
     //http://minerva.bsc.es:8099/aloja-web/perf_by_cost2.php?bench=wordcount&cost_hour_LOCAL=12&cost_hour_AZURE=7&cost_hour_SSD_IB=40&cost_hour_SSD_ETH=30&cost_hour_HDD_IB=22
 
@@ -104,7 +120,7 @@ SELECT
 exec, exe_time, $cost_per_run cost,
 $min_exe_time min_exe_time, $max_exe_time max_exe_time, $min_exe_time min_exe_time
 from execs e
-where $outliers $bench_where and substr(exec, 1, 8) > '20131220';
+where $outliers $bench_where $where_configs and substr(exec, 1, 8) > '20131220';
 ";
 
     $rows = get_rows($query);
@@ -149,6 +165,16 @@ echo $twig->render('perf_by_cost/perf_by_cost.html.twig',
 				'cost_hour_HDD_ETH' => $cost_hour_HDD_ETH,
 				'cost_hour_HDD_IB' => $cost_hour_HDD_IB,
 				'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
 				'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions'
 				//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         )

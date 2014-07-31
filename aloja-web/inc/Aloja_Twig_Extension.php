@@ -11,7 +11,7 @@ class Aloja_Twig_Extension extends Twig_Extension
 		return array(
 				'modifyUrl' => new Twig_Function_Method($this, 'modifyUrl'),
 				'makeTooltip' => new Twig_Function_Method($this, 'makeTooltip'),
-				'makeExecs' => new Twig_Function_Method($this, 'makeExecs')
+				'makeExecs' => new Twig_Function_Method($this, 'makeExecs'),
 		);
 	}
 	

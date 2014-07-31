@@ -9,7 +9,7 @@ casper.test.begin("Perf by cost tests", function(test) {
 
    casper.then(function() {
 	var benchsSelected = this.evaluate(function() { 
-   	   return $("form").find('select').first().val();
+   	   return $("form select").first().val();
 	});
 	test.assertEquals(benchsSelected, 'sort', 'Sort selected');
    });

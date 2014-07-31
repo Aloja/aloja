@@ -5,63 +5,7 @@ require_once 'inc/HighCharts.php';
 
 $message = '';
 
-function delete_none($array) {
-   if (($key = array_search('None', $array)) !== false) {
-       unset ($array[$key]);
-   }
-   return $array;
-}
-
-
-function read_params($item_name) {
-    global $where_configs, $configurations, $concat_config;
-
-    $single_item_name = substr($item_name, 0, -1);
-
-    if (isset($_GET[$item_name])) {
-        $items = $_GET[$item_name];
-        $items = delete_none($items);
-    } else {
-        if ($item_name == 'benchs') {
-            $items = array('pagerank', 'terasort', 'wordcount');
-        } elseif ($item_name == 'nets') {
-            $items = array('IB', 'ETH');
-        } elseif ($item_name == 'disks') {
-            $items = array('SSD', 'HDD');
-        } else {
-            $items = array();
-        }
-
-    }
-    if ($items) {
-        if ($item_name != 'benchs') {
-            $configurations[] = $single_item_name;
-            if ($concat_config) $concat_config .= ",'_',";
-
-            if ($item_name == 'id_clusters') {
-                $conf_prefix = 'CL';
-            } elseif ($item_name == 'iofilebufs') {
-                $conf_prefix = 'I';
-            } else {
-                $conf_prefix = substr($single_item_name, 0, 1);
-            }
-
-            //avoid alphanumeric fields
-            if (!in_array($item_name, array('nets', 'disks'))) {
-                $concat_config .= "'".$conf_prefix."', $single_item_name";
-            } else {
-                $concat_config .= " $single_item_name";
-            }
-        }
-        $where_configs .=
-            ' AND '.
-            $single_item_name. //remove trailing 's'
-            ' IN ("'.join('","', $items).'")';
-    }
-    
-    return $items;
-}
-
+require_once 'inc/configFiltersUtils.php';
 
 try {
 
@@ -69,17 +13,16 @@ try {
     $where_configs = '';
     $concat_config = "";
 
-    $benchs         = read_params('benchs');
-    $nets           = read_params('nets');
-    $disks          = read_params('disks');
-    $blk_sizes      = read_params('blk_sizes');
-    $comps          = read_params('comps');
-    $id_clusters    = read_params('id_clusters');
-    $mapss          = read_params('mapss');
-    $replications   = read_params('replications');
-    $iosfs          = read_params('iosfs');
-    $iofilebufs     = read_params('iofilebufs');
-
+    $benchs         = read_params('benchs',$where_configs,$configurations,$concat_config);
+    $nets           = read_params('nets',$where_configs,$configurations,$concat_config);
+    $disks          = read_params('disks',$where_configs,$configurations,$concat_config);
+    $blk_sizes      = read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+    $comps          = read_params('comps',$where_configs,$configurations,$concat_config);
+    $id_clusters    = read_params('id_clusters',$where_configs,$configurations,$concat_config);
+    $mapss          = read_params('mapss',$where_configs,$configurations,$concat_config);
+    $replications   = read_params('replications',$where_configs,$configurations,$concat_config);
+    $iosfs          = read_params('iosfs',$where_configs,$configurations,$concat_config);
+    $iofilebufs     = read_params('iofilebufs',$where_configs,$configurations,$concat_config);
     
     //$concat_config = join(',\'_\',', $configurations);
     //$concat_config = substr($concat_config, 1);
@@ -171,6 +114,7 @@ if ($rows) {
     $series .= "]
             }, ";
 }
+
 echo $twig->render('config_improvement/config_improvement.html.twig',
      array('selected' => 'Config Improvement',
         'message' => $message,
