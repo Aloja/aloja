@@ -108,5 +108,5 @@ local.properties
 #composer
 composer.lock
 
-#node modules
+#nodeModules
 node_modules

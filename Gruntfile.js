@@ -1,47 +1,18 @@
 'use strict';
 module.exports = function(grunt) {
   grunt.initConfig({
-    jshint: {
-      options: {
-	jshintrc: '.jshintrc'
-      },
-      files: [
-	'Gruntfile.js',
-	'package.json',
-	'aloja-web/tests/*.js'
-      ]
-    },
-    connect: {
-    www: {
-      options: {
-	// keepalive: true,
-	base: 'source',
-	port: 4545
-      }
-    }
-    },
-    ghost: {
-      test: {
-	files: [{
-	  src: ['tests/*.js']
-	}]
-      },
-      options: {
-	args: {
-	  baseUrl: 'http://localhost:8080/aloja-web/'
+     casperjs: {
+	options: {
+	   async: {
+	     parallel: true
+	   }
 	},
-	direct: false,
-	logLevel: 'error',
-	printCommand: false,
-	printFilePaths: true
-      }
-    }
+        files: ['aloja-web/tests/*.js']
+     }
   });
-  grunt.loadNpmTasks('grunt-contrib-connect');
-  grunt.loadNpmTasks('grunt-contrib-jshint');
-  grunt.loadNpmTasks('grunt-contrib-nodeunit');
-  grunt.loadNpmTasks('grunt-ghost');
 
-  grunt.registerTask('test', ['jshint', 'connect', 'ghost']);
+  grunt.loadNpmTasks('grunt-casperjs');
+
+  grunt.registerTask('test', ['casperjs']);
   grunt.registerTask('default', ['connect']);
 };
