@@ -27,8 +27,11 @@ $loader = new Twig_Loader_Filesystem('views/');
 $twig = null;
 if(ENABLE_DEBUG) {
 	$twig   = new Twig_Environment($loader, array('debug' => ENABLE_DEBUG));
-} else
+} else if(IN_CACHE)
 	$twig = new Twig_Environment($loader, array('cache' => '/tmp/twigcache'));
+else
+	$twig = new Twig_Environment($loader);
+
 $twig->addExtension(new Twig_Extension_Debug());
 $twig->addExtension(new Aloja_Twig_Extension());
 
