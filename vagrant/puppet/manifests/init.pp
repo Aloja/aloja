@@ -32,7 +32,7 @@ vcsrepo { "/var/www/":
   provider => git,
   require => [ Package[ 'git' ] ],
   source => "https://someuser:password@github.com/Aloja/aloja.git",
-  revision => 'master',
+  revision => 'azureProd',
 }
 
 #include '::mysql::server'
@@ -48,6 +48,11 @@ if $environment == 'prod' {
                  }
 } else {
    $mysql_options = {'bind-address' => '0.0.0.0'}
+}
+
+class {'varnish':
+   varnish_listen_port => 80,
+   varnish_storage_size => '1G',
 }
 
 class { '::mysql::server':

@@ -1,7 +1,7 @@
 # vagrant/puppet/modules/nginx/files/127.0.0.1
 
 server {
-  listen 80;
+  listen 8080;
   server_name _;
   root /var/www/aloja-web;
 
@@ -31,7 +31,7 @@ server {
 
   #avoid caches
   sendfile on;
-  expires 31d;
+  expires 1y;
 
   # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
   reset_timedout_connection on;

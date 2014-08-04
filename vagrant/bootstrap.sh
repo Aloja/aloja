@@ -18,7 +18,7 @@ fi
 
 #install puppet modules
 [ -d /etc/puppet/modules ] || mkdir -p /etc/puppet/modules
-for module in "puppetlabs-apt" "puppetlabs-mysql" "puppetlabs-vcsrepo"; do
+for module in "puppetlabs-apt" "puppetlabs-mysql" "puppetlabs-vcsrepo" "maxchk-varnish"; do
   (puppet module list | grep "$module") || puppet module install "$module"
 done
 #php 5.5 fpm

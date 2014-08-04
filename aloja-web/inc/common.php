@@ -69,30 +69,31 @@ function get_rows($sql) {
         ($rows = file_get_contents($file_path)) &&
         ($rows = unserialize(gzuncompress($rows)))
     ) {
-
-if (in_dev() && ENABLE_DEBUG) echo "<!--CACHED: $sql --->\n";
-        
-    } else {
-        if (!$db) init_db();
-
-if (in_dev() && ENABLE_DEBUG) echo "<!--NO CACHE: $sql --->\n";
-
-        try {
-            $sth = $db->prepare($sql);
-            $sth->execute();
-        } catch (Exception $e) {
-            throw new Exception($e->getMessage(). " SQL: $sql");
-        }
-
-        $rows = $sth->fetchAll(PDO::FETCH_ASSOC);
-
-        //save cache
-        if ($rows) {
-            file_put_contents($file_path, gzcompress(serialize($rows), 9));
-        }
-    }
-
-    return $rows;
+		if (in_dev () && ENABLE_DEBUG)
+			echo "<!--CACHED: $sql --->\n";
+	} else {
+		if (! $db)
+			init_db ();
+		
+		if (in_dev () && ENABLE_DEBUG)
+			echo "<!--NO CACHE: $sql --->\n";
+		
+		try {
+			$sth = $db->prepare ( $sql );
+			$sth->execute ();
+		} catch ( Exception $e ) {
+			throw new Exception ( $e->getMessage () . " SQL: $sql" );
+		}
+		
+		$rows = $sth->fetchAll ( PDO::FETCH_ASSOC );
+		
+		// save cache
+		if ($rows) {
+			file_put_contents ( $file_path, gzcompress ( serialize ( $rows ), 9 ) );
+		}
+	}
+	
+	return $rows;
 }
 
 $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
