@@ -4,6 +4,7 @@ php:
 before_install:
   - sudo apt-get install -y nodejs npm # php5-fpm nginx
   - npm install -g grunt-cli
+  - npm install -g casperjs
 before_script:
 #  - sh setupfpmnginx.sh
   - mysql -e "create database aloja2;" -uroot
