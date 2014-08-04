@@ -2,7 +2,7 @@ language: php
 php:
   - 5.4
 before_install:
-  - sudo apt-get install -y nodejs npm
+  - sudo apt-get install -y nodejs npm php5-fpm nginx
 before_script:
-  - sudo ./setupfpmnginx.sh
-script: ./tests.sh
+  - sh setupfpmnginx.sh
+script: sh tests.sh
