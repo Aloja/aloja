@@ -1,5 +1,3 @@
 #!/bin/bash
 sudo cp .travis_nginx.conf /etc/nginx/nginx.conf
 sudo service nginx restart
-npm install
-sudo npm install -g grunt-cli

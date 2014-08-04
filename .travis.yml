@@ -3,6 +3,14 @@ php:
   - 5.4
 before_install:
   - sudo apt-get install -y nodejs npm php5-fpm nginx
+  - npm install -g grunt-cli
 before_script:
   - sh setupfpmnginx.sh
+  - mysql -e "create database aloja2;" -uroot
+  - mysql -uroot aloja2 < db_schema.sql
+install:
+  - npm install
 script: sh tests.sh
+services: mysql
+notifications:
+  email: false
