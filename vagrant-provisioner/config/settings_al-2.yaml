@@ -1,0 +1,16 @@
+---
+cluster:
+  cluster_name: al-2
+  vm_size: 'A7'
+  storage_acct_name: 'vagrantstore2'
+  cloud_service_name: 'vagrant-cloud2'
+  deployment_name: 'vagrant-deployment2'
+  vm_location: 'West Europe' # e.g., West US
+  vm_image: 'b39f27a8b8c64d52b05eac6a62ebad85__Ubuntu-12_04_4-LTS-amd64-server-20140428-en-us-30GB'
+servers:
+  - vm_name: 'al-2-01'
+    ssh_port: 22201
+    storage_acct_name: al201
+  - vm_name: 'al-2-02'
+    ssh_port: 22202
+    storage_acct_name: al202

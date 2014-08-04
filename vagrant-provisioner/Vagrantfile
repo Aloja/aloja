@@ -1,20 +1,39 @@
 #Make default provider Azure for this project
 ENV['VAGRANT_DEFAULT_PROVIDER'] ||= 'azure'
+#avoid parallel creation to avoid failures
+ENV['VAGRANT_NO_PARALLEL'] ||= 'true'
 
 #Read settings from YAMLs
 require 'yaml'
 settings_secured = YAML.load_file 'config/settings_secured.yaml'
-settings         = YAML.load_file 'config/settings.yaml'
+#settings         = YAML.load_file 'config/settings.yaml'
+settings         = YAML.load_file 'config/settings_al-2.yaml'
 
 Vagrant.configure(2) do |config|
     config.vm.box = 'azure'
 
+    config.vm.synced_folder '.', '/vagrant', type: 'rsync', rsync__exclude: '.git/'
+
+    #Contruct server's configs from the settings
     settings['servers'].each do |servers|
       config.vm.define servers['vm_name'] do |server|
-        print "Creating host " + servers['vm_name'] + "\n"
+
+        server.vm.host_name = servers['vm_name']
+
+        #bash scripts to run before puppet. Basically to install puppet modules
+        config.vm.provision :shell, :path => 'bootstrap.sh'
+
+        #puppet config
+        config.vm.provision 'puppet' do |puppet|
+          puppet.module_path = 'puppet/modules'
+          puppet.manifests_path = 'puppet/manifests'
+          puppet.manifest_file = 'init_hadoop.pp'
+          #puppet.options = '--verbose --debug'
+        end
 
         server.vm.provider :azure do |azure|
 
+          #default Azure config (shared across nodes)
           azure.subscription_id       = settings_secured['subscription_id']
 
           azure.mgmt_certificate      = settings_secured['mgmt_certificate']
@@ -22,17 +41,21 @@ Vagrant.configure(2) do |config|
           azure.ssh_private_key_file  = settings_secured['ssh_private_key_file']
           azure.ssh_certificate_file  = settings_secured['ssh_certificate_file']
 
-          azure.cloud_service_name    = settings_secured['cloud_service_name'] # optional. A new one will be generated if not provided.
-          azure.storage_acct_name     = servers['storage_acct_name'] # optional. A new one will be generated if not provided.
-          azure.deployment_name       = settings_secured['deployment_name'] # defaults to cloud_service_name
-
-          azure.vm_image              = settings_secured['vm_image']
-          azure.vm_size               = settings_secured['vm_size']
           azure.vm_user               = settings_secured['vm_user'] # defaults to 'vagrant' if not provided
           azure.vm_password           = settings_secured['vm_password'] # min 8 characters. should contain a lower case letter, an uppercase letter, a number and a special character
 
+          azure.cloud_service_name    = settings['cluster']['cloud_service_name'] # optional. A new one will be generated if not provided.
+          azure.deployment_name       = settings['cluster']['deployment_name'] # defaults to cloud_service_name
+
+          azure.vm_image              = settings['cluster']['vm_image']
+          azure.vm_size               = settings['cluster']['vm_size']
+          azure.vm_location           = settings['cluster']['vm_location'] # e.g., West US
+
+
+          #Azure specific settings for server
+          azure.storage_acct_name     = settings['cluster']['storage_acct_name'] # optional. A new one will be generated if not provided.
+
           azure.vm_name               = servers['vm_name'] #MUST BE LOWERCASE! https://github.com/MSOpenTech/vagrant-azure/issues/11 max 15 characters. contains letters, number and hyphens. can start with letters and can end with letters and numbers
-          azure.vm_location           = settings_secured['vm_location'] # e.g., West US
 
           # Provide the following values if creating a *Nix VM
           azure.ssh_port = servers['ssh_port']
@@ -44,7 +67,6 @@ Vagrant.configure(2) do |config|
           #azure.tcp_endpoints = '3389:53389' # opens the Remote Desktop internal port that listens on public port 53389. Without this, you cannot RDP to a Windows VM.
 
         end
-
       end
     end
 

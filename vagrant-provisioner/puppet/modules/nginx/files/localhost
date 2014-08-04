@@ -1,0 +1,36 @@
+# vagrant/puppet/modules/nginx/files/127.0.0.1
+
+server {
+  listen 80;
+  server_name _;
+  root /var/www/;
+
+  index index.html;
+  autoindex on;
+
+  location / {
+    #try_files $uri /index.php;
+    autoindex on;
+  }
+
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  #keepalive_timeout ;
+
+  #avoid caches
+  sendfile off;
+  expires off;
+
+  # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
+  reset_timedout_connection on;
+
+  #perf optimizations
+  tcp_nodelay on;
+
+  gzip on;
+  gzip_comp_level 2;
+  gzip_proxied any;
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_disable "msie6";
+}
