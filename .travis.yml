@@ -2,12 +2,14 @@ language: php
 php:
   - 5.4
 before_install:
-  - sudo apt-get install -y nodejs npm php5-fpm nginx
+  - sudo apt-get install -y nodejs npm # php5-fpm nginx
   - npm install -g grunt-cli
 before_script:
-  - sh setupfpmnginx.sh
+#  - sh setupfpmnginx.sh
   - mysql -e "create database aloja2;" -uroot
   - mysql -uroot aloja2 < db_schema.sql
+  - php -S localhost:8080 &
+  - sleep 3
 install:
   - npm install
 script: sh tests.sh
