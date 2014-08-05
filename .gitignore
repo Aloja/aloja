@@ -113,3 +113,6 @@ node_modules
 
 #vendor
 aloja-web/vendor/
+
+#logs
+aloja-web/logs/*.log
