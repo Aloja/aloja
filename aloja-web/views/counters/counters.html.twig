@@ -12,7 +12,7 @@
     {% block navigation %}
       {{ parent() }}
         <div id="navigation" style="text-align: center;">
-	        <h2>
+	        <h2 class="compare body">
 	            <strong>Job counter types:</strong>
 	            <a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
 	            <a href="{{ modifyUrl({'type': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>

@@ -174,9 +174,9 @@
            <div id="navigation" style="text-align: center;">
 
                <form method="get">
-	            <h2>
+	            <h2 class="compare body">
 	                Benchmark:
-	                <select name="bench">
+	                <select name="benchs">
 	                    <!--<option value="">ALL</option>-->
 	                    <option value="terasort" {% if bench == 'terasort' %}selected="selected"{% endif %}>terasort</option>
 	                    <option value="wordcount" {% if bench == 'wordcount' %}selected="selected"{% endif %}>wordcount</option>
@@ -190,7 +190,7 @@
 	            </h2>
 	            <div id="chart" style="width: 800px; height: 800px; margin: 0 auto; margin-left: 20%; float: left;"></div>
 	            {% include "common/config_filters.html.twig" %}
-	            <h1>Edit cluster configuration costs:</h1>
+	            <h1 class="compare title">Edit cluster configuration costs:</h1>
 	            <div style="text-align: center; margin-left: auto; margin-right: auto; width: 80%;">
 	                <table>
 	                    <tr>

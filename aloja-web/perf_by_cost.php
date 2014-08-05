@@ -8,12 +8,12 @@ $message = '';
 
 try {
 
-    if (isset($_GET['bench']) and strlen($_GET['bench']) > 0) {
-        $bench = $_GET['bench'];
+    if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
+        $bench = $_GET['benchs'];
         $bench_where = " AND bench = '$bench'";
     } else {
-        $bench = '';
-        $bench_where = "";
+        $bench = 'terasort';
+        $bench_where = " AND bench = '$bench'";
     }
 
     if (isset($_GET['cost_hour_HDD_ETH'])) {
@@ -56,7 +56,7 @@ try {
     $where_configs = '';
     $concat_config = "";
     
-    $benchs         = read_params('benchs',$where_configs,$configurations,$concat_config);
+  //  $benchs         = read_params('benchs',$where_configs,$configurations,$concat_config);
     $nets           = read_params('nets',$where_configs,$configurations,$concat_config);
     $disks          = read_params('disks',$where_configs,$configurations,$concat_config);
     $blk_sizes      = read_params('blk_sizes',$where_configs,$configurations,$concat_config);
@@ -156,7 +156,7 @@ echo $twig->render('perf_by_cost/perf_by_cost.html.twig',
 		array('selected' => 'Cost Evaluation',
                 'message' => $message,
                 'highcharts_js' => HighCharts::getHeader(),
-				'show_in_result' => count($show_in_result),
+			//	'show_in_result' => count($show_in_result),
 				'seriesData' => $seriesData,
 				'bench' => $bench,
 				'cost_hour_SSD_IB' => $cost_hour_SSD_IB,
@@ -165,7 +165,7 @@ echo $twig->render('perf_by_cost/perf_by_cost.html.twig',
 				'cost_hour_HDD_ETH' => $cost_hour_HDD_ETH,
 				'cost_hour_HDD_IB' => $cost_hour_HDD_IB,
 				'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
-				'benchs' => $benchs,
+			//	'benchs' => $benchs,
 				'nets' => $nets,
 				'disks' => $disks,
 				'blk_sizes' => $blk_sizes,

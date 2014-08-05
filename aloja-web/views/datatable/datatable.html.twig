@@ -31,7 +31,7 @@
 	        </div>
 	        {% set style_table = 'style="display: none;"' %}
 		  {% endif %}
-        <table id="benchmarks" cellpadding="0" cellspacing="0" border="0" class="display" width="100%" {{ style_table | raw}}>
+        <table id="benchmarks" width="100%" {{ style_table | raw}}>
 		  <thead>
 		    <tr>
 		      <th></th>
@@ -80,8 +80,8 @@
 {#            {{ table_fields | raw }}#}
         </table>
 
-        <h1>Compare executions:</h1>
-        <h2>Select rows by clicking on checkboxes and click: <input type="submit" value="Compare Executions"></h2>
+        <h1 class="compare title">Compare executions:</h1>
+        <h2 class="compare body">Select rows by clicking on checkboxes and click: <input type="submit" value="Compare Executions"></h2>
 
     </form>
 

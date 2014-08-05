@@ -2,13 +2,14 @@
 	<table>
 		<tr>
 			<td>
-				<h2>
+				<h2 class="compare body" style="margin-left: 1em;">
 					Filters: <a href="?">(reset)</a>
 				</h2>
 	
 			</td>
 		</tr>
 		<tr>
+		   {% if benchs is defined %}
 			<td>Benchmarks:</br> <select name="benchs[]" multiple>
 	
 					<option value="pagerank" {% if 'pagerank' in benchs %}SELECTED{% endif %}>pagerank</option>
@@ -20,6 +21,7 @@
 					<option value="None" {% if not benchs %}SELECTED{% endif %}>ALL</option>
 			</select>
 			</td>
+			{% endif %}
 			<td>Clusters: (CL)</br> <select name="id_clusters[]" multiple>
 					<option value="1"{% if '1' in id_clusters %} SELECTED{% endif %}>Local</option>
 					<option value="2"{% if '2' in id_clusters %} SELECTED{% endif %}>Azure</option>

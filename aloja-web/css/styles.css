@@ -39,7 +39,7 @@ body, html {
     position: relative;
 }
 
-
+/*
 #main #footer {
     margin: 50px auto 0 auto;
     padding: 0;
@@ -64,18 +64,20 @@ body, html {
     height: 20px;
     clear: both;
 }
-
+*/
 #main .clear {
     clear: both;
 }
 
+/*
 #main pre {
     padding: 15px;
     background-color: #F5F5F5;
     border: 1px solid #CCCCCC;
 }
+*/
 
-#main h1 {
+#main .compare.title {
     margin-top: 2em;
     font-size: 1.3em;
     font-weight: normal;
@@ -85,7 +87,7 @@ body, html {
     clear: both;
 }
 
-#main h2 {
+#main .compare.body {
     font-size: 1.2em;
     font-weight: normal;
     line-height: 1.6em;
@@ -113,7 +115,7 @@ body, html {
 .css_left {
     float: left;
 }
-
+/*
 .demo_links {
     float: left;
     width: 50%;
@@ -155,27 +157,10 @@ body, html {
 	font-size: 1.3em;
 }
 
-.display {
-    text-align: right;
-}
-
 .panel-heading .indicator:hover {
 	cursor: pointer;
 }
-
+*/
 #navigation h1 a,#navigation h2 a {
 	margin-left: 1.5em;
-}
-
-nav a {
-	text-decoration: none;	
-}
-
-nav a:hover {
-	text-decoration: none;
-	color: grey;
-}
-
-a.navbar-brand {
-	color: yellow;
 }
