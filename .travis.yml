@@ -13,7 +13,7 @@ before_script:
   - sleep 3
 install:
   - npm install
-  - cd aloja-web && composer.phar self-update && composer.phar update
+  - cd aloja-web && php composer.phar self-update && php composer.phar update
 script: bash tests.sh
 services: mysql
 notifications:
