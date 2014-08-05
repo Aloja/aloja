@@ -3,6 +3,9 @@
 require_once('vendor/autoload.php');
 require_once('inc/Aloja_Twig_Extension.php');
 
+use Monolog\Logger;
+use Monolog\Handler\StreamHandler;
+
 function in_dev() {
     if ($_SERVER['SERVER_NAME'] == 'minerva.bsc.es' ||
         $_SERVER['SERVER_NAME'] == 'hadoop.bsc.es'
@@ -35,6 +38,13 @@ else
 $twig->addExtension(new Twig_Extension_Debug());
 $twig->addExtension(new Aloja_Twig_Extension());
 
+$env = in_dev() ? 'dev' : 'prod';
+$logLevel = in_dev() ? Logger::DEBUG : Logger::WARNING;
+
+// create a log channel
+$log = new Logger('aloja');
+$log->pushHandler(new StreamHandler("logs/aloja_$env.log", $logLevel));
+
 $message        = null;
 $db             = null;
 $exec_rows      = null;
@@ -52,7 +62,7 @@ function init_db() {
 }
 
 function get_rows($sql) {
-    global $db, $cache_path;
+    global $db, $cache_path, $log;
 
     $md5_sql = md5($sql);
     $file_path = "$cache_path/CACHE_$md5_sql.sql";
@@ -68,14 +78,12 @@ function get_rows($sql) {
         file_exists($file_path) &&
         ($rows = file_get_contents($file_path)) &&
         ($rows = unserialize(gzuncompress($rows)))
-    ) {
-
-if (in_dev() && ENABLE_DEBUG) echo "<!--CACHED: $sql --->\n";
-        
+    ) {	
+		$log->addDebug('CACHED: '.$sql); 
     } else {
         if (!$db) init_db();
 
-if (in_dev() && ENABLE_DEBUG) echo "<!--NO CACHE: $sql --->\n";
+	$log->addDebug('NO CACHE: '.$sql);
 
         try {
             $sth = $db->prepare($sql);

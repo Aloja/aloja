@@ -110,3 +110,6 @@ composer.lock
 
 #nodeModules
 node_modules
+
+#vendor
+aloja-web/vendor/

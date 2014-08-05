@@ -16,7 +16,9 @@ First [download the master branch as a zip file](https://github.com/Aloja/aloja/
 
     git clone https://github.com/Aloja/aloja.git
 
-Go inside `vagrant` directory and execute:
+Then go inside aloja-web directory and execute `composer.phar self-update` and `composer.phar update` to update composer and install third-party libraries respectively  
+
+Once installed go inside `vagrant` directory and execute:
 
     vagrant up
 

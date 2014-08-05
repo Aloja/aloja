@@ -1,0 +1,2 @@
+[2014-08-05 16:07:51] aloja.INFO: Logging something [] []
+[2014-08-05 16:12:56] aloja.DEBUG: NO CACHE: SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e     join clusters USING (id_cluster)     WHERE 1 AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))     AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001');      [] []
