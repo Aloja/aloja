@@ -4,7 +4,7 @@ result=$(curl --silent "$base_url/aloja-web/serverWorksTest.php")
 
 if [ "$result" = "hello" ]
 then
-   echo -e "\e[1;42mPASS Server is working\e[0m\nRunning functional tests..\n"
+   echo -e "\u001b[1;42mPASS Server is working\u001b[0m\nRunning functional tests..\n"
    npm test
    ret_code=$?
    echo "exiting with ret code $ret_code\n"
