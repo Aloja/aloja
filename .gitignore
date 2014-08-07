@@ -16,7 +16,8 @@ vagrant/.vagrant/*
 #test PHP file to check the configuration (insecure in production)
 test.php
 #production passwords file
-config.php
+aloja-web/config/config.yml
+
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm

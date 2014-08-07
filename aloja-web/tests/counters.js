@@ -1,5 +1,5 @@
 casper.test.begin("Datatable tests", function(test) {
-   casper.start('http://localhost:8080/aloja-web/counters.php?type=SUMMARY', function() {
+   casper.start('http://localhost:8080/counters?type=SUMMARY', function() {
 	test.assertExists("#benchmarks", "Counters table created");
     test.assertExists("#benchmarks td", "Counters table has content");
 //	var tdCount = this.evaluate(function() { return $("#benchmarks td").length; });

@@ -1,7 +1,9 @@
-exec { 'set_document_root':
-  command => 'ln -fs /vagrant/workspace/* /var/www',
-  onlyif => '[ ! -h /var/www ]',
-  path => '/usr/bin:/bin',
+if $environment == 'dev' {
+    exec { 'set_document_root':
+      command => 'ln -fs /vagrant/workspace/* /var/www',
+      onlyif => '[ ! -h /var/www ]',
+      path => '/usr/bin:/bin',
+    }
 }
 
 file { '/var/www/':
@@ -40,6 +42,29 @@ if $environment == 'prod' {
                  }
 } else {
    $mysql_options = {'bind-address' => '0.0.0.0'}
+}
+
+if $environment == 'prod' {
+    class {'varnish':
+        varnish_listen_port => 80,
+        varnish_storage_size => '1G',
+        varnish_ttl => '1y'
+    }
+    
+    #Logrotate rules
+    logrotate::rule { 'aloja-logs':
+    path => '/var/www/aloja-web/logs/*.log',
+    rotate => 5,
+    rotate_every => 'day',
+    }
+    
+    vcsrepo { "/var/www/":
+        ensure => latest,
+        provider => git,
+        require => [ Package[ 'git' ] ],
+        source => "https://someuser:password@github.com/Aloja/aloja.git",
+        revision => 'azureProd',
+    }
 }
 
 class { '::mysql::server':
@@ -84,13 +109,16 @@ mysql_grant { 'vagrant@%/*.*':
 #  privileges  => ['ALL'],
 #}
 
-
-
-
 #TODO make path puppet relative
 file { '/home/vagrant/.bashrc':
   source  => '/vagrant/puppet/files/vagrant/.bashrc',
 }
 file { '/home/vagrant/.vimrc':
   source  => '/vagrant/puppet/files/vagrant/.vimrc',
+}
+
+exec { 'third_party_libs':
+  command => 'bash -c "cd /vagrant/workspace/aloja-web && php composer.phar update"',
+  onlyif => '[ ! -h /vagrant/workspace/aloja-web/vendor ]',
+  path => '/usr/bin:/bin'
 }

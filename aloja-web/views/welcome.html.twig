@@ -61,7 +61,7 @@
                    </td>
                </tr>
                <tr>
-                 <td style="white-space: nowrap;"><a href="datatable.php"><b>Benchmark Executions</b></a></td>
+                 <td style="white-space: nowrap;"><a href="{{ path('benchexecutions') }}"><b>Benchmark Executions</b></a></td>
                  <td>
                      This sections presents the benchmark execution repository.
                      It features more than 4000
@@ -77,7 +77,7 @@
                </tr>
                <tr>
                  <td>
-                   <a href="config_improvement.php"><b>Config improvement</b></a>
+                   <a href="{{ path('configimprovement') }}"><b>Config improvement</b></a>
                  </td>
                  <td>
                    The Configuration Improvement sections evaluates the SPEED-UP improvement by different Hardware
@@ -93,7 +93,7 @@
                </tr>
                <tr>
                  <td>
-                    <a href="perf_by_cost.php"><b>Cost/Perf Evaluation</b></a>
+                    <a href="{{ path('costperfeval') }}"><b>Cost/Perf Evaluation</b></a>
                  </td>
                  <td>
                    The Cost/Performance evaluation tool, presents a cloud of points of the different Hadoop
@@ -111,7 +111,7 @@
                </tr>
                <tr>
                  <td>
-                   <a href="charts1.php?random=1"><b>Performance Charts</b></a>
+                   <a href="{{ path('perfcharts', {'random': '1'}) }}"><b>Performance Charts</b></a>
                  </td>
                  <td>
                    The Performance Charts sections allows first to get a visual glance at the full Hadoop execution
@@ -129,7 +129,7 @@
                  </td>
                </tr>
                <tr>
-                   <td><a href="counters.php"><b>Hadoop Job Counters</b></a></td>
+                   <td><a href="{{ path('counters') }}"><b>Hadoop Job Counters</b></a></td>
                    <td>
                        The Hadoop Job Counters sections allows to browse the counters output at each of the Hadoop
                        executions, filter them, and to order by a specific counter the selected runs (or all).
@@ -169,7 +169,7 @@
                 image: {
                   verticalFit: true
                 }
-                
+
              });
 
             $('.popup-youtube').magnificPopup({

@@ -56,3 +56,14 @@ The MySQL database is accessible from the host, use the following configuration 
 - Username: vagrant
 - Password: vagrant
 - Database: aloja2
+
+## Ubuntu machines production deployment
+1. Change puppet environment variable to 'prod' in `vagrant/Vagrantfile`
+
+2. Change github username and password on `vagrant/puppet/manifests/init.pp` vcsrepo module
+
+3. Copy aloja-web/config/config.sample.yml to aloja-web/config/config.yml and change the parameters properly
+
+4. Go inside `vagrant/` and run `vagrant up`
+
+*WARNING*: Be aware that production's environment comes with server cache enabled, so you'll not see further changes on your code

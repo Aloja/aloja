@@ -83,8 +83,7 @@
 
     </script>
     {% endblock %}
-    {% block navigation %}
-       {{ parent() }}
+    {% block content %}
         <div id="navigation" style="text-align: center; vertical-align: top;">
              <div id="chart" style="width: 800px; height: {{ height }}px; margin: 0 auto; margin-left: 20%; float: left;""></div>
              {% include 'common/config_filters.html.twig' %}

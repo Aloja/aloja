@@ -72,15 +72,14 @@
             });
         </script>
     {% endblock %}
-    {% block navigation %}
-       {{ parent() }}
+    {% block content %}
        {% if charts is defined and charts != '' %}
        <form method="GET" >
        <div id="charts" style="width: 95%;">
            <div id="navigation" style="text-align: center;">
                <h2 class="compare body">
                    <strong>Job/s details:</strong>
-                   <a href="counters.php?type=TASKS{{ makeExecs(execs) }}">Tasks & Counters</a>
+                   <a href="{{ path('counters') }}?type=TASKS{{ makeExecs(execs) }}">Tasks & Counters</a>
                    <strong style="margin-left: 1.5em;">Metrics:</strong>
                    <a href="{{ modifyUrl({'metric': 'CPU'}) }}"><span {% if metric == 'CPU' %}style="font-weight:bold;"{% endif %}>CPU</span></a>
                    <a href="{{ modifyUrl({'metric': 'Memory'}) }}"><span {% if metric == 'Memory' %}style="font-weight:bold;"{% endif %}>Memory</span></a>
@@ -123,7 +122,7 @@
            <div class="panel-group" id="chartsCollapse">
            {% set i = 0 %}
            {% if charts|length > 0 %}
-             {% for chart_type,chart in charts|first %}                          
+             {% for chart_type,chart in charts|first %}
                 {% set first = true %}
                 {% for exec in execs %}
                    {% if charts[exec][chart_type]['chart'] is defined %}

@@ -5,13 +5,13 @@
 				<h2 class="compare body" style="margin-left: 1em;">
 					Filters: <a href="?">(reset)</a>
 				</h2>
-	
+
 			</td>
 		</tr>
 		<tr>
 		   {% if benchs is defined %}
 			<td>Benchmarks:</br> <select name="benchs[]" multiple>
-	
+
 					<option value="pagerank" {% if 'pagerank' in benchs %}SELECTED{% endif %}>pagerank</option>
 					<option value="sort" {% if 'sort' in benchs %}SELECTED{% endif %}>sort</option>
 					<option value="terasort" {% if 'terasort' in benchs %}SELECTED{% endif %}>terasort</option>
@@ -109,6 +109,6 @@
 			</select>
 			</td>
 		</tr>
-	
+
 	</table>
 </form>

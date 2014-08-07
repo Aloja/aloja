@@ -1,5 +1,5 @@
 casper.test.begin("Config improvement tests", function(test) {
-   casper.start('http://localhost:8080/aloja-web/config_improvement.php', function() {
+   casper.start('http://localhost:8080/configimprovement', function() {
 	test.assertExists("#chart", 'Chart created');
 	test.assertExists("form[name=configFilters] select", 'Filters rendered');
 	this.evaluate(function() { 

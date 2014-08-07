@@ -1,0 +1,274 @@
+<?php
+
+namespace alojaweb\inc;
+
+class Utils {
+    
+    public function __construct()
+    {
+        
+    }
+    
+    public static function delete_none($array)
+    {
+        if (($key = array_search('None', $array)) !== false) {
+            unset ($array[$key]);
+        }
+    
+        return $array;
+    }
+    
+    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config)
+    {
+        $single_item_name = substr($item_name, 0, -1);
+    
+        if (isset($_GET[$item_name])) {
+            $items = $_GET[$item_name];
+            $items = Utils::delete_none($items);
+        } else {
+            if ($item_name == 'benchs') {
+                $items = array('pagerank', 'terasort', 'wordcount');
+            } elseif ($item_name == 'nets') {
+                $items = array('IB', 'ETH');
+            } elseif ($item_name == 'disks') {
+                $items = array('SSD', 'HDD');
+            } else {
+                $items = array();
+            }
+        }
+    
+        if ($items) {
+            if ($item_name != 'benchs') {
+                $configurations[] = $single_item_name;
+                if ($concat_config) $concat_config .= ",'_',";
+    
+                if ($item_name == 'id_clusters') {
+                    $conf_prefix = 'CL';
+                } elseif ($item_name == 'iofilebufs') {
+                    $conf_prefix = 'I';
+                } else {
+                    $conf_prefix = substr($single_item_name, 0, 1);
+                }
+    
+                //avoid alphanumeric fields
+                if (!in_array($item_name, array('nets', 'disks'))) {
+                    $concat_config .= "'".$conf_prefix."', $single_item_name";
+                } else {
+                    $concat_config .= " $single_item_name";
+                }
+            }
+            $where_configs .=
+            ' AND '.
+            $single_item_name. //remove trailing 's'
+            ' IN ("'.join('","', $items).'")';
+        }
+    
+        return $items;
+    }
+    
+    public static function generateJSONTable($csv, $show_in_result, $precision = null, $type = null)
+    {
+        $jsonData = array();
+    
+        $i = 0;
+        foreach ($csv as $value_row) {
+            $jsonRow = array();
+            $jsonRow[] = $value_row['id_exec'];
+            foreach (array_keys($show_in_result) as $key_name) {
+                if ($precision !== null && is_numeric($value_row[$key_name])) {
+                    $value_row[$key_name] = round($value_row[$key_name], $precision);
+                }
+    
+                if (!$type) {
+                    if ($key_name == 'bench') {
+                        $jsonRow[] = $value_row[$key_name];
+                    } elseif ($key_name == 'init_time') {
+                        $jsonRow[] = date('YmdHis', strtotime($value_row['end_time']));
+                    } elseif ($key_name == 'exe_time') {
+                        $jsonRow[] = round($value_row['exe_time']);
+                    } elseif ($key_name == 'files') {
+                        $jsonRow[] = $value_row['exec'];
+                    } elseif ($key_name == 'prv') {
+                        $jsonRow[] = $value_row['id_exec'];
+                    } elseif ($key_name == 'version') {
+                        $jsonRow[] = "1.0.3";
+                    } elseif ($key_name == 'cost') {
+                        $jsonRow[] = number_format($value_row['cost'], 2);
+                    } elseif ($key_name == 'id_cluster') {
+                        if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
+                        else $jsonRow[] = "Local 1";
+                    } elseif (stripos($key_name, 'BYTES') !== false) {
+                        $jsonRow[] = round(($value_row[$key_name])/(1024*1024));
+                    } elseif ($key_name == 'FINISH_TIME') {
+                        $jsonRow[] = date('YmdHis', round($value_row[$key_name]/1000));
+                    } elseif ($key_name == 'comp') {
+                        if($value_row[$key_name] == 0)
+                            $jsonRow[] = 'None';
+                        elseif($value_row[$key_name] == 1)
+                        $jsonRow[] = 'ZLIB';
+                        elseif($value_row[$key_name] == 2)
+                        $jsonRow[] = 'BZIP2';
+                        else
+                            $jsonRow[] = 'Snappy';
+                    } else
+                        $jsonRow[] = $value_row[$key_name];
+                } else {
+                    if ($key_name == 'JOBID') {
+                        $jsonRow[] = $value_row[$key_name];
+                    } elseif (stripos($key_name, 'BYTES') !== false) {
+                        $jsonRow[] = round(($value_row[$key_name])/(1024*1024));
+                    } elseif (stripos($key_name, 'TIME') !== false) {
+                        $jsonRow[] = substr($value_row[$key_name], -8);
+                    } elseif (strpos($key_name, 'JOBNAME') !== false) {
+                        if (strlen($value_row[$key_name]) > 15)
+                            $jsonRow[] = substr($value_row[$key_name], 0, 15).'.';
+                        else
+                            $jsonRow[] = $value_row[$key_name];
+                    } else {
+                        $jsonRow[] = $value_row[$key_name];
+                    }
+    
+                }
+            }
+            $jsonData[] = $jsonRow;
+            $i++;
+        }
+    
+        return json_encode(array('aaData' => $jsonData));
+    }
+    
+    public static function get_GET_execs()
+    {
+        $execs = array();
+        if (isset($_GET['execs'])) {
+            $execs_tmp = array_unique($_GET['execs']);
+            foreach ($execs_tmp as $exec) {
+                $execs[] = filter_var($exec, FILTER_SANITIZE_NUMBER_INT);
+            }
+        }
+    
+        return $execs;
+    }
+    
+    public static function get_GET_string($param)
+    {
+        if (isset($_GET[$param]))
+            return filter_var($_GET[$param], FILTER_SANITIZE_STRING);
+    }
+    
+    public static function get_GET_int($param)
+    {
+        if (isset($_GET[$param]))
+            return filter_var($_GET[$param], FILTER_SANITIZE_NUMBER_INT);
+    }
+    
+    public static function minimize_array($array)
+    {
+        foreach ($array as $key=>$value) {
+            if (is_numeric($value))
+                $array[$key] = round($value, 2);
+        }
+    
+        return $array;
+    }
+    
+    public static function minimize_exec_rows(array $rows, $stacked = false)
+    {
+        $minimized_rows = array();
+        $max = null;
+        $min = null;
+        foreach ($rows as $key_row=>$row) {
+            if (is_array($row)) {
+    
+                //if (is_numeric($row['id_exec'])) $id = $row['id_exec'];
+                //else $id = $key_row;
+                $id = $key_row;
+    
+                $row_sum = 0;
+                foreach ($row as $key_field=>$field) {
+                    if (is_numeric($field)) {
+                        $field = round($field, 2);
+                        if (!$stacked && $key_field != 'time') {
+                            if (!$max || $field > $max) $max = $field;
+                            if (!$min || $field < $min) $min = $field;
+                        } else {
+                            $row_sum += $field;
+                        }
+                    }
+                    $minimized_rows[$id][$key_field] = $field;
+                }
+                if ($stacked) {
+                    if (!$max || $row_sum > $max) $max = $row_sum;
+                    if (!$min || $row_sum < $min) $min = $row_sum;
+                }
+            } else {
+                throw new \Exception("Incorrect array format!");
+            }
+        }
+    
+        return array($minimized_rows, $max, $min);
+    }
+    
+    public static function csv_to_array($filename='', $delimiter=',')
+    {
+        if(!file_exists($filename) || !is_readable($filename))
+    
+            return FALSE;
+    
+        $header = null;
+        $data = array();
+        if (($handle = fopen($filename, 'r')) !== FALSE) {
+            while (($row = fgetcsv($handle, 1000, $delimiter)) !== FALSE) {
+                if(!$header)
+                    $header = $row;
+                else
+                    $data[] = array_combine($header, $row);
+            }
+            fclose($handle);
+        }
+    
+        return $data;
+    }
+    
+    public static function find_config($config, $csv)
+    {
+        $return = false;
+        foreach ($csv as $value_row) {
+            if ($value_row['exec'] == $config) {
+                $value_row['print_name'] =
+                "<strong>".$value_row['bench']."</strong> ".
+                substr($value_row['exec'], 16, (strpos($value_row['exec'],'/')-16)).
+                " {$value_row['exe_time']} secs.";
+                $return = $value_row;
+                break;
+            }
+        }
+    
+        return $return;
+    }
+    
+    public static function generate_show($show_in_result, $csv, $offset)
+    {
+        reset($csv);
+        $header = current($csv);
+    
+        $dont_show= array('job_name');
+    
+        $position = 0;
+        foreach (array_keys($header) as $key_header) {
+            if ($position > $offset && !in_array($key_header, $dont_show)) {
+    
+                $name = str_replace('_', ' ', $key_header);
+    
+                if (stripos($key_header, 'BYTES') !== false) {
+                    $show_in_result[$key_header] = str_ireplace('BYTES', 'MB', $name);
+                } else {
+                    $show_in_result[$key_header] = $name;
+                }
+            }
+            $position++;
+        }
+    
+        return $show_in_result;
+    }
+}

@@ -9,8 +9,7 @@
         @import "js/datatables/extras/ColVis/media/css/ColVis.css";
     </style>
 {% endblock %}
-    {% block navigation %}
-      {{ parent() }}
+    {% block content %}
         <div id="navigation" style="text-align: center;">
 	        <h2 class="compare body">
 	            <strong>Job counter types:</strong>
@@ -25,13 +24,12 @@
 	        </h2>
 	    </div>
 	    Click on a <strong>Job Name</strong> to see it's tasks and history </br>
-    {% endblock %}
-    {% block content %}
+
       Click on a <strong>benchmark name</strong> to see execution details.</br>
       Select different rows and <strong>click compare</strong>, to compare charts.</br>
       <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>
 
-      <form action="charts1.php" target="_blank">
+      <form action="{{ path('perfcharts') }}" target="_blank">
           {% set style_table = '' %}
 		  {% if message is not defined or message is null %}
 			  <div id="loading" style="height: 400px; text-align: center; font-size: 2em;">
@@ -46,7 +44,7 @@
 			    <tr>
 			      <th></th>
 				  {% for key_name,column_name in show_in_result_counters %}
-				    <th>{{ column_name }}</th>   
+				    <th>{{ column_name }}</th>
 				  {% endfor %}
 				</tr>
 				<tr>
@@ -58,14 +56,14 @@
 		  </thead>
         </table>
 
-        <h1>Compare executions:</h1>
-        <h2>Select rows by clicking on checkboxes and click: <input type="submit" value="Compare Executions"></h2>
+        <h1 class="compare title">Compare executions:</h1>
+        <h2 class="compare body">Select rows by clicking on checkboxes and click: <input type="submit" value="Compare Executions"></h2>
 
     </form>
 
     <div style="display: none;">
-        <h1>Advanced filtering:</h1>
-        <h2>Remove old executions by default, clear to enable all:</h2>
+        <h1 class="compare title">Advanced filtering:</h1>
+        <h2 class="compare body">Remove old executions by default, clear to enable all:</h2>
         <table border="0" cellspacing="0" cellpadding="1" style="">
             <tbody>
             <tr>
@@ -185,7 +183,7 @@
                 "oSearch": {"sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
-                "sAjaxSource": "getCountersData.php",
+                "sAjaxSource": "{{ path('countersdata') }}",
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
                       "dataType": 'json',
@@ -225,21 +223,21 @@
                 },
                 "fnRowCallback": function( nRow, aData, iDisplayIndex ) {
                     $('td', nRow).each(function(index, value) {
-                        
+
                         //Correction because first row doesn't really exist
-                        if(index > 0) 
+                        if(index > 0)
                             index += 1;
-                        
+
                     	var headTitle = $("#benchmarks thead tr:first-child th:nth-child("+index+")").text();
                     	if(headTitle == 'JOBID')
-        					$(this).html('<a href="counters.php?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
+        					$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
                     });
-                    
+
 	                return nRow;
                 },
-            } );            
+            } );
 
             /* Add event listeners to the two range filtering inputs */
             $('#min').keyup( function() { oTable.fnDraw(); } );

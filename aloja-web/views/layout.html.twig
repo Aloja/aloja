@@ -85,29 +85,29 @@
 		        <span class="icon-bar"></span>
 		        <span class="icon-bar"></span>
 		      </button>
-		      <a class="navbar-brand navlink" href="index.php" >ALOJA</a>
+		      <a class="navbar-brand navlink" href="{{ path('index') }}" >ALOJA</a>
 		    </div>
-		
+
 		    <!-- Collect the nav links, forms, and other content for toggling -->
 		    <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1">
 		      <ul class="nav navbar-nav">
                   <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>
-                      <a class="navlink" href="index.php"><span >About</span></a>
+                      <a class="navlink" href="{{ path('index') }}"><span >About</span></a>
                   </li>
 		        <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}>
-		          <a class="navlink" href="datatable.php"><span >Benchmark Executions</span></a>
+		          <a class="navlink" href="{{ path('benchexecutions') }}"><span >Benchmark Executions</span></a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
-		          <a class="navlink" href="config_improvement.php">Config Improvement</a>
+		          <a class="navlink" href="{{ path('configimprovement') }}">Config Improvement</a>
 		        </li>
-		        <li {% if selected is defined and selected == 'Cost/Perf Evaluation' %}class="active"{% endif %}>
-		          <a class="navlink" href="perf_by_cost.php?bench=terasort">Cost/Perf Evaluation</a>
+		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
+		          <a class="navlink" href="{{ path('costperfeval', {'bench': 'terasort'}) }}">Cost/Perf Evaluation</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
-		          <a class="navlink" href="charts1.php?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
+		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
-		          <a class="navlink" href="counters.php">Hadoop Job Counters</a>
+		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
@@ -128,14 +128,12 @@
 		  </div><!-- /.container-fluid -->
 		</nav>
     	{% endblock %}
-    			{% block messages %} 
+    	{% block messages %}
 			{% if message is defined and message != '' %}
-			<div>
-				<h2 style="color: red; text-align:center;">
-					</br>{{ message }}
-				</h2>
+			<div class="alert alert-danger" role="alert" style="text-align: center; font-weight: bold;">
+			  {{ message }}
 			</div>
-			{% endif %} 
+			{% endif %}
 		{% endblock %}
     	{% block content %}
     	{% endblock %}
@@ -159,7 +157,7 @@
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
-		
+
             function getCookie(cname) {
            		var name = cname + "=";
           		var ca = document.cookie.split(';');
