@@ -12,6 +12,10 @@ jobs/*
 #vagrant
 vagrant/.vagrant/*
 
+#SECURITY
+
+settings_secured.yaml
+keys/*
 
 #test PHP file to check the configuration (insecure in production)
 test.php
