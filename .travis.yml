@@ -9,7 +9,7 @@ before_script:
 #  - sh setupfpmnginx.sh
   - mysql -e "create database aloja2;" -uroot
   - mysql -uroot aloja2 < db_schema.sql
-  - php -S localhost:8080 aloja-web/index.php &
+  - php -S localhost:8080 --docroot=aloja-web &
   - sleep 3
 install:
   - npm install
