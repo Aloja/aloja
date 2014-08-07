@@ -46,7 +46,7 @@ class Container
             $container['config'] = Yaml::parse('config/config.yml');
             $container['env'] = 'prod';
         }
-        
+
         $container['log'] = function ($c) {
             $logLevel = ($c['env'] == 'dev') ? Logger::DEBUG : Logger::WARNING;
             // create a log channel
@@ -72,15 +72,14 @@ class Container
             $twigOptions = array('debug' => $c['config']['enable_debug']);
             if($c['config']['in_cache'])
                 $twigOptions['cache'] = $c['config']['twig_cache_path'];
-            
-            $twig = new Twig_Environment($loader, $twigOptions);            
+
+            $twig = new Twig_Environment($loader, $twigOptions);
             $twig->addExtension(new AlojaTwigExtension($c['router']));
             if($c['config']['enable_debug'])
                 $twig->addExtension(new Twig_Extension_Debug());
 
 //             //Twig globals initialization
 //             $twig->addGlobal('message',null);
-            
             return $twig;
         };
 
@@ -110,7 +109,7 @@ class Container
     {
         return $this->container['router'];
     }
-    
+
     /**
      * @return \Twig_Environment
      */
@@ -118,7 +117,7 @@ class Container
     {
         return $this->container['twig'];
     }
-    
+
     /**
      * @return \alojaweb\inc\DBUtils
      */
@@ -141,7 +140,7 @@ class Container
         else
             throw new \Exception('This container hasn\'t this service');
     }
-    
+
     public function displayServerError()
     {
         echo $this->container['twig']->render('server_error.html.twig', array());

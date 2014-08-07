@@ -98,13 +98,15 @@ class Router
 
         return true;
     }
-    
+
     public function getRouteName($route)
     {
         if(isset($this->routesCollection[$route]))
+
             return $this->routesCollection[$route];
         else {
             $this->logger->addError('The requested route doesn\'t exist');
+
             return null;
         }
     }

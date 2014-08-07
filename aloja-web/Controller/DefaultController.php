@@ -28,8 +28,7 @@ class DefaultController extends AbstractController
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
         );
-    
-    
+
     public function indexAction()
     {
         echo $this->container->get('twig')->render('welcome.html.twig', array(
@@ -38,14 +37,14 @@ class DefaultController extends AbstractController
     }
 
     public function configImprovementAction()
-    {        
+    {
         $db = $this->container->getDBUtils();
 
         try {
             $configurations = array();
             $where_configs = '';
             $concat_config = "";
-        
+
             $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
             $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
             $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
@@ -56,16 +55,16 @@ class DefaultController extends AbstractController
             $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-        
+
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
-        
+
             //make sure there are some defaults
             if (!$concat_config) {
                 $concat_config = 'disk';
                 $disks = array('HDD');
             }
-        
+
             $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
           //  $filter_execs_max_time = "AND exe_time < 10000";
             $order_conf = 'LENGTH(conf), conf';
@@ -74,16 +73,16 @@ class DefaultController extends AbstractController
                       WHERE 1 $filter_execs $where_configs
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
-        
+
             $rows_config = $db->get_rows($query);
-        
+
             $height = 600;
-        
+
             if (count($rows_config) > 4) {
                 $num_configs = count($rows_config);
                 $height = round($height + (10*($num_configs-4)));
             }
-        
+
             //get the result rows
             $query = "SELECT #count(*),
                       concat($concat_config) conf, bench,
@@ -101,26 +100,26 @@ class DefaultController extends AbstractController
                       from execs e
                       WHERE 1  $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
-        
+
             $rows = $db->get_rows($query);
-        
+
             if ($rows) {
                 //print_r($rows);
             } else {
                 throw new \Exception("No results for query!");
             }
-        
+
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
-        
+
         $categories = '';
         $count = 0;
         foreach ($rows_config as $row_config) {
             $categories .= "'{$row_config['conf']} #{$row_config['num']}',";
             $count += $row_config['num'];
         }
-        
+
         $series = '';
         $bench = '';
         if ($rows) {
@@ -143,13 +142,13 @@ class DefaultController extends AbstractController
                     //round(($row['AVG_exe_time']), 3).
                     round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
                     "],";
-        
+
             }
             //close the last series
             $series .= "]
                     }, ";
         }
-        
+
         echo $this->container->getTwig()->render('config_improvement/config_improvement.html.twig',
              array('selected' => 'Config Improvement',
                 'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
@@ -171,7 +170,7 @@ class DefaultController extends AbstractController
              )
         );
     }
-    
+
     public function benchExecutionsAction()
     {
         echo $this->container->getTwig()->render('datatable/datatable.html.twig',
@@ -179,7 +178,7 @@ class DefaultController extends AbstractController
                 'show_in_result' => self::$show_in_result,
             ));
     }
-    
+
     public function costPerfEvaluationAction()
     {
         $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
@@ -193,47 +192,47 @@ class DefaultController extends AbstractController
                 $bench = 'terasort';
                 $bench_where = " AND bench = '$bench'";
             }
-            
+
             if (isset($_GET['cost_hour_HDD_ETH'])) {
                 $cost_hour_HDD_ETH = $_GET['cost_hour_HDD_ETH'];
             } else {
                 $cost_hour_HDD_ETH = 7.1;
             }
-            
+
             if (isset($_GET['cost_hour_AZURE'])) {
                 $cost_hour_AZURE = $_GET['cost_hour_AZURE'];
             } else {
                 $cost_hour_AZURE = 5.4;
             }
-            
+
             if (isset($_GET['cost_hour_AZURE_1remote'])) {
                 $cost_hour_AZURE_1remote = $_GET['cost_hour_AZURE_1remote'];
             } else {
                 $cost_hour_AZURE_1remote = 0.313;
             }
-            
+
             if (isset($_GET['cost_hour_SSD_IB'])) {
                 $cost_hour_SSD_IB = $_GET['cost_hour_SSD_IB'];
             } else {
                 $cost_hour_SSD_IB = 11.2;
             }
-            
+
             if (isset($_GET['cost_hour_SSD_ETH'])) {
                 $cost_hour_SSD_ETH = $_GET['cost_hour_SSD_ETH'];
             } else {
                 $cost_hour_SSD_ETH = 7.5;
             }
-            
+
             if (isset($_GET['cost_hour_HDD_IB'])) {
                 $cost_hour_HDD_IB = $_GET['cost_hour_HDD_IB'];
             } else {
                 $cost_hour_HDD_IB = 11.6;
             }
-            
+
             $configurations = array();
             $where_configs = '';
             $concat_config = "";
-            
+
             // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
             $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
             $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
@@ -244,7 +243,7 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-            
+
             $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
     //        $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
      //       $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
@@ -284,14 +283,14 @@ class DefaultController extends AbstractController
                     )
                     )
                     )";
-            
+
         //    $avg_cost_per_run = "(select avg($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
           //  $std_cost_per_run = "(select std($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
             $max_cost_per_run = "(select max($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
             $min_cost_per_run = "(select min($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-            
+
             // http://minerva.bsc.es:8099/aloja-web/perf_by_cost2.php?bench=wordcount&cost_hour_LOCAL=12&cost_hour_AZURE=7&cost_hour_SSD_IB=40&cost_hour_SSD_ETH=30&cost_hour_HDD_IB=22
-            
+
             $query = "
                             SELECT
                             (exe_time - $min_exe_time)/($max_exe_time - $min_exe_time)  exe_time_std,
@@ -301,9 +300,9 @@ class DefaultController extends AbstractController
                             from execs e
                             where $outliers $bench_where $where_configs and substr(exec, 1, 8) > '20131220';
                             ";
-            
+
             $rows = $dbUtils->get_rows($query);
-            
+
             if ($rows) {
                 // var_dump($rows);
             } else {
@@ -312,24 +311,24 @@ class DefaultController extends AbstractController
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message', $e->getMessage() . "\n");
         }
-        
+
         $seriesData = '';
         foreach ($rows as $row) {
-            
+
             $exec = substr($row['exec'], 21);
-            
+
             if (strpos($exec, '_az') > 0) {
                 $exec = "AZURE " . $exec;
             } else {
                 $exec = "LOCAL " . $exec;
             }
-            
+
             $seriesData .= "{
             name: '" . $exec . "',
                 data: [[" . round($row['exe_time_std'], 3) . ", " . round($row['cost_std'], 3) . "]]
         },";
         }
-        
+
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
@@ -356,7 +355,7 @@ class DefaultController extends AbstractController
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
                 ));
     }
-    
+
     public function performanceChartsAction()
     {
         $exec_rows = null;
@@ -365,10 +364,10 @@ class DefaultController extends AbstractController
         try {
             //TODO fix, initialize variables
             $dbUtil->get_exec_details('1', 'id_exec',$exec_rows,$id_exec_rows);
-        
+
             //check the URL
             $execs = Utils::get_GET_execs();
-        
+
             if (Utils::get_GET_string('random') && !$execs) {
                 $keys = array_keys($exec_rows);
                 $execs = array_unique(array($keys[array_rand($keys)], $keys[array_rand($keys)]));
@@ -383,19 +382,19 @@ class DefaultController extends AbstractController
             } else {
                 $metric = 'CPU';
             }
-        
+
             if (Utils::get_GET_string('aggr')) {
                 $aggr = Utils::get_GET_string('aggr');
             } else {
                 $aggr = 'AVG';
             }
-        
+
             if (Utils::get_GET_string('detail')) {
                 $detail = Utils::get_GET_int('detail');
             } else {
                 $detail = 10;
             }
-        
+
             if ($aggr == 'AVG') {
                 $aggr_text = "Average";
             } elseif ($aggr == 'SUM') {
@@ -403,7 +402,7 @@ class DefaultController extends AbstractController
             } else {
                 throw new \Exception("Aggregation type '$aggr' is not valid.");
             }
-        
+
             if ($hosts == 'Slaves') {
                 $selected_hosts = array('minerva-1002', 'minerva-1003', 'minerva-1004', 'al-1002', 'al-1003', 'al-1004');
             } elseif ($hosts == 'Master') {
@@ -411,13 +410,13 @@ class DefaultController extends AbstractController
             } else {
                 $selected_hosts = array($hosts);
             }
-        
+
             $charts = array();
             $exec_details = array();
             $chart_details = array();
-        
+
             $clusters = array();
-        
+
             foreach ($execs as $exec) {
                 //do a security check
                 $tmp = filter_var($exec, FILTER_SANITIZE_NUMBER_INT);
@@ -425,9 +424,9 @@ class DefaultController extends AbstractController
                     unset($execs[$exec]);
                     continue;
                 }
-        
+
                 $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows,$id_exec_rows);
-        
+
                 $pos_name = strpos($exec_title, '/');
                 $exec_title =
                 '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
@@ -437,31 +436,31 @@ class DefaultController extends AbstractController
                 "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
                 substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
                 ;
-        
+
                 $exec_details[$exec]['time']        = $dbUtil->get_exec_details($exec, 'exe_time',$exec_rows,$id_exec_rows);
                 $exec_details[$exec]['start_time']  = $dbUtil->get_exec_details($exec, 'start_time',$exec_rows,$id_exec_rows);
                 $exec_details[$exec]['end_time']    = $dbUtil->get_exec_details($exec, 'end_time',$exec_rows,$id_exec_rows);
-        
+
                 $id_cluster = $dbUtil->get_exec_details($exec, 'id_cluster',$exec_rows,$id_exec_rows);
                 if (!in_array($id_cluster, $clusters)) $clusters[] = $id_cluster;
-        
+
                 //$end_time = get_exec_details($exec, 'init_time');
-        
+
                 $date_where     = " AND date BETWEEN '{$exec_details[$exec]['start_time']}' and '{$exec_details[$exec]['end_time']}' ";
-        
+
                 $where          = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') $date_where";
                 $where_BWM      = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') ";
-        
+
                 $where_VMSTATS  = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') ";
-        
+
                 $where_sampling = "round(time/$detail)";
                 $group_by       = " GROUP BY $where_sampling ORDER by time";
-        
+
                 $group_by_vmstats = " GROUP BY $where_sampling ORDER by time";
-        
+
                 $where_sampling_BWM = "round(unix_timestamp/$detail)";
                 $group_by_BWM = " GROUP BY $where_sampling_BWM ORDER by unix_timestamp";
-        
+
                 $charts[$exec] = array(
                     'job_status' => array(
                         'metric'    => "ALL",
@@ -887,7 +886,7 @@ class DefaultController extends AbstractController
                         'negative'  => false,
                     ),
                 );
-        
+
                 $has_records = false; //of any chart
                 foreach ($charts[$exec] as $key_type=>$chart) {
                     if ($chart['metric'] == 'ALL' || $metric == $chart['metric']) {
@@ -897,17 +896,17 @@ class DefaultController extends AbstractController
                         $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                         $charts[$exec][$key_type]['chart']->setFields($chart['fields']);
                         $charts[$exec][$key_type]['chart']->setNegativeValues($chart['negative']);
-        
+
                         list($rows, $max, $min) = Utils::minimize_exec_rows($dbUtil->get_rows($chart['query']), $chart['stacked']);
-        
+
                         if (!isset($chart_details[$key_type]['max']) || $max > $chart_details[$key_type]['max'])
                             $chart_details[$key_type]['max'] = $max;
                         if (!isset($chart_details[$key_type]['min']) || $min < $chart_details[$key_type]['min'])
                             $chart_details[$key_type]['min'] = $min;
-        
+
                         //$charts[$exec][$key_type]['chart']->setMax($max);
                         //$charts[$exec][$key_type]['chart']->setMin($min);
-        
+
                         if (count($rows) > 0) {
                             $has_records = true;
                             $charts[$exec][$key_type]['chart']->setRows($rows);
@@ -915,7 +914,7 @@ class DefaultController extends AbstractController
                     }
                 }
             }
-        
+
             if ($exec_details) {
                 $max_time = null;
                 foreach ($exec_details as $exec=>$exe_time) {
@@ -928,22 +927,22 @@ class DefaultController extends AbstractController
                     $exec_details[$exec]['max_time'] = $max_time;
                 }
             }
-        
+
             if (isset($has_records)) {
-        
+
             } else {
                 throw new \Exception("No results for query!");
             }
-        
+
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
-        
+
         $chartsJS = '';
         if ($charts) {
             reset($charts);
             $current_chart = current($charts);
-        
+
             foreach ($current_chart as $chart_type=>$chart) {
                 foreach ($execs as $exec) {
                     if (isset($charts[$exec][$chart_type]['chart'])) {
@@ -957,10 +956,10 @@ class DefaultController extends AbstractController
                 }
             }
         }
-        
+
         if(!isset($exec))
             $exec = '';
-        
+
         echo $this->container->getTwig()->render('charts1/charts1.html.twig',
                 array('selected' => 'Performance charts',
                         'show_in_result' => count(self::$show_in_result),
@@ -974,28 +973,28 @@ class DefaultController extends AbstractController
                         'host_rows' => $dbUtil->get_hosts($clusters),
                         'detail' => $detail,
                 ));
-        
+
     }
-    
+
     public function countersAction()
     {
         try {
             $dbUtil = $this->container->getDBUtils();
             $message = null;
-        
+
             //check the URL
             $execs = Utils::get_GET_execs();
-        
+
             if (Utils::get_GET_string('type')) {
                 $type = Utils::get_GET_string('type');
             } else {
                 $type = 'SUMMARY';
             }
-        
+
             $join = "JOIN execs e using (id_exec) WHERE JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
-        
+
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES
@@ -1044,27 +1043,27 @@ class DefaultController extends AbstractController
             } else {
                 throw new \Exception('Unknown type!');
             }
-        
+
             $exec_rows = $dbUtil->get_rows($query);
-        
+
             if (count($exec_rows) > 0) {
-        
+
                 $show_in_result_counters = array(
                     'id_exec'   => 'ID',
                     //'job_name'  => 'Job Name',
                     //'exe_time' => 'Total Time',
-        
+
                     'JOBID'     => 'JOBID',
                     'bench'     => 'Bench',
                     'JOBNAME'   => 'JOBNAME',
                 );
-        
+
                 $show_in_result_counters = Utils::generate_show($show_in_result_counters, $exec_rows, 4);
             }
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
-        
+
         echo $this->container->getTwig()->render('counters/counters.html.twig',
             array('selected' => 'Hadoop Job Counters',
                 'show_in_result_counters' => $show_in_result_counters,

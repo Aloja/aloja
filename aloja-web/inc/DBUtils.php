@@ -60,26 +60,26 @@ class DBUtils
 
         return $rows;
     }
-    
+
     public function get_execs($filter_execs = null)
     {
         if($filter_execs === null)
             $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
-        
+
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
         join clusters USING (id_cluster)
         WHERE 1 $filter_execs
         AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001');
         ";
-    
+
         return $this->get_rows($query);
     }
-    
+
     public function get_exec_details($id_exec, $field, &$exec_rows, &$id_exec_rows)
     {
         if (is_numeric($id_exec) && $field) {
             if (!$exec_rows) $exec_rows = $this->get_execs();
-    
+
             if (!$id_exec_rows) {
                 $new_rows = array();
                 foreach ($exec_rows as $row) {
@@ -94,7 +94,7 @@ class DBUtils
                 $exec_rows = $new_rows;
                 $id_exec_rows = true;
             }
-    
+
             if (isset($exec_rows[$id_exec][$field]))
                 return $exec_rows[$id_exec][$field];
             else
@@ -103,11 +103,11 @@ class DBUtils
             return false;
         }
     }
-    
+
     public function get_hosts($clusters)
     {
         $query = 'SELECT * FROM hosts WHERE id_cluster IN ("'.join('","', $clusters).'");';
-    
+
         return $this->get_rows($query);
     }
 }

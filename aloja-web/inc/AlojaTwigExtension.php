@@ -13,7 +13,7 @@ class AlojaTwigExtension extends Twig_Extension
 	 * @var \alojaweb\Router\Router
 	 */
     private $router;
-    
+
     public function __construct(\alojaweb\Router\Router $router)
     {
         $this->router = $router;
@@ -68,7 +68,7 @@ class AlojaTwigExtension extends Twig_Extension
             } else {
                 $queryStart = "&";
             }
-            
+
             // modify/delete data
             foreach ($query as $q) {
                 if ($q) {
@@ -106,30 +106,28 @@ class AlojaTwigExtension extends Twig_Extension
 
         return $return;
     }
-    
+
     public function path($routeName, $options = null)
     {
         $route = $this->router->getRouteName($routeName);
-        if($route != null) {
+        if ($route != null) {
             $url = $route['pattern'];
-            if($options != null && is_array($options)) {
+            if ($options != null && is_array($options)) {
                 $first = true;
-                foreach($options as $name => $value)
-                {
-                  if(is_string($value)) {
-                    if($first) {
+                foreach ($options as $name => $value) {
+                  if (is_string($value)) {
+                    if ($first) {
                         $url.='?';
                         $first = false;
-                    }
-                    else $url.='&';
-                    
+                    } else $url.='&';
+
                     $url .= "$name=$value";
                   }
                 }
             }
+
             return $url;
-        }
-        else
+        } else
             throw new Twig_Error_Runtime('There\'s no route with this name');
     }
 }

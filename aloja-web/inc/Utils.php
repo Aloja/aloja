@@ -2,26 +2,26 @@
 
 namespace alojaweb\inc;
 
-class Utils {
-    
+class Utils
+{
     public function __construct()
     {
-        
+
     }
-    
+
     public static function delete_none($array)
     {
         if (($key = array_search('None', $array)) !== false) {
             unset ($array[$key]);
         }
-    
+
         return $array;
     }
-    
+
     public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config)
     {
         $single_item_name = substr($item_name, 0, -1);
-    
+
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
             $items = Utils::delete_none($items);
@@ -36,12 +36,12 @@ class Utils {
                 $items = array();
             }
         }
-    
+
         if ($items) {
             if ($item_name != 'benchs') {
                 $configurations[] = $single_item_name;
                 if ($concat_config) $concat_config .= ",'_',";
-    
+
                 if ($item_name == 'id_clusters') {
                     $conf_prefix = 'CL';
                 } elseif ($item_name == 'iofilebufs') {
@@ -49,7 +49,7 @@ class Utils {
                 } else {
                     $conf_prefix = substr($single_item_name, 0, 1);
                 }
-    
+
                 //avoid alphanumeric fields
                 if (!in_array($item_name, array('nets', 'disks'))) {
                     $concat_config .= "'".$conf_prefix."', $single_item_name";
@@ -62,14 +62,14 @@ class Utils {
             $single_item_name. //remove trailing 's'
             ' IN ("'.join('","', $items).'")';
         }
-    
+
         return $items;
     }
-    
+
     public static function generateJSONTable($csv, $show_in_result, $precision = null, $type = null)
     {
         $jsonData = array();
-    
+
         $i = 0;
         foreach ($csv as $value_row) {
             $jsonRow = array();
@@ -78,7 +78,7 @@ class Utils {
                 if ($precision !== null && is_numeric($value_row[$key_name])) {
                     $value_row[$key_name] = round($value_row[$key_name], $precision);
                 }
-    
+
                 if (!$type) {
                     if ($key_name == 'bench') {
                         $jsonRow[] = $value_row[$key_name];
@@ -127,16 +127,16 @@ class Utils {
                     } else {
                         $jsonRow[] = $value_row[$key_name];
                     }
-    
+
                 }
             }
             $jsonData[] = $jsonRow;
             $i++;
         }
-    
+
         return json_encode(array('aaData' => $jsonData));
     }
-    
+
     public static function get_GET_execs()
     {
         $execs = array();
@@ -146,32 +146,32 @@ class Utils {
                 $execs[] = filter_var($exec, FILTER_SANITIZE_NUMBER_INT);
             }
         }
-    
+
         return $execs;
     }
-    
+
     public static function get_GET_string($param)
     {
         if (isset($_GET[$param]))
             return filter_var($_GET[$param], FILTER_SANITIZE_STRING);
     }
-    
+
     public static function get_GET_int($param)
     {
         if (isset($_GET[$param]))
             return filter_var($_GET[$param], FILTER_SANITIZE_NUMBER_INT);
     }
-    
+
     public static function minimize_array($array)
     {
         foreach ($array as $key=>$value) {
             if (is_numeric($value))
                 $array[$key] = round($value, 2);
         }
-    
+
         return $array;
     }
-    
+
     public static function minimize_exec_rows(array $rows, $stacked = false)
     {
         $minimized_rows = array();
@@ -179,11 +179,11 @@ class Utils {
         $min = null;
         foreach ($rows as $key_row=>$row) {
             if (is_array($row)) {
-    
+
                 //if (is_numeric($row['id_exec'])) $id = $row['id_exec'];
                 //else $id = $key_row;
                 $id = $key_row;
-    
+
                 $row_sum = 0;
                 foreach ($row as $key_field=>$field) {
                     if (is_numeric($field)) {
@@ -205,16 +205,16 @@ class Utils {
                 throw new \Exception("Incorrect array format!");
             }
         }
-    
+
         return array($minimized_rows, $max, $min);
     }
-    
+
     public static function csv_to_array($filename='', $delimiter=',')
     {
         if(!file_exists($filename) || !is_readable($filename))
-    
+
             return FALSE;
-    
+
         $header = null;
         $data = array();
         if (($handle = fopen($filename, 'r')) !== FALSE) {
@@ -226,10 +226,10 @@ class Utils {
             }
             fclose($handle);
         }
-    
+
         return $data;
     }
-    
+
     public static function find_config($config, $csv)
     {
         $return = false;
@@ -243,23 +243,23 @@ class Utils {
                 break;
             }
         }
-    
+
         return $return;
     }
-    
+
     public static function generate_show($show_in_result, $csv, $offset)
     {
         reset($csv);
         $header = current($csv);
-    
+
         $dont_show= array('job_name');
-    
+
         $position = 0;
         foreach (array_keys($header) as $key_header) {
             if ($position > $offset && !in_array($key_header, $dont_show)) {
-    
+
                 $name = str_replace('_', ' ', $key_header);
-    
+
                 if (stripos($key_header, 'BYTES') !== false) {
                     $show_in_result[$key_header] = str_ireplace('BYTES', 'MB', $name);
                 } else {
@@ -268,7 +268,7 @@ class Utils {
             }
             $position++;
         }
-    
+
         return $show_in_result;
     }
 }
