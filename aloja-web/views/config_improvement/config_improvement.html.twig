@@ -14,7 +14,8 @@
                             renderTo: 'chart',
                         },
                         title: {
-                            text: 'Average speedup by config group to average execution time by benchmark'
+                            text: 'Average speedup by config group to average execution time by benchmark',
+                            align: 'center',
                         },
                         subtitle: {
                             text: 'From {{ count }} distinct executions'
@@ -84,8 +85,8 @@
     </script>
     {% endblock %}
     {% block content %}
-        <div id="navigation" style="text-align: center; vertical-align: top;">
-             <div id="chart" style="width: 800px; height: {{ height }}px; margin: 0 auto; margin-left: 20%; float: left;""></div>
+        <div id="navigation" style="">
+             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
              {% include 'common/config_filters.html.twig' %}
             </br>
         </div>

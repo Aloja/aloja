@@ -185,6 +185,9 @@ class DefaultController extends AbstractController
         $filter_execs_max_time = "AND exe_time < 10000";
         $dbUtils = $this->container->getDBUtils();
         try {
+            if(isset($_GET['benchs']))
+             $_GET['benchs'] = $_GET['benchs'][0];
+            
             if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
                 $bench = $_GET['benchs'];
                 $bench_where = " AND bench = '$bench'";
@@ -334,7 +337,8 @@ class DefaultController extends AbstractController
             'highcharts_js' => HighCharts::getHeader(),
             // 'show_in_result' => count($show_in_result),
             'seriesData' => $seriesData,
-            'bench' => $bench,
+            'benchs' => array($bench),
+            'select_multiple_benchs' => false,
             'cost_hour_SSD_IB' => $cost_hour_SSD_IB,
             'cost_hour_AZURE' => $cost_hour_AZURE,
             'cost_hour_AZURE_1remote' => $cost_hour_AZURE_1remote,

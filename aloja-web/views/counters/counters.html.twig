@@ -7,6 +7,11 @@
         @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
         @import "js/datatables/extras/TableTools/media/css/TableTools.css";
         @import "js/datatables/extras/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x:auto;
+            width: 100%;
+        }
     </style>
 {% endblock %}
     {% block content %}
@@ -29,7 +34,7 @@
       Select different rows and <strong>click compare</strong>, to compare charts.</br>
       <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>
 
-      <form action="{{ path('perfcharts') }}" target="_blank">
+      <form action="{{ path('perfcharts') }}" target="_blank" role="form">
           {% set style_table = '' %}
 		  {% if message is not defined or message is null %}
 			  <div id="loading" style="height: 400px; text-align: center; font-size: 2em;">
@@ -50,14 +55,14 @@
 				<tr>
 				   <th><input type="text" value="" class="search_init" style="visibility: hidden;"></th>
 				   {% for key_name,column_name in show_in_result_counters %}
-				   <th><input type="text" value="filter col" class="search_init"></th>
+				   <th><input type="text" value="filter col" class="search_init form-control"></th>
 				   {% endfor %}
 				</tr>
 		  </thead>
         </table>
 
         <h1 class="compare title">Compare executions:</h1>
-        <h2 class="compare body">Select rows by clicking on checkboxes and click: <input type="submit" value="Compare Executions"></h2>
+        <h2 class="compare body">Select rows by clicking on checkboxes and click: <input type="submit" value="Compare Executions" class="btn btn-success"></h2>
 
     </form>
 
@@ -163,9 +168,9 @@
             } );
 
             $("thead input").focus( function () {
-                if ( this.className == "search_init" )
+                if ( $(this).hasClass('search_init') )
                 {
-                    this.className = "";
+                    $(this).removeClass('search_init');
                     this.value = "";
                 }
             } );
@@ -173,7 +178,7 @@
             $("thead input").blur( function (i) {
                 if ( this.value == "" )
                 {
-                    this.className = "search_init";
+                    $(this).addClass('search_init');
                     this.value = this.initVal;
                 }
             } );
@@ -220,6 +225,10 @@
                 "fnInitComplete": function(oSettings, json) {
                     $('#benchmarks').show();
                     $('#loading').hide();
+                    $("#benchmarks_filter input").each(function() {
+                        $(this).addClass('form-control');
+                     });
+                    $("select[name=benchmarks_length]").addClass('form-control');
                 },
                 "fnRowCallback": function( nRow, aData, iDisplayIndex ) {
                     $('td', nRow).each(function(index, value) {
@@ -234,7 +243,7 @@
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
                     });
-
+                           
 	                return nRow;
                 },
             } );
@@ -242,6 +251,11 @@
             /* Add event listeners to the two range filtering inputs */
             $('#min').keyup( function() { oTable.fnDraw(); } );
             $('#max').keyup( function() { oTable.fnDraw(); } );
+
+            $(window).bind('resize', function () {
+            	oTable.fnAdjustColumnSizing();
+            });
+            jQuery('.dataTable').wrap('<div class="scrollStyle" />'); 
 
         } );
 

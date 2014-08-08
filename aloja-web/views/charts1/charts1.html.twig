@@ -74,7 +74,7 @@
     {% endblock %}
     {% block content %}
        {% if charts is defined and charts != '' %}
-       <form method="GET" >
+       <form method="GET" role="form" class="form-inline">
        <div id="charts" style="width: 95%;">
            <div id="navigation" style="text-align: center;">
                <h2 class="compare body">
@@ -93,7 +93,7 @@
                   {% endfor %}
                        <input type="hidden" name="metric" value="{{ metric }}">
                        <strong>Filters:</strong> &nbsp;&nbsp;&nbsp;
-                       Hosts <select name="hosts">
+                       Hosts: <select name="hosts" class="form-control">
                            <option value="Slaves" {% if hosts == 'Slaves' %}selected="selected"{% endif %}>All Slaves</option>
                            <option value="Master"{% if hosts == 'Master' %}selected="selected"{% endif %}>Master</option>
                            {% for host_row in host_rows %}
@@ -101,12 +101,12 @@
                            {% endfor %}
                        </select>
                        &nbsp;&nbsp;&nbsp;
-                       Aggregation <select name="aggr">
+                       Aggregation: <select name="aggr" class="form-control">
                            <option value="AVG" {% if aggr == 'AVG' %}selected="selected"{% endif %}>AVG</option>
                            <option value="SUM" {% if aggr == 'SUM' %}selected="selected"{% endif %}>SUM</option>
                        </select>
                                                    &nbsp;&nbsp;&nbsp;
-                            Detail: <select name="detail">
+                            Detail: <select name="detail" class="form-control">
                                 <option value="1" {% if detail == '1' %}selected="selected"{% endif %}>1</option>
                                 <option value="3" {% if detail == '3' %}selected="selected"{% endif %}>3</option>
                                 <option value="5" {% if detail == '5' %}selected="selected"{% endif %}>5</option>
@@ -142,7 +142,7 @@
                      {% endif %}
                      <div id="chart_options" style="float: right;">
 	                     <label>Set max yAxis value: </label>
-	                     <input type="number" step="any" name="setmax_{{ charts[exec][chart_type]['chart'].getGuid() }}" value="{{ charts[exec][chart_type]['chart'].getMax() }}" />
+	                     <input class="form-control" type="number" step="any" name="setmax_{{ charts[exec][chart_type]['chart'].getGuid() }}" value="{{ charts[exec][chart_type]['chart'].getMax() }}" />
 {# 	                     <select class="preset" name="preset_{{ charts[exec][chart_type]['chart'].getGuid() }}">#}
 {# 	                           <option value="{{ charts[exec][chart_type]['chart'].getMax() }}" selected="selected">{{ charts[exec][chart_type]['chart'].getMax() }}</option>#}
 {# 	                           <option value="10" >10</option>#}
