@@ -29,7 +29,7 @@
 	        </div>
 	        {% set style_table = 'style="display: none;"' %}
 		  {% endif %}
-        <table id="benchmarks" width="100%" class="table" {{ style_table | raw}}>
+        <table id="benchmarks" width="100%" {{ style_table | raw}}>
 		  <thead>
 		    <tr>
 		      <th></th>
@@ -238,6 +238,7 @@
                        $(this).addClass('form-control');
                     });
                     $("select[name=benchmarks_length]").addClass('form-control');
+                    $("#benchmarks_paginate").addClass('pagination');
                 },
                 "fnDrawCallback": function( oSettings) {
                     $(".tooltip2").each(function() {
