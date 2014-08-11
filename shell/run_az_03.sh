@@ -166,7 +166,8 @@ SAVE_LOCATION="/scratch/local/HiBench_prepare/"
 DATE='date +%Y%m%d_%H%M%S'
 CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_az"
 JOB_NAME="`$DATE`_$CONF"
-JOB_PATH="/home/pristine/share/jobs/$JOB_NAME"
+CLUSTER_NAME="03"
+JOB_PATH="/home/pristine/share/jobs_$CLUSTER_NAME/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 

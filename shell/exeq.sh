@@ -11,11 +11,9 @@ fi
 
 trap 'kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
-
-
 echo "USER $USER"
 
-Q_PATH="/home/$USER/qsub/queue"
+Q_PATH="/home/$USER/share/shell/queue"
 EXEC_PATH="$Q_PATH/exec"
 DONE_PATH="$Q_PATH/done"
 CONF_PATH="$Q_PATH/conf"
