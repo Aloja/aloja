@@ -44,7 +44,7 @@ class HighCharts
 
     public function getGuid()
     {
-        if (!$this->guid) $this->guid = 'container_'.uniqid();
+        if (!$this->guid) $this->guid = 'container_'.md5($this->title);
         return $this->guid;
     }
 
@@ -150,6 +150,14 @@ class HighCharts
         return $this->maxX;
     }
 
+    public function getSetMax()
+    {
+        if(($value = Utils::get_GET_string('setmax_'.$this->getGuid())))
+            return $value;
+        else
+            return $this->getMax();    
+    }
+    
     public function getChartJS()
     {
         $JS =

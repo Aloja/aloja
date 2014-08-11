@@ -46,7 +46,7 @@ class RestController extends AbstractController
 
         } catch (Exception $e) {
             $noData = array();
-            for($i = 0; $i<18; ++$i)
+            for($i = 0; $i<sizeof($show_in_result); ++$i)
                 $noData[] = $e->getMessage();
 
             echo json_encode(array('aaData' => $noData));
@@ -60,11 +60,8 @@ class RestController extends AbstractController
             //check the URL
             $execs = Utils::get_GET_execs();
 
-            if (Utils::get_GET_string('type')) {
-                $type = Utils::get_GET_string('type');
-            } else {
+            if (!($type = Utils::get_GET_string('type')))
                 $type = 'SUMMARY';
-            }
 
             $join = "JOIN execs e using (id_exec) WHERE JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
@@ -183,24 +180,23 @@ class RestController extends AbstractController
 
             //check if it needs to be created
             if (!(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
-                $query = '
-SELECT
-concat(
-"2:",
-substring(host, -1),
-":1:",
-substring(host, -1),
-":1:",
-(unix_timestamp(date) -
-(select unix_timestamp(min(date)) FROM SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
-":2001:",round(AVG(`%user`)),
-":2002:",round(AVG(`%system`)),
-":2003:",round(AVG(`%steal`)),
-":2004:",round(AVG(`%iowait`)),
-":2005:",round(AVG(`%nice`))
-) prv
-FROM SAR_cpu t WHERE id_exec = "'.$id_exec.'"
-GROUP BY date, host ORDER by date, host;';
+                $query = 'SELECT
+                    concat(
+                    "2:",
+                    substring(host, -1),
+                    ":1:",
+                    substring(host, -1),
+                    ":1:",
+                    (unix_timestamp(date) -
+                    (select unix_timestamp(min(date)) FROM SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
+                    ":2001:",round(AVG(`%user`)),
+                    ":2002:",round(AVG(`%system`)),
+                    ":2003:",round(AVG(`%steal`)),
+                    ":2004:",round(AVG(`%iowait`)),
+                    ":2005:",round(AVG(`%nice`))
+                    ) prv
+                    FROM SAR_cpu t WHERE id_exec = "'.$id_exec.'"
+                    GROUP BY date, host ORDER by date, host;';
 
                 $prv_rows = $dbUtils->get_rows($query);
 

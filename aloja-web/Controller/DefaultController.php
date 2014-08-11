@@ -66,8 +66,8 @@ class DefaultController extends AbstractController
             }
 
             $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
-          //  $filter_execs_max_time = "AND exe_time < 10000";
             $order_conf = 'LENGTH(conf), conf';
+            
             //get configs first (categories)
             $query = "SELECT count(*) num, concat($concat_config) conf from execs e
                       WHERE 1 $filter_execs $where_configs

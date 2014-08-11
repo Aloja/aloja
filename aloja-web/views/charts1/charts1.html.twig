@@ -24,6 +24,18 @@
 
                 {{ chartsJS | raw }}
 
+
+                $("[name^=setmax_container_]").each(function() {
+                    var val = $(this).val();
+                    if($.isNumeric(val)) {
+						var name = $(this).attr('name').replace('setmax','chart');
+						var selChart = window[name];
+						var options = selChart.options;
+						options.yAxis[0].max = val;
+						window[name] = new Highcharts.Chart(options);
+                    }
+                });
+                
                 //Bugfix trick
                 $("[id^=collapse]").removeClass("in");
                 $("#collapse0").addClass("in");
@@ -35,6 +47,9 @@
 
                 $("#chartsCollapse").on('shown.bs.collapse hidden.bs.collapse', function() {
 					$("[id^=collapse]").each(function() {
+						var id = $(this).attr('id');
+	                    id = id.substring(8);
+	                    
 						if($(this).hasClass("in")) {
 							var element = $(this).parent().find(".indicator").first();
 							if(element.hasClass("glyphicon-chevron-down"))
@@ -69,6 +84,7 @@
 					$("[name="+name+"]").val($(this).val());
 					$("[name="+name+"]").change();
                 });
+                
             });
         </script>
     {% endblock %}
@@ -142,7 +158,7 @@
                      {% endif %}
                      <div id="chart_options" style="float: right;">
 	                     <label>Set max yAxis value: </label>
-	                     <input class="form-control" type="number" step="any" name="setmax_{{ charts[exec][chart_type]['chart'].getGuid() }}" value="{{ charts[exec][chart_type]['chart'].getMax() }}" />
+	                     <input class="form-control" type="number" step="any" name="setmax_{{ charts[exec][chart_type]['chart'].getGuid() }}" value="{{ charts[exec][chart_type]['chart'].getSetMax() }}" />
 {# 	                     <select class="preset" name="preset_{{ charts[exec][chart_type]['chart'].getGuid() }}">#}
 {# 	                           <option value="{{ charts[exec][chart_type]['chart'].getMax() }}" selected="selected">{{ charts[exec][chart_type]['chart'].getMax() }}</option>#}
 {# 	                           <option value="10" >10</option>#}
