@@ -173,9 +173,9 @@ class DefaultController extends AbstractController
 
     public function benchExecutionsAction()
     {
-        echo $this->container->getTwig()->render('datatable/datatable.html.twig',
+        echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
-                'show_in_result' => self::$show_in_result,
+                'theaders' => self::$show_in_result,
             ));
     }
 
@@ -964,7 +964,7 @@ class DefaultController extends AbstractController
         if(!isset($exec))
             $exec = '';
 
-        echo $this->container->getTwig()->render('charts1/charts1.html.twig',
+        echo $this->container->getTwig()->render('perfcharts/perfcharts.html.twig',
                 array('selected' => 'Performance charts',
                         'show_in_result' => count(self::$show_in_result),
                         'title' => 'Hadoop Job/s Execution details and System Performance Charts',
@@ -1070,8 +1070,7 @@ class DefaultController extends AbstractController
 
         echo $this->container->getTwig()->render('counters/counters.html.twig',
             array('selected' => 'Hadoop Job Counters',
-                'show_in_result_counters' => $show_in_result_counters,
-                'show_in_result' => self::$show_in_result,
+                'theaders' => $show_in_result_counters,
                 //'table_fields' => $table_fields,
                 'message' => $message,
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
