@@ -26,7 +26,7 @@ for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 
   #check storage account
 
-  #vm_check_create "$vm_name" "$vm_ssh_port"
+  vm_check_create "$vm_name" "$vm_ssh_port"
   wait_vm_ready "$vm_name"
 
   #TODO not need for master
@@ -40,8 +40,10 @@ for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 done
 
 #parallel Node config
-#cluster_execute "uptime"
 cluster_initialize_disks
+
+#master config
+vm_set_master_crontab
 
 
 elapsedTime="$(( $(date +%s) - startTime ))"

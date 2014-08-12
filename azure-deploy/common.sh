@@ -123,12 +123,111 @@ vm_execute() {
   fi
 }
 
-#1 command to execute in master (as a gateway to DSH)
-cluster_execute() {
+#$1 command to execute in master
+vm_execute_master() {
+  #save current ssh_port
+  vm_ssh_port_save="$vm_ssh_port"
+
   master_ssh_port=""
   get_master_ssh_port
   vm_ssh_port="$master_ssh_port"
-  vm_execute "dsh -g m -M \"$1\""
+
+  vm_execute "$1"
+
+  #restore port
+  vm_ssh_post="$vm_ssh_port_save"
+}
+
+vm_set_master_crontab() {
+
+  if check_bootstraped "vm_set_master_crontab6" "set"; then
+    logger "Setting ALOJA crontab to master"
+
+    crontab="# m h  dom mon dow   command
+* * * * * export USER=$user && bash /home/$user/share/shell/exeq.sh $clusterName
+#backup data
+0 * * * * cp -ru share/jobs_$clusterName . >> /home/$user/cron.log 2>&1
+30 * * * * cp -ru share/jobs_$clusterName /scratch/local/share/safe_store/ >> /home/$user/cron.log 2>&1"
+
+    vm_execute_master "echo '$crontab' |crontab"
+
+    #start the queue so dirs are created
+    vm_execute_master "export USER=$user && bash /home/$user/share/shell/exeq.sh $clusterName"
+
+  else
+    logger "Crontab already installed in master"
+  fi
+}
+
+vm_set_master_forer() {
+
+  if check_bootstraped "vm_set_master_forer" "set"; then
+    logger "Generating jobs (forer)"
+
+    vm_execute_master "bash /home/$user/share/shell/forer_az.sh $clusterName"
+
+  else
+    logger "Jobs generated and queued"
+  fi
+}
+
+
+vm_set_ssh() {
+
+  if check_bootstraped "vm_set_ssh" "set"; then
+    logger "Setting SSH keys to VM $vm_name "
+
+    vm_execute "mkdir -p ~/.ssh/;
+                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
+                echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel"
+
+    scp -i "../secure/keys/myPrivateKey.key" -P "$vm_ssh_port"  \
+           ../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key} \
+           "$user@$dnsName.cloudapp.net:.ssh/"
+
+    vm_execute "chmod -R 0600 ~/.ssh/*;"
+  else
+    logger "SSH already initialized"
+  fi
+}
+
+vm_format_disks() {
+  if check_bootstraped "vm_format_disks" "set"; then
+    logger "Formating disks for VM $vm_name "
+
+    vm_execute ";"
+  else
+    logger "Disks initialized"
+  fi
+}
+
+vm_install_base_packages() {
+  if check_bootstraped "vm_install_packages" "set"; then
+    logger "Installing packages for for VM $vm_name "
+
+    vm_execute "sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
+                sudo apt-get update && sudo apt-get install -y -f dsh sshfs sysstat;"
+  else
+    logger "Packages already initialized"
+  fi
+}
+
+vm_set_dsh() {
+  if check_bootstraped "vm_set_dsh2" ""; then
+    logger "Setting up DSH for VM $vm_name "
+
+    node_names=''
+    get_node_names
+
+    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/m;" "parallel"
+  else
+    logger "DSH already configured"
+  fi
+}
+
+#1 command to execute in master (as a gateway to DSH)
+cluster_execute() {
+  vm_execute_master "dsh -g m -M \"$1\""
 }
 
 cluster_initialize_disks() {
@@ -202,59 +301,6 @@ npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$user/minerva fuse.sshfs noauto,_n
   fi"
 }
 
-
-vm_set_ssh() {
-
-  if check_bootstraped "vm_set_ssh" "set"; then
-    logger "Setting SSH keys to VM $vm_name "
-
-    vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
-                echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel"
-
-    scp -i "../secure/keys/myPrivateKey.key" -P "$vm_ssh_port"  \
-           ../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key} \
-           "$user@$dnsName.cloudapp.net:.ssh/"
-
-    vm_execute "chmod -R 0600 ~/.ssh/*;"
-  else
-    logger "SSH already initialized"
-  fi
-}
-
-vm_format_disks() {
-  if check_bootstraped "vm_format_disks" "set"; then
-    logger "Formating disks for VM $vm_name "
-
-    vm_execute ";"
-  else
-    logger "Disks initialized"
-  fi
-}
-
-vm_install_base_packages() {
-  if check_bootstraped "vm_install_packages" "set"; then
-    logger "Installing packages for for VM $vm_name "
-
-    vm_execute "sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
-                sudo apt-get update && sudo apt-get install -y -f dsh sshfs sysstat;"
-  else
-    logger "Packages already initialized"
-  fi
-}
-
-vm_set_dsh() {
-  if check_bootstraped "vm_set_dsh2" ""; then
-    logger "Setting up DSH for VM $vm_name "
-
-    node_names=''
-    get_node_names
-
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/m;" "parallel"
-  else
-    logger "DSH already configured"
-  fi
-}
 
 get_node_names() {
   node_names=''
