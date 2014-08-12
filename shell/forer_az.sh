@@ -27,7 +27,10 @@ DELETE=" "
 #echo "starting"
 line=0
 
-Q_PATH="/home/$USER/qsub/queue"
+[ -z "$1" ] && CLUSTER_NAME="" || CLUSTER_NAME="$1"
+
+
+Q_PATH="/home/$USER/local/queue_$CLUSTER_NAME"
 CONF_PATH="$Q_PATH/conf"
 
 
@@ -40,7 +43,7 @@ if [[ ! $current_idx =~ ^-?[0-9]+$ ]] ; then
 fi
 
 
-for DISK in "RL3" "RL2" "RL1" "RR3" "RR2" "RR1" #"HDD" "SSD"
+for DISK in "HDD" "RL3" "RL2" "RL1" "RR3" "RR2" "RR1" #"HDD" "SSD"
 do
   DELETE=" "
 for NET in  "ETH" # "IB "
@@ -48,7 +51,7 @@ do
 for REPLICATION in {1..3}
 do
   #DELETE=" "
-for MAX_MAPS in "8" "10" #"24" # "4" "8" "16" "32"
+for MAX_MAPS in "8" "6" "10" "4" #"24" # "4" "8" "16" "32"
 do
 for IO_FACTOR in "10" #"5" "20" #"50"
 do
@@ -58,18 +61,16 @@ for COMPRESS_TYPE in {0..3}
 do
 for BLOCK_SIZE in "67108864" "33554432" "67108864" "134217728" "268435456" #
 do
-for LIST_BENCHS in "kmeans" "wordcount" "sort"  "pagerank" "dfsioe" # "terasort" "bayes"
+for LIST_BENCHS in "terasort" "kmeans" "wordcount" "sort"  "pagerank" "dfsioe" # "terasort" "bayes"
 do
 
-  CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_AZ"
-  current_command="/home/$USER/qsub/run_az.sh -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
+  CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
+  current_command="bash /home/$USER/share/shell/run_${CLUSTER_NAME}.sh -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
   output="${output}${current_command}
   "
-
   #date_with_nano=$(date +%s%N | cut -b1-13)
 
   index=$(printf %08d $current_idx)
-
 
   #create the file for the queue
   echo "$current_command" > "$Q_PATH/${index}_${CONF// /_}_${LIST_BENCHS// /_}"
