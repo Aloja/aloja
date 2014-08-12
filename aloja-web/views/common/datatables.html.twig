@@ -17,7 +17,7 @@
       Select different rows and <strong>click compare</strong>, to compare charts.</br>
       <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>
 
-      <form action="{{ formLink }}" target="_blank" role="form">
+      <form action="{{ path('perfcharts') }}" target="_blank" role="form">
           {% set style_table = '' %}
 		  {% if message is not defined or message is null %}
 			  <div id="loading" style="height: 400px; text-align: center; font-size: 2em;">
