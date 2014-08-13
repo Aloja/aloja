@@ -107,7 +107,7 @@
 		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a>
+		          <a class="navlink" href="{{ path('metrics') }}">Performance Counters</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>

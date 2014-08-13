@@ -446,28 +446,25 @@ VALUES
             $type = Utils::get_GET_string('type');
             if(!$type || $type == 'CPU') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
-                'AVG(s.CPU), MAX(s.CPU), MIN(s.CPU),'.
                 'AVG(s.`%user`), AVG(s.`%nice`),AVG(s.`%system`),AVG(s.`%iowait`),AVG(s.`%steal`),AVG(s.`%idle`),e.id_cluster'.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (s.id_exec)';
+                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.DEV, AVG(s.tps), AVG(s.`rd_sec/s`), AVG(s.`wr_sec/s`), AVG(s.`avgrq-sz`), '.
                     'AVG(s.`avgqu-sz`), AVG(s.await), AVG(s.svctm), AVG(s.`%util`), e.id_cluster'.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (s.id_exec)';
+                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
-                    'AVG(s.`frmpg/s`), AVG(s.`bufpg/s`), AVG(s.`campg/s`), AVG(su.kbmemfree), AVG(su.kbmemused), AVG(su.`%memused`),'.
+                    'AVG(su.kbmemfree), AVG(su.kbmemused), AVG(su.`%memused`),'.
                     'AVG(su.kbbuffers),AVG(su.kbcached),AVG(su.kbcommit),AVG(su.`%commit`),AVG(su.kbactive),AVG(su.kbinact),e.id_cluster'.
-                    ' FROM SAR_memory s JOIN SAR_memory_util su USING (id_exec) '.
-                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (s.id_exec)';
+                    ' FROM SAR_memory_util su '.
+                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.IFACE,AVG(s.`rxpck/s`),AVG(s.`txpck/s`),AVG(s.`rxkB/s`),AVG(s.`txkB/s`),AVG(s.`rxcmp/s`),AVG(s.`txcmp/s`),AVG(s.`rxmcst/s`),'.
-                    'AVG(ne.`rxerr/s`),AVG(ne.`txerr/s`),AVG(ne.`coll/s`),AVG(ne.`rxdrop/s`),AVG(ne.`txdrop/s`),AVG(ne.`txcarr/s`),AVG(ne.`rxfram/s`),AVG(ne.`rxfifo/s`),AVG(ne.`txfifo/s`), '.
-                    'AVG(ns.totsck),AVG(ns.tcpsck),AVG(ns.udpsck),AVG(ns.rawsck),AVG(ns.`ip-frag`),AVG(ns.`tcp-tw`), e.id_cluster'.
-                    ' FROM SAR_net_devices s JOIN SAR_net_errors ne USING (id_exec) JOIN SAR_net_sockets ns USING (id_exec) '.
-                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (s.id_exec)';
+                    'e.id_cluster FROM SAR_net_devices s '.
+                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) GROUP BY (e.id_exec)';
             }
         
             $exec_rows = $dbUtil->get_rows($query);

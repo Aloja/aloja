@@ -85,13 +85,47 @@
     			    {% elseif column_name == '%util' %}
     			      {% set column_name = column_name ~ makeTooltip('Percentage of CPU time during which I/O requests were issued to the device (bandwidth utilization for the device). Device saturation occurs when this value is close to 100%.') %}
     			    {% elseif column_name == 'svctm' %}
-    			      {% set column_name = column_name ~ makeTooltip('The average service time (in milliseconds) for I/O requests that were issued to the device. Warning: Do not trust this field any more. This field will be removed in a future sysstat version.') %}
+    			      {% set column_name = column_name ~ makeTooltip('The average service time (in milliseconds) for I/O requests that were issued to the device.') %}
     			    {% elseif column_name == 'Avg rq-sz' %}
     			      {% set column_name = column_name ~ makeTooltip('The average size (in sectors) of the requests that were issued to the device.') %}
     			    {% elseif column_name == 'Avg queue sz' %}
     			      {% set column_name = column_name ~ makeTooltip('The average queue length of the requests that were issued to the device.') %}  
     			     {% elseif column_name == 'DEV' %}
-    			      {% set column_name = column_name ~ makeTooltip('Device, ID dependant of the system settings') %}
+    			      {% set column_name = column_name ~ makeTooltip('Device, ID dependant of the system settings.') %}
+    			    {% elseif column_name == 'Interface' %}
+    			      {% set column_name = column_name ~ makeTooltip('Name of the network interface for which statistics are reported.') %}
+    			    {% elseif column_name == 'rxpck/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Total number of packets received per second.') %}
+    			    {% elseif column_name == 'txpck/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Total number of packets transmitted per second.') %}
+    			    {% elseif column_name == 'rxkB/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Total number of kilobytes received per second.') %}
+    			    {% elseif column_name == 'txkB/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Total number of kilobytes transmitted per second.') %}
+    			    {% elseif column_name == 'rxcmp/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of compressed packets received per second (for cslip etc.).') %}
+    			    {% elseif column_name == 'txcmp/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of compressed packets transmitted per second.') %}
+    			    {% elseif column_name == 'rxmcst/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of multicast packets received per second.') %}
+    			    {% elseif column_name == 'kbmemfree' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of free memory available in kilobytes.') %}  
+    			     {% elseif column_name == 'kbmemused' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of used memory in kilobytes. This does not take into account memory used by the kernel itself.') %}
+    			    {% elseif column_name == '%memused' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of used memory.') %}
+    			    {% elseif column_name == 'kbbuffers' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of memory used as buffers by the kernel in kilobytes.') %}
+    			    {% elseif column_name == 'kbcached' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of memory used to cache data by the kernel in kilobytes.') %}
+    			    {% elseif column_name == 'kbcommit' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of memory in kilobytes needed for current workload. This is an estimate of how much RAM/swap is needed to guarantee that there never is out of memory.') %}
+    			    {% elseif column_name == '%commit' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of memory needed for current workload in relation to the total amount of memory (RAM+swap). This number may be greater than 100% because the kernel usually overcommits memory.') %}
+    			    {% elseif column_name == 'kbactive' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of active memory in kilobytes (memory that has been used more recently and usually not reclaimed unless absolutely necessary).') %}
+    			    {% elseif column_name == 'kbinact' %}
+    			      {% set column_name = column_name ~ makeTooltip('Amount of inactive memory in kilobytes (memory which has been less recently used. It is more eligible to be reclaimed for other purposes).') %}
     			    {% endif %}
 			       <th>{{ column_name }}</th>
 			       {% endautoescape %}
