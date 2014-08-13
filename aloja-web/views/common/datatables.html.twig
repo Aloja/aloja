@@ -90,6 +90,8 @@
     			      {% set column_name = column_name ~ makeTooltip('The average size (in sectors) of the requests that were issued to the device.') %}
     			    {% elseif column_name == 'Avg queue sz' %}
     			      {% set column_name = column_name ~ makeTooltip('The average queue length of the requests that were issued to the device.') %}  
+    			     {% elseif column_name == 'DEV' %}
+    			      {% set column_name = column_name ~ makeTooltip('Device, ID dependant of the system settings') %}
     			    {% endif %}
 			       <th>{{ column_name }}</th>
 			       {% endautoescape %}
