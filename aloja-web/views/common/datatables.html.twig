@@ -62,7 +62,35 @@
     			      {% set column_name = column_name ~ makeTooltip('Download execution files and logs.') %}
     			    {% elseif column_name == 'PARAVER' %}
     			      {% set column_name = column_name ~ makeTooltip('Download files to view execution details with PARAVER analysis tool.') %}
-    			   {% endif %}
+                    {% elseif column_name == '%user' %}
+                      {% set column_name = column_name ~ makeTooltip('Percentage of CPU utilization that occurred while executing at the user level (application).') %}
+    			    {% elseif column_name == '%nice' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of CPU utilization that occurred while executing at the user level with nice priority.') %}
+    			    {% elseif column_name == '%system' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of CPU utilization that occurred while executing at the system level (kernel).') %}
+    			    {% elseif column_name == '%iowait' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of time that the CPU or CPUs were idle during which the system had an outstanding disk I/O request.') %}
+    			    {% elseif column_name == '%steal' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of time that the CPU had something runnable, but the XEN hypervisor chose to run something else instead.') %}
+    			    {% elseif column_name == '%idle' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of time that the CPU or CPUs were idle and the system did not have an outstanding disk I/O request.') %}
+    			    {% elseif column_name == 'Tps' %}
+    			      {% set column_name = column_name ~ makeTooltip('Indicate the number of transfers per second that were issued to the device. Multiple logical requests can be combined into a single I/O request to the device. A transfer is of indeterminate size.') %}
+    			    {% elseif column_name == 'rd_sec/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of sectors read from the device. The size of a sector is 512 bytes.') %}
+    			    {% elseif column_name == 'wr_sec/s' %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of sectors written to the device. The size of a sector is 512 bytes.') %}
+    			    {% elseif column_name == 'Await' %}
+    			      {% set column_name = column_name ~ makeTooltip('The average time (in milliseconds) for I/O requests issued to the device to be served. This includes the time spent by the requests in queue and the time spent servicing them.') %}
+    			    {% elseif column_name == '%util' %}
+    			      {% set column_name = column_name ~ makeTooltip('Percentage of CPU time during which I/O requests were issued to the device (bandwidth utilization for the device). Device saturation occurs when this value is close to 100%.') %}
+    			    {% elseif column_name == 'svctm' %}
+    			      {% set column_name = column_name ~ makeTooltip('The average service time (in milliseconds) for I/O requests that were issued to the device. Warning: Do not trust this field any more. This field will be removed in a future sysstat version.') %}
+    			    {% elseif column_name == 'Avg rq-sz' %}
+    			      {% set column_name = column_name ~ makeTooltip('The average size (in sectors) of the requests that were issued to the device.') %}
+    			    {% elseif column_name == 'Avg queue sz' %}
+    			      {% set column_name = column_name ~ makeTooltip('The average queue length of the requests that were issued to the device.') %}  
+    			    {% endif %}
 			       <th>{{ column_name }}</th>
 			       {% endautoescape %}
 				  {% endfor %}
@@ -200,7 +228,7 @@
                 "oSearch": {"sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
-                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% else %}{{ path('benchdata') }}{% endif %}",
+                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}{% endif %}",
                 {% if selected == 'Hadoop Job Counters'  %}
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
@@ -223,6 +251,8 @@
                 "aoColumnDefs": [
                     {% if selected == 'Benchmark Executions' %}
                       {"bVisible": false, "aTargets": [ 4,17 ] }
+                    {% elseif selected == 'Performance Metrics' %}
+                      {"bVisible": false, "aTargets": [1]}
                     {% endif %}
                 ],
                 "bSortCellsTop": true,
@@ -264,7 +294,7 @@
         					$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
-                     {% else %}
+                     {% elseif selected == 'Benchmark Executions' %}
                        	if(headTitle == 'Benchmark')
         					$(this).html('<a href="{{ path('perfcharts') }}?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
                     	else if(headTitle == '')
@@ -290,6 +320,27 @@
         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
                         } else if(headTitle == 'PARAVER') {
         					$(this).html('<a href="{{ path('export2prv') }}?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
+                        }
+                     {% else %}
+                         if(headTitle == 'Benchmark')
+         					$(this).html('<a href="{{ path('perfcharts') }}?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
+                     	 else if(headTitle == '')
+                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
+                     	 else if(headTitle == 'Net') {
+         					var tooltip = '';
+         					if(aData[3] == 'ETH')
+         						tooltip = 'Ethernet';
+         					else
+         						tooltip = 'Infiniband';
+         					$(this).html(aData[3] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
+         				} else if(headTitle == 'Disk') {
+         					if(aData[4] == 'HDD')
+         						tooltip = 'Hard disk';
+         					else if(aData[4] == 'SSD')
+         						tooltip = 'Solid-state disk';
+         					else
+         						tooltip = aData[4].substring(2) + ' remote(s)';
+         					$(this).html(aData[4] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
                         }
                      {% endif %}
                     });

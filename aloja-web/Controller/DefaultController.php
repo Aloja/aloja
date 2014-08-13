@@ -1080,4 +1080,32 @@ class DefaultController extends AbstractController
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
+    
+    public function performanceTableAction()
+    {
+        $show_in_result_metrics = array();
+        $type = Utils::get_GET_string('type');
+        if(!$type || $type == 'CPU') {
+          $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 'CPU','Max CPU', 
+              'Min CPU','%user', '%nice', '%system', '%iowait', '%steal', '%idle', 'Cluster');  
+        } else if($type == 'DISK') { 
+            $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
+                'DEV', 'Tps', 'rd_sec/s', 'wr_sec/s', 'Avg rq-sz', 'Avg queue sz', 'Await', '%util', 'svctm', 'Cluster');
+        } else if($type == 'MEMORY') {
+           $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 
+              'frmpg/s','bufpg/s','campg/s','kbmemfree','kbmemused','%memused','kbbuffers',
+              'kbcached','kbcommit','%commit','kbactive','kbinact', 'Cluster');                           
+        } else if($type == 'NETWORK')
+          $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 'Iface', 
+              'rxpck/s','txpck/s','s.rxkB/s','txkB/s','rxcmp/s','txcmp/s','rxmcst/s',
+              'rxerr/s','txerr/s','coll/s','rxdrop/s','txdrop/s','txcarr/s','rxfram/s','rxfifo/s','txfifo/s',
+              'totsck','tcpsck','udpsck','rawsck','ip-frag','tcp-tw', 'Cluster');
+     
+        echo $this->container->getTwig()->render('metrics/metrics.html.twig',
+            array('selected' => 'Performance Metrics',
+                'theaders' => $show_in_result_metrics,
+                'title' => 'Hadoop Performance Metrics',
+                'type' => $type ? $type : 'CPU'
+            ));
+    }
 }

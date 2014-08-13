@@ -33,3 +33,11 @@ countersdata:
 export2prv:
     pattern: "/export2prv"
     controller: "alojaweb\\Controller\\RestController::export2prvAction"
+    
+metrics:
+    pattern: "/metrics"
+    controller: "alojaweb\\Controller\\DefaultController::performanceTableAction"
+    
+metricsdata:
+    pattern: "/metricsdata"
+    controller: "alojaweb\\Controller\\RestController::metricsDataAction"
