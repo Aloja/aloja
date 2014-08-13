@@ -26,11 +26,11 @@ for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 
   #check storage account
 
-  vm_check_create "$vm_name" "$vm_ssh_port"
-  wait_vm_ready "$vm_name"
+  #vm_check_create "$vm_name" "$vm_ssh_port"
+  #wait_vm_ready "$vm_name"
 
   #TODO not need for master
-  vm_check_attach_disks "$vm_name"
+  #vm_check_attach_disks "$vm_name"
 
   #bootstrap VM
   vm_set_ssh

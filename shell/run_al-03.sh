@@ -415,7 +415,7 @@ restart_hadoop(){
     logger "Deleting previous Hadoop HDFS"
 #$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/hadoop; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
     #send multiple yes to format
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
@@ -430,7 +430,6 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    #TODO make number of nodes aware
     if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue

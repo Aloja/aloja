@@ -34,7 +34,7 @@ vm_create() {
         --vm-size "$vmSize" \
         `#--location 'West Europe'` \
         --affinity-group "$affinityGroup" \
-        --virtual-network-name $virtualNetworkName \
+        --virtual-network-name "$virtualNetworkName" \
         --subnet-names "$subnetNames" \
         --ssh "$ssh_port" \
         --ssh-cert "$sshCert" \
