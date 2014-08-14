@@ -25,7 +25,7 @@ class Container
     {
         if (isset($_SERVER['HTTP_CLIENT_IP'])
                 || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
-                || !in_array(@$_SERVER['REMOTE_ADDR'], array('127.0.0.1', 'fe80::1', '::1'))) {
+                || !in_array(@$_SERVER['REMOTE_ADDR'], array('127.0.0.1', 'fe80::1', '::1', '10.0.2.2'))) {
               return false;
         } else
               return true;
@@ -40,7 +40,7 @@ class Container
             ini_set('memory_limit', '256M');
             $container['config'] = Yaml::parse('config/config.sample.yml');
             $container['env'] = 'dev';
-        } else {
+        } else {            
             $container['config'] = Yaml::parse('config/config.yml');
             $container['env'] = 'prod';
         }

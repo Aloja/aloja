@@ -271,7 +271,7 @@
                       "dataType": 'json',
                       "type": "GET",
                       "url": sSource,
-                      {% if selected == 'Hadoop Job Counters'  %}, 
+                      {% if selected == 'Hadoop Job Counters'  %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
                       {% endif %}
                       "success": fnCallback
