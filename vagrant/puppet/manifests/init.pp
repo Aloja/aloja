@@ -1,3 +1,9 @@
+exec { 'third_party_libs':
+  command => 'bash -c "cd /vagrant/workspace/aloja-web && php composer.phar update"',
+  onlyif => '[ ! -h /vagrant/workspace/aloja-web/vendor ]',
+  path => '/usr/bin:/bin'
+}
+
 if $environment == 'dev' {
     exec { 'set_document_root':
       command => 'ln -fs /vagrant/workspace/* /var/www',
@@ -110,10 +116,4 @@ file { '/home/vagrant/.bashrc':
 }
 file { '/home/vagrant/.vimrc':
   source  => '/vagrant/puppet/files/vagrant/.vimrc',
-}
-
-exec { 'third_party_libs':
-  command => 'bash -c "cd /vagrant/workspace/aloja-web && php composer.phar update"',
-  onlyif => '[ ! -h /vagrant/workspace/aloja-web/vendor ]',
-  path => '/usr/bin:/bin'
 }
