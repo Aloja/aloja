@@ -45,25 +45,20 @@ if $environment == 'prod' {
 }
 
 if $environment == 'prod' {
-    class {'varnish':
-        varnish_listen_port => 80,
-        varnish_storage_size => '1G',
-        varnish_ttl => '1y'
-    }
-    
+    include confvarnish
     #Logrotate rules
     logrotate::rule { 'aloja-logs':
-    path => '/var/www/aloja-web/logs/*.log',
-    rotate => 5,
-    rotate_every => 'day',
+      path => '/var/www/aloja-web/logs/*.log',
+      rotate => 5,
+      rotate_every => 'day',
     }
     
     vcsrepo { "/var/www/":
         ensure => latest,
         provider => git,
         require => [ Package[ 'git' ] ],
-        source => "https://someuser:password@github.com/Aloja/aloja.git",
-        revision => 'azureProd',
+        source => "https://user:somepassword@github.com/Aloja/aloja.git",
+        revision => 'master',
     }
 }
 
