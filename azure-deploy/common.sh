@@ -2,11 +2,12 @@
 
 self_name="$(basename $0)"
 
-[ -z $1 ] && { echo "Usage deploy cluster_name"; exit 1;}
+[ -z "$type" ] && type="cluster"
 
-clusterConfigFile="../shell/conf/cluster_${1}.conf"
+[ -z $1 ] && { echo "Usage: $self_name ${type}_name"; exit 1;}
+ConfigFile="../shell/conf/${type}_${1}.conf"
 
-[ ! -f "$clusterConfigFile" ] && { echo "$clusterConfigFile is not a file." ; exit 1;}
+[ ! -f "$ConfigFile" ] && { echo "$ConfigFile is not a file." ; exit 1;}
 
 #check if azure command is installed
 if ! azure --version 2>&1 > /dev/null ; then
@@ -14,11 +15,11 @@ if ! azure --version 2>&1 > /dev/null ; then
   exit 1
 fi
 
-#load non versioned conf
+#load non versioned conf first (order is important for overrides)
 source "../secure/azure_settings.conf"
 
-#load cluster config
-source "$clusterConfigFile"
+#load cluster or node config second
+source "$ConfigFile"
 
 logger() {
   dateTime="$(date +%Y%m%d_%H%M%S)"
