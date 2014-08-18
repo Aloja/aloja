@@ -196,6 +196,9 @@ if [ "$DISK" != "HDD" ] && [ "$DISK" != "SDD" ] ; then
   $DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
 fi
 
+logger "Setting scratch permissions"
+$DSH "sudo chown -R $user: /scratch"
+
 #only copy files if version has changed (to save time in azure)
 logger "Checking if to generate source dirs"
 for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
@@ -404,7 +407,7 @@ restart_hadoop(){
     logger "Deleting previous Hadoop HDFS"
 #$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/hadoop; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
     #send multiple yes to format
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
@@ -419,18 +422,17 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    #TODO make number of nodes aware
     if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
-      elif [ "$i" == "60" ] ; then
+      elif [ "$i" == "30" ] ; then
         logger "Still in Safe mode, MANUALLY RESETTING SAFE MODE wating for $i seconds"
         $DSH_MASTER $H_DIR/bin/hadoop dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
       else
         logger "Still in Safe mode, wating for $i seconds"
       fi
-    elif [ "$i" == "120" ] && [[ -z $1 ]] ; then
+    elif [ "$i" == "60" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
       $DSH_MASTER $H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
       $DSH_MASTER $H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
@@ -439,7 +441,7 @@ restart_hadoop(){
       logger "Reseting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"
       DELETE_HDFS="1"
       restart_hadoop no_retry
-    elif [ "$i" == "180" ] ; then
+    elif [ "$i" == "120" ] ; then
       logger "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
       exit 1
     else

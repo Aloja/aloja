@@ -2,20 +2,8 @@
 
 startTime="$(date +%s)"
 
-#check if azure command is installed
-if ! azure --version 2>&1 > /dev/null ; then
-  echo "azure command not instaled."
-  exit 1
-fi
-
-#load common functions
+#load init and common functions
 source "common.sh"
-
-#load non versioned conf
-source "../secure/azure_settings.conf"
-
-#load cluster config
-source "cluster_04.conf"
 
 
 #Sequential Node deploy
@@ -33,9 +21,9 @@ for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
   #vm_check_attach_disks "$vm_name"
 
   #bootstrap VM
-  vm_set_ssh
-  vm_install_base_packages
-  vm_set_dsh
+  #vm_set_ssh
+  #vm_install_base_packages
+  #vm_set_dsh
 
 done
 
@@ -44,6 +32,7 @@ cluster_initialize_disks
 
 #master config
 vm_set_master_crontab
+vm_set_master_forer
 
 
 elapsedTime="$(( $(date +%s) - startTime ))"

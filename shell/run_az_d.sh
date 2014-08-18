@@ -1,20 +1,15 @@
 #!/bin/bash
 # SCRIPT TO STOP, SET CONFIG, AND START HADOOP and run HiBench in AZURE
 
-
 usage() {
-  echo "Usage: $0 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>] [-b benchmark <_min|_10>] [-r replicaton <positive int>]\
+  echo "Usage: $0 -C clusterName [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>] [-b benchmark <_min|_10>] [-r replicaton <positive int>]\
    [-m max mappers and reducers <positive int>] [-i io factor <positive int>] [-p port prefix <3|4|5>]\
    [-I io.file <positive int>] [-l list of benchmarks <space separated string>] [-c compression <0 (dissabled)|1|2|3>]\
    [-z <block size in bytes>] [-s (save prepare)] -N (don't delete files)" 1>&2;
-  echo "example: $0 -n IB -d SSD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1"
+  echo "example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1"
 
   exit 1;
 }
-
-#make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
-#trap "kill 0" SIGINT SIGTERM EXIT
-trap 'stop_hadoop; stop_monit; kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
 OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
@@ -44,13 +39,17 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-while getopts ":h:?:v:b:r:n:d:m:i:p:l:I:c:z:sN" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN" opt; do
     case "$opt" in
     h|\?)
       usage
       ;;
     v)
       VERBOSE=1
+      ;;
+    C)
+      clusterName=$OPTARG
+      [ ! -z "$clusterName" ] || usage
       ;;
     n)
       NET=$OPTARG
@@ -118,10 +117,20 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
-CLUSTER_NAME="al-03"
-NUMBER_OF_HOSTS="9"
-NUMBER_OF_SLAVES="8"
+[ -z "$clusterName" ] && usage
+
+#make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
+#trap "kill 0" SIGINT SIGTERM EXIT
+trap 'stop_hadoop; stop_monit; kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
+
+#load cluster config
+clusterConfigFile="../shell/conf/cluster_${clusterName}.conf"
+source "$clusterConfigFile"
+
+NUMBER_OF_SLAVES="$numberOfNodes"
 user="pristine"
+
+DSH="dsh -M -m "
 
 #if [ "${NET}" == "IB" ] ; then
 #  host1="al-1001-ib0"
@@ -130,22 +139,19 @@ user="pristine"
 #  host4="al-1004-ib0"
 #  IFACE="ib0"
 #else
-  host1="${CLUSTER_NAME}-00"
-  host2="${CLUSTER_NAME}-01"
-  host3="${CLUSTER_NAME}-02"
-  host4="${CLUSTER_NAME}-03"
-  host5="${CLUSTER_NAME}-04"
-  host6="${CLUSTER_NAME}-05"
-  host7="${CLUSTER_NAME}-06"
-  host8="${CLUSTER_NAME}-07"
-  host9="${CLUSTER_NAME}-08"
+
+
+  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do
+    hosts["$vm_id"]="${clusterName}-${vm_id}"
+    DSH="$DSH ${hosts["$vm_id"]},"
+  done
+  DSH="${DSH:0:-1}"
 
   IFACE="eth0"
 #fi
 
-DSH="dsh -M -m $host1,$host2,$host3,$host4,$host5,$host6,$host7,$host8,$host9"
-DSH_MASTER="ssh $host1"
-DSH_SLAVE="ssh $host1" #TODO check if OK
+DSH_MASTER="ssh ${hosts[00]}"
+DSH_SLAVE="ssh ${hosts[00]}" #TODO check if OK
 
 
 if [ "$DISK" == "SSD" ] ; then
@@ -159,8 +165,6 @@ else
   exit 1
 fi
 
-
-
 BASE_DIR="/home/$user/share/"
 SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
@@ -172,10 +176,10 @@ SAVE_LOCATION="/scratch/local/HiBench_prepare/"
 
 
 DATE='date +%Y%m%d_%H%M%S'
-CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
+CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${clusterName}"
 JOB_NAME="`$DATE`_$CONF"
 
-JOB_PATH="/home/$user/share/jobs_$CLUSTER_NAME/$JOB_NAME"
+JOB_PATH="/home/$user/share/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
@@ -186,6 +190,10 @@ export JAVA_HOME="$SOURCE_DIR/jdk1.7.0_25"
 bwm_source="$SOURCE_DIR/bin/bwm-ng"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
+
+echo "DSH $DSH DSH_MASTER $DSH_MASTER DSH_SLAVE $DSH_SLAVE"
+
+exit 1
 
 #create dir to save files in one host
 $DSH "mkdir -p $JOB_PATH"
@@ -209,7 +217,7 @@ $DSH "sudo chown -R $user: /scratch"
 
 #only copy files if version has changed (to save time in azure)
 logger "Checking if to generate source dirs"
-for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
   host_tmp="host${host_number}" #for variable variable name
   logger " for host ${!host_tmp}"
   if [ "$(ssh "${!host_tmp}" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
@@ -338,11 +346,6 @@ slaves=$(cat <<EOF
 $host2
 $host3
 $host4
-$host5
-$host6
-$host7
-$host8
-$host9
 EOF
 )
 
@@ -357,7 +360,7 @@ EOF
 
   logger "Replacing per host config"
 
-  for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+  for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
     host_tmp="host${host_number}" #for variable variable name
     ssh "${!host_tmp}" "/usr/bin/perl -pe \"s,##HOST##,${!host_tmp},g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
     ssh "${!host_tmp}" "/usr/bin/perl -pe \"s,##HOST##,${!host_tmp},g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
@@ -370,14 +373,14 @@ EOF
   #save config
   logger "Saving config"
   create_conf_dirs=""
-  for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+  for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
     host_tmp="host${host_number}" #for variable variable name
     create_conf_dirs="$create_conf_dirs mkdir -p $JOB_PATH/conf_${!host_tmp} "
   done
 
   $DSH "$create_conf_dirs" 2>&1 |tee -a $LOG_PATH
 
-  for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+  for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
     host_tmp="host${host_number}" #for variable variable name
     ssh "${!host_tmp}" "cp $H_DIR/conf/* $JOB_PATH/conf_${!host_tmp}" 2>&1 |tee -a $LOG_PATH &
   done

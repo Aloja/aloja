@@ -1,5 +1,25 @@
 #common functions, non-executable, must be sourced
 
+self_name="$(basename $0)"
+
+[ -z $1 ] && { echo "Usage deploy cluster_name"; exit 1;}
+
+clusterConfigFile="../shell/conf/cluster_${1}.conf"
+
+[ ! -f "$clusterConfigFile" ] && { echo "$clusterConfigFile is not a file." ; exit 1;}
+
+#check if azure command is installed
+if ! azure --version 2>&1 > /dev/null ; then
+  echo "azure command not instaled. Run npm install azure-cli"
+  exit 1
+fi
+
+#load non versioned conf
+source "../secure/azure_settings.conf"
+
+#load cluster config
+source "$clusterConfigFile"
+
 logger() {
   dateTime="$(date +%Y%m%d_%H%M%S)"
   echo "$dateTime: $1"
@@ -186,6 +206,16 @@ vm_set_ssh() {
            "$user@$dnsName.cloudapp.net:.ssh/"
 
     vm_execute "chmod -R 0600 ~/.ssh/*;"
+
+    test_set_ssh="$(vm_execute "cat ~/.ssh/config |grep 'UserKnownHostsFile'")"
+    #logger "TEST SSH $test_set_ssh"
+
+    if [ ! -z "$test_set_ssh" ] ; then
+      #set the lock
+      check_bootstraped "vm_set_ssh" "set"
+    else
+      logger "ERROR setting SSH for $vm_name. Test output: $test_set_ssh"
+    fi
   else
     logger "SSH already initialized"
   fi
@@ -202,24 +232,42 @@ vm_format_disks() {
 }
 
 vm_install_base_packages() {
-  if check_bootstraped "vm_install_packages" "set"; then
+  if check_bootstraped "vm_install_packages" ""; then
     logger "Installing packages for for VM $vm_name "
 
     vm_execute "sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
                 sudo apt-get update && sudo apt-get install -y -f dsh sshfs sysstat;"
+
+    test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
+    if [ ! -z "$test_install_base_packages" ] ; then
+      #set the lock
+      check_bootstraped "vm_install_packages" "set"
+    else
+      logger "ERROR installing base packages for $vm_name. Test output: $test_install_base_packages"
+    fi
+
   else
     logger "Packages already initialized"
   fi
 }
 
 vm_set_dsh() {
-  if check_bootstraped "vm_set_dsh2" ""; then
+  if check_bootstraped "vm_set_dsh" ""; then
     logger "Setting up DSH for VM $vm_name "
 
     node_names=''
     get_node_names
 
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/m;" "parallel"
+    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/m;"
+
+    test_vm_set_dsh="$(vm_execute " [ -f ~/.dsh/group/m ] && echo 'OK'")"
+    if [ ! -z "$test_vm_set_dsh" ] ; then
+      #set the lock
+      check_bootstraped "vm_set_dsh" "set"
+    else
+      logger "ERROR setting DSH for $vm_name. Test output: $test_install_base_packages"
+    fi
+
   else
     logger "DSH already configured"
   fi

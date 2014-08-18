@@ -76,7 +76,7 @@ do
   echo "$current_command" > "$Q_PATH/${index}_${CONF// /_}_${LIST_BENCHS// /_}"
 
   #Set to dont delete HDFS to save time after first exec of disk group
-  DELETE="-N"
+  #DELETE="-N"
 
   #increment indexes
   current_idx=$((current_idx + 1))
