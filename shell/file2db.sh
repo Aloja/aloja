@@ -107,6 +107,12 @@ get_id_exec(){
     LIMIT 1;"| tail -n 1)
 }
 
+get_id_exec_conf_params(){
+    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
+    AND id_exec NOT IN (select distinct (id_exec) from execs_conf_parameters where id_exec is not null)
+    LIMIT 1;"| tail -n 1)
+}
+
 insert_conf_params_DB(){
 	job_name=$3;
 	id_exec=$2;
@@ -143,7 +149,7 @@ for folder in 201* ; do
 
       bench_folder="${bzip_file%%.*}"
 
-      if [[ "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+      if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
         echo "Untaring $bzip_file"
         tar -xjf "$bzip_file"
       fi
@@ -177,16 +183,10 @@ for folder in 201* ; do
         fi
 
         id_exec=""
-        get_id_exec "$exec"
-
-        echo -e "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
-			
+        get_id_exec_conf_params "$exec"
+        
         if [[ ! -z "$id_exec" ]] ; then
-
-          #if dir does not exists or need to insert in DB
-          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
-
-			#get Haddop conf files which are NOT jobs of prep
+        	#get Haddop conf files which are NOT jobs of prep
 			#1st: get jobs in prep
 			cd ../"prep_$bench_folder"
 			prepjobs=$(find "./history/done" -type f -name "job*.xml");
@@ -208,7 +208,17 @@ for folder in 201* ; do
 				job_name="${job_name:0:(-5)}"
 				insert_conf_params_DB "$params" "$id_exec" "$job_name"
 			done
-			###############
+		fi
+		
+		id_exec=""
+        get_id_exec "$exec"
+
+        echo -e "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
+			
+        if [[ ! -z "$id_exec" ]] ; then
+
+          #if dir does not exists or need to insert in DB
+          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
 			
               #get the Hadoop job logs
               job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
