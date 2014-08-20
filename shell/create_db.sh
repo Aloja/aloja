@@ -473,6 +473,17 @@ CREATE TABLE IF NOT EXISTS \`JOB_tasks\` (
   KEY \`index_job_name\` (\`job_name\`)
 ) ENGINE=InnoDB;
 
+CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
+  \`id_execs_conf_parameters\` int(11) NOT NULL AUTO_INCREMENT,
+  \`id_exec\` int(11) NOT NULL,
+  \`job_name\` varchar(255) NOT NULL,
+  \`parameter_name\` varchar(255) NOT NULL,
+  \`parameter_value\` varchar(255) NOT NULL,
+  PRIMARY KEY (\`id_execs_conf_parameters\`),
+  UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`job_name\`,\`parameter_name\`),
+  KEY \`index2\` (\`id_exec\`),
+  KEY \`index_job_name\` (\`job_name\`)
+) ENGINE=InnoDB;
 
 #CREATE TABLE IF NOT EXISTS \`JOB_job_history\` (
 #  \`id_JOB_job_history\` int(11) NOT NULL AUTO_INCREMENT,

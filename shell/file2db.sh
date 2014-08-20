@@ -107,6 +107,19 @@ get_id_exec(){
     LIMIT 1;"| tail -n 1)
 }
 
+insert_conf_params_DB(){
+	job_name=$3;
+	id_exec=$2;
+	params=$1;
+	for param in $params ; do
+		param_name=$(echo $param | cut -d= -f1)
+		param_value=$(echo $param | cut -d= -f2)
+		insert="INSERT INTO execs_conf_parameters (id_execs_conf_parameters, id_exec, job_name, parameter_name, parameter_value)
+			VALUES(NULL, $id_exec, \"$job_name\", \"$param_name\", \"$param_value\" );"
+		$MYSQL "$insert";
+	done
+}
+
 ######################################
 
 echo "Starting"
@@ -167,12 +180,36 @@ for folder in 201* ; do
         get_id_exec "$exec"
 
         echo -e "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
-
+			
         if [[ ! -z "$id_exec" ]] ; then
 
           #if dir does not exists or need to insert in DB
           if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
 
+			#get Haddop conf files which are NOT jobs of prep
+			#1st: get jobs in prep
+			cd ../"prep_$bench_folder"
+			prepjobs=$(find "./history/done" -type f -name "job*.xml");
+			#2nd: get jobs in bench folder
+			cd ../$bench_folder
+			jobconfs=$(find "./history/done" -type f -name "job*.xml");
+			#3rd: 2 files, with one line per job in bench folder and prep folder
+			echo $jobconfs | tr ' ' '\n' > file.tmp
+			echo $prepjobs | tr ' ' '\n' > file2.tmp
+			#4rd: strip jobs in prep folder and cleanup
+			jobconfs=$(grep -v -f file2.tmp file.tmp)
+			rm file.tmp file2.tmp
+			
+			#Dump parameters from valid conf files to DB
+			for job_conf in $jobconfs ; do
+				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+				filename=$(basename "$job_conf")
+				job_name="${filename%.*}"
+				job_name="${job_name:0:(-5)}"
+				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+			done
+			###############
+			
               #get the Hadoop job logs
               job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
 
