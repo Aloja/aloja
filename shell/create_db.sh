@@ -19,6 +19,7 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
+  \`valid\` BOOLEAN DEFAULT TRUE,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`)
 ) ENGINE=InnoDB;
