@@ -1,6 +1,6 @@
 language: php
 php:
-  - 5.4
+  - 5.5
 before_install:
   - sudo apt-get install -y nodejs npm # php5-fpm nginx
   - npm install -g grunt-cli
@@ -8,7 +8,7 @@ before_install:
 before_script:
 #  - sh setupfpmnginx.sh
   - mysql -e "create database aloja2;" -uroot
-  - mysql -uroot aloja2 < db_schema.sql
+  - mysql -uroot aloja2 < tests_db.sql
   - php -S localhost:8080 --docroot=aloja-web &
   - sleep 3
 install:
