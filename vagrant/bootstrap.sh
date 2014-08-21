@@ -11,6 +11,10 @@ if ! which puppet > /dev/null; then
     apt-get install puppet puppet-common hiera facter virt-what lsb-release -y --force-yes
 fi
 
+if ! which zip > /dev/null; then
+  apt-get install zip -y --force-yes
+fi
+
 if ! which git > /dev/null; then
   apt-get install git -y --force-yes
 fi

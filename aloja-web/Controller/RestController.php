@@ -428,7 +428,7 @@ VALUES
                 throw new \Exception('Could not read zip file');
             }
 
-        } catch (Exception $e) {
+        } catch (\Exception $e) {
             die('FATAL ERROR: '.$e->getMessage());
             $message .= $e->getMessage()."\n";
             echo $message;
