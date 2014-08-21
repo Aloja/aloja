@@ -4,7 +4,7 @@ module.exports = function(grunt) {
      casperjs: {
 	options: {
 	   async: {
-	     parallel: true
+	     parallel: false
 	   }
 	},
         files: ['aloja-web/tests/*.js']
