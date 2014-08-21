@@ -33,7 +33,7 @@ casper.test.begin("Datatable tests", function(test) {
 	});
 
 	casper.then(function() {
-		test.assertEval(function() {
+/*		test.assertEval(function() {
 			var isOk = false;
 			$("tbody tr td:nth-child(6)").each(function() {
 				var text = $(this).text();
@@ -42,7 +42,7 @@ casper.test.begin("Datatable tests", function(test) {
 			});
 			return isOk;
 		}, 'There is an IB network after restoring filters');
-
+*/
 		test.assertEval(function() {
 			return $("#benchmarks_filter input") != null;
 		}, 'Global filter input exists');
