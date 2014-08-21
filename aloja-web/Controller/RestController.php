@@ -447,24 +447,24 @@ VALUES
             if(!$type || $type == 'CPU') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                 'AVG(s.`%user`), AVG(s.`%nice`),AVG(s.`%system`),AVG(s.`%iowait`),AVG(s.`%steal`),AVG(s.`%idle`),e.id_cluster'.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE AND GROUP BY (e.id_exec)';
+                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.DEV, AVG(s.tps), AVG(s.`rd_sec/s`), AVG(s.`wr_sec/s`), AVG(s.`avgrq-sz`), '.
                     'AVG(s.`avgqu-sz`), AVG(s.await), AVG(s.svctm), AVG(s.`%util`), e.id_cluster'.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE AND GROUP BY (e.id_exec)';
+                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     'AVG(su.kbmemfree), AVG(su.kbmemused), AVG(su.`%memused`),'.
                     'AVG(su.kbbuffers),AVG(su.kbcached),AVG(su.kbcommit),AVG(su.`%commit`),AVG(su.kbactive),AVG(su.kbinact),e.id_cluster'.
                     ' FROM SAR_memory_util su '.
-                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE AND GROUP BY (e.id_exec)';
+                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.IFACE,AVG(s.`rxpck/s`),AVG(s.`txpck/s`),AVG(s.`rxkB/s`),AVG(s.`txkB/s`),AVG(s.`rxcmp/s`),AVG(s.`txcmp/s`),AVG(s.`rxmcst/s`),'.
                     'e.id_cluster FROM SAR_net_devices s '.
-                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE AND GROUP BY (e.id_exec)';
+                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             }
         
             $exec_rows = $dbUtil->get_rows($query);
