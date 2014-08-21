@@ -1,0 +1,17 @@
+{% extends "layout.html.twig" %}
+{% use "common/datatables.html.twig" %}
+{% block stylesheet %}
+	{{ parent() }}
+	{% block stylesheetdatatables %}{{ parent() }}{% endblock %}
+{% endblock %}
+    {% block content %}
+     {% block datatablescontent %}{{ parent() }}{% endblock %}
+    <div id="chart"></div>
+
+</div>
+{% endblock %}
+{% block javascript %}
+    {{ parent() }}
+     <script type="text/javascript" language="javascript" src="js/utils.js"></script>
+      {% block javascriptdatatables %}{{ parent() }}{% endblock %}
+    {% endblock %}

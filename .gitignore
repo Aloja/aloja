@@ -11,13 +11,17 @@ jobs/*
 
 #vagrant
 vagrant/.vagrant/*
-vagrant/keys
-vagrant/conf
+
+#SECURITY
+
+settings_secured.yaml
+keys/*
 
 #test PHP file to check the configuration (insecure in production)
 test.php
 #production passwords file
-config.php
+aloja-web/config/config.yml
+
 
 ### Intellij ###
 # Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm
@@ -111,3 +115,10 @@ composer.lock
 
 #nodeModules
 node_modules
+
+#vendor
+aloja-web/vendor/
+
+#logs
+aloja-web/logs/*.log
+

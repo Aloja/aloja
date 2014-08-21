@@ -33,7 +33,6 @@ http {
 
     fastcgi_cache_path /etc/nginx/cache levels=1:2 keys_zone=aloja:500m;
     fastcgi_cache_key "$request_method$host$request_uri$args";
-
     include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;
 }

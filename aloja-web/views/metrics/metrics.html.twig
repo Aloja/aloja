@@ -1,0 +1,26 @@
+{% extends "layout.html.twig" %}
+{% use "common/datatables.html.twig" %}
+{% block stylesheet %}
+	{{ parent() }}
+	{% block stylesheetdatatables %}{{ parent() }}{% endblock %}
+{% endblock %}
+    {% block content %}
+        <div id="navigation" style="text-align: center;">
+	        <h2 class="compare body">
+	            <strong>Metric types:</strong>
+	            <a href="{{ modifyUrl({'type': 'CPU'}) }}"><span {% if type == 'CPU' %}style="font-weight: bold;"{% endif %}>CPU</span></a>
+	            <a href="{{ modifyUrl({'type': 'MEMORY'}) }}"><span {% if type == 'MEMORY' %}style="font-weight: bold;"{% endif %}>MEMORY</span></a>
+	            <a href="{{ modifyUrl({'type': 'DISK'}) }}"><span {% if type == 'DISK' %}style="font-weight: bold;"{% endif %}>DISK</span></a>
+	            <a href="{{ modifyUrl({'type': 'NETWORK'}) }}"><span {% if type == 'NETWORK' %}style="font-weight: bold;"{% endif %}>NETWORK</span></a>
+	        </h2>
+	    </div>
+	    
+     {% block datatablescontent %}{{ parent() }}{% endblock %}
+    <div id="chart"></div>
+
+</div>
+{% endblock %}
+{% block javascript %}
+    {{ parent() }}
+      {% block javascriptdatatables %}{{ parent() }}{% endblock %}
+    {% endblock %}

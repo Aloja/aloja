@@ -1,7 +1,9 @@
 <?php
 
-class HighCharts {
+namespace alojaweb\inc;
 
+class HighCharts
+{
     protected $fields;
     protected $rows;
     protected $stacked;
@@ -13,7 +15,7 @@ class HighCharts {
     protected $min;
     protected $maxX;
 
-    static $header =
+    public static $header =
         '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
         <script src="//code.highcharts.com/highcharts.js"></script>
         <script src="//code.highcharts.com/modules/exporting.js"></script>
@@ -26,20 +28,23 @@ class HighCharts {
     <script src="//rawgithub.com/RolandBanguiran/highcharts-scalable-yaxis/master/scalable-yaxis.js"></script>
      */
 
-    public function HighCharts() {
-
+    public function HighCharts()
+    {
     }
 
-    public static function getHeader() {
+    public static function getHeader()
+    {
         return self::$header;
     }
 
-    public function getContainer($width) {
+    public function getContainer($width)
+    {
         return '<div id="'.$this->getGuid().'" align="left" style="width: '.$width.'%; height: 250px;"></div>'."\n";
     }
 
-    public function getGuid(){
-        if (!$this->guid) $this->guid = 'container_'.uniqid();
+    public function getGuid()
+    {
+        if (!$this->guid) $this->guid = 'container_'.md5($this->title);
         return $this->guid;
     }
 
@@ -52,7 +57,7 @@ class HighCharts {
     {
         return $this->title;
     }
-    
+
     public function setFields($fields)
     {
         $this->fields = $fields;
@@ -145,8 +150,16 @@ class HighCharts {
         return $this->maxX;
     }
 
-    public function getChartJS() {
-
+    public function getSetMax()
+    {
+        if(($value = Utils::get_GET_string('setmax_'.$this->getGuid())))
+            return $value;
+        else
+            return $this->getMax();    
+    }
+    
+    public function getChartJS()
+    {
         $JS =
 
 "               window.chart_{$this->getGuid()} = new Highcharts.Chart({
@@ -283,4 +296,4 @@ class HighCharts {
         return $return;
     }
 
-} 
+}

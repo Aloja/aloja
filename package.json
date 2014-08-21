@@ -1,0 +1,16 @@
+{
+  "name": "aloja-testing",
+  "version": "0.0.1",
+  "license": "MIT",
+  "subdomain": "aloja-testing",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "devDependencies": {
+    "grunt": "x",
+    "grunt-casperjs": "x"
+  },
+  "engines": {
+    "node": "1.3.x"
+  }
+}

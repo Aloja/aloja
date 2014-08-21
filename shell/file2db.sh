@@ -107,6 +107,25 @@ get_id_exec(){
     LIMIT 1;"| tail -n 1)
 }
 
+get_id_exec_conf_params(){
+    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
+    AND id_exec NOT IN (select distinct (id_exec) from execs_conf_parameters where id_exec is not null)
+    LIMIT 1;"| tail -n 1)
+}
+
+insert_conf_params_DB(){
+	job_name=$3;
+	id_exec=$2;
+	params=$1;
+	for param in $params ; do
+		param_name=$(echo $param | cut -d= -f1)
+		param_value=$(echo $param | cut -d= -f2)
+		insert="INSERT INTO execs_conf_parameters (id_execs_conf_parameters, id_exec, job_name, parameter_name, parameter_value)
+			VALUES(NULL, $id_exec, \"$job_name\", \"$param_name\", \"$param_value\" );"
+		$MYSQL "$insert";
+	done
+}
+
 ######################################
 
 echo "Starting"
@@ -130,7 +149,7 @@ for folder in 201* ; do
 
       bench_folder="${bzip_file%%.*}"
 
-      if [[ "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+      if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
         echo "Untaring $bzip_file"
         tar -xjf "$bzip_file"
       fi
@@ -164,15 +183,43 @@ for folder in 201* ; do
         fi
 
         id_exec=""
+        get_id_exec_conf_params "$exec"
+        
+        if [[ ! -z "$id_exec" ]] ; then
+        	#get Haddop conf files which are NOT jobs of prep
+			#1st: get jobs in prep
+			cd ../"prep_$bench_folder"
+			prepjobs=$(find "./history/done" -type f -name "job*.xml");
+			#2nd: get jobs in bench folder
+			cd ../$bench_folder
+			jobconfs=$(find "./history/done" -type f -name "job*.xml");
+			#3rd: 2 files, with one line per job in bench folder and prep folder
+			echo $jobconfs | tr ' ' '\n' > file.tmp
+			echo $prepjobs | tr ' ' '\n' > file2.tmp
+			#4rd: strip jobs in prep folder and cleanup
+			jobconfs=$(grep -v -f file2.tmp file.tmp)
+			rm file.tmp file2.tmp
+			
+			#Dump parameters from valid conf files to DB
+			for job_conf in $jobconfs ; do
+				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+				filename=$(basename "$job_conf")
+				job_name="${filename%.*}"
+				job_name="${job_name:0:(-5)}"
+				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+			done
+		fi
+		
+		id_exec=""
         get_id_exec "$exec"
 
         echo -e "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
-
+			
         if [[ ! -z "$id_exec" ]] ; then
 
           #if dir does not exists or need to insert in DB
           if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
-
+			
               #get the Hadoop job logs
               job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
 

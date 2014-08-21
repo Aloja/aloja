@@ -1,0 +1,43 @@
+index:
+    pattern: "/"
+    controller: "alojaweb\\Controller\\DefaultController::indexAction"
+
+configimprovement:
+    pattern: "/configimprovement"
+    controller: "alojaweb\\Controller\\DefaultController::configImprovementAction"
+
+benchexecutions:
+    pattern: "/benchexecs"
+    controller: "alojaweb\\Controller\\DefaultController::benchExecutionsAction"
+
+benchdata:
+    pattern: "/benchdata"
+    controller: "alojaweb\\Controller\\RestController::benchExecutionsDataAction"
+
+costperfeval:
+    pattern: "/costperfeval"
+    controller: "alojaweb\\Controller\\DefaultController::costPerfEvaluationAction"
+
+perfcharts:
+    pattern: "/perfcharts"
+    controller: "alojaweb\\Controller\\DefaultController::performanceChartsAction"
+
+counters:
+    pattern: "/counters"
+    controller: "alojaweb\\Controller\\DefaultController::countersAction"
+
+countersdata:
+    pattern: "/countersdata"
+    controller: "alojaweb\\Controller\\RestController::countersDataAction"
+
+export2prv:
+    pattern: "/export2prv"
+    controller: "alojaweb\\Controller\\RestController::export2prvAction"
+    
+metrics:
+    pattern: "/metrics"
+    controller: "alojaweb\\Controller\\DefaultController::performanceTableAction"
+    
+metricsdata:
+    pattern: "/metricsdata"
+    controller: "alojaweb\\Controller\\RestController::metricsDataAction"

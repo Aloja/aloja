@@ -1,5 +1,5 @@
 casper.test.begin("Perf by cost tests", function(test) {
-   casper.start('http://localhost:8080/aloja-web/perf_by_cost.php?bench=terasort', function() {
+   casper.start('http://localhost:8080/costperfeval?bench=terasort', function() {
 	test.assertExists("#chart", 'Chart created');
 	test.assertExists("form select", 'Filters rendered');
 	this.evaluate(function() { 

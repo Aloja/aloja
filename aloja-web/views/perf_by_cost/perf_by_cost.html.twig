@@ -169,49 +169,43 @@
         });
 	    </script>
     {% endblock %}
-    {% block navigation %}
-       {{ parent() }}
+    {% block content %}
            <div id="navigation" style="text-align: center;">
-
-               <form method="get">
-	            <h2>
-	                Benchmark:
-	                <select name="bench">
-	                    <!--<option value="">ALL</option>-->
-	                    <option value="terasort" {% if bench == 'terasort' %}selected="selected"{% endif %}>terasort</option>
-	                    <option value="wordcount" {% if bench == 'wordcount' %}selected="selected"{% endif %}>wordcount</option>
-	                    <option value="sort" {% if bench == 'sort' %}selected="selected"{% endif %}>sort</option>
-	                    <option value="pagerank" {% if bench == 'pagerank' %}selected="selected"{% endif %}>pagerank</option>
-	                    <!--<option value="kmeans">kmeans</option>-->
-	                    <!--<option value="bayes">bayes</option>-->
-	                    <option value="dfsioe_read" {% if bench == 'dfsioe_read' %}selected="selected"{% endif %}>dfsioe_read</option>
-	                    <option value="dfsioe_write" {% if bench == 'dfsioe_write' %}selected="selected"{% endif %}>dfsioe_write</option>
-	                </select>
-	            </h2>
 	            <div id="chart" style="width: 800px; height: 800px; margin: 0 auto; margin-left: 20%; float: left;"></div>
 	            {% include "common/config_filters.html.twig" %}
-	            <h1>Edit cluster configuration costs:</h1>
-	            <div style="text-align: center; margin-left: auto; margin-right: auto; width: 80%;">
-	                <table>
-	                    <tr>
-	                        <td>cost_hour_AZURE:</td>
-	                        <td><input type="text" name="cost_hour_AZURE" value="{{ cost_hour_AZURE }}" size="4"></td>
-	                        <td>cost_hour_AZURE_1remote:</td>
-	                        <td><input type="text" name="cost_hour_AZURE_1remote" value="{{ cost_hour_AZURE_1remote }}" size="4"></td>
-	                        <td>cost_hour_HDD_ETH:</td>
-	                        <td><input type="text" name="cost_hour_HDD_ETH" value="{{ cost_hour_HDD_ETH }}" size="4"></td>
-	                    </tr>
-	                    <tr>
-	                        <td>cost_hour_HDD_IB:</td>
-	                        <td><input type="text" name="cost_hour_HDD_IB" value="{{ cost_hour_HDD_IB }}" size="4"></td>
-	                        <td>cost_hour_SSD_ETH:</td>
-	                        <td><input type="text" name="cost_hour_SSD_ETH" value="{{ cost_hour_SSD_ETH }}" size="4"></td>
-	                        <td>cost_hour_SSD_IB:</td>
-	                        <td><input type="text" name="cost_hour_SSD_IB" value="{{ cost_hour_SSD_IB }}" size="4"></td>
-	                        <td></td>
-	                        <td style="text-align: right;"> <input type="submit" value="Submit"></td>
-	                    </tr>
-	                </table>
+	            <h1 class="compare title">Edit cluster configuration costs:</h1>
+	            <div style="margin: 0 auto; width: 60%; text-align: left;">
+	                <div class="row">
+	                    <div class="col-md-3">
+	                        <label>Cost per hour Azure:</label>
+	                        <input type="text" name="cost_hour_AZURE" value="{{ cost_hour_AZURE }}" size="4">
+	                    </div>
+	                    <div class="col-md-3">
+	                        <label>Cost per hour Azure 1 remote:</label>
+	                        <input type="text" name="cost_hour_AZURE_1remote" value="{{ cost_hour_AZURE_1remote }}" size="4">
+	                    </div>
+	                    <div class="col-md-3">
+	                        <label>Cost per hour HDD Ethernet:</label>
+	                        <input type="text" name="cost_hour_HDD_ETH" value="{{ cost_hour_HDD_ETH }}" size="4">
+	                   </div>
+                    </div>
+                    <div class="row" style="margin-top: 1em;">
+	                   <div class="col-md-3">
+	                        <label>Cost per hour HDD Infiniband:</label>
+	                        <input type="text" name="cost_hour_HDD_IB" value="{{ cost_hour_HDD_IB }}" size="4">
+	                   </div>
+	                   <div class="col-md-3">
+	                        <label>Cost per hour SDD Ethernet:</label>
+	                        <input type="text" name="cost_hour_SSD_ETH" value="{{ cost_hour_SSD_ETH }}" size="4">
+	                   </div>
+	                   <div class="col-md-3">
+	                        <label>Cost per hour SSD Infiniband:</label>
+	                        <input type="text" name="cost_hour_SSD_IB" value="{{ cost_hour_SSD_IB }}" size="4">
+                       </div>
+                       <div class="col-md-1">
+	                        <input type="submit" value="Change" class="btn btn-warning">
+                       </div>
+                    </div>
 	            </div>
 	        </form>
 	    </div>
