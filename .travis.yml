@@ -2,19 +2,20 @@ language: php
 php:
   - 5.5
 before_install:
-  - sudo apt-get install -y -qq nodejs npm #php5-fpm nginx
+  - sudo apt-get install -y -qq nodejs npm php5-gd php5-mysql #php5-fpm nginx
   - npm install -g grunt-cli
   - npm install -g casperjs
 before_script:
-  - mysql -e "create database aloja2;" -uroot
+  - mysql -e "create database aloja2;" -uroot 
   - mysql -uroot aloja2 < tests_db.sql
   - cd aloja-web && php -S localhost:8080 travis_index.php &
   - sleep 3
 install:
   - npm install
-  - npm install grunt-casperjs
-  - cd aloja-web && php composer.phar self-update && php composer.phar update && cd ..
+  - cd aloja-web && composer update && cd ..
 script: bash tests.sh
-services: mysql
+services:
+  - mysql
+  - pear
 notifications:
   email: false

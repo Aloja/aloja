@@ -5,7 +5,9 @@ casper.test.begin("Job counters tests", function(test) {
 		
    casper.start('http://localhost:8080/counters?type=SUMMARY', function() {
 	test.assertExists("#benchmarks", "Counters table created");
-    test.assertExists("#benchmarks td", "Counters table has content");
+	test.assertEval(function() {
+		return $("#benchmarks td").length > 1;
+	}, 'Counters table has content');
 
     test.assertEval(function() { 
     	return $("#benchmarks tr:nth-child(2) th").children('input').eq(4).val() == 'filter col';

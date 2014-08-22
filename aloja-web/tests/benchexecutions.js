@@ -4,8 +4,10 @@ casper.test.begin("Datatable tests", function(test) {
 	});
 
 	casper.start('http://localhost:8080/benchexecs', function() {
-		test.assertExists("#benchmarks", "Datatable created");
-		test.assertExists("#benchmarks td", 'Datatable has content');
+		test.assertExists("table#benchmarks", "Datatable created");
+		test.assertEval(function() {
+			return $("#benchmarks td").length > 1;
+		}, 'Datatable has content');
 		test.assertEval(
 				function() {
 					return $("tr:nth-child(2) th").children('input').eq(6)
