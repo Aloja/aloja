@@ -199,10 +199,9 @@ logger(){
 }
 
 #temporary to avoid read-only file system errors
-if [ "$DISK" != "HDD" ] && [ "$DISK" != "SDD" ] ; then
-  logger "Re-mounting attached disks"
-  $DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-fi
+logger "Re-mounting attached disks"
+$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+
 
 logger "Setting scratch permissions"
 $DSH "sudo chown -R $user: /scratch"

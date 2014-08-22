@@ -199,10 +199,9 @@ logger(){
 }
 
 #temporary to avoid read-only file system errors
-if [ "$DISK" != "HDD" ] && [ "$DISK" != "SDD" ] ; then
-  logger "Re-mounting attached disks"
-  $DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-fi
+logger "Re-mounting attached disks"
+$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+
 
 logger "Setting scratch permissions"
 $DSH "sudo chown -R $user: /scratch"
@@ -435,7 +434,6 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    #TODO make number of nodes aware
     if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue

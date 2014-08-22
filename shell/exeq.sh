@@ -24,7 +24,7 @@ Q_SOURCE_PATH="/home/$USER/share/shell/queue"
 Q_PATH="/home/$USER/local/queue_$CLUSTER_NAME"
 
 #prepare dirs for first time
-mkdir -p $Q_PATH/{exec,done,conf}
+mkdir -p $Q_PATH/{exec,done,conf,hold}
 
 EXEC_PATH="$Q_PATH/exec"
 DONE_PATH="$Q_PATH/done"

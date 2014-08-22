@@ -118,6 +118,11 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
+CLUSTER_NAME="az"
+NUMBER_OF_HOSTS="4"
+NUMBER_OF_SLAVES="3"
+user="pristine"
+
 #if [ "${NET}" == "IB" ] ; then
 #  host1="al-1001-ib0"
 #  host2="al-1002-ib0"
@@ -129,6 +134,7 @@ shift $((OPTIND-1))
   host2="al-1002"
   host3="al-1003"
   host4="al-1004"
+
   IFACE="eth0"
 #fi
 
@@ -148,10 +154,7 @@ else
   exit 1
 fi
 
-CLUSTER_NAME="az"
-NUMBER_OF_HOSTS="4"
-NUMBER_OF_SLAVES="3"
-user="pristine"
+
 
 BASE_DIR="/home/$user/share/"
 SOURCE_DIR="/scratch/local/aplic"
@@ -191,10 +194,9 @@ logger(){
 }
 
 #temporary to avoid read-only file system errors
-if [ "$DISK" != "HDD" ] && [ "$DISK" != "SDD" ] ; then
-  logger "Re-mounting attached disks"
-  $DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-fi
+logger "Re-mounting attached disks"
+$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+
 
 logger "Setting scratch permissions"
 $DSH "sudo chown -R $user: /scratch"

@@ -2,11 +2,20 @@
 # SCRIPT TO STOP, SET CONFIG, AND START HADOOP and run HiBench in AZURE
 
 usage() {
-  echo "Usage: $0 -C clusterName [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>] [-b benchmark <_min|_10>] [-r replicaton <positive int>]\
-   [-m max mappers and reducers <positive int>] [-i io factor <positive int>] [-p port prefix <3|4|5>]\
-   [-I io.file <positive int>] [-l list of benchmarks <space separated string>] [-c compression <0 (dissabled)|1|2|3>]\
-   [-z <block size in bytes>] [-s (save prepare)] -N (don't delete files)" 1>&2;
-  echo "example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1"
+  echo -e "Usage:
+$0 -C clusterName
+[-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
+[-b benchmark <_min|_10>]
+[-r replicaton <positive int>]
+[-m max mappers and reducers <positive int>]
+[-i io factor <positive int>] [-p port prefix <3|4|5>]
+[-I io.file <positive int>]
+[-l list of benchmarks <space separated string>]
+[-c compression <0 (dissabled)|1|2|3>]
+[-z <block size in bytes>] [-s (save prepare)] -N (don't delete files)
+
+example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
+" 1>&2;
 
   exit 1;
 }
@@ -207,10 +216,15 @@ logger(){
 }
 
 #temporary to avoid read-only file system errors
-if [ "$DISK" != "HDD" ] && [ "$DISK" != "SDD" ] ; then
-  logger "Re-mounting attached disks"
-  $DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+logger "Re-mounting attached disks"
+$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+
+if [ ! -f "share/safe_store" ] ; then
+  logger "ERROR, share directory is not mounted correctly. Exiting..."
+  exit 1
 fi
+
+
 
 logger "Setting scratch permissions"
 $DSH "sudo chown -R $user: /scratch"
