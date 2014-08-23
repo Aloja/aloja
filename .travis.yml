@@ -16,6 +16,5 @@ install:
 script: bash tests.sh
 services:
   - mysql
-  - pear
 notifications:
   email: false
