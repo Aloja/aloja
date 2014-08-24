@@ -39,7 +39,7 @@ class DefaultController extends AbstractController
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
-
+        $rows_config = '';
         try {
             $configurations = array();
             $where_configs = '';

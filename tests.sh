@@ -4,7 +4,7 @@ result=$(curl --silent "$base_url/serverWorksTest.php")
 
 if [ "$result" = "hello" ]
 then
-   echo -e "\u001b[1;42mPASS Server is working\u001b[0m\nRunning functional tests..\n"
+   echo -e "\u001b[1;42mPASS Server is working\u001b[0m\nChecking if benchdata info is JSON\n"
    npm test
    ret_code=$?
    echo "exiting with ret code $ret_code\n"

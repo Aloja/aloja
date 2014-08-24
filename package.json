@@ -8,7 +8,7 @@
   },
   "devDependencies": {
     "grunt": "x",
-    "grunt-casperjs": "x"
+    "grunt-casper": "x"
   },
   "engines": {
     "node": "1.3.x"

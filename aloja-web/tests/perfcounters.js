@@ -5,7 +5,9 @@ casper.test.begin("Performance counters tests", function(test) {
 		
    casper.start('http://localhost:8080/metrics', function() {
 	test.assertExists("#benchmarks", "Metrics table created");
-    test.assertExists("#benchmarks td", "Metrics table has content");
+	test.assertEval(function() {
+		return $("#benchmarks td").length > 1;
+	}, 'Metrics table has content');
 
     test.assertEval(function() { 
     	return $("#benchmarks tr:nth-child(2) th").children('input').eq(2).val() == 'filter col';
