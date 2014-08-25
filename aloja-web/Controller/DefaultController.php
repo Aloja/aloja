@@ -85,6 +85,7 @@ class DefaultController extends AbstractController
 
             //get the result rows
             $query = "SELECT #count(*),
+            		  e.id_exec,
                       concat($concat_config) conf, bench,
                       avg(exe_time) AVG_exe_time,
                       #max(exe_time) MAX_exe_time,
@@ -115,14 +116,17 @@ class DefaultController extends AbstractController
 
         $categories = '';
         $count = 0;
+        $confOrders = array();
         foreach ($rows_config as $row_config) {
             $categories .= "'{$row_config['conf']} #{$row_config['num']}',";
             $count += $row_config['num'];
+            $confOrders[] = $row_config['conf'];
         }
 
         $series = '';
         $bench = '';
         if ($rows) {
+        	$seriesIndex = 0;
             foreach ($rows as $row) {
                 //close previous serie if not first one
                 if ($bench && $bench != $row['bench']) {
@@ -131,17 +135,23 @@ class DefaultController extends AbstractController
                 }
                 //starts a new series
                 if ($bench != $row['bench']) {
+                	$seriesIndex = 0;
                     $bench = $row['bench'];
                     $series .= "
                         {
                             name: '{$row['bench']}',
                                 data: [";
                 }
-                $series .= "['{$row['conf']}',".
-                    //round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
-                    //round(($row['AVG_exe_time']), 3).
-                    round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
-                    "],";
+                while($row['conf'] != $confOrders[$seriesIndex]) {
+                	$series .= "[null],";
+                	$seriesIndex++;
+                }
+	                $series .= "['{$row['conf']}',".
+	                    //round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
+	                    //round(($row['AVG_exe_time']), 3).
+	                    round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
+	                    "],";
+                $seriesIndex++;
 
             }
             //close the last series
