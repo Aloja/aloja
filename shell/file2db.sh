@@ -145,11 +145,19 @@ for folder in 201* ; do
       #continue
     fi
 
+	##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
+	for bzip_file in prep_*.tar.bz2 ; do
+		bench_folder="${bzip_file%%.*}"
+		if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+	        echo "Untaring $bzip_file"
+	        tar -xjf "$bzip_file"
+		fi
+	done
+	
     for bzip_file in *.tar.bz2 ; do
 
       bench_folder="${bzip_file%%.*}"
-
-      if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+      if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "prep_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
         echo "Untaring $bzip_file"
         tar -xjf "$bzip_file"
       fi
