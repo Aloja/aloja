@@ -20,7 +20,6 @@ clusterConfigFile="${type}_${1}.conf"
 source "../shell/common/cluster_functions.sh"
 
 
-
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
@@ -87,9 +86,39 @@ wait_vm_ready() {
       logger " VM $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempts."
     fi
 
-    sleep 1
+    #sleep 1
   done
 }
+
+#"$vm_name" "$vm_ssh_port" must be set before
+#1 number of tries
+wait_vm_ssh_ready() {
+  logger "Checking SSH status of VM $vm_name"
+  waitStartTime="$(date +%s)"
+  for tries in {1..150}; do
+
+    test_action="$(vm_execute " [ \"\$\(ls\)\" ] && echo '$testKey'")"
+    #in case we get a welcome banner we need to grep
+    test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
+    if [ ! -z "$test_action" ] ; then
+      logger " VM $vm_name is ready!"
+      return 0
+      break #just in case
+    else
+      logger " VM $vm_name is down. Waiting for: $waitElapsedTime s. $tries attempts. Output: $test_action"
+    fi
+
+    #stop if max number of tries has been specified
+    [ ! -z "$1" ] && [[ "$tries" -ge "$1" ]] && break
+
+    sleep 1
+  done
+
+  return 1
+}
+
 
 #$1 vm_name
 number_of_attached_disks() {
@@ -216,6 +245,7 @@ vm_set_ssh() {
   fi
 }
 
+
 vm_format_disks() {
   if check_bootstraped "vm_format_disks" "set"; then
     logger "Formating disks for VM $vm_name "
@@ -257,8 +287,8 @@ vm_set_dsh() {
     get_slaves_names
     vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/s;"
 
-    test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo 'OK'")"
-    if [ "$test_action" == "OK" ] ; then
+    test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
+    if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -281,8 +311,8 @@ export HISTSIZE=50000
 alias a='dsh -g a -M'
 alias s='dsh -g s -M'\" >> ~/.bashrc;" "paralell"
 
-    test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo 'OK'")"
-    if [ "$test_action" == "OK" ] ; then
+    test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo '$testKey'")"
+    if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -300,63 +330,6 @@ cluster_execute() {
   vm_execute_master "dsh -g m -M \"$1\""
 }
 
-#requires $create_string to be defined
-get_initizalize_disks() {
-  if [[ "$attachedVolumes" -gt "12" ]] ; then
-    logger "ERROR, function only supports up to 12 volumes"
-    exit 1;
-  fi
-
-  create_string=""
-  num_drives="1"
-  for drive_letter in "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" ; do
-    create_string="$create_string
-sudo parted -s /dev/sd${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
-sudo mkfs.ext4 -F /dev/sd${drive_letter}1;"
-    #break when we have the required number
-    [[ "$num_drives" -ge "$attachedVolumes" ]] && break
-    num_drives="$((num_drives+1))"
-  done
-}
-
-#requires $create_string to be defined
-get_mount_disks() {
-  if [[ "$attachedVolumes" -gt "12" ]] ; then
-    logger "ERROR, function only supports up to 12 volumes"
-    exit 1;
-  fi
-
-  create_string="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$user/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
-
-  if [ -z "$dont_mount_share" ] ; then
-    create_string="$create_string
-$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,port=222 0 0"
-  fi
-
-  num_drives="1"
-  for drive_letter in "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" ; do
-    create_string="$create_string
-/dev/sd${drive_letter}1       /scratch/attached/1  auto    defaults,nobootwait 0       2"
-    #break when we have the required number
-    [[ "$num_drives" -ge "$attachedVolumes" ]] && break
-    num_drives="$((num_drives+1))"
-  done
-
-  create_string="
-    mkdir -p ~/{share,minerva};
-    sudo mkdir -p /scratch/local/share/{safe_store};
-    sudo mkdir -p /scratch/attached/{1,2,3};
-    sudo chown -R $user: /scratch;
-
-    sudo chmod 0777 /etc/fstab;
-
-    sudo echo '$create_string' >> /etc/fstab;
-
-    sudo chmod 0644 /etc/fstab;
-    sudo mount -a;
-  "
-}
-
 vm_initialize_disks() {
   if check_bootstraped "vm_initialize_disks" ""; then
     logger "Initializing disks for VM $vm_name "
@@ -366,8 +339,8 @@ vm_initialize_disks() {
 
     vm_execute "$create_string"
 
-    test_action="$(vm_execute " [ \"\$\(lsblk|grep sdc1\)\" ] && echo 'OK'")"
-    if [ "$test_action" == "OK" ] ; then
+    test_action="$(vm_execute " [ \"\$\(lsblk|grep sdc1\)\" ] && echo '$testKey'")"
+    if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "vm_initialize_disks" "set"
     else
@@ -383,7 +356,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  bootstrap_file="~/bootstrap_cluster_initialize_disks2"
+  bootstrap_file="~/bootstrap_cluster_initialize_disks"
 
   create_string=""
   get_initizalize_disks
@@ -409,8 +382,8 @@ vm_mount_disks() {
 
     vm_execute "$create_string"
 
-    test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo 'OK'")"
-    if [ "$test_action" == "OK" ] ; then
+    test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo '$testKey'")"
+    if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "vm_mount_disks" "set"
     else
@@ -424,7 +397,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  bootstrap_file="~/bootstrap_cluster_mount_disk19"
+  bootstrap_file="~/bootstrap_cluster_mount_disk"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
@@ -449,20 +422,20 @@ $create_string"
 
 #$1 filename $2 set lock
 check_bootstraped() {
-  fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo 'OK'")"
+  fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
 
   #set lock
   if [ ! -z "$2" ] ; then
     vm_execute "touch ~/bootstrap_$1;"
   fi
 
-  if [ ! -z "$fileExists" ] && [ "$fileExists" != "OK" ] ; then
+  if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
     logger " Avoiding subsequent welcome banners"
     vm_execute "touch ~/.hushlogin; #avoid subsequent banners"
-    fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo 'OK'")"
+    fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
   fi
-
-  if [ "$fileExists" == "OK" ] ; then
+#TODO fix return codes should be the opposite
+  if [ "$fileExists" == "$testKey" ] ; then
     return 1
   elif [ ! -z "$fileExists" ] ; then
     logger "Error checking bootstrap locks, LOCKING anyhow. Check manually. FileExists=$fileExists"
