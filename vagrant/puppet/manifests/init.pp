@@ -64,7 +64,7 @@ if $environment == 'prod' {
         provider => git,
         require => [ Package[ 'git' ] ],
         source => "https://user:somepassword@github.com/Aloja/aloja.git",
-        revision => 'master',
+        revision => 'prod',
     }
 }
 
