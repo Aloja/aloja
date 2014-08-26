@@ -15,7 +15,20 @@ try {
     $container = new Container();
     $router = $container->getRouter();
     $router->loadRoutesFromFile('config/router.yml');
-    $controllerMethod = $router->getControllerMethod();
+    if(isset($_GET['c']) && $_GET['c'] == '404') {
+    	unset($_GET['c']);
+    	$controllerMethod = (isset($_GET['q'])) ? $router->getLegacyRoute($_GET['q']) : null;
+    	if($controllerMethod != null) {
+    		$container->getTwig()->addGlobal('message',
+    				"You accessed this page through an old link, new link is at: "
+    				.$controllerMethod['pattern']."\n");
+    	} else  {
+    		$container->displayServerError('Page not found');
+    		exit;
+    	}
+    } else
+   		 $controllerMethod = $router->getControllerMethod();
+    
     //TODO inject dependencies from a dependency description file or sth like that
     $controller = new $controllerMethod['class']($container);
     $controller->$controllerMethod['method']();

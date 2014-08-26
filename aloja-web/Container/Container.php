@@ -139,8 +139,10 @@ class Container
             throw new \Exception('This container hasn\'t this service');
     }
 
-    public function displayServerError()
+    public function displayServerError($message = 'We are sorry an internal error ocurred. Try it again later')
     {
-        echo $this->container['twig']->render('server_error.html.twig', array());
+        echo $this->container['twig']->render('server_error.html.twig', array(
+        	'message' => $message
+        ));
     }
 }

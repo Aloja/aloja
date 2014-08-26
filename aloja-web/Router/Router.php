@@ -47,7 +47,7 @@ class Router
             $result = false;
             $givenRoute = ($uri == null ) ? $this->request->getPathInfo() : $uri;
             foreach ($this->routesCollection as $route) {
-                if (!$result || $route['pattern'] == $givenRoute) {
+                if (!$result && $route['pattern'] == $givenRoute) {
                     $controller = $route['controller'];
                     $class = explode('::',$controller)[0];
                     $method = explode('::',$controller)[1];
@@ -109,6 +109,35 @@ class Router
 
             return null;
         }
+    }
+    
+    public function getLegacyRoute($givenRoute) {
+    	try {
+    		$result = false;
+    		foreach ($this->routesCollection as $route) {
+    			if (!$result && (isset($route['legacy']) && $route['legacy'] == $givenRoute)) {
+    				$result = true;
+    				$controller = $route['controller'];
+    				$class = explode('::',$controller)[0];
+    				$method = explode('::',$controller)[1];
+    				if (!class_exists($class)) {
+    					throw new \Exception('Legacy The route class doesn\'t exist!');
+    				} else if(!method_exists($class,$method))
+    					throw new \Exception('Legacy The route class\'s method doesn\'t exist!');
+    				
+    				$this->logger->addInfo("Legacy Route controller method found: $class -> $method");
+    				
+    				$result = array('pattern' => $route['pattern'], 'class' => $class, 'method' => $method);
+    			}
+    		}
+    		if(!$result)
+    			return null;
+    		else
+    			return $result;
+    	} catch (\Exception $e) {
+    		$this->logger->addError('Error handling route: '.$e->getMessage());
+    		throw new \Exception($e->getMessage(),$e->getCode(),$e->getPrevious());
+    	}
     }
 
 }
