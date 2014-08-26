@@ -58,7 +58,19 @@
                         dataLabels: {
                             enabled: true
                         }
-                    }
+                    },
+                    series: {
+                    	cursor: 'pointer',
+                        point: {
+                            events: {
+                                click: function () {
+                                    var id = this.series.options.data[this.x][0];
+                                    id = id.replace(new RegExp('_', 'g'), ' ');
+                                    top.location.href = "{{ path('benchexecutions') }}?search="+id;
+                                }
+                            }
+                        }
+                    },
                 },
                 legend: {
                     layout: 'vertical',

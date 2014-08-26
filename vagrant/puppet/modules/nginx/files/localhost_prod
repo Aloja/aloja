@@ -15,7 +15,7 @@ server {
 
   location ~ \.php$ {
     try_files $uri =404;
-    #fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
     fastcgi_index index.php;
     include fastcgi_params;
     fastcgi_read_timeout 60; # Set fairly high for debugging
@@ -23,6 +23,8 @@ server {
     fastcgi_cache aloja;
     fastcgi_cache_valid any 1y;
   }
+
+  error_page 404 /index.php?c=404&q=$uri&$args;
 
   include /etc/nginx/mime.types;
   default_type application/octet-stream;

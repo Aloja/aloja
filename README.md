@@ -1,6 +1,6 @@
 
 ## Local Installation
-
+[![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=aaron)](https://travis-ci.org/Aloja/aloja)
 ### Requirements
 
 Before installing ALOJA you need the following packages:
@@ -67,3 +67,13 @@ The MySQL database is accessible from the host, use the following configuration 
 4. Go inside `vagrant/` and run `vagrant up`
 
 *WARNING*: Be aware that production's environment comes with server cache enabled, so you'll not see further changes on your code
+
+## Functional tests
+
+Once you have your local environment set up, you should run the functional tests and check that they pass, also it should be run every time some functionality is change or added for new important functionalities. To run tests complete the following checklist:
+- Nodejs and npm packages are installed 
+- Install casperjs and gruntJS globally `npm install -g casperjs && npm install -g grunt-cli`
+- Run `npm install` to locally install grunt-casper
+- Run `npm tests` to execute the tests
+
+Tests are localted in the aloja-web/tests directory. Each JS file is a functional test for one page. They are written in CasperJS.

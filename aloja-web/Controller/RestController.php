@@ -446,23 +446,47 @@ VALUES
             $type = Utils::get_GET_string('type');
             if(!$type || $type == 'CPU') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
-                'AVG(s.`%user`), AVG(s.`%nice`),AVG(s.`%system`),AVG(s.`%iowait`),AVG(s.`%steal`),AVG(s.`%idle`),e.id_cluster'.
+                'AVG(s.`%user`), MAX(s.`%user`), MIN(s.`%user`), STDDEV_POP(s.`%user`), VAR_POP(s.`%user`), 
+                 AVG(s.`%nice`), MAX(s.`%nice`), MIN(s.`%nice`), STDDEV_POP(s.`%nice`), VAR_POP(s.`%nice`),
+                 AVG(s.`%system`), MAX(s.`%system`), MIN(s.`%system`), STDDEV_POP(s.`%system`), VAR_POP(s.`%system`),
+                 AVG(s.`%iowait`), MAX(s.`%iowait`), MIN(s.`%iowait`), STDDEV_POP(s.`%iowait`), VAR_POP(s.`%iowait`),
+                 AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
+                 AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster'.
                 ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
-                    's.DEV, AVG(s.tps), AVG(s.`rd_sec/s`), AVG(s.`wr_sec/s`), AVG(s.`avgrq-sz`), '.
-                    'AVG(s.`avgqu-sz`), AVG(s.await), AVG(s.svctm), AVG(s.`%util`), e.id_cluster'.
+                    's.DEV, AVG(s.tps), MAX(s.tps), MIN(s.tps), 
+                    AVG(s.`rd_sec/s`), MAX(s.`rd_sec/s`), MIN(s.`rd_sec/s`), STDDEV_POP(s.`rd_sec/s`), VAR_POP(s.`rd_sec/s`), SUM(s.`rd_sec/s`),
+                    AVG(s.`wr_sec/s`), MAX(s.`wr_sec/s`), MIN(s.`wr_sec/s`), STDDEV_POP(s.`wr_sec/s`), VAR_POP(s.`wr_sec/s`), SUM(s.`wr_sec/s`), 
+                    AVG(s.`avgrq-sz`), MAX(s.`avgrq-sz`), MIN(s.`avgrq-sz`), STDDEV_POP(s.`avgrq-sz`), VAR_POP(s.`avgrq-sz`), '.
+                    'AVG(s.`avgqu-sz`), MAX(s.`avgqu-sz`), MIN(s.`avgqu-sz`), STDDEV_POP(s.`avgqu-sz`), VAR_POP(s.`avgqu-sz`), 
+                    AVG(s.await), MAX(s.`await`), MIN(s.`await`), STDDEV_POP(s.`await`), VAR_POP(s.`await`), 
+                    AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
+                    AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster'.
                     ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
-                    'AVG(su.kbmemfree), AVG(su.kbmemused), AVG(su.`%memused`),'.
-                    'AVG(su.kbbuffers),AVG(su.kbcached),AVG(su.kbcommit),AVG(su.`%commit`),AVG(su.kbactive),AVG(su.kbinact),e.id_cluster'.
+                    'AVG(su.kbmemfree), MAX(su.kbmemfree), MIN(su.kbmemfree), STDDEV_POP(su.kbmemfree), VAR_POP(su.kbmemfree),  
+                     AVG(su.kbmemused), MAX(su.kbmemused), MIN(su.kbmemused), STDDEV_POP(su.kbmemused), VAR_POP(su.kbmemused), 
+                     AVG(su.`%memused`), MAX(su.`%memused`), MIN(su.`%memused`), STDDEV_POP(su.`%memused`), VAR_POP(su.`%memused`), '.
+                    'AVG(su.kbbuffers), MAX(su.kbbuffers), MIN(su.kbbuffers), STDDEV_POP(su.kbbuffers), VAR_POP(su.kbbuffers), 
+                     AVG(su.kbcached), MAX(su.kbcached), MIN(su.kbcached), STDDEV_POP(su.kbcached), VAR_POP(su.kbcached), 
+                     AVG(su.kbcommit), MAX(su.kbcommit), MIN(su.kbcommit), STDDEV_POP(su.kbcommit), VAR_POP(su.kbcommit), 
+                     AVG(su.`%commit`), MAX(su.`%commit`), MIN(su.`%commit`), STDDEV_POP(su.`%commit`), VAR_POP(su.`%commit`), 
+                     AVG(su.kbactive), MAX(su.kbactive), MIN(su.kbactive), STDDEV_POP(su.kbactive), VAR_POP(su.kbactive), 
+                     AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster'.
                     ' FROM SAR_memory_util su '.
                     'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
-                    's.IFACE,AVG(s.`rxpck/s`),AVG(s.`txpck/s`),AVG(s.`rxkB/s`),AVG(s.`txkB/s`),AVG(s.`rxcmp/s`),AVG(s.`txcmp/s`),AVG(s.`rxmcst/s`),'.
+                    's.IFACE,AVG(s.`rxpck/s`),MAX(s.`rxpck/s`),MIN(s.`rxpck/s`),STDDEV_POP(s.`rxpck/s`),VAR_POP(s.`rxpck/s`),SUM(s.`rxpck/s`),
+                    AVG(s.`txpck/s`),MAX(s.`txpck/s`),MIN(s.`txpck/s`),STDDEV_POP(s.`txpck/s`),VAR_POP(s.`txpck/s`),SUM(s.`txpck/s`),
+                    AVG(s.`rxkB/s`),MAX(s.`rxkB/s`),MIN(s.`rxkB/s`),STDDEV_POP(s.`rxkB/s`),VAR_POP(s.`rxkB/s`),SUM(s.`rxkB/s`),
+                    AVG(s.`txkB/s`),MAX(s.`txkB/s`),MIN(s.`txkB/s`),STDDEV_POP(s.`txkB/s`),VAR_POP(s.`txkB/s`),SUM(s.`txkB/s`),
+                    AVG(s.`rxcmp/s`),MAX(s.`rxcmp/s`),MIN(s.`rxcmp/s`),STDDEV_POP(s.`rxcmp/s`),VAR_POP(s.`rxcmp/s`),SUM(s.`rxcmp/s`),
+                    AVG(s.`txcmp/s`),MAX(s.`txcmp/s`),MIN(s.`txcmp/s`),STDDEV_POP(s.`txcmp/s`),VAR_POP(s.`txcmp/s`),SUM(s.`txcmp/s`),
+                    AVG(s.`rxmcst/s`),MAX(s.`rxmcst/s`),MIN(s.`rxmcst/s`),STDDEV_POP(s.`rxmcst/s`),VAR_POP(s.`rxmcst/s`),SUM(s.`rxmcst/s`),'.
                     'e.id_cluster FROM SAR_net_devices s '.
                     'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             }
@@ -470,7 +494,7 @@ VALUES
             $exec_rows = $dbUtil->get_rows($query);
             if (count($exec_rows) > 0) {          
                $show_in_result_metrics = Utils::generate_show($show_in_result_metrics,$exec_rows,0);     
-               $jsonData = Utils::generateJSONTable($exec_rows, $show_in_result_metrics);
+               $jsonData = Utils::generateJSONTable($exec_rows, $show_in_result_metrics, 2);
             } else {
                throw new \Exception("No results for query!");
             }

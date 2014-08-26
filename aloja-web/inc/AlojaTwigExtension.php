@@ -61,7 +61,7 @@ class AlojaTwigExtension extends Twig_Extension
             $url = $this->full_url($_SERVER);
 
             $query = explode("&", $_SERVER['QUERY_STRING']);
-            if($_GET['q'] == '/'.explode('/',$url)[3])
+            if(isset($_GET['q']) && $_GET['q'] == '/'.explode('/',$url)[3])
                 $queryStart = '?';
             else if (!$_SERVER['QUERY_STRING']) {
                 $queryStart = "?";

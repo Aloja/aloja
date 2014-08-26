@@ -39,7 +39,7 @@ class DefaultController extends AbstractController
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
-
+        $rows_config = '';
         try {
             $configurations = array();
             $where_configs = '';
@@ -85,6 +85,7 @@ class DefaultController extends AbstractController
 
             //get the result rows
             $query = "SELECT #count(*),
+            		  e.id_exec,
                       concat($concat_config) conf, bench,
                       avg(exe_time) AVG_exe_time,
                       #max(exe_time) MAX_exe_time,
@@ -115,14 +116,17 @@ class DefaultController extends AbstractController
 
         $categories = '';
         $count = 0;
+        $confOrders = array();
         foreach ($rows_config as $row_config) {
             $categories .= "'{$row_config['conf']} #{$row_config['num']}',";
             $count += $row_config['num'];
+            $confOrders[] = $row_config['conf'];
         }
 
         $series = '';
         $bench = '';
         if ($rows) {
+        	$seriesIndex = 0;
             foreach ($rows as $row) {
                 //close previous serie if not first one
                 if ($bench && $bench != $row['bench']) {
@@ -131,17 +135,23 @@ class DefaultController extends AbstractController
                 }
                 //starts a new series
                 if ($bench != $row['bench']) {
+                	$seriesIndex = 0;
                     $bench = $row['bench'];
                     $series .= "
                         {
                             name: '{$row['bench']}',
                                 data: [";
                 }
-                $series .= "['{$row['conf']}',".
-                    //round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
-                    //round(($row['AVG_exe_time']), 3).
-                    round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
-                    "],";
+                while($row['conf'] != $confOrders[$seriesIndex]) {
+                	$series .= "[null],";
+                	$seriesIndex++;
+                }
+	                $series .= "['{$row['conf']}',".
+	                    //round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
+	                    //round(($row['AVG_exe_time']), 3).
+	                    round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
+	                    "],";
+                $seriesIndex++;
 
             }
             //close the last series
@@ -1087,17 +1097,42 @@ class DefaultController extends AbstractController
         $type = Utils::get_GET_string('type');
         if(!$type || $type == 'CPU') {
           $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
-              '%user', '%nice', '%system', '%iowait', '%steal', '%idle', 'Cluster');  
+              'Avg %user', 'Max %user', 'Min %user', 'Stddev %user', 'Var %user', 
+          	  'Avg %nice', 'Max %nice', 'Min %nice', 'Stddev %nice', 'Var %nice', 
+          	  'Avg %system', 'Max %system', 'Min %system', 'Stddev %system', 'Var %system', 
+          	  'Avg %iowait', 'Max %iowait', 'Min %iowait', 'Stddev %iowait', 'Var %iowait', 
+          	  'Avg %steal', 'Max %steal', 'Min %steal', 'Stddev %steal', 'Var %steal',
+          	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster');  
         } else if($type == 'DISK') { 
             $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
-                'DEV', 'Tps', 'rd_sec/s', 'wr_sec/s', 'Avg rq-sz', 'Avg queue sz', 'Await', '%util', 'svctm', 'Cluster');
+                'DEV', 'Avg tps', 'Max tps', 'Min tps', 
+            	'Avg rd_sec/s', 'Max rd_sec/s', 'Min rd_sec/s', 'Stddev rd_sec/s', 'Var rd_sec/s', 'Sum rd_sec/s',
+            	'Avg wr_sec/s', 'Max wr_sec/s', 'Min wr_sec/s', 'Stddev wr_sec/s', 'Var wr_sec/s', 'Sum wr_sec/s',
+            	'Avg rq-sz', 'Max rq-sz', 'Min rq-sz', 'Stddev rq-sz', 'Var rq-sz',
+            	'Avg queue sz', 'Max queue sz', 'Min queue sz', 'Stddev queue sz', 'Var queue sz',
+            	'Avg Await', 'Max Await', 'Min Await', 'Stddev Await', 'Var Await',
+            	'Avg %util', 'Max %util', 'Min %util', 'Stddev %util', 'Var %util',
+            	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster');
         } else if($type == 'MEMORY') {
            $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 
-              'kbmemfree','kbmemused','%memused','kbbuffers',
-              'kbcached','kbcommit','%commit','kbactive','kbinact', 'Cluster');                           
+              'Avg kbmemfree', 'Max kbmemfree', 'Min kbmemfree', 'Stddev kbmemfree', 'Var kbmemfree',
+           	  'Avg kbmemused', 'Max kbmemused', 'Min kbmemused', 'Stddev kbmemused', 'Var kbmemused',
+           	  'Avg %memused', 'Max %memused', 'Min %memused', 'Stddev %memused', 'Var %memused',
+           	  'Avg kbbuffers', 'Max kbbuffers', 'Min kbbuffers', 'Stddev kbbuffers', 'Var kbbuffers',
+              'Avg kbcached', 'Max kbcached', 'Min kbcached', 'Stddev kbcached', 'Var kbcached',
+           	  'Avg kbcommit', 'Max kbcommit', 'Min kbcommit', 'Stddev kbcommit', 'Var kbcommit',
+           	  'Avg %commit', 'Max %commit', 'Min %commit', 'Stddev %commit', 'Var %commit',
+           	  'Avg kbactive', 'Max kbactive', 'Min kbactive', 'Stddev kbactive', 'Var kbactive',
+           	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster');                           
         } else if($type == 'NETWORK')
           $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 'Interface', 
-              'rxpck/s','txpck/s','rxkB/s','txkB/s','rxcmp/s','txcmp/s','rxmcst/s', 'Cluster');
+              'Avg rxpck/s', 'Max rxpck/s', 'Min rxpck/s', 'Stddev rxpck/s', 'Var rxpck/s', 'Sum rxpck/s', 
+          	  'Avg txpck/s', 'Max txpck/s', 'Min txpck/s', 'Stddev txpck/s', 'Var txpck/s', 'Sum txpck/s',
+          	  'Avg rxkB/s', 'Max rxkB/s', 'Min rxkB/s', 'Stddev rxkB/s', 'Var rxkB/s', 'Sum rxkB/s',
+          	  'Avg txkB/s', 'Max txkB/s', 'Min txkB/s', 'Stddev txkB/s', 'Var txkB/s', 'Sum txkB/s',
+          	  'Avg rxcmp/s', 'Max rxcmp/s', 'Min rxcmp/s', 'Stddev rxcmp/s', 'Var rxcmp/s', 'Sum rxcmp/s',
+          	  'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
+          	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster');
      
         echo $this->container->getTwig()->render('metrics/metrics.html.twig',
             array('selected' => 'Performance Metrics',

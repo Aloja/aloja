@@ -4,10 +4,12 @@ index:
 
 configimprovement:
     pattern: "/configimprovement"
+    legacy: "/config_improvement.php"
     controller: "alojaweb\\Controller\\DefaultController::configImprovementAction"
 
 benchexecutions:
     pattern: "/benchexecs"
+    legacy: "/datatable.php"
     controller: "alojaweb\\Controller\\DefaultController::benchExecutionsAction"
 
 benchdata:
@@ -16,14 +18,17 @@ benchdata:
 
 costperfeval:
     pattern: "/costperfeval"
+    legacy: "/perf_by_cost.php"
     controller: "alojaweb\\Controller\\DefaultController::costPerfEvaluationAction"
 
 perfcharts:
     pattern: "/perfcharts"
+    legacy: "/charts1.php"
     controller: "alojaweb\\Controller\\DefaultController::performanceChartsAction"
 
 counters:
     pattern: "/counters"
+    legacy: "/counters.php"
     controller: "alojaweb\\Controller\\DefaultController::countersAction"
 
 countersdata:

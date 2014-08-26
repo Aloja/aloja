@@ -4,8 +4,10 @@ casper.test.begin("Datatable tests", function(test) {
 	});
 
 	casper.start('http://localhost:8080/benchexecs', function() {
-		test.assertExists("#benchmarks", "Datatable created");
-		test.assertExists("#benchmarks td", 'Datatable has content');
+		test.assertExists("table#benchmarks", "Datatable created");
+		test.assertEval(function() {
+			return $("#benchmarks td").length > 1;
+		}, 'Datatable has content');
 		test.assertEval(
 				function() {
 					return $("tr:nth-child(2) th").children('input').eq(6)
@@ -28,7 +30,7 @@ casper.test.begin("Datatable tests", function(test) {
 		}, 'All networks are ETH after filtering out the others');
 
 		this.evaluate(function() {
-			$("tr:nth-child(2) th").children('input').eq(6).val(' ').keyup();
+			$("tr:nth-child(2) th").children('input').eq(6).val('').keyup();
 		});
 	});
 
@@ -37,7 +39,7 @@ casper.test.begin("Datatable tests", function(test) {
 			var isOk = false;
 			$("tbody tr td:nth-child(6)").each(function() {
 				var text = $(this).text();
-				if (text.substring(0, 2) == "IB")
+				if (text.substring(0,2) == "IB")
 					isOk = true;
 			});
 			return isOk;
