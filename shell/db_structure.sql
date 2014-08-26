@@ -56,9 +56,9 @@ CREATE TABLE IF NOT EXISTS `SAR_cpu` (
   `%idle` decimal(20,3) DEFAULT NULL,
   PRIMARY KEY (`id_SAR_cpu`),
   UNIQUE KEY `avoid_duplicates` (`id_exec`,`host`,`date`)
-  --KEY `index1` (`id_exec`),
-  --KEY `index2` (`date`),
-  --KEY `index3` (`host`)
+  #KEY `index1` (`id_exec`),
+  #KEY `index2` (`date`),
+  #KEY `index3` (`host`)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `SAR_block_devices` (
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `SAR_memory_util` (
   `%commit` decimal(20,3) DEFAULT NULL,
   `kbactive` decimal(20,3) DEFAULT NULL,
   `kbinact` decimal(20,3) DEFAULT NULL,
-  --`kbdirty` decimal(20,3) DEFAULT NULL,
+  #`kbdirty` decimal(20,3) DEFAULT NULL,
   PRIMARY KEY (`id_SAR_memory_util`),
   UNIQUE KEY `avoid_duplicates_UNIQUE` (`id_exec`,`host`,`date`)
 ) ENGINE=InnoDB;
@@ -337,34 +337,34 @@ CREATE TABLE IF NOT EXISTS `VMSTATS` (
 ) ENGINE=InnoDB;
 
 
---CREATE TABLE IF NOT EXISTS `JOB_COUNTERS` (
---  `id_JOB_COUNTERS` int(11) NOT NULL AUTO_INCREMENT,
---  `id_exec` int(11) NOT NULL,
---  `job_name` varchar(255) DEFAULT NULL,
---  `BYTES_READ` bigint DEFAULT NULL,
---  `SLOTS_MILLIS_MAPS` bigint DEFAULT NULL,
---  `FALLOW_SLOTS_MILLIS_REDUCES` bigint DEFAULT NULL,
---  `FALLOW_SLOTS_MILLIS_MAPS` bigint DEFAULT NULL,
---  `TOTAL_LAUNCHED_MAPS` bigint DEFAULT NULL,
---  `SLOTS_MILLIS_REDUCES` bigint DEFAULT NULL,
---  `BYTES_WRITTEN` bigint DEFAULT NULL,
---  `HDFS_BYTES_READ` bigint DEFAULT NULL,
---  `FILE_BYTES_WRITTEN` bigint DEFAULT NULL,
---  `HDFS_BYTES_WRITTEN` bigint DEFAULT NULL,
---  `MAP_INPUT_RECORDS` bigint DEFAULT NULL,
---  `PHYSICAL_MEMORY_BYTES` bigint DEFAULT NULL,
---  `SPILLED_RECORDS` bigint DEFAULT NULL,
---  `COMMITTED_HEAP_BYTES` bigint DEFAULT NULL,
---  `CPU_MILLISECONDS` bigint DEFAULT NULL,
---  `MAP_INPUT_BYTES` bigint DEFAULT NULL,
---  `VIRTUAL_MEMORY_BYTES` bigint DEFAULT NULL,
---  `SPLIT_RAW_BYTES` bigint DEFAULT NULL,
---  `MAP_OUTPUT_RECORDS` bigint DEFAULT NULL,
---  PRIMARY KEY (`id_JOB_COUNTERS`),
---  UNIQUE KEY `avoid_duplicates_UNIQUE` (`id_exec`,`job_name`),
---  KEY `index2` (`id_exec`),
---  KEY `index_job_name` (`job_name`)
---) ENGINE=InnoDB;
+#CREATE TABLE IF NOT EXISTS `JOB_COUNTERS` (
+#  `id_JOB_COUNTERS` int(11) NOT NULL AUTO_INCREMENT,
+#  `id_exec` int(11) NOT NULL,
+#  `job_name` varchar(255) DEFAULT NULL,
+#  `BYTES_READ` bigint DEFAULT NULL,
+#  `SLOTS_MILLIS_MAPS` bigint DEFAULT NULL,
+#  `FALLOW_SLOTS_MILLIS_REDUCES` bigint DEFAULT NULL,
+#  `FALLOW_SLOTS_MILLIS_MAPS` bigint DEFAULT NULL,
+#  `TOTAL_LAUNCHED_MAPS` bigint DEFAULT NULL,
+#  `SLOTS_MILLIS_REDUCES` bigint DEFAULT NULL,
+#  `BYTES_WRITTEN` bigint DEFAULT NULL,
+#  `HDFS_BYTES_READ` bigint DEFAULT NULL,
+#  `FILE_BYTES_WRITTEN` bigint DEFAULT NULL,
+#  `HDFS_BYTES_WRITTEN` bigint DEFAULT NULL,
+#  `MAP_INPUT_RECORDS` bigint DEFAULT NULL,
+#  `PHYSICAL_MEMORY_BYTES` bigint DEFAULT NULL,
+#  `SPILLED_RECORDS` bigint DEFAULT NULL,
+#  `COMMITTED_HEAP_BYTES` bigint DEFAULT NULL,
+#  `CPU_MILLISECONDS` bigint DEFAULT NULL,
+#  `MAP_INPUT_BYTES` bigint DEFAULT NULL,
+#  `VIRTUAL_MEMORY_BYTES` bigint DEFAULT NULL,
+#  `SPLIT_RAW_BYTES` bigint DEFAULT NULL,
+#  `MAP_OUTPUT_RECORDS` bigint DEFAULT NULL,
+#  PRIMARY KEY (`id_JOB_COUNTERS`),
+#  UNIQUE KEY `avoid_duplicates_UNIQUE` (`id_exec`,`job_name`),
+#  KEY `index2` (`id_exec`),
+#  KEY `index_job_name` (`job_name`)
+#) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS `JOB_details` (
   `id_JOB_details` int(11) NOT NULL AUTO_INCREMENT,
@@ -382,19 +382,19 @@ CREATE TABLE IF NOT EXISTS `JOB_details` (
   `FINISHED_MAPS` int(11) DEFAULT NULL,
   `TOTAL_REDUCES` int(11) DEFAULT NULL,
   `FAILED_REDUCES` int(11) DEFAULT NULL,
-  `Launched map tasks` bigint DEFAULT NULL,  --Job Counters
+  `Launched map tasks` bigint DEFAULT NULL,  #Job Counters
   `Rack-local map tasks` bigint DEFAULT NULL,
   `Launched reduce tasks` bigint DEFAULT NULL,
   `SLOTS_MILLIS_MAPS` bigint DEFAULT NULL,
   `SLOTS_MILLIS_REDUCES` bigint DEFAULT NULL,
   `Data-local map tasks` bigint DEFAULT NULL,
-  `FILE_BYTES_WRITTEN` bigint DEFAULT NULL, --FileSystem
+  `FILE_BYTES_WRITTEN` bigint DEFAULT NULL, #FileSystem
   `FILE_BYTES_READ` bigint DEFAULT NULL,
   `HDFS_BYTES_WRITTEN` bigint DEFAULT NULL,
   `HDFS_BYTES_READ` bigint DEFAULT NULL,
   `Bytes Read` bigint DEFAULT NULL,
-  `Bytes Written` bigint DEFAULT NULL, --File Input/Output Format
-  `Spilled Records` bigint DEFAULT NULL,  --MR framework
+  `Bytes Written` bigint DEFAULT NULL, #File Input/Output Format
+  `Spilled Records` bigint DEFAULT NULL,  #MR framework
   `SPLIT_RAW_BYTES` bigint DEFAULT NULL,
   `Map input records` bigint DEFAULT NULL,
   `Map output records` bigint DEFAULT NULL,
@@ -480,7 +480,7 @@ CREATE TABLE IF NOT EXISTS `execs_conf_parameters` (
   KEY `index_job_name` (`job_name`)
 ) ENGINE=InnoDB;
 
--- Add valid column to better distinguis between failed benchs
+# Add valid column to better distinguis between failed benchs
 ALTER TABLE execs ADD COLUMN valid BOOLEAN DEFAULT TRUE;
---- exe time lower than 200 => failed bench
+# exe time lower than 200 => failed bench
 UPDATE execs SET valid = FALSE WHERE exe_time < 200;
