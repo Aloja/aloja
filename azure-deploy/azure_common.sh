@@ -3,10 +3,10 @@ startTime="$(date +%s)"
 self_name="$(basename $0)"
 
 #check if azure command is installed
-if ! azure --version 2>&1 > /dev/null ; then
-  echo "azure command not instaled. Run npm install azure-cli"
-  exit 1
-fi
+#if ! azure --version 2>&1 > /dev/null ; then
+#  echo "azure command not instaled. Run: sudo npm install azure-cli"
+#  exit 1
+#fi
 
 [ -z "$type" ] && type="cluster"
 
@@ -160,12 +160,16 @@ vm_check_attach_disks() {
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
 
+chmod 0600 "../secure/keys/myPrivateKey.key"
+
   #echo to print special chars;
   if [ -z "$2" ] ; then
     echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
   else
     echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
   fi
+
+chmod 0644 "../secure/keys/myPrivateKey.key"
 }
 
 #$1 command to execute in master
@@ -185,13 +189,13 @@ vm_execute_master() {
 
 vm_set_master_crontab() {
 
-  if check_bootstraped "vm_set_master_crontab6" "set"; then
+  if check_bootstraped "vm_set_master_crontab" "set"; then
     logger "Setting ALOJA crontab to master"
 
     crontab="# m h  dom mon dow   command
 * * * * * export USER=$user && bash /home/$user/share/shell/exeq.sh $clusterName
 #backup data
-0 * * * * cp -ru share/jobs_$clusterName local >> /home/$user/cron.log 2>&1"
+#0 * * * * cp -ru share/jobs_$clusterName local >> /home/$user/cron.log 2>&1"
 
     vm_execute_master "echo '$crontab' |crontab"
 
@@ -327,7 +331,7 @@ alias s='dsh -g s -M'\" >> ~/.bashrc;" "paralell"
 
 #1 command to execute in master (as a gateway to DSH)
 cluster_execute() {
-  vm_execute_master "dsh -g m -M \"$1\""
+  vm_execute_master "dsh -g a -M \"$1\""
 }
 
 vm_initialize_disks() {

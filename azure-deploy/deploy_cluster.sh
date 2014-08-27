@@ -3,7 +3,7 @@
 #load init and common functions
 source "azure_common.sh"
 
-#Sequential Node deploy
+Sequential Node deploy
 for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 
   vm_name="${clusterName}-${vm_id}"
@@ -37,7 +37,7 @@ cluster_initialize_disks
 
 #master config
 vm_set_master_crontab
-vm_set_master_forer
+vm_set_master_forer &
 
 #extra command in case any
 [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"

@@ -89,7 +89,7 @@ get_mount_disks() {
 
   if [ -z "$dont_mount_share" ] ; then
     create_string="$create_string
-$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,port=222 0 0"
+$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
   fi
 
   num_drives="1"
@@ -106,7 +106,7 @@ $user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,Ide
 
   create_string="
     mkdir -p ~/{share,minerva};
-    sudo mkdir -p /scratch/attached/{1,2,3};
+    sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
     sudo chown -R $user: /scratch;
 
     sudo chmod 0777 /etc/fstab;
