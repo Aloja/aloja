@@ -277,8 +277,10 @@
                       "success": fnCallback
                     } );
                 },
-                {% if selected == 'Hadoop Job Counters'  %}
+                {% if selected != 'Performance Metrics' %}
                 "aaSorting": [[ 1, "desc" ]],
+                {% else %}
+                "aaSorting": [[ 0, "desc" ]],
                 {% endif %}
                 "iDisplayLength": 10,
                 "sDom": 'C<"clear">lfrtip<"clear"><"clear">T', //"sDom": 'C<"clear">lfrtip',
