@@ -134,7 +134,16 @@
 				<tr>
 				   <th><input type="text" value="" class="search_init" style="visibility: hidden;"></th>
 				   {% for key_name,column_name in theaders %}
-				     <th><input type="text" value="filter col" class="search_init form-control"></th>
+				     {% if discreteOptions[key_name] is defined %}
+				     <th><select class="form-control" style="width: auto;">
+				         {% for option in discreteOptions[key_name] %}
+				       	  <option {% if option == 'All' %}value=""{% else %}value="{{ option }}"{% endif %} {% if loop.index == 0 %}selected="selected"{% endif %}>{{ option }}</option>
+				      	 {% endfor %}
+				         </select>
+				     </th> 
+				     {% else%}
+				     <th><input type="text" value="filter col" class="search_init form-control" {% if column_name == 'PARAVER' or column_name == 'Files'  %}style="display: none;"{% endif %}></th>
+				     {% endif %}
 				   {% endfor %}
 				</tr>
 		  </thead>
@@ -233,7 +242,7 @@
             $("thead input").keyup( function () {
                 /* Filter on the column (the index) of this element */
                 oTable.fnFilter( this.value, oTable.oApi._fnVisibleToColumnIndex(
-                    oTable.fnSettings(), $("thead input").index(this) ) );
+                       oTable.fnSettings(), $(this).parent().index() ) );
             } );
 
             /*
@@ -258,6 +267,11 @@
                     this.value = this.initVal;
                 }
             } );
+
+            $("thead select").change(function() {
+            	oTable.fnFilter( $(this).val(), oTable.oApi._fnVisibleToColumnIndex(
+                        oTable.fnSettings(), $(this).parent().index() ) );
+            });
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {

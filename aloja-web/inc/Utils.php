@@ -271,4 +271,55 @@ class Utils
 
         return $show_in_result;
     }
+    
+    public static function getExecsOptions($db)
+    {
+    	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE valid = TRUE");
+    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE valid = TRUE");
+    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE valid = TRUE");
+    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE valid = TRUE");
+    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE valid = TRUE");
+    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE valid = TRUE");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT id_cluster FROM execs WHERE valid = TRUE");
+    	 
+    	$discreteOptions = array();
+    	$discreteOptions['bench'][] = 'All';
+    	$discreteOptions['net'][] = 'All';
+    	$discreteOptions['disk'][] = 'All';
+    	$discreteOptions['maps'][] = 'All';
+    	$discreteOptions['comp'][] = 'All';
+    	$discreteOptions['blk_size'][] = 'All';
+    	$discreteOptions['id_cluster'][] = 'All';
+    	foreach($benchOptions as $option) {
+    		$discreteOptions['bench'][] = array_shift($option);
+    	}
+    	foreach($netOptions as $option) {
+    		$discreteOptions['net'][] = array_shift($option);
+    	}
+    	foreach($diskOptions as $option) {
+    		$discreteOptions['disk'][] = array_shift($option);
+    	}
+    	foreach($mapsOptions as $option) {
+    		$discreteOptions['maps'][] = array_shift($option);
+    	}
+    	foreach($compOptions as $option) {
+    		$value = array_shift($option);
+    		if($value == 0) $value = 'None';
+    		else if($value == 1) $value = 'ZLIB';
+    		else if($value == 2) $value = 'BZIP2';
+    		else if($value == 3) $value = 'Snappy';
+    		$discreteOptions['comp'][] = $value;
+    	}
+    	foreach($blk_sizeOptions as $option) {
+    		$discreteOptions['blk_size'][] = array_shift($option);
+    	}
+    	foreach($clusterOptions as $option) {
+    		$value = array_shift($option);
+    		if($value == 1) $value = 'Local 1';
+    		else if($value == 2) $value = 'Azure L';
+    		$discreteOptions['id_cluster'][] = $value;
+    	}
+    	
+    	return $discreteOptions;
+    }
 }

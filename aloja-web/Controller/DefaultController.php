@@ -183,9 +183,12 @@ class DefaultController extends AbstractController
 
     public function benchExecutionsAction()
     {
+    	$discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
+
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
+            	'discreteOptions' => $discreteOptions
             ));
     }
 
@@ -993,6 +996,15 @@ class DefaultController extends AbstractController
     public function countersAction()
     {
         try {
+        	$db = $this->container->getDBUtils();
+        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = TRUE");
+        	
+        	$discreteOptions = array();
+        	$discreteOptions['bench'][] = 'All';
+        	foreach($benchOptions as $option) {
+        		$discreteOptions['bench'][] = array_shift($option);
+        	}
+        	
             $dbUtil = $this->container->getDBUtils();
             $message = null;
 
@@ -1054,6 +1066,17 @@ class DefaultController extends AbstractController
             } elseif ($type == 'TASKS') {
                 $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM JOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
+                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+
+                $discreteOptions['TASK_STATUS'][] = 'All';
+                $discreteOptions['TASK_TYPE'][] = 'All';
+                foreach($taskStatusOptions as $option) {
+                	$discreteOptions['TASK_STATUS'][] = array_shift($option);
+                }
+                foreach($typeOptions as $option) {
+                	$discreteOptions['TASK_TYPE'][] = array_shift($option);
+                }
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1086,7 +1109,8 @@ class DefaultController extends AbstractController
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
                 'type' => $type,
                 'execs' => $execs,
-                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : ''
+                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
+            	'discreteOptions' => $discreteOptions
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
@@ -1096,7 +1120,7 @@ class DefaultController extends AbstractController
         $show_in_result_metrics = array();
         $type = Utils::get_GET_string('type');
         if(!$type || $type == 'CPU') {
-          $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
+          $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
               'Avg %user', 'Max %user', 'Min %user', 'Stddev %user', 'Var %user', 
           	  'Avg %nice', 'Max %nice', 'Min %nice', 'Stddev %nice', 'Var %nice', 
           	  'Avg %system', 'Max %system', 'Min %system', 'Stddev %system', 'Var %system', 
@@ -1104,7 +1128,7 @@ class DefaultController extends AbstractController
           	  'Avg %steal', 'Max %steal', 'Min %steal', 'Stddev %steal', 'Var %steal',
           	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster');  
         } else if($type == 'DISK') { 
-            $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
+            $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
                 'DEV', 'Avg tps', 'Max tps', 'Min tps', 
             	'Avg rd_sec/s', 'Max rd_sec/s', 'Min rd_sec/s', 'Stddev rd_sec/s', 'Var rd_sec/s', 'Sum rd_sec/s',
             	'Avg wr_sec/s', 'Max wr_sec/s', 'Min wr_sec/s', 'Stddev wr_sec/s', 'Var wr_sec/s', 'Sum wr_sec/s',
@@ -1114,7 +1138,7 @@ class DefaultController extends AbstractController
             	'Avg %util', 'Max %util', 'Min %util', 'Stddev %util', 'Var %util',
             	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster');
         } else if($type == 'MEMORY') {
-           $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 
+           $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 
               'Avg kbmemfree', 'Max kbmemfree', 'Min kbmemfree', 'Stddev kbmemfree', 'Var kbmemfree',
            	  'Avg kbmemused', 'Max kbmemused', 'Min kbmemused', 'Stddev kbmemused', 'Var kbmemused',
            	  'Avg %memused', 'Max %memused', 'Min %memused', 'Stddev %memused', 'Var %memused',
@@ -1125,7 +1149,7 @@ class DefaultController extends AbstractController
            	  'Avg kbactive', 'Max kbactive', 'Min kbactive', 'Stddev kbactive', 'Var kbactive',
            	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster');                           
         } else if($type == 'NETWORK')
-          $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 'Interface', 
+          $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 'Interface', 
               'Avg rxpck/s', 'Max rxpck/s', 'Min rxpck/s', 'Stddev rxpck/s', 'Var rxpck/s', 'Sum rxpck/s', 
           	  'Avg txpck/s', 'Max txpck/s', 'Min txpck/s', 'Stddev txpck/s', 'Var txpck/s', 'Sum txpck/s',
           	  'Avg rxkB/s', 'Max rxkB/s', 'Min rxkB/s', 'Stddev rxkB/s', 'Var rxkB/s', 'Sum rxkB/s',
@@ -1134,11 +1158,13 @@ class DefaultController extends AbstractController
           	  'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
           	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster');
      
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('metrics/metrics.html.twig',
             array('selected' => 'Performance Metrics',
                 'theaders' => $show_in_result_metrics,
                 'title' => 'Hadoop Performance Counters',
-                'type' => $type ? $type : 'CPU'
+                'type' => $type ? $type : 'CPU',
+            	'discreteOptions' => $discreteOptions
             ));
     }
 }

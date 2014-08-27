@@ -10,11 +10,11 @@ casper.test.begin("Datatable tests", function(test) {
 		}, 'Datatable has content');
 		test.assertEval(
 				function() {
-					return $("tr:nth-child(2) th").children('input').eq(6)
-							.val() == 'filter col';
+					return $("tr:nth-child(2) th").children('select').eq(1)
+							.val() == '';
 				}, 'Network filter field exists');
 		this.evaluate(function() {
-			$("tr:nth-child(2) th").children('input').eq(6).val('ETH').keyup();
+			$("tr:nth-child(2) th").children('select').eq(1).val('ETH').change();
 		});
 	});
 
@@ -23,14 +23,14 @@ casper.test.begin("Datatable tests", function(test) {
 			var isOk = true;
 			$("tbody tr td:nth-child(6)").each(function() {
 				var text = $(this).text();
-				if (text != 'ETH')
+				if (text.substr(0,3) != "ETH")
 					isOk = false;
 			});
 			return isOk;
 		}, 'All networks are ETH after filtering out the others');
 
 		this.evaluate(function() {
-			$("tr:nth-child(2) th").children('input').eq(6).val('').keyup();
+			$("tr:nth-child(2) th").children('select').eq(1).val('').change();
 		});
 	});
 
