@@ -17,4 +17,9 @@ script: bash tests.sh
 services:
   - mysql
 notifications:
-  email: false
+  email:
+     recipients:
+       - aaron.call@bsc.es
+       - nicolas.poggi@bsc.es
+     on_success: never
+     on_failure: always
