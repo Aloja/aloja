@@ -154,8 +154,16 @@ class HighCharts
     {
         if(($value = Utils::get_GET_string('setmax_'.$this->getGuid())))
             return $value;
-        else
-            return $this->getMax();    
+        else {
+        	$max ='';
+        	if ($this->getPercentage()) {
+        		$max = round($this->getPercentage()*1);
+        	} elseif ($this->getMax()) {
+        		$max = round($this->getMax()*1);
+        	}
+        	
+        	return $max;
+        }   
     }
     
     public function getChartJS()
