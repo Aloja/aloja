@@ -4,47 +4,19 @@
 # Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
 
-require 'yaml'
-settings = YAML.load_file 'conf/settings_prod.yml'
-
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-    config.vm.box = 'azure'
-    config.vm.provider :azure do |azure|
+  #Default base image to build from scratch
+  #config.vm.box = "hashicorp/precise64"
+  #Prebuilt box for ALOJA
+  config.vm.box = "npoggi/aloja-precise64"
 
-      azure.subscription_id = settings['subscription_id']
-
-      azure.mgmt_certificate = settings['mgmt_certificate']
-      azure.mgmt_endpoint = 'https://management.core.windows.net'
-      azure.ssh_private_key_file = settings['ssh_private_key_file']
-      azure.ssh_certificate_file = settings['ssh_certificate_file']
-
-      azure.cloud_service_name = settings['cloud_service_name'] # optional. A new one will be generated if not provided.
-      azure.storage_acct_name = settings['storage_acct_name'] # optional. A new one will be generated if not provided.
-      azure.deployment_name = settings['deployment_name'] # defaults to cloud_service_name
-
-      azure.vm_image = settings['vm_image']
-      azure.vm_size = settings['vm_size']
-      azure.vm_user = settings['vm_user'] # defaults to 'vagrant' if not provided
-      azure.vm_password = settings['vm_password'] # min 8 characters. should contain a lower case letter, an uppercase letter, a number and a special character
-
-      azure.vm_name = settings['vm_name'] #MUST BE LOWERCASE! https://github.com/MSOpenTech/vagrant-azure/issues/11 max 15 characters. contains letters, number and hyphens. can start with letters and can end with letters and numbers
-      azure.vm_location = settings['vm_location'] # e.g., West US
-
-      # Provide the following values if creating a *Nix VM
-      azure.ssh_port = settings['ssh_port']
-
-      # Provide the following values if creating a Windows VM
-      #azure.winrm_transport = [ 'http', 'https' ] # this will open up winrm ports on both http (5985) and http (5986) ports
-      #azure.winrm_https_port = 'A VALID PUBLIC PORT' # customize the winrm https port, instead of 5986
-      #azure.winrm_http_port = 'A VALID PUBLIC PORT' # customize the winrm http port, insted of 5985
-
-      azure.tcp_endpoints = settings['tcp_endpoints'] # opens the Remote Desktop internal port that listens on public port 53389. Without this, you cannot RDP to a Windows VM.
-   end
-
-  config.ssh.username = settings['vm_user'] # the one used to create the VM
-  config.ssh.password = settings['vm_password'] # the one used to create the VM
-  config.ssh.private_key_path = settings['ssh_rsa_private_key']
+  #config.vm.box = "yungsang/coreos"
+  #
+  #config.vm.provision "docker" do |d|
+  #  d.build_dir "."
+  #  #d.build_image "/vagrant/app"
+  #end
 
   config.vm.host_name = "vagrant"
 
@@ -59,7 +31,11 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     puppet.module_path = "puppet/modules"
     puppet.manifests_path = "puppet/manifests"
     puppet.manifest_file = "init.pp"
-    puppet.options = "--environment dev" 
+    puppet.options = "--environment dev"
     #puppet.options = "--verbose --debug"
   end
+
+  #net ports
+  config.vm.network :forwarded_port, host: 8080, guest: 80 #web
+  config.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
 end
