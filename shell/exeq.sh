@@ -1,26 +1,37 @@
 #!/bin/bash
 
+#Controls queue execution from a subshell in the master node (should be in crontab)
+
 #first check if already running
 self_name="$(basename $0)"
 self_pid="$$"
-exists=$(pgrep $self_name|wc -l)
-if [ "$exists" != "2" ] ; then
-  echo "Process $self_name already running"
+exists="$(pgrep -f "$self_name"|wc -l)"
+#exists="$(ps aux|grep "$self_name"|wc -l)"
+#echo "$(pgrep -f "$self_name")"
+if [ "$exists" != "3" ] ; then
+  echo "Process $self_name already running with pid $self_pid. Count $exists"
   exit
 fi
 
 trap 'kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
+#echo "USER $USER"
 
+[ -z "$1" ] && CLUSTER_NAME="az" || CLUSTER_NAME="$1"
 
-echo "USER $USER"
+Q_SOURCE_PATH="/home/$USER/share/shell/queue"
 
-Q_PATH="/home/$USER/qsub/queue"
+Q_PATH="/home/$USER/local/queue_$CLUSTER_NAME"
+
+#prepare dirs for first time
+mkdir -p $Q_PATH/{exec,done,conf,hold}
+
 EXEC_PATH="$Q_PATH/exec"
 DONE_PATH="$Q_PATH/done"
 CONF_PATH="$Q_PATH/conf"
 LOG_FILE="$Q_PATH/queue.log"
 
+cd "$Q_PATH"
 
 file_name=""
 #command="ls -l $Q_PATH| egrep -v '^d'|tail -n +2|head -n 1|awk '{print \$(NF)}'"
