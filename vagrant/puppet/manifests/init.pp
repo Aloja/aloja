@@ -35,6 +35,14 @@ package { ['python-software-properties', 'vim', 'git']:
 
 include nginx, php #, mysql
 
+vcsrepo { "/var/www/":
+  ensure => latest,
+  provider => git,
+  require => [ Package[ 'git' ] ],
+  source => "https://someuser:password@github.com/Aloja/aloja.git",
+  revision => 'azureProd',
+}
+
 #include '::mysql::server'
 if $environment == 'prod' {
    $mysql_options = {'bind-address' => '0.0.0.0',
