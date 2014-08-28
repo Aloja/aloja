@@ -240,9 +240,16 @@
 
             /* Add the events etc before DataTables hides a column */
             $("thead input").keyup( function () {
+                var searchText;
+                if(isNumber(this.value))
+                    searchText =  "^"+this.value+"$";
+                else
+                    searchText = this.value;
+                
+                if(this.value == '') searchText = ' ';
                 /* Filter on the column (the index) of this element */
-                oTable.fnFilter( this.value, oTable.oApi._fnVisibleToColumnIndex(
-                       oTable.fnSettings(), $(this).parent().index() ) );
+                oTable.fnFilter( searchText, oTable.oApi._fnVisibleToColumnIndex(
+                       oTable.fnSettings(), $(this).parent().index() ), true );
             } );
 
             /*
