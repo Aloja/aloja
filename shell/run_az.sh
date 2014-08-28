@@ -44,7 +44,6 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-
 while getopts ":h:?:v:b:r:n:d:m:i:p:l:I:c:z:sN" opt; do
     case "$opt" in
     h|\?)
@@ -119,6 +118,11 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
+CLUSTER_NAME="az"
+NUMBER_OF_HOSTS="4"
+NUMBER_OF_SLAVES="3"
+user="pristine"
+
 #if [ "${NET}" == "IB" ] ; then
 #  host1="al-1001-ib0"
 #  host2="al-1002-ib0"
@@ -130,6 +134,7 @@ shift $((OPTIND-1))
   host2="al-1002"
   host3="al-1003"
   host4="al-1004"
+
   IFACE="eth0"
 #fi
 
@@ -150,34 +155,36 @@ else
 fi
 
 
-SOURCE_DIR="/home/pristine/share/aplic"
+
+BASE_DIR="/home/$user/share/"
+SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
 H_DIR="$HDD/aplic/$HADOOP_VERSION" #execution dir
-HIB_DIR="/home/pristine/share/aplic/HiBench${BENCH}/"
+HIB_DIR="$SOURCE_DIR/HiBench${BENCH}/"
 
 #Location of prepared inputs
 SAVE_LOCATION="/scratch/local/HiBench_prepare/"
 
+
 DATE='date +%Y%m%d_%H%M%S'
-CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_az"
+CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
 JOB_NAME="`$DATE`_$CONF"
-JOB_PATH="/home/pristine/share/jobs/$JOB_NAME"
+
+JOB_PATH="/home/$user/share/jobs_$CLUSTER_NAME/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
 
 #export HADOOP_HOME="$HADOOP_DIR"
-export JAVA_HOME="/home/pristine/share/aplic/jdk1.7.0_25"
+export JAVA_HOME="$SOURCE_DIR/jdk1.7.0_25"
 
-bwm_source="/home/pristine/share/aplic/sge-hadoop-jobs/bin/bwm-ng"
+bwm_source="$SOURCE_DIR/bin/bwm-ng"
+
+echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 #create dir to save files in one host
 $DSH "mkdir -p $JOB_PATH"
 $DSH "touch $LOG_PATH"
-
-#temporary to avoid read-only file system errors
-$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-
 
 logger(){
   stamp=$(date '+%s')
@@ -186,13 +193,39 @@ logger(){
   #zabbix_sender "hadoop.status $stamp $1"
 }
 
-logger "Generating source dirs"
-$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
+#temporary to avoid read-only file system errors
+logger "Re-mounting attached disks"
+$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
 
 
+logger "Setting scratch permissions"
+$DSH "sudo chown -R $user: /scratch"
+
+#only copy files if version has changed (to save time in azure)
+logger "Checking if to generate source dirs"
+for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+  host_tmp="host${host_number}" #for variable variable name
+  logger " for host ${!host_tmp}"
+  if [ "$(ssh "${!host_tmp}" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+    logger "At least host ${!host_tmp} did not have source dirs. Generating source dirs for ALL hosts"
+    $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
+    break #dont need to check after one is missing
+  else
+    logger " Host ${!host_tmp} up to date"
+  fi
+done
+
+#if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
+#  logger "Generating source dirs"
+#  $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
+#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
+#else
+#  logger "Source dirs up to date"
+#fi
 
 zabbix_sender(){
-  echo "al-1001 $1" | /home/pristine/share/aplic/zabbix/bin/zabbix_sender -c /home/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
+  :
+  #echo "al-1001 $1" | /home/pristine/share/aplic/zabbix/bin/zabbix_sender -c /home/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
   #>> $LOG_PATH
 }
 
@@ -312,16 +345,12 @@ EOF
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/mapred-site.xml > $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH
 
   logger "Replacing per host config"
-  ssh $host1 "/usr/bin/perl -pe \"s,##HOST##,$host1,g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
-  ssh $host2 "/usr/bin/perl -pe \"s,##HOST##,$host2,g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
-  ssh $host3 "/usr/bin/perl -pe \"s,##HOST##,$host3,g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
-  ssh $host4 "/usr/bin/perl -pe \"s,##HOST##,$host4,g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
 
-  ssh $host1 "/usr/bin/perl -pe \"s,##HOST##,$host1,g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
-  ssh $host2 "/usr/bin/perl -pe \"s,##HOST##,$host2,g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
-  ssh $host3 "/usr/bin/perl -pe \"s,##HOST##,$host3,g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
-  ssh $host4 "/usr/bin/perl -pe \"s,##HOST##,$host4,g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
-
+  for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+    host_tmp="host${host_number}" #for variable variable name
+    ssh "${!host_tmp}" "/usr/bin/perl -pe \"s,##HOST##,${!host_tmp},g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "${!host_tmp}" "/usr/bin/perl -pe \"s,##HOST##,${!host_tmp},g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
+  done
 
   $DSH "echo -e \"$MASTER\" > $H_DIR/conf/masters" 2>&1 |tee -a $LOG_PATH
   $DSH "echo -e \"$slaves\" > $H_DIR/conf/slaves" 2>&1 |tee -a $LOG_PATH
@@ -329,11 +358,18 @@ EOF
 
   #save config
   logger "Saving config"
-  $DSH "mkdir -p $JOB_PATH/conf_$host1 $JOB_PATH/conf_$host2 $JOB_PATH/conf_$host3 $JOB_PATH/conf_$host4" 2>&1 |tee -a $LOG_PATH
-  ssh $host1 "cp $H_DIR/conf/* $JOB_PATH/conf_$host1" 2>&1 |tee -a $LOG_PATH &
-  ssh $host2 "cp $H_DIR/conf/* $JOB_PATH/conf_$host2" 2>&1 |tee -a $LOG_PATH &
-  ssh $host3 "cp $H_DIR/conf/* $JOB_PATH/conf_$host3" 2>&1 |tee -a $LOG_PATH &
-  ssh $host4 "cp $H_DIR/conf/* $JOB_PATH/conf_$host4" 2>&1 |tee -a $LOG_PATH &
+  create_conf_dirs=""
+  for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+    host_tmp="host${host_number}" #for variable variable name
+    create_conf_dirs="$create_conf_dirs mkdir -p $JOB_PATH/conf_${!host_tmp} "
+  done
+
+  $DSH "$create_conf_dirs" 2>&1 |tee -a $LOG_PATH
+
+  for host_number in $(seq 1 "$NUMBER_OF_HOSTS") ; do
+    host_tmp="host${host_number}" #for variable variable name
+    ssh "${!host_tmp}" "cp $H_DIR/conf/* $JOB_PATH/conf_${!host_tmp}" 2>&1 |tee -a $LOG_PATH &
+  done
 }
 
 prepare_config ${NET} ${DISK} ${BENCH}
@@ -373,7 +409,7 @@ restart_hadoop(){
     logger "Deleting previous Hadoop HDFS"
 #$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/hadoop; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
     #send multiple yes to format
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
@@ -388,18 +424,17 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    #TODO make number of nodes aware
-    if [ "$num" == "3" ] ; then
+    if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
-      elif [ "$i" == "60" ] ; then
+      elif [ "$i" == "30" ] ; then
         logger "Still in Safe mode, MANUALLY RESETTING SAFE MODE wating for $i seconds"
         $DSH_MASTER $H_DIR/bin/hadoop dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
       else
         logger "Still in Safe mode, wating for $i seconds"
       fi
-    elif [ "$i" == "120" ] && [[ -z $1 ]] ; then
+    elif [ "$i" == "60" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
       $DSH_MASTER $H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
       $DSH_MASTER $H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
@@ -408,11 +443,11 @@ restart_hadoop(){
       logger "Reseting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"
       DELETE_HDFS="1"
       restart_hadoop no_retry
-    elif [ "$i" == "180" ] ; then
-      logger "$num/3 Datanodes available, EXIT"
+    elif [ "$i" == "120" ] ; then
+      logger "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
       exit 1
     else
-      logger "$num/3 Datanodes available, wating for $i seconds"
+      logger "$num/$NUMBER_OF_SLAVES Datanodes available, wating for $i seconds"
       sleep 1
     fi
   done
