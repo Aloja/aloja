@@ -13,6 +13,17 @@ casper.test.begin("Datatable tests", function(test) {
 					return $("tr:nth-child(2) th").children('select').eq(1)
 							.val() == '';
 				}, 'Network filter field exists');
+		test.assertEval(
+				function() {
+					return $('select[name="benchmarks_length"]').val() != null;
+				}, 'Number of entries per page filter exists'
+		);
+		this.evaluate(function() {
+			$('select[name="benchmarks_length"]').val(-1).change();
+		});
+	});
+	
+	casper.then(function() {
 		this.evaluate(function() {
 			$("tr:nth-child(2) th").children('select').eq(1).val('ETH').change();
 		});

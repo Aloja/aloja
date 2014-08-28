@@ -13,8 +13,14 @@ casper.test.begin("Performance counters tests", function(test) {
     	return $("#benchmarks tr:nth-child(2) th").children('select').eq(0).val() == '';
     }, 'Benchmark filter field exists');
     this.evaluate(function() {
-    	$("#benchmarks tr:nth-child(2) th").children('select').eq(0).val('pagerank').change();
-    });
+		$('select[name="benchmarks_length"]').val(-1).change();
+	});
+   });
+  
+   casper.then(function() {
+	  this.evaluate(function() {
+	  	$("#benchmarks tr:nth-child(2) th").children('select').eq(0).val('pagerank').change();
+	  }); 
    });
    
    casper.then(function() {
