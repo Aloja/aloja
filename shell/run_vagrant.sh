@@ -120,7 +120,7 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
-BLOBS_DIR="$BLOBS_DIR"
+BLOBS_DIR="$CUR_DIR/../blobs"
 
 HDD="$BLOBS_DIR/runs/hadoop-hibench_$PORT_PREFIX"
 
@@ -145,7 +145,7 @@ export JAVA_HOME="$BLOBS_DIR/aplic/jdk1.7.0_25"
 
 bwm_source="$BLOBS_DIR/aplic/sge-hadoop-jobs/bin/bwm-ng"
 
-host1="localhost"
+host1="vagrant"
 
 DSH="dsh -m $host1"
 DSH_MASTER="ssh $host1"
@@ -317,7 +317,7 @@ restart_hadoop(){
     echo $report 2>&1 |tee -a $LOG_PATH
 
     #TODO make number of nodes aware
-    if [ "$num" == "3" ] ; then
+    if [ "$num" == "1" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
@@ -337,7 +337,7 @@ restart_hadoop(){
       DELETE_HDFS="1"
       restart_hadoop no_retry
     elif [ "$i" == "180" ] ; then
-      logger "$num/3 Datanodes available, EXIT"
+      logger "$num/1 Datanodes available, EXIT"
       exit 1
     else
       logger "$num/3 Datanodes available, wating for $i seconds"
