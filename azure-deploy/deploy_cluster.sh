@@ -3,7 +3,7 @@
 #load init and common functions
 source "azure_common.sh"
 
-Sequential Node deploy
+#Sequential Node deploy
 for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 
   vm_name="${clusterName}-${vm_id}"
