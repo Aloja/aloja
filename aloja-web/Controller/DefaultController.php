@@ -1126,7 +1126,7 @@ class DefaultController extends AbstractController
           	  'Avg %system', 'Max %system', 'Min %system', 'Stddev %system', 'Var %system', 
           	  'Avg %iowait', 'Max %iowait', 'Min %iowait', 'Stddev %iowait', 'Var %iowait', 
           	  'Avg %steal', 'Max %steal', 'Min %steal', 'Stddev %steal', 'Var %steal',
-          	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster');  
+          	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster', 'end_time' => 'End time');  
         } else if($type == 'DISK') { 
             $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
                 'DEV', 'Avg tps', 'Max tps', 'Min tps', 
@@ -1136,7 +1136,7 @@ class DefaultController extends AbstractController
             	'Avg queue sz', 'Max queue sz', 'Min queue sz', 'Stddev queue sz', 'Var queue sz',
             	'Avg Await', 'Max Await', 'Min Await', 'Stddev Await', 'Var Await',
             	'Avg %util', 'Max %util', 'Min %util', 'Stddev %util', 'Var %util',
-            	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster');
+            	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster', 'end_time' => 'End time');
         } else if($type == 'MEMORY') {
            $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 
               'Avg kbmemfree', 'Max kbmemfree', 'Min kbmemfree', 'Stddev kbmemfree', 'Var kbmemfree',
@@ -1147,7 +1147,7 @@ class DefaultController extends AbstractController
            	  'Avg kbcommit', 'Max kbcommit', 'Min kbcommit', 'Stddev kbcommit', 'Var kbcommit',
            	  'Avg %commit', 'Max %commit', 'Min %commit', 'Stddev %commit', 'Var %commit',
            	  'Avg kbactive', 'Max kbactive', 'Min kbactive', 'Stddev kbactive', 'Var kbactive',
-           	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster');                           
+           	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster', 'end_time' => 'End time');                           
         } else if($type == 'NETWORK')
           $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 'Interface', 
               'Avg rxpck/s', 'Max rxpck/s', 'Min rxpck/s', 'Stddev rxpck/s', 'Var rxpck/s', 'Sum rxpck/s', 
@@ -1156,7 +1156,7 @@ class DefaultController extends AbstractController
           	  'Avg txkB/s', 'Max txkB/s', 'Min txkB/s', 'Stddev txkB/s', 'Var txkB/s', 'Sum txkB/s',
           	  'Avg rxcmp/s', 'Max rxcmp/s', 'Min rxcmp/s', 'Stddev rxcmp/s', 'Var rxcmp/s', 'Sum rxcmp/s',
           	  'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
-          	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster');
+          	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster', 'end_time' => 'End time');
      
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('metrics/metrics.html.twig',

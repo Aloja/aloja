@@ -298,10 +298,12 @@
                       "success": fnCallback
                     } );
                 },
-                {% if selected != 'Performance Metrics' %}
-                "aaSorting": [[ 1, "desc" ]],
-                {% else %}
-                "aaSorting": [[ 0, "desc" ]],
+                {% if selected == 'Performance Metrics' %}
+                "aaSorting": [[ {{ getArrayIndex(theaders,'End time')+1 }}, "desc" ]],
+                {% elseif selected == 'Hadoop Job Counters' %}
+                "aaSorting": [[ 2, "desc" ]],
+                {% elseif selected == 'Benchmark Executions' %}
+                "aaSorting": [[ 17, "desc" ]],
                 {% endif %}
                 "iDisplayLength": 10,
                 "sDom": 'C<"clear">lfrtip<"clear"><"clear">T', //"sDom": 'C<"clear">lfrtip',
@@ -314,7 +316,7 @@
                     {% if selected == 'Benchmark Executions' %}
                       {"bVisible": false, "aTargets": [ 4,17 ] }
                     {% elseif selected == 'Performance Metrics' %}
-                      {"bVisible": false, "aTargets": [1]}
+                      {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
                     {% endif %}
                 ],
                 "bSortCellsTop": true,
