@@ -510,4 +510,52 @@ VALUES
             echo json_encode(array('aaData' => $noData));
         }
     }
+    
+    public function bestConfigDataAction()
+    {
+    	$db = $this->container->getDBUtils();
+    	$rows_config = '';
+    	try {
+    		$configurations = array();
+    		$where_configs = '';
+    		$concat_config = "";
+    		 
+    		$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+    		$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+    		$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+    		$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+    		$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+    		$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+    		$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+    		$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+    		$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+    		$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+    		 
+    		//$concat_config = join(',\'_\',', $configurations);
+    		//$concat_config = substr($concat_config, 1);
+    		 
+    		//make sure there are some defaults
+    		if (!$concat_config) {
+    			$concat_config = 'disk';
+    			$disks = array('HDD');
+    		}
+    		 
+    		$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+    		$order_conf = 'LENGTH(conf), conf';
+    		 
+    		//get best config
+    		$query = "SELECT e.* from execs e WHERE e.id_exec IN ".
+    				"(SELECT MIN(e2.exe_time) FROM execs e2 WHERE 1 $filter_execs $where_configs LIMIT 1);";
+    		 
+    		$rows = $db->get_rows($query);
+    		if(!$rows)
+    			throw new \Exception("No results for query!");
+    		 
+    	} catch (\Exception $e) {
+    		$noData = array();
+            $noData[] = $e->getMessage();
+
+            echo json_encode(array('aaData' => $noData));
+    	}
+    }
 }
