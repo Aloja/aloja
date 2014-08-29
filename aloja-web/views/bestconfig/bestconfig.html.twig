@@ -1,7 +1,28 @@
 {% extends "layout.html.twig" %}
 {% block javascript %}
 	{{ parent() }}
+	<script type="text/javascript">
+
+	</script>
 {% endblock %}
 {% block content %}
-    
+	<h1>Best configuration details</h1>
+    <table class="table table-stripped">
+    	<thead>
+    	  <th>Run details</th>
+    	  <th>Benchmark</th>
+    	  <th>Exe time</th>
+    	  <th>Running cost$</th>
+    	  <th>Net</th>
+    	  <th>Disk</th>
+    	  <th>Maps</th>
+    	  <th>IO SFac</th>
+    	  <th>Rep</th>
+    	  <th>IO FBuf</th>
+    	  <th>Comp</th>
+    	  <th>Block size</th>
+    	  <th>Cluster</th>
+    	  <th>PARAVER</th>
+    	</thead>
+    </table>
 {% endblock %}

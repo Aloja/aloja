@@ -1167,4 +1167,91 @@ class DefaultController extends AbstractController
             	'discreteOptions' => $discreteOptions
             ));
     }
+    
+    public function bestConfigAction()
+    {	 
+    
+    	$db = $this->container->getDBUtils();
+    	$rows_config = '';
+    	try {
+    		$configurations = array();
+    		$where_configs = '';
+    		$concat_config = "";
+    	
+    		$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config,false);
+    		$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config,false);
+    		$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config,false);
+    		$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config,false);
+    		$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config,false);
+    		$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config,false);
+    		$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config,false);
+    		$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config,false);
+    		$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false);
+    		$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false);
+    	
+    		//$concat_config = join(',\'_\',', $configurations);
+    		//$concat_config = substr($concat_config, 1);
+    	
+    		//make sure there are some defaults
+    		if (!$concat_config) {
+    			$concat_config = 'disk';
+    			$disks = array('HDD');
+    		}
+    	
+    		$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+    		$order_conf = 'LENGTH(conf), conf';
+    	
+    		//get the result rows
+    		$query = "SELECT e.*,
+    		#concat($concat_config) conf, bench,
+    		avg(exe_time) AVG_exe_time,
+    		#max(exe_time) MAX_exe_time,
+    		min(exe_time) MIN_exe_time,
+    		#(select AVG(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) AVG_ALL_exe_time,
+    		#(select MAX(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MAX_ALL_exe_time,
+    		#(select MIN(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MIN_ALL_exe_time,
+    		'none'
+    		from execs e
+    		WHERE 1  $filter_execs $where_configs 
+    		ORDER BY exe_time ASC
+    		LIMIT 1;";
+    	
+    		$rows = $db->get_rows($query);
+    	
+    		if (!$rows) {
+	    		throw new \Exception("No results for query!");
+    		}
+    	} catch (\Exception $e) {
+    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+    	}
+
+    	if($rows) {
+    		$bestexec = $rows[0];
+    		$conf = $bestexec['exec'];
+    		$parameters = explode('_',$conf);
+    		$bench = explode('/',$conf)[1];
+    		$cluster = (explode('/',$parameters)[0] == 'az') ? 'Azure' : 'Local';
+    		$maps = substr($conf[6],1);
+    		$disk = $conf[4];
+    		$net = $conf[3];
+//     		$iosf = $bestexec['ios'];
+//     		$replication = $bestexec['replication'];
+//     		$iofilebuf = $bestexec['iofilebuf'];
+    		$comp = Utils::getCompressionName($bestexec['comp']);
+    	}
+    	
+    	echo $this->container->getTwig()->render('bestconfig/bestconfig.html.twig',
+    		array('selected' => 'Best configuration',
+    				'title' => 'Best Run Configuration',
+    				'bestexec' => $bestexec,
+    				'cluster' => $cluster,
+    				'maps' => $maps,
+    				'disk' => $disk,
+    				'net' => $net,
+//     				'iosf' => $iosf,
+//     				'replication' => $replication,
+//     				'iofilebuf' => $iofilebuf,
+    				'comp' => $comp
+    	));
+    }
 }
