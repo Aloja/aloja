@@ -1,6 +1,6 @@
 
 ## Local Installation
-[![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=aaron)](https://travis-ci.org/Aloja/aloja)
+[![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=master)](https://travis-ci.org/Aloja/aloja)
 ### Requirements
 
 Before installing ALOJA you need the following packages:
