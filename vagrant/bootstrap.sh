@@ -3,6 +3,15 @@
 #rm -rf /var/www
 #ln -fs /vagrant/workspace /var/www
 #
+
+#passwordless login to localhost
+if [ ! -f "/home/vagrant/.ssh/id_dsa" ] ; then
+  sudo -u vagrant ssh-keygen -t dsa -P '' -f /home/vagrant/.ssh/id_dsa
+  sudo -u vagrant cat /home/vagrant/.ssh/id_dsa.pub >> /home/vagrant/.ssh/authorized_keys
+  echo -e "Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet" > /home/vagrant/.ssh/config
+  chown -R vagrant: /home/vagrant/.ssh #just in case
+fi
+
 if ! which puppet > /dev/null; then
   sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list
   wget http://apt.puppetlabs.com/puppetlabs-release-stable.deb -O /tmp/puppetlabs-release-stable.deb && \
