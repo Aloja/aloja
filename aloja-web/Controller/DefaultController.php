@@ -1180,6 +1180,9 @@ class DefaultController extends AbstractController
     	$bestexec = '';
     	$cluster = '';
     	$comp = '';
+    	$seriesCat = '[';
+    	$seriesData = '';
+    	$execsDetails = array();
     	try {
     		$configurations = array();
     		$where_configs = '';
@@ -1231,18 +1234,50 @@ class DefaultController extends AbstractController
     			$conf = $bestexec['exec'];
     			$parameters = explode('_',$conf);
     			$cluster = (explode('/',$parameters[count($parameters)-1])[0] == 'az') ? 'Azure' : 'Local';
+    			$counter = 0;
+    			foreach($rows as $row) {
+    				if($counter < 30)
+    				{
+    					if($counter == 0) {
+    						$seriesCat .= "'".$row['exec']."'";
+    					} else {
+    						$seriesData .= ',';
+    						$seriesCat .= ",'".$row['exec']."'";
+    					}
+    					
+    					if($order_type == 'cost')
+    						$seriesData .= round($row['cost'],2);
+    					else
+    						$seriesData .= $row['exe_time'];
+    					
+    					Utils::makeExecInfoBeauty($row);
+    					$execsDetails[$row['exec']]['id'] = $row['id_exec'];
+    					$execsDetails[$row['exec']]['bench'] = $row['bench'];
+    					$execsDetails[$row['exec']]['exe_time'] = $row['exe_time'];
+    					$execsDetails[$row['exec']]['cost'] = round($row['cost'],2);
+    					$execsDetails[$row['exec']]['net'] = $row['net'];
+    					$execsDetails[$row['exec']]['disk'] = $row['disk'];
+    					$execsDetails[$row['exec']]['maps'] = $row['maps'];
+    					$execsDetails[$row['exec']]['iosf'] = $row['iosf'];
+    					$execsDetails[$row['exec']]['replication'] = $row['replication'];
+    					$execsDetails[$row['exec']]['iofilebuf'] = $row['iofilebuf'];
+    					$execsDetails[$row['exec']]['comp'] = $row['comp'];
+    					$execsDetails[$row['exec']]['blk_size'] = $row['blk_size'];
+    					$conf = $row['exec'];
+    					$parameters = explode('_',$conf);
+    					$execsDetails[$row['exec']]['cluster'] = (explode('/',$parameters[count($parameters)-1])[0] == 'az') ? 'Azure' : 'Local';
+    				}
+    				$counter++;
+    			}
     		}
-    		Utils::makeExecInfoBeauty($bestexec);
-    		
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
-    	
+    	$seriesCat .= ']';
     	echo $this->container->getTwig()->render('bestconfig/bestconfig.html.twig',
     		array('selected' => 'Best configuration',
     				'title' => 'Best Run Configuration',
-    				'bestexec' => $bestexec,
-    				'cluster' => $cluster,
+    				'execsDetails' => json_encode($execsDetails),
     				'order_type' => $order_type,
     				'benchs' => $benchs,
     				'nets' => $nets,
@@ -1254,7 +1289,9 @@ class DefaultController extends AbstractController
     				'replications' => $replications,
     				'iosfs' => $iosfs,
     				'iofilebufs' => $iofilebufs,
-    				'money' => $money
+    				'money' => $money,
+    				'seriesCat' => $seriesCat,
+    				'seriesData' => $seriesData
     	));
     }
 }
