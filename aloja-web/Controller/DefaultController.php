@@ -1217,7 +1217,8 @@ class DefaultController extends AbstractController
     		$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false);
     		$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false);
     		$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config,false);
-    	
+    		if(!$benchs)
+    			$where_configs .= 'AND e.bench = \'wordcount\'';
     		$order_type = Utils::get_GET_string('ordertype');
     		if(!$order_type) $order_type = 'exe_time';
     		//$concat_config = join(',\'_\',', $configurations);
