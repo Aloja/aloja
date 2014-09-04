@@ -1201,7 +1201,7 @@ class DefaultController extends AbstractController
     		$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config,false);
     	
     		$order_type = Utils::get_GET_string('ordertype');
-    		if(!$order_type) $order_type = 'cost';
+    		if(!$order_type) $order_type = 'exe_time';
     		//$concat_config = join(',\'_\',', $configurations);
     		//$concat_config = substr($concat_config, 1);
     	
@@ -1291,7 +1291,8 @@ class DefaultController extends AbstractController
     				'iofilebufs' => $iofilebufs,
     				'money' => $money,
     				'seriesCat' => $seriesCat,
-    				'seriesData' => $seriesData
+    				'seriesData' => $seriesData,
+    				'select_multiple_benchs' => false
     	));
     }
 }
