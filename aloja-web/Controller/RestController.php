@@ -510,4 +510,39 @@ VALUES
             echo json_encode(array('aaData' => $noData));
         }
     }
+    
+    public function histogramDataAction()
+    {
+		$db = $this->container->getDBUtils ();
+		$execsDetails = array ();
+		try {
+			$idExec = Utils::get_GET_string('id_exec');
+			if (!$idExec)
+				throw new \Exception ( "No execution selected!" );
+				
+			// get the result rows
+			$query = "SELECT e.bench,j.*
+    		from JOB_tasks j JOIN execs e USING (id_exec) 
+			where e.valid = TRUE AND j.id_exec = $idExec;";
+			
+			$this->getContainer ()->getLog ()->addInfo ( 'Histogram query: ' . $query );
+			$rows = $db->get_rows ($query);
+			if (!$rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+			
+			$result = array();
+			foreach ( $rows as $row ) {
+				$result[$row['JOBID'].'/'.$row['bench']]['tasks'][$row['TASKID']] = $row;
+			}
+			header('Content-Type: application/json');
+			ob_start('ob_gzhandler');
+			echo json_encode($result);
+		} catch ( \Exception $e ) {
+			$noData = array();
+            $noData[] = $e->getMessage();
+
+            echo json_encode(array('error' => $noData));
+		}
+    }
 }

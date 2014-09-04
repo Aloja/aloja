@@ -1167,4 +1167,35 @@ class DefaultController extends AbstractController
             	'discreteOptions' => $discreteOptions
             ));
     }
+    
+    public function histogramAction()
+    {
+    	$db = $this->container->getDBUtils();
+    	$idExec = '';
+    	try {
+    		$idExec = Utils::get_GET_string('id_exec');
+    		if(!$idExec)
+    			throw new \Exception("No execution selected!");
+    		
+    		//get the result rows
+//     		$query = "SELECT e.bench,j.JOBID,
+//     		  min(j.FILE_BYTES_WRITTEN) AS min, max(j.FILE_BYTES_WRITTEN) AS max 
+//     		  from JOB_tasks j JOIN execs e USING (id_exec) where e.valid = TRUE
+//     		  AND j.TASK_TYPE = 'MAP' AND e.id_exec = $idExec
+//     		  GROUP BY j.id_exec,j.JOBID;";
+    		
+//     		$this->getContainer()->getLog()->addInfo('Histogram query: '.$query);
+//     		$rows = $db->get_rows($query);
+//     		if (!$rows) {
+//     			throw new \Exception("No results for query!");
+//     		}
+    	} catch (\Exception $e) {
+    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+    	}
+    	
+    	echo $this->container->getTwig()->render('histogram/histogram.html.twig',
+    			array('selected' => 'Histogram',
+    				  'idExec' => $idExec
+    			));
+    }
 }

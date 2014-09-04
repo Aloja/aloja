@@ -1,0 +1,176 @@
+{% extends "layout.html.twig" %} {% block javascript %} {{ parent() }}
+<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$(function () {
+			var globalData = null;
+		    var chart = new Highcharts.Chart({
+		        chart: {
+			        renderTo: 'chart',
+		            type: 'columnrange',
+		            inverted: true,
+		            height: 500,
+		            events: {
+			            load: requestData
+		            }
+		        },
+		        title: {
+		            text: 'Job file MB written variation'
+		        },
+		        subtitle: {
+			        text: '(Aggregated with all tasks)'
+				},
+		        xAxis: {
+		            //categories: { seriesCat | raw }}
+		        },
+		        yAxis: {
+		            title: {
+		                text: 'File MB Read'
+		            }
+		        },
+		        tooltip: {
+		            valueSuffix: 'MB'
+		        },
+		        plotOptions: {
+		            columnrange: {
+		                dataLabels: {
+		                    enabled: true,
+		                    formatter: function () {
+		                        return this.y + 'MB';
+		                    }
+		                }
+		            },
+		            series: {
+                    	cursor: 'pointer',
+                        point: {
+                            events: {
+                                click: function () {
+                                    var id = this.series.points[this.x].category;
+                                    updateTasksChart(id);
+                                }
+                            }
+                        }
+                    }
+		        },
+		        legend: {
+		            enabled: false
+		        },
+				credits: {
+					enabled: false
+				},
+		        //series: [{
+		           // name: 'Jobs files mb written',
+		          //  data: #{ seriesData }
+		        //}]
+		    });
+		    var chart_column = null;
+		    function requestData() {
+			    $.ajax({
+			        url: "{{ path('histogramdata', {'id_exec': idExec}) }}",
+			        type: "GET",
+			        dataType: "json",
+			        success: function(dades) {
+				        globalData = dades;
+				        var myData = Array();
+				        var first = null;
+				        var categories = Array();
+				        $.each(dades, function(index, value) {
+					        if(!first)
+						        first = index;
+					        
+					        categories.push(index);
+							var values = Array();
+							$.each(value['tasks'], function(ind, val) {
+								if(val['TASK_TYPE'] == 'MAP') {
+								  var mbWritten = (val['FILE_BYTES_WRITTEN']/1024)/1024;
+								  values.push(mbWritten);
+								}
+							});
+							var max = Math.round(Math.max.apply(Math,values)*100)/100;
+							var min = Math.round(Math.min.apply(Math,values)*100)/100;
+
+							myData.push(Array(min,max));
+					    });
+			            chart.addSeries({
+			              name: "Jobs files mb written",
+			              data: myData
+			            });
+			            Highcharts.charts[0].axes[0].setCategories(categories);
+						updateTasksChart(first);
+			        },
+			        cache: false
+			    });
+			}
+			function updateTasksChart(selected)
+			{
+				if(chart_column != null)
+					chart_column.destroy();
+				var myData = Array();
+		        var categories = Array();
+				var values = Array();
+				$.each(globalData[selected]['tasks'], function(ind, val) {
+					categories.push(ind);
+					if(val['TASK_TYPE'] == 'MAP') {
+					  var mbWritten = (val['FILE_BYTES_WRITTEN']/1024)/1024;
+					  myData.push(mbWritten);
+					}
+				});
+			    chart_column = new Highcharts.Chart({
+			        chart: {
+			            type: 'column',
+			            renderTo: 'chart_column'
+			        },
+			        title: {
+			            text: 'File MB Written per task'
+			        },
+			        xAxis: {
+						labels: {
+							enabled: false
+						}
+			        },
+			        yAxis: {
+			            min: 0,
+			            title: {
+			                text: 'MB Read per file'
+			            }
+			        },
+			        tooltip: {
+			            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+			            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+			                '<td style="padding:0"><b>{point.y:.2f} MB</b></td></tr>',
+			            footerFormat: '</table>',
+			            shared: true,
+			            useHTML: true
+			        },
+			        plotOptions: {
+			            column: {
+			                pointPadding: 0.2,
+			                borderWidth: 0
+			            }
+			        },
+			        legend: {
+						enabled: false
+				    },
+				    credits: {
+					    enabled: false
+					},
+//	 		        series: [{
+//	 		            name: 'Tokyo',
+//	 		            data: [49.9, 71.5, 106.4, 129.2, 144.0, 176.0, 135.6, 148.5, 216.4, 194.1, 95.6, 54.4]
+
+//	 		        }]
+			    });
+				chart_column.addSeries({
+		              name: "File MB Written per task",
+		              data: myData
+		            });
+		        Highcharts.charts[1].axes[0].setCategories(categories);
+			}
+		});
+	});
+	</script>
+{% endblock %} {% block content %}
+<div id="chart"></div>
+<div id="chart_column"></div>
+{% endblock %}

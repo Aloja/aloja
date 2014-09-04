@@ -46,3 +46,11 @@ metrics:
 metricsdata:
     pattern: "/metricsdata"
     controller: "alojaweb\\Controller\\RestController::metricsDataAction"
+    
+histogram:
+    pattern: "/histogram"
+    controller: "alojaweb\\Controller\\DefaultController::histogramAction"
+    
+histogramdata:
+    pattern: "/histogramdata"
+    controller: "alojaweb\\Controller\\RestController::histogramDataAction"
