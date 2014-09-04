@@ -58,6 +58,8 @@
     			      {% set column_name = column_name ~ makeTooltip('Hadoop HDFS block size.') %}
     			    {% elseif column_name == 'Cluster' %}
     			      {% set column_name = column_name ~ makeTooltip('Kind of cluster.') %}
+    			    {% elseif column_name == 'Histogram' %}
+    			      {% set column_name = column_name ~ makeTooltip('Look at job\'s and task\'s metrics histograms.') %}
     			    {% elseif column_name == 'Files' %}
     			      {% set column_name = column_name ~ makeTooltip('Download execution files and logs.') %}
     			    {% elseif column_name == 'PARAVER' %}
@@ -378,10 +380,12 @@
         					else
         						tooltip = aData[7].substring(2) + ' remote(s)';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
-                        } else if(headTitle == 'Files') {
-        					var string = aData[15];
-        					var value = string.substring(0, strpos(aData[15], '/'));
-        					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+//                         } else if(headTitle == 'Files') {
+//         					var string = aData[15];
+//         					var value = string.substring(0, strpos(aData[15], '/'));
+//         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+						} else if(headTitle == 'Histogram') {
+							$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
                         } else if(headTitle == 'PARAVER') {
         					$(this).html('<a href="{{ path('export2prv') }}?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
                         }

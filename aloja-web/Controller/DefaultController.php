@@ -23,7 +23,8 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-            'files' => 'Files',
+    		'histogram' => 'Histogram',
+           // 'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
@@ -184,7 +185,6 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
     	$discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
-
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
@@ -1176,19 +1176,6 @@ class DefaultController extends AbstractController
     		$idExec = Utils::get_GET_string('id_exec');
     		if(!$idExec)
     			throw new \Exception("No execution selected!");
-    		
-    		//get the result rows
-//     		$query = "SELECT e.bench,j.JOBID,
-//     		  min(j.FILE_BYTES_WRITTEN) AS min, max(j.FILE_BYTES_WRITTEN) AS max 
-//     		  from JOB_tasks j JOIN execs e USING (id_exec) where e.valid = TRUE
-//     		  AND j.TASK_TYPE = 'MAP' AND e.id_exec = $idExec
-//     		  GROUP BY j.id_exec,j.JOBID;";
-    		
-//     		$this->getContainer()->getLog()->addInfo('Histogram query: '.$query);
-//     		$rows = $db->get_rows($query);
-//     		if (!$rows) {
-//     			throw new \Exception("No results for query!");
-//     		}
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
