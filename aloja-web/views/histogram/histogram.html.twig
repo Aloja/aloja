@@ -60,23 +60,20 @@
 			        subtitle: {
 				        text: '(Aggregated with all tasks)'
 					},
-			        xAxis: {
-			            //categories: { seriesCat | raw }}
-			        },
 			        yAxis: {
 			            title: {
 			                text: sufix
 			            }
 			        },
 			        tooltip: {
-			            valueSuffix: sufix
+			            valueSuffix: ' '+sufix
 			        },
 			        plotOptions: {
 			            columnrange: {
 			                dataLabels: {
 			                    enabled: true,
 			                    formatter: function () {
-			                        return this.y + sufix;
+			                        return this.y + ' '+ sufix;
 			                    }
 			                }
 			            },
@@ -98,10 +95,6 @@
 					credits: {
 						enabled: false
 					},
-			        //series: [{
-			           // name: 'Jobs files mb written',
-			          //  data: #{ seriesData }
-			        //}]
 			    });
 			    chart.xAxis[0].setCategories(categories,false);
 	            chart.addSeries({
