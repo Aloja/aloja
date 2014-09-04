@@ -18,14 +18,22 @@ class Utils
         return $array;
     }
 
-    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config)
+    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true)
     {
+    	if($item_name == 'money' && isset($_GET['money'])) {
+    		$money = $_GET['money'];
+    		if($money != '') {
+    			$where_configs .= ' AND (exe_time/3600)*(cost_hour) <= '.$_GET['money'];
+    		}
+    		return $_GET['money'];
+    	}
+    	
         $single_item_name = substr($item_name, 0, -1);
 
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
             $items = Utils::delete_none($items);
-        } else {
+        } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('pagerank', 'terasort', 'wordcount');
             } elseif ($item_name == 'nets') {
@@ -35,7 +43,8 @@ class Utils
             } else {
                 $items = array();
             }
-        }
+        } else
+        	$items = array();
 
         if ($items) {
             if ($item_name != 'benchs') {
@@ -102,14 +111,7 @@ class Utils
                     } elseif ($key_name == 'FINISH_TIME') {
                         $jsonRow[] = date('YmdHis', round($value_row[$key_name]/1000));
                     } elseif ($key_name == 'comp') {
-                        if($value_row[$key_name] == 0)
-                            $jsonRow[] = 'None';
-                        elseif($value_row[$key_name] == 1)
-                        $jsonRow[] = 'ZLIB';
-                        elseif($value_row[$key_name] == 2)
-                        $jsonRow[] = 'BZIP2';
-                        else
-                            $jsonRow[] = 'Snappy';
+                    	$jsonRow[] = self::getCompressionName($value_row[$key_name]);
                     } else
                         $jsonRow[] = $value_row[$key_name];
                 } else {
@@ -304,11 +306,7 @@ class Utils
     	}
     	foreach($compOptions as $option) {
     		$value = array_shift($option);
-    		if($value == 0) $value = 'None';
-    		else if($value == 1) $value = 'ZLIB';
-    		else if($value == 2) $value = 'BZIP2';
-    		else if($value == 3) $value = 'Snappy';
-    		$discreteOptions['comp'][] = $value;
+    		$discreteOptions['comp'][] = self::getCompressionName($value);
     	}
     	foreach($blk_sizeOptions as $option) {
     		$discreteOptions['blk_size'][] = array_shift($option);
@@ -321,5 +319,56 @@ class Utils
     	}
     	
     	return $discreteOptions;
+    }
+    
+    public static function getCompressionName($compCode)
+    {
+    	$compName = '';
+    	if($compCode == 0)
+    		$compName = 'None';
+    	elseif($compCode == 1)
+    		$compName = 'ZLIB';
+    	elseif($compCode == 2)
+    		$compName = 'BZIP2';
+    	else
+    		$compName = 'Snappy';
+    	
+    	return $compName;
+    }
+    
+    public static function getNetworkName($netShort)
+    {
+    	$netName = '';
+    	if($netShort == 'IB')
+    		$netName = 'Infiniband';
+    	else
+    		$netName = 'Ethernet';
+    	
+    	return $netName;
+    }
+    
+    public static function getDisksName($diskShort)
+    {
+    	$disks = '';
+    	if($diskShort == 'HDD')
+    		$disks = 'Hard-disk drive';
+    	elseif($diskShort == 'SSD')
+    		$disks = 'Solid-state disk';
+    	else
+    		$disks = substr($diskShort,2).'remotes';
+    
+    	return $disks;
+    }
+    
+    public static function makeExecInfoBeauty(&$execInfo)
+    {
+    	if(key_exists('comp',$execInfo))
+    		$execInfo['comp'] = self::getCompressionName($execInfo['comp']);
+    	
+    	if(key_exists('net',$execInfo))
+    		$execInfo['net'] = self::getNetworkName($execInfo['net']);
+    	
+    	if(key_exists('disk',$execInfo))
+    		$execInfo['disk'] = self::getDisksName($execInfo['disk']);
     }
 }
