@@ -45,15 +45,18 @@
 		         //   categories: ['Africa', 'America', 'Asia', 'Europe', 'Oceania'],
 		            title: {
 		                text: null
-		            }
+		            },
+		            labels: {
+			            enabled: false
+			        }
 		        },
 		        yAxis: {
 		            min: 0,
 		            title: {
-		              {% if request.get('ordertype') == 'exe_time' %}
-		                text: 'Execution time (seconds)',
-		              {% else %}
+		              {% if request.get('ordertype') == 'cost' %}
 		            	text: 'Cost-effective (USD $)',
+		              {% else %}
+		                text: 'Execution time (seconds)',
 		              {% endif %}
 		                align: 'high'
 		            },
@@ -62,7 +65,7 @@
 		            }
 		        },
 		        tooltip: {
-		            valueSuffix: '{% if request.get('ordertype') == 'exe_time' %}s{% else %}${% endif %}'
+		            valueSuffix: '{% if request.get('ordertype') == 'cost' %}${% else %}s{% endif %}'
 		        },
 		        plotOptions: {
 		            bar: {

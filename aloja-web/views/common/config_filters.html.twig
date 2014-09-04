@@ -27,6 +27,8 @@
 				<select class="form-control" class="control-form" name="benchs[]"
 					 {% if select_multiple_benchs is not defined or select_multiple_benchs %}
 					multiple {% endif %}>
+					<option value="bayes"  {% if 'bayes' in benchs %}
+						SELECTED  {% endif %}>bayes</option>
 					<option value="pagerank"  {% if 'pagerank' in benchs %} SELECTED
 						{% endif %}>pagerank</option>
 					<option value="sort"  {% if 'sort' in benchs %} SELECTED
