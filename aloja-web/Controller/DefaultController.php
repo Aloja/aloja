@@ -1200,17 +1200,11 @@ class DefaultController extends AbstractController
     		$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false);
     		$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config,false);
     		if(!$benchs)
-    			$where_configs .= 'AND e.bench = \'wordcount\'';
+    			$where_configs .= 'AND bench IN (\'wordcount\')';
     		$order_type = Utils::get_GET_string('ordertype');
     		if(!$order_type) $order_type = 'exe_time';
     		//$concat_config = join(',\'_\',', $configurations);
     		//$concat_config = substr($concat_config, 1);
-    	
-    		//make sure there are some defaults
-    		if (!$concat_config) {
-    			$concat_config = 'disk';
-    			$disks = array('HDD');
-    		}
     	
     		$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
     		$order_conf = 'LENGTH(conf), conf';
@@ -1275,6 +1269,8 @@ class DefaultController extends AbstractController
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
     	$seriesCat .= ']';
+    	
+    	if(empty($benchs)) $benchs = array('wordcount');
     	echo $this->container->getTwig()->render('bestconfig/bestconfig.html.twig',
     		array('selected' => 'Best configuration',
     				'title' => 'Best Run Configuration',

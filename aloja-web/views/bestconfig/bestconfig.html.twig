@@ -33,16 +33,16 @@
 		    }
 		}
 		
-		    $('#chart').highcharts({
+		    var chart = new Highcharts.Chart({
 		        chart: {
-		            type: 'bar'
+		            type: 'bar',
+		            renderTo: 'chart'
 		        },
 		        title: {
 		            text: 'Executions ordered per best configuration'
 		        },
 		        xAxis: {
 			        categories: {{ seriesCat | raw }},
-		         //   categories: ['Africa', 'America', 'Asia', 'Europe', 'Oceania'],
 		            title: {
 		                text: null
 		            },
@@ -65,7 +65,8 @@
 		            }
 		        },
 		        tooltip: {
-		            valueSuffix: '{% if request.get('ordertype') == 'cost' %}${% else %}s{% endif %}'
+		            valueSuffix: "{% if request.get('ordertype') == 'cost' %}${% else %}s{% endif %}",
+		            pointFormat: '<b>{point.y}</b>'
 		        },
 		        plotOptions: {
 		            bar: {
