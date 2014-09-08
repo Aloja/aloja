@@ -121,9 +121,9 @@
 		        var categories = Array();
 				var values = Array();
 				$.each(globalData[selected]['tasks'], function(ind, val) {
-					categories.push(ind);
 					if(val['TASK_TYPE'] == taskType) {
-					  var mbWritten = (val[$(metricSel).val()]);
+					  categories.push(ind);
+					  var mbWritten = parseFloat(val[$(metricSel).val()]);
 					  if($(metricSel).attr('division'))
 						  mbWritten /= $(metricSel).attr('division');
 					  
@@ -161,12 +161,7 @@
 				    },
 				    credits: {
 					    enabled: false
-					},
-//	 		        series: [{
-//	 		            name: 'Tokyo',
-//	 		            data: [49.9, 71.5, 106.4, 129.2, 144.0, 176.0, 135.6, 148.5, 216.4, 194.1, 95.6, 54.4]
-
-//	 		        }]
+					}
 			    });
 			    chart_column.xAxis[0].setCategories(categories,false);
 				chart_column.addSeries({
