@@ -1176,7 +1176,14 @@ class DefaultController extends AbstractController
     	 
     	$metricaY = Utils::get_GET_string('metricay');
     	$metricaX = Utils::get_GET_string('metricax');
-    	$aggr = Utils::get_GET_string('aggr');
+    	$opX = Utils::get_GET_string('opy');
+    	$opY = Utils::get_GET_string('opy');
+    	$metricaY2 = Utils::get_GET_string('metricay2');
+    	$metricaX2 = Utils::get_GET_string('metricax2');
+    	$aggrX = Utils::get_GET_string('aggrx');
+    	$aggrX2 = Utils::get_GET_string('aggrx2');
+    	$aggrY = Utils::get_GET_string('aggry');
+    	$aggrY2 = Utils::get_GET_string('aggry2');
     	
     	if(!$metricaY)
     		$metricaY = 'e.maps';
@@ -1184,8 +1191,28 @@ class DefaultController extends AbstractController
     	if(!$metricaX)
     		$metricaX = 'e.exe_time';
     	
-    	if(!$aggr)
-    		$aggr = '';
+    	if($metricaX && $aggrX) {
+    		$metricaX = "$aggrX($metricaX)";
+    	}
+    	 
+    	if($metricaX2 && $aggrX2) {
+    		$metricaX2 = "$aggrX2($metricaX2)";
+    	}
+    	
+    	if($metricaY && $aggrY) {
+    		$metricaY = "$aggrY($metricaY)";
+    	}
+    	
+    	if($metricaY2 && $aggrY2) {
+    		$metricaY2 = "$aggrY2($metricaY2)";
+    	}
+    	
+    	if($opX) {
+    		$metricaX = $metricaX.$opX.$metricaX2;
+    	}
+    	if($opY) {
+    		$metricaY = $metricaY.$opY.$metricaY2;
+    	}
     	    	
     	$result = "[";
     	$firstOut = true;
@@ -1196,7 +1223,7 @@ class DefaultController extends AbstractController
     			$result .= ',';
     
     		$bench = $value['bench'];
-    		$query = "SELECT e.bench, $aggr($metricaY) AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' GROUP BY id_exec";
+    		$query = "SELECT e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' GROUP BY id_exec";
     		$this->getContainer()->getLog()->addDebug('MetricVsMetric query:'+$query);
     		$rows = $dbUtils->get_rows($query);
     		$result .= "{name: '$bench', data:[";
@@ -1230,7 +1257,7 @@ class DefaultController extends AbstractController
     		array('selected' => 'Metric vs metric',
     				'series' => $result,
     				'execs' => $execs,
-    				'aggr' => $aggr
+    				'aggrY' => $aggrY
     		));
     }
 }
