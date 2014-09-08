@@ -4,53 +4,162 @@
 {% endblock %}
 {% block content %}
    <form method="get"role="form"class="form-inline">
+    <div class="row" style="margin-left: .5em;">
+     <div class="col-md-4">
+       <div class="row">
 	   MetricaX: <select name="metricax"class="form-control">
-	   				<option value="e.exe_time"unit="s">Execution time</option>
-	   				<option value="e.maps"unit="maps">Maps</option>
-	   				<option value="SUM(j.`Bytes Read`)"unit="bytes">MB Read</option>
-				    <option value="SUM(j.`Bytes Written`)"unit="bytes">MB Written</option>
-				    <option value="SUM(j.`FILE_BYTES_WRITTEN`)"unit="bytes">File MB written</option>
-				    <option value="SUM(j.`FILE_BYTES_READ`)"unit="bytes">File MB read</option>
-				    <option value="SUM(j.`HDFS_BYTES_WRITTEN`)"unit="bytes">HDFS MB written</option>
-				    <option value="SUM(j.`HDFS_BYTES_READ`)"unit="bytes">HDFS MB read</option>
-				    <option value="SUM(j.`Spilled Recordsv">Spilled Records</option>
-				    <option value="SUM(j.`SPLIT_RAW_BYTES`)"unit="bytes">Split raw MB</option>
-	  			    <option value="SUM(j.`Map input records`)" unit=" ">Map input records</option>
-				    <option value="SUM(j.`Map output records`)" unit=" ">Map output records</option>
-				    <option value="SUM(j.`Map input bytes`)"unit="bytes">Map input MB</option>
-				    <option value="SUM(j.`Map output bytes`)"unit="bytes">Map output MB</option>
-				    <option value="SUM(j.`Map ouptut materialized bytes`)"unit="bytes">Map ouptut materialized MB</option>
-				    <option value="SUM(j.`Reduce input groups`)" unit=" ">Reduce input groups</option>
-				    <option value="SUM(j.`Reduce output records`)" unit=" ">Reduce output records</option>
-				    <option value="SUM(j.`Reduce shuffle bytes`)"unit="bytes">Reduce shuffle MB</option>
-				    <option value="SUM(j.`Combine input records`)" unit=" ">Combine input records</option>
-				    <option value="SUM(j.`Combine output records`)" unit=" ">Combine output records</option>
-	   			</select>
-	   
-	   MetricaY:<select name="metricay"class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
 	   				<option value="e.exe_time"unit="s">Execution time</option>
-	   			    <option value="SUM(j.`Bytes Read`)"unit="bytes">MB Read</option>
-				    <option value="SUM(j.`Bytes Written`)"unit="bytes">MB Written</option>
-				    <option value="SUM(j.`FILE_BYTES_WRITTEN`)"unit="bytes">File MB written</option>
-				    <option value="SUM(j.`FILE_BYTES_READ`)"unit="bytes">File MB read</option>
-				    <option value="SUM(j.`HDFS_BYTES_WRITTEN`)"unit="bytes">HDFS MB written</option>
-				    <option value="SUM(j.`HDFS_BYTES_READ`)"unit="bytes">HDFS MB read</option>
-				    <option value="SUM(j.`Spilled Records`)">Spilled Records</option>
-				    <option value="SUM(j.`SPLIT_RAW_BYTES`)"unit="bytes">Split raw MB</option>
-	  			    <option value="SUM(j.`Map input records`)" unit=" ">Map input records</option>
-				    <option value="SUM(j.`Map output records`)" unit=" ">Map output records</option>
-				    <option value="SUM(j.`Map input bytes`)"unit="bytes">Map input MB</option>
-				    <option value="SUM(j.`Map output bytes`)"unit="bytes">Map output MB</option>
-				    <option value="SUM(j.`Map ouptut materialized bytes`)" unit=" ">Map ouptut materialized MB</option>
-				    <option value="SUM(j.`Reduce input groups`)" unit=" ">Reduce input groups</option>
-				    <option value="SUM(j.`Reduce output records`)" unit=" ">Reduce output records</option>
-				    <option value="SUM(j.`Reduce shuffle bytes`)"unit="bytes">Reduce shuffle MB</option>
-				    <option value="SUM(j.`Combine input records`)" unit=" ">Combine input records</option>
-				    <option value="SUM(j.`Combine output records`)" unit=" ">Combine output records</option>
+	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
+				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
+				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
+				    <option value="j.`FILE_BYTES_READ`"unit="bytes" aggr="true">File MB read</option>
+				    <option value="j.`HDFS_BYTES_WRITTEN`"unit="bytes" aggr="true">HDFS MB written</option>
+				    <option value="j.`HDFS_BYTES_READ`"unit="bytes" aggr="true">HDFS MB read</option>
+				    <option value="j.`Spilled Records`" unit=" " aggr="true">Spilled Records</option>
+				    <option value="j.`SPLIT_RAW_BYTES`"unit="bytes" aggr="true">Split raw MB</option>
+	  			    <option value="j.`Map input records`" unit=" " aggr="true">Map input records</option>
+				    <option value="j.`Map output records`" unit=" " aggr="true">Map output records</option>
+				    <option value="j.`Map input bytes`"unit="bytes" aggr="true">Map input MB</option>
+				    <option value="j.`Map output bytes`"unit="bytes" aggr="true">Map output MB</option>
+				    <option value="j.`Map output materialized bytes`" unit=" " aggr="true">Map ouptut materialized MB</option>
+				    <option value="j.`Reduce input groups`" unit=" " aggr="true">Reduce input groups</option>
+				    <option value="j.`Reduce output records`" unit=" " aggr="true">Reduce output records</option>
+				    <option value="j.`Reduce shuffle bytes`" unit="bytes" aggr="true">Reduce shuffle MB</option>
+				    <option value="j.`Combine input records`" unit=" " aggr="true">Combine input records</option>
+				    <option value="j.`Combine output records`" unit=" " aggr="true">Combine output records</option>
 	   			</select>
+	   			<span id="aggrx">
+			   	 Aggr: <select name="aggrx" class="form-control">
+			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="STDDEV_POP">Standard deviation</option>
+			   	 			<option value="VAR_POP">Variance</option>
+			   	 		</select>
+	   			</span>
+	   	 </div>
+	   	 <br />
+	   	 <div class="row">
+	   	 Operation:<select name="opx" class="form-control">
+	   				    <option value=""> </option>
+	   	 				<option value="+">+</option>
+	   	 				<option value="-">-</option>
+	   	 				<option value="*">*</option>
+	   	 				<option value="/">/</option>
+	   	 			</select>
+	   	 </div>
+	   	 <br />
+	   	 <div class="row">
+	   	 Metrica: <select name="metricax2"class="form-control">
+	   				<option value="e.maps"unit="maps">Maps</option>
+	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
+				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
+				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
+				    <option value="j.`FILE_BYTES_READ`"unit="bytes" aggr="true">File MB read</option>
+				    <option value="j.`HDFS_BYTES_WRITTEN`"unit="bytes" aggr="true">HDFS MB written</option>
+				    <option value="j.`HDFS_BYTES_READ`"unit="bytes" aggr="true">HDFS MB read</option>
+				    <option value="j.`Spilled Records`" unit=" " aggr="true">Spilled Records</option>
+				    <option value="j.`SPLIT_RAW_BYTES`"unit="bytes" aggr="true">Split raw MB</option>
+	  			    <option value="j.`Map input records`" unit=" " aggr="true">Map input records</option>
+				    <option value="j.`Map output records`" unit=" " aggr="true">Map output records</option>
+				    <option value="j.`Map input bytes`"unit="bytes" aggr="true">Map input MB</option>
+				    <option value="j.`Map output bytes`"unit="bytes" aggr="true">Map output MB</option>
+				    <option value="j.`Map output materialized bytes`" unit=" " aggr="true">Map ouptut materialized MB</option>
+				    <option value="j.`Reduce input groups`" unit=" " aggr="true">Reduce input groups</option>
+				    <option value="j.`Reduce output records`" unit=" " aggr="true">Reduce output records</option>
+				    <option value="j.`Reduce shuffle bytes`" unit="bytes" aggr="true">Reduce shuffle MB</option>
+				    <option value="j.`Combine input records`" unit=" " aggr="true">Combine input records</option>
+				    <option value="j.`Combine output records`" unit=" " aggr="true">Combine output records</option>
+	   			</select>
+	   			<span id="aggrx2">
+			   	 Aggr: <select name="aggrx2" class="form-control">
+			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="STDDEV_POP">Standard deviation</option>
+			   	 			<option value="VAR_POP">Variance</option>
+			   	 		</select>
+	   			</span>
+	   		</div>
+	  </div>
+	  <div class="col-md-4">
+	   <div class="row">
+	   MetricaY:<select name="metricay" class="form-control">
+	   				<option value="e.maps"unit="maps">Maps</option>
+	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
+				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
+				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
+				    <option value="j.`FILE_BYTES_READ`"unit="bytes" aggr="true">File MB read</option>
+				    <option value="j.`HDFS_BYTES_WRITTEN`"unit="bytes" aggr="true">HDFS MB written</option>
+				    <option value="j.`HDFS_BYTES_READ`"unit="bytes" aggr="true">HDFS MB read</option>
+				    <option value="j.`Spilled Records`" unit=" " aggr="true">Spilled Records</option>
+				    <option value="j.`SPLIT_RAW_BYTES`"unit="bytes" aggr="true">Split raw MB</option>
+	  			    <option value="j.`Map input records`" unit=" " aggr="true">Map input records</option>
+				    <option value="j.`Map output records`" unit=" " aggr="true">Map output records</option>
+				    <option value="j.`Map input bytes`"unit="bytes" aggr="true">Map input MB</option>
+				    <option value="j.`Map output bytes`"unit="bytes" aggr="true">Map output MB</option>
+				    <option value="j.`Map output materialized bytes`" unit=" " aggr="true">Map ouptut materialized MB</option>
+				    <option value="j.`Reduce input groups`" unit=" " aggr="true">Reduce input groups</option>
+				    <option value="j.`Reduce output records`" unit=" " aggr="true">Reduce output records</option>
+				    <option value="j.`Reduce shuffle bytes`" unit="bytes" aggr="true">Reduce shuffle MB</option>
+				    <option value="j.`Combine input records`" unit=" " aggr="true">Combine input records</option>
+				    <option value="j.`Combine output records`" unit=" " aggr="true">Combine output records</option>
+	   			</select>
+	   			<span id="aggry">
+			   	 Aggr: <select name="aggry" class="form-control">
+			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="STDDEV_POP">Standard deviation</option>
+			   	 			<option value="VAR_POP">Variance</option>
+			   	 		</select>
+	   			</span>
+	   	  </div>
+	   	 <br />
+	   	 <div class="row">
+	   	 Operation: <select name="opy" class="form-control">
+	   	 				<option value=""> </option>
+	   	 				<option value="+">+</option>
+	   	 				<option value="-">-</option>
+	   	 				<option value="*">*</option>
+	   	 				<option value="/">/</option>
+	   	 			</select>
+	   	 </div>
+	   	 <br />
+	   	 <div class="row">
+	   	 Metrica: <select name="metricay2"class="form-control">
+	   				<option value="e.maps"unit="maps">Maps</option>
+	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
+				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
+				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
+				    <option value="j.`FILE_BYTES_READ`"unit="bytes" aggr="true">File MB read</option>
+				    <option value="j.`HDFS_BYTES_WRITTEN`"unit="bytes" aggr="true">HDFS MB written</option>
+				    <option value="j.`HDFS_BYTES_READ`"unit="bytes" aggr="true">HDFS MB read</option>
+				    <option value="j.`Spilled Records`" unit=" " aggr="true">Spilled Records</option>
+				    <option value="j.`SPLIT_RAW_BYTES`"unit="bytes" aggr="true">Split raw MB</option>
+	  			    <option value="j.`Map input records`" unit=" " aggr="true">Map input records</option>
+				    <option value="j.`Map output records`" unit=" " aggr="true">Map output records</option>
+				    <option value="j.`Map input bytes`"unit="bytes" aggr="true">Map input MB</option>
+				    <option value="j.`Map output bytes`"unit="bytes" aggr="true">Map output MB</option>
+				    <option value="j.`Map output materialized bytes`" unit=" " aggr="true">Map ouptut materialized MB</option>
+				    <option value="j.`Reduce input groups`" unit=" " aggr="true">Reduce input groups</option>
+				    <option value="j.`Reduce output records`" unit=" " aggr="true">Reduce output records</option>
+				    <option value="j.`Reduce shuffle bytes`" unit="bytes" aggr="true">Reduce shuffle MB</option>
+				    <option value="j.`Combine input records`" unit=" " aggr="true">Combine input records</option>
+				    <option value="j.`Combine output records`" unit=" " aggr="true">Combine output records</option>
+	   			</select>
+	   			<span id="aggry2">
+			   	 Aggr: <select name="aggry2" class="form-control">
+			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="STDDEV_POP">Standard deviation</option>
+			   	 			<option value="VAR_POP">Variance</option>
+			   	 		</select>
+	   			</span>
+	   		</div>
+	   	</div>
+	    <div class="col-md-2">
 	   <input type="hidden" id="selexecs" name="execs[]" value="{{ execs }}" />
 	   <button type="submit"class="btn btn-success">Update</button>
+	   </div>
+	 </div>
    </form>
    <div id="chart"></div>
 {% endblock %}
@@ -60,6 +169,7 @@
     <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>
     <script type="text/javascript">
 	 $(document).ready(function() {
+		 /* getting options selected through GET */
 		 function parse(val) {
 			    var result = "Not found",
 			        tmp = [];
@@ -76,13 +186,121 @@
 		}
 		var getX = parse('metricax').replace('+',' ').replace('+',' ');
 		var getY = parse('metricay').replace('+',' ').replace('+',' ');
+		var getOpx = parse('opx');
+		var getOpy = parse('opy');
+		var getX2 = parse('metricax2').replace('+',' ').replace('+',' ');
+		var getY2 = parse('metricay2').replace('+',' ').replace('+',' ');
+		var aggry = parse('aggry');
+		var aggry2 = parse('aggry2');
+		var aggrx = parse('aggrx');
+		var aggrx2 = parse('aggrx2');
 		var getExecs = parse('execs%5B%5D');
 		if(getExecs == 'Not found')
 			getExecs = '{{ execs }}';
 		
 		$('select[name="metricax"] option[value="'+getX+'"]').attr('selected','selected');
 		$('select[name="metricay"] option[value="'+getY+'"]').attr('selected','selected');
-			
+		$('select[name="opy"] option[value="'+getOpy+'"]').attr('selected','selected');
+		$('select[name="opx"] option[value="'+getOpx+'"]').attr('selected','selected');
+	    $('select[name="metricax2"] option[value="'+getX2+'"]').attr('selected','selected');
+		$('select[name="metricay2"] option[value="'+getY2+'"]').attr('selected','selected');
+		$('select[name="metricay2"] option[value="'+getY2+'"]').attr('selected','selected'); 
+		$('select[name="aggry"] option[value="'+aggry+'"]').attr('selected','selected');
+		$('select[name="aggry2"] option[value="'+aggry2+'"]').attr('selected','selected');
+		$('select[name="aggrx"] option[value="'+aggrx+'"]').attr('selected','selected');
+		$('select[name="aggrx2"] option[value="'+aggrx2+'"]').attr('selected','selected');
+
+		/* Setting aggr values */
+		 var lastSelAggrY,lastSelAggrY2,lastSelAggrX,lastSelAggrX2 = null;
+		 $('select[name="metricay"]').change(function() {
+			if($(this).find(':selected').attr('aggr')) {
+				$('#aggry').show();
+				if($('select[name="aggry"]').val() == null) {
+					if(lastSelAggrY != null)
+						$('select[name="aggry"]').val(lastSelAggrY);
+					else
+						$('select[name="aggry"]').val('SUM');
+				}
+			} else {
+				lastSelAggrY = $('select[name="aggry"]').val();
+				$('#aggry').hide();
+				$('select[name="aggry"]').val(' ');
+			}
+		 });
+
+		 if(!$('select[name="metricay"]').find(':selected').attr('aggr')) {
+			 $('#aggry').hide();
+			 $('select[name="aggry"]').val(' ');
+	     } else
+		     $("#aggry").show();
+
+		 $('select[name="metricay2"]').change(function() {
+				if($(this).find(':selected').attr('aggr')) {
+					$('#aggry2').show();
+					if($('select[name="aggry2"]').val() == null) {
+						if(lastSelAggrY2 != null)
+							$('select[name="aggry2"]').val(lastSelAggrY2);
+						else
+							$('select[name="aggry2"]').val('SUM');
+					}
+				} else {
+					lastSelAggrY2 = $('select[name="aggry2"]').val();
+					$('#aggry2').hide();
+					$('select[name="aggry2"]').val(' ');
+				}
+			 });
+
+			 if(!$('select[name="metricay2"]').find(':selected').attr('aggr')) {
+				 $('#aggry2').hide();
+				 $('select[name="aggry2"]').val(' ');
+		     } else
+			     $("#aggry2").show();
+
+			 $('select[name="metricax"]').change(function() {
+					if($(this).find(':selected').attr('aggr')) {
+						$('#aggrx').show();
+						if($('select[name="aggrx"]').val() == null) {
+							if(lastSelAggrX != null)
+								$('select[name="aggrx"]').val(lastSelAggrX);
+							else
+								$('select[name="aggrx"]').val('SUM');
+						}
+					} else {
+						lastSelAggrX = $('select[name="aggrx"]').val();
+						$('#aggrx').hide();
+						$('select[name="aggrx"]').val(' ');
+					}
+				 });
+
+				 if(!$('select[name="metricax"]').find(':selected').attr('aggr')) {
+					 $('#aggrx').hide();
+					 $('select[name="aggrx"]').val(' ');
+			     } else
+				     $("#aggrx").show();
+
+				 $('select[name="metricax2"]').change(function() {
+						if($(this).find(':selected').attr('aggr')) {
+							$('#aggrx2').show();
+							if($('select[name="aggrx2"]').val() == null) {
+								if(lastSelAggrX2 != null)
+									$('select[name="aggrx2"]').val(lastSelAggrX2);
+								else
+									$('select[name="aggrx2"]').val('SUM');
+							}
+						} else {
+							lastSelAggrX2 = $('select[name="aggrx2"]').val();
+							$('#aggrx2').hide();
+							$('select[name="aggrx2"]').val(' ');
+						}
+					 });
+
+					 if(!$('select[name="metricax2"]').find(':selected').attr('aggr')) {
+						 $('#aggrx2').hide();
+						 $('select[name="aggrx2"]').val(' ');
+				     } else
+					     $("#aggrx2").show();
+
+	     /* Highcharts */
 		 	var metricaX = $('select[name="metricax"]').find(':selected').text();
 		 	var metricaY = $('select[name="metricay"]').find(':selected').text();
 		 	var metricaXUnit = $('select[name="metricax"]').find(':selected').attr('unit');

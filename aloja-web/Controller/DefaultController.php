@@ -1319,12 +1319,43 @@ class DefaultController extends AbstractController
     	 
     	$metricaY = Utils::get_GET_string('metricay');
     	$metricaX = Utils::get_GET_string('metricax');
+    	$opX = Utils::get_GET_string('opy');
+    	$opY = Utils::get_GET_string('opy');
+    	$metricaY2 = Utils::get_GET_string('metricay2');
+    	$metricaX2 = Utils::get_GET_string('metricax2');
+    	$aggrX = Utils::get_GET_string('aggrx');
+    	$aggrX2 = Utils::get_GET_string('aggrx2');
+    	$aggrY = Utils::get_GET_string('aggry');
+    	$aggrY2 = Utils::get_GET_string('aggry2');
     	
     	if(!$metricaY)
     		$metricaY = 'e.maps';
     	
     	if(!$metricaX)
     		$metricaX = 'e.exe_time';
+    	
+    	if($metricaX && $aggrX) {
+    		$metricaX = "$aggrX($metricaX)";
+    	}
+    	 
+    	if($metricaX2 && $aggrX2) {
+    		$metricaX2 = "$aggrX2($metricaX2)";
+    	}
+    	
+    	if($metricaY && $aggrY) {
+    		$metricaY = "$aggrY($metricaY)";
+    	}
+    	
+    	if($metricaY2 && $aggrY2) {
+    		$metricaY2 = "$aggrY2($metricaY2)";
+    	}
+    	
+    	if($opX) {
+    		$metricaX = $metricaX.$opX.$metricaX2;
+    	}
+    	if($opY) {
+    		$metricaY = $metricaY.$opY.$metricaY2;
+    	}
     	    	
     	$result = "[";
     	$firstOut = true;
@@ -1368,7 +1399,8 @@ class DefaultController extends AbstractController
     echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
     		array('selected' => 'Metric vs metric',
     				'series' => $result,
-    				'execs' => $execs
+    				'execs' => $execs,
+    				'aggrY' => $aggrY
     		));
     }
 }
