@@ -1310,4 +1310,51 @@ class DefaultController extends AbstractController
     				'select_multiple_benchs' => false
     	));
     }
+    
+    public function metricVsMetricAction()
+    {
+    	$dbUtils = $this->getContainer()->getDBUtils();
+    	$query = "SELECT DISTINCT bench FROM execs";
+    	$benchs = $dbUtils->get_rows($query);
+    	 
+    	$metricaY = Utils::get_GET_string('metricay');
+    	$metricaX = Utils::get_GET_string('metricax');
+    	
+    	if(!$metricaY)
+    		$metricaY = 'e.maps';
+    	
+    	if(!$metricaX)
+    		$metricaX = 'e.exe_time';
+    	    	
+    	$result = "[";
+    	$firstOut = true;
+    	foreach($benchs as $value) {
+    		if($firstOut)
+    			$firstOut = false;
+    		else
+    			$result .= ',';
+    
+    		$bench = $value['bench'];
+    		$query = "SELECT e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' GROUP BY id_exec";
+    		$this->getContainer()->getLog()->addDebug('MetricVsMetric query:'+$query);
+    		$rows = $dbUtils->get_rows($query);
+    		$result .= "{name: '$bench', data:[";
+    		$firstIn = true;
+    		foreach($rows as $row) {
+    			if($firstIn)
+    				$firstIn = false;
+    			else
+    				$result .= ',';
+
+    			$result .= "[${row['xval']},${row['yval']}]";
+    	}
+    	$result .= "]}";
+    }
+    $result .= "]";
+    
+    echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
+    		array('selected' => 'Metric vs metric',
+    				'series' => $result
+    		));
+    }
 }

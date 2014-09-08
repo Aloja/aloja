@@ -62,3 +62,7 @@ bestconfig:
 bestconfigdata:
     pattern: "/bestconfigdata"
     controller: "alojaweb\\Controller\\DefaultController::bestConfigDataAction"
+    
+metricvsmetric:
+    pattern: "/metricvsmetric"
+    controller: "alojaweb\\Controller\\DefaultController::metricVsMetricAction"
