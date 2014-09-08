@@ -1176,12 +1176,16 @@ class DefaultController extends AbstractController
     	 
     	$metricaY = Utils::get_GET_string('metricay');
     	$metricaX = Utils::get_GET_string('metricax');
+    	$aggr = Utils::get_GET_string('aggr');
     	
     	if(!$metricaY)
     		$metricaY = 'e.maps';
     	
     	if(!$metricaX)
     		$metricaX = 'e.exe_time';
+    	
+    	if(!$aggr)
+    		$aggr = '';
     	    	
     	$result = "[";
     	$firstOut = true;
@@ -1192,7 +1196,7 @@ class DefaultController extends AbstractController
     			$result .= ',';
     
     		$bench = $value['bench'];
-    		$query = "SELECT e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' GROUP BY id_exec";
+    		$query = "SELECT e.bench, $aggr($metricaY) AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' GROUP BY id_exec";
     		$this->getContainer()->getLog()->addDebug('MetricVsMetric query:'+$query);
     		$rows = $dbUtils->get_rows($query);
     		$result .= "{name: '$bench', data:[";
@@ -1225,7 +1229,8 @@ class DefaultController extends AbstractController
     echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
     		array('selected' => 'Metric vs metric',
     				'series' => $result,
-    				'execs' => $execs
+    				'execs' => $execs,
+    				'aggr' => $aggr
     		));
     }
 }
