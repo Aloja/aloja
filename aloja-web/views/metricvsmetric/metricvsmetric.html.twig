@@ -1,0 +1,153 @@
+{% extends "layout.html.twig"%}
+{% block stylesheet %}
+	{{ parent() }}
+{% endblock %}
+{% block content %}
+   <form method="get"role="form"class="form-inline">
+	   MetricaX: <select name="metricax"class="form-control">
+	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   				<option value="e.maps"unit="maps">Maps</option>
+	   				<option value="SUM(j.`Bytes Read`)"unit="bytes">MB Read</option>
+				    <option value="SUM(j.`Bytes Written`)"unit="bytes">MB Written</option>
+				    <option value="SUM(j.`FILE_BYTES_WRITTEN`)"unit="bytes">File MB written</option>
+				    <option value="SUM(j.`FILE_BYTES_READ`)"unit="bytes">File MB read</option>
+				    <option value="SUM(j.`HDFS_BYTES_WRITTEN`)"unit="bytes">HDFS MB written</option>
+				    <option value="SUM(j.`HDFS_BYTES_READ`)"unit="bytes">HDFS MB read</option>
+				    <option value="SUM(j.`Spilled Recordsv">Spilled Records</option>
+				    <option value="SUM(j.`SPLIT_RAW_BYTES`)"unit="bytes">Split raw MB</option>
+	  			    <option value="SUM(j.`Map input records`)" unit=" ">Map input records</option>
+				    <option value="SUM(j.`Map output records`)" unit=" ">Map output records</option>
+				    <option value="SUM(j.`Map input bytes`)"unit="bytes">Map input MB</option>
+				    <option value="SUM(j.`Map output bytes`)"unit="bytes">Map output MB</option>
+				    <option value="SUM(j.`Map ouptut materialized bytes`)"unit="bytes">Map ouptut materialized MB</option>
+				    <option value="SUM(j.`Reduce input groups`)" unit=" ">Reduce input groups</option>
+				    <option value="SUM(j.`Reduce output records`)" unit=" ">Reduce output records</option>
+				    <option value="SUM(j.`Reduce shuffle bytes`)"unit="bytes">Reduce shuffle MB</option>
+				    <option value="SUM(j.`Combine input records`)" unit=" ">Combine input records</option>
+				    <option value="SUM(j.`Combine output records`)" unit=" ">Combine output records</option>
+	   			</select>
+	   
+	   MetricaY:<select name="metricay"class="form-control">
+	   				<option value="e.maps"unit="maps">Maps</option>
+	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   			    <option value="SUM(j.`Bytes Read`)"unit="bytes">MB Read</option>
+				    <option value="SUM(j.`Bytes Written`)"unit="bytes">MB Written</option>
+				    <option value="SUM(j.`FILE_BYTES_WRITTEN`)"unit="bytes">File MB written</option>
+				    <option value="SUM(j.`FILE_BYTES_READ`)"unit="bytes">File MB read</option>
+				    <option value="SUM(j.`HDFS_BYTES_WRITTEN`)"unit="bytes">HDFS MB written</option>
+				    <option value="SUM(j.`HDFS_BYTES_READ`)"unit="bytes">HDFS MB read</option>
+				    <option value="SUM(j.`Spilled Recordsv">Spilled Records</option>
+				    <option value="SUM(j.`SPLIT_RAW_BYTES`)"unit="bytes">Split raw MB</option>
+	  			    <option value="SUM(j.`Map input records`)" unit=" ">Map input records</option>
+				    <option value="SUM(j.`Map output records`)" unit=" ">Map output records</option>
+				    <option value="SUM(j.`Map input bytes`)"unit="bytes">Map input MB</option>
+				    <option value="SUM(j.`Map output bytes`)"unit="bytes">Map output MB</option>
+				    <option value="SUM(j.`Map ouptut materialized bytes`)" unit=" ">Map ouptut materialized MB</option>
+				    <option value="SUM(j.`Reduce input groups`)" unit=" ">Reduce input groups</option>
+				    <option value="SUM(j.`Reduce output records`)" unit=" ">Reduce output records</option>
+				    <option value="SUM(j.`Reduce shuffle bytes`)"unit="bytes">Reduce shuffle MB</option>
+				    <option value="SUM(j.`Combine input records`)" unit=" ">Combine input records</option>
+				    <option value="SUM(j.`Combine output records`)" unit=" ">Combine output records</option>
+	   			</select>
+	   <button type="submit"class="btn btn-success">Update</button>
+   </form>
+   <div id="chart"></div>
+{% endblock %}
+{% block javascript %}
+    {{ parent() }}
+    <script type="text/javascript" src="js/highcharts.js"></script>
+    <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>
+    <script type="text/javascript">
+	 $(document).ready(function() {
+		 function parse(val) {
+			    var result = "Not found",
+			        tmp = [];
+			    location.search
+			    //.replace ( "?", "" ) 
+			    // this is better, there might be a question mark inside
+			    .substr(1)
+			        .split("&")
+			        .forEach(function (item) {
+			        tmp = item.split("=");
+			        if (tmp[0] === val) result = decodeURIComponent(tmp[1]);
+			    });
+			    return result;
+		}
+		var getX = parse('metricax').replace('+',' ').replace('+',' ');
+		var getY = parse('metricay').replace('+',' ').replace('+',' ');
+		$('select[name="metricax"] option[value="'+getX+'"]').attr('selected','selected');
+		$('select[name="metricay"] option[value="'+getY+'"]').attr('selected','selected');
+			
+		 	var metricaX = $('select[name="metricax"]').find(':selected').text();
+		 	var metricaY = $('select[name="metricay"]').find(':selected').text();
+		 	var metricaXUnit = $('select[name="metricax"]').find(':selected').attr('unit');
+		 	var metricaYUnit = $('select[name="metricay"]').find(':selected').attr('unit');
+		    $('#chart').highcharts({
+		        chart: {
+		            type: 'scatter',
+		            zoomType: 'xy'
+		        },
+		        title: {
+		            text: metricaX + ' versus ' + metricaY
+		        },
+		        xAxis: {
+		            title: {
+		                enabled: true,
+		                text: metricaX + ' ('+metricaXUnit+')'
+		            },
+		            startOnTick: true,
+		            endOnTick: true,
+		            showLastLabel: true
+		        },
+		        yAxis: {
+		            title: {
+		                text: metricaY + ' ('+metricaYUnit+')'
+		            }
+		        },
+		        legend: {
+                    layout: 'vertical',
+                            align: 'right',
+                            verticalAlign: 'top',
+                            x: -5,
+                            y: 100,
+                            floating: true,
+                            borderWidth: 1,
+                            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
+                            shadow: true,
+                            title: {
+                        text: ':: Drag Legend ::',
+                    },
+                    draggable: true,
+                },
+		        credits: {
+			        enabled: false
+			    },
+		        plotOptions: {
+		            scatter: {
+		                marker: {
+		                    radius: 5,
+		                    states: {
+		                        hover: {
+		                            enabled: true,
+		                            lineColor: 'rgb(100,100,100)'
+		                        }
+		                    }
+		                },
+		                states: {
+		                    hover: {
+		                        marker: {
+		                            enabled: false
+		                        }
+		                    }
+		                },
+		                tooltip: {
+		                    headerFormat: '<b>{series.name}</b><br>',
+		                    pointFormat: '{point.x} '+metricaXUnit+', {point.y} '+metricaYUnit
+		                }
+		            }
+		        },
+		        series: {{ series | raw }}
+		    });
+	 });
+    </script>
+{% endblock %}

@@ -46,3 +46,7 @@ metrics:
 metricsdata:
     pattern: "/metricsdata"
     controller: "alojaweb\\Controller\\RestController::metricsDataAction"
+    
+metricvsmetric:
+    pattern: "/metricvsmetric"
+    controller: "alojaweb\\Controller\\DefaultController::metricVsMetricAction"

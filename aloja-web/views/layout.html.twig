@@ -104,13 +104,16 @@
 		          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
+		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Perf Charts</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('metrics') }}">Performance Counters</a>
+		          <a class="navlink" href="{{ path('metrics') }}">Perf Counters</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>
+		        </li>
+		        <li {% if selected is defined and selected == 'Metric vs metric' %}class="active"{% endif %}>
+		          <a class="navlink" href="{{ path('metricvsmetric') }}">Metric vs metric</a>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
