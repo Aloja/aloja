@@ -1209,9 +1209,23 @@ class DefaultController extends AbstractController
     }
     $result .= "]";
     
+    $execs = '';
+    if(!isset($_GET['execs'])) {
+    	$first = true;
+    	foreach($benchs as $value) {
+    		if($first)
+    			$first = false;
+    		else
+    			$execs .= ',';
+    		$execs .= $value['bench'];
+    	}
+    } else
+    	$execs = $_GET['execs'][0];
+    
     echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
     		array('selected' => 'Metric vs metric',
-    				'series' => $result
+    				'series' => $result,
+    				'execs' => $execs
     		));
     }
 }

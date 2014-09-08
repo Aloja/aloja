@@ -36,7 +36,7 @@
 				    <option value="SUM(j.`FILE_BYTES_READ`)"unit="bytes">File MB read</option>
 				    <option value="SUM(j.`HDFS_BYTES_WRITTEN`)"unit="bytes">HDFS MB written</option>
 				    <option value="SUM(j.`HDFS_BYTES_READ`)"unit="bytes">HDFS MB read</option>
-				    <option value="SUM(j.`Spilled Recordsv">Spilled Records</option>
+				    <option value="SUM(j.`Spilled Records`)">Spilled Records</option>
 				    <option value="SUM(j.`SPLIT_RAW_BYTES`)"unit="bytes">Split raw MB</option>
 	  			    <option value="SUM(j.`Map input records`)" unit=" ">Map input records</option>
 				    <option value="SUM(j.`Map output records`)" unit=" ">Map output records</option>
@@ -49,6 +49,7 @@
 				    <option value="SUM(j.`Combine input records`)" unit=" ">Combine input records</option>
 				    <option value="SUM(j.`Combine output records`)" unit=" ">Combine output records</option>
 	   			</select>
+	   <input type="hidden" id="selexecs" name="execs[]" value="{{ execs }}" />
 	   <button type="submit"class="btn btn-success">Update</button>
    </form>
    <div id="chart"></div>
@@ -75,6 +76,10 @@
 		}
 		var getX = parse('metricax').replace('+',' ').replace('+',' ');
 		var getY = parse('metricay').replace('+',' ').replace('+',' ');
+		var getExecs = parse('execs%5B%5D');
+		if(getExecs == 'Not found')
+			getExecs = '{{ execs }}';
+		
 		$('select[name="metricax"] option[value="'+getX+'"]').attr('selected','selected');
 		$('select[name="metricay"] option[value="'+getY+'"]').attr('selected','selected');
 			
@@ -85,7 +90,20 @@
 		    $('#chart').highcharts({
 		        chart: {
 		            type: 'scatter',
-		            zoomType: 'xy'
+		            zoomType: 'xy',
+			        events: {
+				        load: function() {
+							var series = this.series;
+							for (var i = 0; i < series.length; i++)
+						    {
+						        if (getExecs.indexOf(series[i].name) == -1)
+						        {
+						            series[i].setVisible(false);
+						        } 
+						    }
+						    this.redraw();
+					    }
+				    }
 		        },
 		        title: {
 		            text: metricaX + ' versus ' + metricaY
@@ -104,21 +122,21 @@
 		                text: metricaY + ' ('+metricaYUnit+')'
 		            }
 		        },
-		        legend: {
-                    layout: 'vertical',
-                            align: 'right',
-                            verticalAlign: 'top',
-                            x: -5,
-                            y: 100,
-                            floating: true,
-                            borderWidth: 1,
-                            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
-                            shadow: true,
-                            title: {
-                        text: ':: Drag Legend ::',
-                    },
-                    draggable: true,
-                },
+// 		        legend: {
+//                     layout: 'vertical',
+//                             align: 'right',
+//                             verticalAlign: 'top',
+//                             x: -5,
+//                             y: 100,
+//                             floating: true,
+//                             borderWidth: 1,
+//                             backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
+//                             shadow: true,
+//                             title: {
+//                         text: ':: Drag Legend ::',
+//                     },
+//                     draggable: true,
+//                 },
 		        credits: {
 			        enabled: false
 			    },
@@ -144,7 +162,28 @@
 		                    headerFormat: '<b>{series.name}</b><br>',
 		                    pointFormat: '{point.x} '+metricaXUnit+', {point.y} '+metricaYUnit
 		                }
-		            }
+		            },
+		            series: {
+						events: {
+							legendItemClick: function(e) {
+								var bench = this.name;
+								var selected = $("#selexecs").val();
+								var array = selected.split(',');
+								var found = -1;
+								for(var i = 0; i< array.length; ++i) {
+									if(array[i] == bench)
+										found = i;
+								}
+								if(found != -1)
+									array.splice(found,1);
+								else
+									array.push(bench);
+
+								array.join();
+								$("#selexecs").val(array);
+							}
+						},
+			        }
 		        },
 		        series: {{ series | raw }}
 		    });
