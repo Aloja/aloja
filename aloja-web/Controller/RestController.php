@@ -601,31 +601,61 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric = $db::$TASK_METRICS[Utils::get_GET_int("metric") ?: 0];
         $metric_select = $db->get_task_metric_query($metric);
+        $group = Utils::get_GET_int("group") ?: 1;  // Group the rows in groups of this quantity
 
-        $query = "
-            SELECT
-                t.`TASKID` as TASK_ID,
-                ".$metric_select('t')." as TASK_VALUE
-            FROM `JOB_tasks` t
-            WHERE t.`JOBID` = :jobid
-            ORDER BY t.`TASKID`
-        ;";
-        $query_params = array(":jobid" => $jobid);
+        if (!($group > 1)) {
+            $query = "
+                SELECT
+                    t.`TASKID` as TASK_ID,
+                    ".$metric_select('t')." as TASK_VALUE,
+                    1 as TASK_VALUE_STDDEV
+                FROM `JOB_tasks` t
+                WHERE t.`JOBID` = :jobid
+                ORDER BY t.`TASKID`
+            ;";
+            $query_params = array(":jobid" => $jobid);
+
+        } else {
+            $query = "
+                SELECT
+                    MIN(t.`TASKID`) as TASK_ID,
+                    AVG(".$metric_select('t').") as TASK_VALUE,
+                    STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
+                    t.`TASK_TYPE`,
+                    CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
+                FROM `JOB_tasks` t
+                WHERE t.`JOBID` = :jobid
+                GROUP BY MYDIV, t.`TASK_TYPE`
+                ORDER BY MIN(t.`TASKID`)
+            ;";
+            $query_params = array(":jobid" => $jobid, ":group" => $group);
+        }
+
         $rows = $db->get_rows($query, $query_params);
 
         $seriesData = array();
+        $seriesError = array();
         foreach ($rows as $row) {
             $task_id = $row['TASK_ID'];
             $task_value = $row['TASK_VALUE'] ?: 0;
+            $task_value_stddev = $row['TASK_VALUE_STDDEV'] ?: 0;
 
             // Show only task id (not the whole string)
             $task_id = substr($task_id, 23);
 
             $seriesData[] = array($task_id, $task_value);
+
+            if ($group > 1) {
+                $task_value_low = $task_value - $task_value_stddev;
+                $task_value_high = $task_value + $task_value_stddev;
+
+                $seriesError[] = array('low' => $task_value_low, 'high' => $task_value_high, 'stddev' => $task_value_stddev);
+            }
         }
 
         $result = [
             'seriesData' => $seriesData,
+            'seriesError' => $seriesError,
         ];
 
         header('Content-Type: application/json');

@@ -24,12 +24,14 @@
 
                 // Load chart options from html form
                 var metric = form.find("[name='metric']");
+                var group = form.find("[name='group']");
 
                 // Launch ajax request
                 $.ajax({
                     url: "{{ path('histogram2data', {'jobid': jobid}) }}",
                     data: {
                         metric: metric.val(),
+                        group: group.val(),
                     },
                 })
                 .done(function(data) {
@@ -40,6 +42,7 @@
 
                     // Update chart data
                     chart.series[0].setData(data.seriesData);
+                    chart.series[1].setData(data.seriesError);
 
                     // Finished loading
                     chart.hideLoading();
@@ -92,6 +95,18 @@
                             showInLegend: false,
                             data: [],
                         },
+                        {
+                            name: "Error",
+                            type: 'errorbar',
+                            showInLegend: false,
+                            color: '#DF5353',
+                            stemWidth: 3,
+                            whiskerLength: 0,
+                            tooltip: {
+                                pointFormat: '<span style="color:{series.color}">\u25CF</span> {series.name}: <b>&plusmn;{point.stddev}</b><br/>',
+                            },
+                            data: [],
+                        },
                     ]
             });
             updateChart();
@@ -110,6 +125,10 @@
                 <option value="{{ loop.index0 }}">{{ current_metric }}</option>
             {% endfor %}
             </select>
+        </label>
+        <label>
+            Group every:
+            <input type="text" name="group" class="form-control" value="1" size="4">
         </label>
     </form>
     <div id="chart" style="clear: both;"></div>
