@@ -20,9 +20,9 @@ class DBUtils
         $this->dbConn->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
     }
 
-    public function get_rows($sql)
+    public function get_rows($sql, $params = array())
     {
-        $md5_sql = md5($sql);
+        $md5_sql = md5($sql.http_build_query($params, '', ','));
         $file_path = "{$this->container['config']['db_cache_path']}/CACHE_$md5_sql.sql";
 
         if ($this->container['env'] == 'dev' || $_SERVER['HTTP_HOST'] == 'localhost' || (isset($_GET['NO_CACHE']) && strlen($_GET['NO_CACHE']) > 0)) {
@@ -45,7 +45,7 @@ class DBUtils
 
             try {
                 $sth = $this->dbConn->prepare($sql);
-                $sth->execute();
+                $sth->execute($params);
             } catch (Exception $e) {
                 throw new \Exception($e->getMessage(). " SQL: $sql");
             }
