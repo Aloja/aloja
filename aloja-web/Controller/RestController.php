@@ -603,18 +603,37 @@ VALUES
         $metric = $db::$TASK_METRICS[Utils::get_GET_int("metric") ?: 0];
         $metric_select = $db->get_task_metric_query($metric);
         $group = Utils::get_GET_int("group") ?: 1;  // Group the rows in groups of this quantity
+        $accumulated = Utils::get_GET_int("accumulated") ?: 0;
+        $divided = Utils::get_GET_int("divided") ?: 0;
+
+        // Accumulated and divided options don't support group
+        if ($accumulated || $divided) {
+            $group = 1;
+        }
 
         if (!($group > 1)) {
             $query = "
                 SELECT
                     t.`TASKID` as TASK_ID,
                     ".$metric_select('t')." as TASK_VALUE,
+                    SUM(".$metric_select('t2').") as TASK_VALUE_ACCUM,
+                    t.TASK_DURATION,
+                    SUM(t2.`TASK_DURATION`) as TASK_DURATION_ACCUM,
                     1 as TASK_VALUE_STDDEV
-                FROM `JOB_tasks` t
+                FROM (
+                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
+                    FROM `JOB_tasks`
+                ) as t
+                JOIN (
+                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
+                    FROM `JOB_tasks`
+                ) as t2
+                ON (t.`TASKID` >= t2.`TASKID` AND t2.`JOBID` = :jobid_repeated)
                 WHERE t.`JOBID` = :jobid
+                GROUP BY t.`TASKID`
                 ORDER BY t.`TASKID`
             ;";
-            $query_params = array(":jobid" => $jobid);
+            $query_params = array(":jobid" => $jobid, ":jobid_repeated" => $jobid);
 
         } else {
             $query = "
@@ -622,6 +641,9 @@ VALUES
                     MIN(t.`TASKID`) as TASK_ID,
                     AVG(".$metric_select('t').") as TASK_VALUE,
                     STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
+                    1 as TASK_VALUE_ACCUM,
+                    1 as TASK_DURATION,
+                    1 as TASK_DURATION_ACCUM,
                     t.`TASK_TYPE`,
                     CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
                 FROM `JOB_tasks` t
@@ -639,10 +661,21 @@ VALUES
         foreach ($rows as $row) {
             $task_id = $row['TASK_ID'];
             $task_value = $row['TASK_VALUE'] ?: 0;
+            $task_value_accum = $row['TASK_VALUE_ACCUM'] ?: 0;
             $task_value_stddev = $row['TASK_VALUE_STDDEV'] ?: 0;
+            $task_duration = $row['TASK_DURATION'] ?: 0;
+            $task_duration_accum = $row['TASK_DURATION_ACCUM'] ?: 0;
 
             // Show only task id (not the whole string)
             $task_id = substr($task_id, 23);
+
+            if ($accumulated == 1) {
+                $task_value = $task_value_accum;
+            }
+
+            if ($divided == 1) {
+                $task_value = $task_value / $task_duration_accum;
+            }
 
             $seriesData[] = array($task_id, $task_value);
 
