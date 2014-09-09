@@ -305,6 +305,24 @@
 		 	var metricaY = $('select[name="metricay"]').find(':selected').text();
 		 	var metricaXUnit = $('select[name="metricax"]').find(':selected').attr('unit');
 		 	var metricaYUnit = $('select[name="metricay"]').find(':selected').attr('unit');
+		 	var metricaX2 = $('select[name="metricax2"]').find(':selected').text();
+		 	var metricaY2 = $('select[name="metricay2"]').find(':selected').text();
+		 	var metricaX2Unit = $('select[name="metricax2"]').find(':selected').attr('unit');
+		 	var metricaY2Unit = $('select[name="metricay2"]').find(':selected').attr('unit');
+		 	var titleX,titleY,unitX,unitY = null;
+		 	titleX = metricaX;
+		 	unitX = metricaXUnit;
+		 	if(getOpx != '') {
+			 	titleX += getOpx + metricaX2;
+			 	unitX += getOpx + metricaX2Unit;
+		 	}
+		 	titleY = metricaY;
+		 	unitY = metricaYUnit;
+			if(getOpy != '') {
+				titleY += getOpy + metricaY2;
+				unitY += getOpy + metricaY2Unit;
+			}
+			
 		    $('#chart').highcharts({
 		        chart: {
 		            type: 'scatter',
@@ -324,12 +342,12 @@
 				    }
 		        },
 		        title: {
-		            text: metricaX + ' versus ' + metricaY
+		            text: titleX + ' versus ' + titleY
 		        },
 		        xAxis: {
 		            title: {
 		                enabled: true,
-		                text: metricaX + ' ('+metricaXUnit+')'
+		                text: titleX
 		            },
 		            startOnTick: true,
 		            endOnTick: true,
@@ -337,7 +355,7 @@
 		        },
 		        yAxis: {
 		            title: {
-		                text: metricaY + ' ('+metricaYUnit+')'
+		                text: titleY
 		            }
 		        },
 // 		        legend: {
@@ -378,7 +396,7 @@
 		                },
 		                tooltip: {
 		                    headerFormat: '<b>{series.name}</b><br>',
-		                    pointFormat: '{point.x} '+metricaXUnit+', {point.y} '+metricaYUnit
+		                    pointFormat: '{point.x} '+unitX+', {point.y} '+unitY
 		                }
 		            },
 		            series: {
