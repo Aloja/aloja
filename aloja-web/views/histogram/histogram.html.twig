@@ -136,8 +136,11 @@
 			            renderTo: 'chart_column'
 			        },
 			        title: {
-			            text: ''
+			            text: 'Tasks of '+selected
 			        },
+			        subtitle: {
+						text: $(metricSel).text()
+				    },
 			        xAxis: {
 						labels: {
 							enabled: false
