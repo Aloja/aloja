@@ -1319,7 +1319,7 @@ class DefaultController extends AbstractController
     	 
     	$metricaY = Utils::get_GET_string('metricay');
     	$metricaX = Utils::get_GET_string('metricax');
-    	$opX = Utils::get_GET_string('opy');
+    	$opX = Utils::get_GET_string('opx');
     	$opY = Utils::get_GET_string('opy');
     	$metricaY2 = Utils::get_GET_string('metricay2');
     	$metricaX2 = Utils::get_GET_string('metricax2');
