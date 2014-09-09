@@ -4,6 +4,29 @@ namespace alojaweb\inc;
 
 class DBUtils
 {
+    public static $TASK_METRICS = [
+        'Duration',
+        'Bytes Read',
+        'Bytes Written',
+        'FILE_BYTES_WRITTEN',
+        'FILE_BYTES_READ',
+        'HDFS_BYTES_WRITTEN',
+        'HDFS_BYTES_READ',
+        'Spilled Records',
+        'SPLIT_RAW_BYTES',
+        'Map input records',
+        'Map output records',
+        'Map input bytes',
+        'Map output bytes',
+        'Map output materialized bytes',
+        'Reduce input groups',
+        'Reduce input records',
+        'Reduce output records',
+        'Reduce shuffle bytes',
+        'Combine input records',
+        'Combine output records',
+    ];
+
     private $dbConn;
     private $container;
 
@@ -111,5 +134,14 @@ class DBUtils
         $query = 'SELECT * FROM hosts WHERE id_cluster IN ("'.join('","', $clusters).'");';
 
         return $this->get_rows($query);
+    }
+
+    public function get_task_metric_query($metric)
+    {
+        if ($metric === 'Duration') {
+            return function($table) { return "TIMESTAMPDIFF(SECOND, $table.`START_TIME`, $table.`FINISH_TIME`)"; };
+        } else {
+            return function($table) use ($metric)  { return "$table.`$metric`"; };
+        }
     }
 }
