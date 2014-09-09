@@ -1,0 +1,117 @@
+{% extends "layout.html.twig" %}
+
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+
+{% block javascript %}
+    {{ parent() }}
+    {{ highcharts_js|raw }}
+
+    <script>
+        $(document).ready(function() {
+
+            // Form with all the chart options
+            var form = $('form#options');
+
+            // Call updateChart for form events
+            form.change(updateChart);
+            form.submit(updateChart);
+
+            function updateChart(event) {
+                // Start loading
+                chart.showLoading();
+
+                // Load chart options from html form
+                var metric = form.find("[name='metric']");
+
+                // Launch ajax request
+                $.ajax({
+                    url: "{{ path('histogram2data', {'jobid': jobid}) }}",
+                    data: {
+                        metric: metric.val(),
+                    },
+                })
+                .done(function(data) {
+                    // Update chart with new options
+                    var metric_name = metric.find("option:selected").text();
+                    chart.yAxis[0].setTitle({text: metric_name});
+                    chart.series[0].update({name: metric_name});
+
+                    // Update chart data
+                    chart.series[0].setData(data.seriesData);
+
+                    // Finished loading
+                    chart.hideLoading();
+                });
+
+                // Prevent form submit
+                if (event && event.type == "submit") {
+                    event.preventDefault();
+                }
+            }
+
+            var chart = new Highcharts.Chart({
+                chart: {
+                    renderTo: 'chart',
+                    type: 'column'
+                },
+                title: {
+                    text: 'Histogram'
+                },
+                subtitle: {
+                    text: '{{ jobid }}'
+                },
+                xAxis: {
+                    type: 'category',
+                    labels: {
+                        rotation: -45,
+                    }
+                },
+                yAxis: {
+                    min: 0,
+                    title: {
+                        text: ""
+                    }
+                },
+                tooltip: {
+                    shared: true,
+                    useHTML: true
+                },
+                plotOptions: {
+                    column: {
+                        groupPadding: 0,
+                        pointPadding: 0,
+                        borderWidth: 0,
+                    }
+                },
+                series: 
+                    [
+                        {
+                            name: "",
+                            showInLegend: false,
+                            data: [],
+                        },
+                    ]
+            });
+            updateChart();
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+
+    <form id="options" role="form" class="form-inline pull-right">
+        <input type="hidden" name="jobid" value="{{ jobid }}">
+        <label>
+            Metric:
+            <select name="metric" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}">{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+    </form>
+    <div id="chart" style="clear: both;"></div>
+
+{% endblock %}

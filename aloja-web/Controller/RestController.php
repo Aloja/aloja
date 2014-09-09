@@ -593,4 +593,43 @@ VALUES
             echo json_encode(array('aaData' => array($noData)));
     	}
     }
+
+    public function histogram2DataAction()
+    {
+        $db = $this->container->getDBUtils();
+
+        $jobid = Utils::get_GET_string("jobid");
+        $metric = $db::$TASK_METRICS[Utils::get_GET_int("metric") ?: 0];
+        $metric_select = $db->get_task_metric_query($metric);
+
+        $query = "
+            SELECT
+                t.`TASKID` as TASK_ID,
+                ".$metric_select('t')." as TASK_VALUE
+            FROM `JOB_tasks` t
+            WHERE t.`JOBID` = :jobid
+            ORDER BY t.`TASKID`
+        ;";
+        $query_params = array(":jobid" => $jobid);
+        $rows = $db->get_rows($query, $query_params);
+
+        $seriesData = array();
+        foreach ($rows as $row) {
+            $task_id = $row['TASK_ID'];
+            $task_value = $row['TASK_VALUE'] ?: 0;
+
+            // Show only task id (not the whole string)
+            $task_id = substr($task_id, 23);
+
+            $seriesData[] = array($task_id, $task_value);
+        }
+
+        $result = [
+            'seriesData' => $seriesData,
+        ];
+
+        header('Content-Type: application/json');
+        ob_start('ob_gzhandler');
+        echo json_encode($result, JSON_NUMERIC_CHECK);
+    }
 }
