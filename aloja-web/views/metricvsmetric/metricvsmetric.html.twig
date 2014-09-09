@@ -3,13 +3,18 @@
 	{{ parent() }}
 {% endblock %}
 {% block content %}
-   <form method="get"role="form"class="form-inline">
-    <div class="row" style="margin-left: .5em;">
+ <form method="get"role="form"class="form-inline">
+  <div style="float: left; width: 78%;">
+    <div class="row" style="margin-left: .5em; margin-bottom: 1em;">
      <div class="col-md-4">
        <div class="row">
 	   MetricaX: <select name="metricax"class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
 	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   				<option value="e.blk_size"unit="MB">Block size</option>
+	   				<option value="e.iosf"unit=" ">IO Sort Factor</option>
+	   				<option value="e.replication"unit=" ">Replication</option>
+	   				<option value="e.iofilebuf"unit="MB">IO File Buffer</option>
 	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
 				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
 				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
@@ -52,6 +57,10 @@
 	   	 Metrica: <select name="metricax2"class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
 	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   				<option value="e.blk_size"unit="MB">Block size</option>
+	   				<option value="e.iosf"unit=" ">IO Sort Factor</option>
+	   				<option value="e.replication"unit=" ">Replication</option>
+	   				<option value="e.iofilebuf"unit="MB">IO File Buffer</option>
 	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
 				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
 				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
@@ -85,6 +94,10 @@
 	   MetricaY:<select name="metricay" class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
 	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   				<option value="e.blk_size"unit="MB">Block size</option>
+	   				<option value="e.iosf"unit=" ">IO Sort Factor</option>
+	   				<option value="e.replication"unit=" ">Replication</option>
+	   				<option value="e.iofilebuf"unit="MB">IO File Buffer</option>
 	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
 				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
 				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
@@ -127,6 +140,10 @@
 	   	 Metrica: <select name="metricay2"class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
 	   				<option value="e.exe_time"unit="s">Execution time</option>
+	   				<option value="e.blk_size"unit="MB">Block size</option>
+	   				<option value="e.iosf"unit=" ">IO Sort Factor</option>
+	   				<option value="e.replication"unit=" ">Replication</option>
+	   				<option value="e.iofilebuf"unit="MB">IO File Buffer</option>
 	   			    <option value="j.`Bytes Read`"unit="bytes" aggr="true">MB Read</option>
 				    <option value="j.`Bytes Written`"unit="bytes" aggr="true">MB Written</option>
 				    <option value="j.`FILE_BYTES_WRITTEN`"unit="bytes" aggr="true">File MB written</option>
@@ -160,13 +177,22 @@
 	   <button type="submit"class="btn btn-success">Update</button>
 	   </div>
 	 </div>
-   </form>
    <div id="chart"></div>
+ </div>
+ {% include "common/config_filters.html.twig" %}
+    </form>
+ 
+ <div style="clear: both;">
+{#     <p style="text-align: center;">Software filters</p>#}
+ </div>
 {% endblock %}
 {% block javascript %}
     {{ parent() }}
-    <script type="text/javascript" src="js/highcharts.js"></script>
-    <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>
+    <script src="//code.highcharts.com/highcharts.js"></script>
+        <script src="//code.highcharts.com/modules/exporting.js"></script>
+        <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+        <script src="js/datatables/extras/export-csv/export-csv.js"></script>
+{#     <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>#}
     <script type="text/javascript">
 	 $(document).ready(function() {
 		 /* getting options selected through GET */
@@ -197,6 +223,12 @@
 		var getExecs = parse('execs%5B%5D');
 		if(getExecs == 'Not found')
 			getExecs = '{{ execs }}';
+
+		if(getX == 'Not found')
+			getX = 'e.exe_time';
+		if(getY == 'Not found')
+			getY = 'e.maps';
+		
 		
 		$('select[name="metricax"] option[value="'+getX+'"]').attr('selected','selected');
 		$('select[name="metricay"] option[value="'+getY+'"]').attr('selected','selected');
@@ -312,13 +344,13 @@
 		 	var titleX,titleY,unitX,unitY = null;
 		 	titleX = metricaX;
 		 	unitX = metricaXUnit;
-		 	if(getOpx != '') {
+		 	if(getOpx != '' && getOpx != 'Not found') {
 			 	titleX += getOpx + metricaX2;
 			 	unitX += getOpx + metricaX2Unit;
 		 	}
 		 	titleY = metricaY;
 		 	unitY = metricaYUnit;
-			if(getOpy != '') {
+			if(getOpy != '' && getOpy != 'Not found') {
 				titleY += getOpy + metricaY2;
 				unitY += getOpy + metricaY2Unit;
 			}
@@ -395,8 +427,8 @@
 		                    }
 		                },
 		                tooltip: {
-		                    headerFormat: '<b>{series.name}</b><br>',
-		                    pointFormat: '{point.x} '+unitX+', {point.y} '+unitY
+ 		                    headerFormat: '<b>{series.name}</b><br>',
+		                    pointFormat: '{point.x} '+unitX+', {point.y} '+unitY + '<br />{point.exec}',
 		                }
 		            },
 		            series: {

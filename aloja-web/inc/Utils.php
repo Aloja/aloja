@@ -17,54 +17,68 @@ class Utils
 
         return $array;
     }
-
-    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config)
-    {
-        $single_item_name = substr($item_name, 0, -1);
-
-        if (isset($_GET[$item_name])) {
-            $items = $_GET[$item_name];
-            $items = Utils::delete_none($items);
-        } else {
-            if ($item_name == 'benchs') {
-                $items = array('pagerank', 'terasort', 'wordcount');
-            } elseif ($item_name == 'nets') {
-                $items = array('IB', 'ETH');
-            } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD');
-            } else {
-                $items = array();
-            }
-        }
-
-        if ($items) {
-            if ($item_name != 'benchs') {
-                $configurations[] = $single_item_name;
-                if ($concat_config) $concat_config .= ",'_',";
-
-                if ($item_name == 'id_clusters') {
-                    $conf_prefix = 'CL';
-                } elseif ($item_name == 'iofilebufs') {
-                    $conf_prefix = 'I';
-                } else {
-                    $conf_prefix = substr($single_item_name, 0, 1);
-                }
-
-                //avoid alphanumeric fields
-                if (!in_array($item_name, array('nets', 'disks'))) {
-                    $concat_config .= "'".$conf_prefix."', $single_item_name";
-                } else {
-                    $concat_config .= " $single_item_name";
-                }
-            }
-            $where_configs .=
-            ' AND '.
-            $single_item_name. //remove trailing 's'
-            ' IN ("'.join('","', $items).'")';
-        }
-
-        return $items;
-    }
+	public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true)
+	{
+		if ($item_name == 'money' && isset ( $_GET ['money'] )) {
+			$money = $_GET ['money'];
+			if ($money != '') {
+				$where_configs .= ' AND (exe_time/3600)*(cost_hour) <= ' . $_GET ['money'];
+			}
+			return $_GET ['money'];
+		}
+		$single_item_name = substr ( $item_name, 0, - 1 );
+		if (isset ( $_GET [$item_name] )) {
+			$items = $_GET [$item_name];
+			$items = Utils::delete_none ( $items );
+		} else if ($setDefaultValues) {
+			if ($item_name == 'benchs') {
+				$items = array (
+						'pagerank',
+						'terasort',
+						'wordcount' 
+				);
+			} elseif ($item_name == 'nets') {
+				$items = array (
+						'IB',
+						'ETH' 
+				);
+			} elseif ($item_name == 'disks') {
+				$items = array (
+						'SSD',
+						'HDD' 
+				);
+			} else {
+				$items = array ();
+			}
+		} else
+			$items = array ();
+		if ($items) {
+			if ($item_name != 'benchs') {
+				$configurations [] = $single_item_name;
+				if ($concat_config)
+					$concat_config .= ",'_',";
+				if ($item_name == 'id_clusters') {
+					$conf_prefix = 'CL';
+				} elseif ($item_name == 'iofilebufs') {
+					$conf_prefix = 'I';
+				} else {
+					$conf_prefix = substr ( $single_item_name, 0, 1 );
+				}
+				// avoid alphanumeric fields
+				if (! in_array ( $item_name, array (
+						'nets',
+						'disks' 
+				) )) {
+					$concat_config .= "'" . $conf_prefix . "', $single_item_name";
+				} else {
+					$concat_config .= " $single_item_name";
+				}
+			}
+			$where_configs .= ' AND ' . $single_item_name . 			// remove trailing 's'
+			' IN ("' . join ( '","', $items ) . '")';
+		}
+		return $items;
+	}
 
     public static function generateJSONTable($csv, $show_in_result, $precision = null, $type = null)
     {

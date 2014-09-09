@@ -1172,7 +1172,7 @@ class DefaultController extends AbstractController
     {
     	$dbUtils = $this->getContainer()->getDBUtils();
     	$query = "SELECT DISTINCT bench FROM execs";
-    	$benchs = $dbUtils->get_rows($query);
+    	$availBenchs = $dbUtils->get_rows($query);
     	 
     	$metricaY = Utils::get_GET_string('metricay');
     	$metricaX = Utils::get_GET_string('metricax');
@@ -1213,17 +1213,31 @@ class DefaultController extends AbstractController
     	if($opY) {
     		$metricaY = $metricaY.$opY.$metricaY2;
     	}
-    	    	
+
+    	$configurations = array();
+    	$where_configs = '';
+    	$concat_config = "";
+    	$benchs = Utils::read_params('benchs',$where_configs,$configurations,$concat_config,false);
+    	$nets = Utils::read_params('nets',$where_configs,$configurations,$concat_config,false);
+    	$disks = Utils::read_params('disks',$where_configs,$configurations,$concat_config,false);
+    	$blk_sizes = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config,false);
+    	$comps = Utils::read_params('comps',$where_configs,$configurations,$concat_config,false);
+    	$id_clusters = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config,false);
+    	$mapss = Utils::read_params('mapss',$where_configs,$configurations,$concat_config,false);
+    	$replications = Utils::read_params('replications',$where_configs,$configurations,$concat_config,false);
+    	$iosfs = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false);
+    	$iofilebufs = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false);
+
     	$result = "[";
     	$firstOut = true;
-    	foreach($benchs as $value) {
+    	foreach($availBenchs as $value) {
     		if($firstOut)
     			$firstOut = false;
     		else
     			$result .= ',';
     
     		$bench = $value['bench'];
-    		$query = "SELECT e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' GROUP BY id_exec";
+    		$query = "SELECT e.exec, e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' $where_configs GROUP BY id_exec";
     		$this->getContainer()->getLog()->addDebug('MetricVsMetric query:'+$query);
     		$rows = $dbUtils->get_rows($query);
     		$result .= "{name: '$bench', data:[";
@@ -1234,30 +1248,40 @@ class DefaultController extends AbstractController
     			else
     				$result .= ',';
 
-    			$result .= "[${row['xval']},${row['yval']}]";
-    	}
+    			$result .= "{x: ${row['xval']},y: ${row['yval']}, exec: '${row['exec']}'}";
+    		}
     	$result .= "]}";
-    }
-    $result .= "]";
-    
-    $execs = '';
-    if(!isset($_GET['execs'])) {
-    	$first = true;
-    	foreach($benchs as $value) {
-    		if($first)
-    			$first = false;
-    		else
-    			$execs .= ',';
-    		$execs .= $value['bench'];
-    	}
-    } else
-    	$execs = $_GET['execs'][0];
-    
-    echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
-    		array('selected' => 'Metric vs metric',
-    				'series' => $result,
-    				'execs' => $execs,
-    				'aggrY' => $aggrY
-    		));
+   		}
+	    $result .= "]";
+	    
+	    $execs = '';
+	    if(!isset($_GET['execs'])) {
+	    	$first = true;
+	    	foreach($availBenchs as $value) {
+	    		if($first)
+	    			$first = false;
+	    		else
+	    			$execs .= ',';
+	    		$execs .= $value['bench'];
+	    	}
+	    } else
+	    	$execs = $_GET['execs'][0];
+	    
+	    echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
+	    		array('selected' => 'Metric vs metric',
+	    				'series' => $result,
+	    				'execs' => $execs,
+	    				'aggrY' => $aggrY,
+	    				'benchs' => $benchs,
+	    				'nets' => $nets,
+	    				'disks' => $disks,
+	    				'blk_sizes' => $blk_sizes,
+	    				'comps' => $comps,
+	    				'id_clusters' => $id_clusters,
+	    				'mapss' => $mapss,
+	    				'replications' => $replications,
+	    				'iosfs' => $iosfs,
+	    				'iofilebufs' => $iofilebufs,
+	    		));
     }
 }
