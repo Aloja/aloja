@@ -90,3 +90,11 @@ histogram2:
 histogram2data:
     pattern: "/histogram2data"
     controller: "alojaweb\\Controller\\RestController::histogram2DataAction"
+
+dbscan:
+    pattern: "/dbscan"
+    controller: "alojaweb\\Controller\\DefaultController::dbscanAction"
+
+dbscandata:
+    pattern: "/dbscandata"
+    controller: "alojaweb\\Controller\\RestController::dbscanDataAction"

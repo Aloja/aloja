@@ -696,4 +696,48 @@ VALUES
         ob_start('ob_gzhandler');
         echo json_encode($result, JSON_NUMERIC_CHECK);
     }
+
+    public function dbscanDataAction()
+    {
+        $db = $this->container->getDBUtils();
+
+        $jobid = Utils::get_GET_string("jobid");
+        $metric_x = $db::$TASK_METRICS[Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0];
+        $metric_y = $db::$TASK_METRICS[Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1];
+
+        $query_select1 = $db->get_task_metric_query($metric_x);
+        $query_select2 = $db->get_task_metric_query($metric_y);
+        $query = "
+            SELECT
+                t.`TASKID` as TASK_ID,
+                ".$query_select1('t')." as TASK_VALUE_X,
+                ".$query_select2('t')." as TASK_VALUE_Y
+            FROM `JOB_tasks` t
+            WHERE t.`JOBID` = :jobid
+            ORDER BY t.`TASKID`
+        ;";
+        $query_params = array(":jobid" => $jobid);
+
+        $rows = $db->get_rows($query, $query_params);
+
+        $seriesData = array();
+        foreach ($rows as $row) {
+            $task_id = $row['TASK_ID'];
+            $task_value_x = $row['TASK_VALUE_X'] ?: 0;
+            $task_value_y = $row['TASK_VALUE_Y'] ?: 0;
+
+            // Show only task id (not the whole string)
+            $task_id = substr($task_id, 23);
+
+            $seriesData[] = array('x' => $task_value_x, 'y' => $task_value_y, 'task_id' => $task_id);
+        }
+
+        $result = [
+            'seriesData' => $seriesData,
+        ];
+
+        header('Content-Type: application/json');
+        ob_start('ob_gzhandler');
+        echo json_encode($result, JSON_NUMERIC_CHECK);
+    }
 }
