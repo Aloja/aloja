@@ -1455,4 +1455,31 @@ class DefaultController extends AbstractController
             )
         );
     }
+
+    public function dbscanAction()
+    {
+        $jobid = Utils::get_GET_string("jobid");
+
+        // if no job requested, show a random one
+        if (strlen($jobid) == 0 || $jobid === "random") {
+            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+            $db = $this->container->getDBUtils();
+            $query = "
+                SELECT DISTINCT(t.`JOBID`)
+                FROM `JOB_tasks` t
+                ORDER BY RAND()
+                LIMIT 1
+            ;";
+            $jobid = $db->get_rows($query)[0]['JOBID'];
+        }
+
+        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+            array(
+                'selected' => 'DBSCAN',
+                'highcharts_js' => HighCharts::getHeader(),
+                'jobid' => $jobid,
+                'METRICS' => DBUtils::$TASK_METRICS,
+            )
+        );
+    }
 }

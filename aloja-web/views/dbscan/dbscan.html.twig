@@ -1,0 +1,124 @@
+{% extends "layout.html.twig" %}
+
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+
+{% block javascript %}
+    {{ parent() }}
+    {{ highcharts_js|raw }}
+
+    <script>
+        $(document).ready(function() {
+
+            // Form with all the chart options
+            var form = $('form#options');
+
+            // Call updateChart for form events
+            form.change(updateChart);
+            form.find('button').click(updateChart)
+            form.submit(updateChart);
+
+            function updateChart(event) {
+                // Start loading
+                chart.showLoading();
+
+                // Load chart options from html form
+                var metric_x = form.find("[name='metric_x']");
+                var metric_y = form.find("[name='metric_y']");
+
+                // Launch ajax request
+                $.ajax({
+                    url: "{{ path('dbscandata', {'jobid': jobid}) }}",
+                    data: {
+                        metric_x: metric_x.val(),
+                        metric_y: metric_y.val(),
+                    },
+                })
+                .done(function(data) {
+                    // Update chart with new options
+                    var metric_x_name = metric_x.find("option:selected").text();
+                    var metric_y_name = metric_y.find("option:selected").text();
+                    chart.xAxis[0].setTitle({text: metric_x_name});
+                    chart.yAxis[0].setTitle({text: metric_y_name});
+
+                    // Update chart data
+                    chart.series[0].setData(data.seriesData);
+
+                    // Finished loading
+                    chart.hideLoading();
+                });
+
+                // Prevent form submit
+                if (event && event.type == "submit") {
+                    event.preventDefault();
+                }
+            }
+
+            var chart = new Highcharts.Chart({
+                chart: {
+                    renderTo: 'chart',
+                    type: 'scatter',
+                    zoomType: 'xy',
+                },
+                title: {
+                    text: 'DBSCAN'
+                },
+                subtitle: {
+                    text: '{{ jobid }}'
+                },
+                xAxis: {
+                    title: {
+                        text: ""
+                    },
+                },
+                yAxis: {
+                    title: {
+                        text: ""
+                    },
+                },
+                tooltip: {
+                    shared: true,
+                    useHTML: true,
+                    headerFormat: '',
+                    pointFormat: '<span style="font-size: 10px">{point.task_id}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
+                },
+                plotOptions: {
+                },
+                series: 
+                    [
+                        {
+                            showInLegend: false,
+                            data: [],
+                        },
+                    ]
+            });
+            updateChart();
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+
+    <form id="options" role="form" class="form-inline pull-right">
+        <input type="hidden" name="jobid" value="{{ jobid }}">
+        <label>
+            Metric X:
+            <select name="metric_x" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}" {% if loop.index0 == 0 %}selected="selected"{% endif %}>{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+        <label>
+            Metric Y:
+            <select name="metric_y" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+    </form>
+    <div id="chart" style="clear: both;"></div>
+
+{% endblock %}
