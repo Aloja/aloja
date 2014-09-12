@@ -1,12 +1,18 @@
 {% extends "layout.html.twig"%}
 {% block stylesheet %}
 	{{ parent() }}
+	<style type="text/css">
+	  @import "js/bootstrap-slider/css/bootstrap-slider.css";
+	  #sw_filters .row {
+	  	margin-bottom: 1em;
+	  }
+	</style>
 {% endblock %}
 {% block content %}
  <form method="get"role="form"class="form-inline">
   <div style="float: left; width: 78%;">
     <div class="row" style="margin-left: .5em; margin-bottom: 1em;">
-     <div class="col-md-4">
+     <div class="col-md-5">
        <div class="row">
 	   MetricaX: <select name="metricax"class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
@@ -37,6 +43,7 @@
 	   			<span id="aggrx">
 			   	 Aggr: <select name="aggrx" class="form-control">
 			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="AVG">Average</option>
 			   	 			<option value="STDDEV_POP">Standard deviation</option>
 			   	 			<option value="VAR_POP">Variance</option>
 			   	 		</select>
@@ -83,13 +90,14 @@
 	   			<span id="aggrx2">
 			   	 Aggr: <select name="aggrx2" class="form-control">
 			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="AVG">Average</option>
 			   	 			<option value="STDDEV_POP">Standard deviation</option>
 			   	 			<option value="VAR_POP">Variance</option>
 			   	 		</select>
 	   			</span>
 	   		</div>
 	  </div>
-	  <div class="col-md-4">
+	  <div class="col-md-5">
 	   <div class="row">
 	   MetricaY:<select name="metricay" class="form-control">
 	   				<option value="e.maps"unit="maps">Maps</option>
@@ -120,6 +128,7 @@
 	   			<span id="aggry">
 			   	 Aggr: <select name="aggry" class="form-control">
 			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="AVG">Average</option>
 			   	 			<option value="STDDEV_POP">Standard deviation</option>
 			   	 			<option value="VAR_POP">Variance</option>
 			   	 		</select>
@@ -166,6 +175,7 @@
 	   			<span id="aggry2">
 			   	 Aggr: <select name="aggry2" class="form-control">
 			   	 			<option value="SUM">Sum</option>
+			   	 			<option value="AVG">Average</option>
 			   	 			<option value="STDDEV_POP">Standard deviation</option>
 			   	 			<option value="VAR_POP">Variance</option>
 			   	 		</select>
@@ -175,26 +185,91 @@
 	    <div class="col-md-2">
 	   <input type="hidden" id="selexecs" name="execs[]" value="{{ execs }}" />
 	   <button type="submit"class="btn btn-success">Update</button>
+	   <a style="font-decoration: none; color: white;" href="?" class="btn btn-warning">Reset filters</a>
 	   </div>
 	 </div>
    <div id="chart"></div>
  </div>
- {% include "common/config_filters.html.twig" %}
-    </form>
- 
- <div style="clear: both;">
-{#     <p style="text-align: center;">Software filters</p>#}
+ {% include "common/config_filters.html.twig" %} 
+ <div style="clear: both; width: 30%; border: 2px black;" id="sw_filters">
+	<h2 class="compare body" style="text-align: center; margin-bottom: .2em;">
+		Software filters<br />
+		<a id="resetsw" style="cursor: pointer;">(reset)</a>
+	</h2>
+{# 	<div class="row">#}
+{# 		I/O Sort MB {{ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') | raw }}:#}
+{# 		<span class="regular">#}
+{# 			<b style="margin-right: 1em;">100</b>#}
+{# 			<input default="100" name="io.sort.mb" type="text" class="sw-slider" value="20" data-slider-min="0" data-slider-max="1000" data-slider-step="1"/>#}
+{# 		</span>#}
+{# 	</div>#}
+	<div class="row">
+		HDFS Block Size (MB):
+		<span class="interval">
+			<b style="margin-right: 1em;">{{ dfsBlkSizeMin / 1048576 | default('64') }}</b>
+			<input default="{{ dfsBlkSize | default('[64,256]') }}" name="dfsblocksize" type="text" class="sw-slider" value="{{ dfsBlkSize | default('[64,256]')}}" data-slider-min="64" data-slider-max="256" data-slider-step="1" data-slider-value="{{ dfsBlkSize | default('[64,256]') }}"/>
+			<b style="margin-left: 1em;">{{ dfsBlkSizeMax / 1048576 | default ('256') }}</b>
+		</span>
+	</div>
+	<div class="row">
+		Map tasks {{ makeTooltip('The default number of map tasks per job.') | raw }}:
+		<span class="interval">
+			<b style="margin-right: 1em;">{{ mapTasksMin | default('1') }}</b>
+			<input default="{{ mapTasks | default('[1,256]') }}" name="mapredmaptasks" type="text" class="sw-slider" value="{{ mapTasks | default('[1,256]')}}" data-slider-min="0" data-slider-max="2000" data-slider-step="1" data-slider-value="{{ mapTasks | default('[1,256]') }}"/>
+			<b style="margin-left: 1em;">{{ mapTasksMax | default('256') }}</b>
+		</span>
+	</div>
+	<div class="row">
+		Reduce tasks {{ makeTooltip('The default number of reduce tasks per job.') | raw }}:
+		<span class="interval">
+			<b style="margin-right: 1em;">{{ redTasksMin | default('1') }}</b>
+			<input default="{{ redTasks | default('[1,256]') }}" name="mapredreducetasks" type="text" class="sw-slider" value="{{ redTasks | default('[1,256]') }}" data-slider-min="0" data-slider-max="256" data-slider-step="1" data-slider-value="{{ redTasks | default('[1,256]') }}"/>
+			<b style="margin-left: 1em;">{{ redTasksMax | default('256') }}</b>
+		</span>
+	</div>
  </div>
+</form>
+ 
 {% endblock %}
 {% block javascript %}
     {{ parent() }}
     <script src="//code.highcharts.com/highcharts.js"></script>
-        <script src="//code.highcharts.com/modules/exporting.js"></script>
-        <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
-        <script src="js/datatables/extras/export-csv/export-csv.js"></script>
-{#     <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>#}
+    <script src="//code.highcharts.com/modules/exporting.js"></script>
+    <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
+    <script src="js/datatables/extras/export-csv/export-csv.js"></script>
+    <script src="js/bootstrap-slider/js/bootstrap-slider.js"></script>
     <script type="text/javascript">
 	 $(document).ready(function() {
+		 /** Software filters init */
+		 $("#resethw").click(function() {
+			$("#hw_filters select").each(function() {
+				$(this).val("None");
+			});
+		 });
+
+		 $("#resetsw").click(function() {
+			$("#sw_filters input").each(function() {
+				$(this).slider('setValue',$(this).attr('default'));
+			});
+		 });
+			
+		 $(".sw-slider").each(function() { 
+			 $(this).slider({'tooltip': 'hide'}).on('slide', function() {
+				if($(this).parent().hasClass('regular'))
+					$(this).parent().find('b').first().text($(this).slider('getValue'));
+				else {
+					var range = $(this).slider('getValue');
+					$(this).parent().find('b').first().text(range[0]);
+					$(this).parent().find('b').eq(1).text(range[1]);
+				}
+				$(this).parent().find('input').val('['+$(this).slider('getValue')+']');
+			 });
+		 });
+		 
+		 $(".regular input").change(function() {
+			$(this).parent().find('b').first().text($(this).val());
+		 });
+		 
 		 /* getting options selected through GET */
 		 function parse(val) {
 			    var result = "Not found",

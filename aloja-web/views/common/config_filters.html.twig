@@ -1,11 +1,12 @@
-<div style="width: 20%; float: right; margin-right: 0;">
+<div id="hw_filters" style="width: 20%; float: right; margin-right: 0;">
   {% if selected != 'Metric vs metric' %}
   <form name="configFilters" method="GET" role="form">
   {% endif %}
 	<div class="row">
         <div class="col-md-12">	
 				<h2 class="compare body" style="text-align: center; margin-bottom: .2em;">
-					Hardware filters<br /> <a href="?">(reset)</a>
+					Hardware filters<br />{% if selected != 'Metric vs metric' %}<a href="?">(reset)</a>{% else %}
+					<a id="resethw" style="cursor: pointer;">(reset)</a>{% endif %}
 				</h2>
        </div>
     </div>

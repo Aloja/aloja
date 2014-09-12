@@ -1,0 +1,42 @@
+{
+  "name": "seiyria-bootstrap-slider",
+  "version": "4.0.1",
+  "dependencies": {
+    "jquery": "",
+    "bootstrap": "",
+    "modernizr": "",
+    "jquery-bridget": ""
+  },
+  "homepage": "https://github.com/seiyria/bootstrap-slider",
+  "authors": [
+    "Kyle Kemp <kyle@seiyria.com>",
+    "Rohit Kalkur <rohit.kalkur@gmail.com>"
+  ],
+  "description": "a slider element for bootstrap 2/3",
+  "main": [
+    "js/bootstrap-slider.js",
+    "dist/css/bootstrap-slider.css"
+  ],
+  "keywords": [
+    "slider",
+    "bootstrap2",
+    "bootstrap3",
+    "bootstrap"
+  ],
+  "license": "MIT",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components"
+  ],
+  "_release": "4.0.1",
+  "_resolution": {
+    "type": "version",
+    "tag": "v4.0.1",
+    "commit": "37aa8c483619d9e305e1be255b6686851d245c0b"
+  },
+  "_source": "git://github.com/seiyria/bootstrap-slider.git",
+  "_target": "~4.0.1",
+  "_originalSource": "seiyria-bootstrap-slider",
+  "_direct": true
+}

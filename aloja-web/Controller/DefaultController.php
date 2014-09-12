@@ -1228,6 +1228,28 @@ class DefaultController extends AbstractController
     	$iosfs = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false);
     	$iofilebufs = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false);
 
+    	$where_params = '';
+     	//$ioSortMb = isset($_GET['io.sort.mb']) ? $_GET['io.sort.mb'] : 100;
+    	$dfsBlkSize = isset($_GET['dfsblocksize']) ? $_GET['dfsblocksize'] : '[64,256]';
+		$mapTasks = isset($_GET['mapredmaptasks']) ? $_GET['mapredmaptasks'] : '[1,256]';
+		$redTasks = isset($_GET['mapredreducetasks']) ? $_GET['mapredreducetasks'] : '[1,256]';
+		
+		preg_match('~\[([0-9]+),([0-9]+)\]~', $dfsBlkSize, $interval);
+		$dfsBlkSizeMin = $interval[1]*1048576;
+		$dfsBlkSizeMax = $interval[2]*1048576;
+		
+		preg_match('~\[([0-9]+),([0-9]+)\]~', $mapTasks, $interval);
+		$mapTasksMin = $interval[1];
+		$mapTasksMax = $interval[2];
+		
+		preg_match('~\[([0-9]+),([0-9]+)\]~', $redTasks, $interval);
+		$redTasksMin = $interval[1];
+		$redTasksMax = $interval[2];
+		
+		$whereParams = " AND e.id_exec IN (SELECT id_exec FROM execs_conf_parameters WHERE parameter_name = 'dfs.block.size' AND parameter_value >= $dfsBlkSizeMin AND parameter_value <= $dfsBlkSizeMax)
+		 AND e.id_exec IN (SELECT id_exec FROM execs_conf_parameters WHERE parameter_name = 'mapred.map.tasks' AND parameter_value >= $mapTasksMin AND parameter_value <= $mapTasksMax)
+		 AND e.id_exec IN (SELECT id_exec FROM execs_conf_parameters WHERE parameter_name = 'mapred.reduce.tasks' AND parameter_value >= $redTasksMin AND parameter_value <= $redTasksMax)";
+    	
     	$result = "[";
     	$firstOut = true;
     	foreach($availBenchs as $value) {
@@ -1237,7 +1259,7 @@ class DefaultController extends AbstractController
     			$result .= ',';
     
     		$bench = $value['bench'];
-    		$query = "SELECT e.exec, e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.bench = '$bench' $where_configs GROUP BY id_exec";
+    		$query = "SELECT e.exec, e.bench, $metricaY AS yval, $metricaX AS xval FROM JOB_tasks j JOIN execs e USING (id_exec) WHERE e.valid = 1 AND e.bench = '$bench' $where_configs $whereParams GROUP BY id_exec";
     		$this->getContainer()->getLog()->addDebug('MetricVsMetric query:'+$query);
     		$rows = $dbUtils->get_rows($query);
     		$result .= "{name: '$bench', data:[";
@@ -1266,7 +1288,7 @@ class DefaultController extends AbstractController
 	    	}
 	    } else
 	    	$execs = $_GET['execs'][0];
-	    
+	    	    
 	    echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
 	    		array('selected' => 'Metric vs metric',
 	    				'series' => $result,
@@ -1282,6 +1304,15 @@ class DefaultController extends AbstractController
 	    				'replications' => $replications,
 	    				'iosfs' => $iosfs,
 	    				'iofilebufs' => $iofilebufs,
+	    				'dfsBlkSize' => $dfsBlkSize,
+	    				'mapTasks' => $mapTasks,
+	    				'redTasks' => $redTasks,
+	    				'redTasksMin' => $redTasksMin,
+	    				'redTasksMax' => $redTasksMax,
+	    				'mapTasksMin' => $mapTasksMin,
+	    				'mapTasksMax' => $mapTasksMax,
+	    				'dfsBlkSizeMin' => $dfsBlkSizeMin,
+	    				'dfsBlkSizeMax' => $dfsBlkSizeMax
 	    		));
     }
 }
