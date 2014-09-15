@@ -6,8 +6,8 @@
 *.out
 
 #ignore jobs files but create folder
-jobs/*
-!jobs/.git_ignored_folder
+blobs/*
+!blobs/.git_ignored_folder
 
 #vagrant
 vagrant/.vagrant/*

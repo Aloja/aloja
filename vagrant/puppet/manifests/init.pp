@@ -27,7 +27,7 @@ exec { 'apt-get update':
 #    path => '/usr/bin'
 #}
 
-package { ['python-software-properties', 'vim', 'git', 'dsh']:
+package { ['python-software-properties', 'vim', 'git', 'dsh', 'sysstat', 'bwm-ng']:
   ensure => present,
   require => Exec['apt-get update'],
 }
