@@ -4,6 +4,8 @@ namespace alojaweb\Controller;
 
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\inc\dbscan\DBSCAN;
+use alojaweb\inc\dbscan\Point;
 
 class RestController extends AbstractController
 {
@@ -703,6 +705,8 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = $db::$TASK_METRICS[Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0];
         $metric_y = $db::$TASK_METRICS[Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1];
+        $eps = Utils::get_GET_int("eps") !== null ? Utils::get_GET_int("eps") : 250000;
+        $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
 
         $query_select1 = $db->get_task_metric_query($metric_x);
         $query_select2 = $db->get_task_metric_query($metric_y);
@@ -719,7 +723,7 @@ VALUES
 
         $rows = $db->get_rows($query, $query_params);
 
-        $seriesData = array();
+        $points = array();
         foreach ($rows as $row) {
             $task_id = $row['TASK_ID'];
             $task_value_x = $row['TASK_VALUE_X'] ?: 0;
@@ -728,11 +732,39 @@ VALUES
             // Show only task id (not the whole string)
             $task_id = substr($task_id, 23);
 
-            $seriesData[] = array('x' => $task_value_x, 'y' => $task_value_y, 'task_id' => $task_id);
+            $points[] = new Point($task_value_x, $task_value_y, array('task_id' => $task_id));
+        }
+
+        $dbscan = new DBSCAN($eps, $minPoints);
+        list($clusters, $noise) = $dbscan->execute($points);
+
+        $seriesData = array();
+        foreach ($clusters as $cluster) {
+
+            $data = array();
+            foreach ($cluster as $point) {
+                $task_id = $point->info['task_id'];
+                $task_value_x = $point->x;
+                $task_value_y = $point->y;
+                $data[] = array('x' => $task_value_x, 'y' => $task_value_y, 'task_id' => $task_id);
+            }
+
+            if ($data) {
+                $seriesData[] = $data;
+            }
+        }
+
+        $noiseData = array();
+        foreach ($noise as $point) {
+            $task_id = $point->info['task_id'];
+            $task_value_x = $point->x;
+            $task_value_y = $point->y;
+            $noiseData[] = array('x' => $task_value_x, 'y' => $task_value_y, 'task_id' => $task_id);
         }
 
         $result = [
             'seriesData' => $seriesData,
+            'noiseData' => $noiseData,
         ];
 
         header('Content-Type: application/json');

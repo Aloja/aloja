@@ -26,6 +26,8 @@
                 // Load chart options from html form
                 var metric_x = form.find("[name='metric_x']");
                 var metric_y = form.find("[name='metric_y']");
+                var eps = form.find("[name='eps']");
+                var minPoints = form.find("[name='minPoints']");
 
                 // Launch ajax request
                 $.ajax({
@@ -33,6 +35,8 @@
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
+                        eps: eps.val(),
+                        minPoints: minPoints.val(),
                     },
                 })
                 .done(function(data) {
@@ -43,7 +47,22 @@
                     chart.yAxis[0].setTitle({text: metric_y_name});
 
                     // Update chart data
-                    chart.series[0].setData(data.seriesData);
+                    while(chart.series.length > 0) {
+                        chart.series[0].remove(false);
+                    }
+                    for (i = 0; i < data.seriesData.length; i++) {
+                        chart.addSeries({
+                            name: "Cluster " + (i + 1),
+                            data: data.seriesData[i],
+                        }, false);
+                    }
+                    if (data.noiseData.length > 0) {
+                        chart.addSeries({
+                            name: "Noise",
+                            data: data.noiseData,
+                        }, false);
+                    }
+                    chart.redraw();
 
                     // Finished loading
                     chart.hideLoading();
@@ -87,10 +106,6 @@
                 },
                 series: 
                     [
-                        {
-                            showInLegend: false,
-                            data: [],
-                        },
                     ]
             });
             updateChart();
@@ -117,6 +132,14 @@
                 <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
             {% endfor %}
             </select>
+        </label>
+        <label>
+            Eps:
+            <input type="text" name="eps" class="form-control" value="250000" size="10">
+        </label>
+        <label>
+            MinPoints:
+            <input type="text" name="minPoints" class="form-control" value="1" size="3">
         </label>
     </form>
     <div id="chart" style="clear: both;"></div>
