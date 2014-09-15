@@ -10,6 +10,20 @@
 	<style type="text/css" title="currentStyle">
 		@import "css/bootstrap.min.css";
 		@import "css/styles.css";
+		@media (min-width: 768px) and (max-width: 1200px) {
+		  .hidden-desktop {
+		    display: inherit !important;
+		  }
+		  .visible-desktop {
+		    display: none !important ;
+		  }
+		  .visible-tablet {
+		    display: inherit !important;
+		  }
+		  .hidden-tablet {
+		    display: none !important;
+		  }
+		}
 	</style>
 	{% endblock %}
 	<script>
