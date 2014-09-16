@@ -7,167 +7,70 @@
 		$("input,select").change(function() {
 			$("form").submit();
 		});
-		var execDetails = {{ execsDetails|raw }};
-		function setElementTable(key) {
-		   $("#detailTable td").eq(0).html('<a href="{{ path('perfcharts') }}?execs[]='+execDetails[key]['id']+'">Details</a>');
-		   $("#detailTable td").eq(1).html(execDetails[key]['bench']);
-		   $("#detailTable td").eq(2).html(execDetails[key]['exe_time']);
-		   $("#detailTable td").eq(3).html(execDetails[key]['cost']+'$');
-		   $("#detailTable td").eq(4).html(execDetails[key]['net']);
-		   $("#detailTable td").eq(5).html(execDetails[key]['disk']);
-		   $("#detailTable td").eq(6).html(execDetails[key]['maps']);
-		   $("#detailTable td").eq(7).html(execDetails[key]['iosf']);
-		   $("#detailTable td").eq(8).html(execDetails[key]['replication']);
-		   $("#detailTable td").eq(9).html(execDetails[key]['iofilebuf']);
-		   $("#detailTable td").eq(10).html(execDetails[key]['comp']);
-		   $("#detailTable td").eq(11).html(execDetails[key]['blk_size']);
-		   $("#detailTable td").eq(12).html(execDetails[key]['cluster']);
-		   $("#detailTable td").eq(13).html('<a href="{{ path('export2prv') }}?id_exec='+execDetails[key]['id']+'">PARAVER</a>');
-		}
-		
-		var firstElem;
-		for(var key in execDetails) {
-		    if(execDetails.hasOwnProperty(key)) {
-		    	setElementTable(key);
-		        break;
-		    }
-		}
-		
-		    var chart = new Highcharts.Chart({
-		        chart: {
-		            type: 'bar',
-		            renderTo: 'chart'
-		        },
-		        title: {
-		            text: 'Executions ordered per best configuration'
-		        },
-		        xAxis: {
-			        categories: {{ seriesCat | raw }},
-		            title: {
-		                text: null
-		            },
-		            labels: {
-			            enabled: false
-			        }
-		        },
-		        yAxis: {
-		            min: 0,
-		            title: {
-		              {% if request.get('ordertype') == 'cost' %}
-		            	text: 'Cost-effective (USD $)',
-		              {% else %}
-		                text: 'Execution time (seconds)',
-		              {% endif %}
-		                align: 'high'
-		            },
-		            labels: {
-		                overflow: 'justify'
-		            }
-		        },
-		        tooltip: {
-		            valueSuffix: "{% if request.get('ordertype') == 'cost' %}${% else %}s{% endif %}",
-		            pointFormat: '<b>{point.y}</b>'
-		        },
-		        plotOptions: {
-		            bar: {
-		                dataLabels: {
-		                    enabled: true
-		                }
-		            },
-			        series: {
-	                	cursor: 'pointer',
-	                    point: {
-	                        events: {
-	                            click: function () {
-	                                var id = this.series.data[this.x].category;
-	                                setElementTable(id);
-	                            }
-	                        }
-	                    }
-	                }
-		        },
-		        legend: {
-			        enabled: false,
-		        },
-		        credits: {
-		            enabled: false
-		        },
-		        series: [{
-			        name: ' ',
-			        data: [{{ seriesData | raw}}]
-		        }]
-		    });
 	 });
 	</script>
 {% endblock %} 
 {% block content %}
 <div id="chart"></div>
 <div style="float: left; width: 50%;">
-{# 	<form method="get" action="{{ path('bestconfig') }}" role="form"#}
-{# 		class="form-inline">#}
-{# 		<label>Best configuration according to:&nbsp;</label><select class="form-control" name="ordertype">#}
-{# 			<option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>#}
-{# 			<option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>#}
-{# 		</select>#}
-{# 	</form>#}
-	<br />
+    <h3>Best {{ bestexec['bench'] }} configuration</h3>
 	<table id="detailTable" class="table table-striped">
 		<tbody>
 			<tr>
 				<th>Run details</th>
-				<td></td>
+				<td><a href="{{ path('perfcharts') }}?execs[]={{ bestexec['id_exec'] }}">Details</a></td>
 			</tr>
 			<tr>
 				<th>Benchmark</th>
-				<td></td>
+				<td>{{ bestexec['bench'] }}</td>
 			</tr>
 			<tr>
 				<th>Execution time</th>
-				<td></td>
+				<td>{{ bestexec['exe_time'] | number_format(2,'.',',') }}s</td>
 			</tr>
 			<tr>
 				<th>Running cost $ {{ makeTooltip('Cost on USD dependant of running time and hardware configuration.') | raw }}</th>
-				<td></td>
+				<td>{{ bestexec['cost'] | number_format(2,'.',',') }}$</td>
 			</tr>
 			<tr>
 				<th>Net</th>
-				<td></td>
+				<td>{{ bestexec['net'] }}</td>
 			</tr>
 			<tr>
 				<th>Disk</th>
-				<td></td>
+				<td>{{ bestexec['disk'] }}</td>
 			</tr>
 			<tr>
 				<th>Number of hadoop mappers</th>
-				<td></td>
+				<td>{{ bestexec['maps'] }}</td>
 			</tr>
 			<tr>
 				<th>IO Sort File Factor {{ makeTooltip('The number of streams to merge at once while sorting files. This determines the number of open file handles.') | raw }}</th>
-				<td></td>
+				<td>{{ bestexec['iosf'] }}</td>
 			</tr>
 			<tr>
 				<th>Number of replicas</th>
-				<td></td>
+				<td>{{ bestexec['replication'] }}</td>
 			</tr>
 			<tr>
 				<th>IO File Buffer {{ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') | raw }}</th>
-				<td></td>
+				<td>{{ bestexec['iofilebuf'] }}</td>
 			</tr>
 			<tr>
 				<th>Compression algorithm</th>
-				<td></td>
+				<td>{{ bestexec['comp'] }}</td>
 			</tr>
 			<tr>
 				<th>Block size</th>
-				<td></td>
+				<td>{{ bestexec['blk_size'] }}</td>
 			</tr>
 			<tr>
 				<th>Cluster</th>
-				<td></td>
+				<td>{{ cluster }}</td>
 			</tr>
 			<tr>
 				<th>PARAVER {{ makeTooltip('Download files to view execution details with PARAVER analysis tool.') | raw }}</th>
-				<td></td>
+				<td><a href="{{ path('export2prv') }}?id_exec={{ bestexec['id_exec'] }}">PARAVER</a></td>
 			</tr>
 		</tbody>
 	</table>
