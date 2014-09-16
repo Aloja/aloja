@@ -27,21 +27,13 @@ exec { 'apt-get update':
 #    path => '/usr/bin'
 #}
 
-package { ['python-software-properties', 'vim', 'git', 'dsh']:
+package { ['python-software-properties', 'vim', 'git', 'dsh', 'sysstat', 'bwm-ng']:
   ensure => present,
   require => Exec['apt-get update'],
 }
 
 
 include nginx, php #, mysql
-
-vcsrepo { "/var/www/":
-  ensure => latest,
-  provider => git,
-  require => [ Package[ 'git' ] ],
-  source => "https://someuser:password@github.com/Aloja/aloja.git",
-  revision => 'azureProd',
-}
 
 #include '::mysql::server'
 if $environment == 'prod' {
