@@ -114,8 +114,8 @@
 		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('configimprovement') }}">Config Improvement</a>
 		        </li>
-		        <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('bestconfig') }}">Best Configuration</a>
+		        <li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}>
+		          <a class="navlink" href="{{ path('clusters') }}">Clusters</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>

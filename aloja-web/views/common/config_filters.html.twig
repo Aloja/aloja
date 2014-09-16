@@ -7,15 +7,17 @@
 				</h2>
 			</div>
 		</div>
-		{% if selected == 'Best configuration' %}
+		{% if selected == 'Best configuration' or selected == 'Clusters' %}
+		 {% if selected == 'Clusters' %}
 		<div class="row">
 			<div class="col-md-8">
 			   Number of clusters:<input class="form-control" value="{{ kmclusters }}" name="kmclusters" type="number" step="1" max="10" min="2" />
 			</div>
 		</div>
+		{% endif %}
 		<div class="row">
 			<div class="col-md-4">
-				Best config by:<select class="form-control" name="ordertype">
+				Order by:<select class="form-control" name="ordertype">
 					<option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>
 					<option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>
 				</select>
