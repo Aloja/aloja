@@ -12,5 +12,5 @@ function strpos(haystack, needle, offset) {
 }
 
 function isNumber(n) {
-  return !isNaN(parseFloat(n)) && isFinite(n);
+	return !isNaN(parseFloat(n)) && isFinite(n);
 }

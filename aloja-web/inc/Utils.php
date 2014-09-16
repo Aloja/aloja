@@ -353,9 +353,9 @@ class Utils
     	if($diskShort == 'HDD')
     		$disks = 'Hard-disk drive';
     	elseif($diskShort == 'SSD')
-    		$disks = 'Solid-state disk';
+    		$disks = 'SSD';
     	else
-    		$disks = substr($diskShort,2).'remotes';
+    		$disks = substr($diskShort,2).' remote(s)';
     
     	return $disks;
     }

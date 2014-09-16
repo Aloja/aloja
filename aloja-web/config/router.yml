@@ -46,6 +46,10 @@ metrics:
 metricsdata:
     pattern: "/metricsdata"
     controller: "alojaweb\\Controller\\RestController::metricsDataAction"
+
+clusters:
+    pattern: "/clusters"
+    controller: "alojaweb\\Controller\\DefaultController::clustersAction"
     
 bestconfig:
     pattern: "/bestconfig"

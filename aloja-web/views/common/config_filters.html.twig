@@ -2,12 +2,17 @@
 	<form name="configFilters" method="GET" role="form">
 		<div class="row">
 			<div class="col-md-8">
-				<h2 class="compare body" style="margin-left: 1em;">
+				<h2 class="compare body" style="text-align: center;">
 					Filters: <a href="?">(reset)</a>
 				</h2>
 			</div>
 		</div>
 		{% if selected == 'Best configuration' %}
+		<div class="row">
+			<div class="col-md-8">
+			   Number of clusters:<input class="form-control" value="{{ kmclusters }}" name="kmclusters" type="number" step="1" max="10" min="2" />
+			</div>
+		</div>
 		<div class="row">
 			<div class="col-md-4">
 				Best config by:<select class="form-control" name="ordertype">
