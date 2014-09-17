@@ -23,7 +23,8 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-            'files' => 'Files',
+    		'histogram' => 'Histogram',
+           // 'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
@@ -184,7 +185,6 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
     	$discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
-
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
@@ -1166,5 +1166,23 @@ class DefaultController extends AbstractController
                 'type' => $type ? $type : 'CPU',
             	'discreteOptions' => $discreteOptions
             ));
+    }
+    
+    public function histogramAction()
+    {
+    	$db = $this->container->getDBUtils();
+    	$idExec = '';
+    	try {
+    		$idExec = Utils::get_GET_string('id_exec');
+    		if(!$idExec)
+    			throw new \Exception("No execution selected!");
+    	} catch (\Exception $e) {
+    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+    	}
+    	
+    	echo $this->container->getTwig()->render('histogram/histogram.html.twig',
+    			array('selected' => 'Histogram',
+    				  'idExec' => $idExec
+    			));
     }
 }
