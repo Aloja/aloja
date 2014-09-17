@@ -130,37 +130,41 @@ shift $((OPTIND-1))
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
-trap 'stop_hadoop; stop_monit; kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
+trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
-#load cluster config
-clusterConfigFile="../shell/conf/cluster_${clusterName}.conf"
-source "$clusterConfigFile"
+#####
+#load cluster config and common functions
+clusterConfigFile="cluster_${clusterName}.conf"
+
+CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$CUR_DIR_TMP/common/cluster_functions.sh"
+
+#####
 
 NUMBER_OF_SLAVES="$numberOfNodes"
 user="pristine"
 
-DSH="dsh -M -m "
+DSH="dsh -M -c -m "
 
+#DEPRECATED for infiniband tests
 #if [ "${NET}" == "IB" ] ; then
 #  host1="al-1001-ib0"
 #  host2="al-1002-ib0"
 #  host3="al-1003-ib0"
 #  host4="al-1004-ib0"
 #  IFACE="ib0"
-#else
 
+IFACE="eth0"
 
-  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do
-    hosts["$vm_id"]="${clusterName}-${vm_id}"
-    DSH="$DSH ${hosts["$vm_id"]},"
-  done
-  DSH="${DSH:0:-1}"
+node_names="$(get_node_names)"
 
-  IFACE="eth0"
-#fi
+DSH="$DSH $(nl2char "$node_names" ",")"
 
-DSH_MASTER="ssh ${hosts[00]}"
-DSH_SLAVE="ssh ${hosts[00]}" #TODO check if OK
+#nodes="$(nl2char "$node_names" " ")"
+
+master_name="$(get_master_name)"
+DSH_MASTER="ssh $master_name"
+DSH_SLAVE="ssh $master_name" #TODO check if OK
 
 
 if [ "$DISK" == "SSD" ] ; then
@@ -200,13 +204,20 @@ bwm_source="$SOURCE_DIR/bin/bwm-ng"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
-echo "DSH $DSH DSH_MASTER $DSH_MASTER DSH_SLAVE $DSH_SLAVE"
+#temporary to avoid read-only file system errors
+echo "Re-mounting attached disks"
+$DSH "sudo umount /home/$user/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
 
-exit 1
+correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+
+if [ "$correctly_mounted_nodes" != "$(( numberOfNodes + 1 ))" ] ; then
+  echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
+  exit 1
+fi
 
 #create dir to save files in one host
-$DSH "mkdir -p $JOB_PATH"
-$DSH "touch $LOG_PATH"
+$DSH_MASTER "mkdir -p $JOB_PATH"
+$DSH_MASTER "touch $LOG_PATH"
 
 logger(){
   stamp=$(date '+%s')
@@ -215,33 +226,23 @@ logger(){
   #zabbix_sender "hadoop.status $stamp $1"
 }
 
-#temporary to avoid read-only file system errors
-logger "Re-mounting attached disks"
-$DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-
-if [ ! -f "share/safe_store" ] ; then
-  logger "ERROR, share directory is not mounted correctly. Exiting..."
-  exit 1
-fi
-
-
 
 logger "Setting scratch permissions"
 $DSH "sudo chown -R $user: /scratch"
 
 #only copy files if version has changed (to save time in azure)
 logger "Checking if to generate source dirs"
-for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
-  host_tmp="host${host_number}" #for variable variable name
-  logger " for host ${!host_tmp}"
-  if [ "$(ssh "${!host_tmp}" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
-    logger "At least host ${!host_tmp} did not have source dirs. Generating source dirs for ALL hosts"
+for node in $node_names ; do
+  logger " for host $node"
+  if [ "$(ssh "$node" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+    logger "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
     $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
     break #dont need to check after one is missing
   else
-    logger " Host ${!host_tmp} up to date"
+    logger " Host $node up to date"
   fi
 done
+
 
 #if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
 #  logger "Generating source dirs"
@@ -318,7 +319,7 @@ echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 
   $DSH "rm -rf $H_DIR/conf/*" 2>&1 |tee -a $LOG_PATH
 
-  MASTER="$host1"
+  MASTER="$master_name"
 
   IO_MB="$((IO_FACTOR * 10))"
 
@@ -356,12 +357,8 @@ s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
 EOF
 )
 
-slaves=$(cat <<EOF
-$host2
-$host3
-$host4
-EOF
-)
+slaves="$(get_slaves_names)"
+
 
   #to avoid perl warnings
   export LC_CTYPE=en_US.UTF-8
@@ -374,10 +371,9 @@ EOF
 
   logger "Replacing per host config"
 
-  for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
-    host_tmp="host${host_number}" #for variable variable name
-    ssh "${!host_tmp}" "/usr/bin/perl -pe \"s,##HOST##,${!host_tmp},g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
-    ssh "${!host_tmp}" "/usr/bin/perl -pe \"s,##HOST##,${!host_tmp},g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
+  for node in $node_names ; do
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $H_DIR/conf/mapred-site.xml > $H_DIR/conf/mapred-site.xml.tmp; rm $H_DIR/conf/mapred-site.xml; mv $H_DIR/conf/mapred-site.xml.tmp $H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $H_DIR/conf/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml.tmp; rm $H_DIR/conf/hdfs-site.xml; mv $H_DIR/conf/hdfs-site.xml.tmp $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
   done
 
   $DSH "echo -e \"$MASTER\" > $H_DIR/conf/masters" 2>&1 |tee -a $LOG_PATH
@@ -387,16 +383,14 @@ EOF
   #save config
   logger "Saving config"
   create_conf_dirs=""
-  for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
-    host_tmp="host${host_number}" #for variable variable name
-    create_conf_dirs="$create_conf_dirs mkdir -p $JOB_PATH/conf_${!host_tmp} "
+  for node in $node_names ; do
+    create_conf_dirs="$create_conf_dirs mkdir -p $JOB_PATH/conf_$node ;"
   done
 
   $DSH "$create_conf_dirs" 2>&1 |tee -a $LOG_PATH
 
-  for host_number in $(seq 1 "$NUMBER_OF_NODES") ; do
-    host_tmp="host${host_number}" #for variable variable name
-    ssh "${!host_tmp}" "cp $H_DIR/conf/* $JOB_PATH/conf_${!host_tmp}" 2>&1 |tee -a $LOG_PATH &
+  for node in $node_names ; do
+    ssh "$node" "cp $H_DIR/conf/* $JOB_PATH/conf_$node" 2>&1 |tee -a $LOG_PATH &
   done
 }
 
@@ -522,8 +516,8 @@ save_bench() {
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
   cp "${HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
 
-  logger "Copying files to master == scp -r $JOB_PATH ${host1}:$JOB_PATH"
-  #$DSH "scp -r $JOB_PATH ${host1}:$JOB_PATH" 2>&1 |tee -a $LOG_PATH
+  #logger "Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
+  #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH" 2>&1 |tee -a $LOG_PATH
   #pending, delete
 
   logger "Compresing and deleting $1"
@@ -531,9 +525,9 @@ save_bench() {
   $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;" 2>&1 |tee -a $LOG_PATH
   tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
   $DSH_MASTER "rm -rf $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  $JOB_PATH/conf_*
+  $JOB_PATH/conf_* #TODO check
 
-  #empy the contents from original disk  TODO check if necessary still
+  #empy the contents from original disk  TODO check if still necessary
   $DSH "for i in $HDD/hadoop-*.{log,out}; do echo "" > $i; done;" 2>&1 |tee -a $LOG_PATH
 
   logger "Done saving benchmark $1"

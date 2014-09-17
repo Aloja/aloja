@@ -17,25 +17,36 @@ source "$clusterConfigFilePath/$clusterConfigFile"
 
 
 get_node_names() {
-  node_names=''
+  local node_names=''
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    node_names="${node_names}\n${clusterName}-${vm_id}"
+    if [ ! -z "$node_names" ] ; then
+      node_names="${node_names}\n${clusterName}-${vm_id}"
+    else
+      node_names="${clusterName}-${vm_id}"
+    fi
   done
+  echo -e "$node_names"
 }
 
 get_slaves_names() {
-  node_names=''
+  local node_names=''
   for vm_id in $(seq -f "%02g" 1 "$numberOfNodes") ; do #pad the sequence with 0s
-    node_names="${node_names}\n${clusterName}-${vm_id}"
+    if [ ! -z "$node_names" ] ; then
+      node_names="${node_names}\n${clusterName}-${vm_id}"
+    else
+      node_names="${clusterName}-${vm_id}"
+    fi
   done
+  echo -e "$node_names"
 }
 
 get_master_name() {
-  master_name=''
+  local master_name=''
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
     master_name="${clusterName}-${vm_id}"
     break #just return one
   done
+  echo "$master_name"
 }
 
 get_master_ssh_port() {

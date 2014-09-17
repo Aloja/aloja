@@ -164,12 +164,13 @@ chmod 0600 "../secure/keys/myPrivateKey.key"
 
   #echo to print special chars;
   if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
+    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
   else
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
+    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
   fi
 
-chmod 0644 "../secure/keys/myPrivateKey.key"
+#chmod 0644 "../secure/keys/myPrivateKey.key"
+
 }
 
 #$1 command to execute in master
@@ -285,11 +286,10 @@ vm_set_dsh() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
-    node_names=''
-    get_node_names
+    node_names="$(get_node_names)"
     vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/a;"
-    get_slaves_names
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/s;"
+    slave_names="$(get_slaves_names)"
+    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$slave_names\" > ~/.dsh/group/s;"
 
     test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
@@ -312,8 +312,8 @@ vm_set_dot_files() {
 
     vm_execute "echo -e \"
 export HISTSIZE=50000
-alias a='dsh -g a -M'
-alias s='dsh -g s -M'\" >> ~/.bashrc;" "paralell"
+alias a='dsh -g a -M -c'
+alias s='dsh -g s -M -c'\" >> ~/.bashrc;" "paralell"
 
     test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
@@ -331,7 +331,7 @@ alias s='dsh -g s -M'\" >> ~/.bashrc;" "paralell"
 
 #1 command to execute in master (as a gateway to DSH)
 cluster_execute() {
-  vm_execute_master "dsh -g a -M \"$1\""
+  vm_execute_master "dsh -g a -M -c \"$1\""
 }
 
 vm_initialize_disks() {
