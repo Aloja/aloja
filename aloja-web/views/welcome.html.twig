@@ -19,8 +19,15 @@
                     <td>
                         <p>
                             <br/>
-                        <h4>Welcome to the <strong>ALOJA</strong> project,</h4>
 
+                        <div id="warning_testing" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+						<h5><strong>This is NOT a production server. 
+							This contains testing functionalities that may have bugs, and data may be outdated.
+							<br />Camera-ready (production) page is located at <a href="http://hadoop.bsc.es">http://hadoop.bsc.es</a></strong></h5>
+						</div>
+
+                        <h4>Welcome to the <strong>ALOJA</strong> project,</h4>
+                        
                         <h5><strong>ALOJA</strong> is an initiative of the
                             <a href="http://www.bscmsrc.eu/" target="_blank"> BSC-MSR</a> research centre in Barcelona to explore
                             Hadoop's performance under different deployment scenarios.
@@ -181,6 +188,11 @@
 
                 fixedContentPos: false
               });
+
+            if(location.href == 'http://alojatest.cloudapp.net/' || location.href == 'http://hadoop.bsc.es:8080/')
+            {
+                $("#warning_testing").show();
+            }
 		  });
 	</script>
     {% endblock %}
