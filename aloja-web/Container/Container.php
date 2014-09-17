@@ -76,7 +76,8 @@ class Container
             if($c['config']['enable_debug'])
                 $twig->addExtension(new Twig_Extension_Debug());
 
-//             //Twig globals initialization
+            //Twig globals initialization
+			$twig->addGlobal('request',$c['request']);
 //             $twig->addGlobal('message',null);
             return $twig;
         };

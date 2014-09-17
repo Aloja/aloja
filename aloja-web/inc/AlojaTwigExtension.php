@@ -30,7 +30,8 @@ class AlojaTwigExtension extends Twig_Extension
                 'modifyUrl' => new Twig_Function_Method($this, 'modifyUrl'),
                 'makeTooltip' => new Twig_Function_Method($this, 'makeTooltip'),
                 'makeExecs' => new Twig_Function_Method($this, 'makeExecs'),
-                'path' => new Twig_Function_Method($this, 'path')
+                'path' => new Twig_Function_Method($this, 'path'),
+        		'getArrayIndex' => new Twig_Function_Method($this, 'getArrayIndex')
         );
     }
 
@@ -129,5 +130,25 @@ class AlojaTwigExtension extends Twig_Extension
             return $url;
         } else
             throw new Twig_Error_Runtime('There\'s no route with this name');
+    }
+    
+    public function getArrayIndex($array, $valueToFind)
+    {
+    	if(!is_array($array))
+    		throw new \Exception('Expected array in first argument');
+    	
+    	if(!in_array($valueToFind,$array))
+    		throw new \Exception('Value doesn\'t exists in the given array');
+    	
+    	$count = 0;
+    	foreach($array as $value)
+    	{
+    		if($value == $valueToFind)
+    			return $count;
+    		
+    		$count++;
+    	}
+    	
+    	return 0;
     }
 }

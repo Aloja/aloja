@@ -10,6 +10,20 @@
 	<style type="text/css" title="currentStyle">
 		@import "css/bootstrap.min.css";
 		@import "css/styles.css";
+		@media (min-width: 768px) and (max-width: 1200px) {
+		  .hidden-desktop {
+		    display: inherit !important;
+		  }
+		  .visible-desktop {
+		    display: none !important ;
+		  }
+		  .visible-tablet {
+		    display: inherit !important;
+		  }
+		  .hidden-tablet {
+		    display: none !important;
+		  }
+		}
 	</style>
 	{% endblock %}
 	<script>
@@ -100,17 +114,22 @@
 		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('configimprovement') }}">Config Improvement</a>
 		        </li>
-		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('metrics') }}">Performance Counters</a>
+		        <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}>
+		          <a class="navlink" href="{{ path('bestconfig') }}">Best Configuration</a>
 		        </li>
 		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>
+		        </li>
+{# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
+{# 		          <a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
+{# 		        </li>#}
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Charts</a></li>
+		            <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a></li>
+		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Metrics</a></li>
+		          </ul>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
@@ -158,6 +177,7 @@
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
 
@@ -183,6 +203,10 @@
         	$(".tooltip2").each(function() {
 				$(this).tooltip();
             });
+
+        	if($('.dropdown li.active').length > 0) {
+        		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
+        	}
 		  });
 	</script>
 	{% endblock %}

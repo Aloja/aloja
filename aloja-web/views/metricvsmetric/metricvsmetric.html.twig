@@ -1,0 +1,80 @@
+{% extends "layout.html.twig" %}
+{% block stylesheet %}
+	{{ parent() }}
+	<style type="text/css" title="currentStyle">
+		@import "js/slider/css/slider.css";
+	</style>
+	<style type="text/css">
+	  #filters #software .col-md-6 input {
+	    margin-right: 1em;
+	  }
+	  #filters #software input[id^="number"] {
+	  	width: 8em;
+	  }
+	  #filters #software input.slider {
+	  	width: 10em;
+	  }
+	</style>
+{% endblock %}
+{% block content %}
+  <div id="filters">
+   <form role="form" method="GET">
+     <div id="hardware">
+     
+     </div>
+	 <div id="software">
+	    <div class="row">
+	     <div class="col-md-6">
+	        <input id="number1" type="number" value="0" step="1" min="0" max="20" />
+	    	<input id="slider1" type="text" class="slider" value="0" data-slider-min="0" data-slider-max="20" data-slider-step="1" data-slider-orientation="horizontal" data-slider-selection="after"data-slider-tooltip="hide">
+	        <label>In/out bytes per map task</label>
+	      </div>
+	    </div>
+	    <div class="row">
+	     <div class="col-md-6">
+	        <input id="number2" type="number" value="0" step="1" min="0" max="20" />
+	    	<input id="slider2" type="text" class="slider" value="0" data-slider-min="0" data-slider-max="20" data-slider-step="1" data-slider-orientation="horizontal" data-slider-selection="after"data-slider-tooltip="hide">
+	        <label>Reducers per node</label>
+	      </div>
+	    </div>
+	    <div class="row">
+	     <div class="col-md-6">
+	        <input id="number3" type="number" value="0" step="1" min="0" max="20" />
+	    	<input id="slider3" type="text" class="slider" value="0" data-slider-min="0" data-slider-max="20" data-slider-step="1" data-slider-orientation="horizontal" data-slider-selection="after"data-slider-tooltip="hide">
+	        <label>Input size</label>
+	      </div>
+	    </div>
+	    <div class="row">
+	     <div class="col-md-6">
+	        <input id="number4" type="number" value="0" step="1" min="0" max="20" />
+	    	<input id="slider4" type="text" class="slider" value="0" data-slider-min="0" data-slider-max="20" data-slider-step="1" data-slider-orientation="horizontal" data-slider-selection="after"data-slider-tooltip="hide">
+	        <label>Output size</label>
+	      </div>
+	    </div>
+	    <div class="row">
+	     <div class="col-md-6">
+	        <input id="number5" type="number" value="0" step="1" min="0" max="20" />
+	    	<input id="slider5" type="text" class="slider" value="0" data-slider-min="0" data-slider-max="20" data-slider-step="1" data-slider-orientation="horizontal" data-slider-selection="after"data-slider-tooltip="hide">
+	        <label>Intermediate size</label>
+	      </div>
+	    </div>
+	  </div>
+   </form>
+  </div>
+{% endblock %}
+{% block javascript %}
+    {{ parent() }}
+    <script type="text/javascript" src="js/utils.js"></script>
+    <script type="text/javascript" src="js/slider/js/bootstrap-slider.js"></script>
+    <script type="text/javascript">
+      $(document).ready(function() {
+		$("#filters input.slider").slider('setValue',0)
+			.on('slide', function(ev) {
+				var number = $(this).attr('id');
+				number = number.substring(6);
+				$("#number"+number).val($(this).val());
+			});
+		$('#filters input[id^="number"]').val(0);
+      });
+    </script>
+{% endblock %}

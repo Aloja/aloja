@@ -23,7 +23,8 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-            'files' => 'Files',
+    		'histogram' => 'Histogram',
+           // 'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
@@ -55,7 +56,8 @@ class DefaultController extends AbstractController
             $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-
+			$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+			
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
 
@@ -177,15 +179,18 @@ class DefaultController extends AbstractController
                 'iofilebufs' => $iofilebufs,
                 'count' => $count,
                 'height' => $height,
+             	'money' => $money
              )
         );
     }
 
     public function benchExecutionsAction()
     {
+    	$discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
+            	'discreteOptions' => $discreteOptions
             ));
     }
 
@@ -256,7 +261,8 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-
+            $money 	= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+            
             $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
     //        $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
      //       $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
@@ -365,7 +371,8 @@ class DefaultController extends AbstractController
             'replications' => $replications,
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
-            'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions'
+            'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
+        	'money' => $money
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
                 ));
     }
@@ -993,6 +1000,15 @@ class DefaultController extends AbstractController
     public function countersAction()
     {
         try {
+        	$db = $this->container->getDBUtils();
+        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = TRUE");
+        	
+        	$discreteOptions = array();
+        	$discreteOptions['bench'][] = 'All';
+        	foreach($benchOptions as $option) {
+        		$discreteOptions['bench'][] = array_shift($option);
+        	}
+        	
             $dbUtil = $this->container->getDBUtils();
             $message = null;
 
@@ -1054,6 +1070,17 @@ class DefaultController extends AbstractController
             } elseif ($type == 'TASKS') {
                 $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM JOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
+                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+
+                $discreteOptions['TASK_STATUS'][] = 'All';
+                $discreteOptions['TASK_TYPE'][] = 'All';
+                foreach($taskStatusOptions as $option) {
+                	$discreteOptions['TASK_STATUS'][] = array_shift($option);
+                }
+                foreach($typeOptions as $option) {
+                	$discreteOptions['TASK_TYPE'][] = array_shift($option);
+                }
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1086,7 +1113,8 @@ class DefaultController extends AbstractController
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
                 'type' => $type,
                 'execs' => $execs,
-                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : ''
+                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
+            	'discreteOptions' => $discreteOptions
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
@@ -1096,15 +1124,15 @@ class DefaultController extends AbstractController
         $show_in_result_metrics = array();
         $type = Utils::get_GET_string('type');
         if(!$type || $type == 'CPU') {
-          $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
+          $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
               'Avg %user', 'Max %user', 'Min %user', 'Stddev %user', 'Var %user', 
           	  'Avg %nice', 'Max %nice', 'Min %nice', 'Stddev %nice', 'Var %nice', 
           	  'Avg %system', 'Max %system', 'Min %system', 'Stddev %system', 'Var %system', 
           	  'Avg %iowait', 'Max %iowait', 'Min %iowait', 'Stddev %iowait', 'Var %iowait', 
           	  'Avg %steal', 'Max %steal', 'Min %steal', 'Stddev %steal', 'Var %steal',
-          	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster');  
+          	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster', 'end_time' => 'End time');  
         } else if($type == 'DISK') { 
-            $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size',
+            $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
                 'DEV', 'Avg tps', 'Max tps', 'Min tps', 
             	'Avg rd_sec/s', 'Max rd_sec/s', 'Min rd_sec/s', 'Stddev rd_sec/s', 'Var rd_sec/s', 'Sum rd_sec/s',
             	'Avg wr_sec/s', 'Max wr_sec/s', 'Min wr_sec/s', 'Stddev wr_sec/s', 'Var wr_sec/s', 'Sum wr_sec/s',
@@ -1112,9 +1140,9 @@ class DefaultController extends AbstractController
             	'Avg queue sz', 'Max queue sz', 'Min queue sz', 'Stddev queue sz', 'Var queue sz',
             	'Avg Await', 'Max Await', 'Min Await', 'Stddev Await', 'Var Await',
             	'Avg %util', 'Max %util', 'Min %util', 'Stddev %util', 'Var %util',
-            	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster');
+            	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster', 'end_time' => 'End time');
         } else if($type == 'MEMORY') {
-           $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 
+           $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 
               'Avg kbmemfree', 'Max kbmemfree', 'Min kbmemfree', 'Stddev kbmemfree', 'Var kbmemfree',
            	  'Avg kbmemused', 'Max kbmemused', 'Min kbmemused', 'Stddev kbmemused', 'Var kbmemused',
            	  'Avg %memused', 'Max %memused', 'Min %memused', 'Stddev %memused', 'Var %memused',
@@ -1123,22 +1151,127 @@ class DefaultController extends AbstractController
            	  'Avg kbcommit', 'Max kbcommit', 'Min kbcommit', 'Stddev kbcommit', 'Var kbcommit',
            	  'Avg %commit', 'Max %commit', 'Min %commit', 'Stddev %commit', 'Var %commit',
            	  'Avg kbactive', 'Max kbactive', 'Min kbactive', 'Stddev kbactive', 'Var kbactive',
-           	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster');                           
+           	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster', 'end_time' => 'End time');                           
         } else if($type == 'NETWORK')
-          $show_in_result_metrics = array('Conf','Benchmark','Net', 'Disk','Maps','Comp','Rep','Blk size', 'Interface', 
+          $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 'Interface', 
               'Avg rxpck/s', 'Max rxpck/s', 'Min rxpck/s', 'Stddev rxpck/s', 'Var rxpck/s', 'Sum rxpck/s', 
           	  'Avg txpck/s', 'Max txpck/s', 'Min txpck/s', 'Stddev txpck/s', 'Var txpck/s', 'Sum txpck/s',
           	  'Avg rxkB/s', 'Max rxkB/s', 'Min rxkB/s', 'Stddev rxkB/s', 'Var rxkB/s', 'Sum rxkB/s',
           	  'Avg txkB/s', 'Max txkB/s', 'Min txkB/s', 'Stddev txkB/s', 'Var txkB/s', 'Sum txkB/s',
           	  'Avg rxcmp/s', 'Max rxcmp/s', 'Min rxcmp/s', 'Stddev rxcmp/s', 'Var rxcmp/s', 'Sum rxcmp/s',
           	  'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
-          	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster');
+          	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster', 'end_time' => 'End time');
      
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('metrics/metrics.html.twig',
             array('selected' => 'Performance Metrics',
                 'theaders' => $show_in_result_metrics,
                 'title' => 'Hadoop Performance Counters',
-                'type' => $type ? $type : 'CPU'
+                'type' => $type ? $type : 'CPU',
+            	'discreteOptions' => $discreteOptions
             ));
     }
+    
+    public function histogramAction()
+    {
+    	$db = $this->container->getDBUtils();
+    	$idExec = '';
+    	try {
+    		$idExec = Utils::get_GET_string('id_exec');
+    		if(!$idExec)
+    			throw new \Exception("No execution selected!");
+    	} catch (\Exception $e) {
+    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+    	}
+    	
+    	echo $this->container->getTwig()->render('histogram/histogram.html.twig',
+    			array('selected' => 'Histogram',
+    				  'idExec' => $idExec
+    			));
+    }
+
+    public function bestConfigAction() {
+		$db = $this->container->getDBUtils ();
+		$rows_config = '';
+		$bestexec = '';
+		$cluster = '';
+		$comp = '';
+		$execsDetails = array ();
+		try {
+			$configurations = array ();
+			$where_configs = '';
+			$concat_config = "";
+			
+			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
+			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
+			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
+			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config, false );
+			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config, false );
+			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config, false );
+			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config, false );
+			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config, false );
+			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
+			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
+			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
+			if (! $benchs)
+				$where_configs .= 'AND bench IN (\'wordcount\')';
+			$order_type = Utils::get_GET_string ( 'ordertype' );
+			if (! $order_type)
+				$order_type = 'exe_time';
+				// $concat_config = join(',\'_\',', $configurations);
+				// $concat_config = substr($concat_config, 1);
+			
+			$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+			$order_conf = 'LENGTH(conf), conf';
+			
+			// get the result rows
+			$query = "SELECT e.*,
+    		(exe_time/3600)*(cost_hour) cost
+    		from execs e
+    		join clusters USING (id_cluster)
+    		WHERE e.valid = TRUE $where_configs
+    		ORDER BY $order_type ASC;";
+			
+			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
+			
+			$rows = $db->get_rows ( $query );
+			
+			if (! $rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+			if ($rows) {
+				$bestexec = $rows[0];
+				$conf = $bestexec['exec'];
+				$parameters = explode ( '_', $conf );
+				$cluster = (explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+				Utils::makeExecInfoBeauty($bestexec);
+			}
+		} catch ( \Exception $e ) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
+		
+		if (empty ( $benchs ))
+			$benchs = array (
+					'wordcount' 
+			);
+		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
+				'selected' => 'Best configuration',
+				'title' => 'Best Run Configuration',
+				'bestexec' => $bestexec,
+				'cluster' => $cluster,
+				'order_type' => $order_type,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
+				'money' => $money,
+				'select_multiple_benchs' => false,
+		) );
+	}
 }

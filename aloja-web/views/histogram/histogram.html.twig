@@ -1,0 +1,218 @@
+{% extends "layout.html.twig" %} {% block javascript %} {{ parent() }}
+<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$(function () {
+			var globalData = null;
+		    var chart = null;
+		    var chart_column = null;
+		    requestData();
+		    function requestData() {
+			    $.ajax({
+			        url: "{{ path('histogramdata', {'id_exec': idExec}) }}",
+			        type: "GET",
+			        dataType: "json",
+			        success: function(dades) {
+				        globalData = dades;
+				        updateChart();
+			        },
+			        cache: false
+			    });
+			}
+			function updateChart() {
+				var metricSel = $('select[name="metric"]').find(':selected');
+		        var taskType = $('select[name="type"]').find(':selected').val();
+		        var dades = globalData;
+		        var myData = Array();
+		        var first = null;
+		        var sufix = $(metricSel).attr('division') ? 'MB' : '';
+		        var categories = Array();
+		        $.each(dades, function(index, value) {
+			        if(!first)
+				        first = index;
+			        
+			        categories.push(index);
+					var values = Array();
+					$.each(value['tasks'], function(ind, val) {
+						if(val['TASK_TYPE'] == taskType) {
+						  var valor = val[$(metricSel).val()];
+						  if($(metricSel).attr('division'))
+							  valor /= $(metricSel).attr('division');
+
+						  values.push(valor);
+						}
+					});
+					var max = Math.round(Math.max.apply(Math,values)*100)/100;
+					var min = Math.round(Math.min.apply(Math,values)*100)/100;
+
+					myData.push(Array(min,max));
+			    });
+		        chart = new Highcharts.Chart({
+			        chart: {
+				        renderTo: 'chart',
+			            type: 'columnrange',
+			            inverted: true,
+			        },
+			        title: {
+			            text: $(metricSel).text()
+			        },
+			        subtitle: {
+				        text: '(Aggregated with all tasks)'
+					},
+			        yAxis: {
+			            title: {
+			                text: sufix
+			            }
+			        },
+			        tooltip: {
+			            valueSuffix: ' '+sufix
+			        },
+			        plotOptions: {
+			            columnrange: {
+			                dataLabels: {
+			                    enabled: true,
+			                    formatter: function () {
+			                        return this.y + ' '+ sufix;
+			                    }
+			                }
+			            },
+			            series: {
+	                    	cursor: 'pointer',
+	                        point: {
+	                            events: {
+	                                click: function () {
+	                                    var id = this.series.points[this.x].category;
+	                                    updateTasksChart(id);
+	                                }
+	                            }
+	                        }
+	                    }
+			        },
+			        legend: {
+			            enabled: false
+			        },
+					credits: {
+						enabled: false
+					},
+			    });
+			    chart.xAxis[0].setCategories(categories,false);
+	            chart.addSeries({
+	              name: $(metricSel).text(),
+	              data: myData
+	            });
+	            
+				$('.highcharts-xaxis-labels text').css('cursor','pointer');
+			    $('.highcharts-xaxis-labels text').click(function() {
+			        updateTasksChart($(this).text());
+			    });
+				updateTasksChart(first);
+			    
+			}
+			
+			function updateTasksChart(selected)
+			{
+				if(chart_column != null)
+					chart_column.destroy();
+				var metricSel = $('select[name="metric"]').find(':selected');
+		        var taskType = $('select[name="type"]').find(':selected').val();
+		        var sufix = $(metricSel).attr('division') ? 'MB' : '';
+				var myData = Array();
+		        var categories = Array();
+				var values = Array();
+				$.each(globalData[selected]['tasks'], function(ind, val) {
+					if(val['TASK_TYPE'] == taskType) {
+					  categories.push(ind);
+					  var mbWritten = parseFloat(val[$(metricSel).val()]);
+					  if($(metricSel).attr('division'))
+						  mbWritten /= $(metricSel).attr('division');
+					  
+					  myData.push(mbWritten);
+					}
+				});
+			    chart_column = new Highcharts.Chart({
+			        chart: {
+			            type: 'column',
+			            renderTo: 'chart_column'
+			        },
+			        title: {
+			            text: 'Tasks of '+selected
+			        },
+			        subtitle: {
+						text: $(metricSel).text()
+				    },
+			        xAxis: {
+						labels: {
+							enabled: false
+						}
+			        },
+			        yAxis: {
+			            title: {
+			                text: sufix
+			            }
+			        },
+			        tooltip: {
+			            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+			            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+			                '<td style="padding:0"><b>{point.y:.2f} '+sufix+'</b></td></tr>',
+			            footerFormat: '</table>',
+			            shared: true,
+			            useHTML: true
+			        },
+			        legend: {
+						enabled: false
+				    },
+				    credits: {
+					    enabled: false
+					}
+			    });
+			    chart_column.xAxis[0].setCategories(categories,false);
+				chart_column.addSeries({
+		              name: $(metricSel).text(),
+		              data: myData
+		            });
+			}
+
+			$("#button").click(function() {
+				updateChart()
+			});
+		});
+	});
+	</script>
+{% endblock %}
+{% block content %}
+  <form role="form" class="form-inline pull-right">
+{#     <p style="text-align: center; font-size: 2em;">Filters:</p>#}
+    Metric:
+	<select name="metric" class="form-control">
+	  <option value="Bytes Read" division="1051648">MB Read</option>
+	  <option value="Bytes Written" division="1051648">MB Written</option>
+	  <option value="FILE_BYTES_WRITTEN" division="1051648">File MB written</option>
+	  <option value="FILE_BYTES_READ" division="1051648">File MB read</option>
+	  <option value="HDFS_BYTES_WRITTEN" division="1051648">HDFS MB written</option>
+	  <option value="HDFS_BYTES_READ" division="1051648">HDFS MB read</option>
+	  <option value="Spilled Records">Spilled Records</option>
+	  <option value="SPLIT_RAW_BYTES" division="1051648">Split raw MB</option>
+	  <option value="Map input records">Map input records</option>
+	  <option value="Map output records">Map output records</option>
+	  <option value="Map input byes" division="1051648">Map input MB</option>
+	  <option value="Map output bytes" division="1051648">Map output MB</option>
+	  <option value="Map ouptut materialized bytes" division="1051648">Map ouptut materialized MB</option>
+	  <option value="Reduce input groups">Reduce input groups</option>
+	  <option value="Reduce output records">Reduce output records</option>
+	  <option value="Reduce shuffle bytes" division="1051648">Reduce shuffle MB</option>
+	  <option value="Combine input records">Combine input records</option>
+	  <option value="Combine ouptut records">Combine output records</option>
+	</select>
+	Task type:
+	<select name="type" class="form-control">
+	  <option value="MAP">Map</option>
+	  <option value="REDUCE">Reduce</option>
+	  <option value="CLEANUP">Cleanup</option>
+	  <option value="SETUP">Setup</option>
+	</select>
+	<span id="button" class="btn btn-success">Update</span>
+  </form>
+	<div id="chart" style="clear: both;"></div>
+	<div id="chart_column"></div>
+{% endblock %}
