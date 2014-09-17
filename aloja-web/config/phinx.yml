@@ -22,10 +22,10 @@ environments:
         port: 4306
         charset: utf8
 
-    testing:
+    vagrant:
         adapter: mysql
         host: localhost
-        name: aloja2_test
+        name: aloja2
         user: vagrant
         pass: 'vagrant'
         port: 3306

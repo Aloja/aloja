@@ -4,6 +4,11 @@ exec { 'third_party_libs':
   path => '/usr/bin:/bin'
 }
 
+exec { 'db_migrations':
+  command => 'bash -c "cd /vagrant/workspace/aloja-web && php vendor/bin/phinx -cconfig/phinx.yml -evagrant migrate"',
+  path => '/usr/bin:/bin'
+}
+
 if $environment == 'dev' {
     exec { 'set_document_root':
       command => 'ln -fs /vagrant/workspace/* /var/www',
