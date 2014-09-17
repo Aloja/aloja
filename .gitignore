@@ -122,3 +122,6 @@ aloja-web/vendor/
 #logs
 aloja-web/logs/*.log
 files
+
+#migrations
+aloja-web/migrations/*.php
