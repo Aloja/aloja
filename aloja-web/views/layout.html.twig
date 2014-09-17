@@ -117,21 +117,20 @@
 		        <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('bestconfig') }}">Best Configuration</a>
 		        </li>
-		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('metrics') }}">Performance Counters</a>
-		        </li>
 		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
 		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>
 		        </li>
 {# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
 {# 		          <a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
 {# 		        </li>#}
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Charts</a></li>
+		            <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a></li>
+		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Metrics</a></li>
+		          </ul>
+		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
  		         {#<li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}>#}
@@ -204,6 +203,10 @@
         	$(".tooltip2").each(function() {
 				$(this).tooltip();
             });
+
+        	if($('.dropdown li.active').length > 0) {
+        		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
+        	}
 		  });
 	</script>
 	{% endblock %}
