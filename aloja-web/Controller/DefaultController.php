@@ -56,7 +56,8 @@ class DefaultController extends AbstractController
             $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-
+			$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+			
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
 
@@ -178,6 +179,7 @@ class DefaultController extends AbstractController
                 'iofilebufs' => $iofilebufs,
                 'count' => $count,
                 'height' => $height,
+             	'money' => $money
              )
         );
     }
@@ -259,7 +261,8 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-
+            $money 	= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+            
             $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
     //        $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
      //       $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
@@ -368,7 +371,8 @@ class DefaultController extends AbstractController
             'replications' => $replications,
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
-            'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions'
+            'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
+        	'money' => $money
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
                 ));
     }
@@ -1185,4 +1189,89 @@ class DefaultController extends AbstractController
     				  'idExec' => $idExec
     			));
     }
+
+    public function bestConfigAction() {
+		$db = $this->container->getDBUtils ();
+		$rows_config = '';
+		$bestexec = '';
+		$cluster = '';
+		$comp = '';
+		$execsDetails = array ();
+		try {
+			$configurations = array ();
+			$where_configs = '';
+			$concat_config = "";
+			
+			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
+			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
+			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
+			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config, false );
+			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config, false );
+			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config, false );
+			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config, false );
+			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config, false );
+			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
+			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
+			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
+			if (! $benchs)
+				$where_configs .= 'AND bench IN (\'wordcount\')';
+			$order_type = Utils::get_GET_string ( 'ordertype' );
+			if (! $order_type)
+				$order_type = 'exe_time';
+				// $concat_config = join(',\'_\',', $configurations);
+				// $concat_config = substr($concat_config, 1);
+			
+			$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+			$order_conf = 'LENGTH(conf), conf';
+			
+			// get the result rows
+			$query = "SELECT e.*,
+    		(exe_time/3600)*(cost_hour) cost
+    		from execs e
+    		join clusters USING (id_cluster)
+    		WHERE e.valid = TRUE $where_configs
+    		ORDER BY $order_type ASC;";
+			
+			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
+			
+			$rows = $db->get_rows ( $query );
+			
+			if (! $rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+			if ($rows) {
+				$bestexec = $rows[0];
+				$conf = $bestexec['exec'];
+				$parameters = explode ( '_', $conf );
+				$cluster = (explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+				Utils::makeExecInfoBeauty($bestexec);
+			}
+		} catch ( \Exception $e ) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
+		
+		if (empty ( $benchs ))
+			$benchs = array (
+					'wordcount' 
+			);
+		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
+				'selected' => 'Best configuration',
+				'title' => 'Best Run Configuration',
+				'bestexec' => $bestexec,
+				'cluster' => $cluster,
+				'order_type' => $order_type,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
+				'money' => $money,
+				'select_multiple_benchs' => false,
+		) );
+	}
 }
