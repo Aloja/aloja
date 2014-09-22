@@ -1,0 +1,49 @@
+# vagrant/puppet/modules/nginx/files/127.0.0.1
+
+server {
+  listen 8080;
+  server_name _;
+  root /var/www/aloja-web/;
+
+  index index.html index.php;
+  autoindex on;
+
+  location / {
+    try_files $uri $uri/ /index.php?q=$uri&$args;
+    autoindex on;
+  }
+
+  location ~ \.php$ {
+    try_files $uri =404;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_index index.php;
+    include fastcgi_params;
+    fastcgi_read_timeout 60; # Set fairly high for debugging
+    fastcgi_intercept_errors off;
+    #fastcgi_cache aloja;
+    #fastcgi_cache_valid any 1y;
+  }
+
+  error_page 404 /index.php?c=404&q=$uri&$args;
+
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  #keepalive_timeout ;
+
+  #avoid caches
+  sendfile off;
+  expires off;
+
+  # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
+  reset_timedout_connection on;
+
+  #perf optimizations
+  tcp_nodelay on;
+
+  gzip on;
+  gzip_comp_level 2;
+  gzip_proxied any;
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_disable "msie6";
+}

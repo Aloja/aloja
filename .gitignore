@@ -123,4 +123,5 @@ aloja-web/vendor/
 
 #logs
 aloja-web/logs/*.log
-files
+/files
+
