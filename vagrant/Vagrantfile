@@ -12,11 +12,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   config.vm.box = "npoggi/aloja-precise64"
 
   #config.vm.box = "yungsang/coreos"
-  #
-  #config.vm.provision "docker" do |d|
-  #  d.build_dir "."
-  #  #d.build_image "/vagrant/app"
-  #end
+
 
   config.vm.host_name = "vagrant"
 
