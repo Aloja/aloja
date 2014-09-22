@@ -96,11 +96,19 @@ get_mount_disks() {
     exit 1;
   fi
 
+  if [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] ; then
+    #internal network
+    fs_mount="$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+  else
+    #external network
+    fs_mount="$user@al-1001.cloudapp.net:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222 0 0"
+  fi
+
   create_string="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$user/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
 
   if [ -z "$dont_mount_share" ] ; then
     create_string="$create_string
-$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+$fs_mount"
   fi
 
   num_drives="1"
@@ -128,6 +136,8 @@ $user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,Ide
     sudo mount -a;
     sudo chown -R $user /scratch
   "
+
+  echo -e "$create_string"
 }
 
 

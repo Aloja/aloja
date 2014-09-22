@@ -22,6 +22,9 @@ fi
 #boostrap VM
 vm_set_ssh
 vm_initialize_disks
+vm_install_base_packages
+#vm_set_dsh
+#vm_set_dot_files &
 
 #extra command in case any
 [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
