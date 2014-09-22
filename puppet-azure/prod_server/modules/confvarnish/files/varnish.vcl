@@ -75,7 +75,7 @@ backend default {
  }
 # 
  sub vcl_fetch {
-#      set beresp.ttl = 365d;
+      set beresp.ttl = 365d;
 #     if (beresp.ttl <= 0s ||
 #         beresp.http.Set-Cookie ||
 #         beresp.http.Vary == "*") {
