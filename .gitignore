@@ -34,6 +34,8 @@ dataSources.ids
 dataSources.xml
 sqlDataSources.xml
 dynamic.xml
+misc.xml
+profiles_settings.xml
 
 ## File-based project format
 *.ipr
