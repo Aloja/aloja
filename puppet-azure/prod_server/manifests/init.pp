@@ -48,13 +48,13 @@ if $environment == 'prod' {
     
 }
 
-file { '/var/www/':
-  ensure => 'directory',
-  owner => 'www-data',
-  group => 'www-data',
-  recurse => true,
-  mode => '755'
-}
+#file { '/var/www/':
+#  ensure => 'directory',
+#  owner => 'www-data',
+#  group => 'www-data',
+#  recurse => true,
+#  mode => '755'
+#}
 
 exec { 'third_party_libs':
   command => 'bash -c "cd /var/www/aloja-web && sudo php composer.phar update"',
@@ -81,8 +81,9 @@ exec { 'chmod_vendor':
 }
 
 Exec['apt-get update'] -> Vcsrepo['/var/www/']
-Vcsrepo['/var/www/'] -> File['/var/www/']
-File['/var/www/'] -> File['/var/www/aloja-web/logs']
+Vcsrepo['/var/www/'] -> File['/var/www/aloja-web/logs']
+#Vcsrepo['/var/www/'] -> File['/var/www/']
+#File['/var/www/'] -> File['/var/www/aloja-web/logs']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
 Class['::mysql::server'] -> Exec['third_party_libs']
 Exec['third_party_libs'] -> Exec['chmod_vendor']

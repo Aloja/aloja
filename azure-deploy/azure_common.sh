@@ -33,7 +33,7 @@ source "../shell/common/cluster_functions.sh"
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
- if [ ! -z "$(azure vm list -s "$subscriptionID"|grep " $1 ")" ] ; then
+if [ ! -z "$(azure vm list -s "$subscriptionID"|grep " $1 " | grep " $dnsName.cloudapp.net ")" ] ; then
     return 0
   else
     return 1
@@ -465,8 +465,8 @@ vm_puppet_apply() {
 				$puppet "$user@$dnsName.cloudapp.net:~/"
 		logger "Puppet install modules and apply"
 		
-	vm_execute "cd $(basename $puppet) && sudo cp -R modules/* /etc/puppet/modules && sudo ./$puppetBootFile"
-	if [ -z "$puppetPostScript" ]; then
-	 vm_execute "cd $(basename $puppet) && sudo cp -R modules/* /etc/puppet/modules && sudo ./$puppetPostScript"
+	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"
+	if [ ! -z "$puppetPostScript" ]; then
+	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
 	fi
 }
