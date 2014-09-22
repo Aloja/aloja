@@ -10,10 +10,20 @@ self_name="$(basename $0)"
 
 [ -z "$type" ] && type="cluster"
 
-[ -z $1 ] && { echo "Usage: $self_name ${type}_name"; exit 1;}
+[ -z $1 ] && { echo "Usage: $self_name ${type}_name [conf_file]"; exit 1;}
+
+if [ -z $2 ]; then
+	confFile="secure/aloja_settings.conf"
+else
+	confFile=$2
+	if [ ! -e "../$confFile" ]; then
+		echo "ERROR: Conf file doesn't exists!"
+		exit
+	fi
+fi
 
 #load non versioned conf first (order is important for overrides)
-source "../secure/azure_settings.conf"
+source "../$confFile"
 
 clusterConfigFile="${type}_${1}.conf"
 
@@ -23,7 +33,7 @@ source "../shell/common/cluster_functions.sh"
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
-  if [ ! -z "$(azure vm list -s "$subscriptionID"|grep "$1")" ] ; then
+ if [ ! -z "$(azure vm list -s "$subscriptionID"|grep " $1 ")" ] ; then
     return 0
   else
     return 1
@@ -447,4 +457,19 @@ check_bootstraped() {
   else
     return 0
   fi
+}
+
+#Puppet apply
+vm_puppet_apply() {
+
+		logger "Transfering puppet to VM"
+		scp -i "../secure/keys/myPrivateKey.key" -P "$vm_ssh_port" -rp \
+	           ../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key} \
+				$puppet "$user@$dnsName.cloudapp.net:~/"
+		logger "Puppet install modules and apply"
+		
+	vm_execute "cd $(basename $puppet) && sudo cp -R modules/* /etc/puppet/modules && sudo ./$puppetBootFile"
+	if [ -z "$puppetPostScript" ]; then
+	 vm_execute "cd $(basename $puppet) && sudo cp -R modules/* /etc/puppet/modules && sudo ./$puppetPostScript"
+	fi
 }

@@ -26,5 +26,7 @@ vm_initialize_disks
 #extra command in case any
 [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
 
+[ ! -z "$puppet" ] && vm_puppet_apply
+
 elapsedTime="$(( $(date +%s) - startTime ))"
 logger "All done, took $elapsedTime seconds."
