@@ -43,6 +43,23 @@ done
 
 puppet apply --modulepath=/etc/puppet/modules manifests/init.pp --environment=prod
 
+##MySQL data to attached disk
+if [ ! -d "/scratch/attached/1/mysql" ]; then
+	cp /var/lib/mysql /scratch/attached/1/ -R
+	sed "s/\/var\/lib\/mysql/\/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf > tmp.cnf
+	mv tmp.cnf /etc/mysql/my.cnf
+	cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
+	chown mysql.mysql /scratch/attached/1/mysql -R
+	chmod 775 /scratch/attached/1/mysql -R
+	service apparmor restart
+	service mysql restart
+		
+	if [ "$?" -ne "0" ]; then
+		echo "Moving MySQL data to attached disk failed!"
+	fi
+fi
+
+##Add execs to MySQL AND/OR change default git branch
 if [ ! -z $1 ]; then
 	if [ "$1" == "execs" ]; then
 		tar -xvf execs.sql.tar.gz
