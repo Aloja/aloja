@@ -22,10 +22,11 @@ if $environment == 'prod' {
                  'query_cache_size' => 128M,
                  'max_connections' => 300,
                  'thread_cache_size' => 50,
-                 'table_open_cache' => 600
+                 'table_open_cache' => 600,
+                 'datadir' => '/scratch/attached/1/mysql'
                  }
 } else {
-   $mysql_options = {'bind-address' => '0.0.0.0'}
+   $mysql_options = {'bind-address' => '0.0.0.0', 'datadir' => '/scratch/attached/1/mysql'}
 }
 
 if $environment == 'prod' {

@@ -31,5 +31,7 @@ vm_install_base_packages
 
 [ ! -z "$puppet" ] && vm_puppet_apply
 
+[ ! -z "$endpoints" ] && vm_endpoints_create
+
 elapsedTime="$(( $(date +%s) - startTime ))"
 logger "All done, took $elapsedTime seconds."
