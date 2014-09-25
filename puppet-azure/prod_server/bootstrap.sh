@@ -46,8 +46,6 @@ puppet apply --modulepath=/etc/puppet/modules manifests/init.pp --environment=pr
 ##MySQL data to attached disk
 if [ ! -d "/scratch/attached/1/mysql" ]; then
 	cp /var/lib/mysql /scratch/attached/1/ -R
-	sed "s/\/var\/lib\/mysql/\/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf > tmp.cnf
-	mv tmp.cnf /etc/mysql/my.cnf
 	cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
 	chown mysql.mysql /scratch/attached/1/mysql -R
 	chmod 775 /scratch/attached/1/mysql -R
@@ -59,11 +57,20 @@ if [ ! -d "/scratch/attached/1/mysql" ]; then
 	fi
 fi
 
+add_execs() {
+	tar -xvf execs.sql.tar.gz
+	mysqlshow -uroot aloja2
+	retcode=$?
+	if [ "$retcode" -ne "0" ]; then
+		mysql -uroot -e "create database aloja2;"
+	fi
+	mysql -uroot aloja2 < execs.sql	
+}
+
 ##Add execs to MySQL AND/OR change default git branch
 if [ ! -z $1 ]; then
 	if [ "$1" == "execs" ]; then
-		tar -xvf execs.sql.tar.gz
-		mysql -uroot -p aloja2 < execs.sql
+		add_execs
 	else
 		/bin/bash updategitbranch.sh $1
 		retcode=$?
@@ -71,13 +78,7 @@ if [ ! -z $1 ]; then
 			exit	
 		fi
 		if [ ! -z $2 ] && [ "$2" == "execs" ]; then
-			tar -xvf execs.sql.tar.gz
-			mysqlshow -uroot aloja2
-			retcode=$?
-			if [ "$retcode" -ne "0" ]; then
-				mysql -uroot -e "create database aloja2;"
-			fi
-			mysql -uroot aloja2 < execs.sql
+			add_execs
 		fi
 	fi
 fi
