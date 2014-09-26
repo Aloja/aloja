@@ -470,3 +470,29 @@ vm_puppet_apply() {
 	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
 	fi
 }
+
+#$1 $endpoints list $2 end1 $3 end2
+vm_check_endpoint_exists() {
+	echo $1 | grep $2 | grep $3
+	if [ "$?" -ne "0" ]; then
+	 return 0
+	else
+ 	 return 1
+	fi
+}
+
+vm_endpoints_create() {
+	endpointList=$(azure vm endpoint list $vm_name)
+	for endpoint in "${endpoints[@]}"
+	do
+		end1=$(echo $endpoint | cut -d: -f1)
+		end2=$(echo $endpoint | cut -d: -f2)
+		if vm_check_endpoint_exists "$endpointList" "$end1" "$end2"; then
+			echo "Adding endpoint $endpoint to $vm_name"	
+			azure vm endpoint create "$vm_name" $end1 $end2
+		else
+			echo "Endpoint $end1:$end2 already exists"
+		fi
+	done
+	azure vm endpoint list "$vm_name"
+}
