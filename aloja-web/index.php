@@ -19,6 +19,8 @@ try {
     	unset($_GET['c']);
     	$controllerMethod = (isset($_GET['q'])) ? $router->getLegacyRoute($_GET['q']) : null;
     	if($controllerMethod != null) {
+    		header("Location: http://${_SERVER['HTTP_HOST']}${controllerMethod['pattern']}",true,303);
+    		die();
     		$container->getLog()->addDebug('Legacy route detected');
     		$container->getTwig()->addGlobal('message',
     				"You accessed this page through an old link, new link is at: "
