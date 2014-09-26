@@ -78,7 +78,7 @@ vm_check_create() {
   if ! vm_exists "$1"  ; then
     vm_create "$1" "$2"
   else
-    logger "VM $1 already exists. Skipping creation..."
+    logger " VM $1 already exists. Skipping creation..."
   fi
 
 }
