@@ -43,13 +43,12 @@ class RestController extends AbstractController
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
             echo $jsonData;
-
         } catch (Exception $e) {
             $noData = array();
-            for($i = 0; $i<sizeof($show_in_result); ++$i)
-                $noData[] = $e->getMessage();
-
-            echo json_encode(array('aaData' => $noData));
+            for($i = 0; $i<=sizeof($show_in_result); ++$i)
+            	$noData[] = 'error';
+            
+            echo json_encode(array('aaData' => array($noData)));
         }
     }
 
@@ -150,10 +149,10 @@ class RestController extends AbstractController
 
         } catch (Exception $e) {
             $noData = array();
-            for($i = 0; $i<18; ++$i)
-                $noData[] = $e->getMessage();
-
-            echo json_encode(array('aaData' => $noData));
+            for($i = 0; $i<=sizeof($show_in_result); ++$i)
+            	$noData[] = 'error';
+            
+            echo json_encode(array('aaData' => array($noData)));
         }
     }
 
@@ -429,7 +428,7 @@ VALUES
             }
 
         } catch (\Exception $e) {
-            die('FATAL ERROR: '.$e->getMessage());
+            die('Unexpected error: '.$e->getMessage());
             $message .= $e->getMessage()."\n";
             echo $message;
             exit;
@@ -588,9 +587,10 @@ VALUES
     		 
     	} catch (\Exception $e) {
     		$noData = array();
-            $noData[] = $e->getMessage();
-
-            echo json_encode(array('aaData' => $noData));
+            for($i = 0; $i<=sizeof($show_in_result); ++$i)
+            	$noData[] = 'error';
+            
+            echo json_encode(array('aaData' => array($noData)));
     	}
     }
 }
