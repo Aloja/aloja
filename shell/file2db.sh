@@ -211,7 +211,6 @@ for folder in 201* ; do
 				rm file.tmp file2.tmp
 			else
 				echo "Not prep folder, considering all confs belonging to exec"
-				cd "$bench_folder"
 				jobconfs=$(find "./history/done" -type f -name "job*.xml");
 			fi
 			
