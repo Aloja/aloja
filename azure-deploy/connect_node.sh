@@ -4,4 +4,5 @@
 type="node"
 source "azure_common.sh"
 
-ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
+echo "Connecting to subscription $subscriptionID, with details: ${user}@${dnsName}.cloudapp.net -p $vm_ssh_port -i ../secure/keys/myPrivateKey.key"
+ssh -i "../secure/keys/myPrivateKey.key" "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
