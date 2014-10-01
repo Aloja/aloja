@@ -3,10 +3,10 @@ startTime="$(date +%s)"
 self_name="$(basename $0)"
 
 #check if azure command is installed
-#if ! azure --version 2>&1 > /dev/null ; then
-#  echo "azure command not instaled. Run: sudo npm install azure-cli"
-#  exit 1
-#fi
+if ! azure --version 2>&1 > /dev/null ; then
+  echo "azure command not instaled. Run: sudo npm install azure-cli"
+  exit 1
+fi
 
 [ -z "$type" ] && type="cluster"
 
