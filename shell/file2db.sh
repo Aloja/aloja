@@ -162,7 +162,7 @@ for folder in 201* ; do
         tar -xjf "$bzip_file"
       fi
 
-      if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" ]] ; then
+    if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
 
         cd "$bench_folder"
         echo "Entering $bench_folder"
