@@ -3,8 +3,8 @@ startTime="$(date +%s)"
 self_name="$(basename $0)"
 
 #check if azure command is installed
-if ! azure --version 2>&1 > /dev/null ; then
-  echo "azure command not instaled. Run: sudo npm install azure-cli"
+if ! nova --version 2>&1 > /dev/null ; then
+  echo "nova command not instaled. Run: sudo pip install install rackspace-novaclient"
   exit 1
 fi
 
@@ -13,7 +13,7 @@ fi
 [ -z $1 ] && { echo "Usage: $self_name ${type}_name [conf_file]"; exit 1;}
 
 if [ -z $2 ]; then
-	confFile="../secure/azure_settings.conf"
+	confFile="../secure/rackspace_settings.conf"
 else
 	confFile="../secure/$2"
 	if [ ! -e "$confFile" ]; then
@@ -29,46 +29,26 @@ clusterConfigFile="${type}_${1}.conf"
 
 source "../shell/common/cluster_functions.sh"
 
+#global vars
+nodeIP[$vm_name]=""
+bootStraped="false"
 
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
-if [ ! -z "$(azure vm list -s "$subscriptionID"|grep " $1 " | grep " $dnsName.cloudapp.net ")" ] ; then
+  if [ ! -z "$(nova list |grep " $1 ")" ] ; then
     return 0
   else
     return 1
   fi
 }
 
-# $1 vm name $2 ssh port
+# $1 vm name
 vm_create() {
 
-  #check if the port was specified
-  if [ ! -z "$2" ] ; then
-    ssh_port="$2"
-  else
-    ssh_port=$(( ( RANDOM % 65535 )  + 1024 ))
-  fi
+  logger "Creating VM $1"
 
-  logger "Creating VM $1 with SSH port $ssh_port..."
-
-  azure vm create \
-        -s "$subscriptionID" \
-        --connect "$dnsName" `#Deployment name` \
-        --vm-name "$1" \
-        --vm-size "$vmSize" \
-        `#--location 'West Europe'` \
-        --affinity-group "$affinityGroup" \
-        --virtual-network-name "$virtualNetworkName" \
-        --subnet-names "$subnetNames" \
-        --ssh "$ssh_port" \
-        --ssh-cert "$sshCert" \
-        `#-v` \
-        `#'test-11'` `#DNS name` \
-        "$vmImage" \
-        "$user" "$password"
-
-#--location 'West Europe' \
+  nova boot "$1" --image "$vmImage" --flavor "$vmSize" --key-name "$keyName"
 
 }
 
@@ -82,14 +62,15 @@ vm_check_create() {
   fi
 
 }
+
 #$1 vm_name
 wait_vm_ready() {
   logger "Checking status of VM $1"
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
-    currentStatus="$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|awk '{print substr($3,2,(length($3)-2));}')"
+    currentStatus="$(nova show "$1" |grep "OS-EXT-STS:vm_state"|awk '{print $4}')"
     waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
-    if [ "$currentStatus" == "ReadyRole" ] ; then
+    if [ "$currentStatus" == "active" ] ; then
       logger " VM $1 is ready!"
       break
     else
@@ -98,6 +79,10 @@ wait_vm_ready() {
 
     #sleep 1
   done
+}
+
+vm_get_IP() {
+  echo "$(nova show openstack-test|grep accessIPv4|awk '{print $4}')"
 }
 
 #"$vm_name" "$vm_ssh_port" must be set before
@@ -170,17 +155,39 @@ vm_check_attach_disks() {
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
 
-chmod 0600 "../secure/keys/myPrivateKey.key"
-
-  #echo to print special chars;
-  if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
-  else
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
+  if [ -z "${nodeIP[$vm_name]}" ] ; then
+    nodeIP[$vm_name]="$(vm_get_IP)"
   fi
 
-#chmod 0644 "../secure/keys/myPrivateKey.key"
+  if [ ! -z "${nodeIP[$vm_name]}" ] ; then
 
+    #check if we can change from root user
+    if [ "$bootStraped" == "false" ] ; then
+      bootstrap_file="Initial_Bootstrap"
+      if check_bootstraped "$bootstrap_file" ""; then
+        ssh_user="root"
+
+      else
+        ssh_user="$user"
+      fi
+    else
+      ssh_user="$user"
+    fi
+
+    chmod 0600 "../secure/keys/id_rsa"
+
+    #echo to print special chars;
+    if [ -z "$2" ] ; then
+      echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 "$ssh_user"@"${nodeIP[$vm_name]}"
+    else
+      echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 "$ssh_user"@"${nodeIP[$vm_name]}" &
+    fi
+
+    #chmod 0644 "../secure/keys/id_rsa"
+
+  else
+    logger "ERROR: IP could not be obtained for VM $vm_name! ${nodeIP[$vm_name]}"
+  fi
 }
 
 #$1 command to execute in master
@@ -227,6 +234,37 @@ vm_set_master_forer() {
 
   else
     logger "Jobs generated and queued"
+  fi
+}
+
+vm_initial_bootstrap() {
+
+  bootstrap_file="Initial_Bootstrap"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Bootstraping $vm_name "
+
+    vm_execute "
+useradd --create-home -s /bin/bash $user &&
+mkdir -p /home/$user/.ssh &&
+chown -R $user: /home/$user/.ssh &&
+adduser $user sudo &&
+echo -n '$user:$password' | chpasswd
+"
+
+    test_action="$(vm_execute " [ -d /home/$user/.ssh ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+      #change the user
+      bootStraped="true"
+    else
+      logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
   fi
 }
 
