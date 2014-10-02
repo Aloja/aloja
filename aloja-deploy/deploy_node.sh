@@ -2,8 +2,7 @@
 
 #load init and common functions
 type="node"
-source "openstack_common.sh"
-
+source "include/include.sh"
 
 #test first if machines accessible via SSH
 if ! wait_vm_ssh_ready "1" ; then
@@ -22,13 +21,14 @@ fi
 
 #boostrap VM
 vm_initial_bootstrap
+#by this time the machine should be bootstraped, check just in case
+[ "$bootStraped" == "false" ] && { logger "The VM $vm_name has not been bootstraped (created user) correctly!"; exit 1;}
+
 vm_set_ssh
 vm_initialize_disks
 vm_install_base_packages
-#vm_set_dsh
-#vm_set_dot_files &
 
-#extra command in case any
+#extra commands to exectute *if defined)
 [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
 
 [ ! -z "$puppet" ] && vm_puppet_apply

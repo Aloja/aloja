@@ -3,17 +3,36 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR/common.sh"
 
 #test variables
-[ -z "$testKey" ] && { echo "testKey not set! Exiting"; exit 1; }
+[ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 
 #test and load cluster config
 
 clusterConfigFilePath="$CUR_DIR/../conf"
 
-[ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { echo "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
+[ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { logger "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config second
 source "$clusterConfigFilePath/$clusterConfigFile"
+
+
+#global vars
+bootStraped="true" #not needed for Azure
+
+if [ "$cloud_provider" == "azure" ] ; then
+   devicePrefix="sd"
+   cloud_drive_letters="$(echo {c..z})"
+   cloud_drive_letters_test="$(echo {b..z})"
+elif [ "$cloud_provider" == "rackspace" ] ; then
+   devicePrefix="xvd"
+   cloud_drive_letters="$(echo {b..z})"
+   cloud_drive_letters_test="$(echo {a..z})"
+else
+  logger "Cloud provider $cloud_provider not defined.  Exiting..."
+  exit 1
+fi
+
+logger "Starting ALOJA deploy for Cloud provider: $cloud_provider"
 
 
 get_node_names() {
@@ -66,27 +85,28 @@ get_initizalize_disks() {
 
   create_string=""
   num_drives="1"
-  for drive_letter in "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" ; do
+  for drive_letter in $cloud_drive_letters ; do
     create_string="$create_string
-sudo parted -s /dev/sd${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
-sudo mkfs.ext4 -F /dev/sd${drive_letter}1;"
+sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
+sudo mkfs.ext4 -F /dev/${devicePrefix}${drive_letter}1;"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
 }
 
-#requires $create_string to be defined
 get_initizalize_disks_test() {
   create_string="echo ''"
   num_drives="1"
-  for drive_letter in "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" ; do
-    create_string="$create_string && lsblk|grep sd${drive_letter}"
+  for drive_letter in $cloud_drive_letters ; do
+    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
   create_string="$create_string && echo '$testKey'"
+
+  echo "$create_string"
 }
 
 #requires $create_string to be defined
@@ -112,9 +132,9 @@ $fs_mount"
   fi
 
   num_drives="1"
-  for drive_letter in "c" "d" "e" "f" "g" "h" "i" "j" "k" "l" "m" "n" ; do
+  for drive_letter in $cloud_drive_letters ; do
     create_string="$create_string
-/dev/sd${drive_letter}1       /scratch/attached/1  auto    defaults,nobootwait 0       2"
+/dev/${devicePrefix}${drive_letter}1       /scratch/attached/1  auto    defaults,nobootwait 0       2"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -145,8 +165,9 @@ vm_test_initiallize_disks() {
 
   logger "Checking if the correct number of disks are atttached to VM $vm_name"
 
-  create_string=""
-  get_initizalize_disks_test
+  create_string="$(get_initizalize_disks_test)"
+
+  #logger "DEBUG: $create_string"
 
   test_action="$(vm_execute "$create_string")"
   #in case SSH is not yet configured, a welcome message will be appended
@@ -207,6 +228,26 @@ vm_set_ssh() {
   fi
 }
 
+#$1 vm_name
+vm_check_attach_disks() {
+  #attach required volumes
+  if [ ! -z "$attachedVolumes" ] ; then
+
+    logger " getting number of attached disks to VM $1"
+    numberOfDisks="$(number_of_attached_disks "$1")"
+    logger " $numberOfDisks attached disks to VM $1"
+
+    if [ "$attachedVolumes" -gt "$numberOfDisks" ] ; then
+      missingDisks="$(( attachedVolumes - numberOfDisks ))"
+      logger " need to attach $missingDisks disk(s) to VM $1"
+      for ((disk=0; disk<missingDisks; disk++ )) ; do
+        vm_attach_new_disk "$1" "$diskSize" "$disk"
+      done
+    else
+      logger " no need to attach new disks to VM $1"
+    fi
+  fi
+}
 
 vm_format_disks() {
   if check_bootstraped "vm_format_disks" "set"; then
@@ -272,7 +313,7 @@ export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'\" >> ~/.bashrc;" "paralell"
 
-    test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(grep ${devicePrefix}c1 /etc/fstab\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -302,7 +343,7 @@ vm_initialize_disks() {
 
     vm_execute "$create_string"
 
-    test_action="$(vm_execute " [ \"\$\(lsblk|grep sdc1\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(lsblk|grep ${devicePrefix}c1\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "vm_initialize_disks" "set"
@@ -344,7 +385,7 @@ vm_mount_disks() {
 
     vm_execute "$create_string"
 
-    test_action="$(vm_execute " [ \"\$\(grep sdc1 /etc/fstab\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(grep ${devicePrefix}c1 /etc/fstab\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "vm_mount_disks" "set"
@@ -457,9 +498,9 @@ vm_set_master_forer() {
 #Puppet apply
 vm_puppet_apply() {
 
-		logger "Transfering puppet to VM"
-		vm_local_scp "$puppet" "~/" "-rp"
-		logger "Puppet install modules and apply"
+  logger "Transfering puppet to VM"
+  vm_local_scp "$puppet" "~/" "-rp"
+  logger "Puppet install modules and apply"
 
 	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"
 	if [ ! -z "$puppetPostScript" ]; then

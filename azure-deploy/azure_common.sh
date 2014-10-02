@@ -119,40 +119,18 @@ wait_vm_ssh_ready() {
   return 1
 }
 
-
 #$1 vm_name
 number_of_attached_disks() {
-  #total number
-  logger " getting number of attached disks to VM $1"
-  numberOfDisks="$(azure vm disk list $1 |grep $1|wc -l)"
+  numberOfDisks="$(azure vm disk list " $1 " |grep " $1 "|wc -l)"
   #substract the system volume
   numberOfDisks="$(( numberOfDisks - 1 ))"
-  logger " $numberOfDisks attached disks to VM $1"
+  echo "$numberOfDisks"
 }
 
-#$1 vm_name $2 disk size in MB
+#$1 vm_name $2 disk size in MB $3 disk number
 vm_attach_new_disk() {
-  logger " Attaching a new disk to VM $1 of size ${2}MB"
+  logger " Attaching a new disk #$3 to VM $1 of size ${2}MB"
   azure vm disk attach-new "$1" "$2" -s "$subscriptionID"
-}
-
-#$1 vm_name
-vm_check_attach_disks() {
-  #attach required volumes
-  if [ ! -z $attachedVolumes ] ; then
-    numberOfDisks=""
-    number_of_attached_disks "$1"
-
-    if [ "$attachedVolumes" -gt "$numberOfDisks" ] ; then
-      missingDisks="$(( attachedVolumes - numberOfDisks ))"
-      logger " need to attach $missingDisks disk(s) to VM $1"
-      for ((disk=0; disk<missingDisks; disk++ )) ; do
-        vm_attach_new_disk "$1" "$diskSize"
-      done
-    else
-      logger " no need to attach new disks to VM $1"
-    fi
-  fi
 }
 
 #$1 commands to execute $2 set in parallel (&)
