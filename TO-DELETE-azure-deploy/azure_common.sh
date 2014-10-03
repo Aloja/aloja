@@ -2,6 +2,8 @@
 startTime="$(date +%s)"
 self_name="$(basename $0)"
 
+echo "WARNING: using deprecated deployer"
+
 #check if azure command is installed
 if ! azure --version 2>&1 > /dev/null ; then
   echo "azure command not instaled. Run: sudo npm install azure-cli"
