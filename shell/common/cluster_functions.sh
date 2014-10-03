@@ -17,7 +17,7 @@ source "$clusterConfigFilePath/$clusterConfigFile"
 
 
 #global vars
-bootStraped="true" #not needed for Azure
+bootStrapped="true" #not needed for Azure
 
 if [ "$cloud_provider" == "azure" ] ; then
    devicePrefix="sd"
@@ -594,10 +594,15 @@ vm_endpoints_create() {
 
 #1 $node_name
 node_connect() {
-	logger "WARNING: Function node_delete not implemented or not necessary for provider"
+	logger "WARNING: Function node_connect not implemented or not necessary for provider"
 }
 
 #1 $node_name
 node_delete() {
   logger "WARNING: Function node_delete not implemented or not necessary for provider"
+}
+
+#1 $node_name
+node_stop() {
+  logger "WARNING: Function node_stop not implemented or not necessary for provider"
 }

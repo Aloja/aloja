@@ -3,7 +3,7 @@
 
 
 #global vars
-bootStraped="true" #azure doens't need bootstraping
+bootStrapped="true" #azure doens't need bootstraping
 
 #### start $cloud_provider customizations
 
@@ -91,6 +91,10 @@ vm_local_scp() {
     scp -i "../secure/keys/myPrivateKey.key" -P "$vm_ssh_port" $(eval echo "$3") $(eval echo "$1") "$user"@"${dnsName}.cloudapp.net:$2"
 }
 
+vm_initial_bootstrap() {
+  bootStrapped="true"
+}
+
 #$1 $endpoints list $2 end1 $3 end2
 vm_check_endpoint_exists() {
 	echo $1 | grep $2 | grep $3
@@ -127,7 +131,13 @@ node_connect() {
 
 #1 $node_name
 node_delete() {
-  logger "About to delete node $1 and its associated attached volumes. Continue?"
-  pause
+  logger "Deleting node $1 and its associated attached volumes"
   azure vm delete -b -q "$1"
 }
+
+#1 $node_name
+node_stop() {
+  logger "Stopping vm $1"
+  azure vm shutdown "$1"
+}
+

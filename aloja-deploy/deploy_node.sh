@@ -21,9 +21,6 @@ fi
 
 #boostrap VM
 vm_initial_bootstrap
-#by this time the machine should be bootstraped, check just in case
-[ "$bootStraped" == "false" ] && { logger "The VM $vm_name has not been bootstraped (created user) correctly!"; exit 1;}
-
 vm_set_ssh
 vm_initialize_disks
 vm_install_base_packages

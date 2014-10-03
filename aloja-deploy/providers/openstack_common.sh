@@ -1,7 +1,7 @@
 #OPENSTACK specific functions
 
 #global vars
-bootStraped="false"
+bootStrapped="false"
 
 #openstack specific globals
 nodeIP["$vm_name"]=""
@@ -80,7 +80,7 @@ vm_execute() {
   vm_set_details
 
   #check if we can change from root user
-  if [ "$bootStraped" == "false" ] ; then
+  if [ "$bootStrapped" == "false" ] ; then
     #"WARNINIG: connecting as root"
     ssh_user="root"
   else
@@ -106,7 +106,7 @@ vm_local_scp() {
   vm_set_details
 
   #check if we can change from root user
-  if [ "$bootStraped" == "false" ] ; then
+  if [ "$bootStrapped" == "false" ] ; then
     #"WARNINIG: connecting as root"
     ssh_user="root"
   else
@@ -145,13 +145,13 @@ chown -R $user: /home/$user/.ssh;
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
       #change the user
-      bootStraped="true"
+      bootStrapped="true"
     else
       logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
     fi
 
   else
-    bootStraped="true"
+    bootStrapped="true"
     logger "$bootstrap_file already configured"
   fi
 }
@@ -170,7 +170,6 @@ node_connect() {
 #1 $node_name
 node_delete() {
   logger "About to delete node $1 and its associated attached volumes. Continue?"
-  pause
   nova delete "$vm_name"
 
   logger "listing server volumes"
