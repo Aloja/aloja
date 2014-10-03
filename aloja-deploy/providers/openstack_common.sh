@@ -25,24 +25,6 @@ vm_create() {
   nova boot "$1" --image "$vmImage" --flavor "$vmSize" --key-name "$keyName"
 }
 
-#$1 vm_name
-wait_vm_ready() {
-  logger "Checking status of VM $1"
-  waitStartTime="$(date +%s)"
-  for tries in {1..300}; do
-    currentStatus="$(nova show "$1" |grep "OS-EXT-STS:vm_state"|awk '{print $4}')"
-    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
-    if [ "$currentStatus" == "active" ] ; then
-      logger " VM $1 is ready!"
-      break
-    else
-      logger " VM $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempts."
-    fi
-
-    #sleep 1
-  done
-}
-
 #get openstack machine details
 #$vm_name required
 vm_set_details() {
@@ -62,34 +44,9 @@ vm_set_details() {
   fi
 }
 
-
-#"$vm_name" "$vm_ssh_port" must be set before
-#1 number of tries
-wait_vm_ssh_ready() {
-  logger "Checking SSH status of VM $vm_name"
-  waitStartTime="$(date +%s)"
-  for tries in {1..150}; do
-
-    test_action="$(vm_execute " [ \"\$\(ls\)\" ] && echo '$testKey'")"
-    #in case we get a welcome banner we need to grep
-    test_action="$(echo -e "$test_action"|grep "$testKey")"
-
-    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
-    if [ ! -z "$test_action" ] ; then
-      logger " VM $vm_name is ready!"
-      return 0
-      break #just in case
-    else
-      logger " VM $vm_name is down. Waiting for: $waitElapsedTime s. $tries attempts. Output: $test_action"
-    fi
-
-    #stop if max number of tries has been specified
-    [ ! -z "$1" ] && [[ "$tries" -ge "$1" ]] && break
-
-    sleep 1
-  done
-
-  return 1
+#$1 vm_name
+vm_get_status(){
+ echo "$(nova show "$1" |grep "OS-EXT-STS:vm_state"|awk '{print $4}')"
 }
 
 #$1 vm_name
@@ -197,4 +154,27 @@ chown -R $user: /home/$user/.ssh;
     bootStraped="true"
     logger "$bootstrap_file already configured"
   fi
+}
+
+###for executables
+
+#1 $node_name
+node_connect() {
+
+  vm_set_details
+
+  echo "Connecting to Rackspace, with details: ${user}@${nodeIP[$vm_name]}"
+  ssh -i "../secure/keys/id_rsa" "$user"@"${nodeIP[$vm_name]}"
+}
+
+#1 $node_name
+node_delete() {
+  logger "About to delete node $1 and its associated attached volumes. Continue?"
+  pause
+  nova delete "$vm_name"
+
+  logger "listing server volumes"
+  nova volume-list|grep " DISK_$vm_name"
+
+  logger "Remember to manually delete non-used volumes, functionallity not implemented yet"
 }

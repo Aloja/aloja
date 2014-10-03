@@ -32,7 +32,7 @@ else
   exit 1
 fi
 
-logger "Starting ALOJA deploy for Cloud provider: $cloud_provider"
+logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
 
 
 get_node_names() {
@@ -160,6 +160,52 @@ $fs_mount"
   echo -e "$create_string"
 }
 
+#$1 vm_name
+wait_vm_ready() {
+  logger "Checking status of VM $1"
+  waitStartTime="$(date +%s)"
+  for tries in {1..300}; do
+    currentStatus="$(vm_get_status "$1")"
+    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
+    if [ "$currentStatus" == "active" ] ; then
+      logger " VM $1 is ready!"
+      break
+    else
+      logger " VM $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempts."
+    fi
+
+    #sleep 1
+  done
+}
+
+#"$vm_name" "$vm_ssh_port" must be set before
+#1 number of tries
+wait_vm_ssh_ready() {
+  logger "Checking SSH status of VM $vm_name"
+  waitStartTime="$(date +%s)"
+  for tries in {1..150}; do
+
+    test_action="$(vm_execute " [ \"\$\(ls\)\" ] && echo '$testKey'")"
+    #in case we get a welcome banner we need to grep
+    test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
+    if [ ! -z "$test_action" ] ; then
+      logger " VM $vm_name is ready!"
+      return 0
+      break #just in case
+    else
+      logger " VM $vm_name is down. Waiting for: $waitElapsedTime s. $tries attempts. Output: $test_action"
+    fi
+
+    #stop if max number of tries has been specified
+    [ ! -z "$1" ] && [[ "$tries" -ge "$1" ]] && break
+
+    sleep 1
+  done
+
+  return 1
+}
 
 vm_test_initiallize_disks() {
 
@@ -194,12 +240,6 @@ vm_check_create() {
   fi
 
 }
-
-
-vm_initial_bootstrap() {
-  logger "WARNING: Function vm_initial_bootstrap not implemented or not necessary for provider"
-}
-
 
 vm_set_ssh() {
 
@@ -326,13 +366,10 @@ alias s='dsh -g s -M -c'\" >> ~/.bashrc;" "paralell"
   fi
 }
 
-
 #1 command to execute in master (as a gateway to DSH)
 cluster_execute() {
   vm_execute_master "dsh -g a -M -c \"$1\""
 }
-
-
 
 vm_initialize_disks() {
   if check_bootstraped "vm_initialize_disks" ""; then
@@ -446,7 +483,6 @@ check_bootstraped() {
   fi
 }
 
-
 #$1 command to execute in master
 vm_execute_master() {
   #save current ssh_port
@@ -494,7 +530,6 @@ vm_set_master_forer() {
   fi
 }
 
-
 #Puppet apply
 vm_puppet_apply() {
 
@@ -508,6 +543,44 @@ vm_puppet_apply() {
 	fi
 }
 
+###These are just a function list that should be implemented if necessary in the provider
+
+vm_exists() {
+  logger "WARNING: Function vm_exists not implemented or not necessary for provider"
+}
+
+vm_create() {
+  logger "WARNING: Function vm_create not implemented or not necessary for provider"
+}
+
+vm_set_details() {
+  logger "WARNING: Function vm_set_details not implemented or not necessary for provider"
+}
+
+vm_get_status() {
+  logger "WARNING: Function vm_get_status not implemented or not necessary for provider"
+}
+
+number_of_attached_disks() {
+  logger "WARNING: Function number_of_attached_disks not implemented or not necessary for provider"
+}
+
+vm_attach_new_disk() {
+  logger "WARNING: Function vm_attach_new_disk not implemented or not necessary for provider"
+}
+
+vm_execute() {
+  logger "WARNING: Function vm_execute not implemented or not necessary for provider"
+}
+
+vm_local_scp() {
+  logger "WARNING: Function vm_local_scp not implemented or not necessary for provider"
+}
+
+vm_initial_bootstrap() {
+  logger "WARNING: Function vm_initial_bootstrap not implemented or not necessary for provider"
+}
+
 #$1 $endpoints list $2 end1 $3 end2
 vm_check_endpoint_exists() {
 	logger "WARNING: Function vm_check_endpoint_exists not implemented or not necessary for provider"
@@ -515,4 +588,16 @@ vm_check_endpoint_exists() {
 
 vm_endpoints_create() {
 	logger "WARNING: Function vm_endpoints_create not implemented or not necessary for provider"
+}
+
+###for executables
+
+#1 $node_name
+node_connect() {
+	logger "WARNING: Function node_delete not implemented or not necessary for provider"
+}
+
+#1 $node_name
+node_delete() {
+  logger "WARNING: Function node_delete not implemented or not necessary for provider"
 }

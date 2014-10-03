@@ -28,7 +28,7 @@ vm_set_ssh
 vm_initialize_disks
 vm_install_base_packages
 
-#extra commands to exectute *if defined)
+#extra commands to exectute (if defined)
 [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
 
 [ ! -z "$puppet" ] && vm_puppet_apply
