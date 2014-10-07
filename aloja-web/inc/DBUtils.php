@@ -76,7 +76,7 @@ class DBUtils
             $rows = $sth->fetchAll(\PDO::FETCH_ASSOC);
 
             //save cache
-            if ($rows) {
+            if ($use_cache && $rows) {
                 file_put_contents($file_path, gzcompress(serialize($rows), 9));
             }
         }
