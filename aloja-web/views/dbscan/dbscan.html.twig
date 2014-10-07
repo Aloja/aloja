@@ -32,15 +32,19 @@
 
                 // Iterate all series to obtain the absolute min&max
                 // (the min&max values for every serie are already calculated)
-                var absolute_min = null;
-                var absolute_max = null;
+                var absolute_x_min = null;
+                var absolute_x_max = null;
+                var absolute_y_min = null;
+                var absolute_y_max = null;
                 for (i = 0; i < chart.series.length; i++) {
-                    if (absolute_min == null) absolute_min = chart.series[i].options.x_min;
-                    if (absolute_max == null) absolute_max = chart.series[i].options.x_max;
-                    if (absolute_min > chart.series[i].options.x_min) absolute_min = chart.series[i].options.x_min;
-                    if (absolute_max < chart.series[i].options.x_max) absolute_max = chart.series[i].options.x_max;
-                    if (absolute_min > chart.series[i].options.y_min) absolute_min = chart.series[i].options.y_min;
-                    if (absolute_max < chart.series[i].options.y_max) absolute_max = chart.series[i].options.y_max;
+                    if (absolute_x_min == null) absolute_x_min = chart.series[i].options.x_min;
+                    if (absolute_x_max == null) absolute_x_max = chart.series[i].options.x_max;
+                    if (absolute_y_min == null) absolute_y_min = chart.series[i].options.y_min;
+                    if (absolute_y_max == null) absolute_y_max = chart.series[i].options.y_max;
+                    if (absolute_x_min > chart.series[i].options.x_min) absolute_x_min = chart.series[i].options.x_min;
+                    if (absolute_x_max < chart.series[i].options.x_max) absolute_x_max = chart.series[i].options.x_max;
+                    if (absolute_y_min > chart.series[i].options.y_min) absolute_y_min = chart.series[i].options.y_min;
+                    if (absolute_y_max < chart.series[i].options.y_max) absolute_y_max = chart.series[i].options.y_max;
                 }
 
                 // Calculate the current aspect ratio of the graph
@@ -51,8 +55,30 @@
                 var aspect_ratio = chart_width / chart_height;
 
                 // Change zoom
-                chart.xAxis[0].setExtremes(absolute_min, absolute_max * aspect_ratio, false);
-                chart.yAxis[0].setExtremes(absolute_min, absolute_max , false);
+                var absolute_min = Math.min(absolute_x_min, absolute_y_min);
+                var absolute_max = Math.max(absolute_x_max, absolute_y_max);
+                if ((absolute_x_max - absolute_x_min) > (absolute_y_max - absolute_y_min)) {
+                    // Points form a horizontal rectangle
+                    chart.xAxis[0].setExtremes(absolute_min, absolute_max, false);
+                    chart.yAxis[0].setExtremes(absolute_min, absolute_max / aspect_ratio, false);
+                } else if ((absolute_x_max - absolute_x_min) < (absolute_y_max - absolute_y_min)) {
+                    // Points form a vertical rectangle
+                    chart.xAxis[0].setExtremes(absolute_min, absolute_max * aspect_ratio, false);
+                    chart.yAxis[0].setExtremes(absolute_min, absolute_max, false);
+                } else {
+                    // Points form a square
+                    if (aspect_ratio > 1) {
+                        // Viewport is a horizontal rectangle
+                        // Expand the X axis
+                        chart.xAxis[0].setExtremes(absolute_min, absolute_max * aspect_ratio, false);
+                        chart.yAxis[0].setExtremes(absolute_min, absolute_max, false);
+                    } else {
+                        // Viewport is a vertical rectangle
+                        // Expand the Y axis
+                        chart.xAxis[0].setExtremes(absolute_min, absolute_max, false);
+                        chart.yAxis[0].setExtremes(absolute_min, absolute_max / aspect_ratio, false);
+                    }
+                }
                 chart.redraw()
             }
 
