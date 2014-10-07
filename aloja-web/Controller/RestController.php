@@ -760,6 +760,7 @@ VALUES
             if ($data) {
                 $seriesData[] = array(
                     'points' => $data,
+                    'size' => $cluster->count(),
                     'x_min' => $cluster->getXMin(),
                     'x_max' => $cluster->getXMax(),
                     'y_min' => $cluster->getYMin(),
