@@ -18,6 +18,24 @@ class Cluster extends \ArrayObject
     private $y_max;
 
     /**
+     * Updates the calculated internal values with the passed value
+     */
+    private function updateValues($value)
+    {
+        // If any value is null, initialize with new value
+        if ($this->x_min === null) $this->x_min = $value->x;
+        if ($this->x_max === null) $this->x_max = $value->x;
+        if ($this->y_min === null) $this->y_min = $value->y;
+        if ($this->y_max === null) $this->y_max = $value->y;
+
+        // Update values if necessary
+        if ($this->x_min > $value->x) $this->x_min = $value->x;
+        if ($this->x_max < $value->x) $this->x_max = $value->x;
+        if ($this->y_min > $value->y) $this->y_min = $value->y;
+        if ($this->y_max < $value->y) $this->y_max = $value->y;
+    }
+
+    /**
      * Return the minimum X value of the cluster, or null if empty
      */
     public function getXMin()
@@ -61,19 +79,34 @@ class Cluster extends \ArrayObject
     // Superclass overrides
     //
 
+    public function __construct()
+    {
+        // Call superclass
+        $result = parent::__construct();
+
+        // Iterate and append all arguments
+        // (no need to call updateValues(), offsetSet will take care of it)
+        $args = func_get_args();
+        foreach($args as $arg) {
+            if (is_array($arg) || $arg instanceof \Traversable) {
+                // Argument is array-like, append all its values
+                foreach ($arg as $value) {
+                    $this[] = $value;
+                }
+            } else {
+                // Append the argument
+                $this[] = $arg;
+            }
+        }
+
+        // Return superclass return
+        return $result;
+    }
+
     public function offsetSet($offset, $value)
     {
-        // If any value is null, initialize with new value
-        if ($this->x_min === null) $this->x_min = $value->x;
-        if ($this->x_max === null) $this->x_max = $value->x;
-        if ($this->y_min === null) $this->y_min = $value->y;
-        if ($this->y_max === null) $this->y_max = $value->y;
-
-        // Update values if necessary
-        if ($this->x_min > $value->x) $this->x_min = $value->x;
-        if ($this->x_max < $value->x) $this->x_max = $value->x;
-        if ($this->y_min > $value->y) $this->y_min = $value->y;
-        if ($this->y_max < $value->y) $this->y_max = $value->y;
+        // Update internal values
+        $this->updateValues($value);
 
         // Call superclass
         return parent::offsetSet($offset, $value);

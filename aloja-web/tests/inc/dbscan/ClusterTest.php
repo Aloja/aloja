@@ -15,6 +15,63 @@ class ClusterTest extends \PHPUnit_Framework_TestCase
         $this->assertNull($cluster->getYMax());
     }
 
+    public function testClusterConstructValue()
+    {
+        $cluster = new Cluster(
+            new Point(1, 2)
+        );
+
+        $this->assertEquals($cluster->getXMin(), 1);
+        $this->assertEquals($cluster->getXMax(), 1);
+        $this->assertEquals($cluster->getYMin(), 2);
+        $this->assertEquals($cluster->getYMax(), 2);
+    }
+
+    public function testClusterConstructValues()
+    {
+        $cluster = new Cluster(
+            new Point(1, 2),
+            new Point(3, 4)
+        );
+
+        $this->assertEquals($cluster->getXMin(), 1);
+        $this->assertEquals($cluster->getXMax(), 3);
+        $this->assertEquals($cluster->getYMin(), 2);
+        $this->assertEquals($cluster->getYMax(), 4);
+    }
+
+    public function testClusterConstructArray()
+    {
+        $cluster = new Cluster(
+            array(
+                new Point(1, 2),
+                new Point(3, 4),
+            )
+        );
+
+        $this->assertEquals($cluster->getXMin(), 1);
+        $this->assertEquals($cluster->getXMax(), 3);
+        $this->assertEquals($cluster->getYMin(), 2);
+        $this->assertEquals($cluster->getYMax(), 4);
+    }
+
+    public function testClusterConstructClusters()
+    {
+        $cluster = new Cluster(
+            new Cluster(
+                new Point(1, 2)
+            ),
+            new Cluster(
+                new Point(3, 4)
+            )
+        );
+
+        $this->assertEquals($cluster->getXMin(), 1);
+        $this->assertEquals($cluster->getXMax(), 3);
+        $this->assertEquals($cluster->getYMin(), 2);
+        $this->assertEquals($cluster->getYMax(), 4);
+    }
+
     public function testClusterContains()
     {
         $point1 = new Point(1, 1);
