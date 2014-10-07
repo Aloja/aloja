@@ -14,7 +14,7 @@ class DBSCAN
     protected $cluster;
     protected $noise;
 
-    const HEURISTIC_DIVISION = 10;
+    const HEURISTIC_DIVISION = 13.3;
 
     public function __construct($eps = null, $minPoints = null, DistanceInterface $distance = null, SearchInterface $search = null)
     {
