@@ -24,10 +24,10 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             new Point(1, 2),
             new Point(2, 1),
             new Point(2, 2),
-            new Point(10000, 10000),
-            new Point(10000, 10001),
-            new Point(10001, 10000),
-            new Point(10001, 10001)
+            new Point(13300, 13300),
+            new Point(13300, 13301),
+            new Point(13301, 13300),
+            new Point(13301, 13301)
         );
 
         $dbscan = new DBSCAN();
@@ -46,10 +46,10 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             new Point(1, 2),
             new Point(2, 1),
             new Point(2, 2),
-            new Point(10000, 10000),
-            new Point(10000, 10001),
-            new Point(10001, 10000),
-            new Point(10001, 10001),
+            new Point(13300, 13300),
+            new Point(13300, 13301),
+            new Point(13301, 13300),
+            new Point(13301, 13301),
         );
 
         $dbscan = new DBSCAN();
@@ -120,8 +120,8 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             array("job_201406271147_0002", 0, 15, 2),
             array("job_201406271147_0002", 0, 16, 2),
             array("job_201406271147_0002", 0, 17, 2),
-            array("job_201406271147_0002", 0, 18, 3),  // Should be 4?
-            array("job_201406271147_0002", 0, 19, 3),  // Should be 4?
+            array("job_201406271147_0002", 0, 18, 4),
+            array("job_201406271147_0002", 0, 19, 4),
 
             array("job_201406271147_0002", 1, 2, 4),
             array("job_201406271147_0002", 1, 3, 4),
@@ -138,7 +138,7 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             array("job_201406271147_0002", 1, 14, 3),
             array("job_201406271147_0002", 1, 15, 3),
             array("job_201406271147_0002", 1, 16, 3),
-            array("job_201406271147_0002", 1, 17, 3),  // Should be 4?
+            array("job_201406271147_0002", 1, 17, 4),
             array("job_201406271147_0002", 1, 18, 3),
             array("job_201406271147_0002", 1, 19, 3),
 
@@ -218,7 +218,7 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             array("job_201406271147_0002", 6, 14, 3),
             array("job_201406271147_0002", 6, 15, 3),
             array("job_201406271147_0002", 6, 16, 3),
-            array("job_201406271147_0002", 6, 17, 3),  // Should be 4?
+            array("job_201406271147_0002", 6, 17, 4),
             array("job_201406271147_0002", 6, 18, 3),
             array("job_201406271147_0002", 6, 19, 3),
 
@@ -273,7 +273,7 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             array("job_201406271147_0002", 11, 14, 3),
             array("job_201406271147_0002", 11, 15, 3),
             array("job_201406271147_0002", 11, 16, 3),
-            array("job_201406271147_0002", 11, 17, 3),  // Should be 4?
+            array("job_201406271147_0002", 11, 17, 4),
             array("job_201406271147_0002", 11, 18, 3),
             array("job_201406271147_0002", 11, 19, 3),
 
@@ -316,7 +316,7 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             array("job_201406271147_0002", 1, 2, 4),
             array("job_201402172244_0002", 0, 1, 3),
             array("job_201402172338_0001", 0, 1, 1),
-            array("job_201402180048_0001", 0, 1, 2),  // Should be 3?
+            array("job_201402180048_0001", 0, 1, 3),
         );
     }
 
