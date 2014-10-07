@@ -164,6 +164,12 @@ class Utils
             return filter_var($_GET[$param], FILTER_SANITIZE_NUMBER_INT);
     }
 
+    public static function get_GET_float($param)
+    {
+        if (isset($_GET[$param]))
+            return filter_var($_GET[$param], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+    }
+
     public static function minimize_array($array)
     {
         foreach ($array as $key=>$value) {
