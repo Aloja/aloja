@@ -49,4 +49,22 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(0, $noise);
     }
 
+    public function testHeuristicOverlappingPoints()
+    {
+        $points = new Cluster(
+            new Point(10, 10),
+            new Point(10, 10),
+            new Point(10, 10),
+            new Point(10, 10)
+        );
+
+        $dbscan = new DBSCAN();
+        list($cluster, $noise) = $dbscan->execute($points);
+
+        $this->assertEquals(1, $dbscan->getEps());
+        $this->assertEquals(1, $dbscan->getMinPoints());
+        $this->assertCount(1, $cluster);
+        $this->assertCount(0, $noise);
+    }
+
 }

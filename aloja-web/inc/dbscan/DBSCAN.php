@@ -138,6 +138,13 @@ class DBSCAN
             $x_diff = ($data_clustered->getXMax() - $data_clustered->getXMin());
             $y_diff = ($data_clustered->getYMax() - $data_clustered->getYMin());
             $this->eps = max($x_diff, $y_diff) / $this::HEURISTIC_DIVISION;
+            if ($this->eps <= 0) {
+                // If all the points are in the same place, eps will be 0,
+                // and because the distance comparison is a "less strict"
+                // all points would be noise. This way they will all belong
+                // to the same cluster
+                $this->eps = 1;
+            }
             $this->minPoints = 1;
         }
     }
