@@ -19,6 +19,43 @@
             form.find('button').click(updateChart)
             form.submit(updateChart);
 
+            // Different zoom actions
+            $('#zoom_reset').click(function () {
+                // Sets the default zoom
+                chart.xAxis[0].setExtremes(null, null, false);
+                chart.yAxis[0].setExtremes(null, null, false);
+                chart.redraw()
+            });
+            $('#zoom_ratio_11').click(zoomRatio11);
+            function zoomRatio11() {
+                // Sets a zoom where both axis have the same aspect ratio (1:1)
+
+                // Iterate all series to obtain the absolute min&max
+                // (the min&max values for every serie are already calculated)
+                var absolute_min = null;
+                var absolute_max = null;
+                for (i = 0; i < chart.series.length; i++) {
+                    if (absolute_min == null) absolute_min = chart.series[i].options.x_min;
+                    if (absolute_max == null) absolute_max = chart.series[i].options.x_max;
+                    if (absolute_min > chart.series[i].options.x_min) absolute_min = chart.series[i].options.x_min;
+                    if (absolute_max < chart.series[i].options.x_max) absolute_max = chart.series[i].options.x_max;
+                    if (absolute_min > chart.series[i].options.y_min) absolute_min = chart.series[i].options.y_min;
+                    if (absolute_max < chart.series[i].options.y_max) absolute_max = chart.series[i].options.y_max;
+                }
+
+                // Calculate the current aspect ratio of the graph
+                var x_extremes = chart.xAxis[0].getExtremes();
+                var y_extremes = chart.yAxis[0].getExtremes();
+                var chart_width = chart.xAxis[0].toPixels(x_extremes.max) - chart.xAxis[0].toPixels(x_extremes.min);
+                var chart_height = chart.yAxis[0].toPixels(y_extremes.min) - chart.yAxis[0].toPixels(y_extremes.max);
+                var aspect_ratio = chart_width / chart_height;
+
+                // Change zoom
+                chart.xAxis[0].setExtremes(absolute_min, absolute_max * aspect_ratio, false);
+                chart.yAxis[0].setExtremes(absolute_min, absolute_max , false);
+                chart.redraw()
+            }
+
             function updateChart(event) {
                 // Start loading
                 chart.showLoading();
@@ -96,6 +133,11 @@
                             data: data.noiseData,
                         }, false);
                     }
+
+                    // Reset zoom
+                    chart.xAxis[0].setExtremes(null, null, false);
+                    chart.yAxis[0].setExtremes(null, null, false);
+
                     chart.redraw();
 
                     // Finished loading
@@ -113,6 +155,11 @@
                     renderTo: 'chart',
                     type: 'scatter',
                     zoomType: 'xy',
+                    resetZoomButton: {
+                        theme: {
+                            display: 'none',
+                        },
+                    },
                 },
                 title: {
                     text: 'DBSCAN'
@@ -124,11 +171,15 @@
                     title: {
                         text: ""
                     },
+                    startOnTick: false,
+                    endOnTick: false,
                 },
                 yAxis: {
                     title: {
                         text: ""
                     },
+                    startOnTick: false,
+                    endOnTick: false,
                 },
                 tooltip: {
                     shared: true,
@@ -150,7 +201,6 @@
                                         this.series.options.y_min,
                                         this.series.options.y_max
                                     );
-                                    this.series.chart.showResetZoom();
                                 }
                             },
                         },
@@ -166,6 +216,11 @@
 {% endblock %}
 
 {% block content %}
+
+    <form role="form" class="form-inline pull-left">
+        <button type="button" id="zoom_ratio_11" class="btn btn-default">Zoom 1:1</button>
+        <button type="button" id="zoom_reset" class="btn btn-default">Reset Zoom</button>
+    </form>
 
     <form id="options" role="form" class="form-inline pull-right">
         <input type="hidden" name="jobid" value="{{ jobid }}">
