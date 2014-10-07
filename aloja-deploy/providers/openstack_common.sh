@@ -4,8 +4,8 @@
 bootStrapped="false"
 
 #openstack specific globals
-nodeIP["$vm_name"]=""
-serverId["$vm_name"]=""
+declare -A nodeIP
+declare -A serverId
 
 #### start $cloud_provider customizations
 
@@ -28,7 +28,8 @@ vm_create() {
 #get openstack machine details
 #$vm_name required
 vm_set_details() {
-  if [ -z "${nodeIP[$vm_name]}" ] || [ -z "${serverId[$vm_name]}"  ] ; then
+
+  if [ -z "${nodeIP[$vm_name]}" ] || [ -z "${serverId[$vm_name]}"  ]  ; then
     #get machine details
     local vm_details="$(nova show --minimal "$vm_name")"
     #set IP
@@ -91,9 +92,9 @@ vm_execute() {
 
   #echo to print special chars;
   if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 "$ssh_user"@"${nodeIP[$vm_name]}"
+    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$ssh_user"@"${nodeIP[$vm_name]}"
   else
-    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 "$ssh_user"@"${nodeIP[$vm_name]}" &
+    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$ssh_user"@"${nodeIP[$vm_name]}" &
   fi
 
   #chmod 0644 "../secure/keys/id_rsa"
@@ -116,7 +117,7 @@ vm_local_scp() {
   chmod 0600 "../secure/keys/id_rsa"
 
   #eval is for parameter expansion
-  scp -i "../secure/keys/id_rsa" $(eval echo "$3") $(eval echo "$1") "$ssh_user"@"${nodeIP[$vm_name]}:$2"
+  scp -i "../secure/keys/id_rsa" -o StrictHostKeyChecking=no $(eval echo "$3") $(eval echo "$1") "$ssh_user"@"${nodeIP[$vm_name]}:$2"
 
   #chmod 0644 "../secure/keys/id_rsa"
 }
@@ -128,15 +129,17 @@ vm_initial_bootstrap() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Bootstraping $vm_name "
 
+#bash -c 'BASH_ENV=/etc/profile exec bash' &&
+
     vm_execute "
-echo '[ -z \"$PS1\" ] && return' >> /root/.bashrc &&
 useradd --create-home -s /bin/bash $user &&
 adduser $user sudo &&
 echo -n '$user:$password' | chpasswd &&
 sed -i.bkp -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers &&
 mkdir -p /home/$user/.ssh &&
 echo '${insecureKey}' >> /home/$user/.ssh/authorized_keys &&
-chown -R $user: /home/$user/.ssh;
+chown -R $user: /home/$user/.ssh ;
+cp /home/$user/.profile /home/$user/.bashrc /root/ ;
 "
 
     test_action="$(vm_execute " [ -d /home/$user/.ssh ] && echo '$testKey'")"
@@ -156,24 +159,77 @@ chown -R $user: /home/$user/.ssh;
   fi
 }
 
+make_hosts_file_command() {
+  hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
+
+  echo "sudo chmod 777 /etc/hosts; echo -e '$hosts_file' >> /etc/hosts; sudo chmod 644 /etc/hosts;"
+}
+
+vm_update_hosts_file() {
+  logger "Getting list of hostnames for hosts file for VM $vm_name"
+  local hosts_file_command="$(make_hosts_file_command)"
+
+  logger "Updating hosts file for VM $vm_name"
+  vm_execute "$hosts_file_command"
+}
+
+vm_final_bootstrap() {
+  logger "Finalizing VM $vm_name bootstrap"
+
+  #currently is ran everytime it is executed
+  vm_update_hosts_file
+
+}
+
+### cluster functions
+
+cluster_final_boostrap() {
+  logger "Finalizing Cluster $cluster_name bootstrap"
+  logger "Getting list of hostnames for hosts file for VM $vm_name"
+  local hosts_file_command="$(make_hosts_file_command)"
+
+  logger "Updating hosts file for VM $vm_name"
+  cluster_execute "$hosts_file_command"
+}
+
+
 ###for executables
 
-#1 $node_name
 node_connect() {
 
   vm_set_details
 
-  echo "Connecting to Rackspace, with details: ${user}@${nodeIP[$vm_name]}"
-  ssh -i "../secure/keys/id_rsa" "$user"@"${nodeIP[$vm_name]}"
+  logger "Connecting to Rackspace, with details: ${user}@${nodeIP[$vm_name]}"
+  ssh -i "../secure/keys/id_rsa" -o StrictHostKeyChecking=no "$user"@"${nodeIP[$vm_name]}"
 }
 
 #1 $node_name
 node_delete() {
-  logger "About to delete node $1 and its associated attached volumes. Continue?"
+  vm_set_details
+
+  logger "Getting attached disks"
+  attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
+  logger "$attached_volumes"
+
+  logger "De-Ataching node volumes"
+  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
+    nova volume-detach "$volumeID"
+  done
+
+  logger "Deleting node $1"
   nova delete "$vm_name"
 
-  logger "listing server volumes"
-  nova volume-list|grep " DISK_$vm_name"
+  logger "Deleting node volumes"
+  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
+    nova volume-delete "$volumeID"
+  done
+}
 
-  logger "Remember to manually delete non-used volumes, functionallity not implemented yet"
+#1 $node_name
+node_stop() {
+  vm_set_details
+
+  logger "Stopping vm $1"
+
+  nova stop "${serverId["$vm_name"]}"
 }

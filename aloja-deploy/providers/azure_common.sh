@@ -3,7 +3,7 @@
 
 
 #global vars
-bootStrapped="true" #azure doens't need bootstraping
+bootStrapped="false"
 
 #### start $cloud_provider customizations
 
@@ -77,9 +77,9 @@ vm_execute() {
 
   #echo to print special chars;
   if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
+    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
   else
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
+    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
   fi
 }
 
@@ -88,7 +88,7 @@ vm_execute() {
 vm_local_scp() {
     logger "SCPing files"
     #eval is for parameter expansion
-    scp -i "../secure/keys/myPrivateKey.key" -P "$vm_ssh_port" $(eval echo "$3") $(eval echo "$1") "$user"@"${dnsName}.cloudapp.net:$2"
+    scp -i "../secure/keys/myPrivateKey.key" -o StrictHostKeyChecking=no -P "$vm_ssh_port" $(eval echo "$3") $(eval echo "$1") "$user"@"${dnsName}.cloudapp.net:$2"
 }
 
 vm_initial_bootstrap() {
@@ -121,12 +121,23 @@ vm_endpoints_create() {
 	azure vm endpoint list "$vm_name"
 }
 
+vm_final_bootstratp() {
+  : #not necessary for Azure (yet)
+}
+
+### cluster functions
+
+cluster_final_boostrap() {
+  : #not necessary for Azure (yet)
+}
+
+
 ###for executables
 
 #1 $node_name
 node_connect() {
   logger "Connecting to subscription $subscriptionID, with details: ${user}@${dnsName}.cloudapp.net -p $vm_ssh_port -i ../secure/keys/myPrivateKey.key"
-  ssh -i "../secure/keys/myPrivateKey.key" "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
+  ssh -i "../secure/keys/myPrivateKey.key" -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p  "$vm_ssh_port"
 }
 
 #1 $node_name

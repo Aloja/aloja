@@ -1,6 +1,7 @@
-CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CONF_DIF="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source "$CUR_DIR/common.sh"
+source "$CONF_DIF/common.sh"
+source "$CONF_DIF/provider_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -8,7 +9,7 @@ source "$CUR_DIR/common.sh"
 
 #test and load cluster config
 
-clusterConfigFilePath="$CUR_DIR/../conf"
+clusterConfigFilePath="$CONF_DIF/../conf"
 
 [ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { logger "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
 
@@ -34,6 +35,28 @@ fi
 
 logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
 
+
+#$1 vm_name
+vm_create_connect() {
+
+  #make sure we clean the variable
+  bootStrapped="false"
+
+  #test first if machines are accessible via SSH to save time
+  if ! wait_vm_ssh_ready "1" ; then
+    vm_check_create "$1" "$vm_ssh_port"
+    wait_vm_ready "$1"
+
+    vm_check_attach_disks "$1"
+
+    #wait for ssh to be ready
+    wait_vm_ssh_ready
+
+  #make sure the correct number of disks is innitialized
+  elif ! vm_test_initiallize_disks ; then
+    vm_check_attach_disks "$1"
+  fi
+}
 
 get_node_names() {
   local node_names=''
@@ -116,7 +139,7 @@ get_mount_disks() {
     exit 1;
   fi
 
-  if [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] ; then
+  if [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
     #internal network
     fs_mount="$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
   else
@@ -239,6 +262,30 @@ vm_check_create() {
     logger "VM $1 already exists. Skipping creation..."
   fi
 
+}
+
+#requires $vm_name and $type to be set
+vm_create_node() {
+
+  #check if machine has been already created or creates it
+  vm_create_connect "$vm_name"
+
+  #boostrap VM
+  vm_initial_bootstrap
+
+  vm_set_ssh
+  [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+  vm_install_base_packages
+  vm_set_dot_files &
+
+  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+
+  #extra commands to exectute (if defined)
+  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+
+  [ ! -z "$puppet" ] && vm_puppet_apply
+
+  [ ! -z "$endpoints" ] && vm_endpoints_create
 }
 
 vm_set_ssh() {
@@ -458,6 +505,8 @@ cluster_mount_disks() {
   fi"
 }
 
+
+
 #$1 filename $2 set lock
 check_bootstraped() {
   fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
@@ -541,68 +590,4 @@ vm_puppet_apply() {
 	if [ ! -z "$puppetPostScript" ]; then
 	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
 	fi
-}
-
-###These are just a function list that should be implemented if necessary in the provider
-
-vm_exists() {
-  logger "WARNING: Function vm_exists not implemented or not necessary for provider"
-}
-
-vm_create() {
-  logger "WARNING: Function vm_create not implemented or not necessary for provider"
-}
-
-vm_set_details() {
-  logger "WARNING: Function vm_set_details not implemented or not necessary for provider"
-}
-
-vm_get_status() {
-  logger "WARNING: Function vm_get_status not implemented or not necessary for provider"
-}
-
-number_of_attached_disks() {
-  logger "WARNING: Function number_of_attached_disks not implemented or not necessary for provider"
-}
-
-vm_attach_new_disk() {
-  logger "WARNING: Function vm_attach_new_disk not implemented or not necessary for provider"
-}
-
-vm_execute() {
-  logger "WARNING: Function vm_execute not implemented or not necessary for provider"
-}
-
-vm_local_scp() {
-  logger "WARNING: Function vm_local_scp not implemented or not necessary for provider"
-}
-
-vm_initial_bootstrap() {
-  logger "WARNING: Function vm_initial_bootstrap not implemented or not necessary for provider"
-}
-
-#$1 $endpoints list $2 end1 $3 end2
-vm_check_endpoint_exists() {
-	logger "WARNING: Function vm_check_endpoint_exists not implemented or not necessary for provider"
-}
-
-vm_endpoints_create() {
-	logger "WARNING: Function vm_endpoints_create not implemented or not necessary for provider"
-}
-
-###for executables
-
-#1 $node_name
-node_connect() {
-	logger "WARNING: Function node_connect not implemented or not necessary for provider"
-}
-
-#1 $node_name
-node_delete() {
-  logger "WARNING: Function node_delete not implemented or not necessary for provider"
-}
-
-#1 $node_name
-node_stop() {
-  logger "WARNING: Function node_stop not implemented or not necessary for provider"
 }
