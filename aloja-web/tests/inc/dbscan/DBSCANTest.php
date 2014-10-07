@@ -5,7 +5,7 @@ namespace alojaweb\inc\dbscan;
 class DBSCANTest extends \PHPUnit_Framework_TestCase
 {
 
-    public function testSimple()
+    public function testSimpleWithArray()
     {
         $eps = 10;
         $minPoints = 4;
@@ -27,8 +27,46 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(2, $cluster);
         $this->assertCount(4, $cluster[0]);
         $this->assertCount(4, $cluster[1]);
+        $this->assertEquals(10, $dbscan->getEps());
+        $this->assertEquals(4, $dbscan->getMinPoints());
         $this->assertEquals((array)$cluster[0], array_slice($points, 0, 4));
         $this->assertEquals((array)$cluster[1], array_slice($points, 4, 4));
+        $this->assertEquals($cluster[0]->getXMin(), 1);
+        $this->assertEquals($cluster[0]->getXMax(), 2);
+        $this->assertEquals($cluster[0]->getYMin(), 1);
+        $this->assertEquals($cluster[0]->getYMax(), 2);
+        $this->assertEquals($cluster[1]->getXMin(), 100);
+        $this->assertEquals($cluster[1]->getXMax(), 101);
+        $this->assertEquals($cluster[1]->getYMin(), 100);
+        $this->assertEquals($cluster[1]->getYMax(), 101);
+    }
+
+    public function testSimpleWithCluster()
+    {
+        $eps = 10;
+        $minPoints = 4;
+        $points = new Cluster(
+            new Point(1, 1),
+            new Point(1, 2),
+            new Point(2, 1),
+            new Point(2, 2),
+            new Point(100, 100),
+            new Point(100, 101),
+            new Point(101, 100),
+            new Point(101, 101)
+        );
+
+        $dbscan = new DBSCAN($eps, $minPoints);
+        list($cluster, $noise) = $dbscan->execute($points);
+
+        $this->assertCount(0, $noise);
+        $this->assertCount(2, $cluster);
+        $this->assertCount(4, $cluster[0]);
+        $this->assertCount(4, $cluster[1]);
+        $this->assertEquals(10, $dbscan->getEps());
+        $this->assertEquals(4, $dbscan->getMinPoints());
+        $this->assertEquals((array)$cluster[0], array_slice((array)$points, 0, 4));
+        $this->assertEquals((array)$cluster[1], array_slice((array)$points, 4, 4));
         $this->assertEquals($cluster[0]->getXMin(), 1);
         $this->assertEquals($cluster[0]->getXMax(), 2);
         $this->assertEquals($cluster[0]->getYMin(), 1);

@@ -737,13 +737,9 @@ VALUES
             $points[] = new Point($task_value_x, $task_value_y, array('task_id' => $task_id));
         }
 
-        // Heuristic: try to infer a good eps value (minPoints will always be 1)
+        // Heuristic: let DBSCAN choose the parameters
         if ($heuristic) {
-            $HEURISTIC_CONSTANT = 1000;
-            $x_diff = ($points->getXMax() - $points->getXMin());
-            $y_diff = ($points->getYMax() - $points->getYMin());
-            $eps = max($x_diff, $y_diff) / $HEURISTIC_CONSTANT;
-            $minPoints = 1;
+            $eps = $minPoints = null;
         }
 
         $dbscan = new DBSCAN($eps, $minPoints);
@@ -783,8 +779,8 @@ VALUES
             'seriesData' => $seriesData,
             'noiseData' => $noiseData,
             'heuristic' => $heuristic,
-            'eps' => $eps,
-            'minPoints' => $minPoints,
+            'eps' => $dbscan->getEps(),
+            'minPoints' => $dbscan->getMinPoints(),
         ];
 
         header('Content-Type: application/json');
