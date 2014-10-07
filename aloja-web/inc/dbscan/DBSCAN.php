@@ -14,7 +14,9 @@ class DBSCAN
     protected $cluster;
     protected $noise;
 
-    public function __construct($eps, $minPoints, DistanceInterface $distance = null, SearchInterface $search = null)
+    const HEURISTIC_DIVISION = 1000;
+
+    public function __construct($eps = null, $minPoints = null, DistanceInterface $distance = null, SearchInterface $search = null)
     {
         if ($distance === null) {
             $distance = new DistanceEuclidean();
@@ -31,7 +33,17 @@ class DBSCAN
         $this->search->setDistanceMode($distance);
     }
 
-    public function execute(array $data)
+    public function getEps()
+    {
+        return $this->eps;
+    }
+
+    public function getMinPoints()
+    {
+        return $this->minPoints;
+    }
+
+    public function execute($data)
     {
         // Initialize internal variables
         $this->init($data);
@@ -104,7 +116,7 @@ class DBSCAN
         // echo "  END FOREACH\n";
     }
 
-    private function init(array $data) {
+    private function init($data) {
         // Fill search class with all the points
         $this->search->setData($data);
 
@@ -112,6 +124,22 @@ class DBSCAN
         $this->visited = array();
         $this->cluster = array();
         $this->noise = array();
+
+        // Check if any parameter is missing to calculate heuristic values
+        if ($this->eps === null || $this->minPoints === null) {
+
+            $data_clustered = $data;
+            if (!$data_clustered instanceof Cluster) {
+                // Convert array to cluster
+                $data_clustered = new Cluster($data);
+            }
+
+            // Calculate heuristic values and set them as DBSCAN parameters
+            $x_diff = ($data_clustered->getXMax() - $data_clustered->getXMin());
+            $y_diff = ($data_clustered->getYMax() - $data_clustered->getYMin());
+            $this->eps = max($x_diff, $y_diff) / $this::HEURISTIC_DIVISION;
+            $this->minPoints = 1;
+        }
     }
 
     private function isVisited($point)
