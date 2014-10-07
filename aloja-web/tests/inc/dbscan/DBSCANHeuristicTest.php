@@ -24,10 +24,10 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             new Point(1, 2),
             new Point(2, 1),
             new Point(2, 2),
-            new Point(13300, 13300),
-            new Point(13300, 13301),
-            new Point(13301, 13300),
-            new Point(13301, 13301)
+            new Point(15000, 15000),
+            new Point(15000, 15001),
+            new Point(15001, 15000),
+            new Point(15001, 15001)
         );
 
         $dbscan = new DBSCAN();
@@ -46,10 +46,10 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
             new Point(1, 2),
             new Point(2, 1),
             new Point(2, 2),
-            new Point(13300, 13300),
-            new Point(13300, 13301),
-            new Point(13301, 13300),
-            new Point(13301, 13301),
+            new Point(15000, 15000),
+            new Point(15000, 15001),
+            new Point(15001, 15000),
+            new Point(15001, 15001),
         );
 
         $dbscan = new DBSCAN();
@@ -314,17 +314,17 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
 
 
             # bayes
-            array("job_201406181732_0001", 1, 2, 2),
-            array("job_201406181732_0001", 6, 5, 2),
+            array("job_201406181732_0001", 1, 2, 3),
+            array("job_201406181732_0001", 6, 5, 3),
             array("job_201406181732_0002", 0, 3, 9),
             
-            array("job_201401290551_0005", 6, 13, 2),
+            array("job_201401290551_0005", 6, 13, 3),
 
 
             # pagerank
             array("job_201406270717_0003", 0, 1, 4),
             array("job_201406270717_0003", 0, 2, 2),
-            array("job_201406270717_0003", 1, 4, 4),
+            array("job_201406270717_0003", 1, 4, 5),
             array("job_201406270717_0003", 1, 7, 5),
             array("job_201406270717_0003", 4, 7, 4),
             array("job_201406270717_0004", 0, 4, 3),
