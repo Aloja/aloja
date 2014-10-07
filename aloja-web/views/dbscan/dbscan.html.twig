@@ -46,6 +46,10 @@
                     chart.xAxis[0].setTitle({text: metric_x_name});
                     chart.yAxis[0].setTitle({text: metric_y_name});
 
+                    // Reset series color and symbol iterator
+                    // This way the same cluster will keep it's theme between updates
+                    chart.colorCounter = chart.symbolCounter = 0;
+
                     // Update chart data
                     while(chart.series.length > 0) {
                         chart.series[0].remove(false);
