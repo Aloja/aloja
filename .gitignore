@@ -6,6 +6,7 @@
 *.out
 
 #ignore jobs files but create folder
+jobs/*
 blobs/*
 !blobs/.git_ignored_folder
 
@@ -124,4 +125,4 @@ aloja-web/vendor/
 #logs
 aloja-web/logs/*.log
 /files
-
+azure-deploy/azure.err
