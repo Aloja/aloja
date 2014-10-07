@@ -107,6 +107,9 @@
                     pointFormat: '<span style="font-size: 10px">{point.task_id}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
                 },
                 plotOptions: {
+                    series: {
+                        animation: false,
+                    },
                 },
                 series: 
                     [
