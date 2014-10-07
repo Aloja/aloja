@@ -27,8 +27,16 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(2, $cluster);
         $this->assertCount(4, $cluster[0]);
         $this->assertCount(4, $cluster[1]);
-        $this->assertEquals($cluster[0], array_slice($points, 0, 4));
-        $this->assertEquals($cluster[1], array_slice($points, 4, 4));
+        $this->assertEquals((array)$cluster[0], array_slice($points, 0, 4));
+        $this->assertEquals((array)$cluster[1], array_slice($points, 4, 4));
+        $this->assertEquals($cluster[0]->getXMin(), 1);
+        $this->assertEquals($cluster[0]->getXMax(), 2);
+        $this->assertEquals($cluster[0]->getYMin(), 1);
+        $this->assertEquals($cluster[0]->getYMax(), 2);
+        $this->assertEquals($cluster[1]->getXMin(), 100);
+        $this->assertEquals($cluster[1]->getXMax(), 101);
+        $this->assertEquals($cluster[1]->getYMin(), 100);
+        $this->assertEquals($cluster[1]->getYMax(), 101);
     }
 
     public function testNotEnoughMinPoints()
@@ -76,8 +84,8 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
         $this->assertCount(1, $noise);
         $this->assertCount(2, $cluster);
         $this->assertEquals($noise[0], $points[4]);
-        $this->assertEquals($cluster[0], array_slice($points, 0, 4));
-        $this->assertEquals($cluster[1], array_slice($points, 5, 4));
+        $this->assertEquals((array)$cluster[0], array_slice($points, 0, 4));
+        $this->assertEquals((array)$cluster[1], array_slice($points, 5, 4));
     }
 
     public function testEpsEnough()
@@ -96,7 +104,7 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(0, $noise);
         $this->assertCount(1, $cluster);
-        $this->assertEquals($cluster[0], array_slice($points, 0, 4));
+        $this->assertEquals((array)$cluster[0], array_slice($points, 0, 4));
     }
 
     public function testEpsNotEnough()
@@ -134,7 +142,7 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(0, $noise);
         $this->assertCount(1, $cluster);
-        $this->assertEquals($cluster[0], array_slice($points, 0, 4));
+        $this->assertEquals((array)$cluster[0], array_slice($points, 0, 4));
     }
 
     public function testOverlappingPoint()
@@ -152,7 +160,7 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
 
         $this->assertCount(0, $noise);
         $this->assertCount(1, $cluster);
-        $this->assertEquals($cluster[0], $points);
+        $this->assertEquals((array)$cluster[0], $points);
 
     }
 

@@ -58,7 +58,7 @@ class DBSCAN
                 $this->noise[] = $point;
             } else {
                 // Create new cluster
-                $this->cluster[] = array();
+                $this->cluster[] = new Cluster();
                 $this->expandCluster($point_id, $point, $neighborhood);
             }
         }
@@ -128,7 +128,7 @@ class DBSCAN
     {
         $last_cluster = &$this->cluster[count($this->cluster) - 1];
         // Don't duplicate points inside the same cluster
-        if (!in_array($point, $last_cluster, $strict = true)) {
+        if (!$last_cluster->contains($point)) {
             $last_cluster[] = $point;
         }
     }
