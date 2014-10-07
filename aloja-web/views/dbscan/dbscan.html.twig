@@ -57,7 +57,11 @@
                     for (i = 0; i < data.seriesData.length; i++) {
                         chart.addSeries({
                             name: "Cluster " + (i + 1),
-                            data: data.seriesData[i],
+                            data: data.seriesData[i].points,
+                            x_min: data.seriesData[i].x_min,
+                            x_max: data.seriesData[i].x_max,
+                            y_min: data.seriesData[i].y_min,
+                            y_max: data.seriesData[i].y_max,
                         }, false);
                     }
                     if (data.noiseData.length > 0) {
@@ -109,6 +113,21 @@
                 plotOptions: {
                     series: {
                         animation: false,
+                        point: {
+                            events: {
+                                click: function () {
+                                    this.series.chart.xAxis[0].setExtremes(
+                                        this.series.options.x_min,
+                                        this.series.options.x_max
+                                    );
+                                    this.series.chart.yAxis[0].setExtremes(
+                                        this.series.options.y_min,
+                                        this.series.options.y_max
+                                    );
+                                    this.series.chart.showResetZoom();
+                                }
+                            },
+                        },
                     },
                 },
                 series: 
