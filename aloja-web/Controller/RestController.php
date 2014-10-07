@@ -5,6 +5,7 @@ namespace alojaweb\Controller;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
 use alojaweb\inc\dbscan\DBSCAN;
+use alojaweb\inc\dbscan\Cluster;
 use alojaweb\inc\dbscan\Point;
 
 class RestController extends AbstractController
@@ -706,7 +707,8 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = $db::$TASK_METRICS[Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0];
         $metric_y = $db::$TASK_METRICS[Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1];
-        $eps = Utils::get_GET_int("eps") !== null ? Utils::get_GET_int("eps") : 250000;
+        $heuristic = Utils::get_GET_int("heuristic") !== null ? Utils::get_GET_int("heuristic") : 1;
+        $eps = Utils::get_GET_float("eps") !== null ? Utils::get_GET_float("eps") : 250000;
         $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
 
         $query_select1 = $db->get_task_metric_query($metric_x);
@@ -724,7 +726,7 @@ VALUES
 
         $rows = $db->get_rows($query, $query_params);
 
-        $points = array();
+        $points = new Cluster();  // Used instead of a simple array to calc x/y min/max
         foreach ($rows as $row) {
             $task_id = $row['TASK_ID'];
             $task_value_x = $row['TASK_VALUE_X'] ?: 0;
@@ -736,8 +738,17 @@ VALUES
             $points[] = new Point($task_value_x, $task_value_y, array('task_id' => $task_id));
         }
 
+        // Heuristic: try to infer a good eps value (minPoints will always be 1)
+        if ($heuristic) {
+            $HEURISTIC_CONSTANT = 1000;
+            $x_diff = ($points->getXMax() - $points->getXMin());
+            $y_diff = ($points->getYMax() - $points->getYMin());
+            $eps = max($x_diff, $y_diff) / $HEURISTIC_CONSTANT;
+            $minPoints = 1;
+        }
+
         $dbscan = new DBSCAN($eps, $minPoints);
-        list($clusters, $noise) = $dbscan->execute($points);
+        list($clusters, $noise) = $dbscan->execute((array)$points);
 
         $seriesData = array();
         foreach ($clusters as $cluster) {
@@ -772,6 +783,9 @@ VALUES
         $result = [
             'seriesData' => $seriesData,
             'noiseData' => $noiseData,
+            'heuristic' => $heuristic,
+            'eps' => $eps,
+            'minPoints' => $minPoints,
         ];
 
         header('Content-Type: application/json');

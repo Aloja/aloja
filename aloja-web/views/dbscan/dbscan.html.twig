@@ -26,8 +26,19 @@
                 // Load chart options from html form
                 var metric_x = form.find("[name='metric_x']");
                 var metric_y = form.find("[name='metric_y']");
+                var heuristic = form.find("[name='heuristic']").hasClass("active");
                 var eps = form.find("[name='eps']");
                 var minPoints = form.find("[name='minPoints']");
+
+                // Workaround
+                // When a button toggle event is dispatched, the class
+                // "active" is added to the element AFTER the event has
+                // finished executing, so the value is toggled manually here
+                if ($(this).is("button")) {
+                    if ($(this).attr("name") == "heuristic") {
+                        heuristic = !heuristic;
+                    }
+                }
 
                 // Launch ajax request
                 $.ajax({
@@ -35,6 +46,7 @@
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
+                        heuristic: ((heuristic)?1:0),
                         eps: eps.val(),
                         minPoints: minPoints.val(),
                     },
@@ -45,6 +57,20 @@
                     var metric_y_name = metric_y.find("option:selected").text();
                     chart.xAxis[0].setTitle({text: metric_x_name});
                     chart.yAxis[0].setTitle({text: metric_y_name});
+
+                    // Check heuristic usage
+                    if (data.heuristic) {
+                        // Disable controls
+                        eps.prop("disabled", true);
+                        minPoints.prop("disabled", true);
+                    } else {
+                        // Enable controls
+                        eps.prop("disabled", false);
+                        minPoints.prop("disabled", false);
+                    }
+                    // Show used values in the form
+                    eps.val(data.eps);
+                    minPoints.val(data.minPoints);
 
                     // Reset series color and symbol iterator
                     // This way the same cluster will keep it's theme between updates
@@ -159,13 +185,14 @@
             {% endfor %}
             </select>
         </label>
+        <button type="button" name="heuristic" class="btn btn-default active" data-toggle="button">Heuristic</button>
         <label>
             Eps:
-            <input type="text" name="eps" class="form-control" value="250000" size="10">
+            <input type="text" name="eps" class="form-control" size="10" disabled>
         </label>
         <label>
             MinPoints:
-            <input type="text" name="minPoints" class="form-control" value="1" size="3">
+            <input type="text" name="minPoints" class="form-control" size="3" disabled>
         </label>
     </form>
     <div id="chart" style="clear: both;"></div>
