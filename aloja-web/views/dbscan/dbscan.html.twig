@@ -82,7 +82,7 @@
                     }
                     for (i = 0; i < data.seriesData.length; i++) {
                         chart.addSeries({
-                            name: "Cluster " + (i + 1),
+                            name: "Cluster #" + (i + 1) + " (" + data.seriesData[i].size + ")",
                             data: data.seriesData[i].points,
                             x_min: data.seriesData[i].x_min,
                             x_max: data.seriesData[i].x_max,
@@ -134,7 +134,7 @@
                     shared: true,
                     useHTML: true,
                     headerFormat: '',
-                    pointFormat: '<span style="font-size: 10px">{point.task_id}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
+                    pointFormat: '<span style="font-size: 10px">{point.task_id}</span><br/><span style="font-size: 10px">{series.name}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
                 },
                 plotOptions: {
                     series: {
