@@ -751,7 +751,13 @@ VALUES
             }
 
             if ($data) {
-                $seriesData[] = $data;
+                $seriesData[] = array(
+                    'points' => $data,
+                    'x_min' => $cluster->getXMin(),
+                    'x_max' => $cluster->getXMax(),
+                    'y_min' => $cluster->getYMin(),
+                    'y_max' => $cluster->getYMax(),
+                );
             }
         }
 
