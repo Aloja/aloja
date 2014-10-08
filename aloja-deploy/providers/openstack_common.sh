@@ -74,52 +74,21 @@ vm_attach_new_disk() {
   nova volume-attach "${serverId["$vm_name"]}" "$disk_id"
 }
 
-#$1 commands to execute $2 set in parallel (&)
-#$vm_ssh_port must be set before
-vm_execute() {
+get_ssh_host() {
+ vm_set_details
 
-  vm_set_details
-
-  #check if we can change from root user
-  if [ "$bootStrapped" == "false" ] ; then
-    #"WARNINIG: connecting as root"
-    ssh_user="root"
-  else
-    ssh_user="$user"
-  fi
-
-  chmod 0600 "../secure/keys/id_rsa"
-
-  #echo to print special chars;
-  if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$ssh_user"@"${nodeIP[$vm_name]}"
-  else
-    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$ssh_user"@"${nodeIP[$vm_name]}" &
-  fi
-
-  #chmod 0644 "../secure/keys/id_rsa"
+ echo "${nodeIP[$vm_name]}"
 }
 
-#$1 source files $2 destination $3 extra options
-vm_local_scp() {
-  logger "SCPing files"
-
-  vm_set_details
-
+#Openstack needs to use root first
+get_ssh_user() {
   #check if we can change from root user
   if [ "$bootStrapped" == "false" ] ; then
     #"WARNINIG: connecting as root"
-    ssh_user="root"
+    echo "root"
   else
-    ssh_user="$user"
+    echo "$user"
   fi
-
-  chmod 0600 "../secure/keys/id_rsa"
-
-  #eval is for parameter expansion
-  scp -i "../secure/keys/id_rsa" -o StrictHostKeyChecking=no $(eval echo "$3") $(eval echo "$1") "$ssh_user"@"${nodeIP[$vm_name]}:$2"
-
-  #chmod 0644 "../secure/keys/id_rsa"
 }
 
 vm_initial_bootstrap() {
@@ -213,7 +182,7 @@ node_delete() {
 
   logger "De-Ataching node volumes"
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
-    nova volume-detach "$volumeID"
+    nova volume-detach "${serverId["$vm_name"]}" "$volumeID"
   done
 
   logger "Deleting node $1"
