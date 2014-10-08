@@ -317,25 +317,27 @@ vm_create_node() {
   #check if machine has been already created or creates it
   vm_create_connect "$vm_name"
 
-[ ! -z "$extraLocalCommands" ] && $extraLocalCommands
+  if [ "$vmType" != 'windows' ] ; then
 
-  #boostrap VM
-  vm_initial_bootstrap
+    #boostrap VM
+    vm_initial_bootstrap
 
-  vm_set_ssh
-  [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
-  vm_install_base_packages
-  vm_set_dot_files &
+    vm_set_ssh
+    [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+    vm_install_base_packages
+    vm_set_dot_files &
 
-  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+    [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
 
-  #extra commands to exectute (if defined)
-  [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
-  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+    #extra commands to exectute (if defined)
+    [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
+    [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
 
-  [ ! -z "$puppet" ] && vm_puppet_apply
+    [ ! -z "$puppet" ] && vm_puppet_apply
 
-  [ ! -z "$endpoints" ] && vm_endpoints_create
+    [ ! -z "$endpoints" ] && vm_endpoints_create
+
+  fi
 }
 
 vm_set_ssh() {
