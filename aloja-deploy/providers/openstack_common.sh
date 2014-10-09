@@ -180,6 +180,16 @@ node_connect() {
 node_delete() {
   vm_set_details
 
+  if [ "$type" == "cluster" ] ; then
+    logger "Paralellizing node deletions"
+    node_delete_helper &
+  else
+    node_delete_helper
+  fi
+}
+
+#to alow parallel deletion above
+node_delete_helper() {
   logger "Getting attached disks"
   attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
   logger "$attached_volumes"
@@ -193,10 +203,12 @@ node_delete() {
   nova delete "$vm_name"
 
   logger "Deleting node volumes"
+  sleep 60 #with until volumes are deattached
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
     nova volume-delete "$volumeID"
   done
 }
+
 
 #1 $node_name
 node_stop() {

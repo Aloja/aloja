@@ -561,7 +561,21 @@ cluster_mount_disks() {
   fi"
 }
 
+#parallel Node config
+function cluster_parallel_config() {
+  if [ "$vmType" != 'windows' ] ; then
+    cluster_initialize_disks
+    cluster_final_boostrap
+  fi
+}
 
+#master config to execute benchmarks
+function cluster_queue_jobs() {
+  if [ "$vmType" != 'windows' ] ; then
+    vm_set_master_crontab
+    vm_set_master_forer &
+  fi
+}
 
 #$1 filename $2 set lock
 check_bootstraped() {

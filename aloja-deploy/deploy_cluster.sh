@@ -20,13 +20,12 @@ done
 
 #wait $! #wait for the last one in case we launch in parallel
 
-#parallel Node config
-cluster_initialize_disks
-cluster_final_boostrap
 
-#master config
-vm_set_master_crontab
-vm_set_master_forer &
+#parallel Node config
+cluster_parallel_config
+
+#master config to execute benchmarks
+cluster_queue_jobs
 
 
 elapsedTime="$(( $(date +%s) - startTime ))"
