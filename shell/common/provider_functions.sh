@@ -32,6 +32,10 @@ vm_local_scp() {
   logger "WARNING: Function vm_local_scp not implemented or not necessary for provider"
 }
 
+vm_rsync() {
+  logger "WARNING: Function vm_local_scp not implemented or not necessary for provider"
+}
+
 vm_initial_bootstrap() {
   logger "WARNING: Function vm_initial_bootstrap not implemented or not necessary for provider"
 }

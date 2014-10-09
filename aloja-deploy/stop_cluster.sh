@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #load init and common functions
-type="node"
+type="cluster"
 source "include/include.sh"
 
 #Sequential Node deploy

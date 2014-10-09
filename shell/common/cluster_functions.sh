@@ -18,19 +18,17 @@ source "$clusterConfigFilePath/$clusterConfigFile"
 
 
 #global vars
-bootStrapped="true" #not needed for Azure
+bootStrapped="false" #not needed for Azure
 
 if [ "$cloud_provider" == "azure" ] ; then
    devicePrefix="sd"
    cloud_drive_letters="$(echo {c..z})"
-   cloud_drive_letters_test="$(echo {b..z})"
 elif [ "$cloud_provider" == "rackspace" ] ; then
    devicePrefix="xvd"
    cloud_drive_letters="$(echo {b..z})"
-   cloud_drive_letters_test="$(echo {a..z})"
 else
-  logger "Cloud provider $cloud_provider not defined.  Exiting..."
-  exit 1
+  logger "WARNING: Cloud provider $cloud_provider not defined."
+  #exit 1
 fi
 
 logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
@@ -53,7 +51,7 @@ vm_create_connect() {
     wait_vm_ssh_ready
 
   #make sure the correct number of disks is innitialized
-  elif ! vm_test_initiallize_disks ; then
+  elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
 }
@@ -80,6 +78,55 @@ get_slaves_names() {
     fi
   done
   echo -e "$node_names"
+}
+
+#the default key override if necessary i.e. in Azure
+get_ssh_key() {
+ echo "../secure/keys/id_rsa"
+}
+
+#default port, override to change i.e. in Azure
+get_ssh_port() {
+  echo "22"
+}
+
+#default port, override to change i.e. Openstack might need first root
+get_ssh_user() {
+  echo "$user"
+}
+
+vm_initial_bootstrap() {
+  bootStrapped="true" #not necesarry by default
+}
+
+#$1 commands to execute $2 set in parallel (&)
+#$vm_ssh_port must be set before
+vm_execute() {
+  #logger "Executing in VM $vm_name command(s): $1"
+
+  chmod 0600 $(get_ssh_key)
+
+  #echo to print special chars;
+  if [ -z "$2" ] ; then
+    echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+  else
+    echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+  fi
+}
+
+#$1 source files $2 destination $3 extra options
+vm_local_scp() {
+    logger "SCPing files"
+    #eval is for parameter expansion
+    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -P "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+}
+
+#$1 source files $2 destination $3 extra options
+#$vm_ssh_port must be set first
+vm_rsync() {
+    logger "RSyncing files"
+    #eval is for parameter expansion
+    rsync -aur --progress --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
@@ -111,7 +158,7 @@ get_initizalize_disks() {
   for drive_letter in $cloud_drive_letters ; do
     create_string="$create_string
 sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
-sudo mkfs.ext4 -F /dev/${devicePrefix}${drive_letter}1;"
+sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -157,7 +204,7 @@ $fs_mount"
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     create_string="$create_string
-/dev/${devicePrefix}${drive_letter}1       /scratch/attached/1  auto    defaults,nobootwait 0       2"
+/dev/${devicePrefix}${drive_letter}1       /scratch/attached/$num_drives  auto    defaults,nobootwait,noatime,nodiratime 0       2"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -190,7 +237,7 @@ wait_vm_ready() {
   for tries in {1..300}; do
     currentStatus="$(vm_get_status "$1")"
     waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
-    if [ "$currentStatus" == "active" ] ; then
+    if [ "$currentStatus" == "$(get_OK_status)" ] ; then
       logger " VM $1 is ready!"
       break
     else
@@ -267,25 +314,34 @@ vm_check_create() {
 #requires $vm_name and $type to be set
 vm_create_node() {
 
-  #check if machine has been already created or creates it
-  vm_create_connect "$vm_name"
+  if [ "$vmType" != 'windows' ] ; then
 
-  #boostrap VM
-  vm_initial_bootstrap
+    #check if machine has been already created or creates it
+    vm_create_connect "$vm_name"
 
-  vm_set_ssh
-  [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
-  vm_install_base_packages
-  vm_set_dot_files &
+    #boostrap VM
+    vm_initial_bootstrap
 
-  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+    vm_set_ssh
+    [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+    vm_install_base_packages
+    vm_set_dot_files &
 
-  #extra commands to exectute (if defined)
-  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+    [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
 
-  [ ! -z "$puppet" ] && vm_puppet_apply
+    #extra commands to exectute (if defined)
+    [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
+    [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
 
-  [ ! -z "$endpoints" ] && vm_endpoints_create
+    [ ! -z "$puppet" ] && vm_puppet_apply
+
+    [ ! -z "$endpoints" ] && vm_endpoints_create
+
+  elif [ "$vmType" == 'windows' ] ; then
+    vm_check_create "$vm_name" "$vm_ssh_port"
+    wait_vm_ready "$vm_name"
+    vm_check_attach_disks "$vm_name"
+  fi
 }
 
 vm_set_ssh() {
@@ -351,7 +407,7 @@ vm_install_base_packages() {
     logger "Installing packages for for VM $vm_name "
 
     vm_execute "sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
-                sudo apt-get update && sudo apt-get install -y -f dsh sshfs sysstat gawk libxml2-utils;"
+                sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils;"
 
     test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
     if [ ! -z "$test_install_base_packages" ] ; then
@@ -590,4 +646,38 @@ vm_puppet_apply() {
 	if [ ! -z "$puppetPostScript" ]; then
 	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
 	fi
+}
+
+#Initialized the shared file system
+vm_make_fs() {
+
+  logger "Initializing the shared file system for VM $vm_name"
+
+  local attached_disk_path="/scratch/attached/1"
+  logger "Linking ~/share"
+  vm_execute "sudo chown -R ${user} /scratch;
+[ -d ~/share ] && [ ! -L ~/share ] && mv ~/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $attached_disk_path /home/$user/share;
+touch /home/$user/share/safe_store;
+  "
+
+  logger "RSynching ../shell"
+  vm_rsync "../shell" "$attached_disk_path"
+
+  logger "Checking if aplic exits to redownload or rsync for changes"
+  test_action="$(vm_execute "ls ~/share/aplic/aplic_version && echo '$testKey'")"
+  #in case we get a welcome banner we need to grep
+  test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+  if [ -z "$test_action" ] ; then
+    logger "Downloading aplic"
+    vm_execute "cd ~/share/; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+
+    logger "Uncompressing aplic"
+    vm_execute "cd ~/share/; tar -jxf aplic.tar.bz2"
+  else
+    logger "RSynching aplic"
+    vm_rsync "../blobs/aplic" "~/share/"
+  fi
+
 }
