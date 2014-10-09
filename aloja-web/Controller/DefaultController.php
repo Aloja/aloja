@@ -1274,7 +1274,7 @@ class DefaultController extends AbstractController
 				'select_multiple_benchs' => false 
 		) );
 	}
-	public function configPerformanceAction() {
+	public function paramEvaluationAction() {
 		$db = $this->container->getDBUtils ();
 		$rows_config = '';
 		try {
@@ -1418,5 +1418,33 @@ class DefaultController extends AbstractController
 				'money' => $money,
 				'select_multiple_benchs' => false
 		) );
+	}
+	
+	public function publicationsAction()
+	{
+		echo $this->container->getTwig()->render('publications/publications.html.twig', array(
+				'selected' => 'Publications',
+				'title' => 'ALOJA Publications'));
+	}
+	
+	public function teamAction()
+	{
+		echo $this->container->getTwig()->render('team/team.html.twig', array(
+				'selected' => 'Team',
+				'title' => 'ALOJA Team & Collaborators'));
+	}
+	
+	public function clustersAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
+				'selected' => 'Clusters',
+				'title' => 'ALOJA Clusters'));
+	}
+	
+	public function clusterCostsAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
+				'selected' => 'Clusters Costs',
+				'title' => 'ALOJA Clusters Costs'));
 	}
 }
