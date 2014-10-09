@@ -27,8 +27,8 @@ elif [ "$cloud_provider" == "rackspace" ] ; then
    devicePrefix="xvd"
    cloud_drive_letters="$(echo {b..z})"
 else
-  logger "Cloud provider $cloud_provider not defined.  Exiting..."
-  exit 1
+  logger "WARNING: Cloud provider $cloud_provider not defined."
+  #exit 1
 fi
 
 logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
@@ -126,7 +126,7 @@ vm_local_scp() {
 vm_rsync() {
     logger "RSyncing files"
     #eval is for parameter expansion
-    rsync -aur --progress --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no " --port="$(get_ssh_port)"  $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    rsync -aur --progress --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
@@ -158,7 +158,7 @@ get_initizalize_disks() {
   for drive_letter in $cloud_drive_letters ; do
     create_string="$create_string
 sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
-sudo mkfs.ext4 -F /dev/${devicePrefix}${drive_letter}1;"
+sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -204,7 +204,7 @@ $fs_mount"
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     create_string="$create_string
-/dev/${devicePrefix}${drive_letter}1       /scratch/attached/1  auto    defaults,nobootwait 0       2"
+/dev/${devicePrefix}${drive_letter}1       /scratch/attached/$num_drives  auto    defaults,nobootwait,noatime,nodiratime 0       2"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -237,7 +237,7 @@ wait_vm_ready() {
   for tries in {1..300}; do
     currentStatus="$(vm_get_status "$1")"
     waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
-    if [ "$currentStatus" == "active" ] ; then
+    if [ "$currentStatus" == "$(get_OK_status)" ] ; then
       logger " VM $1 is ready!"
       break
     else
@@ -314,10 +314,10 @@ vm_check_create() {
 #requires $vm_name and $type to be set
 vm_create_node() {
 
-  #check if machine has been already created or creates it
-  vm_create_connect "$vm_name"
-
   if [ "$vmType" != 'windows' ] ; then
+
+    #check if machine has been already created or creates it
+    vm_create_connect "$vm_name"
 
     #boostrap VM
     vm_initial_bootstrap
@@ -337,6 +337,10 @@ vm_create_node() {
 
     [ ! -z "$endpoints" ] && vm_endpoints_create
 
+  elif [ "$vmType" == 'windows' ] ; then
+    vm_check_create "$vm_name" "$vm_ssh_port"
+    wait_vm_ready "$vm_name"
+    vm_check_attach_disks "$vm_name"
   fi
 }
 

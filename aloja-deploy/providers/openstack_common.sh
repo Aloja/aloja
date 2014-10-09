@@ -50,6 +50,10 @@ vm_get_status(){
  echo "$(nova show "$1" |grep "OS-EXT-STS:vm_state"|awk '{print $4}')"
 }
 
+get_OK_status() {
+  echo "active"
+}
+
 #$1 vm_name
 number_of_attached_disks() {
 

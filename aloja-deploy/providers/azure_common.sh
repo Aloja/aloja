@@ -52,9 +52,13 @@ vm_get_status(){
  echo "$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|awk '{print substr($3,2,(length($3)-2));}')"
 }
 
+get_OK_status() {
+  echo "ReadyRole"
+}
+
 #$1 vm_name
 number_of_attached_disks() {
-  numberOfDisks="$(azure vm disk list " $1 " |grep " $1 "|wc -l)"
+  numberOfDisks="$(azure vm disk list " $1 " |grep " $1"|wc -l)"
   #substract the system volume
   numberOfDisks="$(( numberOfDisks - 1 ))"
   echo "$numberOfDisks"
