@@ -49,6 +49,14 @@ if $environment == 'prod' {
     
 }
 
+vcsrepo { "/var/presentations/":
+        ensure => latest,
+        provider => git,
+        require => [ Package[ 'git' ] ],
+        source => "https://github.com/Aloja/presentations.git",
+        revision => 'master',
+}
+
 #file { '/var/www/':
 #  ensure => 'directory',
 #  owner => 'www-data',
@@ -58,15 +66,15 @@ if $environment == 'prod' {
 #}
 
 exec { 'third_party_libs':
-  command => 'bash -c "cd /var/www/aloja-web && sudo php composer.phar update"',
+  command => 'bash -c "cd /var/www/aloja-web && sudo php composer.phar self-update && sudo php composer.phar update"',
   onlyif => '[ ! -h /var/www/aloja-web/vendor ]',
   path => '/usr/bin:/bin'
 }
 
-#exec { 'db_migrations':
-#  command => 'bash -c "cd /var/www/aloja-web && php vendor/bin/phinx -cconfig/phinx.yml -evagrant migrate"',
-#  path => '/usr/bin:/bin'
-#}
+exec { 'db_migrations':
+  command => 'bash -c "cd /var/www/aloja-web && php vendor/bin/phinx -cconfig/phinx.yml -eproduction migrate"',
+  path => '/usr/bin:/bin'
+}
 
 file { '/var/www/aloja-web/logs':
   ensure => 'directory',
@@ -81,14 +89,14 @@ exec { 'chmod_vendor':
   path => '/bin:/usr/bin'
 }
 
+##Dependencies
 Exec['apt-get update'] -> Vcsrepo['/var/www/']
 Vcsrepo['/var/www/'] -> File['/var/www/aloja-web/logs']
-#Vcsrepo['/var/www/'] -> File['/var/www/']
-#File['/var/www/'] -> File['/var/www/aloja-web/logs']
+Vcsrepo['/var/www/'] -> Vcsrepo['/var/presentations/']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
 Class['::mysql::server'] -> Exec['third_party_libs']
 Exec['third_party_libs'] -> Exec['chmod_vendor']
-#Exec['third_party_libs'] -> Exec['db_migrations']
+Exec['third_party_libs'] -> Exec['db_migrations']
 
 class { '::mysql::server':
   override_options => {
