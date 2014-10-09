@@ -62,3 +62,7 @@ bestconfig:
 bestconfigdata:
     pattern: "/bestconfigdata"
     controller: "alojaweb\\Controller\\DefaultController::bestConfigDataAction"
+    
+configperf:
+    pattern: "/configperf"
+    controller: "alojaweb\\Controller\\DefaultController::configPerformanceAction"
