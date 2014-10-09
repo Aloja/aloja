@@ -23,7 +23,7 @@ class DBSCAN
         }
 
         if ($search === null) {
-            $search = new SearchLinear();
+            $search = new SearchLinearCached();
         }
 
         $this->eps = $eps;
