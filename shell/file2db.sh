@@ -20,8 +20,8 @@ hostn=""
 if [[ ! -z $(lsb_release -a|grep Arch) ]] ; then
   sadf="$CUR_DIR/sar/archlinux/sadf"
 #ubuntu
-elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
-  sadf="$CUR_DIR/sar/ubuntu/sadf"
+#elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
+#  sadf="$CUR_DIR/sar/ubuntu/sadf"
 #other
 else
   sadf="/usr/bin/sadf"
@@ -162,7 +162,7 @@ for folder in 201* ; do
         tar -xjf "$bzip_file"
       fi
 
-      if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" ]] ; then
+    if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
 
         cd "$bench_folder"
         echo "Entering $bench_folder"
@@ -194,19 +194,25 @@ for folder in 201* ; do
         get_id_exec_conf_params "$exec"
         
         if [[ ! -z "$id_exec" ]] ; then
+        	jobconfs=""
         	#get Haddop conf files which are NOT jobs of prep
-			#1st: get jobs in prep
-			cd ../"prep_$bench_folder"
-			prepjobs=$(find "./history/done" -type f -name "job*.xml");
-			#2nd: get jobs in bench folder
-			cd ../$bench_folder
-			jobconfs=$(find "./history/done" -type f -name "job*.xml");
-			#3rd: 2 files, with one line per job in bench folder and prep folder
-			echo $jobconfs | tr ' ' '\n' > file.tmp
-			echo $prepjobs | tr ' ' '\n' > file2.tmp
-			#4rd: strip jobs in prep folder and cleanup
-			jobconfs=$(grep -v -f file2.tmp file.tmp)
-			rm file.tmp file2.tmp
+			if [ -d "prep_$bench_folder" ]; then
+				#1st: get jobs in prep
+				cd ../"prep_$bench_folder"
+				prepjobs=$(find "./history/done" -type f -name "job*.xml");
+				#2nd: get jobs in bench folder
+				cd ../$bench_folder
+				jobconfs=$(find "./history/done" -type f -name "job*.xml");
+				#3rd: 2 files, with one line per job in bench folder and prep folder
+				echo $jobconfs | tr ' ' '\n' > file.tmp
+				echo $prepjobs | tr ' ' '\n' > file2.tmp
+				#4rd: strip jobs in prep folder and cleanup
+				jobconfs=$(grep -v -f file2.tmp file.tmp)
+				rm file.tmp file2.tmp
+			else
+				echo "Not prep folder, considering all confs belonging to exec"
+				jobconfs=$(find "./history/done" -type f -name "job*.xml");
+			fi
 			
 			#Dump parameters from valid conf files to DB
 			for job_conf in $jobconfs ; do

@@ -19,6 +19,8 @@ try {
     	unset($_GET['c']);
     	$controllerMethod = (isset($_GET['q'])) ? $router->getLegacyRoute($_GET['q']) : null;
     	if($controllerMethod != null) {
+    		header("Location: http://${_SERVER['HTTP_HOST']}${controllerMethod['pattern']}",true,303);
+    		die();
     		$container->getLog()->addDebug('Legacy route detected');
     		$container->getTwig()->addGlobal('message',
     				"You accessed this page through an old link, new link is at: "
@@ -36,7 +38,7 @@ try {
     $controller->$controllerMethod['method']();
 } catch (\Exception $e) {
     if($container->get('config')['enable_debug'])
-      exit('FATAL ERROR '.$e->getMessage(). "\n".$e->getPrevious());
+      exit('Unexpected error: '.$e->getMessage(). "\n".$e->getPrevious());
     else {
       $container->getLog()->addError('Internal server error: '.$e->getMessage(). "\n".$e->getPrevious());
       $container->displayServerError();

@@ -7,7 +7,8 @@
 
 #ignore jobs files but create folder
 jobs/*
-!jobs/.git_ignored_folder
+blobs/*
+!blobs/.git_ignored_folder
 
 #vagrant
 vagrant/.vagrant/*
@@ -34,6 +35,8 @@ dataSources.ids
 dataSources.xml
 sqlDataSources.xml
 dynamic.xml
+misc.xml
+profiles_settings.xml
 
 ## File-based project format
 *.ipr
@@ -121,4 +124,5 @@ aloja-web/vendor/
 
 #logs
 aloja-web/logs/*.log
-files
+/files
+azure-deploy/azure.err

@@ -10,11 +10,17 @@ casper.test.begin("Job counters tests", function(test) {
 	}, 'Counters table has content');
 
     test.assertEval(function() { 
-    	return $("#benchmarks tr:nth-child(2) th").children('input').eq(4).val() == 'filter col';
+    	return $("#benchmarks tr:nth-child(2) th").children('select').eq(0).val() == '';
     }, 'Benchmark filter field exists');
     this.evaluate(function() {
-    	$("#benchmarks tr:nth-child(2) th").children('input').eq(4).val('pagerank').keyup();
-    });
+		$('select[name="benchmarks_length"]').val(-1).change();
+	});
+   });
+   
+   casper.then(function() {
+	    this.evaluate(function() {
+	    	$("#benchmarks tr:nth-child(2) th").children('select').eq(0).val('pagerank').change();
+	    }); 
    });
    
    casper.then(function() {
@@ -29,7 +35,7 @@ casper.test.begin("Job counters tests", function(test) {
 	   }, 'Benchmark is pagerank after filtering out the others');
 	   
 	   this.evaluate(function() {
-	    	$("#benchmarks tr:nth-child(2) th").children('input').eq(4).val(' ').keyup();
+	    	$("#benchmarks tr:nth-child(2) th").children('select').eq(0).val('').change();
 	    });
    });
    

@@ -1,0 +1,105 @@
+{% extends "layout.html.twig" %}
+{% block javascript %}
+	{{ parent() }}
+    {{ highcharts_js|raw }}
+    <script>
+        $(document).ready(function() {
+                    $('select').change(function() {
+                        $(this).parents('form').submit();
+                    });
+
+                    var chart = new Highcharts.Chart({
+                        chart: {
+                            type: 'bar',
+                            renderTo: 'chart',
+                        },
+                        title: {
+                            text: 'Average speedup by config group to average execution time by benchmark',
+                            align: 'center',
+                        },
+                        subtitle: {
+                            text: 'From {{ count }} distinct executions'
+                        },
+                        xAxis: {
+                            categories: [{{ categories|raw }}
+                    ],
+                    title: {
+                        text: 'Configuration group',
+                    }
+                },
+                yAxis: {
+                    min: 0,
+                        //max: 1,
+                            title: {
+                        useHTML: true,
+                                text: '&#8678; Slower &nbsp;&nbsp;&nbsp; Execution time Speedup over average for benchmark (more is better) &nbsp;&nbsp;&nbsp; Faster &#8680;',
+                        //align: 'high'
+                    },
+                    labels: {
+                        overflow: 'justify'
+                    },
+                    plotBands: [
+                        {
+                            from: 0,
+                            to: 1,
+                            color: 'rgba(255, 170, 213, .2)'
+                        },
+                        {
+                            from: 1,
+                            to: 10,
+                            color: 'rgba(100, 170, 255, .2)'
+                        }]
+                },
+                tooltip: {
+                    //valueSuffix: ' millions'
+                },
+                plotOptions: {
+                    bar: {
+                        dataLabels: {
+                            enabled: true
+                        }
+                    },
+                    series: {
+                    	cursor: 'pointer',
+                        point: {
+                            events: {
+                                click: function () {
+                                    var id = this.series.options.data[this.x][0];
+                                    id = id.replace(new RegExp('_', 'g'), ' ');
+                                    top.location.href = "{{ path('benchexecutions') }}?search="+id;
+                                }
+                            }
+                        }
+                    },
+                },
+                legend: {
+                    layout: 'vertical',
+                            align: 'right',
+                            verticalAlign: 'top',
+                            x: -5,
+                            y: 100,
+                            floating: true,
+                            borderWidth: 1,
+                            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
+                            shadow: true,
+                            title: {
+                        text: ':: Drag Legend ::',
+                    },
+                    draggable: true,
+                },
+                credits: {
+                    enabled: false
+                },
+                series: [{{ series|raw }}]
+        });
+    });
+
+    </script>
+    {% endblock %}
+    {% block content %}
+        <div id="navigation" style="text-align: center;">
+             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
+             {% include 'common/config_filters.html.twig' %}
+            </br>
+        </div>
+    {% endblock %}

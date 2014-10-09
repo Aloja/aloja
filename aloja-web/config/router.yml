@@ -46,3 +46,39 @@ metrics:
 metricsdata:
     pattern: "/metricsdata"
     controller: "alojaweb\\Controller\\RestController::metricsDataAction"
+    
+histogram:
+    pattern: "/histogram"
+    controller: "alojaweb\\Controller\\DefaultController::histogramAction"
+    
+histogramdata:
+    pattern: "/histogramdata"
+    controller: "alojaweb\\Controller\\RestController::histogramDataAction"
+
+bestconfig:
+    pattern: "/bestconfig"
+    controller: "alojaweb\\Controller\\DefaultController::bestConfigAction"
+    
+bestconfigdata:
+    pattern: "/bestconfigdata"
+    controller: "alojaweb\\Controller\\DefaultController::bestConfigDataAction"
+    
+parameval:
+    pattern: "/parameval"
+    controller: "alojaweb\\Controller\\DefaultController::paramEvaluationAction"
+    
+publications:
+    pattern: "/publications"
+    controller: "alojaweb\\Controller\\DefaultController::publicationsAction"
+    
+team:
+    pattern: "/team"
+    controller: "alojaweb\\Controller\\DefaultController::teamAction"
+    
+clusters:
+    pattern: "/clusters"
+    controller: "alojaweb\\Controller\\DefaultController::clustersAction"
+    
+clustercosts:
+    pattern: "/clustercosts"
+    controller: "alojaweb\\Controller\\DefaultController::clusterCostsAction"

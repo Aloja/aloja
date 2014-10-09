@@ -13,6 +13,9 @@
     </style>
 {% endblock %}
 {% block datatablescontent %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+	  <p></p>
+	</div>
       Click on a <strong>benchmark name</strong> to see execution details.</br>
       Select different rows and <strong>click compare</strong>, to compare charts.</br>
       <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>
@@ -58,6 +61,8 @@
     			      {% set column_name = column_name ~ makeTooltip('Hadoop HDFS block size.') %}
     			    {% elseif column_name == 'Cluster' %}
     			      {% set column_name = column_name ~ makeTooltip('Kind of cluster.') %}
+    			    {% elseif column_name == 'Histogram' %}
+    			      {% set column_name = column_name ~ makeTooltip('Look at job\'s and task\'s metrics histograms.') %}
     			    {% elseif column_name == 'Files' %}
     			      {% set column_name = column_name ~ makeTooltip('Download execution files and logs.') %}
     			    {% elseif column_name == 'PARAVER' %}
@@ -134,7 +139,16 @@
 				<tr>
 				   <th><input type="text" value="" class="search_init" style="visibility: hidden;"></th>
 				   {% for key_name,column_name in theaders %}
-				     <th><input type="text" value="filter col" class="search_init form-control"></th>
+				     {% if discreteOptions[key_name] is defined %}
+				     <th><select class="form-control" style="width: auto;">
+				         {% for option in discreteOptions[key_name] %}
+				       	  <option {% if option == 'All' %}value=""{% else %}value="{{ option }}"{% endif %} {% if loop.index == 0 %}selected="selected"{% endif %}>{{ option }}</option>
+				      	 {% endfor %}
+				         </select>
+				     </th> 
+				     {% else%}
+				     <th><input type="text" value="filter col" class="search_init form-control" {% if column_name == 'PARAVER' or column_name == 'Files'  %}style="display: none;"{% endif %}></th>
+				     {% endif %}
 				   {% endfor %}
 				</tr>
 		  </thead>
@@ -231,9 +245,16 @@
 
             /* Add the events etc before DataTables hides a column */
             $("thead input").keyup( function () {
+                var searchText;
+                if(isNumber(this.value))
+                    searchText =  "^"+this.value+"$";
+                else
+                    searchText = this.value;
+                
+                if(this.value == '') searchText = ' ';
                 /* Filter on the column (the index) of this element */
-                oTable.fnFilter( this.value, oTable.oApi._fnVisibleToColumnIndex(
-                    oTable.fnSettings(), $("thead input").index(this) ) );
+                oTable.fnFilter( searchText, oTable.oApi._fnVisibleToColumnIndex(
+                       oTable.fnSettings(), $(this).parent().index() ), true );
             } );
 
             /*
@@ -259,6 +280,11 @@
                 }
             } );
 
+            $("thead select").change(function() {
+            	oTable.fnFilter( $(this).val(), oTable.oApi._fnVisibleToColumnIndex(
+                        oTable.fnSettings(), $(this).parent().index() ) );
+            });
+
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
                 "oSearch": {"sSearch": $.urlParam('search')},
@@ -277,10 +303,12 @@
                       "success": fnCallback
                     } );
                 },
-                {% if selected != 'Performance Metrics' %}
-                "aaSorting": [[ 1, "desc" ]],
-                {% else %}
-                "aaSorting": [[ 0, "desc" ]],
+                {% if selected == 'Performance Metrics' %}
+                "aaSorting": [[ {{ getArrayIndex(theaders,'End time')+1 }}, "desc" ]],
+                {% elseif selected == 'Hadoop Job Counters' %}
+                "aaSorting": [[ 2, "desc" ]],
+                {% elseif selected == 'Benchmark Executions' %}
+                "aaSorting": [[ 17, "desc" ]],
                 {% endif %}
                 "iDisplayLength": 10,
                 "sDom": 'C<"clear">lfrtip<"clear"><"clear">T', //"sDom": 'C<"clear">lfrtip',
@@ -293,7 +321,7 @@
                     {% if selected == 'Benchmark Executions' %}
                       {"bVisible": false, "aTargets": [ 4,17 ] }
                     {% elseif selected == 'Performance Metrics' %}
-                      {"bVisible": false, "aTargets": [1]}
+                      {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
                     {% endif %}
                 ],
                 "bSortCellsTop": true,
@@ -310,13 +338,19 @@
                     [10, 25, 50, 100, 200, "All"]
                 ],
                 "fnInitComplete": function(oSettings, json) {
-                    $('#benchmarks').show();
-                    $('#loading').hide();
-                    $("#benchmarks_filter input").each(function() {
-                        $(this).addClass('form-control');
-                     });
-                    $("select[name=benchmarks_length]").addClass('form-control');
-                    $("#benchmarks_paginate").addClass('pagination');
+                    if(json.aaData[0][0] != 'error') {
+	                    $('#benchmarks').show();
+	                    $('#loading').hide();
+	                    $("#benchmarks_filter input").each(function() {
+	                        $(this).addClass('form-control');
+	                     });
+	                    $("select[name=benchmarks_length]").addClass('form-control');
+	                    $("#benchmarks_paginate").addClass('pagination');
+                    } else {
+						$("#jsonError p").text('An error has occurred. No data to display');
+						$("#loading").hide();
+						$("#jsonError").show();
+                    }
                 },
                 "fnDrawCallback": function( oSettings) {
                     $(".tooltip2").each(function() {
@@ -355,10 +389,12 @@
         					else
         						tooltip = aData[7].substring(2) + ' remote(s)';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
-                        } else if(headTitle == 'Files') {
-        					var string = aData[15];
-        					var value = string.substring(0, strpos(aData[15], '/'));
-        					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+//                         } else if(headTitle == 'Files') {
+//         					var string = aData[15];
+//         					var value = string.substring(0, strpos(aData[15], '/'));
+//         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+						} else if(headTitle == 'Histogram') {
+							$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
                         } else if(headTitle == 'PARAVER') {
         					$(this).html('<a href="{{ path('export2prv') }}?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
                         }

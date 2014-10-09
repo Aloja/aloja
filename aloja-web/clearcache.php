@@ -11,10 +11,27 @@ spl_autoload_register(function ($file) {
 
 use Symfony\Component\Yaml\Yaml;
 
-if(count($argv) < 2)
-	exit('You must indicate either "dev" or "prod" parameters to select environment'."\n");
-else
+$usage = 'Usage: php clearcache.php dev|prod [--exclude=excoptions[,excoptions] [varnish]'."\n";
+$usage .= 'excoptions: [db|twig]';
+
+$excoptions = array('db','twig');
+if($argc < 2) {
+	exit($usage);
+} else
 	$env = $argv[1];
+
+if($argc > 2) {
+	if(preg_match('/--exclude/',$argv[2])) {
+		if(!preg_match('/--exclude=[a-z,]+/',$argv[2]))
+			exit($usage);
+		$excludeOptions = explode(',',explode('=',$argv[2])[1]);
+		if(!empty(array_diff($excludeOptions,$excoptions)))
+			exit($usage);
+	}
+}
+
+if($argc == 4 && $argv[3] != 'varnish')
+	exit($usage);
 
 $conf = array();
 if($env == 'dev')
@@ -22,8 +39,12 @@ if($env == 'dev')
 else
 	$conf = Yaml::parse('config/config.yml');
 
-exec("rm ${conf['db_cache_path']}/*.sql");
-exec("rm ${conf['twig_cache_path']}");
+if(!isset($excludeOptions) || !in_array('db',$excludeOptions))
+	exec("rm ${conf['db_cache_path']}/*.sql");
 
-if(isset($argv[2]) && $argv[2] == 'varnish')
-	exec("service varnish restart");
+if(!isset($excludeOptions) || !in_array('twig',$excludeOptions))
+	exec("rm ${conf['twig_cache_path']}");
+
+if(isset($argv[3]) && $argv[3] == 'varnish')
+
+exec("service varnish restart");

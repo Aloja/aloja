@@ -65,7 +65,7 @@ for LIST_BENCHS in "terasort" "kmeans" "wordcount" "sort"  "pagerank" "dfsioe" #
 do
 
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
-  current_command="bash /home/$USER/share/shell/run_${CLUSTER_NAME}.sh -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
+  current_command="bash /home/$USER/share/shell/run_az_d.sh -C ${CLUSTER_NAME} -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
   output="${output}${current_command}
   "
   #date_with_nano=$(date +%s%N | cut -b1-13)

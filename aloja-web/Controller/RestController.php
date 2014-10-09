@@ -43,13 +43,12 @@ class RestController extends AbstractController
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
             echo $jsonData;
-
         } catch (Exception $e) {
             $noData = array();
-            for($i = 0; $i<sizeof($show_in_result); ++$i)
-                $noData[] = $e->getMessage();
-
-            echo json_encode(array('aaData' => $noData));
+            for($i = 0; $i<=sizeof($show_in_result); ++$i)
+            	$noData[] = 'error';
+            
+            echo json_encode(array('aaData' => array($noData)));
         }
     }
 
@@ -150,10 +149,10 @@ class RestController extends AbstractController
 
         } catch (Exception $e) {
             $noData = array();
-            for($i = 0; $i<18; ++$i)
-                $noData[] = $e->getMessage();
-
-            echo json_encode(array('aaData' => $noData));
+            for($i = 0; $i<=sizeof($show_in_result); ++$i)
+            	$noData[] = 'error';
+            
+            echo json_encode(array('aaData' => array($noData)));
         }
     }
 
@@ -429,7 +428,7 @@ VALUES
             }
 
         } catch (\Exception $e) {
-            die('FATAL ERROR: '.$e->getMessage());
+            die('Unexpected error: '.$e->getMessage());
             $message .= $e->getMessage()."\n";
             echo $message;
             exit;
@@ -451,7 +450,7 @@ VALUES
                  AVG(s.`%system`), MAX(s.`%system`), MIN(s.`%system`), STDDEV_POP(s.`%system`), VAR_POP(s.`%system`),
                  AVG(s.`%iowait`), MAX(s.`%iowait`), MIN(s.`%iowait`), STDDEV_POP(s.`%iowait`), VAR_POP(s.`%iowait`),
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
-                 AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster'.
+                 AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time'.
                 ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
@@ -463,7 +462,7 @@ VALUES
                     'AVG(s.`avgqu-sz`), MAX(s.`avgqu-sz`), MIN(s.`avgqu-sz`), STDDEV_POP(s.`avgqu-sz`), VAR_POP(s.`avgqu-sz`), 
                     AVG(s.await), MAX(s.`await`), MIN(s.`await`), STDDEV_POP(s.`await`), VAR_POP(s.`await`), 
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
-                    AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster'.
+                    AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time'.
                     ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
@@ -475,7 +474,7 @@ VALUES
                      AVG(su.kbcommit), MAX(su.kbcommit), MIN(su.kbcommit), STDDEV_POP(su.kbcommit), VAR_POP(su.kbcommit), 
                      AVG(su.`%commit`), MAX(su.`%commit`), MIN(su.`%commit`), STDDEV_POP(su.`%commit`), VAR_POP(su.`%commit`), 
                      AVG(su.kbactive), MAX(su.kbactive), MIN(su.kbactive), STDDEV_POP(su.kbactive), VAR_POP(su.kbactive), 
-                     AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster'.
+                     AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time'.
                     ' FROM SAR_memory_util su '.
                     'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
@@ -487,7 +486,7 @@ VALUES
                     AVG(s.`rxcmp/s`),MAX(s.`rxcmp/s`),MIN(s.`rxcmp/s`),STDDEV_POP(s.`rxcmp/s`),VAR_POP(s.`rxcmp/s`),SUM(s.`rxcmp/s`),
                     AVG(s.`txcmp/s`),MAX(s.`txcmp/s`),MIN(s.`txcmp/s`),STDDEV_POP(s.`txcmp/s`),VAR_POP(s.`txcmp/s`),SUM(s.`txcmp/s`),
                     AVG(s.`rxmcst/s`),MAX(s.`rxmcst/s`),MIN(s.`rxmcst/s`),STDDEV_POP(s.`rxmcst/s`),VAR_POP(s.`rxmcst/s`),SUM(s.`rxmcst/s`),'.
-                    'e.id_cluster FROM SAR_net_devices s '.
+                    'e.id_cluster,e.end_time FROM SAR_net_devices s '.
                     'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             }
         
@@ -509,5 +508,89 @@ VALUES
 
             echo json_encode(array('aaData' => $noData));
         }
+    }
+    
+    public function histogramDataAction()
+    {
+		$db = $this->container->getDBUtils ();
+		$execsDetails = array ();
+		try {
+			$idExec = Utils::get_GET_string('id_exec');
+			if (!$idExec)
+				throw new \Exception ( "No execution selected!" );
+				
+			// get the result rows
+			$query = "SELECT e.bench,j.*
+    		from JOB_tasks j JOIN execs e USING (id_exec) 
+			where e.valid = TRUE AND j.id_exec = $idExec;";
+			
+			$this->getContainer ()->getLog ()->addInfo ( 'Histogram query: ' . $query );
+			$rows = $db->get_rows ($query);
+			if (!$rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+			
+			$result = array();
+			foreach ( $rows as $row ) {
+				$result[$row['JOBID'].'/'.$row['bench']]['tasks'][$row['TASKID']] = $row;
+			}
+			header('Content-Type: application/json');
+			ob_start('ob_gzhandler');
+			echo json_encode($result);
+		} catch ( \Exception $e ) {
+			$noData = array();
+            $noData[] = $e->getMessage();
+
+            echo json_encode(array('error' => $noData));
+		}
+    }
+
+    public function bestConfigDataAction()
+    {
+    	$db = $this->container->getDBUtils();
+    	$rows_config = '';
+    	try {
+    		$configurations = array();
+    		$where_configs = '';
+    		$concat_config = "";
+    		 
+    		$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+    		$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+    		$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+    		$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+    		$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+    		$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+    		$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+    		$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+    		$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+    		$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+    		 
+    		//$concat_config = join(',\'_\',', $configurations);
+    		//$concat_config = substr($concat_config, 1);
+    		 
+    		//make sure there are some defaults
+    		if (!$concat_config) {
+    			$concat_config = 'disk';
+    			$disks = array('HDD');
+    		}
+    		 
+    		$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+    		$order_conf = 'LENGTH(conf), conf';
+    		 
+    		//get best config
+    		$query = "SELECT e.* from execs e WHERE e.id_exec IN ".
+    				"(SELECT MIN(e2.exe_time) FROM execs e2 WHERE 1 $filter_execs $where_configs LIMIT 1);";
+    		 
+    		$rows = $db->get_rows($query);
+    		if(!$rows)
+    			throw new \Exception("No results for query!");
+    		 
+    	} catch (\Exception $e) {
+    		$noData = array();
+            for($i = 0; $i<=sizeof($show_in_result); ++$i)
+            	$noData[] = 'error';
+            
+            echo json_encode(array('aaData' => array($noData)));
+    	}
     }
 }

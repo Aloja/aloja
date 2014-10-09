@@ -50,6 +50,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   #web document root
   config.vm.synced_folder "../", "/vagrant/workspace"
+  config.vm.synced_folder "../aloja-web/logs", "/vagrant/workspace/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
 
   #bash scripts
   config.vm.provision :shell, :path => "bootstrap.sh"
@@ -61,5 +62,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     puppet.manifest_file = "init.pp"
     puppet.options = "--environment prod" 
     #puppet.options = "--verbose --debug"
+  end
+
+  #net ports
+  config.vm.network :forwarded_port, host: 8080, guest: 80 #web
+  config.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 2048
+    v.cpus = 1
   end
 end
