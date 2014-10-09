@@ -99,46 +99,65 @@
 		        <span class="icon-bar"></span>
 		        <span class="icon-bar"></span>
 		      </button>
-		      <a class="navbar-brand navlink" href="{{ path('index') }}" >ALOJA</a>
+		      <a class="navbar-brand navlink" href="{{ path('index') }}" >Home</a>
 		    </div>
 
 		    <!-- Collect the nav links, forms, and other content for toggling -->
 		    <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1">
 		      <ul class="nav navbar-nav">
-                  <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>
-                      <a class="navlink" href="{{ path('index') }}"><span >About</span></a>
-                  </li>
-		        <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('benchexecutions') }}"><span >Benchmark Executions</span></a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('configimprovement') }}">Config Improvement</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('bestconfig') }}">Best Configuration</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>
+{#                   <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>#}
+{#                       <a class="navlink" href="{{ path('index') }}"><span >About</span></a>#}
+{#                   </li>#}
+			   <li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Benchmark Executions</a></li>
+		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
+		          </ul>
 		        </li>
 {# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
 {# 		          <a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
 {# 		        </li>#}
 				<li class="dropdown">
-		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance <span class="caret"></span></a>
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Config Evaluations <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Charts</a></li>
-		            <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a></li>
-		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Metrics</a></li>
+		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
+		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
+{# 		            <li {% if selected is defined and selected == 'Configuration Performance' %}class="active"{% endif %}><a class="navlink" href="{{ path('configperf') }}">Parameter Evaluation</a>#}
+		          </ul>
+		        </li>
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
+			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
+			        </li>
+		          </ul>
+		        </li>		        
+
+
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance Details<span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
+		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
 		          </ul>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
- 		         {#<li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}>#}
- 		          {#<a class="navlink" href="#">Publications</a>#}
- 		         {#</li>#}
-                  {#<li {% if selected is defined and selected == 'Videos' %}class="active"{% endif %}>#}
-                      {#<a class="navlink" href="videos.php">Videos</a>#}
-                  {#</li>#}
+                <li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">ALOJA Reference<span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li><a class="navlink" href="#">ALOJA-WEB Presentation Slides</a></li>
+		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications</a></li>
+		            <li {% if selected is defined and selected == 'Team' %}class="active"{% endif %}><a class="navlink" href="{{ path('team') }}">Team & Collaborators</a></li>
+		            <li class="divider"></li>
+		            <li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clusters') }}">Clusters Reference</a></li>
+		            <li {% if selected is defined and selected == 'Clusters Costs' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosts') }}">Clusters Costs Calculations</a></li>
+		            <li class="divider"></li>
+		            <li><a class="navlink" target="_blank" href="http://github.com/Aloja">Browse the code</a></li>
+		          </ul>
+		        </li>
 		        <li>
 		          <a class="navlink" href="http://hadoop.bsc.es/blog"  target="_blank">Blog</a>
 		        </li>

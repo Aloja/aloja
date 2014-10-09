@@ -1271,7 +1271,180 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
-				'select_multiple_benchs' => false,
+				'select_multiple_benchs' => false 
 		) );
+	}
+	public function paramEvaluationAction() {
+		$db = $this->container->getDBUtils ();
+		$rows_config = '';
+		try {
+			$configurations = array ();
+			$where_configs = '';
+			$concat_config = "";
+			
+			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
+			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
+			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
+			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
+			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
+			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
+			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
+			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
+			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
+			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
+			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
+			
+			// $concat_config = join(',\'_\',', $configurations);
+			// $concat_config = substr($concat_config, 1);
+			
+			// make sure there are some defaults
+			if (! $concat_config) {
+				$concat_config = 'disk';
+				$disks = array (
+						'HDD' 
+				);
+			}
+			
+			$filter_execs = "AND valid = TRUE";
+			$order_conf = 'LENGTH(conf), conf';
+			
+			// get configs first (categories)
+			$query = "SELECT count(*) num, concat($concat_config) conf from execs e
+			WHERE 1 $filter_execs $where_configs
+			GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
+			;";
+						
+			$rows_config = $db->get_rows ( $query );
+			
+			$height = 600;
+			
+			if (count ( $rows_config ) > 4) {
+				$num_configs = count ( $rows_config );
+				$height = round ( $height + (10 * ($num_configs - 4)) );
+			}
+			
+			// get the result rows
+			$query = "SELECT #count(*),
+			e.id_exec,
+			concat($concat_config) conf, bench,
+			avg(exe_time) AVG_exe_time,
+			#max(exe_time) MAX_exe_time,
+			min(exe_time) MIN_exe_time,
+			#CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
+			#CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
+			#CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
+			#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
+			(select AVG(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) AVG_ALL_exe_time,
+			#(select MAX(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MAX_ALL_exe_time,
+			#(select MIN(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MIN_ALL_exe_time,
+			'none'
+			from execs e
+			WHERE 1  $filter_execs $where_configs
+			GROUP BY conf, bench order by bench, $order_conf;";
+			
+			$rows = $db->get_rows ( $query );
+			
+			if ($rows) {
+				// print_r($rows);
+			} else {
+				throw new \Exception ( "No results for query!" );
+			}
+		} catch ( \Exception $e ) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
+		
+		$categories = '';
+		$count = 0;
+		$confOrders = array ();
+		foreach ( $rows_config as $row_config ) {
+			$categories .= "'{$row_config['conf']} #{$row_config['num']}',";
+			$count += $row_config ['num'];
+			$confOrders [] = $row_config ['conf'];
+		}
+		
+		$series = '';
+		$bench = '';
+		if ($rows) {
+			$seriesIndex = 0;
+			foreach ( $rows as $row ) {
+				// close previous serie if not first one
+				if ($bench && $bench != $row ['bench']) {
+					$series .= "]
+		}, ";
+				}
+				// starts a new series
+				if ($bench != $row ['bench']) {
+					$seriesIndex = 0;
+					$bench = $row ['bench'];
+					$series .= "
+			{
+			name: '{$row['bench']}',
+			data: [";
+				}
+				while ( $row ['conf'] != $confOrders [$seriesIndex] ) {
+					$series .= "[null],";
+					$seriesIndex ++;
+				}
+				$series .= "['{$row['conf']}',".
+					//round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
+					//round(($row['AVG_exe_time']), 3).
+					round ( ($row ['AVG_ALL_exe_time'] / $row ['AVG_exe_time']), 3 ) . 				//
+				"],";
+				$seriesIndex ++;
+			}
+			// close the last series
+			$series .= "]
+						}, ";
+		}
+		
+		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
+				'selected' => 'Configuration Performance',
+				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
+				'highcharts_js' => HighCharts::getHeader (),
+				'categories' => $categories,
+				'series' => $series,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
+				'count' => $count,
+				'height' => $height,
+				'money' => $money,
+				'select_multiple_benchs' => false
+		) );
+	}
+	
+	public function publicationsAction()
+	{
+		echo $this->container->getTwig()->render('publications/publications.html.twig', array(
+				'selected' => 'Publications',
+				'title' => 'ALOJA Publications'));
+	}
+	
+	public function teamAction()
+	{
+		echo $this->container->getTwig()->render('team/team.html.twig', array(
+				'selected' => 'Team',
+				'title' => 'ALOJA Team & Collaborators'));
+	}
+	
+	public function clustersAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
+				'selected' => 'Clusters',
+				'title' => 'ALOJA Clusters'));
+	}
+	
+	public function clusterCostsAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
+				'selected' => 'Clusters Costs',
+				'title' => 'ALOJA Clusters Costs'));
 	}
 }
