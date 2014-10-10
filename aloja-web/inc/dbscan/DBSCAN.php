@@ -51,12 +51,12 @@ class DBSCAN
         foreach ($data as $point_id => $point) {
 
             // Skip if point already visited
-            if ($this->isVisited($point)) {
+            if ($this->isVisited($point_id)) {
                 continue;
             }
 
             // Mark point as visited
-            $this->setVisited($point);
+            $this->setVisited($point_id);
 
             // Search near points
             $neighborhood = $this->search->regionQuery($point, $this->eps);
@@ -83,17 +83,18 @@ class DBSCAN
         $this->toCluster($point);
 
         // Iterate all neighbors
+        $iterator_array = $neighborhood;
         $iterator = new \AppendIterator();
-        $iterator->append(new \ArrayIterator($neighborhood));
+        $iterator->append(new \ArrayIterator($iterator_array));
         foreach ($iterator as $neighbor_id => $neighbor) {
 
             // echo "  foreach in $neighbor ($neighbor_id)\n";
 
             // Neighbor not yet visited
-            if (!$this->isVisited($neighbor)) {
+            if (!$this->isVisited($neighbor_id)) {
 
                 // Mark neighbor as visited
-                $this->setVisited($neighbor);
+                $this->setVisited($neighbor_id);
 
                 // Search the neighbor's neighborhood for new points
                 $neighbor_neighborhood = $this->search->regionQuery($neighbor, $this->eps);
@@ -102,8 +103,15 @@ class DBSCAN
                 // print_r($neighbor_neighborhood);
 
                 if (count($neighbor_neighborhood) >= $this->minPoints) {
+                    // Filter out the points already in the iterator
+                    $filtered = array_diff_key(
+                        $neighbor_neighborhood,
+                        $iterator_array
+                    );
+
                     // Add new points to the loop
-                    $iterator->append(new \ArrayIterator($neighbor_neighborhood));
+                    $iterator_array = array_replace($iterator_array, $filtered);
+                    $iterator->append(new \ArrayIterator($filtered));
 
                     // echo "  appended!!\n";
                 }
@@ -149,14 +157,14 @@ class DBSCAN
         }
     }
 
-    private function isVisited($point)
+    private function isVisited($point_id)
     {
-        return in_array($point, $this->visited, $strict = true);
+        return isset($this->visited[$point_id]);
     }
 
-    private function setVisited($point)
+    private function setVisited($point_id)
     {
-        $this->visited[] = $point;
+        $this->visited[$point_id] = true;
     }
 
     private function toCluster($point)
