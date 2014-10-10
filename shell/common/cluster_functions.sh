@@ -114,6 +114,12 @@ vm_execute() {
   fi
 }
 
+#interactive SSH
+vm_connect() {
+  logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+  ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+}
+
 #$1 source files $2 destination $3 extra options
 vm_local_scp() {
     logger "SCPing files"
@@ -124,7 +130,7 @@ vm_local_scp() {
 #$1 source files $2 destination $3 extra options
 #$vm_ssh_port must be set first
 vm_rsync() {
-    logger "RSyncing files"
+    logger "RSyncing: $1 To: $2"
     #eval is for parameter expansion
     rsync -aur --progress --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
@@ -139,11 +145,12 @@ get_master_name() {
 }
 
 get_master_ssh_port() {
-  master_ssh_port=''
+  local master_ssh_port=''
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
     master_ssh_port="2${clusterID}${vm_id}"
     break #just return one
   done
+  echo "$master_ssh_port"
 }
 
 #requires $create_string to be defined
@@ -169,7 +176,7 @@ get_initizalize_disks_test() {
   create_string="echo ''"
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
-    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}"
+    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}1"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -210,8 +217,10 @@ $fs_mount"
     num_drives="$((num_drives+1))"
   done
 
+  if [ "$cloud_provider" == "azure" ] ; then
   create_string="$create_string
 /mnt       /scratch/local    none bind 0 0"
+  fi
 
   create_string="
     mkdir -p ~/{share,minerva};
@@ -294,7 +303,7 @@ vm_test_initiallize_disks() {
     logger " disks OK for VM $vm_name"
     return 0
   else
-    logger " disks KO for $vm_name. Test output: $test_action"
+    logger " disks KO for $vm_name or not formated yet. Test output: $test_action"
     return 1
   fi
 }
@@ -323,9 +332,13 @@ vm_create_node() {
     vm_initial_bootstrap
 
     vm_set_ssh
+
     [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+
     vm_install_base_packages
     vm_set_dot_files &
+
+    [ "$type" == "cluster" ] && vm_set_dsh
 
     [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
 
@@ -392,15 +405,15 @@ vm_check_attach_disks() {
   fi
 }
 
-vm_format_disks() {
-  if check_bootstraped "vm_format_disks" "set"; then
-    logger "Formating disks for VM $vm_name "
-
-    vm_execute ";"
-  else
-    logger "Disks initialized"
-  fi
-}
+#vm_format_disks() {
+#  if check_bootstraped "vm_format_disks" "set"; then
+#    logger "Formating disks for VM $vm_name "
+#
+#    vm_execute ";"
+#  else
+#    logger "Disks initialized"
+#  fi
+#}
 
 vm_install_base_packages() {
   if check_bootstraped "vm_install_packages" ""; then
@@ -577,9 +590,13 @@ function cluster_queue_jobs() {
   fi
 }
 
-#$1 filename $2 set lock
+#$1 filename $2 set lock $3 execute on master
 check_bootstraped() {
-  fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+  if [ -z "$3" ] ; then
+    fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+  else
+    fileExists="$(vm_execute_master "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+  fi
 
   #set lock
   if [ ! -z "$2" ] ; then
@@ -604,22 +621,23 @@ check_bootstraped() {
 
 #$1 command to execute in master
 vm_execute_master() {
-  #save current ssh_port
-  vm_ssh_port_save="$vm_ssh_port"
+  #save current ssh_port and vm_name
+  local vm_ssh_port_save="$vm_ssh_port"
+  local vm_name_save="$vm_name"
 
-  master_ssh_port=""
-  get_master_ssh_port
-  vm_ssh_port="$master_ssh_port"
+  vm_ssh_port="$(get_master_ssh_port)"
+  vm_name="$(get_master_name)"
 
   vm_execute "$1"
 
-  #restore port
-  vm_ssh_post="$vm_ssh_port_save"
+  #restore port and vm_name
+  vm_ssh_port="$vm_ssh_port_save"
+  vm_name="$vm_name_save"
 }
 
 vm_set_master_crontab() {
 
-  if check_bootstraped "vm_set_master_crontab" "set"; then
+  if check_bootstraped "vm_set_master_crontab" "set" "master"; then
     logger "Setting ALOJA crontab to master"
 
     crontab="# m h  dom mon dow   command
@@ -639,13 +657,28 @@ vm_set_master_crontab() {
 
 vm_set_master_forer() {
 
-  if check_bootstraped "vm_set_master_forer" "set"; then
+  if check_bootstraped "vm_set_master_forer" "set" "master"; then
+
+  logger "Checking if queues already setup"
+  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
+  #in case we get a welcome banner we need to grep
+  test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+  if [ -z "$test_action" ] ; then
+    #TODO shouldn't be necessary but...
+    logger "DEBUG: Re-mounting disks"
+    cluster_execute "sudo mount -a"
+    cluster_execute "ls -lah ~/share/safe_store"
+
     logger "Generating jobs (forer)"
 
     vm_execute_master "bash /home/$user/share/shell/forer_az.sh $clusterName"
+  else
+    logger " queues already setup"
+  fi
 
   else
-    logger "Jobs generated and queued"
+    logger "Jobs already generated and queued"
   fi
 }
 
@@ -668,14 +701,23 @@ vm_make_fs() {
   logger "Initializing the shared file system for VM $vm_name"
 
   local attached_disk_path="/scratch/attached/1"
-  logger "Linking ~/share"
-  vm_execute "sudo chown -R ${user} /scratch;
+
+  logger "Checking if ~/share is correctly linked"
+  test_action="$(vm_execute "[ -d ~/share ] && [ -L ~/share ] && ls ~/share/safe_store && echo '$testKey'")"
+  #in case we get a welcome banner we need to grep
+  test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+  if [ -z "$test_action" ] ; then
+    logger " Linking ~/share"
+    vm_execute "sudo chown -R ${user} /scratch;
 [ -d ~/share ] && [ ! -L ~/share ] && mv ~/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $attached_disk_path /home/$user/share;
 touch /home/$user/share/safe_store;
   "
+  else
+    logger " ~/share is correctly mounted"
+  fi
 
-  logger "RSynching ../shell"
   vm_rsync "../shell" "$attached_disk_path"
 
   logger "Checking if aplic exits to redownload or rsync for changes"

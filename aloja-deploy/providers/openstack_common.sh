@@ -172,11 +172,11 @@ node_connect() {
 
   vm_set_details
 
-  logger "Connecting to Rackspace, with details: ${user}@${nodeIP[$vm_name]}"
-  ssh -i "../secure/keys/id_rsa" -o StrictHostKeyChecking=no "$user"@"${nodeIP[$vm_name]}"
+  logger "Connecting to Rackspace"
+  vm_connect
 }
 
-#1 $node_name
+#1 $vm_name
 node_delete() {
   vm_set_details
 
@@ -210,11 +210,18 @@ node_delete_helper() {
 }
 
 
-#1 $node_name
+#1 $vm_name
 node_stop() {
   vm_set_details
 
   logger "Stopping vm $1"
-
   nova stop "${serverId["$vm_name"]}"
+}
+
+#1 $vm_name
+node_start() {
+  vm_set_details
+
+  logger "Starting VM $1"
+  azure vm start "$1"
 }
