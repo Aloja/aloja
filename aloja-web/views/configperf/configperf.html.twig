@@ -9,7 +9,7 @@
 			var name = $(this).val()+'s[]';
 			$('select[name="'+name+'"]').val('None');
         });
-    	$('select').change(function() {
+    	$('select, input').change(function() {
             $(this).parents('form').submit();
         });
         
@@ -38,7 +38,8 @@
             tooltip: {
                 headerFormat: '<table>',
                 pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
-                    '<td style="padding:0"><b>{point.y:.1f} s</b></td></tr>',
+                    '<td style="padding:0"><b>{point.y:.1f} s</b></td></tr>'+
+                    '<tr><td>Average of {point.count} executions</tr>',
                 footerFormat: '</table>',
                 shared: true,
                 useHTML: true
@@ -58,7 +59,7 @@
         <div id="navigation" style="text-align: center;">
          <form>
         	<div style="width: 50%; margin-left: 10%;">
-        	 <div style="width: 20%; margin: 0 auto;">
+        	 <div style="width: 40%; margin: 0 auto;">
         	 Parameter to evaluate: <select class="form-control" name="parameval">
 						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
 						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>

@@ -157,5 +157,12 @@
 				</select>
 			</div>
 		</div>
+		{% if selected == 'Parameter Evaluation' %}
+		<div class="row">
+			<div class="col-md-4">
+				Minimum executions:<input type="number" step="1" class="form-control" name="minexecs" {% if minexecs is defined and minexecs != null %}value="{{ minexecs }}"{% endif %}/>
+			</div>
+		</div>
+		{% endif %}
 	</form>
 </div>
