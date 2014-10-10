@@ -204,6 +204,9 @@ bwm_source="$SOURCE_DIR/bin/bwm-ng"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
+#temporary OS config
+$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
+
 #temporary to avoid read-only file system errors
 echo "Re-mounting attached disks"
 $DSH "sudo umount /home/$user/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
@@ -526,7 +529,7 @@ save_bench() {
   $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;" 2>&1 |tee -a $LOG_PATH
   tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
   $DSH_MASTER "rm -rf $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  $JOB_PATH/conf_* #TODO check
+  #$JOB_PATH/conf_* #TODO check
 
   #empy the contents from original disk  TODO check if still necessary
   $DSH "for i in $HDD/hadoop-*.{log,out}; do echo "" > $i; done;" 2>&1 |tee -a $LOG_PATH
