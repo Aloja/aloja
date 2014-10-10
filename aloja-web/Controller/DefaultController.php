@@ -1301,6 +1301,11 @@ class DefaultController extends AbstractController
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
 			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
+			$minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
+			$minExecsFilter = "";
+			if($minExecs > 0)
+				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
+			
 			$filter_execs = "AND valid = TRUE";
 				
 			$paramOptions = array();
@@ -1326,10 +1331,10 @@ class DefaultController extends AbstractController
 			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
 			// get the result rows
-			$query = "SELECT $paramEval, e.id_exec, exec as conf, bench, ".
+			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
 				"from execs e WHERE 1 $filter_execs $where_configs".
-				"GROUP BY $paramEval, bench order by bench,$paramEval";
+				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 			
 			$rows = $db->get_rows ( $query );
 
@@ -1363,7 +1368,8 @@ class DefaultController extends AbstractController
 				else if($paramEval == 'iofilebuf')
 					$row[$paramEval] /= 1024;
 				
-				$arrayBenchs[$row['bench']][$row[$paramEval]] = round((int)$row['avg_exe_time'],2);
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
 			}				
 					
 			foreach($arrayBenchs as $key => $arrayBench)
