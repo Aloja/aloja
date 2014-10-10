@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #load init and common functions
-source "azure_common.sh"
+type="cluster"
+source "include/include.sh"
 
 #Sequential Node deploy
 for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
@@ -10,10 +11,9 @@ for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
   vm_ssh_port="2${clusterID}${vm_id}"
 
   logger "Atempting to shutdown node $vm_name..."
-  azure vm shutdown "$vm_name"
+  start_stop "$vm_name"
 
 done
-
 
 elapsedTime="$(( $(date +%s) - startTime ))"
 logger "All done, took $elapsedTime seconds."

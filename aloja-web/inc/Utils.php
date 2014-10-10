@@ -354,8 +354,10 @@ class Utils
     		$disks = 'Hard-disk drive';
     	elseif($diskShort == 'SSD')
     		$disks = 'SSD';
+    	else if(substr($diskShort,2))
+    		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
     	else
-    		$disks = substr($diskShort,2).' remote(s)';
+    		$disks = substr($diskShort,1).' HDFS remote(s)';
     
     	return $disks;
     }
@@ -370,5 +372,25 @@ class Utils
     	
     	if(key_exists('disk',$execInfo))
     		$execInfo['disk'] = self::getDisksName($execInfo['disk']);
+    }
+    
+    public static function changeParamOptions(&$paramOptions, $paramEval)
+    {
+    	if($paramEval == 'comp') {
+    		foreach($paramOptions as &$option) {
+    			$option['param'] = Utils::getCompressionName($option['param']);
+    		}
+    	}
+    }
+    
+    public static function getParamevalUnit($paramEval)
+    {
+    	$unit = '';
+    	if($paramEval == 'iofilebuf')
+    		$unit = 'KB';
+    	else if($paramEval == 'blk_size')
+    		$unit = 'MB';
+    	
+    	return $unit;
     }
 }

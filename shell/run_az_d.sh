@@ -212,6 +212,7 @@ correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
 if [ "$correctly_mounted_nodes" != "$(( numberOfNodes + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
+  echo "DEBUG: Correct $correctly_mounted_nodes NumberOfNodes $numberOfNodes + 1"
   exit 1
 fi
 
@@ -699,4 +700,3 @@ $DSH "cp $HDD/* $JOB_PATH/"
 #$(touch ${JOB_PATH}/total_${total_time})
 du -h $JOB_PATH|tail -n 1
 logger "DONE, total time $total_time seconds. Path $JOB_PATH"
-

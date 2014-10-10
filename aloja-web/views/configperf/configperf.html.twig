@@ -1,105 +1,79 @@
 {% extends "layout.html.twig" %}
 {% block javascript %}
 	{{ parent() }}
-    {{ highcharts_js|raw }}
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
     <script>
-        $(document).ready(function() {
-                    $('select').change(function() {
-                        $(this).parents('form').submit();
-                    });
-
-                    var chart = new Highcharts.Chart({
-                        chart: {
-                            type: 'bar',
-                            renderTo: 'chart',
-                        },
-                        title: {
-                            text: 'Average speedup by config group to average execution time by benchmark',
-                            align: 'center',
-                        },
-                        subtitle: {
-                            text: 'From {{ count }} distinct executions'
-                        },
-                        xAxis: {
-                            categories: [{{ categories|raw }}
-                    ],
-                    title: {
-                        text: 'Configuration group',
-                    }
-                },
-                yAxis: {
-                    min: 0,
-                        //max: 1,
-                            title: {
-                        useHTML: true,
-                                text: '&#8678; Slower &nbsp;&nbsp;&nbsp; Execution time Speedup over average for benchmark (more is better) &nbsp;&nbsp;&nbsp; Faster &#8680;',
-                        //align: 'high'
-                    },
-                    labels: {
-                        overflow: 'justify'
-                    },
-                    plotBands: [
-                        {
-                            from: 0,
-                            to: 1,
-                            color: 'rgba(255, 170, 213, .2)'
-                        },
-                        {
-                            from: 1,
-                            to: 10,
-                            color: 'rgba(100, 170, 255, .2)'
-                        }]
-                },
-                tooltip: {
-                    //valueSuffix: ' millions'
-                },
-                plotOptions: {
-                    bar: {
-                        dataLabels: {
-                            enabled: true
-                        }
-                    },
-                    series: {
-                    	cursor: 'pointer',
-                        point: {
-                            events: {
-                                click: function () {
-                                    var id = this.series.options.data[this.x][0];
-                                    id = id.replace(new RegExp('_', 'g'), ' ');
-                                    top.location.href = "{{ path('benchexecutions') }}?search="+id;
-                                }
-                            }
-                        }
-                    },
-                },
-                legend: {
-                    layout: 'vertical',
-                            align: 'right',
-                            verticalAlign: 'top',
-                            x: -5,
-                            y: 100,
-                            floating: true,
-                            borderWidth: 1,
-                            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
-                            shadow: true,
-                            title: {
-                        text: ':: Drag Legend ::',
-                    },
-                    draggable: true,
-                },
-                credits: {
-                    enabled: false
-                },
-                series: [{{ series|raw }}]
+    $(function () {
+        $('select[name="parameval"]').change(function() {
+			var name = $(this).val()+'s[]';
+			$('select[name="'+name+'"]').val('None');
+        });
+    	$('select').change(function() {
+            $(this).parents('form').submit();
+        });
+        
+        $('#chart').highcharts({
+            chart: {
+                type: 'column'
+            },
+            title: {
+                text: '{{ getParamevalTitleName(paramEval) }} evaluation'
+            },
+            credits: {
+                enabled: false
+            },
+            xAxis: {
+                categories: [{{ categories | raw}}],
+                title: {
+                    text: '{{ getParamevalTitleName(paramEval) }}'
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Execution time'
+                }
+            },
+            tooltip: {
+                headerFormat: '<table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} s</b></td></tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: {{ series | raw }}
         });
     });
-
     </script>
     {% endblock %}
     {% block content %}
         <div id="navigation" style="text-align: center;">
-             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
+         <form>
+        	<div style="width: 50%; margin-left: 10%;">
+        	 <div style="width: 20%; margin: 0 auto;">
+        	 Parameter to evaluate: <select class="form-control" name="parameval">
+						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
+						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
+						<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+						<option value="net" {% if paramEval == 'net' %}selected="selected"{% endif %}>Network</option>
+						<option value="disk" {% if paramEval == 'disk' %}selected="selected"{% endif %}>Disk</option>
+						<option value="replication" {% if paramEval == 'replication' %}selected="selected"{% endif %}>Replication</option>
+						<option value="iofilebuf" {% if paramEval == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+						<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
+						<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
+					</select>
+			 </div>
+		   </div>
+             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
              {% include 'common/config_filters.html.twig' %}
-            </br>
         </div>
+        <p style="clear: both;"></p>
     {% endblock %}

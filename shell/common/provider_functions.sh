@@ -32,6 +32,10 @@ vm_local_scp() {
   logger "WARNING: Function vm_local_scp not implemented or not necessary for provider"
 }
 
+vm_rsync() {
+  logger "WARNING: Function vm_local_scp not implemented or not necessary for provider"
+}
+
 vm_initial_bootstrap() {
   logger "WARNING: Function vm_initial_bootstrap not implemented or not necessary for provider"
 }
@@ -69,4 +73,9 @@ node_delete() {
 #1 $node_name
 node_stop() {
   logger "WARNING: Function node_stop not implemented or not necessary for provider"
+}
+
+#1 $node_name
+node_start() {
+  logger "WARNING: Function node_start not implemented or not necessary for provider"
 }

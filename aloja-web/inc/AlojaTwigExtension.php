@@ -31,7 +31,8 @@ class AlojaTwigExtension extends Twig_Extension
                 'makeTooltip' => new Twig_Function_Method($this, 'makeTooltip'),
                 'makeExecs' => new Twig_Function_Method($this, 'makeExecs'),
                 'path' => new Twig_Function_Method($this, 'path'),
-        		'getArrayIndex' => new Twig_Function_Method($this, 'getArrayIndex')
+        		'getArrayIndex' => new Twig_Function_Method($this, 'getArrayIndex'),
+        		'getParamevalTitleName' => new Twig_Function_Method($this, 'getParamevalTitleName'),
         );
     }
 
@@ -150,5 +151,28 @@ class AlojaTwigExtension extends Twig_Extension
     	}
     	
     	return 0;
+    }
+    
+    public function getParamevalTitleName($paramEval)
+    {
+    	$title = '';
+    	if($paramEval == 'maps')
+			$title = 'Number of maps';
+		else if($paramEval == 'comp')
+			$title = 'Compression';
+		else if($paramEval == 'net')
+			$title = 'Network';
+		else if($paramEval == 'disk')
+			$title = 'Disks';
+		else if($paramEval == 'replication')
+			$title = 'Replication level';
+		else if($paramEval == 'iofilebuf')
+			$title = 'I/O File Buffer size';
+		else if($paramEval == 'blk_size')
+			$title = 'HDFS block size';
+		else if($paramEval == 'iosf')
+			$title = 'I/O Sort Factor';
+		
+		return $title;
     }
 }

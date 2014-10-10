@@ -20,16 +20,6 @@
 			</div>
 		</div>
 		{% endif %}
-		{% if selected == 'Configuration Performance' %}
-		<div class="row">
-			<div class="col-md-4">
-				Best config by:<select class="form-control" name="ordertype">
-					<option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>
-					<option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>
-				</select>
-			</div>
-		</div>
-		{% endif %}
 		<div class="row">
 			<div class="col-md-4">
 				{% if select_multiple_benchs is not defined or

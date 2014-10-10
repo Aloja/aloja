@@ -1,7 +1,5 @@
 #AZURE specific functions
 
-
-
 #global vars
 bootStrapped="false"
 
@@ -54,11 +52,17 @@ vm_get_status(){
  echo "$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|awk '{print substr($3,2,(length($3)-2));}')"
 }
 
+get_OK_status() {
+  echo "ReadyRole"
+}
+
 #$1 vm_name
 number_of_attached_disks() {
-  numberOfDisks="$(azure vm disk list " $1 " |grep " $1 "|wc -l)"
+  numberOfDisks="$(azure vm disk list " $1 " |grep " $1"|wc -l)"
   #substract the system volume
-  numberOfDisks="$(( numberOfDisks - 1 ))"
+  if [ -z "$numberOfDisks" ] ; then
+    numberOfDisks="$(( numberOfDisks - 1 ))"
+  fi
   echo "$numberOfDisks"
 }
 
@@ -68,31 +72,23 @@ vm_attach_new_disk() {
   azure vm disk attach-new "$1" "$2" -s "$subscriptionID"
 }
 
-#$1 commands to execute $2 set in parallel (&)
-#$vm_ssh_port must be set before
-vm_execute() {
-  #logger "Executing in VM $vm_name command(s): $1"
+#Azure uses a different key
+get_ssh_key() {
+ echo "../secure/keys/myPrivateKey.key"
+}
 
-  chmod 0600 "../secure/keys/myPrivateKey.key"
+get_ssh_host() {
+ echo "${dnsName}.cloudapp.net"
+}
 
-  #echo to print special chars;
-  if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port"
-  else
-    echo "$1" |ssh -i "../secure/keys/myPrivateKey.key" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p "$vm_ssh_port" &
+#Azure changes ports
+get_ssh_port() {
+  if [ -z "$vm_ssh_port" ] ; then
+    logger "ERROR: $vm_ssh_port not set! for VM $vm_name";
+    exit 1
   fi
-}
 
-#$1 source files $2 destination $3 extra options
-#$vm_ssh_port must be set first
-vm_local_scp() {
-    logger "SCPing files"
-    #eval is for parameter expansion
-    scp -i "../secure/keys/myPrivateKey.key" -o StrictHostKeyChecking=no -P "$vm_ssh_port" $(eval echo "$3") $(eval echo "$1") "$user"@"${dnsName}.cloudapp.net:$2"
-}
-
-vm_initial_bootstrap() {
-  bootStrapped="true"
+  echo "$vm_ssh_port"
 }
 
 #$1 $endpoints list $2 end1 $3 end2
@@ -112,7 +108,7 @@ vm_endpoints_create() {
 		end1=$(echo $endpoint | cut -d: -f1)
 		end2=$(echo $endpoint | cut -d: -f2)
 		if vm_check_endpoint_exists "$endpointList" "$end1" "$end2"; then
-			echo "Adding endpoint $endpoint to $vm_name"	
+			echo "Adding endpoint $endpoint to $vm_name"
 			azure vm endpoint create "$vm_name" $end1 $end2
 		else
 			echo "Endpoint $end1:$end2 already exists"
@@ -134,21 +130,26 @@ cluster_final_boostrap() {
 
 ###for executables
 
-#1 $node_name
+#1 $vm_name
 node_connect() {
-  logger "Connecting to subscription $subscriptionID, with details: ${user}@${dnsName}.cloudapp.net -p $vm_ssh_port -i ../secure/keys/myPrivateKey.key"
-  ssh -i "../secure/keys/myPrivateKey.key" -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p  "$vm_ssh_port"
+  logger "Connecting to azure subscription $subscriptionID"
+  vm_connect
 }
 
-#1 $node_name
+#1 $vm_name
 node_delete() {
   logger "Deleting node $1 and its associated attached volumes"
   azure vm delete -b -q "$1"
 }
 
-#1 $node_name
+#1 $vm_name
 node_stop() {
   logger "Stopping vm $1"
   azure vm shutdown "$1"
 }
 
+#1 $vm_name
+node_start() {
+  logger "Starting VM $1"
+  azure vm start "$1"
+}

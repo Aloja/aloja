@@ -50,6 +50,10 @@ vm_get_status(){
  echo "$(nova show "$1" |grep "OS-EXT-STS:vm_state"|awk '{print $4}')"
 }
 
+get_OK_status() {
+  echo "active"
+}
+
 #$1 vm_name
 number_of_attached_disks() {
 
@@ -74,52 +78,21 @@ vm_attach_new_disk() {
   nova volume-attach "${serverId["$vm_name"]}" "$disk_id"
 }
 
-#$1 commands to execute $2 set in parallel (&)
-#$vm_ssh_port must be set before
-vm_execute() {
+get_ssh_host() {
+ vm_set_details
 
-  vm_set_details
-
-  #check if we can change from root user
-  if [ "$bootStrapped" == "false" ] ; then
-    #"WARNINIG: connecting as root"
-    ssh_user="root"
-  else
-    ssh_user="$user"
-  fi
-
-  chmod 0600 "../secure/keys/id_rsa"
-
-  #echo to print special chars;
-  if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$ssh_user"@"${nodeIP[$vm_name]}"
-  else
-    echo "$1" |ssh -i "../secure/keys/id_rsa" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$ssh_user"@"${nodeIP[$vm_name]}" &
-  fi
-
-  #chmod 0644 "../secure/keys/id_rsa"
+ echo "${nodeIP[$vm_name]}"
 }
 
-#$1 source files $2 destination $3 extra options
-vm_local_scp() {
-  logger "SCPing files"
-
-  vm_set_details
-
+#Openstack needs to use root first
+get_ssh_user() {
   #check if we can change from root user
   if [ "$bootStrapped" == "false" ] ; then
     #"WARNINIG: connecting as root"
-    ssh_user="root"
+    echo "root"
   else
-    ssh_user="$user"
+    echo "$user"
   fi
-
-  chmod 0600 "../secure/keys/id_rsa"
-
-  #eval is for parameter expansion
-  scp -i "../secure/keys/id_rsa" -o StrictHostKeyChecking=no $(eval echo "$3") $(eval echo "$1") "$ssh_user"@"${nodeIP[$vm_name]}:$2"
-
-  #chmod 0644 "../secure/keys/id_rsa"
 }
 
 vm_initial_bootstrap() {
@@ -199,37 +172,56 @@ node_connect() {
 
   vm_set_details
 
-  logger "Connecting to Rackspace, with details: ${user}@${nodeIP[$vm_name]}"
-  ssh -i "../secure/keys/id_rsa" -o StrictHostKeyChecking=no "$user"@"${nodeIP[$vm_name]}"
+  logger "Connecting to Rackspace"
+  vm_connect
 }
 
-#1 $node_name
+#1 $vm_name
 node_delete() {
   vm_set_details
 
+  if [ "$type" == "cluster" ] ; then
+    logger "Paralellizing node deletions"
+    node_delete_helper &
+  else
+    node_delete_helper
+  fi
+}
+
+#to alow parallel deletion above
+node_delete_helper() {
   logger "Getting attached disks"
   attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
   logger "$attached_volumes"
 
   logger "De-Ataching node volumes"
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
-    nova volume-detach "$volumeID"
+    nova volume-detach "${serverId["$vm_name"]}" "$volumeID"
   done
 
   logger "Deleting node $1"
   nova delete "$vm_name"
 
   logger "Deleting node volumes"
+  sleep 60 #with until volumes are deattached
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
     nova volume-delete "$volumeID"
   done
 }
 
-#1 $node_name
+
+#1 $vm_name
 node_stop() {
   vm_set_details
 
   logger "Stopping vm $1"
-
   nova stop "${serverId["$vm_name"]}"
+}
+
+#1 $vm_name
+node_start() {
+  vm_set_details
+
+  logger "Starting VM $1"
+  azure vm start "$1"
 }

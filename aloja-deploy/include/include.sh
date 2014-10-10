@@ -10,7 +10,7 @@ self_name="$(basename $0)"
 if [ -z $3 ]; then
 	confFile="../secure/${2}_settings.conf"
 else
-	confFile="../secure/$2"
+	confFile="../secure/$3"
 	if [ ! -e "$confFile" ]; then
 		echo "ERROR: Conf file $confFile doesn't exists!"
 		exit
