@@ -10,6 +10,7 @@ spl_autoload_register(function ($file) {
 });
 
 use Symfony\Component\Yaml\Yaml;
+
 $usage = 'Usage: php clearcache.php dev|prod [--exclude=excoptions[,excoptions] [varnish]'."\n";
 $usage .= 'excoptions: [db|twig]';
 
@@ -45,4 +46,5 @@ if(!isset($excludeOptions) || !in_array('twig',$excludeOptions))
 	exec("rm ${conf['twig_cache_path']}");
 
 if(isset($argv[3]) && $argv[3] == 'varnish')
-	exec("service varnish restart");
+
+exec("service varnish restart");
