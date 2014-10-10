@@ -74,3 +74,8 @@ node_delete() {
 node_stop() {
   logger "WARNING: Function node_stop not implemented or not necessary for provider"
 }
+
+#1 $node_name
+node_start() {
+  logger "WARNING: Function node_start not implemented or not necessary for provider"
+}

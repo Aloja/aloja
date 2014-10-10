@@ -60,7 +60,9 @@ get_OK_status() {
 number_of_attached_disks() {
   numberOfDisks="$(azure vm disk list " $1 " |grep " $1"|wc -l)"
   #substract the system volume
-  numberOfDisks="$(( numberOfDisks - 1 ))"
+  if [ -z "$numberOfDisks" ] ; then
+    numberOfDisks="$(( numberOfDisks - 1 ))"
+  fi
   echo "$numberOfDisks"
 }
 
@@ -128,20 +130,26 @@ cluster_final_boostrap() {
 
 ###for executables
 
-#1 $node_name
+#1 $vm_name
 node_connect() {
-  logger "Connecting to subscription $subscriptionID, with details: ${user}@${dnsName}.cloudapp.net -p $vm_ssh_port -i ../secure/keys/myPrivateKey.key"
-  ssh -i "../secure/keys/myPrivateKey.key" -o StrictHostKeyChecking=no "$user"@"$dnsName".cloudapp.net -p  "$vm_ssh_port"
+  logger "Connecting to azure subscription $subscriptionID"
+  vm_connect
 }
 
-#1 $node_name
+#1 $vm_name
 node_delete() {
   logger "Deleting node $1 and its associated attached volumes"
   azure vm delete -b -q "$1"
 }
 
-#1 $node_name
+#1 $vm_name
 node_stop() {
   logger "Stopping vm $1"
   azure vm shutdown "$1"
+}
+
+#1 $vm_name
+node_start() {
+  logger "Starting VM $1"
+  azure vm start "$1"
 }
