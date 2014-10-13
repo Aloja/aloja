@@ -20,14 +20,14 @@ class SearchLinear implements SearchInterface
         $this->distanceClass = $distance;
     }
 
-    public function regionQuery($reference, $eps)
+    public function regionQuery($reference_id, $eps)
     {
         $neighborhood = array();
         foreach ($this->data as $point_id => $point) {
 
-            // echo "distance from $reference to $point is ".$this->distanceClass->distance($point, $reference)."\n";
+            // echo "distance from $reference_id to $point is ".$this->distanceClass->distance($point, $this->data[$reference_id])."\n";
 
-            if ($this->distanceClass->distance($point, $reference) < $eps) {
+            if ($this->distanceClass->distance($point, $this->data[$reference_id]) < $eps) {
                 $neighborhood[$point_id] = $point;
             }
         }

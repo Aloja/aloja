@@ -22,36 +22,33 @@ class SearchLinearCached implements SearchInterface
         $this->distanceClass = $distance;
     }
 
-    public function regionQuery($reference, $eps)
+    public function regionQuery($reference_id, $eps)
     {
         $neighborhood = array();
         foreach ($this->data as $point_id => $point) {
 
-            // echo "distance from $reference to $point is ".$this->distanceClass->distance($point, $reference)."\n";
+            // echo "distance from $reference_id to $point is ".$this->distanceClass->distance($point, $this->data[$reference_id])."\n";
 
-            if ($this->getDistance($point, $reference) < $eps) {
+            if ($this->getDistance($point_id, $reference_id) < $eps) {
                 $neighborhood[$point_id] = $point;
             }
         }
         return $neighborhood;
     }
 
-    private function getDistance($point1, $point2)
+    private function getDistance($id1, $id2)
     {
-        $comp = $point1->compareTo($point2);
-        $str1 = (string)($comp <= 0 ? $point1 : $point2);
-        $str2 = (string)($comp <= 0 ? $point2 : $point1);
+        $id_min = min($id1, $id2);
+        $id_max = max($id1, $id2);
 
-        if (array_key_exists($str1, $this->cached)) {
-            if (array_key_exists($str2, $this->cached[$str1])) {
-                // echo "Cached!!!!!!!!!!!!!! $str1 $str2\n";
-                return $this->cached[$str1][$str2];
-            }
+        if (isset($this->cached[$id_min][$id_max])) {
+            // echo "Cached!!!!!!!!!!!!!! $id_min $id_max\n";
+            return $this->cached[$id_min][$id_max];
         }
-        // echo "NOT cached $str1 $str2\n";
+        // echo "NOT cached $id_min $id_max\n";
 
-        $distance = $this->distanceClass->distance($point1, $point2);
-        $this->cached[$str1][$str2] = $distance;
+        $distance = $this->distanceClass->distance($this->data[$id_min], $this->data[$id_max]);
+        $this->cached[$id_min][$id_max] = $distance;
 
         return $distance;
     }

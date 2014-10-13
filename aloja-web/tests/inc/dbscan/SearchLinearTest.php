@@ -23,7 +23,7 @@ class SearchLinearTest extends \PHPUnit_Framework_TestCase
         );
         $search->setData($points);
 
-        $result = $search->regionQuery($points[4], $eps);
+        $result = $search->regionQuery(4, $eps);
         $this->assertCount(4, $result);
         $this->assertEquals($result[4], $points[4]);
         $this->assertEquals($result[5], $points[5]);
