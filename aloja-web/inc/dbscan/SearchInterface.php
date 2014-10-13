@@ -11,6 +11,6 @@ interface SearchInterface
 
     public function setDistanceMode(DistanceInterface $distance);
 
-    public function regionQuery($reference, $eps);
+    public function regionQuery($reference_id, $eps);
 
 }

@@ -59,7 +59,7 @@ class DBSCAN
             $this->setVisited($point_id);
 
             // Search near points
-            $neighborhood = $this->search->regionQuery($point, $this->eps);
+            $neighborhood = $this->search->regionQuery($point_id, $this->eps);
 
             // echo "neighborhood\n";
             // print_r($neighborhood);
@@ -97,7 +97,7 @@ class DBSCAN
                 $this->setVisited($neighbor_id);
 
                 // Search the neighbor's neighborhood for new points
-                $neighbor_neighborhood = $this->search->regionQuery($neighbor, $this->eps);
+                $neighbor_neighborhood = $this->search->regionQuery($neighbor_id, $this->eps);
 
                 // echo "  current neighbor $neighbor has this neighbor_neighborhood around:\n";
                 // print_r($neighbor_neighborhood);
