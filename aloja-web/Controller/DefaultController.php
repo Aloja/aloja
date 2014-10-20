@@ -1276,11 +1276,16 @@ class DefaultController extends AbstractController
 	}
 	public function paramEvaluationAction() {
 		$db = $this->container->getDBUtils ();
-		$rows_config = '';
+		$rows = '';
+		$categories = '';
+		$series = '';
 		try {
 			$configurations = array ();
 			$where_configs = '';
 			$concat_config = "";
+			
+			if(!(isset($_GET['benchs'])))
+				$_GET['benchs'][] = 'wordcount';
 			
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
@@ -1293,114 +1298,92 @@ class DefaultController extends AbstractController
 			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
-			
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
-			
-			// make sure there are some defaults
-			if (! $concat_config) {
-				$concat_config = 'disk';
-				$disks = array (
-						'HDD' 
-				);
-			}
+			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
+			$minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
+			$minExecsFilter = "";
+			if($minExecs > 0)
+				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
 			$filter_execs = "AND valid = TRUE";
-			$order_conf = 'LENGTH(conf), conf';
+				
+			$paramOptions = array();
+			if($paramEval == 'maps')
+				$paramOptions = array(4,6,8,10,12,16,24,32);
+			else if($paramEval == 'comp')
+				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
+		    else if($paramEval == 'id_cluster')
+				$paramOptions = array('Local','Azure');
+			else if($paramEval == 'net')
+				$paramOptions = array('Ethernet','Infiniband');
+			else if($paramEval == 'disk')
+				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
+			else if($paramEval == 'replication')
+				$paramOptions = array(1,2,3);
+			else if($paramEval == 'iofilebuf')
+				$paramOptions = array(1,4,16,32,64,128,256);
+			else if($paramEval == 'blk_size')
+				$paramOptions = array(32,64,128,256);
+			else if($paramEval == 'iosf')
+				$paramOptions = array(5,10,20,50);
 			
-			// get configs first (categories)
-			$query = "SELECT count(*) num, concat($concat_config) conf from execs e
-			WHERE 1 $filter_execs $where_configs
-			GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
-			;";
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
-			$rows_config = $db->get_rows ( $query );
-			
-			$height = 600;
-			
-			if (count ( $rows_config ) > 4) {
-				$num_configs = count ( $rows_config );
-				$height = round ( $height + (10 * ($num_configs - 4)) );
-			}
-			
 			// get the result rows
-			$query = "SELECT #count(*),
-			e.id_exec,
-			concat($concat_config) conf, bench,
-			avg(exe_time) AVG_exe_time,
-			#max(exe_time) MAX_exe_time,
-			min(exe_time) MIN_exe_time,
-			#CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
-			#CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
-			#CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
-			#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
-			(select AVG(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) AVG_ALL_exe_time,
-			#(select MAX(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MAX_ALL_exe_time,
-			#(select MIN(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MIN_ALL_exe_time,
-			'none'
-			from execs e
-			WHERE 1  $filter_execs $where_configs
-			GROUP BY conf, bench order by bench, $order_conf;";
+			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
+				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
+				"from execs e WHERE 1 $filter_execs $where_configs".
+				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 			
 			$rows = $db->get_rows ( $query );
-			
-			if ($rows) {
-				// print_r($rows);
-			} else {
+
+			if (!$rows) {
 				throw new \Exception ( "No results for query!" );
 			}
+	
+			$categories = '';
+			$arrayBenchs = array();
+			foreach ( $paramOptions as $param ) {
+				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
+				foreach($benchOptions as $bench) {
+					$arrayBenchs[$bench['bench']][$param] = null;
+				}
+			}
+
+			$series = array();
+			$bench = '';
+			foreach($rows as $row) {
+				if($paramEval == 'comp')
+					$row[$paramEval] = Utils::getCompressionName($row['comp']);
+				else if($paramEval == 'id_cluster') {
+					if($row[$paramEval] == 1)
+						$row[$paramEval] = 'Local';
+					else
+						$row[$paramEval] = 'Azure';
+				} else if($paramEval == 'net')
+					$row[$paramEval] = Utils::getNetworkName($row['net']);
+				else if($paramEval == 'disk')
+					$row[$paramEval] = Utils::getDisksName($row['disk']);
+				else if($paramEval == 'iofilebuf')
+					$row[$paramEval] /= 1024;
+				
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
+			}				
+					
+			foreach($arrayBenchs as $key => $arrayBench)
+			{
+				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
+			}
+			$series = json_encode($series);
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 		}
 		
-		$categories = '';
-		$count = 0;
-		$confOrders = array ();
-		foreach ( $rows_config as $row_config ) {
-			$categories .= "'{$row_config['conf']} #{$row_config['num']}',";
-			$count += $row_config ['num'];
-			$confOrders [] = $row_config ['conf'];
-		}
-		
-		$series = '';
-		$bench = '';
-		if ($rows) {
-			$seriesIndex = 0;
-			foreach ( $rows as $row ) {
-				// close previous serie if not first one
-				if ($bench && $bench != $row ['bench']) {
-					$series .= "]
-		}, ";
-				}
-				// starts a new series
-				if ($bench != $row ['bench']) {
-					$seriesIndex = 0;
-					$bench = $row ['bench'];
-					$series .= "
-			{
-			name: '{$row['bench']}',
-			data: [";
-				}
-				while ( $row ['conf'] != $confOrders [$seriesIndex] ) {
-					$series .= "[null],";
-					$seriesIndex ++;
-				}
-				$series .= "['{$row['conf']}',".
-					//round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
-					//round(($row['AVG_exe_time']), 3).
-					round ( ($row ['AVG_ALL_exe_time'] / $row ['AVG_exe_time']), 3 ) . 				//
-				"],";
-				$seriesIndex ++;
-			}
-			// close the last series
-			$series .= "]
-						}, ";
-		}
-		
 		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
-				'selected' => 'Configuration Performance',
+				'selected' => 'Parameter Evaluation',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
-				'highcharts_js' => HighCharts::getHeader (),
 				'categories' => $categories,
 				'series' => $series,
 				'benchs' => $benchs,
@@ -1413,10 +1396,8 @@ class DefaultController extends AbstractController
 				'replications' => $replications,
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
-				'count' => $count,
-				'height' => $height,
 				'money' => $money,
-				'select_multiple_benchs' => false
+				'paramEval' => $paramEval
 		) );
 	}
 	
