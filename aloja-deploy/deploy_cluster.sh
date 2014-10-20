@@ -27,4 +27,4 @@ cluster_parallel_config
 cluster_queue_jobs
 
 
-logger "All done, took $(getElapsedTime) seconds."
+logger "All done, took $(getElapsedTime startTime) seconds."

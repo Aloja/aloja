@@ -6,4 +6,4 @@ source "include/include.sh"
 
 vm_create_node
 
-logger "All done, took $(getElapsedTime) seconds."
+logger "All done, took $(getElapsedTime startTime) seconds."

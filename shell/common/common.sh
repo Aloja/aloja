@@ -19,5 +19,7 @@ nl2char() {
 
 #$1 startTime
 getElapsedTime() {
-  echo "$(( $(date +%s) - $1 ))"
+  elapsedTime='ERROR: start time not set.'
+  [ ! -z $1 ] && elapsedTime="$(( $(date +%s) - $1 ))"
+  echo "$elapsedTime"
 }
