@@ -83,6 +83,35 @@
                  </td>
                </tr>
                <tr>
+                   <td><a href="{{ path('counters') }}"><b>Hadoop Job Counters</b></a></td>
+                   <td>
+                       The Hadoop Job Counters sections allows to browse the counters output at each of the Hadoop
+                       executions, filter them, and to order by a specific counter the selected runs (or all).
+                        </br>
+                       The section presents the summary of all the Job execution counters,
+                       Map and Reduce specific counters, and the I/O subsystem counters.
+                       </br>
+                       It also features the details by task: to understand the running time of each Map or Reduce
+                       process.
+                   </td>
+                   <td>
+                       <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
+                           <img src="img/screenshots/counters.jpeg" style="width: 90%;" />
+                       </a>
+                   </td>
+               </tr>
+               <tr>
+               	<td style="white-space: nowrap;"><a href="{{ path('bestconfig') }}"><b>Best Configuration</b></a></td>
+               	<td>
+               	This section allows the user to see the best configuration found for a given benchmark. It also allows to find it filtering some parameters such as kind of cluster, number of mappers, block size, etcetera.
+               	</td>
+               	<td>
+                   <a class="image-popup-vertical-fit" href="img/screenshots/bestconfig.jpeg">
+                      <img src="img/screenshots/bestconfig.jpeg" style="width: 80%;" />
+                   </a>
+                 </td>
+               </tr>
+               <tr>
                  <td>
                    <a href="{{ path('configimprovement') }}"><b>Config improvement</b></a>
                  </td>
@@ -118,6 +147,20 @@
                </tr>
                <tr>
                  <td>
+                   <a href="{{ path('parameval') }}"><b>Parameter Evaluation</b></a>
+                 </td>
+                 <td>
+                   The Parameter Evaluation presents a column chart to see how much time it took executions to ran for each possible value of a selected parameter. In the
+       			   picture an example of how the number of mappers affect the execution time is given.
+                 </td>
+                 <td>
+                     <a class="image-popup-vertical-fit" href="img/screenshots/parameval.jpg">
+                        <img  src="img/screenshots/parameval.jpg" style="width: 90%;" />
+                     </a>
+                 </td>
+               </tr>
+               <tr>
+                 <td>
                    <a href="{{ path('perfcharts', {'random': '1'}) }}"><b>Performance Charts</b></a>
                  </td>
                  <td>
@@ -136,22 +179,17 @@
                  </td>
                </tr>
                <tr>
-                   <td><a href="{{ path('counters') }}"><b>Hadoop Job Counters</b></a></td>
-                   <td>
-                       The Hadoop Job Counters sections allows to browse the counters output at each of the Hadoop
-                       executions, filter them, and to order by a specific counter the selected runs (or all).
-                        </br>
-                       The section presents the summary of all the Job execution counters,
-                       Map and Reduce specific counters, and the I/O subsystem counters.
-                       </br>
-                       It also features the details by task: to understand the running time of each Map or Reduce
-                       process.
-                   </td>
-                   <td>
-                       <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
-                           <img src="img/screenshots/counters.jpeg" style="width: 90%;" />
-                       </a>
-                   </td>
+                 <td>
+                   <a href="{{ path('metrics') }}"><b>Performance Metrics</b></a>
+                 </td>
+                 <td>
+                   The Performance Metrics section shows all the performance metrics collected during benchmark's executions, allowing the user to see how many CPU, Network, I/O and Memory was used.
+                 </td>
+                 <td>
+                     <a class="image-popup-vertical-fit" href="img/screenshots/perfmetrics.jpg">
+                        <img  src="img/screenshots/perfmetrics.jpg" style="width: 90%;" />
+                     </a>
+                 </td>
                </tr>
            </tbody>
           </table>
