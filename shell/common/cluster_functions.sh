@@ -51,20 +51,16 @@ vm_create_node() {
 
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
-
-    #boostrap and provision VM with base packages
+    #boostrap and provision VM with base packages in parallel
     vm_provision &
-
-    wait $! #wait for the provisioning to be ready
-    logger "Provisioning for VM $vm_name ready, finalizing deployment"
-
-    #check if extra commands are specified once VMs are provisioned
-    vm_finalize &
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
     wait_vm_ready "$vm_name"
     vm_check_attach_disks "$vm_name"
+  else
+    logger "ERROR: Invalid VM OS type. Type $type"
+    exit 1
   fi
 }
 
@@ -105,6 +101,13 @@ vm_provision() {
   [ "$type" == "cluster" ] && vm_set_dsh
 
   [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+
+  #logger "Waiting for VM $vm_name deployment"
+  #wait $! #wait for the provisioning to be ready
+
+  logger "Provisioning for VM $vm_name ready, finalizing deployment"
+  #check if extra commands are specified once VMs are provisioned
+  vm_finalize &
 }
 
 vm_finalize() {
