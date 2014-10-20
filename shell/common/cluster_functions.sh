@@ -33,6 +33,37 @@ fi
 
 logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
 
+#$1 vm_name $2 ssh_port
+vm_check_create() {
+  #create VM
+  if ! vm_exists "$1"  ; then
+    vm_create "$1" "$2"
+  else
+    logger "VM $1 already exists. Skipping creation..."
+  fi
+
+}
+
+#requires $vm_name and $type to be set
+vm_create_node() {
+
+  if [ "$vmType" != 'windows' ] ; then
+
+    #check if machine has been already created or creates it
+    vm_create_connect "$vm_name"
+
+    #boostrap and provision VM with base packages
+    vm_provision
+
+    #check if extra commands are specified once VMs are provisioned
+    vm_finalize
+
+  elif [ "$vmType" == 'windows' ] ; then
+    vm_check_create "$vm_name" "$vm_ssh_port"
+    wait_vm_ready "$vm_name"
+    vm_check_attach_disks "$vm_name"
+  fi
+}
 
 #$1 vm_name
 vm_create_connect() {
@@ -54,6 +85,30 @@ vm_create_connect() {
   elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
+
+  [ ! -z "$endpoints" ] && vm_endpoints_create
+}
+
+#requires $vm_name and $type to be set
+vm_provision() {
+  vm_initial_bootstrap
+  vm_set_ssh
+
+  [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+
+  vm_install_base_packages
+  vm_set_dot_files &
+
+  [ "$type" == "cluster" ] && vm_set_dsh
+
+  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+}
+
+vm_finalize() {
+  #extra commands to exectute (if defined)
+  [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
+  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+  [ ! -z "$puppet" ] && vm_puppet_apply
 }
 
 get_node_names() {
@@ -305,55 +360,6 @@ vm_test_initiallize_disks() {
   else
     logger " disks KO for $vm_name or not formated yet. Test output: $test_action"
     return 1
-  fi
-}
-
-
-#$1 vm_name $2 ssh_port
-vm_check_create() {
-  #create VM
-  if ! vm_exists "$1"  ; then
-    vm_create "$1" "$2"
-  else
-    logger "VM $1 already exists. Skipping creation..."
-  fi
-
-}
-
-#requires $vm_name and $type to be set
-vm_create_node() {
-
-  if [ "$vmType" != 'windows' ] ; then
-
-    #check if machine has been already created or creates it
-    vm_create_connect "$vm_name"
-
-    #boostrap VM
-    vm_initial_bootstrap
-
-    vm_set_ssh
-
-    [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
-
-    vm_install_base_packages
-    vm_set_dot_files &
-
-    [ "$type" == "cluster" ] && vm_set_dsh
-
-    [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
-
-    #extra commands to exectute (if defined)
-    [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
-    [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
-
-    [ ! -z "$puppet" ] && vm_puppet_apply
-
-    [ ! -z "$endpoints" ] && vm_endpoints_create
-
-  elif [ "$vmType" == 'windows' ] ; then
-    vm_check_create "$vm_name" "$vm_ssh_port"
-    wait_vm_ready "$vm_name"
-    vm_check_attach_disks "$vm_name"
   fi
 }
 
