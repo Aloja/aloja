@@ -420,7 +420,7 @@ vm_install_base_packages() {
     logger "Installing packages for for VM $vm_name "
 
     vm_execute "sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
-                sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils;"
+                sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;"
 
     test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
     if [ ! -z "$test_install_base_packages" ] ; then
