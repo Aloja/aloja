@@ -16,3 +16,8 @@ nl2char() {
   tmp="$(echo -e "$1"|tr "\n" "$2")"
   echo "${tmp::-1}" #remove trailing $2
 }
+
+#$1 startTime
+getElapsedTime() {
+  echo "$(( $(date +%s) - $1 ))"
+}

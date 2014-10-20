@@ -53,10 +53,13 @@ vm_create_node() {
     vm_create_connect "$vm_name"
 
     #boostrap and provision VM with base packages
-    vm_provision
+    vm_provision &
+
+    wait $! #wait for the provisioning to be ready
+    logger "Provisioning for VM $vm_name ready, finalizing deployment"
 
     #check if extra commands are specified once VMs are provisioned
-    vm_finalize
+    vm_finalize &
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -231,7 +234,7 @@ get_initizalize_disks_test() {
   create_string="echo ''"
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
-    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}1"
+    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -347,7 +350,7 @@ vm_test_initiallize_disks() {
 
   create_string="$(get_initizalize_disks_test)"
 
-  #logger "DEBUG: $create_string"
+  #TODO check if disks are formated
 
   test_action="$(vm_execute "$create_string")"
   #in case SSH is not yet configured, a welcome message will be appended
@@ -358,7 +361,7 @@ vm_test_initiallize_disks() {
     logger " disks OK for VM $vm_name"
     return 0
   else
-    logger " disks KO for $vm_name or not formated yet. Test output: $test_action"
+    logger " disks KO for $vm_name Test output: $test_action"
     return 1
   fi
 }

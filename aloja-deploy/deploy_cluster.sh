@@ -28,5 +28,4 @@ cluster_parallel_config
 cluster_queue_jobs
 
 
-elapsedTime="$(( $(date +%s) - startTime ))"
-logger "All done, took $elapsedTime seconds."
+logger "All done, took $(getElapsedTime) seconds."
