@@ -98,3 +98,11 @@ dbscan:
 dbscandata:
     pattern: "/dbscandata"
     controller: "alojaweb\\Controller\\RestController::dbscanDataAction"
+
+dbscanexecs:
+    pattern: "/dbscanexecs"
+    controller: "alojaweb\\Controller\\DefaultController::dbscanexecsAction"
+
+dbscanexecsdata:
+    pattern: "/dbscanexecsdata"
+    controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"

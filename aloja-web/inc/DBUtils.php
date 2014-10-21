@@ -144,4 +144,96 @@ class DBUtils
             return function($table) use ($metric)  { return "$table.`$metric`"; };
         }
     }
+
+    /**
+     * Adds the clusters of the DBSCAN result to the database. Does NOT replace
+     * existing ones.
+     */
+    public function add_dbscan($jobid, $clusters)
+    {
+        list($bench, $job_offset, $id_exec) = $this->get_jobid_info($jobid);
+
+        // Check if clusters already exist for this jobid
+        $query = "
+            SELECT COUNT(*) as COUNT
+            FROM `JOB_dbscan`
+            WHERE
+                `bench` = :bench AND
+                `job_offset` = :job_offset AND
+                `id_exec` = :id_exec
+        ;";
+        $query_params = array(":bench" => $bench, ":job_offset" => $job_offset, ":id_exec" => $id_exec);
+        $sth = $this->dbConn->prepare($query);
+        $sth->execute($query_params);
+        if ($sth->fetchAll(\PDO::FETCH_ASSOC)[0]["COUNT"] > 0) {
+            return;
+        }
+
+        // Insert new clusters
+        $this->insert_dbscan($clusters);
+    }
+
+    /**
+     * Retrieve info about jobid.
+     *
+     * Returns the bench, job_offset and id_exec of the specified jobid.
+     *
+     * The job_offset is defined as the last string after _
+     * Example: job_201402172244_0002 -> 0002
+     */
+    public function get_jobid_info($jobid)
+    {
+        $query = "
+            SELECT
+                e.`bench`,
+                e.`id_exec`
+            FROM
+                `JOB_details` d,
+                `execs` e
+            WHERE
+                e.`id_exec` = d.`id_exec` AND
+                d.`JOBID` = :jobid
+        ;";
+        $query_params = array(":jobid" => $jobid);
+
+        $rows = $this->get_rows($query, $query_params);
+
+        $bench = $rows[0]["bench"];
+        $id_exec = $rows[0]["id_exec"];
+
+        $job_offset = explode('_', $jobid);
+        $job_offset = end($job_offset);
+
+        return array($bench, $job_offset, $id_exec);
+    }
+
+    /**
+     * Save DBSCAN to database.
+     *
+     * Warning: doesn't check for duplicates neither removes previous clusters.
+     */
+    private function insert_dbscan($clusters)
+    {
+        $columns = ["`bench`", "`job_offset`", "`id_exec`", "`centroid_x`", "`centroid_y`"];
+
+        $query_params = [];
+        foreach ($clusters as $cluster) {
+            $query_params[] = $bench;
+            $query_params[] = $job_offset;
+            $query_params[] = $id_exec;
+            $query_params[] = $cluster->getCentroid()->x;
+            $query_params[] = $cluster->getCentroid()->y;
+        }
+
+        $query_values = implode(', ', array_fill(0, count($clusters), '('.str_pad('', (count($columns)*2)-1, '?,').')'));
+        $query = "
+            INSERT INTO
+                `JOB_dbscan` (".implode(',', $columns).")
+            VALUES
+                $query_values
+        ;";
+
+        $sth = $this->dbConn->prepare($query);
+        $sth->execute($query_params);
+    }
 }
