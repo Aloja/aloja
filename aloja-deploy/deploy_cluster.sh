@@ -26,5 +26,4 @@ cluster_parallel_config
 #master config to execute benchmarks
 cluster_queue_jobs
 
-
 logger "All done, took $(getElapsedTime startTime) seconds."

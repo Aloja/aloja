@@ -16,6 +16,7 @@ clusterConfigFilePath="$CONF_DIF/../conf"
 #load cluster or node config second
 source "$clusterConfigFilePath/$clusterConfigFile"
 
+logger "Starting ALOJA deploy tools for Provider: $cloud_provider"
 
 #global vars
 bootStrapped="false" #not needed for Azure
@@ -27,11 +28,10 @@ elif [ "$cloud_provider" == "rackspace" ] ; then
    devicePrefix="xvd"
    cloud_drive_letters="$(echo {b..z})"
 else
-  logger "WARNING: Cloud provider $cloud_provider not defined."
+  logger "WARNING: Provider $cloud_provider has no devices definition."
   #exit 1
 fi
 
-logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
 
 #$1 vm_name $2 ssh_port
 vm_check_create() {
@@ -141,6 +141,11 @@ get_slaves_names() {
   echo -e "$node_names"
 }
 
+#the default SSH host override if necessary i.e. in Azure
+get_ssh_host() {
+ echo "$vm_name"
+}
+
 #the default key override if necessary i.e. in Azure
 get_ssh_key() {
  echo "../secure/keys/id_rsa"
@@ -148,7 +153,7 @@ get_ssh_key() {
 
 #default port, override to change i.e. in Azure
 get_ssh_port() {
-  echo "22"
+  echo "$vm_ssh_port"
 }
 
 #default port, override to change i.e. Openstack might need first root
@@ -160,32 +165,91 @@ vm_initial_bootstrap() {
   bootStrapped="true" #not necesarry by default
 }
 
-#$1 commands to execute $2 set in parallel (&)
+check_sudo() {
+  test_action="$(vm_execute " sudo test && echo '$testKey'" 2> /dev/null)"
+  #in case SSH is not yet configured, a welcome message will be appended
+
+  test_action="$(echo "$test_action"|grep "$testKey")"
+
+  if [ ! -z "$test_action" ] ; then
+    #logger "SUDO permission OK"
+    return 0
+  else
+    #logger "Cannot sudo"
+    return 1
+  fi
+}
+
+check_sshpass() {
+  if ! which sshpass > /dev/null; then
+    logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
+    sudo apt-get install -y sshpass
+    if ! which sshpass > /dev/null; then
+      logger "ERROR: sshpass could not be installed or not found"
+      exit 1
+    fi
+  fi
+}
+
+#$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
 
   chmod 0600 $(get_ssh_key)
-
-  #echo to print special chars;
-  if [ -z "$2" ] ; then
-    echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+  #Use SSH keys
+  if [ -z "$3" ] ; then
+    #echo to print special chars;
+    if [ -z "$2" ] ; then
+      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    else
+      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+    fi
+  #Use password
   else
-    echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+    check_sshpass
+
+    if [ -z "$2" ] ; then
+      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    else
+      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+    fi
   fi
 }
 
-#interactive SSH
+#interactive SSH $1 use password
 vm_connect() {
-  logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-  ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+
+  #Use SSH keys
+  if [ -z "$1" ] ; then
+    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+
+    if [ "$?" != "0" ] ; then
+      logger "WARNING: Falied SSH connecting using keys"
+      failed_ssh_keys="true"
+    fi
+  #Use password
+  else
+    check_sshpass
+    logger "Connecting to VM $vm_name (using PASS), with details: ssh $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+  fi
 }
 
-#$1 source files $2 destination $3 extra options
+#$1 source files $2 destination $3 extra options $4 use password
 vm_local_scp() {
-    logger "SCPing files"
+  logger "SCPing files"
+
+  #Use SSH keys
+  if [ -z "$4" ] ; then
     #eval is for parameter expansion
-    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -P "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -P "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+  #Use password
+  else
+    check_sshpass
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no -P "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+  fi
 }
 
 #$1 source files $2 destination $3 extra options
@@ -369,18 +433,29 @@ vm_test_initiallize_disks() {
   fi
 }
 
+#$1 use password based auth
 vm_set_ssh() {
 
   if check_bootstraped "vm_set_ssh" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
-    vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
-                echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel"
+    #use SSH keys
+    if [ -z "$1" ] ; then
+      vm_execute "mkdir -p ~/.ssh/;
+                  echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
+                  echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel"
 
-    vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/"
+      vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/"
+      vm_execute "chmod -R 0600 ~/.ssh/*;"
+    #use password
+    else
+      vm_execute "mkdir -p ~/.ssh/;
+                  echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
+                  echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "use_password"
 
-    vm_execute "chmod -R 0600 ~/.ssh/*;"
+      vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "use_password"
+      vm_execute "chmod -R 0600 ~/.ssh/*;" "" "use_password"
+    fi
 
     test_set_ssh="$(vm_execute "cat ~/.ssh/config |grep 'UserKnownHostsFile'")"
     #logger "TEST SSH $test_set_ssh"
@@ -440,7 +515,7 @@ vm_install_base_packages() {
       #set the lock
       check_bootstraped "vm_install_packages" "set"
     else
-      logger "ERROR installing base packages for $vm_name. Test output: $test_install_base_packages"
+      logger "ERROR: installing base packages for $vm_name. Test output: $test_install_base_packages"
     fi
 
   else
@@ -501,27 +576,32 @@ cluster_execute() {
 }
 
 vm_initialize_disks() {
-  if check_bootstraped "vm_initialize_disks" ""; then
-    logger "Initializing disks for VM $vm_name "
+  if [[ "$attachedVolumes" -gt "0" ]] ; then
 
-    create_string=""
-    get_initizalize_disks
+    if check_bootstraped "vm_initialize_disks" ""; then
+      logger "Initializing disks for VM $vm_name "
 
-    vm_execute "$create_string"
+      create_string=""
+      get_initizalize_disks
 
-    test_action="$(vm_execute " [ \"\$\(lsblk|grep ${devicePrefix}c1\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
-      #set the lock
-      check_bootstraped "vm_initialize_disks" "set"
+      vm_execute "$create_string"
+
+      test_action="$(vm_execute " [ \"\$\(lsblk|grep ${devicePrefix}c1\)\" ] && echo '$testKey'")"
+      if [ "$test_action" == "$testKey" ] ; then
+        #set the lock
+        check_bootstraped "vm_initialize_disks" "set"
+      else
+        logger "ERROR initializing disks for $vm_name. Test output: $test_action"
+      fi
+
     else
-      logger "ERROR initializing disks for $vm_name. Test output: $test_action"
+      logger "Disks already initialized for VM $vm_name "
     fi
 
+    vm_mount_disks
   else
-    logger "Disks already initialized for VM $vm_name "
+    logger " no need to attach disks for VM $vm_name"
   fi
-
-  vm_mount_disks
 }
 
 cluster_initialize_disks() {
@@ -709,11 +789,16 @@ vm_puppet_apply() {
 }
 
 #Initialized the shared file system
+#$1 share location
 vm_make_fs() {
 
   logger "Initializing the shared file system for VM $vm_name"
 
-  local attached_disk_path="/scratch/attached/1"
+  if [ -z "$1" ] ; then
+    local share_disk_path="/scratch/attached/1"
+  else
+    local share_disk_path="$1"
+  fi
 
   logger "Checking if ~/share is correctly linked"
   test_action="$(vm_execute "[ -d ~/share ] && [ -L ~/share ] && ls ~/share/safe_store && echo '$testKey'")"
@@ -724,14 +809,14 @@ vm_make_fs() {
     logger " Linking ~/share"
     vm_execute "sudo chown -R ${user} /scratch;
 [ -d ~/share ] && [ ! -L ~/share ] && mv ~/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $attached_disk_path /home/$user/share;
+ln -sf $share_disk_path /home/$user/share;
 touch /home/$user/share/safe_store;
   "
   else
     logger " ~/share is correctly mounted"
   fi
 
-  vm_rsync "../shell" "$attached_disk_path"
+  vm_rsync "../shell" "$share_disk_path"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls ~/share/aplic/aplic_version && echo '$testKey'")"
