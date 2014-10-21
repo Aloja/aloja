@@ -5,7 +5,7 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 
 #TABLE MANIPULATION
-MYSQL_ARGS="-u npm -pquete -h gallactica --local-infile -f -b --show-warnings " #--show-warnings -B
+MYSQL_ARGS="-u vagrant -paaa -h host --local-infile -f -b --show-warnings " #--show-warnings -B
 DB="aloja"
 MYSQL="mysql $MYSQL_ARGS $DB -e "
 BASE_TABLES="$1"
