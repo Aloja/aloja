@@ -788,4 +788,88 @@ VALUES
         ob_start('ob_gzhandler');
         echo json_encode($result, JSON_NUMERIC_CHECK);
     }
+
+    public function dbscanexecsDataAction()
+    {
+        $db = $this->container->getDBUtils();
+
+        $jobid = Utils::get_GET_string("jobid");
+        list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
+
+        $query = "
+            SELECT
+                d.`centroid_x`,
+                d.`centroid_y`
+            FROM `JOB_dbscan` d
+            WHERE
+                d.`bench` = :bench AND
+                d.`job_offset` = :job_offset AND
+                d.`id_exec` = :id_exec
+        ;";
+        $query_params = array(":bench" => $bench, ":job_offset" => $job_offset, ":id_exec" => $id_exec);
+
+        $rows = $db->get_rows($query, $query_params);
+
+        $points = new Cluster();  // Used instead of a simple array to calc x/y min/max
+        foreach ($rows as $row) {
+            $points[] = new Point(
+                $row['centroid_x'],
+                $row['centroid_y'],
+                array(
+                    'bench' => $bench,
+                    'job_offset' => $job_offset,
+                    'id_exec' => $id_exec
+                )
+            );
+        }
+
+        $dbscan = new DBSCAN();
+        list($clusters, $noise) = $dbscan->execute((array)$points);
+
+        $seriesData = array();
+        foreach ($clusters as $cluster) {
+
+            $data = array();
+            foreach ($cluster as $point) {
+                $data[] = array(
+                    'x' => $point->x,
+                    'y' => $point->y,
+                    'bench' => $bench,
+                    'job_offset' => $job_offset,
+                    'id_exec' => $id_exec
+                );
+            }
+
+            if ($data) {
+                $seriesData[] = array(
+                    'points' => $data,
+                    'size' => $cluster->count(),
+                    'x_min' => $cluster->getXMin(),
+                    'x_max' => $cluster->getXMax(),
+                    'y_min' => $cluster->getYMin(),
+                    'y_max' => $cluster->getYMax(),
+                );
+            }
+        }
+
+        $noiseData = array();
+        foreach ($noise as $point) {
+            $noiseData[] = array(
+                'x' => $point->x,
+                'y' => $point->y,
+                'bench' => $bench,
+                'job_offset' => $job_offset,
+                'id_exec' => $id_exec
+            );
+        }
+
+        $result = [
+            'seriesData' => $seriesData,
+            'noiseData' => $noiseData,
+        ];
+
+        header('Content-Type: application/json');
+        ob_start('ob_gzhandler');
+        echo json_encode($result, JSON_NUMERIC_CHECK);
+    }
 }
