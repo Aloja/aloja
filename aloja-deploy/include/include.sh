@@ -4,7 +4,7 @@ self_name="$(basename $0)"
 
 [ -z "$type" ] && type="cluster"
 
-[ -z $1 ] || [ -z $2 ] && { echo "Usage: $self_name ${type}_name <provider:azure|openstack|rackspace> [conf_file]"; exit 1;}
+[ -z $1 ] || [ -z $2 ] && { echo "Usage: $self_name ${type}_name <provider:azure|openstack|rackspace|on-premise|pedraforca> [conf_file]"; exit 1;}
 
 
 if [ -z $3 ]; then

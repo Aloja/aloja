@@ -1,7 +1,7 @@
-CONF_DIF="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source "$CONF_DIF/common.sh"
-source "$CONF_DIF/provider_functions.sh"
+source "$CONF_DIR/common.sh"
+source "$CONF_DIR/provider_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -9,7 +9,7 @@ source "$CONF_DIF/provider_functions.sh"
 
 #test and load cluster config
 
-clusterConfigFilePath="$CONF_DIF/../conf"
+clusterConfigFilePath="$CONF_DIR/../conf"
 
 [ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { logger "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
 
