@@ -152,8 +152,13 @@ get_ssh_key() {
 }
 
 #default port, override to change i.e. in Azure
+#$1 should be vm_name if needed
 get_ssh_port() {
-  echo "$vm_ssh_port"
+  if [ ! -z "$vm_ssh_port" ] ; then
+    echo "$vm_ssh_port"
+  else
+    echo "22" #default port when empty or not overwriten
+  fi
 }
 
 #default port, override to change i.e. Openstack might need first root
@@ -166,16 +171,17 @@ vm_initial_bootstrap() {
 }
 
 check_sudo() {
-  test_action="$(vm_execute " sudo test && echo '$testKey'" 2> /dev/null)"
-  #in case SSH is not yet configured, a welcome message will be appended
 
-  test_action="$(echo "$test_action"|grep "$testKey")"
+#  test_action="$(vm_execute " sudo test && echo '$testKey'" 2> /dev/null)"
+#  #in case SSH is not yet configured, a welcome message will be appended
+#
+#  test_action="$(echo "$test_action"|grep "$testKey")"
 
-  if [ ! -z "$test_action" ] ; then
-    #logger "SUDO permission OK"
+  if [ -z "$noSudo" ] ; then
+    #logger "sudo permission OK"
     return 0
   else
-    #logger "Cannot sudo"
+    logger "WARNING: cannot sudo or disabled"
     return 1
   fi
 }
@@ -226,7 +232,7 @@ vm_connect() {
     ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
 
     if [ "$?" != "0" ] ; then
-      logger "WARNING: Falied SSH connecting using keys"
+      logger "WARNING: Falied SSH connecting using keys.  Retuned code: $?"
       failed_ssh_keys="true"
     fi
   #Use password
@@ -276,6 +282,21 @@ get_master_ssh_port() {
     break #just return one
   done
   echo "$master_ssh_port"
+}
+
+#vm_name must be set
+get_vm_ssh_port() {
+  local node_ssh_port=''
+  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+    local vm_name_tmp="${clusterName}-${vm_id}"
+    local vm_ssh_port_tmp="2${clusterID}${vm_id}"
+
+    if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+      node_ssh_port="2${clusterID}${vm_id}"
+      break #just return one
+    fi
+  done
+  echo "$node_ssh_port"
 }
 
 #requires $create_string to be defined
@@ -503,23 +524,27 @@ vm_check_attach_disks() {
 #}
 
 vm_install_base_packages() {
-  if check_bootstraped "vm_install_packages" ""; then
-    logger "Installing packages for for VM $vm_name "
+  if check_sudo ; then
+    if check_bootstraped "vm_install_packages" ""; then
+      logger "Installing packages for for VM $vm_name "
 
-    #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
+      #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
-    vm_execute "sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;"
+      vm_execute "sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;"
 
-    test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
-    if [ ! -z "$test_install_base_packages" ] ; then
-      #set the lock
-      check_bootstraped "vm_install_packages" "set"
+      test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
+      if [ ! -z "$test_install_base_packages" ] ; then
+        #set the lock
+        check_bootstraped "vm_install_packages" "set"
+      else
+        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_base_packages"
+      fi
+
     else
-      logger "ERROR: installing base packages for $vm_name. Test output: $test_install_base_packages"
+      logger "Packages already initialized"
     fi
-
   else
-    logger "Packages already initialized"
+    logger "WARNING: no sudo access or disabled, no packages installed"
   fi
 }
 

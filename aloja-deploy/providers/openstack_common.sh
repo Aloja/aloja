@@ -84,6 +84,10 @@ get_ssh_host() {
  echo "${nodeIP[$vm_name]}"
 }
 
+get_ssh_port() {
+  echo "22" #default port when empty or not overwriten
+}
+
 #Openstack needs to use root first
 get_ssh_user() {
   #check if we can change from root user

@@ -101,16 +101,6 @@ get_ssh_host() {
  echo "${dnsName}.cloudapp.net"
 }
 
-#Azure changes ports
-get_ssh_port() {
-  if [ -z "$vm_ssh_port" ] ; then
-    logger "ERROR: $vm_ssh_port not set! for VM $vm_name";
-    exit 1
-  fi
-
-  echo "$vm_ssh_port"
-}
-
 #$1 $endpoints list $2 end1 $3 end2
 vm_check_endpoint_exists() {
 	echo $1 | grep $2 | grep $3
