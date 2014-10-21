@@ -33,6 +33,36 @@ fi
 
 logger "Starting ALOJA deploy tools for Cloud provider: $cloud_provider"
 
+#$1 vm_name $2 ssh_port
+vm_check_create() {
+  #create VM
+  if ! vm_exists "$1"  ; then
+    vm_create "$1" "$2"
+  else
+    logger "VM $1 already exists. Skipping creation..."
+  fi
+
+}
+
+#requires $vm_name and $type to be set
+vm_create_node() {
+
+  if [ "$vmType" != 'windows' ] ; then
+
+    #check if machine has been already created or creates it
+    vm_create_connect "$vm_name"
+    #boostrap and provision VM with base packages in parallel
+    vm_provision &
+
+  elif [ "$vmType" == 'windows' ] ; then
+    vm_check_create "$vm_name" "$vm_ssh_port"
+    wait_vm_ready "$vm_name"
+    vm_check_attach_disks "$vm_name"
+  else
+    logger "ERROR: Invalid VM OS type. Type $type"
+    exit 1
+  fi
+}
 
 #$1 vm_name
 vm_create_connect() {
@@ -54,6 +84,37 @@ vm_create_connect() {
   elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
+
+  [ ! -z "$endpoints" ] && vm_endpoints_create
+}
+
+#requires $vm_name and $type to be set
+vm_provision() {
+  vm_initial_bootstrap
+  vm_set_ssh
+
+  [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+
+  vm_install_base_packages
+  vm_set_dot_files &
+
+  [ "$type" == "cluster" ] && vm_set_dsh
+
+  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+
+  #logger "Waiting for VM $vm_name deployment"
+  #wait $! #wait for the provisioning to be ready
+
+  logger "Provisioning for VM $vm_name ready, finalizing deployment"
+  #check if extra commands are specified once VMs are provisioned
+  vm_finalize &
+}
+
+vm_finalize() {
+  #extra commands to exectute (if defined)
+  [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
+  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+  [ ! -z "$puppet" ] && vm_puppet_apply
 }
 
 get_node_names() {
@@ -176,7 +237,7 @@ get_initizalize_disks_test() {
   create_string="echo ''"
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
-    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}1"
+    create_string="$create_string && lsblk|grep ${devicePrefix}${drive_letter}"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
@@ -292,7 +353,7 @@ vm_test_initiallize_disks() {
 
   create_string="$(get_initizalize_disks_test)"
 
-  #logger "DEBUG: $create_string"
+  #TODO check if disks are formated
 
   test_action="$(vm_execute "$create_string")"
   #in case SSH is not yet configured, a welcome message will be appended
@@ -303,57 +364,8 @@ vm_test_initiallize_disks() {
     logger " disks OK for VM $vm_name"
     return 0
   else
-    logger " disks KO for $vm_name or not formated yet. Test output: $test_action"
+    logger " disks KO for $vm_name Test output: $test_action"
     return 1
-  fi
-}
-
-
-#$1 vm_name $2 ssh_port
-vm_check_create() {
-  #create VM
-  if ! vm_exists "$1"  ; then
-    vm_create "$1" "$2"
-  else
-    logger "VM $1 already exists. Skipping creation..."
-  fi
-
-}
-
-#requires $vm_name and $type to be set
-vm_create_node() {
-
-  if [ "$vmType" != 'windows' ] ; then
-
-    #check if machine has been already created or creates it
-    vm_create_connect "$vm_name"
-
-    #boostrap VM
-    vm_initial_bootstrap
-
-    vm_set_ssh
-
-    [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
-
-    vm_install_base_packages
-    vm_set_dot_files &
-
-    [ "$type" == "cluster" ] && vm_set_dsh
-
-    [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
-
-    #extra commands to exectute (if defined)
-    [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
-    [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
-
-    [ ! -z "$puppet" ] && vm_puppet_apply
-
-    [ ! -z "$endpoints" ] && vm_endpoints_create
-
-  elif [ "$vmType" == 'windows' ] ; then
-    vm_check_create "$vm_name" "$vm_ssh_port"
-    wait_vm_ready "$vm_name"
-    vm_check_attach_disks "$vm_name"
   fi
 }
 
@@ -419,8 +431,9 @@ vm_install_base_packages() {
   if check_bootstraped "vm_install_packages" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    vm_execute "sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
-                sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils;"
+    #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
+
+    vm_execute "sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;"
 
     test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
     if [ ! -z "$test_install_base_packages" ] ; then

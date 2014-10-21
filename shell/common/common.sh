@@ -7,7 +7,7 @@ testKey="###OK###"
 #common funtions
 logger() {
   dateTime="$(date +%Y%m%d_%H%M%S)"
-  echo "$dateTime: $1"
+  echo "$dateTime p$$: $1"
 }
 
 #trasposes new lines to selected string
@@ -15,4 +15,11 @@ logger() {
 nl2char() {
   tmp="$(echo -e "$1"|tr "\n" "$2")"
   echo "${tmp::-1}" #remove trailing $2
+}
+
+#$1 startTime
+getElapsedTime() {
+  elapsedTime='ERROR: start time not set.'
+  [ ! -z $1 ] && elapsedTime="$(( $(date +%s) - $1 ))"
+  echo "$elapsedTime"
 }
