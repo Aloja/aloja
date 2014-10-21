@@ -17,6 +17,7 @@ vagrant/.vagrant/*
 
 settings_secured.yaml
 secure/*
+!secure/.git_ignored_folder
 
 #test PHP file to check the configuration (insecure in production)
 test.php
@@ -125,4 +126,3 @@ aloja-web/vendor/
 #logs
 aloja-web/logs/*.log
 /files
-azure-deploy/azure.err
