@@ -17,6 +17,8 @@ class Cluster extends \ArrayObject
     private $y_min;
     private $y_max;
 
+    private $centroid;
+
     /**
      * Updates the calculated internal values with the passed value
      */
@@ -27,12 +29,18 @@ class Cluster extends \ArrayObject
         if ($this->x_max === null) $this->x_max = $value->x;
         if ($this->y_min === null) $this->y_min = $value->y;
         if ($this->y_max === null) $this->y_max = $value->y;
+        if ($this->centroid === null) $this->centroid = new Point($value->x, $value->y);
 
         // Update values if necessary
         if ($this->x_min > $value->x) $this->x_min = $value->x;
         if ($this->x_max < $value->x) $this->x_max = $value->x;
         if ($this->y_min > $value->y) $this->y_min = $value->y;
         if ($this->y_max < $value->y) $this->y_max = $value->y;
+
+        // Recalculate centroid with new value
+        $size = $this->count();
+        $this->centroid->x = ($this->centroid->x * $size + $value->x) / ($size + 1);
+        $this->centroid->y = ($this->centroid->y * $size + $value->y) / ($size + 1);
     }
 
     /**
@@ -65,6 +73,14 @@ class Cluster extends \ArrayObject
     public function getYMax()
     {
         return $this->y_max;
+    }
+
+    /**
+     * Return the centroid of the cluster, or null if empty
+     */
+    public function getCentroid()
+    {
+        return $this->centroid;
     }
 
     /**

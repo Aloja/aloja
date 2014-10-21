@@ -129,4 +129,44 @@ class ClusterTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals($cluster->getYMax(), 10);
     }
 
+    public function testClusterCentroid()
+    {
+        $cluster = new Cluster();
+        $this->assertNull($cluster->getCentroid());
+
+        $cluster[] = new Point(1, 2);
+        $this->assertEquals($cluster->getCentroid(), new Point(1, 2));
+
+        $cluster[] = new Point(3, 2);
+        $this->assertEquals($cluster->getCentroid(), new Point(2, 2));
+
+        $cluster[] = new Point(5, -10);
+        $this->assertEquals($cluster->getCentroid(), new Point(3, -2));
+    }
+
+    public function testClusterCentroidConstructArray()
+    {
+        $cluster = new Cluster(array(
+            new Point(1, 2),
+            new Point(3, 2),
+            new Point(5, -10)
+        ));
+        $this->assertEquals($cluster->getCentroid(), new Point(3, -2));
+    }
+
+    public function testClusterCentroidConstructClusters()
+    {
+        $cluster = new Cluster(
+            new Cluster(
+                new Point(1, 2)
+            ),
+            new Cluster(
+                new Point(3, 2)
+            ),
+            new Cluster(
+                new Point(5, -10)
+            )
+        );
+        $this->assertEquals($cluster->getCentroid(), new Point(3, -2));
+    }
 }
