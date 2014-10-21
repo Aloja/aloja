@@ -119,13 +119,18 @@ vm_finalize() {
 
 get_node_names() {
   local node_names=''
-  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    if [ ! -z "$node_names" ] ; then
-      node_names="${node_names}\n${clusterName}-${vm_id}"
-    else
-      node_names="${clusterName}-${vm_id}"
-    fi
-  done
+  if [ ! -z "$nodeNames" ] ; then
+    node_names="$nodeNames"
+  else #generate them from standard naming
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      if [ ! -z "$node_names" ] ; then
+        node_names="${node_names}\n${clusterName}-${vm_id}"
+      else
+        node_names="${clusterName}-${vm_id}"
+      fi
+    done
+  fi
+
   echo -e "$node_names"
 }
 
