@@ -2,6 +2,10 @@
 
 namespace alojaweb\inc;
 
+use alojaweb\inc\dbscan\DBSCAN;
+use alojaweb\inc\dbscan\Cluster;
+use alojaweb\inc\dbscan\Point;
+
 class DBUtils
 {
     public static $TASK_METRICS = [
@@ -146,12 +150,61 @@ class DBUtils
     }
 
     /**
+     * Calculates the DBSCAN.
+     */
+    public function get_dbscan($jobid, $metric_x, $metric_y, $eps = null, $minPoints = null)
+    {
+        $query_select1 = $this->get_task_metric_query($this::$TASK_METRICS[$metric_x]);
+        $query_select2 = $this->get_task_metric_query($this::$TASK_METRICS[$metric_y]);
+        $query = "
+            SELECT
+                t.`TASKID` as TASK_ID,
+                ".$query_select1('t')." as TASK_VALUE_X,
+                ".$query_select2('t')." as TASK_VALUE_Y
+            FROM `JOB_tasks` t
+            WHERE t.`JOBID` = :jobid
+            ORDER BY t.`TASKID`
+        ;";
+        $query_params = array(":jobid" => $jobid);
+
+        $rows = $this->get_rows($query, $query_params);
+
+        $points = new Cluster();  // Used instead of a simple array to calc x/y min/max
+        foreach ($rows as $row) {
+            $task_id = $row['TASK_ID'];
+            $task_value_x = $row['TASK_VALUE_X'] ?: 0;
+            $task_value_y = $row['TASK_VALUE_Y'] ?: 0;
+
+            // Show only task id (not the whole string)
+            $task_id = substr($task_id, 23);
+
+            $points[] = new Point($task_value_x, $task_value_y, array('task_id' => $task_id));
+        }
+
+        $dbscan = new DBSCAN($eps, $minPoints);
+        $dbscan->execute((array)$points);
+
+        // If heuristic was used, cache results in database
+        if ($eps === null && $minPoints === null) {
+            $this->add_dbscan($jobid, $metric_x, $metric_y, $dbscan->getClusters());
+        }
+
+        return $dbscan;
+    }
+
+    /**
      * Adds the clusters of the DBSCAN result to the database. Does NOT replace
      * existing ones.
      */
-    public function add_dbscan($jobid, $clusters)
+    public function add_dbscan($jobid, $metric_x, $metric_y, $clusters)
     {
         list($bench, $job_offset, $id_exec) = $this->get_jobid_info($jobid);
+
+        // Start transaction
+        // We need this here because we are going to SELECT some data to check
+        // if exists, and if not INSERT it to the database
+        // Also, the first SELECT has a "LOCK IN SHARE MODE"
+        $this->dbConn->beginTransaction();
 
         // Check if clusters already exist for this jobid
         $query = "
@@ -160,17 +213,31 @@ class DBUtils
             WHERE
                 `bench` = :bench AND
                 `job_offset` = :job_offset AND
+                `metric_x` = :metric_x AND
+                `metric_y` = :metric_y AND
                 `id_exec` = :id_exec
+            LOCK IN SHARE MODE
         ;";
-        $query_params = array(":bench" => $bench, ":job_offset" => $job_offset, ":id_exec" => $id_exec);
+        $query_params = array(
+            ":bench" => $bench,
+            ":job_offset" => $job_offset,
+            ":metric_x" => $metric_x,
+            ":metric_y" => $metric_y,
+            ":id_exec" => $id_exec
+        );
         $sth = $this->dbConn->prepare($query);
         $sth->execute($query_params);
         if ($sth->fetchAll(\PDO::FETCH_ASSOC)[0]["COUNT"] > 0) {
+            // End transaction (INSERT not needed)
+            $this->dbConn->commit();
             return;
         }
 
         // Insert new clusters
-        $this->insert_dbscan($clusters);
+        $this->insert_dbscan($bench, $job_offset, $id_exec, $metric_x, $metric_y, $clusters);
+
+        // End transaction (outside of que SELECT + INSERT block)
+        $this->dbConn->commit();
     }
 
     /**
@@ -208,18 +275,65 @@ class DBUtils
     }
 
     /**
+     * Finds all the executions related to the $bench and $job_offset that
+     * don't have dbscanexecs results calculated yet.
+     *
+     * Returns a list containing arrays with 'bench', 'id_exec' and 'jobid'.
+     */
+    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y)
+    {
+        $query = "
+            SELECT
+                e.`bench`,
+                d.`id_exec`,
+                d.`JOBID` as jobid
+            FROM `JOB_details` d
+
+            JOIN `execs` e
+            ON e.`id_exec` = d.`id_exec`
+
+            LEFT OUTER JOIN `JOB_dbscan` s
+            ON
+                e.`bench` = s.`bench` AND
+                s.`metric_x` = :metric_x AND
+                s.`metric_y` = :metric_y AND
+                d.`id_exec` = s.`id_exec`
+
+            WHERE e.`bench` = :bench
+            AND d.`JOBID` LIKE :job_offset
+            AND s.`id` IS null
+            ORDER BY d.`id_exec`
+        ;";
+        $query_params = array(
+            ":bench" => $bench,
+            ":job_offset" => "%_$job_offset",
+            ":metric_x" => $metric_x,
+            ":metric_y" => $metric_y
+        );
+
+        // Done manually to bypass cache
+        $sth = $this->dbConn->prepare($query);
+        $sth->execute($query_params);
+        $rows = $sth->fetchAll(\PDO::FETCH_ASSOC);
+
+        return $rows;
+    }
+
+    /**
      * Save DBSCAN to database.
      *
      * Warning: doesn't check for duplicates neither removes previous clusters.
      */
-    private function insert_dbscan($clusters)
+    private function insert_dbscan($bench, $job_offset, $id_exec, $metric_x, $metric_y, $clusters)
     {
-        $columns = ["`bench`", "`job_offset`", "`id_exec`", "`centroid_x`", "`centroid_y`"];
+        $columns = ["`bench`", "`job_offset`", "`metric_x`", "`metric_y`", "`id_exec`", "`centroid_x`", "`centroid_y`"];
 
         $query_params = [];
         foreach ($clusters as $cluster) {
             $query_params[] = $bench;
             $query_params[] = $job_offset;
+            $query_params[] = $metric_x;
+            $query_params[] = $metric_y;
             $query_params[] = $id_exec;
             $query_params[] = $cluster->getCentroid()->x;
             $query_params[] = $cluster->getCentroid()->y;
