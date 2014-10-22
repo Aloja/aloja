@@ -209,36 +209,41 @@ check_sshpass() {
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
 
+  set_shh_proxy
+
   chmod 0600 $(get_ssh_key)
   #Use SSH keys
   if [ -z "$3" ] ; then
     #echo to print special chars;
     if [ -z "$2" ] ; then
-      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
   #Use password
   else
     check_sshpass
 
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
   fi
 }
 
+set_shh_proxy() {
+  if [ ! -z "$useProxy" ] ; then
+    proxyDetails="ProxyCommand $useProxy"
+  else
+    proxyDetails="ProxyCommand none"
+  fi
+
+}
 #interactive SSH $1 use password
 vm_connect() {
 
-  if [ ! -z "$useProxy" ] ; then
-    #ssh -o 'ProxyCommand ssh %h nc login.example.edu 22' \
-    proxyDetails="'ProxyCommand ssh -i ../secure/keys/id_rsa npoggi@pedraforca1.bsc.es -p 6622'"
-  else
-    proxyDetails="'ProxyCommand none'"
-  fi
+  set_shh_proxy
 
   #Use SSH keys
   if [ -z "$1" ] ; then
@@ -261,14 +266,16 @@ vm_connect() {
 vm_local_scp() {
   logger "SCPing files"
 
+  set_shh_proxy
+
   #Use SSH keys
   if [ -z "$4" ] ; then
     #eval is for parameter expansion
-    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -P "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -P -o "$proxyDetails" "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
     check_sshpass
-    sshpass -p "$password" scp -o StrictHostKeyChecking=no -P "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no -P -o "$proxyDetails" "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -283,7 +290,7 @@ vm_rsync() {
 get_master_name() {
   local master_name=''
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    master_name="${clusterName}-${vm_id}"
+    local master_name="${clusterName}-${vm_id}"
     break #just return one
   done
   echo "$master_name"
@@ -292,7 +299,7 @@ get_master_name() {
 get_master_ssh_port() {
   local master_ssh_port=''
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    master_ssh_port="2${clusterID}${vm_id}"
+    local master_ssh_port="2${clusterID}${vm_id}"
     break #just return one
   done
   echo "$master_ssh_port"
@@ -306,7 +313,7 @@ get_vm_ssh_port() {
     local vm_ssh_port_tmp="2${clusterID}${vm_id}"
 
     if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-      node_ssh_port="2${clusterID}${vm_id}"
+      local node_ssh_port="2${clusterID}${vm_id}"
       break #just return one
     fi
   done
