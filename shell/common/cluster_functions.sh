@@ -122,13 +122,13 @@ vm_finalize() {
 get_node_names() {
   local node_names=''
   if [ ! -z "$nodeNames" ] ; then
-    node_names="$nodeNames"
+    local node_names="$nodeNames"
   else #generate them from standard naming
     for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
       if [ ! -z "$node_names" ] ; then
-        node_names="${node_names}\n${clusterName}-${vm_id}"
+        local node_names="${node_names}\n${clusterName}-${vm_id}"
       else
-        node_names="${clusterName}-${vm_id}"
+        local node_names="${clusterName}-${vm_id}"
       fi
     done
   fi
@@ -289,10 +289,18 @@ vm_rsync() {
 
 get_master_name() {
   local master_name=''
-  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    local master_name="${clusterName}-${vm_id}"
-    break #just return one
-  done
+
+  if [ ! -z "$nodeNames" ] ; then
+    for node in $nodeNames ; do #pad the sequence with 0s
+      local master_name="$node"
+      break #just return one
+    done
+  else #generate them from standard naming
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local master_name="${clusterName}-${vm_id}"
+      break #just return one
+    done
+  fi
   echo "$master_name"
 }
 
