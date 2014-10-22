@@ -24,6 +24,7 @@ wait $! #wait for the last one in case we launch in parallel
 cluster_parallel_config
 
 #master config to execute benchmarks
-cluster_queue_jobs
+[ ! -z "$queueJobs" ] && cluster_queue_jobs
+
 
 logger "All done, took $(getElapsedTime startTime) seconds."
