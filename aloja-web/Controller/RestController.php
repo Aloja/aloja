@@ -764,6 +764,8 @@ VALUES
 
     public function dbscanexecsDataAction()
     {
+        ini_set('memory_limit', '384M');
+
         $db = $this->container->getDBUtils();
 
         $jobid = Utils::get_GET_string("jobid");
