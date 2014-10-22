@@ -100,25 +100,14 @@
             }
 
             function updateChart(event) {
-                // Start loading
-                chart.showLoading();
+                // Start loading (only show first time, if not already present)
+                if (chart.loadingShown !== true) {
+                    chart.showLoading();
+                }
 
                 // Load chart options from html form
                 var metric_x = form.find("[name='metric_x']");
                 var metric_y = form.find("[name='metric_y']");
-                var heuristic = form.find("[name='heuristic']").hasClass("active");
-                var eps = form.find("[name='eps']");
-                var minPoints = form.find("[name='minPoints']");
-
-                // Workaround
-                // When a button toggle event is dispatched, the class
-                // "active" is added to the element AFTER the event has
-                // finished executing, so the value is toggled manually here
-                if ($(this).is("button")) {
-                    if ($(this).attr("name") == "heuristic") {
-                        heuristic = !heuristic;
-                    }
-                }
 
                 // Launch ajax request
                 $.ajax({
@@ -126,31 +115,18 @@
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
-                        heuristic: ((heuristic)?1:0),
-                        eps: eps.val(),
-                        minPoints: minPoints.val(),
                     },
                 })
                 .done(function(data) {
+
+                    // Update loading dialog
+                    chart.showLoading("Loading... <br>(" + data.pending + " remaining)");
+
                     // Update chart with new options
                     var metric_x_name = metric_x.find("option:selected").text();
                     var metric_y_name = metric_y.find("option:selected").text();
                     chart.xAxis[0].setTitle({text: metric_x_name});
                     chart.yAxis[0].setTitle({text: metric_y_name});
-
-                    // Check heuristic usage
-                    if (data.heuristic) {
-                        // Disable controls
-                        eps.prop("disabled", true);
-                        minPoints.prop("disabled", true);
-                    } else {
-                        // Enable controls
-                        eps.prop("disabled", false);
-                        minPoints.prop("disabled", false);
-                    }
-                    // Show used values in the form
-                    eps.val(data.eps);
-                    minPoints.val(data.minPoints);
 
                     // Reset series color and symbol iterator
                     // This way the same cluster will keep it's theme between updates
@@ -183,8 +159,13 @@
 
                     chart.redraw();
 
-                    // Finished loading
-                    chart.hideLoading();
+                    if (data.pending > 0) {
+                        // Fire the AJAX call again
+                        updateChart();
+                    } else {
+                        // Finished loading
+                        chart.hideLoading();
+                    }
                 });
 
                 // Prevent form submit
@@ -228,7 +209,7 @@
                     shared: true,
                     useHTML: true,
                     headerFormat: '',
-                    pointFormat: '<span style="font-size: 10px">{point.task_id}</span><br/><span style="font-size: 10px">{series.name}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
+                    pointFormat: '<span style="font-size: 10px">Exec: {point.id_exec}</span><br/><span style="font-size: 10px">{series.name}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
                 },
                 plotOptions: {
                     series: {
@@ -265,6 +246,25 @@
         <button type="button" id="zoom_reset" class="btn btn-default">Reset Zoom</button>
     </form>
 
+    <form id="options" role="form" class="form-inline pull-right">
+        <input type="hidden" name="jobid" value="{{ jobid }}">
+        <label>
+            Metric X:
+            <select name="metric_x" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}" {% if loop.index0 == 0 %}selected="selected"{% endif %}>{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+        <label>
+            Metric Y:
+            <select name="metric_y" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+    </form>
     <div id="chart" style="clear: both;"></div>
 
 {% endblock %}

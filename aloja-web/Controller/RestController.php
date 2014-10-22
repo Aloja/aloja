@@ -704,49 +704,21 @@ VALUES
         $db = $this->container->getDBUtils();
 
         $jobid = Utils::get_GET_string("jobid");
-        $metric_x = $db::$TASK_METRICS[Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0];
-        $metric_y = $db::$TASK_METRICS[Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1];
+        $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
+        $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
         $heuristic = Utils::get_GET_int("heuristic") !== null ? Utils::get_GET_int("heuristic") : 1;
         $eps = Utils::get_GET_float("eps") !== null ? Utils::get_GET_float("eps") : 250000;
         $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
-
-        $query_select1 = $db->get_task_metric_query($metric_x);
-        $query_select2 = $db->get_task_metric_query($metric_y);
-        $query = "
-            SELECT
-                t.`TASKID` as TASK_ID,
-                ".$query_select1('t')." as TASK_VALUE_X,
-                ".$query_select2('t')." as TASK_VALUE_Y
-            FROM `JOB_tasks` t
-            WHERE t.`JOBID` = :jobid
-            ORDER BY t.`TASKID`
-        ;";
-        $query_params = array(":jobid" => $jobid);
-
-        $rows = $db->get_rows($query, $query_params);
-
-        $points = new Cluster();  // Used instead of a simple array to calc x/y min/max
-        foreach ($rows as $row) {
-            $task_id = $row['TASK_ID'];
-            $task_value_x = $row['TASK_VALUE_X'] ?: 0;
-            $task_value_y = $row['TASK_VALUE_Y'] ?: 0;
-
-            // Show only task id (not the whole string)
-            $task_id = substr($task_id, 23);
-
-            $points[] = new Point($task_value_x, $task_value_y, array('task_id' => $task_id));
-        }
 
         // Heuristic: let DBSCAN choose the parameters
         if ($heuristic) {
             $eps = $minPoints = null;
         }
 
-        $dbscan = new DBSCAN($eps, $minPoints);
-        list($clusters, $noise) = $dbscan->execute((array)$points);
+        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $eps, $minPoints);
 
         $seriesData = array();
-        foreach ($clusters as $cluster) {
+        foreach ($dbscan->getClusters() as $cluster) {
 
             $data = array();
             foreach ($cluster as $point) {
@@ -769,7 +741,7 @@ VALUES
         }
 
         $noiseData = array();
-        foreach ($noise as $point) {
+        foreach ($dbscan->getNoise() as $point) {
             $task_id = $point->info['task_id'];
             $task_value_x = $point->x;
             $task_value_y = $point->y;
@@ -794,20 +766,39 @@ VALUES
         $db = $this->container->getDBUtils();
 
         $jobid = Utils::get_GET_string("jobid");
+        $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
+        $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+
         list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
 
+        // Calc pending dbscanexecs (if any)
+        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y);
+        if (count($pending) > 0) {
+            $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y);
+        }
+
+        // Retrieve calculated dbscanexecs from database
         $query = "
             SELECT
+                d.`id_exec`,
                 d.`centroid_x`,
                 d.`centroid_y`
             FROM `JOB_dbscan` d
             WHERE
                 d.`bench` = :bench AND
                 d.`job_offset` = :job_offset AND
-                d.`id_exec` = :id_exec
+                d.`metric_x` = :metric_x AND
+                d.`metric_y` = :metric_y
         ;";
-        $query_params = array(":bench" => $bench, ":job_offset" => $job_offset, ":id_exec" => $id_exec);
+        $query_params = array(
+            ":bench" => $bench,
+            ":job_offset" => $job_offset,
+            ":metric_x" => $metric_x,
+            ":metric_y" => $metric_y
+        );
 
+        // Since we are calculating new results, we have to bypass the cache
+        $_GET['NO_CACHE'] = 1;
         $rows = $db->get_rows($query, $query_params);
 
         $points = new Cluster();  // Used instead of a simple array to calc x/y min/max
@@ -815,11 +806,7 @@ VALUES
             $points[] = new Point(
                 $row['centroid_x'],
                 $row['centroid_y'],
-                array(
-                    'bench' => $bench,
-                    'job_offset' => $job_offset,
-                    'id_exec' => $id_exec
-                )
+                array('id_exec' => $row['id_exec'])
             );
         }
 
@@ -834,9 +821,7 @@ VALUES
                 $data[] = array(
                     'x' => $point->x,
                     'y' => $point->y,
-                    'bench' => $bench,
-                    'job_offset' => $job_offset,
-                    'id_exec' => $id_exec
+                    'id_exec' => $point->info['id_exec']
                 );
             }
 
@@ -857,15 +842,14 @@ VALUES
             $noiseData[] = array(
                 'x' => $point->x,
                 'y' => $point->y,
-                'bench' => $bench,
-                'job_offset' => $job_offset,
-                'id_exec' => $id_exec
+                'id_exec' => $point->info['id_exec']
             );
         }
 
         $result = [
             'seriesData' => $seriesData,
             'noiseData' => $noiseData,
+            'pending' => max(0, count($pending) - 1),
         ];
 
         header('Content-Type: application/json');
