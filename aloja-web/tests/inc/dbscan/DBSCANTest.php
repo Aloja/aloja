@@ -204,6 +204,7 @@ class DBSCANTest extends \PHPUnit_Framework_TestCase
 
     /**
      * @dataProvider iterationsProvider
+     * @group optimization
      */
     public function testComplexity($size, $repeat)
     {
