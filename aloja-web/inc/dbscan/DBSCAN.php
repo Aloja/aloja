@@ -43,6 +43,16 @@ class DBSCAN
         return $this->minPoints;
     }
 
+    public function getClusters()
+    {
+        return $this->cluster;
+    }
+
+    public function getNoise()
+    {
+        return $this->noise;
+    }
+
     public function execute($data)
     {
         // Initialize internal variables
