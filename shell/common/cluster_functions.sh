@@ -58,6 +58,8 @@ vm_create_node() {
     vm_check_create "$vm_name" "$vm_ssh_port"
     wait_vm_ready "$vm_name"
     vm_check_attach_disks "$vm_name"
+    [ ! -z "$endpoints" ] && vm_endpoints_create
+
   else
     logger "ERROR: Invalid VM OS type. Type $type"
     exit 1
@@ -231,10 +233,17 @@ vm_execute() {
 #interactive SSH $1 use password
 vm_connect() {
 
+  if [ ! -z "$useProxy" ] ; then
+    #ssh -o 'ProxyCommand ssh %h nc login.example.edu 22' \
+    proxyDetails="'ProxyCommand ssh -i ../secure/keys/id_rsa npoggi@pedraforca1.bsc.es -p 6622'"
+  else
+    proxyDetails="'ProxyCommand none'"
+  fi
+
   #Use SSH keys
   if [ -z "$1" ] ; then
-    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
 
     if [ "$?" != "0" ] ; then
       logger "WARNING: Falied SSH connecting using keys.  Retuned code: $?"
@@ -243,8 +252,8 @@ vm_connect() {
   #Use password
   else
     check_sshpass
-    logger "Connecting to VM $vm_name (using PASS), with details: ssh $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$password" ssh -o StrictHostKeyChecking=no "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    logger "Connecting to VM $vm_name (using PASS), with details: ssh -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
