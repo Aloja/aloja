@@ -274,6 +274,7 @@ vm_local_scp() {
   #Use password
   else
     check_sshpass
+
     sshpass -p "$password" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
@@ -485,28 +486,23 @@ vm_test_initiallize_disks() {
 #$1 use password based auth
 vm_set_ssh() {
 
-  if check_bootstraped "vm_set_ssh" ""; then
+  if check_bootstraped "vm_set_ssh2" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
-    #use SSH keys
     if [ -z "$1" ] ; then
-      vm_execute "mkdir -p ~/.ssh/;
-                  echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
-                  echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel"
-
-      vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/"
-      vm_execute "chmod -R 0600 ~/.ssh/*;"
-    #use password
+      local use_password="" #use SSH keys
     else
-      vm_execute "mkdir -p ~/.ssh/;
-                  echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
-                  echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "use_password"
-
-      vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "use_password"
-      vm_execute "chmod -R 0600 ~/.ssh/*;" "" "use_password"
+      local use_password="true" #use password
     fi
 
-    test_set_ssh="$(vm_execute "cat ~/.ssh/config |grep 'UserKnownHostsFile'")"
+    vm_execute "mkdir -p ~/.ssh/;
+                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
+                echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "$use_password"
+
+    vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "$use_password"
+    vm_execute "chmod -R 0600 ~/.ssh/*;" "" "$use_password"
+
+    test_set_ssh="$(vm_execute "cat ~/.ssh/config |grep 'UserKnownHostsFile' && ls ~/.ssh/id_rsa")"
     #logger "TEST SSH $test_set_ssh"
 
     if [ ! -z "$test_set_ssh" ] ; then
