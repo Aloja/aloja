@@ -113,6 +113,18 @@ mkdir -p /home/$user/.ssh &&
 echo '${insecureKey}' >> /home/$user/.ssh/authorized_keys &&
 chown -R $user: /home/$user/.ssh ;
 cp /home/$user/.profile /home/$user/.bashrc /root/ ;
+echo -e '* soft nproc 65535
+chmod 777 /etc/security/limits.conf;
+echo -e '* soft nproc 450756
+* hard nproc 450756
+* soft nofile 65535
+* hard nofile 65535' >> /etc/security/limits.conf;
+chmod 644 /etc/security/limits.conf;
+chmod 777 /etc/pam.d/common-session;
+echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
+chmod 644 /etc/pam.d/common-session;
+adduser $user adm;
+ufw disable;
 "
 
     test_action="$(vm_execute " [ -d /home/$user/.ssh ] && echo '$testKey'")"
@@ -170,6 +182,7 @@ cluster_final_boostrap() {
 
 node_connect() {
 
+  bootStrapped="true" #try to connect as a regular user
   vm_set_details
 
   logger "Connecting to Rackspace"

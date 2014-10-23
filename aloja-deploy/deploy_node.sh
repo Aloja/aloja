@@ -6,5 +6,4 @@ source "include/include.sh"
 
 vm_create_node
 
-elapsedTime="$(( $(date +%s) - startTime ))"
-logger "All done, took $elapsedTime seconds."
+logger "All done, took $(getElapsedTime startTime) seconds."
