@@ -142,7 +142,7 @@ source "$CUR_DIR_TMP/common/cluster_functions.sh"
 #####
 
 NUMBER_OF_SLAVES="$numberOfNodes"
-user="pristine"
+userAloja="pristine"
 
 DSH="dsh -M -c -m "
 
@@ -178,7 +178,7 @@ else
   exit 1
 fi
 
-BASE_DIR="/home/$user/share/"
+BASE_DIR="/home/$userAloja/share/"
 SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
 H_DIR="$HDD/aplic/$HADOOP_VERSION" #execution dir
@@ -192,7 +192,7 @@ DATE='date +%Y%m%d_%H%M%S'
 CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${clusterName}"
 JOB_NAME="`$DATE`_$CONF"
 
-JOB_PATH="/home/$user/share/jobs_$clusterName/$JOB_NAME"
+JOB_PATH="/home/$userAloja/share/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
@@ -209,7 +209,7 @@ $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo serv
 
 #temporary to avoid read-only file system errors
 echo "Re-mounting attached disks"
-$DSH "sudo umount /home/$user/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+$DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
 
 correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
@@ -232,7 +232,7 @@ logger(){
 
 
 logger "Setting scratch permissions"
-$DSH "sudo chown -R $user: /scratch"
+$DSH "sudo chown -R $userAloja: /scratch"
 
 #only copy files if version has changed (to save time in azure)
 logger "Checking if to generate source dirs"

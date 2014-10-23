@@ -60,9 +60,17 @@ cluster_final_boostrap() {
 
 ###for executables
 
-#1 $node_name
 node_connect() {
-	logger "WARNING: Function node_connect not implemented or not necessary for provider"
+
+  bootStrapped="true" #try to connect as a regular user
+
+  logger "Connecting to $vm_name using SSH keys"
+  vm_connect
+
+  if [ ! -z "$failed_ssh_keys" ] ; then
+    logger "Connecting to $vm_name using password"
+    vm_connect "use_password"
+  fi
 }
 
 #1 $node_name
