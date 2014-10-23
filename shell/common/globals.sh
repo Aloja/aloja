@@ -17,5 +17,7 @@ vmSize='' #Size according to cloud provider
 attachedVolumes='0' #0 attached volumes by default
 diskSize='1023' #1TB (in Azure format) for default diskSize
 
+queueJobs='' #set to set the queue and add benchmarks to the cluster
+
 #cluster_functions.sh
 proxyDetails='' #SSH proxy details

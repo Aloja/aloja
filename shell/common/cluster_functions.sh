@@ -159,7 +159,6 @@ get_ssh_key() {
 }
 
 #default port, override to change i.e. in Azure
-#$1 should be vm_name if needed
 get_ssh_port() {
   if [ ! -z "$vm_ssh_port" ] ; then
     echo "$vm_ssh_port"
@@ -271,11 +270,11 @@ vm_local_scp() {
   #Use SSH keys
   if [ -z "$4" ] ; then
     #eval is for parameter expansion
-    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -P -o "$proxyDetails" "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
     check_sshpass
-    sshpass -p "$password" scp -o StrictHostKeyChecking=no -P -o "$proxyDetails" "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$password" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -559,9 +558,18 @@ vm_install_base_packages() {
 
       #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
-      vm_execute "sudo apt-get update && sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;"
+#only update apt when is 1 week old (600000) to save time
+      vm_execute '
+if [ -f "/var/lib/apt/periodic/update-success-stamp" ] && [ "$[$(date +%s) - $(stat -c %Z /var/lib/apt/periodic/update-success-stamp)]" -ge 600000 ]; then
+  sudo apt-get update -m;
+fi
 
-      test_install_base_packages="$(vm_execute "dsh --version |grep 'Junichi'")"
+sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;'
+
+      logger "Checking if extra packages defined to install them"
+      vm_install_extra_packages
+
+      test_install_base_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
       if [ ! -z "$test_install_base_packages" ] ; then
         #set the lock
         check_bootstraped "vm_install_packages" "set"
@@ -575,6 +583,11 @@ vm_install_base_packages() {
   else
     logger "WARNING: no sudo access or disabled, no packages installed"
   fi
+}
+
+#override to install aditional packages
+vm_install_extra_packages() {
+  logger " no extra packages defined for cluster"
 }
 
 vm_set_dsh() {
