@@ -2,6 +2,10 @@
 #to keep sanity
 
 
+#Node config
+dont_mount_share='' #prevent ~/share to be mounted or created
+
+
 #Cluster config
 clusterID='' #from 03 0 99
 clusterName='' #clusterName-clusterID

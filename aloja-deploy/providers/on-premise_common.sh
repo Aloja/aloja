@@ -91,7 +91,7 @@ declare -A serverId
 #    #"WARNINIG: connecting as root"
 #    echo "root"
 #  else
-#    echo "$user"
+#    echo "$userAloja"
 #  fi
 #}
 

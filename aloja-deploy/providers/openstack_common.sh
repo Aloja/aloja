@@ -95,7 +95,7 @@ get_ssh_user() {
     #"WARNINIG: connecting as root"
     echo "root"
   else
-    echo "$user"
+    echo "$userAloja"
   fi
 }
 
@@ -109,14 +109,14 @@ vm_initial_bootstrap() {
 #bash -c 'BASH_ENV=/etc/profile exec bash' &&
 
     vm_execute "
-useradd --create-home -s /bin/bash $user &&
-adduser $user sudo &&
-echo -n '$user:$password' | chpasswd &&
+useradd --create-home -s /bin/bash $userAloja &&
+adduser $userAloja sudo &&
+echo -n '$userAloja:$passwordAloja' | chpasswd &&
 sed -i.bkp -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers &&
-mkdir -p /home/$user/.ssh &&
-echo '${insecureKey}' >> /home/$user/.ssh/authorized_keys &&
-chown -R $user: /home/$user/.ssh ;
-cp /home/$user/.profile /home/$user/.bashrc /root/ ;
+mkdir -p /home/$userAloja/.ssh &&
+echo '${insecureKey}' >> /home/$userAloja/.ssh/authorized_keys &&
+chown -R $userAloja: /home/$userAloja/.ssh ;
+cp /home/$userAloja/.profile /home/$userAloja/.bashrc /root/ ;
 echo -e '* soft nproc 65535
 chmod 777 /etc/security/limits.conf;
 echo -e '* soft nproc 450756
@@ -127,11 +127,11 @@ chmod 644 /etc/security/limits.conf;
 chmod 777 /etc/pam.d/common-session;
 echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
 chmod 644 /etc/pam.d/common-session;
-adduser $user adm;
+adduser $userAloja adm;
 ufw disable;
 "
 
-    test_action="$(vm_execute " [ -d /home/$user/.ssh ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ -d /home/$userAloja/.ssh ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock

@@ -17,7 +17,7 @@ for vm_name in $(get_node_names) ; do #pad the sequence with 0s
 
 done
 
-wait $! #wait for the last one in case we launch in parallel
+wait #wait for the last one in case we launch in parallel
 
 #parallel Node config
 cluster_parallel_config

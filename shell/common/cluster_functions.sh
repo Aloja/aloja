@@ -52,7 +52,12 @@ vm_create_node() {
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
-    vm_provision &
+
+    if [ "$cloud_provider" != "pedraforca" ] ; then #carma cluster is / is the same for all nodes
+      vm_provision & #in parallel
+    else
+      vm_provision
+    fi
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -95,7 +100,10 @@ vm_provision() {
   vm_initial_bootstrap
   vm_set_ssh
 
-  [ "$type" != "cluster" ] && vm_initialize_disks #cluster is in parallel later
+  [ "$type" != "cluster" ] && {
+    vm_initialize_disks #cluster is in parallel later
+    vm_mount_disks
+  }
 
   vm_install_base_packages
   vm_set_dot_files &
@@ -169,7 +177,7 @@ get_ssh_port() {
 
 #default port, override to change i.e. Openstack might need first root
 get_ssh_user() {
-  echo "$user"
+  echo "$userAloja"
 }
 
 vm_initial_bootstrap() {
@@ -224,9 +232,9 @@ vm_execute() {
     check_sshpass
 
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |sshpass -p "$passwordAloja" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |sshpass -p "$password" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |sshpass -p "$passwordAloja" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
   fi
 }
@@ -257,7 +265,7 @@ vm_connect() {
   else
     check_sshpass
     logger "Connecting to VM $vm_name (using PASS), with details: ssh -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$password" ssh -o StrictHostKeyChecking=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    sshpass -p "$passwordAloja" ssh -o StrictHostKeyChecking=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
@@ -275,7 +283,7 @@ vm_local_scp() {
   else
     check_sshpass
 
-    sshpass -p "$password" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$passwordAloja" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -302,15 +310,6 @@ get_master_name() {
     done
   fi
   echo "$master_name"
-}
-
-get_master_ssh_port() {
-  local master_ssh_port=''
-  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    local master_ssh_port="2${clusterID}${vm_id}"
-    break #just return one
-  done
-  echo "$master_ssh_port"
 }
 
 #vm_name must be set
@@ -361,6 +360,25 @@ get_initizalize_disks_test() {
   echo "$create_string"
 }
 
+get_share_location() {
+
+  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+
+  if [ "$cloud_provider" == "pedraforca" ] ; then
+    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+  elif [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
+    #internal network
+    local fs_mount="$minerva_mount
+$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+  else
+    #external network
+    local fs_mount="$minerva_mount
+$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222 0 0"
+  fi
+
+  echo -e "$fs_mount"
+}
+
 #requires $create_string to be defined
 get_mount_disks() {
   if [[ "$attachedVolumes" -gt "12" ]] ; then
@@ -368,19 +386,10 @@ get_mount_disks() {
     exit 1;
   fi
 
-  if [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
-    #internal network
-    fs_mount="$user@aloja-fs:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
-  else
-    #external network
-    fs_mount="$user@al-1001.cloudapp.net:/home/$user/share/ /home/$user/share fuse.sshfs _netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222 0 0"
-  fi
-
-  create_string="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$user/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$user/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+  fs_mount="$(get_share_location)"
 
   if [ -z "$dont_mount_share" ] ; then
-    create_string="$create_string
-$fs_mount"
+    create_string="$fs_mount"
   fi
 
   num_drives="1"
@@ -400,7 +409,7 @@ $fs_mount"
   create_string="
     mkdir -p ~/{share,minerva};
     sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
-    sudo chown -R $user: /scratch;
+    sudo chown -R $userAloja: /scratch;
 
     sudo chmod 0777 /etc/fstab;
 
@@ -408,7 +417,7 @@ $fs_mount"
 
     sudo chmod 0644 /etc/fstab;
     sudo mount -a;
-    sudo chown -R $user /scratch
+    sudo chown -R $userAloja /scratch
   "
 
   echo -e "$create_string"
@@ -486,7 +495,8 @@ vm_test_initiallize_disks() {
 #$1 use password based auth
 vm_set_ssh() {
 
-  if check_bootstraped "vm_set_ssh2" ""; then
+  bootstrap_file="vm_set_ssh"
+  if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
     if [ -z "$1" ] ; then
@@ -507,7 +517,7 @@ vm_set_ssh() {
 
     if [ ! -z "$test_set_ssh" ] ; then
       #set the lock
-      check_bootstraped "vm_set_ssh" "set"
+      check_bootstraped "$bootstrap_file" "set"
     else
       logger "ERROR setting SSH for $vm_name. Test output: $test_set_ssh"
     fi
@@ -661,7 +671,6 @@ vm_initialize_disks() {
       logger "Disks already initialized for VM $vm_name "
     fi
 
-    vm_mount_disks
   else
     logger " no need to attach disks for VM $vm_name"
   fi
@@ -682,8 +691,6 @@ cluster_initialize_disks() {
     touch $bootstrap_file;
     $create_string
   fi"
-
-  cluster_mount_disks
 }
 
 vm_mount_disks() {
@@ -732,9 +739,15 @@ cluster_mount_disks() {
 
 #parallel Node config
 function cluster_parallel_config() {
-  if [ "$vmType" != 'windows' ] ; then
+  if [ "$vmType" != 'windows' ] && [ -z "$dont_mount_share" ] && check_sudo; then
+
+    logger "Checking if to initilize cluster disks"
     cluster_initialize_disks
+    logger "Checking if to mount cluster disks"
+    cluster_mount_disks
     cluster_final_boostrap
+  else
+    logger "Disks initialization and mounting dissabled"
   fi
 }
 
@@ -781,7 +794,7 @@ vm_execute_master() {
   local vm_ssh_port_save="$vm_ssh_port"
   local vm_name_save="$vm_name"
 
-  vm_ssh_port="$(get_master_ssh_port)"
+  vm_ssh_port="$(get_vm_ssh_port)"
   vm_name="$(get_master_name)"
 
   vm_execute "$1"
@@ -797,14 +810,14 @@ vm_set_master_crontab() {
     logger "Setting ALOJA crontab to master"
 
     crontab="# m h  dom mon dow   command
-* * * * * export USER=$user && bash /home/$user/share/shell/exeq.sh $clusterName
+* * * * * export USER=$userAloja && bash /home/$userAloja/share/shell/exeq.sh $clusterName
 #backup data
-#0 * * * * cp -ru share/jobs_$clusterName local >> /home/$user/cron.log 2>&1"
+#0 * * * * cp -ru share/jobs_$clusterName local >> /home/$userAloja/cron.log 2>&1"
 
     vm_execute_master "echo '$crontab' |crontab"
 
     #start the queue so dirs are created
-    vm_execute_master "export USER=$user && bash /home/$user/share/shell/exeq.sh $clusterName"
+    vm_execute_master "export USER=$userAloja && bash /home/$userAloja/share/shell/exeq.sh $clusterName"
 
   else
     logger "Crontab already installed in master"
@@ -828,7 +841,7 @@ vm_set_master_forer() {
 
     logger "Generating jobs (forer)"
 
-    vm_execute_master "bash /home/$user/share/shell/forer_az.sh $clusterName"
+    vm_execute_master "bash /home/$userAloja/share/shell/forer_az.sh $clusterName"
   else
     logger " queues already setup"
   fi
@@ -872,8 +885,8 @@ vm_make_fs() {
     logger " Linking ~/share"
     vm_execute "sudo chown -R ${user} /scratch;
 [ -d ~/share ] && [ ! -L ~/share ] && mv ~/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path /home/$user/share;
-touch /home/$user/share/safe_store;
+ln -sf $share_disk_path /home/$userAloja/share;
+touch /home/$userAloja/share/safe_store;
   "
   else
     logger " ~/share is correctly mounted"
