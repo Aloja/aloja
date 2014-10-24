@@ -5,6 +5,9 @@
 #Node config
 dont_mount_share='' #prevent ~/share to be mounted or created
 
+extraLocalCommands='' #commands to be run after deploy on local machine
+extraCommands='' #commands to be executed on the deployed machine
+
 
 #Cluster config
 clusterID='' #from 03 0 99
@@ -22,6 +25,7 @@ attachedVolumes='0' #0 attached volumes by default
 diskSize='1023' #1TB (in Azure format) for default diskSize
 
 queueJobs='' #set to set the queue and add benchmarks to the cluster
+
 
 #cluster_functions.sh
 proxyDetails='' #SSH proxy details
