@@ -53,7 +53,7 @@ vm_create_node() {
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
 
-    if [ "$cloud_provider" != "pedraforca" ] ; then #carma cluster is / is the same for all nodes
+    if [ -z "$noParallelProvision" ] && [ "$cloud_provider" != "pedraforca" ] ; then #carma cluster is / is the same for all nodes
       vm_provision & #in parallel
     else
       vm_provision
@@ -156,7 +156,7 @@ get_slaves_names() {
   echo -e "$node_names"
 }
 
-#the default SSH host override if necessary i.e. in Azure
+#the default SSH host override if necessary i.e. in Azure, Openstack
 get_ssh_host() {
  echo "$vm_name"
 }
@@ -215,6 +215,7 @@ check_sshpass() {
 #$vm_ssh_port must be set before
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
+  logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
@@ -446,7 +447,7 @@ wait_vm_ready() {
 wait_vm_ssh_ready() {
   logger "Checking SSH status of VM $vm_name"
   waitStartTime="$(date +%s)"
-  for tries in {1..150}; do
+  for tries in {1..300}; do
 
     test_action="$(vm_execute " [ \"\$\(ls\)\" ] && echo '$testKey'")"
     #in case we get a welcome banner we need to grep
@@ -459,6 +460,12 @@ wait_vm_ssh_ready() {
       break #just in case
     else
       logger " VM $vm_name is down. Waiting for: $waitElapsedTime s. $tries attempts. Output: $test_action"
+      if [ "$tries" == "2" ] ; then
+        vm_start "$vm_name"
+      elif [ "$tries" == "100" ] ; then
+        vm_reboot "$vm_name"
+      fi
+
     fi
 
     #stop if max number of tries has been specified
@@ -566,7 +573,7 @@ vm_install_base_packages() {
 
 #only update apt when is 1 week old (600000) to save time
       vm_execute '
-if [ -f "/var/lib/apt/periodic/update-success-stamp" ] && [ "$[$(date +%s) - $(stat -c %Z /var/lib/apt/periodic/update-success-stamp)]" -ge 600000 ]; then
+if [ ! -f "/var/lib/apt/periodic/update-success-stamp" ] || [ "$[$(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp)]" -ge 600000 ]; then
   sudo apt-get update -m;
 fi
 
