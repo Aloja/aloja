@@ -122,7 +122,7 @@ vm_provision() {
 
 vm_finalize() {
   #extra commands to exectute (if defined)
-  [ ! -z "$extraLocalCommands" ] && $extraLocalCommands
+  [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
   [ ! -z "$puppet" ] && vm_puppet_apply
 }
