@@ -1,6 +1,6 @@
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-source "$CUR_DIR_TMP/on-premise_common.sh"
+source "$CUR_DIR_TMP/on-premise.sh"
 
 
 #vm_install_extra_packages() {

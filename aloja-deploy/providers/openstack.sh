@@ -25,6 +25,18 @@ vm_create() {
   nova boot "$1" --image "$vmImage" --flavor "$vmSize" --key-name "$keyName"
 }
 
+# $1 vm name
+vm_start() {
+  logger "Starting VM $1"
+  nova start "$1"
+}
+
+# $1 vm name
+vm_reboot() {
+  logger "Rebooting VM $1"
+  nova reboot "$1"
+}
+
 #get openstack machine details
 #$vm_name required
 vm_set_details() {
@@ -80,7 +92,6 @@ vm_attach_new_disk() {
 
 get_ssh_host() {
  vm_set_details
-
  echo "${nodeIP[$vm_name]}"
 }
 
@@ -149,9 +160,26 @@ ufw disable;
 }
 
 make_hosts_file_command() {
-  hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
+  local hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
 
-  echo "sudo chmod 777 /etc/hosts; echo -e '$hosts_file' >> /etc/hosts; sudo chmod 644 /etc/hosts;"
+  #here we are missing the ip6 address
+  local default_header="# The following lines are desirable for IPv6 capable hosts
+#::1     ip6-localhost ip6-loopback
+#fe00::0 ip6-localnet
+#ff00::0 ip6-mcastprefix
+#ff02::1 ip6-allnodes
+#ff02::2 ip6-allrouters
+#127.0.0.1 localhost
+"
+
+  local hosts_file="${default_header}
+  ${hosts_file}"
+
+  echo "sudo chmod 777 /etc/hosts;
+  echo -e '$hosts_file' |grep -v \$(hostname) > /etc/hosts;
+  sudo chmod 644 /etc/hosts;
+  [ \"\$\(cat /etc/hosts\)\" == \"$hosts_file\" ] && echo ' Hosts succesfully updated' || echo ' Error updating hosts file';
+  "
 }
 
 vm_update_hosts_file() {
@@ -174,10 +202,10 @@ vm_final_bootstrap() {
 
 cluster_final_boostrap() {
   logger "Finalizing Cluster $cluster_name bootstrap"
-  logger "Getting list of hostnames for hosts file for VM $vm_name"
+  logger "Getting list of hostnames for hosts file for the cluster"
   local hosts_file_command="$(make_hosts_file_command)"
 
-  logger "Updating hosts file for VM $vm_name"
+  logger "Updating hosts file for cluster"
   cluster_execute "$hosts_file_command"
 }
 

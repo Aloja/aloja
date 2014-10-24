@@ -10,6 +10,7 @@ extraCommands='' #commands to be executed on the deployed machine
 
 
 #Cluster config
+defaultProvider='' #if set no need to specify provider parameter
 clusterID='' #from 03 0 99
 clusterName='' #clusterName-clusterID
 numberOfNodes='' #starts at 0 (max 99)

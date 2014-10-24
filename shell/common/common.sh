@@ -5,9 +5,22 @@
 testKey="###OK###"
 
 #common funtions
+
+#$1 message $2 severity $3 log to file
 logger() {
-  dateTime="$(date +%Y%m%d_%H%M%S)"
-  echo "$dateTime p$$: $1"
+  local log_file="aloja-deploy.log"
+  local dateTime="$(date +%Y%m%d_%H%M%S)"
+  if [ ! -z "$vm_name" ] ; then
+    local vm_info=" $vm_name"
+  else
+    local vm_info=""
+  fi
+
+  if [ -z "$3" ] ; then
+    echo "$dateTime $$${vm_info}: $1"
+  else
+    echo "$dateTime $$${vm_info}: $1" >> $log_file
+  fi
 }
 
 #trasposes new lines to selected string

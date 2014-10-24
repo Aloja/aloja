@@ -4,8 +4,19 @@ vm_exists() {
   logger "WARNING: Function vm_exists not implemented or not necessary for provider"
 }
 
+# $1 vm name
 vm_create() {
   logger "WARNING: Function vm_create not implemented or not necessary for provider"
+}
+
+# $1 vm name
+vm_start() {
+  logger "WARNING: Function vm_start not implemented or not necessary for provider"
+}
+
+# $1 vm name
+vm_reboot() {
+  logger "WARNING: Function vm_reboot not implemented or not necessary for provider"
 }
 
 vm_set_details() {

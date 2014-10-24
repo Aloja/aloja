@@ -67,6 +67,18 @@ vm_create() {
 
 }
 
+# $1 vm name
+vm_start() {
+  logger "Starting VM $1"
+  azure vm start "$1"
+}
+
+# $1 vm name
+vm_reboot() {
+  logger "Rebooting VM $1"
+  azure vm restart "$1"
+}
+
 #$1 vm_name
 vm_get_status(){
  echo "$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|awk '{print substr($3,2,(length($3)-2));}')"
