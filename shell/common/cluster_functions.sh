@@ -215,19 +215,21 @@ check_sshpass() {
 #$vm_ssh_port must be set before
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
-  logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
+  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
-  chmod 0600 $(get_ssh_key)
+
   #Use SSH keys
   if [ -z "$3" ] ; then
+    chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
       echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
       echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
+    chmod 0644 $(get_ssh_key)
   #Use password
   else
     check_sshpass
@@ -255,6 +257,7 @@ vm_connect() {
 
   #Use SSH keys
   if [ -z "$1" ] ; then
+    chmod 0600 $(get_ssh_key)
     logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
     ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
 
@@ -262,6 +265,7 @@ vm_connect() {
       logger "WARNING: Falied SSH connecting using keys.  Retuned code: $?"
       failed_ssh_keys="true"
     fi
+    chmod 0644 $(get_ssh_key)
   #Use password
   else
     check_sshpass
