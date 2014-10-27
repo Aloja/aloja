@@ -1,8 +1,7 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
+
+#avoids having to $ vagrant provider=docker
+#ENV['VAGRANT_DEFAULT_PROVIDER'] ||= 'docker'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
@@ -10,11 +9,22 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #config.vm.box = "hashicorp/precise64"
   #Prebuilt box for ALOJA
   config.vm.box = "npoggi/aloja-precise64"
-
-  #config.vm.box = "yungsang/coreos"
-
-
   config.vm.host_name = "vagrant"
+
+  config.vm.provider 'docker' do |d|
+    #use a prebuilt image ie 'npoggi/vagrant-docker:latest'
+    if ENV['DOCKER_IMAGE'] then
+      print 'Using docker image ' + ENV['DOCKER_IMAGE'] +' (downloads if necessary)\n'
+      d.image = ENV['DOCKER_IMAGE']
+    else
+      #build from the Dockerfile
+      print 'Building from the Dockerfile (if necessary)\n'
+      d.build_dir = '.'
+      d.name = 'vagrant-docker'
+    end
+    #the docker image must remain running for SSH (See the Dockerfile)
+    d.has_ssh = true
+  end
 
   #web document root
   config.vm.synced_folder "../", "/vagrant/workspace"
