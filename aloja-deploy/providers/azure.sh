@@ -113,6 +113,11 @@ get_ssh_host() {
  echo "${dnsName}.cloudapp.net"
 }
 
+#construct the port number from vm_name
+get_ssh_port() {
+  echo "$(get_vm_ssh_port)"
+}
+
 #$1 $endpoints list $2 end1 $3 end2
 vm_check_endpoint_exists() {
 	echo $1 | grep $2 | grep $3
