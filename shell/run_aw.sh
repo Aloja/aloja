@@ -169,7 +169,7 @@ DSH_SLAVE="ssh $master_name" #TODO check if OK
 BASE_DIR="/home/$userAloja/share/"
 SOURCE_DIR="/cygdrive/f"
 HADOOP_VERSION="hadoop-1.2.0.1.3.0.0-0380"
-H_DIR="/cygdrive/f/haddop/$HADOOP_VERSION" #execution dir
+H_DIR="/cygdrive/f/hadop/$HADOOP_VERSION" #execution dir
 HIB_DIR="$SOURCE_DIR/HiBench${BENCH}/"
 
 #Location of prepared inputs
