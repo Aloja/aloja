@@ -258,7 +258,7 @@ vm_connect() {
   #Use SSH keys
   if [ -z "$1" ] ; then
     chmod 0600 $(get_ssh_key)
-    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
     ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
 
     if [ "$?" != "0" ] ; then
@@ -269,7 +269,7 @@ vm_connect() {
   #Use password
   else
     check_sshpass
-    logger "Connecting to VM $vm_name (using PASS), with details: ssh -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    logger "Connecting to VM $vm_name (using PASS), with details: ssh -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
     sshpass -p "$passwordAloja" ssh -o StrictHostKeyChecking=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
