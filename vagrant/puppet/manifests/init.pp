@@ -21,6 +21,28 @@ file { '/var/www/':
   ensure => 'directory',
 }
 
+vcsrepo { "/var/presentations/":
+        ensure => latest,
+        provider => git,
+        require => [ Package[ 'git' ] ],
+        source => "https://github.com/Aloja/presentations.git",
+        revision => 'master',
+}
+
+file { '/var/www/aloja-web/logs':
+  ensure => 'directory',
+  mode => '776',
+  owner => 'www-data',
+  group => 'www-data',
+  recurse => true
+}
+
+exec { 'chmod_vendor':
+  command => 'sudo chown www-data.www-data -R /var/www/aloja-web/vendor && sudo chmod 775 -R /var/www/aloja-web/vendor',
+  path => '/bin:/usr/bin'
+}
+
+
 include apt
 apt::ppa { 'ppa:ondrej/php5': }
 
@@ -122,3 +144,12 @@ file { '/home/vagrant/.bashrc':
 file { '/home/vagrant/.vimrc':
   source  => '/vagrant/puppet/files/vagrant/.vimrc',
 }
+
+##Dependencies
+Exec['apt-get update'] -> File['/var/www/']
+File['/var/www/'] -> File['/var/www/aloja-web/logs']
+File['/var/www/'] -> Vcsrepo['/var/presentations/']
+File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
+Class['::mysql::server'] -> Exec['third_party_libs']
+Exec['third_party_libs'] -> Exec['chmod_vendor']
+Exec['third_party_libs'] -> Exec['db_migrations']
