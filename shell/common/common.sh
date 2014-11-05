@@ -2,6 +2,8 @@
 #must be sourced
 
 #common variables
+startTime="$(date +%s)"
+
 testKey="###OK###"
 
 #common funtions

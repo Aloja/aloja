@@ -1,6 +1,9 @@
-CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+#Check that CONF_DIR is correctly set before starting
+[ -z "$CONF_DIR" ] || [ ! -f "$CONF_DIR/provider_functions.sh" ] && {
+  echo "ERROR: CONF_DIR not set correctly" ; exit 1;
+}
 
-source "$CONF_DIR/common.sh"
+#load provider functions
 source "$CONF_DIR/provider_functions.sh"
 
 #test variables
@@ -9,14 +12,14 @@ source "$CONF_DIR/provider_functions.sh"
 
 #test and load cluster config
 
-clusterConfigFilePath="$CONF_DIR/../conf"
+#clusterConfigFilePath="$CONF_DIR/../conf"
+#
+#[ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { logger "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
+#
+##load cluster or node config second
+#source "$clusterConfigFilePath/$clusterConfigFile"
 
-[ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { logger "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
 
-#load cluster or node config second
-source "$clusterConfigFilePath/$clusterConfigFile"
-
-logger "Starting ALOJA deploy tools for Provider: $cloud_provider"
 
 #global vars
 bootStrapped="false" #not needed for Azure
@@ -215,7 +218,7 @@ check_sshpass() {
 #$vm_ssh_port must be set before
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
-  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
+  logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
@@ -338,16 +341,20 @@ get_initizalize_disks() {
     exit 1;
   fi
 
-  create_string=""
+logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
+
+  local create_string=""
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
-    create_string="$create_string
+    local create_string="$create_string
 sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
 sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
+
+  echo -e "$create_string"
 }
 
 get_initizalize_disks_test() {
@@ -664,8 +671,7 @@ vm_initialize_disks() {
     if check_bootstraped "vm_initialize_disks" ""; then
       logger "Initializing disks for VM $vm_name "
 
-      create_string=""
-      get_initizalize_disks
+      create_string="$(get_initizalize_disks)"
 
       vm_execute "$create_string"
 
@@ -690,16 +696,23 @@ cluster_initialize_disks() {
 
   bootstrap_file="~/bootstrap_cluster_initialize_disks"
 
-  create_string=""
-  get_initizalize_disks
+  create_string="echo 'yeah'; $(get_initizalize_disks)"
 
   cluster_execute "
   if [[ -f $bootstrap_file ]] ; then
     echo 'Disks already initialized';
   else
     echo 'Initializing disks';
-    touch $bootstrap_file;
+
     $create_string
+    echo 'Here';
+
+    test_action=\"\$(lsblk|grep ${devicePrefix}c1\) ] && echo '$testKey')\"
+    if [ \"\$test_action\" == \"$testKey\" ] ; then
+      touch $bootstrap_file;
+    else
+      echo  'ERROR initializing disks for $vm_name. Test output: \$test_action'
+    fi
   fi"
 }
 
