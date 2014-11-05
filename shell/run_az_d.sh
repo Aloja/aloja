@@ -4,6 +4,7 @@
 usage() {
   echo -e "Usage:
 $0 -C clusterName
+`#[-n net <IB|ETH>] [-s \(save prepare\)] -N \(don\'t delete files\)`
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
 [-b benchmark <_min|_10>]
 [-r replicaton <positive int>]
@@ -48,7 +49,7 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -119,6 +120,10 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN" opt; do
     N)
       DELETE_HDFS=0
       ;;
+    S)
+      LIMIT_SLAVE_NODES=$OPTARG
+      echo "LIMIT_SLAVE_NODES $LIMIT_SLAVE_NODES"
+      ;;
     esac
 done
 
@@ -158,6 +163,23 @@ IFACE="eth0"
 
 node_names="$(get_node_names)"
 
+if [ ! -z "$LIMIT_SLAVE_NODES" ] ; then
+
+  node_iteration=0
+  for node in $node_names ; do
+    if [ ! -z "$nodes_tmp" ] ; then
+      node_tmp="$node_tmp\n$node"
+    else
+      node_tmp="$node"
+    fi
+    [[ $node_iteration -ge $LIMIT_SLAVE_NODES ]]  && break;
+    node_iteration=$((node_iteration+1))
+  done
+
+  node_name=$(echo -e "$nodes_tmp")
+  NUMBER_OF_SLAVES="$LIMIT_SLAVE_NODES"
+fi
+
 DSH="$DSH $(nl2char "$node_names" ",")"
 
 #nodes="$(nl2char "$node_names" " ")"
@@ -189,7 +211,7 @@ SAVE_LOCATION="/scratch/local/HiBench_prepare/"
 
 
 DATE='date +%Y%m%d_%H%M%S'
-CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${clusterName}"
+CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_SLAVES}_${clusterName}"
 JOB_NAME="`$DATE`_$CONF"
 
 JOB_PATH="/home/$userAloja/share/jobs_$clusterName/$JOB_NAME"
@@ -213,9 +235,9 @@ $DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2
 
 correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
-if [ "$correctly_mounted_nodes" != "$(( numberOfNodes + 1 ))" ] ; then
+if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-  echo "DEBUG: Correct $correctly_mounted_nodes NumberOfNodes $numberOfNodes + 1"
+  echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
   exit 1
 fi
 
