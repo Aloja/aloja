@@ -445,7 +445,7 @@ wait_vm_ready() {
       logger " VM $1 is ready!"
       break
     else
-      logger " VM $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempts."
+      logger " VM $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempt(s)."
     fi
 
     #sleep 1
