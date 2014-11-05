@@ -104,8 +104,12 @@ vm_provision() {
   vm_set_ssh
 
   [ "$type" != "cluster" ] && {
-    vm_initialize_disks #cluster is in parallel later
-    vm_mount_disks
+    if [ -z "noSudo" ] ; then
+      vm_initialize_disks #cluster is in parallel later
+      vm_mount_disks
+    else
+      logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
+    fi
   }
 
   vm_install_base_packages
@@ -770,7 +774,7 @@ function cluster_parallel_config() {
     cluster_mount_disks
     cluster_final_boostrap
   else
-    logger "Disks initialization and mounting dissabled"
+    logger "Disks initialization and mounting disabled"
   fi
 }
 
@@ -899,38 +903,46 @@ vm_make_fs() {
     local share_disk_path="$1"
   fi
 
-  logger "Checking if ~/share is correctly linked"
-  test_action="$(vm_execute "[ -d ~/share ] && [ -L ~/share ] && ls ~/share/safe_store && echo '$testKey'")"
-  #in case we get a welcome banner we need to grep
-  test_action="$(echo -e "$test_action"|grep "$testKey")"
+  shared_dir="/home/$userAloja/share"
 
-  if [ -z "$test_action" ] ; then
-    logger " Linking ~/share"
-    vm_execute "sudo chown -R ${user} /scratch;
-[ -d ~/share ] && [ ! -L ~/share ] && mv ~/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path /home/$userAloja/share;
-touch /home/$userAloja/share/safe_store;
-  "
+  if [ -z "$homeIsShared" ] ; then
+    logger "Checking if $shared_dir is correctly linked"
+    test_action="$(vm_execute "[ -d $shared_dir ] && [ -L $shared_dir ] && ls $shared_dir/safe_store && echo '$testKey'")"
+    #in case we get a welcome banner we need to grep
+    test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+    if [ -z "$test_action" ] ; then
+      logger " Linking $shared_dir"
+      vm_execute "sudo chown -R ${user} /scratch;
+[ -d $shared_dir ] && [ ! -L $shared_dir ] && mv $shared_dir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $share_disk_path $shared_dir;
+touch $shared_dir/safe_store;
+    "
+    else
+      logger " $shared_dir is correctly mounted"
+    fi
+
   else
-    logger " ~/share is correctly mounted"
+    logger "NOTICE: /home is marked as shared, creating the dir if necessary"
+    vm_execute "mkdir -p $shared_dir; touch $shared_dir/safe_store"
   fi
 
-  vm_rsync "../shell" "$share_disk_path"
+  vm_rsync "../shell" "$shared_dir"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
-  test_action="$(vm_execute "ls ~/share/aplic/aplic_version && echo '$testKey'")"
+  test_action="$(vm_execute "ls $shared_dir/aplic/aplic_version && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd ~/share/; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    vm_execute "cd $shared_dir; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
-    vm_execute "cd ~/share/; tar -jxf aplic.tar.bz2"
-  else
-    logger "RSynching aplic"
-    vm_rsync "../blobs/aplic" "~/share/"
+    vm_execute "cd $shared_dir; tar -jxf aplic.tar.bz2"
   fi
+
+  logger "RSynching aplic for possible updates"
+  vm_rsync "../blobs/aplic" "$shared_dir"
 
 }
