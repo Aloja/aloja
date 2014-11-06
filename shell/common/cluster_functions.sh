@@ -56,7 +56,7 @@ vm_create_node() {
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
 
-    if [ -z "$noParallelProvision" ] && [ "$cloud_provider" != "pedraforca" ] ; then #carma cluster is / is the same for all nodes
+    if [ -z "$noParallelProvision" ] && [ "$type" != "node" ] ; then
       vm_provision & #in parallel
     else
       vm_provision
@@ -103,14 +103,14 @@ vm_provision() {
   vm_initial_bootstrap
   vm_set_ssh
 
-  [ "$type" != "cluster" ] && {
-    if [ -z "noSudo" ] ; then
+  #[ "$type" != "cluster" ] && {
+    if [ -z "$noSudo" ] ; then
       vm_initialize_disks #cluster is in parallel later
       vm_mount_disks
     else
       logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
     fi
-  }
+  #}
 
   vm_install_base_packages
   vm_set_dot_files &
@@ -152,14 +152,23 @@ get_node_names() {
 }
 
 get_slaves_names() {
-  local node_names=''
-  for vm_id in $(seq -f "%02g" 1 "$numberOfNodes") ; do #pad the sequence with 0s
-    if [ ! -z "$node_names" ] ; then
-      node_names="${node_names}\n${clusterName}-${vm_id}"
-    else
-      node_names="${clusterName}-${vm_id}"
-    fi
-  done
+  local node_names=""
+  if [ ! -z "$nodeNames" ] ; then #remove the master
+    local node_number=""
+    for node_name in $nodeNames ; do
+      [[ "$node_number" -gt "1" ]] && node_names+="\n" #add new line, but no to the first or last one
+      [[ "$node_number" -gt "0" ]] && node_names+="$node_name"
+      local node_number="$((node_number+1))"
+    done
+  else #generate them from standard naming
+    for vm_id in $(seq -f "%02g" 1 "$numberOfNodes") ; do #pad the sequence with 0s
+      if [ ! -z "$node_names" ] ; then
+        node_names="${node_names}\n${clusterName}-${vm_id}"
+      else
+        node_names="${clusterName}-${vm_id}"
+      fi
+    done
+  fi
   echo -e "$node_names"
 }
 
@@ -301,9 +310,9 @@ vm_local_scp() {
 #$1 source files $2 destination $3 extra options
 #$vm_ssh_port must be set first
 vm_rsync() {
-    logger "RSyncing: $1 To: $2"
-    #eval is for parameter expansion
-    rsync -aur --progress --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    logger "RSynching: $1 To: $2"
+    #eval is for parameter expansion  --progress
+    rsync -aur --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
@@ -516,7 +525,7 @@ vm_test_initiallize_disks() {
 #$1 use password based auth
 vm_set_ssh() {
 
-  bootstrap_file="vm_set_ssh"
+  local bootstrap_file="vm_set_ssh"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
@@ -618,7 +627,7 @@ vm_install_extra_packages() {
 }
 
 vm_set_dsh() {
-  bootstrap_file="vm_set_dsh"
+  local bootstrap_file="vm_set_dsh"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
@@ -641,8 +650,8 @@ vm_set_dsh() {
 }
 
 vm_set_dot_files() {
-  function_name="Dotfiles"
-  bootstrap_file="vm_set_dot_files"
+  local function_name="Dotfiles"
+  local bootstrap_file="vm_set_dot_files"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
@@ -698,7 +707,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  bootstrap_file="~/bootstrap_cluster_initialize_disks"
+  local bootstrap_file="~/bootstrap_cluster_initialize_disks"
 
   create_string="echo 'yeah'; $(get_initizalize_disks)"
 
@@ -743,7 +752,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  bootstrap_file="~/bootstrap_cluster_mount_disk"
+  local bootstrap_file="~/bootstrap_cluster_mount_disk"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
@@ -768,11 +777,12 @@ cluster_mount_disks() {
 function cluster_parallel_config() {
   if [ "$vmType" != 'windows' ] && [ -z "$dont_mount_share" ] && check_sudo; then
 
-    logger "Checking if to initilize cluster disks"
-    cluster_initialize_disks
-    logger "Checking if to mount cluster disks"
-    cluster_mount_disks
-    cluster_final_boostrap
+    : #disabled for the moment
+#    logger "Checking if to initilize cluster disks"
+#    cluster_initialize_disks
+#    logger "Checking if to mount cluster disks"
+#    cluster_mount_disks
+#    cluster_final_boostrap
   else
     logger "Disks initialization and mounting disabled"
   fi
@@ -788,15 +798,18 @@ function cluster_queue_jobs() {
 
 #$1 filename $2 set lock $3 execute on master
 check_bootstraped() {
+
+  local bootstrap_filename="bootstrap_${1}_${vm_name}"
+
   if [ -z "$3" ] ; then
-    fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+    fileExists="$(vm_execute "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
   else
-    fileExists="$(vm_execute_master "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+    fileExists="$(vm_execute_master "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
   fi
 
   #set lock
   if [ ! -z "$2" ] ; then
-    vm_execute "touch ~/bootstrap_$1;"
+    vm_execute "touch ~/$bootstrap_file;"
   fi
 
   if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
@@ -928,6 +941,7 @@ touch $shared_dir/safe_store;
   fi
 
   vm_rsync "../shell" "$shared_dir"
+  vm_rsync "../aloja-deploy" "$shared_dir"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $shared_dir/aplic/aplic_version && echo '$testKey'")"

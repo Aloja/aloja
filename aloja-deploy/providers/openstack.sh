@@ -112,7 +112,7 @@ get_ssh_user() {
 
 vm_initial_bootstrap() {
 
-  bootstrap_file="Initial_Bootstrap"
+  local bootstrap_file="Initial_Bootstrap"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Bootstraping $vm_name "
@@ -242,13 +242,14 @@ node_delete_helper() {
   logger "De-Ataching node volumes"
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
     nova volume-detach "${serverId["$vm_name"]}" "$volumeID"
+    sleep 60 #TODO improve
   done
 
   logger "Deleting node $1"
   nova delete "$vm_name"
+  sleep 120 #TODO improve
 
   logger "Deleting node volumes"
-  sleep 60 #with until volumes are deattached
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
     nova volume-delete "$volumeID"
   done
