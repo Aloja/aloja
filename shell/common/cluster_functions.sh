@@ -430,12 +430,19 @@ get_mount_disks() {
 /mnt       /scratch/local    none bind 0 0"
   fi
 
+#sudo chmod 777 /etc/fstab; sudo echo -e '# <file system> <mount point>   <type>  <options>       <dump>  <pass>
+#/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
+##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
+
+
   create_string="
     mkdir -p ~/{share,minerva};
     sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
     sudo chown -R $userAloja: /scratch;
 
     sudo chmod 0777 /etc/fstab;
+
+
 
     sudo echo '$create_string' >> /etc/fstab;
 
@@ -777,12 +784,12 @@ cluster_mount_disks() {
 function cluster_parallel_config() {
   if [ "$vmType" != 'windows' ] && [ -z "$dont_mount_share" ] && check_sudo; then
 
-    : #disabled for the moment
 #    logger "Checking if to initilize cluster disks"
 #    cluster_initialize_disks
 #    logger "Checking if to mount cluster disks"
 #    cluster_mount_disks
-#    cluster_final_boostrap
+
+    cluster_final_boostrap
   else
     logger "Disks initialization and mounting disabled"
   fi
@@ -809,7 +816,7 @@ check_bootstraped() {
 
   #set lock
   if [ ! -z "$2" ] ; then
-    vm_execute "touch ~/$bootstrap_file;"
+    vm_execute "touch ~/$bootstrap_filename;"
   fi
 
   if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
