@@ -625,10 +625,10 @@ execute_bench(){
 
 
   #save the prepare
-  #if [[ -z $3 ]] && [ "$SAVE_BENCH" == "1" ] ; then
+  if [[ -z $3 ]] && [ "$SAVE_BENCH" == "1" ] ; then
     logger "Saving $3 to disk"
     $DSH_MASTER $BENCH_H_DIR/bin/hadoop fs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
-  #fi
+  fi
 
   stop_monit
 
