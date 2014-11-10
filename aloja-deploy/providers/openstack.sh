@@ -1,8 +1,5 @@
 #OPENSTACK specific functions
 
-#global vars
-bootStrapped="false"
-
 #openstack specific globals
 declare -A nodeIP
 declare -A serverId

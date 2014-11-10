@@ -1,8 +1,5 @@
 #AZURE specific functions
 
-#global vars
-bootStrapped="false"
-
 #### start $cloud_provider customizations
 
 vm_exists() {

@@ -10,17 +10,6 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 
-#test and load cluster config
-
-#clusterConfigFilePath="$CONF_DIR/../conf"
-#
-#[ ! -f "$clusterConfigFilePath/$clusterConfigFile" ] && { logger "$clusterConfigFilePath/$clusterConfigFile is not a file." ; exit 1;}
-#
-##load cluster or node config second
-#source "$clusterConfigFilePath/$clusterConfigFile"
-
-
-
 #global vars
 bootStrapped="false" #not needed for Azure
 
