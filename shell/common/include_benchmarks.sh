@@ -85,5 +85,12 @@ fi
 #    exit 1
 #  fi
 #fi
-
+logger "INFO: loading $providerFunctionsFile"
 source "$providerFunctionsFile"
+
+#bencmark sources
+logger "INFO: loading $CONF_DIR/common_benchmarks.sh"
+source "$CONF_DIR/common_benchmarks.sh"
+
+logger "INFO: loading $CONF_DIR/common_hadoop.sh"
+source "$CONF_DIR/common_hadoop.sh"
