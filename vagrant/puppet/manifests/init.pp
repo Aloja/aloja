@@ -1,12 +1,14 @@
 exec { 'third_party_libs':
   command => 'bash -c "cd /vagrant/workspace/aloja-web && php composer.phar update"',
   onlyif => '[ ! -h /vagrant/workspace/aloja-web/vendor ]',
-  path => '/usr/bin:/bin'
+  path => '/usr/bin:/bin',
+  notify  => Service['nginx'], #restart nginx
 }
 
 exec { 'db_migrations':
   command => 'bash -c "cd /vagrant/workspace/aloja-web && php vendor/bin/phinx -cconfig/phinx.yml -evagrant migrate"',
-  path => '/usr/bin:/bin'
+  path => '/usr/bin:/bin',
+
 }
 
 if $environment == 'dev' {
