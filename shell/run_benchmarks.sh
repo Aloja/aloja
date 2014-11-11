@@ -6,7 +6,7 @@ usage() {
 $0 -C clusterName
 `#[-n net <IB|ETH>] `
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
-[-b benchmark <_min|_10>]
+[-b benchmark <-min|-10>]
 [-r replicaton <positive int>]
 [-m max mappers and reducers <positive int>]
 [-i io factor <positive int>] [-p port prefix <3|4|5>]
@@ -73,7 +73,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "_10" ] || [ "$BENCH" == "_min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "-10" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "sleep" ]  || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -224,7 +224,7 @@ fi
 
 BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 
-if [ -z "$BENCH" ] || [ "$BENCH" == "_min" ] || [ "$BENCH" == "_10" ]; then
+if [ -z "$BENCH" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "-10" ]; then
   BENCH="HiBench$BENCH"
   EXECUTE_HIBENCH="true"
 fi
