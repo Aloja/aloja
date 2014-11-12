@@ -511,8 +511,8 @@ class DefaultController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
                         FROM SAR_load $where $group_by;",
                         'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
-                        'title'     => "CPU Load Averge ($aggr_text, $hosts) $exec_title ",
-                        'group_title' => 'CPU Load Averge '."($aggr_text, $hosts)",
+                        'title'     => "CPU Load Average ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'CPU Load Average '."($aggr_text, $hosts)",
                         'percentage'=> false,
                         'stacked'   => false,
                         'negative'  => false,
