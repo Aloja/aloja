@@ -201,7 +201,8 @@ class RestController extends AbstractController
 
                 if (!isset($prv_rows)) throw new \Exception('No data returned!');
 
-                $query_job_history = 'select time, maps, reduce from JOB_job_history where id_exec = "'.$id_exec.'" ORDER by time';
+                #$query_job_history = 'select time, maps, reduce from JOB_job_history where id_exec = "'.$id_exec.'" ORDER by time';
+                $query_job_history = 'select date, maps, reduce from JOB_status where id_exec = "'.$id_exec.'" ORDER by date';
 
                 $job_history_rows = $dbUtils->get_rows($query_job_history);
 
