@@ -249,7 +249,7 @@ else
   CONF="conf_${NET}_${DISK}_b${BENCH}_S${NUMBER_OF_SLAVES}_${clusterName}"
 fi
 
-JOB_NAME="$(DATE)_$CONF"
+JOB_NAME="`$DATE`_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"

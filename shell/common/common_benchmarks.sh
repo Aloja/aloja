@@ -114,7 +114,7 @@ execute_sleep() {
 
   restart_monit
 
-  for sleep_iterator in {1..5} ; do
+  for sleep_iterator in {1..20} ; do
     loggerb "Sleeping zzZZZzzz $sleep_iterator"
     $DSH "sleep 1"
   done

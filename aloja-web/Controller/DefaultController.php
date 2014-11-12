@@ -425,9 +425,17 @@ class DefaultController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-                $selected_hosts = array('minerva-1002', 'minerva-1003', 'minerva-1004', 'al-1002', 'al-1003', 'al-1004');
+                $selected_hosts = array(
+                    'minerva-1002', 'minerva-1003', 'minerva-1004',
+                    'al-1002', 'al-1003', 'al-1004',
+                    'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
+                );
             } elseif ($hosts == 'Master') {
-                $selected_hosts = array('minerva-1001', 'al-1001');
+                $selected_hosts = array(
+                    'minerva-1001',
+                    'al-1001',
+                    'minerva-6',
+                );
             } else {
                 $selected_hosts = array($hosts);
             }

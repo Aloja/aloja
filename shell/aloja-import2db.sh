@@ -37,7 +37,7 @@ MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-
 DB="aloja2"
 MYSQL="mysql $MYSQL_ARGS $DB -e "
 
-mysql $MYSQL_CREDENTIALS -e "DROP database \`$DB\`;"
+#mysql $MYSQL_CREDENTIALS -e "DROP database \`$DB\`;"
 
 if [ "$INSERT_DB" == "1" ] ; then
 
@@ -54,6 +54,7 @@ insert_DB(){
   if [[ $(head "$2"|wc -l) > 1 ]] ; then
     echo "Loading $2 into $1"
 head -n3 "$2"
+
     $MYSQL "
     SET time_zone = '+00:00';
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
@@ -88,7 +89,7 @@ get_exec_params(){
   strftime("%F %H:%M:%S", $3, 1) "\",\""\
   parts[4]"\",\"" \
   parts[5]"\",\"" \
-  parts[6]"\",\"aaaa" \
+  substr(parts[6],2)"\",\"" \
   substr(parts[7],2)"\",\"" \
   substr(parts[8],2)"\",\"" \
   substr(parts[9],2)"\",\"" \
@@ -99,8 +100,7 @@ get_exec_params(){
   } \
   ' )"
 
-echo -e "$1\n$exec_params"
-exit 1
+#echo -e "$1\n$exec_params"
 
   # Time from Zabbix format
   # substr(zt,0,4) "-" substr(zt,5,2) "-" substr(zt,7,2) " " substr(zt,9,2) ":" substr(zt,11,2) ":" substr(zt,13,2) "\",\"" \
@@ -109,7 +109,7 @@ exit 1
 
 get_id_exec(){
     id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
-    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001')
+    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'
     LIMIT 1;"| tail -n 1)
 }
 
@@ -193,7 +193,7 @@ for folder in 201* ; do
                   start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
                   end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
           echo "$insert"
-exit 1
+
           $MYSQL "$insert"
         else
           echo "CANNOT FIND BENCH $bench_folder EXEC DETAILS IN LOG"
