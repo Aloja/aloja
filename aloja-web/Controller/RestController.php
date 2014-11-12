@@ -172,7 +172,7 @@ class RestController extends AbstractController
             $exec_name = $dbUtils->get_exec_details($id_exec, 'exec');
             $exec_name = str_replace('/', '_', $exec_name);
 
-            $dir = '/tmp/prv';
+            $dir = 'cache/prv';
             $zip_file = "$exec_name.zip";
 
             $full_name = "$dir/$zip_file";
