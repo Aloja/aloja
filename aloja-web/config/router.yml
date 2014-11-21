@@ -55,6 +55,10 @@ histogramdata:
     pattern: "/histogramdata"
     controller: "alojaweb\\Controller\\RestController::histogramDataAction"
 
+histogramtasksdata:
+    pattern: "/histogramtasksdata"
+    controller: "alojaweb\\Controller\\RestController::histogramTasksDataAction"
+
 bestconfig:
     pattern: "/bestconfig"
     controller: "alojaweb\\Controller\\DefaultController::bestConfigAction"
