@@ -18,7 +18,7 @@ include nginx, php #, mysql
 if $environment == 'prod' {
   $mysql_options = {
     'bind-address' => '0.0.0.0',
-    'innodb_autoinc_lock_mode=' => '0', #prevent gaps in auto increments
+    'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
     'datadir' => '/scratch/attached/1/mysql'
     'innodb_buffer_pool_size' => '512M',
     'innodb_file_per_table' => '1',
@@ -31,7 +31,7 @@ if $environment == 'prod' {
 } else {
   $mysql_options = {
     'bind-address' => '0.0.0.0',
-    'innodb_autoinc_lock_mode=' => '0', #prevent gaps in auto increments
+    'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
     'datadir' => '/scratch/attached/1/mysql',
   }
 }
