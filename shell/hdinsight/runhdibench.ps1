@@ -1,4 +1,4 @@
-param([String]$clusterName="alojahdi6", [String]$inputData="/example/data/1TB-sort-input", [String]$outputData="/example/data/1TB-sort-output")
+param([String]$clusterName, [String]$inputData="/example/data/1TB-sort-input", [String]$outputData="/example/data/1TB-sort-output",[String]$outputData="/example/data/1TB-sort-output", [String]$storageAccount, [String]$storageKey, [String]$containerName)
 
 . ./common.ps1
 
