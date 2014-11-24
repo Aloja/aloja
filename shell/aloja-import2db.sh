@@ -154,21 +154,21 @@ for folder in 201* ; do
 	##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
 	for bzip_file in prep_*.tar.bz2 ; do
 		bench_folder="${bzip_file%%.*}"
-		if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+		#if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
 	        echo "Untaring $bzip_file"
 	        tar -xjf "$bzip_file"
-		fi
+		#fi
 	done
 	
     for bzip_file in *.tar.bz2 ; do
 
       bench_folder="${bzip_file%%.*}"
-      if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "prep_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+      #if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "prep_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
         echo "Untaring $bzip_file"
         tar -xjf "$bzip_file"
-      fi
+      #fi
 
-    if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
+    #if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
 
         cd "$bench_folder"
         echo "Entering $bench_folder"
@@ -177,15 +177,15 @@ for folder in 201* ; do
 
         #insert config and get ID_exec
         exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
-        if [[ ! -z $exec_values ]] ; then
-          #TODO need to add ol naming scheme
-          if [[  $folder == *_az ]] ; then
-            cluster="2"
-          else
-            cluster="${folder:(-2):2}"
-          fi
+        #TODO need to add ol naming scheme
+        if [[  $folder == *_az ]] ; then
+          cluster="2"
+        else
+          cluster="${folder:(-2):2}"
+        fi
+        echo "Cluster $cluster"
 
-          echo "Cluster $cluster"
+        if [[ ! -z $exec_values ]] ; then
 
           insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
                   VALUES (NULL, $cluster, \"$exec\", $exec_values)
@@ -195,6 +195,19 @@ for folder in 201* ; do
           echo "$insert"
 
           $MYSQL "$insert"
+        elif [ "$bench_folder" == "SCWC" ] ; then
+          echo "Processing SCWC"
+
+          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+                  VALUES (NULL, $cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+                  ;"
+                  #ON DUPLICATE KEY UPDATE
+                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
+                  #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
+          echo "$insert"
+
+          $MYSQL "$insert"
+
         else
           echo "CANNOT FIND BENCH $bench_folder EXEC DETAILS IN LOG"
           #continue
@@ -232,7 +245,7 @@ for folder in 201* ; do
 				job_name="${job_name:0:(-5)}"
 				insert_conf_params_DB "$params" "$id_exec" "$job_name"
 			done
-		fi
+		#fi
 		
 		id_exec=""
         get_id_exec "$exec"
@@ -248,8 +261,8 @@ for folder in 201* ; do
               job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
 
               echo "Generating Hadoop Job CSVs for $bench_folder"
-              rm -rf "hadoop_job"
-rm -rf "sysstat"
+              #rm -rf "hadoop_job"
+              #rm -rf "sysstat"
               mkdir -p "hadoop_job"
 
               for job_file in $job_files ; do
