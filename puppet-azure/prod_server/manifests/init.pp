@@ -14,19 +14,26 @@ package { ['python-software-properties', 'vim', 'git', 'dsh', 'sysstat', 'bwm-ng
 include nginx, php #, mysql
 
 #include '::mysql::server'
+
 if $environment == 'prod' {
-   $mysql_options = {'bind-address' => '0.0.0.0',
-                 'innodb_buffer_pool_size' => 512M,
-                 'innodb_file_per_table' => 1,
-                 'innodb_flush_method' => O_DIRECT,
-                 'query_cache_size' => 128M,
-                 'max_connections' => 300,
-                 'thread_cache_size' => 50,
-                 'table_open_cache' => 600,
-                 'datadir' => '/scratch/attached/1/mysql'
-                 }
+  $mysql_options = {
+    'bind-address' => '0.0.0.0',
+    'innodb_autoinc_lock_mode=' => '0', #prevent gaps in auto increments
+    'datadir' => '/scratch/attached/1/mysql'
+    'innodb_buffer_pool_size' => '512M',
+    'innodb_file_per_table' => '1',
+    'innodb_flush_method' => 'O_DIRECT',
+    'query_cache_size' => '128M',
+    'max_connections' => '300',
+    'thread_cache_size' => '50',
+    'table_open_cache' => '600',
+  }
 } else {
-   $mysql_options = {'bind-address' => '0.0.0.0', 'datadir' => '/scratch/attached/1/mysql'}
+  $mysql_options = {
+    'bind-address' => '0.0.0.0',
+    'innodb_autoinc_lock_mode=' => '0', #prevent gaps in auto increments
+    'datadir' => '/scratch/attached/1/mysql',
+  }
 }
 
 if $environment == 'prod' {
