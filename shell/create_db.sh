@@ -40,10 +40,10 @@ insert ignore into hosts set id_host=6, id_cluster=2, host_name='al-1002', role=
 insert ignore into hosts set id_host=7, id_cluster=2, host_name='al-1003', role='slave';
 insert ignore into hosts set id_host=8, id_cluster=2, host_name='al-1004', role='slave';
 
-insert ignore into hosts set id_host=1006, id_cluster=10, host_name='minerva-06', role='master';
-insert ignore into hosts set id_host=1007, id_cluster=10, host_name='minerva-07', role='slave';
-insert ignore into hosts set id_host=1008, id_cluster=10, host_name='minerva-08', role='slave';
-insert ignore into hosts set id_host=1009, id_cluster=10, host_name='minerva-09', role='slave';
+insert ignore into hosts set id_host=1006, id_cluster=10, host_name='minerva-6', role='master';
+insert ignore into hosts set id_host=1007, id_cluster=10, host_name='minerva-7', role='slave';
+insert ignore into hosts set id_host=1008, id_cluster=10, host_name='minerva-8', role='slave';
+insert ignore into hosts set id_host=1009, id_cluster=10, host_name='minerva-9', role='slave';
 insert ignore into hosts set id_host=1010, id_cluster=10, host_name='minerva-10', role='slave';
 insert ignore into hosts set id_host=1011, id_cluster=10, host_name='minerva-11', role='slave';
 insert ignore into hosts set id_host=1012, id_cluster=10, host_name='minerva-12', role='slave';
@@ -56,11 +56,22 @@ insert ignore into hosts set id_host=1018, id_cluster=10, host_name='minerva-18'
 insert ignore into hosts set id_host=1019, id_cluster=10, host_name='minerva-19', role='slave';
 insert ignore into hosts set id_host=1020, id_cluster=10, host_name='minerva-20', role='slave';
 
+insert ignore into hosts set id_host=1001, id_cluster=12, host_name='minerva-1', role='master';
+insert ignore into hosts set id_host=1002, id_cluster=12, host_name='minerva-2', role='slave';
+insert ignore into hosts set id_host=1003, id_cluster=12, host_name='minerva-3', role='slave';
+insert ignore into hosts set id_host=1004, id_cluster=12, host_name='minerva-4', role='slave';
+
+insert ignore into hosts set id_host=1005, id_cluster=13, host_name='minerva-5', role='master';
+insert ignore into hosts set id_host=1006, id_cluster=13, host_name='minerva-6', role='slave';
+insert ignore into hosts set id_host=1007, id_cluster=13, host_name='minerva-7', role='slave';
+insert ignore into hosts set id_host=1008, id_cluster=13, host_name='minerva-8', role='slave';
 
 create table if not exists clusters (id_cluster int, name varchar(127), cost_hour decimal(10,3), \`type\` varchar(127), link varchar(255), primary key (id_cluster)) engine InnoDB;
-insert ignore into clusters set name='Local 1', id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+insert ignore into clusters set name='Local 1',     id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
 insert ignore into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, type='IaaS Cloud', link='http://www.windowsazure.com/en-us/pricing/calculator/';
-insert ignore into clusters set name='minerva', id_cluster=10, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+insert ignore into clusters set name='minerva',     id_cluster=10, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+insert ignore into clusters set name='minerva1_4',  id_cluster=12, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+insert ignore into clusters set name='minerva5_8',  id_cluster=13, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
 
 #TODO move this to end of execution
 update execs SET disk='RR1' where disk='R1';

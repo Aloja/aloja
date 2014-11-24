@@ -351,20 +351,10 @@ loggerb  ""
 
 
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  prepare_config ${NET} ${DISK} ${BENCH}
-
-  #before running hibench, set exports and vars
-  EXP="export JAVA_HOME=$JAVA_HOME && \
-export HADOOP_HOME=$BENCH_H_DIR && \
-export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
-export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
-export NUM_MAPS=$MAX_MAPS && \
-export NUM_REDS=$MAX_MAPS && \
-"
-
+  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
+else
+  prepare_config
 fi
-
-
 
 start_time=$(date '+%s')
 
@@ -385,15 +375,13 @@ else
   exit 1
 fi
 
-loggerb  "$(date +"%H:%M:%S") DONE $bench"
-
-
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  #clean output data
-  loggerb "INFO: Cleaning Output data for $bench"
-  get_bench_name $bench
-  $DSH_MASTER "${BENCH_H_DIR}/bin/hadoop fs -rmr /HiBench/$full_name/Output"
+if [ ! "$EXECUTE_HIBENCH" ] ; then
+  stop_monit
+  save_bench "$BENCH"
 fi
+
+
+loggerb  "$(date +"%H:%M:%S") DONE $bench"
 
 
 ########################################################
