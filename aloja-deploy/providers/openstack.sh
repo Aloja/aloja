@@ -239,8 +239,9 @@ node_delete_helper() {
   logger "De-Ataching node volumes"
   for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
     nova volume-detach "${serverId["$vm_name"]}" "$volumeID"
-    sleep 60 #TODO improve
   done
+
+  sleep 60 #TODO improve
 
   logger "Deleting node $1"
   nova delete "$vm_name"
