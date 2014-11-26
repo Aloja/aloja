@@ -38,3 +38,48 @@ getElapsedTime() {
   [ ! -z $1 ] && elapsedTime="$(( $(date +%s) - $1 ))"
   echo "$elapsedTime"
 }
+
+templateLead='### BEGIN ALOJA TEMPLATE ###'
+templateTail='### END ALOJA TEMPLATE ###'
+
+# Edits a file on the local filesystem and inserts or updates template data
+# $1 source filename path $2 replace content
+template_update_file() {
+
+  logger "INFO: Applying template changes to $1"
+
+  if [ "$(grep "$templateLead" "$testFile")" ] ; then
+    logger "INFO: template lines found, executing sed"
+    local mktempFile="$(mktemp)"
+    echo -e "$2" > "$mktempFile"
+
+    sed -i.bak -e "/^$templateLead\$/,/^$templateTail\$/{ /^$templateLead\$/{p; r $mktempFile
+            }; /^$templateTail\$/p; d }"  "$1"
+
+    rm "$mktempFile" #remove the temporary file
+
+  else
+    logger "INFO: not found, appending (or creating file)"
+    echo -e "$templateLead\n$2\n$templateTail" >> "$testFile"
+  fi
+}
+
+# Receives file contents and echos contents with template insertion or update
+#$1 file content path $2 replace content
+template_update_stream() {
+
+  if [ "$(echo -e "$1" |grep "$templateLead")" ] ; then
+    #logger "INFO: template lines found, executing sed"
+    local mktempFile="$(mktemp)"
+    echo -e "$2" > "$mktempFile"
+
+    echo -e "$1" | sed -e "/^$templateLead\$/,/^$templateTail\$/{ /^$templateLead\$/{p; r $mktempFile
+            }; /^$templateTail\$/p; d }"
+
+    rm "$mktempFile" #remove the temporary file
+
+  else
+    #logger "INFO: not found, appending"
+    echo -e "$1\n\n$templateLead\n$2\n$templateTail"
+  fi
+}
