@@ -11,7 +11,7 @@ source "$CONF_DIR/provider_functions.sh"
 
 
 #global vars
-bootStrapped="false" #not needed for Azure
+bootStrapped="" # set to false as needed for openstack
 
 if [ "$cloud_provider" == "azure" ] ; then
    devicePrefix="sd"
@@ -70,7 +70,7 @@ vm_create_node() {
 vm_create_connect() {
 
   #make sure we clean the variable
-  bootStrapped="false"
+  bootStrapped=""
 
   #test first if machines are accessible via SSH to save time
   if ! wait_vm_ssh_ready "1" ; then
