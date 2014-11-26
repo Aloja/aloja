@@ -19,9 +19,9 @@ logger() {
   fi
 
   if [ -z "$3" ] ; then
-    echo "$dateTime $$${vm_info}: $1"
+    echo -e "$dateTime $$${vm_info}: $1"
   else
-    echo "$dateTime $$${vm_info}: $1" >> $log_file
+    echo -e "$dateTime $$${vm_info}: $1" >> $log_file
   fi
 }
 
@@ -81,5 +81,29 @@ template_update_stream() {
   else
     #logger "INFO: not found, appending"
     echo -e "$1\n\n$templateLead\n$2\n$templateTail"
+  fi
+}
+
+cachePrefix="cache_"
+
+#$1 filename $2 contents
+cache_put() {
+  echo -e "$2" > "$cachePrefix_${1}"
+}
+
+#$1 filename $2 expriry
+cache_get() {
+  if [ -f "$1" ] ; then
+    local lastModified="$(expr $(date +%s) - $(date +%s -r $1))"
+
+    if [ $2 -gt $lastModified ] ; then
+      logger "DEBUG: Cache found for $1" "" "log to file"
+      #output cache contents
+      cat "$cachePrefix_${1}"
+    else
+      logger "DEBUG: Cache not found for $1 with $2 secs timeout" "" "log to file"
+    fi
+  else
+      logger "DEBUG: Cache file not found $1" "" "log to file"
   fi
 }
