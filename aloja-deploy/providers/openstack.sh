@@ -4,6 +4,8 @@
 declare -A nodeIP
 declare -A serverId
 
+lockedBootstrapCheck=""
+
 #### start $cloud_provider customizations
 
 vm_exists() {
@@ -98,8 +100,13 @@ get_ssh_port() {
 
 #Openstack needs to use root first
 get_ssh_user() {
+  #check if we can change to regular user
+  if [ ! "$bootStrapped" ] ; then
+    vm_already_bootstraped
+  fi
+
   #check if we can change from root user
-  if [ "$bootStrapped" == "false" ] ; then
+  if [ ! "$bootStrapped" ] ; then
     #"WARNINIG: connecting as root"
     echo "root"
   else
@@ -107,25 +114,47 @@ get_ssh_user() {
   fi
 }
 
+vm_already_bootstraped() {
+
+  if [ ! "$lockedBootstrapCheck" ] ; then
+    #lock to prevent loops
+    lockedBootstrapCheck="true"
+
+    #TODO improve dynamic filename and bootstrap functionality
+    local test_action="$(vm_execute " [ -f /root/bootstrap_Initial_Bootstrap_${vm_name} ] && echo '$testKey'")"
+    #in case we get a welcome banner we need to grep
+    local test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+    #change to bootStrapped in case file present
+    [ "$test_action" ] && bootStrapped="true"
+
+    #unlock
+    lockedBootstrapCheck=""
+  fi
+}
+
 vm_initial_bootstrap() {
 
-  local bootstrap_file="Initial_Bootstrap"
+  if [ ! "$bootStrapped" ] ; then
 
-  if check_bootstraped "$bootstrap_file" ""; then
-    logger "Bootstraping $vm_name "
+    local bootstrap_file="Initial_Bootstrap"
 
-#bash -c 'BASH_ENV=/etc/profile exec bash' &&
+    if check_bootstraped "$bootstrap_file" ""; then
+      logger "Bootstraping $vm_name "
 
-    vm_execute "
+  #bash -c 'BASH_ENV=/etc/profile exec bash' &&
+
+      vm_execute "
 useradd --create-home -s /bin/bash $userAloja &&
 adduser $userAloja sudo &&
 echo -n '$userAloja:$passwordAloja' | chpasswd &&
 sed -i.bkp -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers &&
-mkdir -p /home/$userAloja/.ssh &&
+mkdir -p /home/$userAloja/.ssh ;
+
 echo '${insecureKey}' >> /home/$userAloja/.ssh/authorized_keys &&
 chown -R $userAloja: /home/$userAloja/.ssh ;
 cp /home/$userAloja/.profile /home/$userAloja/.bashrc /root/ ;
-echo -e '* soft nproc 65535
+
 chmod 777 /etc/security/limits.conf;
 echo -e '* soft nproc 450756
 * hard nproc 450756
@@ -135,24 +164,28 @@ chmod 644 /etc/security/limits.conf;
 chmod 777 /etc/pam.d/common-session;
 echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
 chmod 644 /etc/pam.d/common-session;
+
 adduser $userAloja adm;
 ufw disable;
 "
 
-    test_action="$(vm_execute " [ -d /home/$userAloja/.ssh ] && echo '$testKey'")"
+      test_action="$(vm_execute " [ -d /home/$userAloja/.ssh ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
-      #set the lock
-      check_bootstraped "$bootstrap_file" "set"
-      #change the user
-      bootStrapped="true"
+      if [ "$test_action" == "$testKey" ] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+        #change the user
+        bootStrapped="true"
+      else
+        logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
+      fi
+
     else
-      logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
+      bootStrapped="true"
+      logger "$bootstrap_file already configured"
     fi
-
   else
-    bootStrapped="true"
-    logger "$bootstrap_file already configured"
+    logger "INFO: $vm_name already bootstraped"
   fi
 }
 
@@ -170,21 +203,32 @@ make_hosts_file_command() {
 "
 
   local hosts_file="${default_header}
-  ${hosts_file}"
+${hosts_file}"
 
   echo "sudo chmod 777 /etc/hosts;
-  echo -e '$hosts_file' |grep -v \$(hostname) > /etc/hosts;
-  sudo chmod 644 /etc/hosts;
-  [ \"\$\(cat /etc/hosts\)\" == \"$hosts_file\" ] && echo ' Hosts succesfully updated' || echo ' Error updating hosts file';
-  "
+echo -e '$hosts_file' |grep -v \$(hostname) > /etc/hosts;
+sudo chmod 644 /etc/hosts;
+
+[ \"\$\(cat /etc/hosts\)\" == \"$hosts_file\" ] && echo ' Hosts succesfully updated' || echo ' Error updating hosts file';
+"
+
+}
+
+make_hosts_file() {
+  local hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
+  echo -e "$hosts_file"
 }
 
 vm_update_hosts_file() {
   logger "Getting list of hostnames for hosts file for VM $vm_name"
-  local hosts_file_command="$(make_hosts_file_command)"
+  #local hosts_file_command="$(make_hosts_file_command)"
+  local hosts_file="$(make_hosts_file)"
 
   logger "Updating hosts file for VM $vm_name"
-  vm_execute "$hosts_file_command"
+  logger "DEBUG: $hosts_file $hosts_file_command"
+
+  #vm_execute "$hosts_file_command"
+  vm_update_template "/etc/hosts" "$hosts_file" "secured_file"
 }
 
 vm_final_bootstrap() {
@@ -203,6 +247,7 @@ cluster_final_boostrap() {
   local hosts_file_command="$(make_hosts_file_command)"
 
   logger "Updating hosts file for cluster"
+  logger "DEBUG: $hosts_file_command"
   cluster_execute "$hosts_file_command"
 }
 
