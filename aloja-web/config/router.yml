@@ -87,14 +87,6 @@ clustercosts:
     pattern: "/clustercosts"
     controller: "alojaweb\\Controller\\DefaultController::clusterCostsAction"
 
-histogram2:
-    pattern: "/histogram2"
-    controller: "alojaweb\\Controller\\DefaultController::histogram2Action"
-
-histogram2data:
-    pattern: "/histogram2data"
-    controller: "alojaweb\\Controller\\RestController::histogram2DataAction"
-
 dbscan:
     pattern: "/dbscan"
     controller: "alojaweb\\Controller\\DefaultController::dbscanAction"
