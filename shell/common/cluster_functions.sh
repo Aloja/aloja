@@ -56,11 +56,14 @@ vm_create_node() {
     wait_vm_ready "$vm_name"
     vm_check_attach_disks "$vm_name"
     [ ! -z "$endpoints" ] && vm_endpoints_create
-
   else
     logger "ERROR: Invalid VM OS type. Type $type"
     exit 1
   fi
+
+  #TODO improve
+  #unset boostrap for next iteration
+  bootStrapped=""
 }
 
 #$1 vm_name
@@ -224,14 +227,16 @@ vm_execute() {
 
   set_shh_proxy
 
+  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+
   #Use SSH keys
   if [ -z "$3" ] ; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
-      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
     #chmod 0644 $(get_ssh_key)
   #Use password
@@ -239,18 +244,18 @@ vm_execute() {
     check_sshpass
 
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$passwordAloja" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |sshpass -p "$passwordAloja" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
   fi
 }
 
 set_shh_proxy() {
   if [ ! -z "$useProxy" ] ; then
-    proxyDetails="ProxyCommand $useProxy"
+    proxyDetails="ProxyCommand=$useProxy"
   else
-    proxyDetails="ProxyCommand none"
+    proxyDetails="ProxyCommand=none"
   fi
 
 }
@@ -259,11 +264,13 @@ vm_connect() {
 
   set_shh_proxy
 
+  local sshOptions="-o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+
   #Use SSH keys
   if [ -z "$1" ] ; then
     chmod 0600 $(get_ssh_key)
-    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
 
     if [ "$?" != "0" ] ; then
       logger "WARNING: Falied SSH connecting using keys.  Retuned code: $?"
@@ -273,8 +280,8 @@ vm_connect() {
   #Use password
   else
     check_sshpass
-    logger "Connecting to VM $vm_name (using PASS), with details: ssh -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$passwordAloja" ssh -o StrictHostKeyChecking=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    logger "Connecting to VM $vm_name (using PASS), with details: ssh  $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
@@ -955,4 +962,52 @@ touch $shared_dir/safe_store;
   logger "RSynching aplic for possible updates"
   vm_rsync "../blobs/aplic" "$shared_dir"
 
+}
+
+#$1 filename
+vm_get_file_contents() {
+  if [ "$1" ] ; then
+    local fileContent="$(vm_execute "cat $1")"
+  else
+    : #error
+  fi
+
+  echo -e "$fileContent"
+}
+
+#$1 filename $2 contents $3 change permissions
+vm_put_file_contents() {
+
+  if [ "$1" ] && [ "$2" ] ; then
+    if [ "$3" ] ; then
+      local command="
+sudo chmod 777 $1;
+sudo cp $1 ${1}.$(date +%s).bak;
+sudo echo -e '$2' > $1;
+sudo chmod 644 $1"
+
+    else
+      local command="
+mv $1 ${1}.$(date +%s).bak;
+echo -e '$2' > $1;"
+
+    fi
+
+    vm_execute "$command"
+
+  else
+    : #error
+  fi
+}
+
+#$1 filename on remote machine $2 template part content $3 change permissions
+vm_update_template() {
+
+  logger "DEBUG: getting $1 contents"
+  local fileCurrentContent="$(vm_get_file_contents "$1")"
+  logger "DEBUG: $1 contents\n$fileCurrentContent"
+  local fileNewContent="$(template_update_stream "$fileCurrentContent" "$2")"
+  logger "DEBUG: new contents\n$fileNewContent"
+  vm_put_file_contents "$1" "$fileNewContent" "$3"
+  logger "DEBUG: updated $1 with template"
 }
