@@ -149,6 +149,15 @@ class DBUtils
         }
     }
 
+    public function get_task_type_query($task_type)
+    {
+        if ($task_type === 'MAP' || $task_type === 'REDUCE' || $task_type === 'CLEANUP' || $task_type === 'SETUP') {
+            return function($table) use ($task_type) { return "AND $table.`TASK_TYPE` LIKE '$task_type'"; };
+        } else {
+            return function($table) use ($task_type) { return ""; };
+        }
+    }
+
     /**
      * Calculates the DBSCAN.
      */

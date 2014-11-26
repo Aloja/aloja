@@ -560,6 +560,7 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric = $db::$TASK_METRICS[Utils::get_GET_int("metric") ?: 0];
         $metric_select = $db->get_task_metric_query($metric);
+        $task_type_select = $db->get_task_type_query(Utils::get_GET_string("task_type"));
         $group = Utils::get_GET_int("group") ?: 1;  // Group the rows in groups of this quantity
         $accumulated = Utils::get_GET_int("accumulated") ?: 0;
         $divided = Utils::get_GET_int("divided") ?: 0;
@@ -588,6 +589,7 @@ VALUES
                 ) as t2
                 ON (t.`TASKID` >= t2.`TASKID` AND t2.`JOBID` = :jobid_repeated)
                 WHERE t.`JOBID` = :jobid
+                ".$task_type_select('t')."
                 GROUP BY t.`TASKID`
                 ORDER BY t.`TASKID`
             ;";
@@ -606,6 +608,7 @@ VALUES
                     CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
                 FROM `JOB_tasks` t
                 WHERE t.`JOBID` = :jobid
+                ".$task_type_select('t')."
                 GROUP BY MYDIV, t.`TASK_TYPE`
                 ORDER BY MIN(t.`TASKID`)
             ;";
