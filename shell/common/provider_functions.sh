@@ -73,8 +73,6 @@ cluster_final_boostrap() {
 
 node_connect() {
 
-  bootStrapped="true" #try to connect as a regular user
-
   logger "Connecting to $vm_name using SSH keys"
   vm_connect
 

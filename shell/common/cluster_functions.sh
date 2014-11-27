@@ -11,7 +11,6 @@ source "$CONF_DIR/provider_functions.sh"
 
 
 #global vars
-bootStrapped="" # set to false as needed for openstack
 
 if [ "$cloud_provider" == "azure" ] ; then
    devicePrefix="sd"
@@ -56,21 +55,15 @@ vm_create_node() {
     wait_vm_ready "$vm_name"
     vm_check_attach_disks "$vm_name"
     [ ! -z "$endpoints" ] && vm_endpoints_create
+
   else
     logger "ERROR: Invalid VM OS type. Type $type"
     exit 1
   fi
-
-  #TODO improve
-  #unset boostrap for next iteration
-  bootStrapped=""
 }
 
 #$1 vm_name
 vm_create_connect() {
-
-  #make sure we clean the variable
-  bootStrapped=""
 
   #test first if machines are accessible via SSH to save time
   if ! wait_vm_ssh_ready "1" ; then
@@ -95,6 +88,8 @@ vm_provision() {
   vm_initial_bootstrap
   vm_set_ssh
 
+  vm_install_base_packages
+
   #[ "$type" != "cluster" ] && {
     if [ -z "$noSudo" ] ; then
       vm_initialize_disks #cluster is in parallel later
@@ -104,12 +99,11 @@ vm_provision() {
     fi
   #}
 
-  vm_install_base_packages
   vm_set_dot_files &
 
-  [ "$type" == "cluster" ] && vm_set_dsh
+  [ "$type" == "cluster" ] && vm_set_dsh &
 
-  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+  vm_final_bootstrap
 
   #logger "Waiting for VM $vm_name deployment"
   #wait $! #wait for the provisioning to be ready
@@ -189,7 +183,7 @@ get_ssh_user() {
 }
 
 vm_initial_bootstrap() {
-  bootStrapped="true" #not necesarry by default
+  : #not necesarry by default
 }
 
 check_sudo() {
@@ -352,10 +346,25 @@ get_initizalize_disks() {
 
 logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
 
-  local create_string=""
+  local create_string="echo ' DEBUG: listing devices'; lsblk;"
+
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
 sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
 sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
     #break when we have the required number
@@ -399,22 +408,23 @@ $userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share f
   echo -e "$fs_mount"
 }
 
-#requires $create_string to be defined
-get_mount_disks() {
+make_fstab(){
   if [[ "$attachedVolumes" -gt "12" ]] ; then
     logger "ERROR, function only supports up to 12 volumes"
     exit 1;
   fi
 
+  local create_string=""
+
   fs_mount="$(get_share_location)"
 
   if [ -z "$dont_mount_share" ] ; then
-    create_string="$fs_mount"
+    local create_string="$fs_mount"
   fi
 
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
-    create_string="$create_string
+    local create_string="$create_string
 /dev/${devicePrefix}${drive_letter}1       /scratch/attached/$num_drives  auto    defaults,nobootwait,noatime,nodiratime 0       2"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
@@ -422,7 +432,7 @@ get_mount_disks() {
   done
 
   if [ "$cloud_provider" == "azure" ] ; then
-  create_string="$create_string
+    local create_string="$create_string
 /mnt       /scratch/local    none bind 0 0"
   fi
 
@@ -430,23 +440,20 @@ get_mount_disks() {
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
 
+  logger "INFO: Updating /etc/fstab template"
+  vm_update_template "/etc/fstab" "$create_string" "secured_file"
+}
 
-  create_string="
+#requires $create_string to be defined
+get_mount_disks() {
+
+  local create_string="
     mkdir -p ~/{share,minerva};
     sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
     sudo chown -R $userAloja: /scratch;
-
-    sudo chmod 0777 /etc/fstab;
-
-
-
-    sudo echo '$create_string' >> /etc/fstab;
-
-    sudo chmod 0644 /etc/fstab;
     sudo mount -a;
     sudo chown -R $userAloja /scratch
   "
-
   echo -e "$create_string"
 }
 
@@ -507,7 +514,7 @@ vm_test_initiallize_disks() {
 
   logger "Checking if the correct number of disks are atttached to VM $vm_name"
 
-  create_string="$(get_initizalize_disks_test)"
+  local create_string="$(get_initizalize_disks_test)"
 
   #TODO check if disks are formated
 
@@ -635,9 +642,10 @@ vm_set_dsh() {
     logger "Setting up DSH for VM $vm_name "
 
     node_names="$(get_node_names)"
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/a;"
+    vm_update_template "~/.dsh/group/a" "$node_names" ""
+
     slave_names="$(get_slaves_names)"
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$slave_names\" > ~/.dsh/group/s;"
+    vm_update_template "~/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
@@ -658,12 +666,11 @@ vm_set_dot_files() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
-    vm_execute "echo -e \"
-export HISTSIZE=50000
+    vm_update_template "~/.bashrc" "export HISTSIZE=50000
 alias a='dsh -g a -M -c'
-alias s='dsh -g s -M -c'\" >> ~/.bashrc;" "paralell"
+alias s='dsh -g s -M -c'" ""
 
-    test_action="$(vm_execute " [ \"\$\(grep ${devicePrefix}c1 /etc/fstab\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' ~/.bashrc\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -687,7 +694,7 @@ vm_initialize_disks() {
     if check_bootstraped "vm_initialize_disks" ""; then
       logger "Initializing disks for VM $vm_name "
 
-      create_string="$(get_initizalize_disks)"
+      local create_string="$(get_initizalize_disks)"
 
       vm_execute "$create_string"
 
@@ -712,7 +719,7 @@ cluster_initialize_disks() {
 
   local bootstrap_file="~/bootstrap_cluster_initialize_disks"
 
-  create_string="echo 'yeah'; $(get_initizalize_disks)"
+  local create_string="$(get_initizalize_disks)"
 
   cluster_execute "
   if [[ -f $bootstrap_file ]] ; then
@@ -734,9 +741,12 @@ cluster_initialize_disks() {
 
 vm_mount_disks() {
   if check_bootstraped "vm_mount_disks" ""; then
-    logger "Mounting disks for VM $vm_name "
 
-    create_string="$(get_mount_disks)"
+    make_fstab
+
+    logger "INFO: Mounting disks for VM $vm_name "
+
+    local create_string="$(get_mount_disks)"
 
     vm_execute "$create_string"
 
@@ -760,7 +770,7 @@ cluster_mount_disks() {
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
 
-  create_string="$(get_mount_disks)"
+  local create_string="$(get_mount_disks)"
 
   mounts="$create_string"
 
@@ -929,7 +939,7 @@ vm_make_fs() {
 
     if [ -z "$test_action" ] ; then
       logger " Linking $shared_dir"
-      vm_execute "sudo chown -R ${user} /scratch;
+      vm_execute "sudo chown -R ${userAloja} /scratch;
 [ -d $shared_dir ] && [ ! -L $shared_dir ] && mv $shared_dir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $shared_dir;
 touch $shared_dir/safe_store;
@@ -981,15 +991,21 @@ vm_put_file_contents() {
   if [ "$1" ] && [ "$2" ] ; then
     if [ "$3" ] ; then
       local command="
-sudo chmod 777 $1;
-sudo cp $1 ${1}.$(date +%s).bak;
-sudo echo -e '$2' > $1;
+sudo chmod 777 $1 2> /dev/null;
+sudo cp $1 ${1}.$(date +%s).bak 2> /dev/null;
+sudo cat << 'EOF' > $1
+$2
+EOF
+
 sudo chmod 644 $1"
 
     else
       local command="
-mv $1 ${1}.$(date +%s).bak;
-echo -e '$2' > $1;"
+cp $1 ${1}.$(date +%s).bak 2> /dev/null;
+cat << 'EOF' > $1
+$2
+EOF
+"
 
     fi
 
@@ -1003,11 +1019,18 @@ echo -e '$2' > $1;"
 #$1 filename on remote machine $2 template part content $3 change permissions
 vm_update_template() {
 
-  logger "DEBUG: getting $1 contents"
+  #logger "DEBUG: TEMPLATE getting $1 contents"
   local fileCurrentContent="$(vm_get_file_contents "$1")"
-  logger "DEBUG: $1 contents\n$fileCurrentContent"
+
+  #if file doesn't exists, is possible that the main dir does not exist either
+  if [ ! "$fileCurrentContent" ] ; then
+    logger "WARNING: atempting to create directory: $(dirname "$1") for $1"
+    vm_execute "mkdir -p $(dirname "$1")"
+  fi
+
+  #logger "DEBUG: TEMPLATE $1 GOT contents"
   local fileNewContent="$(template_update_stream "$fileCurrentContent" "$2")"
-  logger "DEBUG: new contents\n$fileNewContent"
+  #logger "DEBUG: TEMPLATE GOT NEW contents"
   vm_put_file_contents "$1" "$fileNewContent" "$3"
-  logger "DEBUG: updated $1 with template"
+  #logger "DEBUG: TEMPLATE UPDATED $1 with template"
 }

@@ -46,10 +46,10 @@ templateTail='### END ALOJA TEMPLATE ###'
 # $1 source filename path $2 replace content
 template_update_file() {
 
-  logger "INFO: Applying template changes to $1"
+  #logger "INFO: Applying template changes to $1"
 
   if [ "$(grep "$templateLead" "$testFile")" ] ; then
-    logger "INFO: template lines found, executing sed"
+    #logger "INFO: template lines found, executing sed"
     local mktempFile="$(mktemp)"
     echo -e "$2" > "$mktempFile"
 
@@ -59,7 +59,7 @@ template_update_file() {
     rm "$mktempFile" #remove the temporary file
 
   else
-    logger "INFO: not found, appending (or creating file)"
+    #logger "INFO: not found, appending (or creating file)"
     echo -e "$templateLead\n$2\n$templateTail" >> "$testFile"
   fi
 }
@@ -80,30 +80,37 @@ template_update_stream() {
 
   else
     #logger "INFO: not found, appending"
-    echo -e "$1\n\n$templateLead\n$2\n$templateTail"
+    echo -e "$1\n\n$templateLead\n$2\n$templateTail\n\n"
   fi
 }
 
 cachePrefix="cache_"
+deployCacheFolderPath="$CONF_DIR/../../aloja-deploy/cache"
 
 #$1 filename $2 contents
 cache_put() {
-  echo -e "$2" > "$cachePrefix_${1}"
+  local cacheFileName="$deployCacheFolderPath/${cachePrefix}${1}"
+  echo -e "$2" > "$cacheFileName"
 }
 
 #$1 filename $2 expriry
 cache_get() {
-  if [ -f "$1" ] ; then
-    local lastModified="$(expr $(date +%s) - $(date +%s -r $1))"
 
-    if [ $2 -gt $lastModified ] ; then
-      logger "DEBUG: Cache found for $1" "" "log to file"
+  local cacheFileName="$deployCacheFolderPath/${cachePrefix}${1}"
+
+  #logger "DEBUG: Looking  cache for file $cacheFileName expiry $2" "" "log to file"
+
+  if [ -f "$cacheFileName" ] ; then
+    local lastModified="$(expr 1 + $(date +%s) - $(stat --printf='%Y' "$cacheFileName"))"
+
+    if [[ "$2" -gt "$lastModified" ]] ; then
+      #logger "DEBUG: Cache found for $1" "" "log to file"
       #output cache contents
-      cat "$cachePrefix_${1}"
+      cat "$cacheFileName"
     else
-      logger "DEBUG: Cache not found for $1 with $2 secs timeout" "" "log to file"
+      : #logger "DEBUG: Cache not found for $cacheFileName with $2 secs timeout Last modified: $lastModified" "" "log to file"
     fi
   else
-      logger "DEBUG: Cache file not found $1" "" "log to file"
+      : #logger "DEBUG: Cache file not found $cacheFileName Last modified: $lastModified" "" "log to file"
   fi
 }
