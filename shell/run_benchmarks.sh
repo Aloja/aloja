@@ -241,7 +241,7 @@ fi
 
 
 
-DATE='date +%Y%m%d_%H%M%S'
+
 
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_SLAVES}_${clusterName}"
@@ -249,7 +249,7 @@ else
   CONF="conf_${NET}_${DISK}_b${BENCH}_S${NUMBER_OF_SLAVES}_${clusterName}"
 fi
 
-JOB_NAME="`$DATE`_$CONF"
+JOB_NAME="$(get_date_folder)"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"

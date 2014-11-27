@@ -5,6 +5,10 @@ loggerb(){
   #zabbix_sender "hadoop.status $stamp $1"
 }
 
+get_date_folder(){
+  echo date +%Y%m%d_%H%M%S
+}
+
 zabbix_sender(){
   :
   #echo "al-1001 $1" | /home/pristine/share/aplic/zabbix/bin/zabbix_sender -c /home/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
