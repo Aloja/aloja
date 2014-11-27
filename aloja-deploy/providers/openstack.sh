@@ -1,8 +1,11 @@
 #OPENSTACK specific functions
 
 #openstack specific globals
+
+#associative arrays (one key per node)
 declare -A nodeIP
 declare -A serverId
+declare -A vmBootStrapped
 
 lockedBootstrapCheck=""
 
@@ -42,11 +45,19 @@ vm_set_details() {
 
   if [ -z "${nodeIP[$vm_name]}" ] || [ -z "${serverId[$vm_name]}"  ]  ; then
     #get machine details
-    local vm_details="$(nova show --minimal "$vm_name")"
+    local cacheFileName="rackspace_vm_details_${vm_name}"
+    local vm_details="$(cache_get "$cacheFileName" "60")"
+
+    if [ ! "$vm_details" ] ; then
+      local vm_details="$(nova show --minimal "$vm_name")"
+      cache_put "$cacheFileName" "$vm_details"
+    fi
+
     #set IP
-    nodeIP["$vm_name"]="$(echo "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
+    nodeIP["$vm_name"]="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
     #set serverId
-    serverId["$vm_name"]="$(echo "$vm_details"|grep ' id '|awk '{print $4}')"
+    serverId["$vm_name"]="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
+
   fi
 
   #if empty, we cannot continue
@@ -100,13 +111,9 @@ get_ssh_port() {
 
 #Openstack needs to use root first
 get_ssh_user() {
-  #check if we can change to regular user
-  if [ ! "$bootStrapped" ] ; then
-    vm_already_bootstraped
-  fi
 
   #check if we can change from root user
-  if [ ! "$bootStrapped" ] ; then
+  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
     echo "root"
   else
@@ -116,17 +123,29 @@ get_ssh_user() {
 
 vm_already_bootstraped() {
 
+  #check if we can change to regular user
+  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+    vm_already_bootstraped
+  fi
+
   if [ ! "$lockedBootstrapCheck" ] ; then
     #lock to prevent loops
     lockedBootstrapCheck="true"
+
+    logger "DEBUG: Checking if vm already bootstrapped: ${vmBootStrapped[@]} " "" "log to file"
 
     #TODO improve dynamic filename and bootstrap functionality
     local test_action="$(vm_execute " [ -f /root/bootstrap_Initial_Bootstrap_${vm_name} ] && echo '$testKey'")"
     #in case we get a welcome banner we need to grep
     local test_action="$(echo -e "$test_action"|grep "$testKey")"
 
-    #change to bootStrapped in case file present
-    [ "$test_action" ] && bootStrapped="true"
+    #change to boot strapped in case file present
+    if [ "$test_action" ] ; then
+      vmBootStrapped["$vm_name"]="true"
+      logger "DEBUG: vm already bootstrapped: ${vmBootStrapped[@]} " "" "log to file"
+    else
+      logger "DEBUG: vm NOT bootstrapped: ${vmBootStrapped[@]} " "" "log to file"
+    fi
 
     #unlock
     lockedBootstrapCheck=""
@@ -135,7 +154,7 @@ vm_already_bootstraped() {
 
 vm_initial_bootstrap() {
 
-  if [ ! "$bootStrapped" ] ; then
+  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
 
     local bootstrap_file="Initial_Bootstrap"
 
@@ -175,13 +194,13 @@ ufw disable;
         #set the lock
         check_bootstraped "$bootstrap_file" "set"
         #change the user
-        bootStrapped="true"
+        vmBootStrapped["$vm_name"]="true"
       else
         logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
       fi
 
     else
-      bootStrapped="true"
+      vmBootStrapped["$vm_name"]="true"
       logger "$bootstrap_file already configured"
     fi
   else
@@ -189,33 +208,42 @@ ufw disable;
   fi
 }
 
-make_hosts_file_command() {
-  local hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
-
-  #here we are missing the ip6 address
-  local default_header="# The following lines are desirable for IPv6 capable hosts
-#::1     ip6-localhost ip6-loopback
-#fe00::0 ip6-localnet
-#ff00::0 ip6-mcastprefix
-#ff02::1 ip6-allnodes
-#ff02::2 ip6-allrouters
-#127.0.0.1 localhost
-"
-
-  local hosts_file="${default_header}
-${hosts_file}"
-
-  echo "sudo chmod 777 /etc/hosts;
-echo -e '$hosts_file' |grep -v \$(hostname) > /etc/hosts;
-sudo chmod 644 /etc/hosts;
-
-[ \"\$\(cat /etc/hosts\)\" == \"$hosts_file\" ] && echo ' Hosts succesfully updated' || echo ' Error updating hosts file';
-"
-
-}
+#make_hosts_file_command() {
+#  local hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
+#
+#  #here we are missing the ip6 address
+#  local default_header="# The following lines are desirable for IPv6 capable hosts
+##::1     ip6-localhost ip6-loopback
+##fe00::0 ip6-localnet
+##ff00::0 ip6-mcastprefix
+##ff02::1 ip6-allnodes
+##ff02::2 ip6-allrouters
+##127.0.0.1 localhost
+#"
+#
+#  local hosts_file="${default_header}
+#${hosts_file}"
+#
+#  echo "sudo chmod 777 /etc/hosts;
+#echo -e '$hosts_file' |grep -v \$(hostname) > /etc/hosts;
+#sudo chmod 644 /etc/hosts;
+#
+#[ \"\$\(cat /etc/hosts\)\" == \"$hosts_file\" ] && echo ' Hosts succesfully updated' || echo ' Error updating hosts file';
+#"
+#
+#}
 
 make_hosts_file() {
-  local hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
+  local cacheFileName="${cloud_provider}_hosts"
+
+  #first try the cache
+  local hosts_file="$(cache_get "$cacheFileName" "60")"
+
+  if [ ! "$hosts_file" ] ; then
+    local hosts_file="$(nova list|tee hosts.txt|tail -n +4|head -n -1|awk '{start=index($0,"private")+8; print substr($0,start, index(substr($0,start), " ")) "\t" $4}'|tr ";" " ")"
+    cache_put "$cacheFileName" "$hosts_file"
+  fi
+
   echo -e "$hosts_file"
 }
 
@@ -224,8 +252,11 @@ vm_update_hosts_file() {
   #local hosts_file_command="$(make_hosts_file_command)"
   local hosts_file="$(make_hosts_file)"
 
+  #remove the same machine
+  local hosts_file="$(echo -e "$hosts_file" |grep -v "$vm_name")"
+
   logger "Updating hosts file for VM $vm_name"
-  logger "DEBUG: $hosts_file $hosts_file_command"
+  #logger "DEBUG: $hosts_file $hosts_file_command"
 
   #vm_execute "$hosts_file_command"
   vm_update_template "/etc/hosts" "$hosts_file" "secured_file"
@@ -236,27 +267,26 @@ vm_final_bootstrap() {
 
   #currently is ran everytime it is executed
   vm_update_hosts_file
-
 }
 
 ### cluster functions
 
-cluster_final_boostrap() {
-  logger "Finalizing Cluster $cluster_name bootstrap"
-  logger "Getting list of hostnames for hosts file for the cluster"
-  local hosts_file_command="$(make_hosts_file_command)"
-
-  logger "Updating hosts file for cluster"
-  logger "DEBUG: $hosts_file_command"
-  cluster_execute "$hosts_file_command"
-}
+#cluster_final_boostrap() {
+#  logger "Finalizing Cluster $cluster_name bootstrap"
+##  logger "Getting list of hostnames for hosts file for the cluster"
+##  local hosts_file_command="$(make_hosts_file_command)"
+##
+##  logger "Updating hosts file for cluster"
+##  logger "DEBUG: $hosts_file_command"
+##  cluster_execute "$hosts_file_command"
+#}
 
 
 ###for executables
 
 node_connect() {
 
-  bootStrapped="true" #try to connect as a regular user
+  vmBootStrapped["$vm_name"]="true" #try to connect as a regular user
   vm_set_details
 
   logger "Connecting to Rackspace"
