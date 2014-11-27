@@ -6,7 +6,7 @@ loggerb(){
 }
 
 get_date_folder(){
-  echo date +%Y%m%d_%H%M%S
+  echo "$(date +%Y%m%d_%H%M%S)"
 }
 
 zabbix_sender(){
