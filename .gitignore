@@ -9,6 +9,8 @@
 jobs/*
 blobs/*
 !blobs/.git_ignored_folder
+aloja-deploy/cache/*
+!aloja-deploy/cache/.git_ignored_folder
 
 #vagrant
 vagrant/.vagrant/*
