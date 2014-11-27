@@ -1,9 +1,9 @@
 var https = require('https');
  
 // Cluster Authentication Setup
-var clustername = "aloja8";
-var username = "";
-var password = ""; // Reminder: Don`t share this file with your password saved!
+var clustername = "aloja16";
+var username = require('../../secure/azure_settings.js').username;
+var password = require('../../secure/azure_settings.js').password;
 
 process.argv.forEach(function(val,index,array) {
   if(index == 2)
@@ -42,11 +42,11 @@ https.get(optionJobs, function (res) {
                 });
                 res.on('end', function () {
                     var thisJob = JSON.parse(jobResponseString); // Parse the JSON response
-		    if(thisJob.status != undefined && thisJob.status.state == "SUCCEEDED" && thisJob.status.jobName == "TeraSort") {
+		    if(thisJob.status != undefined && thisJob.status.state == "SUCCEEDED" && thisJob.status.jobName != "TempletonControllerJob" ) {
 		 	var startTime = new Date(thisJob.status.startTime);
                         var finishTime = new Date(thisJob.status.finishTime);
 			var diff = finishTime - startTime;	
-			console.log("\""+thisJob.status.jobId+"\",\""+(diff/1000)+"\"");
+			console.log("\""+thisJob.status.jobName+"\",\""+thisJob.status.jobId+"\",\""+(diff/1000)+"\"");
 		    }
                 });
             });
