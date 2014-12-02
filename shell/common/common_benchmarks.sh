@@ -95,3 +95,9 @@ execute_sleep() {
 
   stop_monit
 }
+
+set_omm_killer() {
+  loggerb "WARNING: OOM killer not set for benchmark"
+  #Example: echo 15 > proc/<pid>/oom_adj significantly increase the likelihood that process <pid> will be OOM killed.
+  #pgrep apache2 |sudo xargs -I %PID sh -c 'echo 10 > /proc/%PID/oom_adj'
+}

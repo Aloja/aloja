@@ -190,6 +190,8 @@ restart_hadoop(){
     fi
   done
 
+  set_omm_killer
+
   loggerb "Hadoop ready"
 }
 
@@ -204,8 +206,8 @@ execute_HiBench(){
     restart_hadoop
 
     #Delete previous data
-    #$DSH_MASTER "${BENCH_H_DIR}/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
-    echo "" > "${BENCH_HIB_DIR}$bench/hibench.report"
+    #$DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
+    echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
 
     #just in case check if the input file exists in hadoop
     if [ "$DELETE_HDFS" == "0" ] ; then
@@ -321,7 +323,7 @@ $DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
   #clean output data
   loggerb "INFO: Cleaning Output data for $bench"
   get_bench_name $bench
-  $DSH_MASTER "${BENCH_H_DIR}/bin/hadoop fs -rmr /HiBench/$full_name/Output"
+  $DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench/$full_name/Output"
 
   save_hadoop "${3}${1}"
 }
