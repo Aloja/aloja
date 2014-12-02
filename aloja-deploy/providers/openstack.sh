@@ -253,13 +253,29 @@ vm_update_hosts_file() {
   local hosts_file="$(make_hosts_file)"
 
   #remove the same machine
-  local hosts_file="$(echo -e "$hosts_file" |grep -v "$vm_name")"
+  #local hosts_file="$(echo -e "$hosts_file" |grep -v "$vm_name")"
 
   logger "Updating hosts file for VM $vm_name"
   #logger "DEBUG: $hosts_file $hosts_file_command"
 
   #vm_execute "$hosts_file_command"
-  vm_update_template "/etc/hosts" "$hosts_file" "secured_file"
+  vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
+}
+
+#$1 filename on remote machine $2 template part content $3 change permissions
+vm_update_host_template() {
+
+  #logger "DEBUG: TEMPLATE getting $1 contents"
+  local fileCurrentContent="$(vm_get_file_contents "$1")"
+
+  #remove the same machine
+  local fileCurrentContent="$(echo -e "$fileCurrentContent" |grep -v "$vm_name")"
+
+  #logger "DEBUG: TEMPLATE $1 GOT contents"
+  local fileNewContent="$(template_update_stream "$fileCurrentContent" "$2")"
+  #logger "DEBUG: TEMPLATE GOT NEW contents"
+  vm_put_file_contents "$1" "$fileNewContent" "$3"
+  #logger "DEBUG: TEMPLATE UPDATED $1 with template"
 }
 
 vm_final_bootstrap() {
@@ -342,5 +358,5 @@ node_start() {
   vm_set_details
 
   logger "Starting VM $1"
-  azure vm start "$1"
+  nova start "$1"
 }
