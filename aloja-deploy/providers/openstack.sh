@@ -359,4 +359,7 @@ node_start() {
 
   logger "Starting VM $1"
   nova start "$1"
+  logger "Starting (rebooting --hard) VM $1"
+  sleep 1 #just in case the previous command takes a second to be effective
+  nova reboot --hard "$1"
 }
