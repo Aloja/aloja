@@ -229,7 +229,7 @@ if [ -z "$BENCH" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "-10" ]; then
   EXECUTE_HIBENCH="true"
 fi
 
-BENCH_HIB_DIR="$BENCH_SOURCE_DIR/${BENCH}/"
+BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
@@ -270,7 +270,11 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
-    $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
+    $DSH "sudo sysctl -w vm.swappiness=0;
+sudo sysctl vm.panic_on_oom=1;
+sudo sysctl -w fs.file-max=65536;
+sudo service ufw stop;
+"
 
     #temporary to avoid read-only file system errors
     echo "Re-mounting attached disks"
