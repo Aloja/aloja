@@ -9,6 +9,8 @@ INSERT_BY_EXEC=1 #if to insert right after each folder
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
 
+source "$CUR_DIR/common/include_import.sh"
+
 #TODO check if these variables are still needed
 DROP_DB_FIRST=""
 first_host=""
@@ -17,7 +19,7 @@ hostn=""
 #Check if to use a special version of sar or the system one
 #nico pc
 #if [[ "$HOSTNAME" == "darchi" ]] ; then
-if [[ ! -z $(lsb_release -a|grep Arch) ]] ; then
+if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
   sadf="$CUR_DIR/sar/archlinux/sadf"
 #ubuntu
 #elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
@@ -37,7 +39,7 @@ MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-
 DB="aloja2"
 MYSQL="mysql $MYSQL_ARGS $DB -e "
 
-#mysql $MYSQL_CREDENTIALS -e "DROP database \`$DB\`;"
+#mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
 
@@ -68,6 +70,28 @@ head -n3 "$2"
 
   rm $2
 }
+
+#$1 cluster
+get_insert_cluster_sql() {
+  local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
+  source "$clusterConfigFile"
+
+  local sql="
+INSERT into clusters set
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link=''
+   ON DUPLICATE KEY UPDATE
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='';\n"
+
+  local nodeName="$(get_master_name)"
+  sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+
+  for nodeName in $(get_slaves_names) ; do
+    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+  done
+
+  echo -e "$sql\n"
+}
+
 
 get_exec_params(){
   #here get the zabbix URL to parse filtering prepares and other benchmarks
@@ -182,6 +206,8 @@ for folder in 201* ; do
           cluster="2"
         else
           cluster="${folder:(-2):2}"
+
+          $MYSQL "$(get_insert_cluster_sql "$cluster")"
         fi
         echo "Cluster $cluster"
 
@@ -219,32 +245,32 @@ for folder in 201* ; do
         if [[ ! -z "$id_exec" ]] ; then
         	jobconfs=""
         	#get Haddop conf files which are NOT jobs of prep
-			if [ -d "prep_$bench_folder" ]; then
-				#1st: get jobs in prep
-				cd ../"prep_$bench_folder"
-				prepjobs=$(find "./history/done" -type f -name "job*.xml");
-				#2nd: get jobs in bench folder
-				cd ../$bench_folder
-				jobconfs=$(find "./history/done" -type f -name "job*.xml");
-				#3rd: 2 files, with one line per job in bench folder and prep folder
-				echo $jobconfs | tr ' ' '\n' > file.tmp
-				echo $prepjobs | tr ' ' '\n' > file2.tmp
-				#4rd: strip jobs in prep folder and cleanup
-				jobconfs=$(grep -v -f file2.tmp file.tmp)
-				rm file.tmp file2.tmp
-			else
-				echo "Not prep folder, considering all confs belonging to exec"
-				jobconfs=$(find "./history/done" -type f -name "job*.xml");
-			fi
-			
-			#Dump parameters from valid conf files to DB
-			for job_conf in $jobconfs ; do
-				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
-				filename=$(basename "$job_conf")
-				job_name="${filename%.*}"
-				job_name="${job_name:0:(-5)}"
-				insert_conf_params_DB "$params" "$id_exec" "$job_name"
-			done
+#			if [ -d "prep_$bench_folder" ]; then
+#				#1st: get jobs in prep
+#				cd ../"prep_$bench_folder"
+#				prepjobs=$(find "./history/done" -type f -name "job*.xml");
+#				#2nd: get jobs in bench folder
+#				cd ../$bench_folder
+#				jobconfs=$(find "./history/done" -type f -name "job*.xml");
+#				#3rd: 2 files, with one line per job in bench folder and prep folder
+#				echo $jobconfs | tr ' ' '\n' > file.tmp
+#				echo $prepjobs | tr ' ' '\n' > file2.tmp
+#				#4rd: strip jobs in prep folder and cleanup
+#				jobconfs=$(grep -v -f file2.tmp file.tmp)
+#				rm file.tmp file2.tmp
+#			else
+#				echo "Not prep folder, considering all confs belonging to exec"
+#				jobconfs=$(find "./history/done" -type f -name "job*.xml");
+#			fi
+#
+#			#Dump parameters from valid conf files to DB
+#			for job_conf in $jobconfs ; do
+#				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+#				filename=$(basename "$job_conf")
+#				job_name="${filename%.*}"
+#				job_name="${job_name:0:(-5)}"
+#				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+#			done
 		#fi
 		
 		id_exec=""

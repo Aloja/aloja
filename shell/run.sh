@@ -225,7 +225,7 @@ prepare_config(){
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $H_DIR" 2>&1 |tee -a $LOG_PATH
 
-  $DSH "cp -r $SOURCE_DIR/${HADOOP_VERSION}-scratch/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -r $SOURCE_DIR/${HADOOP_VERSION}/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
 
   vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
   bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"

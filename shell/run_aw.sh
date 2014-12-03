@@ -222,7 +222,7 @@ done
 #if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
 #  logger "Generating source dirs"
 #  $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
-#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
+#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $SOURCE_DIR/${HADOOP_VERSION};
 #else
 #  logger "Source dirs up to date"
 #fi
@@ -280,7 +280,7 @@ $DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{aplic,hado
 
 echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 
-  $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-scratch/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
 
   logger "Preparing config"
 
