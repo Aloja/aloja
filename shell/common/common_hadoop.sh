@@ -27,7 +27,7 @@ $DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$P
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
 
-  $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-scratch/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
 
   $DSH "cp /usr/bin/vmstat $vmstat" 2>&1 |tee -a $LOG_PATH
   $DSH "cp $bwm_source $bwm" 2>&1 |tee -a $LOG_PATH
@@ -58,6 +58,8 @@ MAX_REDS="$MAX_MAPS"
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##JAVA_XMS##,$JAVA_XMS,g;
+s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
@@ -81,6 +83,8 @@ slaves="$(get_slaves_names)"
   #to avoid perl warnings
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
+
+  $DSH "cp $BENCH_H_DIR/conf_template/* $BENCH_H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hadoop-env.sh > $BENCH_H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH
