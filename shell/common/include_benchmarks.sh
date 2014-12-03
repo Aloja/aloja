@@ -88,6 +88,9 @@ fi
 logger "INFO: loading $providerFunctionsFile"
 source "$providerFunctionsFile"
 
+logger "INFO: loading benchmarks_defaults.conf"
+source "$CONF_DIR/../conf/benchmarks_defaults.conf"
+
 #bencmark sources
 logger "INFO: loading $CONF_DIR/common_benchmarks.sh"
 source "$CONF_DIR/common_benchmarks.sh"
