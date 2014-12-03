@@ -414,18 +414,18 @@ get_initizalize_disks_test() {
 
 get_share_location() {
 
-  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
 
   if [ "$cloud_provider" == "pedraforca" ] ; then
-    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
   elif [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
     #internal network
     local fs_mount="$minerva_mount
-$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
   else
     #external network
     local fs_mount="$minerva_mount
-$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222 0 0"
+$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
   fi
 
   echo -e "$fs_mount"
