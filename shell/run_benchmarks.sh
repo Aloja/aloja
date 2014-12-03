@@ -259,6 +259,9 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
 
+[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+
 bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
 vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
 bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"

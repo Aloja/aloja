@@ -223,6 +223,9 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$SOURCE_DIR/jdk1.7.0_25"
 
+[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+
 bwm_source="$SOURCE_DIR/bin/bwm-ng"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
@@ -374,6 +377,8 @@ MAX_REDS="$MAX_MAPS"
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##JAVA_XMS##,$JAVA_XMS,g;
+s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;

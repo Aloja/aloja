@@ -145,6 +145,9 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="/scratch/ssd/npoggi/aplic/jdk1.7.0_25"
 
+[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+
 bwm_source="/scratch/ssd/npoggi/aplic/sge-hadoop-jobs/bin/bwm-ng"
 
 if [ "${NET}" == "IB" ] ; then
@@ -245,13 +248,16 @@ prepare_config(){
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##JAVA_XMS##,$JAVA_XMS,g;
+s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
 s,##NAMENODE##,$MASTER,g;
-s,##TMP_DIR##,$HDD/hadoop,g;
+s,##TMP_DIR##,$HDD,g;
+s,##HDFS_DIR##,$HDFS_DIR,g;
 s,##MAX_MAPS##,$MAX_MAPS,g;
-s,##MAX_REDS##,$MAX_MAPS,g;
+s,##MAX_REDS##,$MAX_REDS,g;
 s,##IFACE##,$IFACE,g;
 s,##IO_FACTOR##,$IO_FACTOR,g;
 s,##IO_MB##,$IO_MB,g;
