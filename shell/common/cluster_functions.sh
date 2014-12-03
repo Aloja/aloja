@@ -1,6 +1,6 @@
 #Check that CONF_DIR is correctly set before starting
 [ -z "$CONF_DIR" ] || [ ! -f "$CONF_DIR/provider_functions.sh" ] && {
-  echo "ERROR: CONF_DIR not set correctly" ; exit 1;
+  echo "ERROR: CONF_DIR not set correctly. CONF_DIR=$CONF_DIR" ; exit 1;
 }
 
 #load provider functions
@@ -117,6 +117,8 @@ vm_finalize() {
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+  [ ! -z "$extraPackages" ] && vm_install_extra_packages
+
   [ ! -z "$puppet" ] && vm_puppet_apply
 }
 
@@ -302,7 +304,7 @@ vm_local_scp() {
 vm_rsync() {
     logger "RSynching: $1 To: $2"
     #eval is for parameter expansion  --progress
-    rsync -aur --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
@@ -325,16 +327,37 @@ get_master_name() {
 #vm_name must be set
 get_vm_ssh_port() {
   local node_ssh_port=''
+
+  if [ "$type" == "node" ] ; then
+    if [ "$cloud_provider" == "azure" ] ; then
+      local node_ssh_port="$vm_ssh_port" #for Azure nodes
+    else
+      local node_ssh_port="22" #default
+    fi
+  else #cluster auto id
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local vm_name_tmp="${clusterName}-${vm_id}"
+      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
+
+      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+        local node_ssh_port="2${clusterID}${vm_id}"
+        break #just return one
+      fi
+    done
+  fi
+
+  echo "$node_ssh_port"
+}
+
+#$1 vm_name
+get_vm_id() {
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
     local vm_name_tmp="${clusterName}-${vm_id}"
-    local vm_ssh_port_tmp="2${clusterID}${vm_id}"
-
-    if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-      local node_ssh_port="2${clusterID}${vm_id}"
-      break #just return one
+    if [ "$vm_name_tmp" == "$1" ] ; then
+      echo "$vm_id"
+      break
     fi
   done
-  echo "$node_ssh_port"
 }
 
 #requires $create_string to be defined
@@ -599,28 +622,34 @@ vm_check_attach_disks() {
 
 vm_install_base_packages() {
   if check_sudo ; then
-    if check_bootstraped "vm_install_packages" ""; then
+
+    local bootstrap_file="vm_install_packages"
+
+    if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing packages for for VM $vm_name "
+
+      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp"
 
       #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
-#only update apt when is 1 week old (600000) to save time
-      vm_execute '
-if [ ! -f "/var/lib/apt/periodic/update-success-stamp" ] || [ "$[$(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp)]" -ge 600000 ]; then
+      #only update apt sources when is 1 week old (600000) to save time
+      local install_packages_command='
+if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 600000 ]; then
   sudo apt-get update -m;
 fi
 
-sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;'
+sudo apt-get install -y -f '
 
-      logger "Checking if extra packages defined to install them"
-      vm_install_extra_packages
+      local install_packages_command="$install_packages_command ssh $base_packages;"
 
-      test_install_base_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
-      if [ ! -z "$test_install_base_packages" ] ; then
+      vm_execute "$install_packages_command"
+
+      test_install_extra_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
+      if [ ! -z "$test_install_extra_packages" ] ; then
         #set the lock
-        check_bootstraped "vm_install_packages" "set"
+        check_bootstraped "$bootstrap_file" "set"
       else
-        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_base_packages"
+        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_extra_packages"
       fi
 
     else
@@ -631,9 +660,30 @@ sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;'
   fi
 }
 
-#override to install aditional packages
 vm_install_extra_packages() {
-  logger " no extra packages defined for cluster"
+  if check_sudo ; then
+
+    local bootstrap_file="vm_install_extra_packages"
+
+    if check_bootstraped "$bootstrap_file" ""; then
+      logger "Installing extra packages for for VM $vm_name "
+
+      vm_execute "sudo apt-get install -y -f vim mc git;"
+
+      local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
+      if [ ! -z "$test_install_extra_packages" ] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        logger "ERROR: installing extra packages for $vm_name. Test output: $test_install_extra_packages"
+      fi
+
+    else
+      logger "Extra packages already initialized"
+    fi
+  else
+    logger "WARNING: no sudo access or disabled, no extra packages installed"
+  fi
 }
 
 vm_set_dsh() {
