@@ -331,6 +331,8 @@ slaves="$(get_slaves_names)"
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
 
+  $DSH "cp $H_DIR/conf_template/* $H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
+
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/hadoop-env.sh > $H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/core-site.xml > $H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/hdfs-site.xml > $H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH
