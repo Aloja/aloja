@@ -324,7 +324,7 @@ node_delete() {
 #to alow parallel deletion above
 node_delete_helper() {
   logger "Getting attached disks"
-  attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
+  local attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
   logger "$attached_volumes"
 
   logger "De-Ataching node volumes"
@@ -333,6 +333,11 @@ node_delete_helper() {
   done
 
   sleep 60 #TODO improve
+
+  logger "Deleting node volumes"
+  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
+    nova volume-delete "$volumeID"
+  done
 
   logger "Deleting node $1"
   nova delete "$vm_name"
