@@ -218,9 +218,7 @@ done
 #if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
 #  logger "Generating source dirs"
 #  $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
-#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
-#else
-#  logger "Source dirs up to date"
+#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch#  logger "Source dirs up to date"
 #fi
 
 zabbix_sender(){

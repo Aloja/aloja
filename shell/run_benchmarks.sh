@@ -229,7 +229,7 @@ if [ -z "$BENCH" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "-10" ]; then
   EXECUTE_HIBENCH="true"
 fi
 
-BENCH_HIB_DIR="$BENCH_SOURCE_DIR/${BENCH}/"
+BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
@@ -241,7 +241,7 @@ fi
 
 
 
-DATE='date +%Y%m%d_%H%M%S'
+
 
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_SLAVES}_${clusterName}"
@@ -249,7 +249,7 @@ else
   CONF="conf_${NET}_${DISK}_b${BENCH}_S${NUMBER_OF_SLAVES}_${clusterName}"
 fi
 
-JOB_NAME="$(DATE)_$CONF"
+JOB_NAME="$(get_date_folder)"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
@@ -258,6 +258,9 @@ LOG="2>&1 |tee -a $LOG_PATH"
 
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
+
+[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
 
 bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
 vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
@@ -270,18 +273,29 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
-    $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
+    $DSH "sudo sysctl -w vm.swappiness=0;
+sudo sysctl vm.panic_on_oom=1;
+sudo sysctl -w fs.file-max=65536;
+sudo service ufw stop;
+"
 
-    #temporary to avoid read-only file system errors
-    echo "Re-mounting attached disks"
-    $DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-
+    #TODO improve mount checking
     correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
     if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
-      echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-      echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
-      exit 1
+      echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
+
+      #temporary to avoid read-only file system errors
+      echo "Re-mounting attached disks"
+      $DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+
+      correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+
+      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
+        echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
+        echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
+        exit 1
+      fi
     fi
   fi
 fi
@@ -316,7 +330,7 @@ done
 #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
 #  loggerb  "Generating source dirs"
 #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
-#  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-scratch" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-scratch;
+#  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION};
 #else
 #  loggerb  "Source dirs up to date"
 #fi
@@ -351,20 +365,10 @@ loggerb  ""
 
 
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  prepare_config ${NET} ${DISK} ${BENCH}
-
-  #before running hibench, set exports and vars
-  EXP="export JAVA_HOME=$JAVA_HOME && \
-export HADOOP_HOME=$BENCH_H_DIR && \
-export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
-export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
-export NUM_MAPS=$MAX_MAPS && \
-export NUM_REDS=$MAX_MAPS && \
-"
-
+  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
+else
+  prepare_config
 fi
-
-
 
 start_time=$(date '+%s')
 
@@ -385,15 +389,13 @@ else
   exit 1
 fi
 
-loggerb  "$(date +"%H:%M:%S") DONE $bench"
-
-
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  #clean output data
-  loggerb "INFO: Cleaning Output data for $bench"
-  get_bench_name $bench
-  $DSH_MASTER "${BENCH_H_DIR}/bin/hadoop fs -rmr /HiBench/$full_name/Output"
+if [ ! "$EXECUTE_HIBENCH" ] ; then
+  stop_monit
+  save_bench "$BENCH"
 fi
+
+
+loggerb  "$(date +"%H:%M:%S") DONE $bench"
 
 
 ########################################################

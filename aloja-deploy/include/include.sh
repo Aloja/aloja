@@ -73,7 +73,10 @@ if [ ! -z "defaultProvider" ] && [ -z "$2" ] ; then
   providerFunctionsFile="providers/${defaultProvider}.sh"
 else
   providerFunctionsFile="providers/${2}.sh"
+  defaultProvider="$2"
 fi
+
+
 
 #check if provider file exists
 if [ ! -f "$providerFunctionsFile" ] ; then
@@ -81,15 +84,15 @@ if [ ! -f "$providerFunctionsFile" ] ; then
   exit 1
 fi
 
-if [ "$2" == "rackspace" ] || [ "$2" == "openstack" ] ; then
+if [ "$defaultProvider" == "rackspace" ] || [ "$defaultProvider" == "openstack" ] ; then
 
   #check if azure command is installed
   if ! nova --version 2>&1 > /dev/null ; then
-    echo "ERROR: nova command not instaled. Run: sudo pip install install rackspace-novaclient"
+    echo -e "ERROR: nova command not instaled. Run:\nrun apt-get install install python-pip;\nsudo pip install rackspace-novaclient"
     exit 1
   fi
 
-elif [ "$2" == "azure" ] ; then
+elif [ "$defaultProvider" == "azure" ] ; then
   #check if azure command is installed
   if ! azure --version 2>&1 > /dev/null ; then
     echo "azure command not instaled. Run: sudo npm install azure-cli"

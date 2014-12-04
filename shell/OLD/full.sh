@@ -4,7 +4,7 @@
 [ $# -lt 2 ] && { echo "Usage: $0 eth|ib ssd|hdd [_min|_10] [_m4|_m8|_m16|_m24]" ; exit 1; }
 
 
-DIR="/scratch/ssd/npoggi/aplic/hadoop-1.0.3-scratch"
+DIR="/scratch/ssd/npoggi/aplic/hadoop-1.0.3"
 
 DATE='date +%Y%m%d_%H%M%S'
 CONF="conf_$1_${2}${4}"

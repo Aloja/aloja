@@ -6,7 +6,7 @@ usage() {
 $0 -C clusterName
 `#[-n net <IB|ETH>] [-s \(save prepare\)] -N \(don\'t delete files\)`
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
-[-b benchmark <_min|_10>]
+[-b benchmark <-min|-10>]
 [-r replicaton <positive int>]
 [-m max mappers and reducers <positive int>]
 [-i io factor <positive int>] [-p port prefix <3|4|5>]
@@ -15,7 +15,7 @@ $0 -C clusterName
 [-c compression <0 (dissabled)|1|2|3>]
 [-z <block size in bytes>] [-s (save prepare)] -N (don't delete files)
 
-example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
+example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b -min -I 4096 -l wordcount -c 1
 " 1>&2;
 
   exit 1;
@@ -71,7 +71,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "_10" ] || [ "$BENCH" == "_min" ] || usage
+      [ "$BENCH" == "-10" ] || [ "$BENCH" == "-min" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -142,7 +142,8 @@ trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; kill $(jobs -p); exit;' SIG
 clusterConfigFile="cluster_${clusterName}.conf"
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$CUR_DIR_TMP/common/cluster_functions.sh"
+CONF_DIR="$CUR_DIR_TMP/common/"
+source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
 #####
 
@@ -200,14 +201,14 @@ else
   exit 1
 fi
 
-BASE_DIR="/home/$userAloja/share/"
+BASE_DIR="/home/$userAloja/share"
 SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
 H_DIR="$HDD/aplic/$HADOOP_VERSION" #execution dir
-HIB_DIR="$SOURCE_DIR/HiBench${BENCH}/"
+HIB_DIR="$SOURCE_DIR/HiBench${BENCH}"
 
 #Location of prepared inputs
-SAVE_LOCATION="/scratch/local/HiBench_prepare/"
+SAVE_LOCATION="/scratch/local/HiBench_prepare"
 
 
 DATE='date +%Y%m%d_%H%M%S'
@@ -222,6 +223,9 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$SOURCE_DIR/jdk1.7.0_25"
 
+[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+
 bwm_source="$SOURCE_DIR/bin/bwm-ng"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
@@ -229,17 +233,24 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 #temporary OS config
 $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
 
-#temporary to avoid read-only file system errors
-echo "Re-mounting attached disks"
-$DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
-
 correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
 if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
-  echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-  echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
-  exit 1
+  echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
+
+  #temporary to avoid read-only file system errors
+  echo "Re-mounting attached disks"
+  $DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+
+  correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+
+  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
+    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
+    echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
+    exit 1
+  fi
 fi
+
 
 #create dir to save files in one host
 $DSH_MASTER "mkdir -p $JOB_PATH"
@@ -273,7 +284,7 @@ done
 #if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
 #  logger "Generating source dirs"
 #  $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
-#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
+#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $SOURCE_DIR/${HADOOP_VERSION};
 #else
 #  logger "Source dirs up to date"
 #fi
@@ -331,7 +342,7 @@ $DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{aplic,hado
 
 echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 
-  $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-scratch/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
 
   vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
   bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
@@ -366,6 +377,8 @@ MAX_REDS="$MAX_MAPS"
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##JAVA_XMS##,$JAVA_XMS,g;
+s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
@@ -389,6 +402,8 @@ slaves="$(get_slaves_names)"
   #to avoid perl warnings
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
+
+  $DSH "cp $H_DIR/conf_template/* $H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/hadoop-env.sh > $H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/core-site.xml > $H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH
@@ -540,7 +555,7 @@ save_bench() {
   $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  cp "${HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
+  cp "$HIB_DIR/$bench/hibench.report" "$JOB_PATH/$1/"
 
   #logger "Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
   #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH" 2>&1 |tee -a $LOG_PATH
@@ -634,7 +649,7 @@ do
 
   #Delete previous data
   #$DSH_MASTER "${H_DIR}/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
-  echo "" > "${HIB_DIR}$bench/hibench.report"
+  echo "" > "$HIB_DIR/$bench/hibench.report"
 
   #just in case check if the input file exists in hadoop
   if [ "$DELETE_HDFS" == "0" ] ; then
@@ -663,9 +678,9 @@ do
 
     if [ "$DELETE_HDFS" == "1" ] ; then
       if [ "$bench" != "dfsioe" ] ; then
-        execute_bench $bench ${HIB_DIR}$bench/bin/prepare.sh "prep_"
+        execute_bench $bench $HIB_DIR/$bench/bin/prepare.sh "prep_"
       elif [ "$bench" == "dfsioe" ] ; then
-        execute_bench $bench ${HIB_DIR}$bench/bin/prepare-read.sh "prep_"
+        execute_bench $bench $HIB_DIR/$bench/bin/prepare-read.sh "prep_"
       fi
     else
       logger "Reusing previous RUN prepared $bench"
@@ -689,13 +704,13 @@ do
   logger "$(date +"%H:%M:%S") RUNNING $bench"
 
   if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
-    execute_bench $bench ${HIB_DIR}$bench/bin/run.sh
+    execute_bench $bench $HIB_DIR/$bench/bin/run.sh
   elif [ "$bench" == "hivebench" ] ; then
-    execute_bench hivebench_agregation ${HIB_DIR}hivebench/bin/run-aggregation.sh
-    execute_bench hivebench_join ${HIB_DIR}hivebench/bin/run-join.sh
+    execute_bench hivebench_agregation $HIB_DIR/hivebench/bin/run-aggregation.sh
+    execute_bench hivebench_join $HIB_DIR/hivebench/bin/run-join.sh
   elif [ "$bench" == "dfsioe" ] ; then
-    execute_bench dfsioe_read ${HIB_DIR}dfsioe/bin/run-read.sh
-    execute_bench dfsioe_write ${HIB_DIR}dfsioe/bin/run-write.sh
+    execute_bench dfsioe_read $HIB_DIR/dfsioe/bin/run-read.sh
+    execute_bench dfsioe_write $HIB_DIR/dfsioe/bin/run-write.sh
   fi
 
 done

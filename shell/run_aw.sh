@@ -188,6 +188,9 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="/cygdrive/c/Java/jdk1.7.0_25"
 
+[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 #create dir to save files in one host
@@ -222,7 +225,7 @@ done
 #if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
 #  logger "Generating source dirs"
 #  $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
-#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
+#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $SOURCE_DIR/${HADOOP_VERSION};
 #else
 #  logger "Source dirs up to date"
 #fi
@@ -280,7 +283,7 @@ $DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{aplic,hado
 
 echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 
-  $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-scratch/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
 
   logger "Preparing config"
 
@@ -307,6 +310,8 @@ MAX_REDS="$MAX_MAPS"
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##JAVA_XMS##,$JAVA_XMS,g;
+s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
@@ -330,6 +335,8 @@ slaves="$(get_slaves_names)"
   #to avoid perl warnings
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
+
+  $DSH "cp $H_DIR/conf_template/* $H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/hadoop-env.sh > $H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $H_DIR/conf_template/core-site.xml > $H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH

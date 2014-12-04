@@ -1,6 +1,6 @@
 #Check that CONF_DIR is correctly set before starting
 [ -z "$CONF_DIR" ] || [ ! -f "$CONF_DIR/provider_functions.sh" ] && {
-  echo "ERROR: CONF_DIR not set correctly" ; exit 1;
+  echo "ERROR: CONF_DIR not set correctly. CONF_DIR=$CONF_DIR" ; exit 1;
 }
 
 #load provider functions
@@ -11,7 +11,6 @@ source "$CONF_DIR/provider_functions.sh"
 
 
 #global vars
-bootStrapped="false" #not needed for Azure
 
 if [ "$cloud_provider" == "azure" ] ; then
    devicePrefix="sd"
@@ -66,9 +65,6 @@ vm_create_node() {
 #$1 vm_name
 vm_create_connect() {
 
-  #make sure we clean the variable
-  bootStrapped="false"
-
   #test first if machines are accessible via SSH to save time
   if ! wait_vm_ssh_ready "1" ; then
     vm_check_create "$1" "$vm_ssh_port"
@@ -92,6 +88,8 @@ vm_provision() {
   vm_initial_bootstrap
   vm_set_ssh
 
+  vm_install_base_packages
+
   #[ "$type" != "cluster" ] && {
     if [ -z "$noSudo" ] ; then
       vm_initialize_disks #cluster is in parallel later
@@ -101,12 +99,11 @@ vm_provision() {
     fi
   #}
 
-  vm_install_base_packages
   vm_set_dot_files &
 
-  [ "$type" == "cluster" ] && vm_set_dsh
+  [ "$type" == "cluster" ] && vm_set_dsh &
 
-  [ "$type" != "cluster" ] && vm_final_bootstrap #cluster is in parallel later
+  vm_final_bootstrap
 
   #logger "Waiting for VM $vm_name deployment"
   #wait $! #wait for the provisioning to be ready
@@ -120,6 +117,8 @@ vm_finalize() {
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+  [ ! -z "$extraPackages" ] && vm_install_extra_packages
+
   [ ! -z "$puppet" ] && vm_puppet_apply
 }
 
@@ -186,7 +185,7 @@ get_ssh_user() {
 }
 
 vm_initial_bootstrap() {
-  bootStrapped="true" #not necesarry by default
+  : #not necesarry by default
 }
 
 check_sudo() {
@@ -224,14 +223,16 @@ vm_execute() {
 
   set_shh_proxy
 
+  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+
   #Use SSH keys
   if [ -z "$3" ] ; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
-      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |ssh -i "$(get_ssh_key)" -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
     #chmod 0644 $(get_ssh_key)
   #Use password
@@ -239,18 +240,18 @@ vm_execute() {
     check_sshpass
 
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$passwordAloja" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |sshpass -p "$passwordAloja" ssh -q -o connectTimeout=5 -o StrictHostKeyChecking=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
   fi
 }
 
 set_shh_proxy() {
   if [ ! -z "$useProxy" ] ; then
-    proxyDetails="ProxyCommand $useProxy"
+    proxyDetails="ProxyCommand=$useProxy"
   else
-    proxyDetails="ProxyCommand none"
+    proxyDetails="ProxyCommand=none"
   fi
 
 }
@@ -259,11 +260,13 @@ vm_connect() {
 
   set_shh_proxy
 
+  local sshOptions="-o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+
   #Use SSH keys
   if [ -z "$1" ] ; then
     chmod 0600 $(get_ssh_key)
-    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    ssh -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    logger "Connecting to VM $vm_name, with details: ssh -i $(get_ssh_key) $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
 
     if [ "$?" != "0" ] ; then
       logger "WARNING: Falied SSH connecting using keys.  Retuned code: $?"
@@ -273,8 +276,8 @@ vm_connect() {
   #Use password
   else
     check_sshpass
-    logger "Connecting to VM $vm_name (using PASS), with details: ssh -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$passwordAloja" ssh -o StrictHostKeyChecking=no -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    logger "Connecting to VM $vm_name (using PASS), with details: ssh  $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
+    sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
@@ -301,7 +304,7 @@ vm_local_scp() {
 vm_rsync() {
     logger "RSynching: $1 To: $2"
     #eval is for parameter expansion  --progress
-    rsync -aur --partial  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
@@ -324,16 +327,37 @@ get_master_name() {
 #vm_name must be set
 get_vm_ssh_port() {
   local node_ssh_port=''
+
+  if [ "$type" == "node" ] ; then
+    if [ "$cloud_provider" == "azure" ] ; then
+      local node_ssh_port="$vm_ssh_port" #for Azure nodes
+    else
+      local node_ssh_port="22" #default
+    fi
+  else #cluster auto id
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local vm_name_tmp="${clusterName}-${vm_id}"
+      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
+
+      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+        local node_ssh_port="2${clusterID}${vm_id}"
+        break #just return one
+      fi
+    done
+  fi
+
+  echo "$node_ssh_port"
+}
+
+#$1 vm_name
+get_vm_id() {
   for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
     local vm_name_tmp="${clusterName}-${vm_id}"
-    local vm_ssh_port_tmp="2${clusterID}${vm_id}"
-
-    if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-      local node_ssh_port="2${clusterID}${vm_id}"
-      break #just return one
+    if [ "$vm_name_tmp" == "$1" ] ; then
+      echo "$vm_id"
+      break
     fi
   done
-  echo "$node_ssh_port"
 }
 
 #requires $create_string to be defined
@@ -345,10 +369,25 @@ get_initizalize_disks() {
 
 logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
 
-  local create_string=""
+  local create_string="echo ' DEBUG: listing devices'; lsblk;"
+
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
+[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+
 sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
 sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
     #break when we have the required number
@@ -392,22 +431,23 @@ $userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share f
   echo -e "$fs_mount"
 }
 
-#requires $create_string to be defined
-get_mount_disks() {
+make_fstab(){
   if [[ "$attachedVolumes" -gt "12" ]] ; then
     logger "ERROR, function only supports up to 12 volumes"
     exit 1;
   fi
 
+  local create_string=""
+
   fs_mount="$(get_share_location)"
 
   if [ -z "$dont_mount_share" ] ; then
-    create_string="$fs_mount"
+    local create_string="$fs_mount"
   fi
 
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
-    create_string="$create_string
+    local create_string="$create_string
 /dev/${devicePrefix}${drive_letter}1       /scratch/attached/$num_drives  auto    defaults,nobootwait,noatime,nodiratime 0       2"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
@@ -415,7 +455,7 @@ get_mount_disks() {
   done
 
   if [ "$cloud_provider" == "azure" ] ; then
-  create_string="$create_string
+    local create_string="$create_string
 /mnt       /scratch/local    none bind 0 0"
   fi
 
@@ -423,23 +463,20 @@ get_mount_disks() {
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
 
+  logger "INFO: Updating /etc/fstab template"
+  vm_update_template "/etc/fstab" "$create_string" "secured_file"
+}
 
-  create_string="
+#requires $create_string to be defined
+get_mount_disks() {
+
+  local create_string="
     mkdir -p ~/{share,minerva};
     sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
     sudo chown -R $userAloja: /scratch;
-
-    sudo chmod 0777 /etc/fstab;
-
-
-
-    sudo echo '$create_string' >> /etc/fstab;
-
-    sudo chmod 0644 /etc/fstab;
     sudo mount -a;
     sudo chown -R $userAloja /scratch
   "
-
   echo -e "$create_string"
 }
 
@@ -500,7 +537,7 @@ vm_test_initiallize_disks() {
 
   logger "Checking if the correct number of disks are atttached to VM $vm_name"
 
-  create_string="$(get_initizalize_disks_test)"
+  local create_string="$(get_initizalize_disks_test)"
 
   #TODO check if disks are formated
 
@@ -585,28 +622,34 @@ vm_check_attach_disks() {
 
 vm_install_base_packages() {
   if check_sudo ; then
-    if check_bootstraped "vm_install_packages" ""; then
+
+    local bootstrap_file="vm_install_packages"
+
+    if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing packages for for VM $vm_name "
+
+      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp"
 
       #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
-#only update apt when is 1 week old (600000) to save time
-      vm_execute '
-if [ ! -f "/var/lib/apt/periodic/update-success-stamp" ] || [ "$[$(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp)]" -ge 600000 ]; then
+      #only update apt sources when is 1 week old (600000) to save time
+      local install_packages_command='
+if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 600000 ]; then
   sudo apt-get update -m;
 fi
 
-sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;'
+sudo apt-get install -y -f '
 
-      logger "Checking if extra packages defined to install them"
-      vm_install_extra_packages
+      local install_packages_command="$install_packages_command ssh $base_packages;"
 
-      test_install_base_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
-      if [ ! -z "$test_install_base_packages" ] ; then
+      vm_execute "$install_packages_command"
+
+      test_install_extra_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
+      if [ ! -z "$test_install_extra_packages" ] ; then
         #set the lock
-        check_bootstraped "vm_install_packages" "set"
+        check_bootstraped "$bootstrap_file" "set"
       else
-        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_base_packages"
+        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_extra_packages"
       fi
 
     else
@@ -617,9 +660,30 @@ sudo apt-get install -y -f dsh rsync sshfs sysstat gawk libxml2-utils ntp;'
   fi
 }
 
-#override to install aditional packages
 vm_install_extra_packages() {
-  logger " no extra packages defined for cluster"
+  if check_sudo ; then
+
+    local bootstrap_file="vm_install_extra_packages"
+
+    if check_bootstraped "$bootstrap_file" ""; then
+      logger "Installing extra packages for for VM $vm_name "
+
+      vm_execute "sudo apt-get install -y -f vim mc git;"
+
+      local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
+      if [ ! -z "$test_install_extra_packages" ] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        logger "ERROR: installing extra packages for $vm_name. Test output: $test_install_extra_packages"
+      fi
+
+    else
+      logger "Extra packages already initialized"
+    fi
+  else
+    logger "WARNING: no sudo access or disabled, no extra packages installed"
+  fi
 }
 
 vm_set_dsh() {
@@ -628,9 +692,10 @@ vm_set_dsh() {
     logger "Setting up DSH for VM $vm_name "
 
     node_names="$(get_node_names)"
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$node_names\" > ~/.dsh/group/a;"
+    vm_update_template "~/.dsh/group/a" "$node_names" ""
+
     slave_names="$(get_slaves_names)"
-    vm_execute "mkdir -p ~/.dsh/group; echo -e \"$slave_names\" > ~/.dsh/group/s;"
+    vm_update_template "~/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
@@ -651,12 +716,11 @@ vm_set_dot_files() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
-    vm_execute "echo -e \"
-export HISTSIZE=50000
+    vm_update_template "~/.bashrc" "export HISTSIZE=50000
 alias a='dsh -g a -M -c'
-alias s='dsh -g s -M -c'\" >> ~/.bashrc;" "paralell"
+alias s='dsh -g s -M -c'" ""
 
-    test_action="$(vm_execute " [ \"\$\(grep ${devicePrefix}c1 /etc/fstab\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' ~/.bashrc\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -680,7 +744,7 @@ vm_initialize_disks() {
     if check_bootstraped "vm_initialize_disks" ""; then
       logger "Initializing disks for VM $vm_name "
 
-      create_string="$(get_initizalize_disks)"
+      local create_string="$(get_initizalize_disks)"
 
       vm_execute "$create_string"
 
@@ -705,7 +769,7 @@ cluster_initialize_disks() {
 
   local bootstrap_file="~/bootstrap_cluster_initialize_disks"
 
-  create_string="echo 'yeah'; $(get_initizalize_disks)"
+  local create_string="$(get_initizalize_disks)"
 
   cluster_execute "
   if [[ -f $bootstrap_file ]] ; then
@@ -727,9 +791,12 @@ cluster_initialize_disks() {
 
 vm_mount_disks() {
   if check_bootstraped "vm_mount_disks" ""; then
-    logger "Mounting disks for VM $vm_name "
 
-    create_string="$(get_mount_disks)"
+    make_fstab
+
+    logger "INFO: Mounting disks for VM $vm_name "
+
+    local create_string="$(get_mount_disks)"
 
     vm_execute "$create_string"
 
@@ -753,7 +820,7 @@ cluster_mount_disks() {
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
 
-  create_string="$(get_mount_disks)"
+  local create_string="$(get_mount_disks)"
 
   mounts="$create_string"
 
@@ -922,7 +989,7 @@ vm_make_fs() {
 
     if [ -z "$test_action" ] ; then
       logger " Linking $shared_dir"
-      vm_execute "sudo chown -R ${user} /scratch;
+      vm_execute "sudo chown -R ${userAloja} /scratch;
 [ -d $shared_dir ] && [ ! -L $shared_dir ] && mv $shared_dir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $shared_dir;
 touch $shared_dir/safe_store;
@@ -955,4 +1022,65 @@ touch $shared_dir/safe_store;
   logger "RSynching aplic for possible updates"
   vm_rsync "../blobs/aplic" "$shared_dir"
 
+}
+
+#$1 filename
+vm_get_file_contents() {
+  if [ "$1" ] ; then
+    local fileContent="$(vm_execute "cat $1")"
+  else
+    : #error
+  fi
+
+  echo -e "$fileContent"
+}
+
+#$1 filename $2 contents $3 change permissions
+vm_put_file_contents() {
+
+  if [ "$1" ] && [ "$2" ] ; then
+    if [ "$3" ] ; then
+      local command="
+sudo chmod 777 $1 2> /dev/null;
+sudo cp $1 ${1}.$(date +%s).bak 2> /dev/null;
+sudo cat << 'EOF' > $1
+$2
+EOF
+
+sudo chmod 644 $1"
+
+    else
+      local command="
+cp $1 ${1}.$(date +%s).bak 2> /dev/null;
+cat << 'EOF' > $1
+$2
+EOF
+"
+
+    fi
+
+    vm_execute "$command"
+
+  else
+    : #error
+  fi
+}
+
+#$1 filename on remote machine $2 template part content $3 change permissions
+vm_update_template() {
+
+  #logger "DEBUG: TEMPLATE getting $1 contents"
+  local fileCurrentContent="$(vm_get_file_contents "$1")"
+
+  #if file doesn't exists, is possible that the main dir does not exist either
+  if [ ! "$fileCurrentContent" ] ; then
+    logger "WARNING: atempting to create directory: $(dirname "$1") for $1"
+    vm_execute "mkdir -p $(dirname "$1")"
+  fi
+
+  #logger "DEBUG: TEMPLATE $1 GOT contents"
+  local fileNewContent="$(template_update_stream "$fileCurrentContent" "$2")"
+  #logger "DEBUG: TEMPLATE GOT NEW contents"
+  vm_put_file_contents "$1" "$fileNewContent" "$3"
+  #logger "DEBUG: TEMPLATE UPDATED $1 with template"
 }

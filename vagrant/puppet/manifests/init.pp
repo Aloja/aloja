@@ -66,17 +66,22 @@ include nginx, php #, mysql
 
 #include '::mysql::server'
 if $environment == 'prod' {
-   $mysql_options = {'bind-address' => '0.0.0.0',
-                 'innodb_buffer_pool_size' => 512M,
-                 'innodb_file_per_table' => 1,
-                 'innodb_flush_method' => O_DIRECT,
-                 'query_cache_size' => 128M,
-                 'max_connections' => 300,
-                 'thread_cache_size' => 50,
-                 'table_open_cache' => 600
+   $mysql_options = {
+                 'bind-address' => '0.0.0.0',
+                 'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
+                 'innodb_buffer_pool_size' => '512M',
+                 'innodb_file_per_table' => '1',
+                 'innodb_flush_method' => 'O_DIRECT',
+                 'query_cache_size' => '128M',
+                 'max_connections' => '300',
+                 'thread_cache_size' => '50',
+                 'table_open_cache' => '600',
                  }
 } else {
-   $mysql_options = {'bind-address' => '0.0.0.0'}
+   $mysql_options = {
+      'bind-address' => '0.0.0.0',
+      'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
+    }
 }
 
 if $environment == 'prod' {

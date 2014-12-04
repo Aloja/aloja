@@ -41,7 +41,7 @@ insert ignore into hosts set id_host=7, id_cluster=2, host_name='al-1003', role=
 insert ignore into hosts set id_host=8, id_cluster=2, host_name='al-1004', role='slave';
 
 create table if not exists clusters (id_cluster int, name varchar(127), cost_hour decimal(10,3), \`type\` varchar(127), link varchar(255), primary key (id_cluster)) engine InnoDB;
-insert ignore into clusters set name='Local 1', id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+insert ignore into clusters set name='Local 1',     id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
 insert ignore into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, type='IaaS Cloud', link='http://www.windowsazure.com/en-us/pricing/calculator/';
 
 #TODO move this to end of execution

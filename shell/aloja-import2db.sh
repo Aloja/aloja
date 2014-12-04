@@ -9,6 +9,8 @@ INSERT_BY_EXEC=1 #if to insert right after each folder
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
 
+source "$CUR_DIR/common/include_import.sh"
+
 #TODO check if these variables are still needed
 DROP_DB_FIRST=""
 first_host=""
@@ -17,7 +19,7 @@ hostn=""
 #Check if to use a special version of sar or the system one
 #nico pc
 #if [[ "$HOSTNAME" == "darchi" ]] ; then
-if [[ ! -z $(lsb_release -a|grep Arch) ]] ; then
+if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
   sadf="$CUR_DIR/sar/archlinux/sadf"
 #ubuntu
 #elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
@@ -37,7 +39,7 @@ MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-
 DB="aloja2"
 MYSQL="mysql $MYSQL_ARGS $DB -e "
 
-mysql $MYSQL_CREDENTIALS -e "DROP database \`$DB\`;"
+#mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
 
@@ -54,6 +56,7 @@ insert_DB(){
   if [[ $(head "$2"|wc -l) > 1 ]] ; then
     echo "Loading $2 into $1"
 head -n3 "$2"
+
     $MYSQL "
     SET time_zone = '+00:00';
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
@@ -67,6 +70,28 @@ head -n3 "$2"
 
   rm $2
 }
+
+#$1 cluster
+get_insert_cluster_sql() {
+  local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
+  source "$clusterConfigFile"
+
+  local sql="
+INSERT into clusters set
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link=''
+   ON DUPLICATE KEY UPDATE
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='';\n"
+
+  local nodeName="$(get_master_name)"
+  sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+
+  for nodeName in $(get_slaves_names) ; do
+    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+  done
+
+  echo -e "$sql\n"
+}
+
 
 get_exec_params(){
   #here get the zabbix URL to parse filtering prepares and other benchmarks
@@ -88,7 +113,7 @@ get_exec_params(){
   strftime("%F %H:%M:%S", $3, 1) "\",\""\
   parts[4]"\",\"" \
   parts[5]"\",\"" \
-  parts[6]"\",\"aaaa" \
+  substr(parts[6],2)"\",\"" \
   substr(parts[7],2)"\",\"" \
   substr(parts[8],2)"\",\"" \
   substr(parts[9],2)"\",\"" \
@@ -99,8 +124,7 @@ get_exec_params(){
   } \
   ' )"
 
-echo -e "$1\n$exec_params"
-exit 1
+#echo -e "$1\n$exec_params"
 
   # Time from Zabbix format
   # substr(zt,0,4) "-" substr(zt,5,2) "-" substr(zt,7,2) " " substr(zt,9,2) ":" substr(zt,11,2) ":" substr(zt,13,2) "\",\"" \
@@ -109,7 +133,7 @@ exit 1
 
 get_id_exec(){
     id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
-    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001')
+    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'
     LIMIT 1;"| tail -n 1)
 }
 
@@ -154,21 +178,21 @@ for folder in 201* ; do
 	##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
 	for bzip_file in prep_*.tar.bz2 ; do
 		bench_folder="${bzip_file%%.*}"
-		if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+		#if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
 	        echo "Untaring $bzip_file"
 	        tar -xjf "$bzip_file"
-		fi
+		#fi
 	done
 	
     for bzip_file in *.tar.bz2 ; do
 
       bench_folder="${bzip_file%%.*}"
-      if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "prep_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
+      #if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "prep_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
         echo "Untaring $bzip_file"
         tar -xjf "$bzip_file"
-      fi
+      #fi
 
-    if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
+    #if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
 
         cd "$bench_folder"
         echo "Entering $bench_folder"
@@ -177,15 +201,17 @@ for folder in 201* ; do
 
         #insert config and get ID_exec
         exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
-        if [[ ! -z $exec_values ]] ; then
-          #TODO need to add ol naming scheme
-          if [[  $folder == *_az ]] ; then
-            cluster="2"
-          else
-            cluster="${folder:(-2):2}"
-          fi
+        #TODO need to add ol naming scheme
+        if [[  $folder == *_az ]] ; then
+          cluster="2"
+        else
+          cluster="${folder:(-2):2}"
 
-          echo "Cluster $cluster"
+          $MYSQL "$(get_insert_cluster_sql "$cluster")"
+        fi
+        echo "Cluster $cluster"
+
+        if [[ ! -z $exec_values ]] ; then
 
           insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
                   VALUES (NULL, $cluster, \"$exec\", $exec_values)
@@ -193,8 +219,21 @@ for folder in 201* ; do
                   start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
                   end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
           echo "$insert"
-exit 1
+
           $MYSQL "$insert"
+        elif [ "$bench_folder" == "SCWC" ] ; then
+          echo "Processing SCWC"
+
+          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+                  VALUES (NULL, $cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+                  ;"
+                  #ON DUPLICATE KEY UPDATE
+                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
+                  #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
+          echo "$insert"
+
+          $MYSQL "$insert"
+
         else
           echo "CANNOT FIND BENCH $bench_folder EXEC DETAILS IN LOG"
           #continue
@@ -206,33 +245,33 @@ exit 1
         if [[ ! -z "$id_exec" ]] ; then
         	jobconfs=""
         	#get Haddop conf files which are NOT jobs of prep
-			if [ -d "prep_$bench_folder" ]; then
-				#1st: get jobs in prep
-				cd ../"prep_$bench_folder"
-				prepjobs=$(find "./history/done" -type f -name "job*.xml");
-				#2nd: get jobs in bench folder
-				cd ../$bench_folder
-				jobconfs=$(find "./history/done" -type f -name "job*.xml");
-				#3rd: 2 files, with one line per job in bench folder and prep folder
-				echo $jobconfs | tr ' ' '\n' > file.tmp
-				echo $prepjobs | tr ' ' '\n' > file2.tmp
-				#4rd: strip jobs in prep folder and cleanup
-				jobconfs=$(grep -v -f file2.tmp file.tmp)
-				rm file.tmp file2.tmp
-			else
-				echo "Not prep folder, considering all confs belonging to exec"
-				jobconfs=$(find "./history/done" -type f -name "job*.xml");
-			fi
-			
-			#Dump parameters from valid conf files to DB
-			for job_conf in $jobconfs ; do
-				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
-				filename=$(basename "$job_conf")
-				job_name="${filename%.*}"
-				job_name="${job_name:0:(-5)}"
-				insert_conf_params_DB "$params" "$id_exec" "$job_name"
-			done
-		fi
+#			if [ -d "prep_$bench_folder" ]; then
+#				#1st: get jobs in prep
+#				cd ../"prep_$bench_folder"
+#				prepjobs=$(find "./history/done" -type f -name "job*.xml");
+#				#2nd: get jobs in bench folder
+#				cd ../$bench_folder
+#				jobconfs=$(find "./history/done" -type f -name "job*.xml");
+#				#3rd: 2 files, with one line per job in bench folder and prep folder
+#				echo $jobconfs | tr ' ' '\n' > file.tmp
+#				echo $prepjobs | tr ' ' '\n' > file2.tmp
+#				#4rd: strip jobs in prep folder and cleanup
+#				jobconfs=$(grep -v -f file2.tmp file.tmp)
+#				rm file.tmp file2.tmp
+#			else
+#				echo "Not prep folder, considering all confs belonging to exec"
+#				jobconfs=$(find "./history/done" -type f -name "job*.xml");
+#			fi
+#
+#			#Dump parameters from valid conf files to DB
+#			for job_conf in $jobconfs ; do
+#				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+#				filename=$(basename "$job_conf")
+#				job_name="${filename%.*}"
+#				job_name="${job_name:0:(-5)}"
+#				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+#			done
+		#fi
 		
 		id_exec=""
         get_id_exec "$exec"
@@ -248,8 +287,8 @@ exit 1
               job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
 
               echo "Generating Hadoop Job CSVs for $bench_folder"
-              rm -rf "hadoop_job"
-rm -rf "sysstat"
+              #rm -rf "hadoop_job"
+              #rm -rf "sysstat"
               mkdir -p "hadoop_job"
 
               for job_file in $job_files ; do

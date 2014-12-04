@@ -1,7 +1,18 @@
 
-prepare_config(){
+prepare_hadoop_config(){
+
+  #before running hibench, set exports and vars
+  EXP="export JAVA_HOME=$JAVA_HOME && \
+export HADOOP_HOME=$BENCH_H_DIR && \
+export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
+export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
+export NUM_MAPS=$MAX_MAPS && \
+export NUM_REDS=$MAX_MAPS && \
+"
 
   loggerb "Preparing exe dir"
+
+
 
   if [ "$DELETE_HDFS" == "1" ] ; then
      loggerb "Deleting previous PORT files"
@@ -16,7 +27,7 @@ $DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$P
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
 
-  $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-scratch/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
 
   $DSH "cp /usr/bin/vmstat $vmstat" 2>&1 |tee -a $LOG_PATH
   $DSH "cp $bwm_source $bwm" 2>&1 |tee -a $LOG_PATH
@@ -47,6 +58,8 @@ MAX_REDS="$MAX_MAPS"
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##JAVA_XMS##,$JAVA_XMS,g;
+s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
@@ -70,6 +83,8 @@ slaves="$(get_slaves_names)"
   #to avoid perl warnings
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
+
+  $DSH "cp $BENCH_H_DIR/conf_template/* $BENCH_H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hadoop-env.sh > $BENCH_H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH
@@ -179,6 +194,8 @@ restart_hadoop(){
     fi
   done
 
+  set_omm_killer
+
   loggerb "Hadoop ready"
 }
 
@@ -193,8 +210,8 @@ execute_HiBench(){
     restart_hadoop
 
     #Delete previous data
-    #$DSH_MASTER "${BENCH_H_DIR}/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
-    echo "" > "${BENCH_HIB_DIR}$bench/hibench.report"
+    #$DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
+    echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
 
     #just in case check if the input file exists in hadoop
     if [ "$DELETE_HDFS" == "0" ] ; then
@@ -223,9 +240,9 @@ execute_HiBench(){
 
       if [ "$DELETE_HDFS" == "1" ] ; then
         if [ "$bench" != "dfsioe" ] ; then
-          execute_bench $bench ${BENCH_HIB_DIR}$bench/bin/prepare.sh "prep_"
+          execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/prepare.sh "prep_"
         elif [ "$bench" == "dfsioe" ] ; then
-          execute_bench $bench ${BENCH_HIB_DIR}$bench/bin/prepare-read.sh "prep_"
+          execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/prepare-read.sh "prep_"
         fi
       else
         loggerb  "Reusing previous RUN prepared $bench"
@@ -249,16 +266,99 @@ execute_HiBench(){
     loggerb  "$(date +"%H:%M:%S") RUNNING $bench"
 
     if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
-      execute_bench $bench ${BENCH_HIB_DIR}$bench/bin/run.sh
+      execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/run.sh
     elif [ "$bench" == "hivebench" ] ; then
-      execute_bench hivebench_agregation ${BENCH_HIB_DIR}hivebench/bin/run-aggregation.sh
-      execute_bench hivebench_join ${BENCH_HIB_DIR}hivebench/bin/run-join.sh
+      execute_hadoop hivebench_agregation ${BENCH_HIB_DIR}hivebench/bin/run-aggregation.sh
+      execute_hadoop hivebench_join ${BENCH_HIB_DIR}hivebench/bin/run-join.sh
     elif [ "$bench" == "dfsioe" ] ; then
-      execute_bench dfsioe_read ${BENCH_HIB_DIR}dfsioe/bin/run-read.sh
-      execute_bench dfsioe_write ${BENCH_HIB_DIR}dfsioe/bin/run-write.sh
+      execute_hadoop dfsioe_read ${BENCH_HIB_DIR}dfsioe/bin/run-read.sh
+      execute_hadoop dfsioe_write ${BENCH_HIB_DIR}dfsioe/bin/run-write.sh
     fi
 
   done
+}
+
+
+execute_hadoop(){
+  #clear buffer cache exept for prepare
+#  if [[ -z $3 ]] ; then
+#    loggerb "Clearing Buffer cache"
+#    $DSH "sudo /usr/local/sbin/drop_caches" 2>&1 |tee -a $LOG_PATH
+#  fi
+
+  loggerb "# Checking disk space with df BEFORE"
+  $DSH "df -h" 2>&1 |tee -a $LOG_PATH
+  loggerb "# Checking hadoop folder space BEFORE"
+  $DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+
+  restart_monit
+
+  #TODO fix empty variable problem when not echoing
+  local start_exec=$(date '+%s')  && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
+  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S') && echo "end $start_date" 2>&1 |tee -a $LOG_PATH
+  loggerb "# EXECUTING ${3}${1}"
+
+  $DSH_SLAVE "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
+
+  local end_exec=$(date '+%s') && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
+
+  loggerb "# DONE EXECUTING $1"
+
+  local total_secs=$(expr $end_exec - $start_exec) &&  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
+
+  url="http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=${start_date}&period=${total_secs}"
+  echo "SENDING: hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s." 2>&1 |tee -a $LOG_PATH
+  zabbix_sender "hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s."
+
+
+  stop_monit
+
+  #save the prepare
+  if [[ -z $3 ]] && [ "$SAVE_BENCH" == "1" ] ; then
+    loggerb "Saving $3 to disk: $BENCH_SAVE_PREPARE_LOCATION"
+    $DSH_MASTER $BENCH_H_DIR/bin/hadoop fs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
+  fi
+
+loggerb "# Checking disk space with df AFTER"
+$DSH "df -h" 2>&1 |tee -a $LOG_PATH
+loggerb "# Checking hadoop folder space AFTER"
+$DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+
+  #clean output data
+  loggerb "INFO: Cleaning Output data for $bench"
+  get_bench_name $bench
+  $DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench/$full_name/Output"
+
+  save_hadoop "${3}${1}"
+}
+
+save_hadoop() {
+  loggerb "Saving benchmark $1"
+  $DSH "mkdir -p $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
+  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  #we cannot move hadoop files
+  #take into account naming *.date when changing dates
+  #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
+  cp "${BENCH_HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
+
+  #loggerb "Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
+  #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH" 2>&1 |tee -a $LOG_PATH
+  #pending, delete
+
+  loggerb "Compresing and deleting $1"
+
+  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;" 2>&1 |tee -a $LOG_PATH
+  tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
+  $DSH_MASTER "rm -rf $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
+  #$JOB_PATH/conf_* #TODO check
+
+  #empy the contents from original disk  TODO check if still necessary
+  $DSH "for i in $HDD/hadoop-*.{log,out}; do echo "" > $i; done;" 2>&1 |tee -a $LOG_PATH
+
+  loggerb "Done saving benchmark $1"
 }
 
 

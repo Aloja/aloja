@@ -172,7 +172,7 @@ class RestController extends AbstractController
             $exec_name = $dbUtils->get_exec_details($id_exec, 'exec');
             $exec_name = str_replace('/', '_', $exec_name);
 
-            $dir = '/tmp/prv';
+            $dir = 'cache/prv';
             $zip_file = "$exec_name.zip";
 
             $full_name = "$dir/$zip_file";
@@ -201,7 +201,8 @@ class RestController extends AbstractController
 
                 if (!isset($prv_rows)) throw new \Exception('No data returned!');
 
-                $query_job_history = 'select time, maps, reduce from JOB_job_history where id_exec = "'.$id_exec.'" ORDER by time';
+                #$query_job_history = 'select time, maps, reduce from JOB_job_history where id_exec = "'.$id_exec.'" ORDER by time';
+                $query_job_history = 'select date, maps, reduce from JOB_status where id_exec = "'.$id_exec.'" ORDER by date';
 
                 $job_history_rows = $dbUtils->get_rows($query_job_history);
 
