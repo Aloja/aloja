@@ -5,9 +5,9 @@
 #
 
 #passwordless login to localhost
-if [ ! -f "/home/vagrant/.ssh/id_dsa" ] ; then
-  sudo -u vagrant ssh-keygen -t dsa -P '' -f /home/vagrant/.ssh/id_dsa
-  sudo -u vagrant cat /home/vagrant/.ssh/id_dsa.pub >> /home/vagrant/.ssh/authorized_keys
+if [ ! -f "/home/vagrant/.ssh/id_rsa" ] ; then
+  sudo -u vagrant ssh-keygen -t rsa -P '' -f /home/vagrant/.ssh/id_rsa
+  sudo -u vagrant cat /home/vagrant/.ssh/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys
   echo -e "Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet" > /home/vagrant/.ssh/config
   chown -R vagrant: /home/vagrant/.ssh #just in case
 fi

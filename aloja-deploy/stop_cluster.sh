@@ -15,5 +15,4 @@ for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 
 done
 
-elapsedTime="$(( $(date +%s) - startTime ))"
-logger "All done, took $elapsedTime seconds."
+logger "All done, took $(getElapsedTime starttime) seconds."

@@ -425,9 +425,22 @@ class DefaultController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-                $selected_hosts = array('minerva-1002', 'minerva-1003', 'minerva-1004', 'al-1002', 'al-1003', 'al-1004');
+                $selected_hosts = array(
+                    'minerva-1002', 'minerva-1003', 'minerva-1004',
+                    'al-1002', 'al-1003', 'al-1004',
+                    'minerva-2','minerva-3','minerva-4',
+                    'minerva-6','minerva-7','minerva-8',
+                    'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
+
+                );
             } elseif ($hosts == 'Master') {
-                $selected_hosts = array('minerva-1001', 'al-1001');
+                $selected_hosts = array(
+                    'minerva-1001',
+                    'al-1001',
+                    'minerva-1',
+                    'minerva-6',
+                    'minerva-5',
+                );
             } else {
                 $selected_hosts = array($hosts);
             }
@@ -511,8 +524,8 @@ class DefaultController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
                         FROM SAR_load $where $group_by;",
                         'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
-                        'title'     => "CPU Load Averge ($aggr_text, $hosts) $exec_title ",
-                        'group_title' => 'CPU Load Averge '."($aggr_text, $hosts)",
+                        'title'     => "CPU Load Average ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'CPU Load Average '."($aggr_text, $hosts)",
                         'percentage'=> false,
                         'stacked'   => false,
                         'negative'  => false,

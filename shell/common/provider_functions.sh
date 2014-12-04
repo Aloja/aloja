@@ -4,8 +4,19 @@ vm_exists() {
   logger "WARNING: Function vm_exists not implemented or not necessary for provider"
 }
 
+# $1 vm name
 vm_create() {
   logger "WARNING: Function vm_create not implemented or not necessary for provider"
+}
+
+# $1 vm name
+vm_start() {
+  logger "WARNING: Function vm_start not implemented or not necessary for provider"
+}
+
+# $1 vm name
+vm_reboot() {
+  logger "WARNING: Function vm_reboot not implemented or not necessary for provider"
 }
 
 vm_set_details() {
@@ -60,9 +71,15 @@ cluster_final_boostrap() {
 
 ###for executables
 
-#1 $node_name
 node_connect() {
-	logger "WARNING: Function node_connect not implemented or not necessary for provider"
+
+  logger "Connecting to $vm_name using SSH keys"
+  vm_connect
+
+  if [ ! -z "$failed_ssh_keys" ] ; then
+    logger "Connecting to $vm_name using password"
+    vm_connect "use_password"
+  fi
 }
 
 #1 $node_name

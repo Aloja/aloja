@@ -121,7 +121,7 @@ shift $((OPTIND-1))
 CLUSTER_NAME="az"
 NUMBER_OF_HOSTS="4"
 NUMBER_OF_SLAVES="3"
-user="pristine"
+userAloja="pristine"
 
 #if [ "${NET}" == "IB" ] ; then
 #  host1="al-1001-ib0"
@@ -156,7 +156,7 @@ fi
 
 
 
-BASE_DIR="/home/$user/share/"
+BASE_DIR="/home/$userAloja/share/"
 SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
 H_DIR="$HDD/aplic/$HADOOP_VERSION" #execution dir
@@ -170,7 +170,7 @@ DATE='date +%Y%m%d_%H%M%S'
 CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
 JOB_NAME="`$DATE`_$CONF"
 
-JOB_PATH="/home/$user/share/jobs_$CLUSTER_NAME/$JOB_NAME"
+JOB_PATH="/home/$userAloja/share/jobs_$CLUSTER_NAME/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
@@ -199,7 +199,7 @@ $DSH "sudo umount /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; s
 
 
 logger "Setting scratch permissions"
-$DSH "sudo chown -R $user: /scratch"
+$DSH "sudo chown -R $userAloja: /scratch"
 
 #only copy files if version has changed (to save time in azure)
 logger "Checking if to generate source dirs"
@@ -218,9 +218,7 @@ done
 #if [ "$(cat $BASE_DIR/aplic/aplic_version)" != "$(cat $SOURCE_DIR/aplic_version)" ] ; then
 #  logger "Generating source dirs"
 #  $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
-#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}-scratch" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch;
-#else
-#  logger "Source dirs up to date"
+#  #$DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}-home $SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $SOURCE_DIR/${HADOOP_VERSION}-scratch#  logger "Source dirs up to date"
 #fi
 
 zabbix_sender(){

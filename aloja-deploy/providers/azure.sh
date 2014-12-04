@@ -1,8 +1,5 @@
 #AZURE specific functions
 
-#global vars
-bootStrapped="false"
-
 #### start $cloud_provider customizations
 
 vm_exists() {
@@ -18,33 +15,65 @@ vm_exists() {
 # $1 vm name $2 ssh port
 vm_create() {
 
-  #check if the port was specified
+  #check if the port was specified, for Windows this will be the RDP port
   if [ ! -z "$2" ] ; then
     ssh_port="$2"
   else
     ssh_port=$(( ( RANDOM % 65535 )  + 1024 ))
   fi
 
-  logger "Creating VM $1 with SSH port $ssh_port..."
+  if [ "$vmType" != "windows" ] ; then
 
-  azure vm create \
-        -s "$subscriptionID" \
-        --connect "$dnsName" `#Deployment name` \
-        --vm-name "$1" \
-        --vm-size "$vmSize" \
-        `#--location 'West Europe'` \
-        --affinity-group "$affinityGroup" \
-        --virtual-network-name "$virtualNetworkName" \
-        --subnet-names "$subnetNames" \
-        --ssh "$ssh_port" \
-        --ssh-cert "$sshCert" \
-        `#-v` \
-        `#'test-11'` `#DNS name` \
-        "$vmImage" \
-        "$user" "$password"
+    logger "Creating Linux VM $1 with SSH port $ssh_port..."
+
+    azure vm create \
+          -s "$subscriptionID" \
+          --connect "$dnsName" `#Deployment name` \
+          --vm-name "$1" \
+          --vm-size "$vmSize" \
+          `#--location 'West Europe'` \
+          --affinity-group "$affinityGroup" \
+          --virtual-network-name "$virtualNetworkName" \
+          --subnet-names "$subnetNames" \
+          --ssh "$ssh_port" \
+          --ssh-cert "$sshCert" \
+          `#-v` \
+          `#'test-11'` `#DNS name` \
+          "$vmImage" \
+          "$userAloja" "$passwordAloja"
+  else
+    logger "Creating Windows VM $1 with RDP port $ssh_port..."
+
+    azure vm create \
+          -s "$subscriptionID" \
+          --connect "$dnsName" `#Deployment name` \
+          --vm-name "$1" \
+          --vm-size "$vmSize" \
+          `#--location 'West Europe'` \
+          --affinity-group "$affinityGroup" \
+          --virtual-network-name "$virtualNetworkName" \
+          --subnet-names "$subnetNames" \
+          --rdp "$ssh_port" \
+          `#-v` \
+          `#'test-11'` `#DNS name` \
+          "$vmImage" \
+          "$userAloja" "$passwordAloja"
+  fi
 
 #--location 'West Europe' \
 
+}
+
+# $1 vm name
+vm_start() {
+  logger "Starting VM $1"
+  azure vm start "$1"
+}
+
+# $1 vm name
+vm_reboot() {
+  logger "Rebooting VM $1"
+  azure vm restart "$1"
 }
 
 #$1 vm_name
@@ -81,14 +110,9 @@ get_ssh_host() {
  echo "${dnsName}.cloudapp.net"
 }
 
-#Azure changes ports
+#construct the port number from vm_name
 get_ssh_port() {
-  if [ -z "$vm_ssh_port" ] ; then
-    logger "ERROR: $vm_ssh_port not set! for VM $vm_name";
-    exit 1
-  fi
-
-  echo "$vm_ssh_port"
+  echo "$(get_vm_ssh_port)"
 }
 
 #$1 $endpoints list $2 end1 $3 end2
@@ -127,13 +151,23 @@ cluster_final_boostrap() {
   : #not necessary for Azure (yet)
 }
 
+#interactive SSH
+vm_connect_RDP() {
+  logger "Connecting to VM $vm_name, with details: RDP rdesktop -u $(get_ssh_user) -p xxx $(get_ssh_host):$(get_ssh_port)"
+  rdesktop -u "$(get_ssh_user)" -p "$passwordAloja" "$(get_ssh_host):$(get_ssh_port)"
+}
+
 
 ###for executables
 
 #1 $vm_name
 node_connect() {
   logger "Connecting to azure subscription $subscriptionID"
-  vm_connect
+  if [ "$vmType" != "windows" ] ; then
+    vm_connect
+  else
+    vm_connect_RDP
+  fi
 }
 
 #1 $vm_name
