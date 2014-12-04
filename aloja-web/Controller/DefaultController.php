@@ -1499,4 +1499,57 @@ class DefaultController extends AbstractController
             )
         );
     }
+    
+    public function mltemplateAction()
+    {
+    	$jsonExecs = array();
+    	try {
+	    	$db = $this->container->getDBUtils();
+	    	
+	    	$configurations = array ();
+	    	$where_configs = '';
+	    	$concat_config = "";
+	    	
+	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+	    	
+	    	// get the result rows
+	    	$query = "SELECT * FROM execs WHERE valid = TRUE ".$where_configs;
+	    		
+	    	$rows = $db->get_rows ( $query );
+	    	$c = 0;
+	    	foreach($rows as $row) {
+	    		$jsonExecs[$c++][] = (int)$row['exe_time'];
+	    		$jsonExecs[$c-1][] = (int)$row['exe_time']/2;
+	    	}
+	    	
+    	} catch(\Exception $e) {
+    		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+    	}
+    	
+    	echo $this->container->getTwig()->render('mltemplate/mltemplate.html.twig',
+    			array(
+    					'selected' => 'mltemplate',
+    					'jsonExecs' => json_encode($jsonExecs),
+    					'benchs' => $benchs,
+    					'nets' => $nets,
+    					'disks' => $disks,
+    					'blk_sizes' => $blk_sizes,
+    					'comps' => $comps,
+    					'id_clusters' => $id_clusters,
+    					'mapss' => $mapss,
+    					'replications' => $replications,
+    					'iosfs' => $iosfs,
+    					'iofilebufs' => $iofilebufs
+    			)
+    	);
+    }
 }
