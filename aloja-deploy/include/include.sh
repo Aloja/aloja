@@ -21,13 +21,13 @@ logger "Starting ALOJA deploy tools"
 
 #test and load cluster config
 clusterConfigFile="${type}_${1}.conf"
-ConfigFolderPath="$CONF_DIR/../conf"
+configFolderPath="$CONF_DIR/../conf"
 
-[ ! -f "$ConfigFolderPath/$clusterConfigFile" ] && { logger "$ConfigFolderPath/$clusterConfigFile is not a file." ; exit 1;}
+[ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config
 logger "INFO: Loading $clusterConfigFile"
-source "$ConfigFolderPath/$clusterConfigFile"
+source "$configFolderPath/$clusterConfigFile"
 
 #3) Load the secured provider settings
 
@@ -57,7 +57,7 @@ logger " for Provider: $cloud_provider"
 #3) Re-load cluster config file (for overrides)
 
 #logger "INFO: Re-Loading $clusterConfigFile"
-source "$ConfigFolderPath/$clusterConfigFile"
+source "$configFolderPath/$clusterConfigFile"
 
 
 
