@@ -141,7 +141,7 @@ source "$CUR_DIR_TMP/common/cluster_functions.sh"
 
 #####
 
-NUMBER_OF_SLAVES="$numberOfNodes"
+NUMBER_OF_DATA_NODES="$numberOfNodes"
 userAloja="pristine"
 
 DSH="ssh "
@@ -420,7 +420,7 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
+    if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
@@ -440,10 +440,10 @@ restart_hadoop(){
       DELETE_HDFS="1"
       restart_hadoop no_retry
     elif [ "$i" == "120" ] ; then
-      logger "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
+      logger "$num/$NUMBER_OF_DATA_NODES Datanodes available, EXIT"
       exit 1
     else
-      logger "$num/$NUMBER_OF_SLAVES Datanodes available, wating for $i seconds"
+      logger "$num/$NUMBER_OF_DATA_NODES Datanodes available, wating for $i seconds"
       sleep 1
     fi
   done

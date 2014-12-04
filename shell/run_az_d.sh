@@ -121,8 +121,8 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       DELETE_HDFS=0
       ;;
     S)
-      LIMIT_SLAVE_NODES=$OPTARG
-      echo "LIMIT_SLAVE_NODES $LIMIT_SLAVE_NODES"
+      LIMIT_DATA_NODES=$OPTARG
+      echo "LIMIT_DATA_NODES $LIMIT_DATA_NODES"
       ;;
     esac
 done
@@ -147,7 +147,7 @@ source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
 #####
 
-NUMBER_OF_SLAVES="$numberOfNodes"
+NUMBER_OF_DATA_NODES="$numberOfNodes"
 userAloja="pristine"
 
 DSH="dsh -M -c -m "
@@ -164,7 +164,7 @@ IFACE="eth0"
 
 node_names="$(get_node_names)"
 
-if [ ! -z "$LIMIT_SLAVE_NODES" ] ; then
+if [ ! -z "$LIMIT_DATA_NODES" ] ; then
 
   node_iteration=0
   for node in $node_names ; do
@@ -173,12 +173,12 @@ if [ ! -z "$LIMIT_SLAVE_NODES" ] ; then
     else
       node_tmp="$node"
     fi
-    [[ $node_iteration -ge $LIMIT_SLAVE_NODES ]]  && break;
+    [[ $node_iteration -ge $LIMIT_DATA_NODES ]]  && break;
     node_iteration=$((node_iteration+1))
   done
 
   node_name=$(echo -e "$nodes_tmp")
-  NUMBER_OF_SLAVES="$LIMIT_SLAVE_NODES"
+  NUMBER_OF_DATA_NODES="$LIMIT_DATA_NODES"
 fi
 
 DSH="$DSH $(nl2char "$node_names" ",")"
@@ -212,7 +212,7 @@ SAVE_LOCATION="/scratch/local/HiBench_prepare"
 
 
 DATE='date +%Y%m%d_%H%M%S'
-CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_SLAVES}_${clusterName}"
+CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="`$DATE`_$CONF"
 
 JOB_PATH="/home/$userAloja/share/jobs_$clusterName/$JOB_NAME"
@@ -235,7 +235,7 @@ $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo serv
 
 correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
-if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
+if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
   #temporary to avoid read-only file system errors
@@ -244,9 +244,9 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
 
   correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
-  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
+  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
     echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-    echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
+    echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_DATA_NODES $NUMBER_OF_DATA_NODES + 1"
     exit 1
   fi
 fi
@@ -487,7 +487,7 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
+    if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
@@ -507,10 +507,10 @@ restart_hadoop(){
       DELETE_HDFS="1"
       restart_hadoop no_retry
     elif [ "$i" == "120" ] ; then
-      logger "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
+      logger "$num/$NUMBER_OF_DATA_NODES Datanodes available, EXIT"
       exit 1
     else
-      logger "$num/$NUMBER_OF_SLAVES Datanodes available, wating for $i seconds"
+      logger "$num/$NUMBER_OF_DATA_NODES Datanodes available, wating for $i seconds"
       sleep 1
     fi
   done
