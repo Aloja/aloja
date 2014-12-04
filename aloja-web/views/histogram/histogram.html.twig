@@ -124,6 +124,7 @@
 
 				// Load chart options from html form
 				var metric = form.find("[name='metric']");
+				var task_type = form.find("[name='type']");
 				var group = form.find("[name='group']");
 				var accumulated = form.find("[name='accumulated']").hasClass("active");
 				var divided = form.find("[name='divided']").hasClass("active");
@@ -154,6 +155,7 @@
 					data: {
 						jobid: jobid,
 						metric: metric.val(),
+						task_type: task_type.val(),
 						group: group.val(),
 						accumulated: ((accumulated)?1:0),
 						divided: ((divided)?1:0),
