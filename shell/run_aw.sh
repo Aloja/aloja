@@ -214,7 +214,7 @@ for node in $node_names ; do
   logger " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     logger "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
-    $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
+    $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic/* $SOURCE_DIR/"
     break #dont need to check after one is missing
   else
     logger " Host $node up to date"
