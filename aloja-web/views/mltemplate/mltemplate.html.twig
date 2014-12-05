@@ -1,5 +1,5 @@
 {% extends "layout.html.twig" %} 
-{% block stylesheet %} 
+{% block stylesheet %}
     {{ parent() }}
 {% endblock %}
 {% block content %}
@@ -14,16 +14,22 @@
 <script type="text/javascript" src="js/utils.js"></script>
 <script type="text/javascript">
       $(document).ready(function() {
-	    	  $("input,select").change(function() {
-	  			$("form").submit();
-	  		});
-    		    $('#chart').highcharts({
+		var elem = document.getElementById('action-button-div');
+		elem.style.display = 'block';
+
+		var elem = document.getElementById('action-button');
+		elem.value = 'Learn model';
+
+		$("input").change(function() {
+			$("form").submit();
+		});
+		$('#chart').highcharts( {
     		        chart: {
     		            type: 'scatter',
     		            zoomType: 'xy'
     		        },
     		        title: {
-    		            text: 'ML Template'
+    		            text: 'Prediction Results'
     		        },
     		        subtitle: {
     		            text: 'Predictions'
@@ -43,7 +49,7 @@
     		            }
     		        },
 	                credits: {
-						enabled: false
+				enabled: false
 		            },
 //     		        legend: {
 //     		            layout: 'vertical',
@@ -84,8 +90,8 @@
     		            color: 'rgba(223, 83, 83, .5)',
     		            data: {{ jsonExecs | raw}}
 
-    		        }]
-    		    });
-      });
+			}]
+		});
+	});
     </script>
 {% endblock %}
