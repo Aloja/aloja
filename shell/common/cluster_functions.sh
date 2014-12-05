@@ -668,7 +668,7 @@ vm_install_extra_packages() {
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing extra packages for for VM $vm_name "
 
-      vm_execute "sudo apt-get install -y -f vim mc git;"
+      vm_execute "sudo apt-get install -y -f screen vim mc git iotop htop;"
 
       local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
       if [ ! -z "$test_install_extra_packages" ] ; then
