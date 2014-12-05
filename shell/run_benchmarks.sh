@@ -203,8 +203,8 @@ DSH_C="$DSH -c " #concurrent
 
 [ ! "$BENCH_HADOOP_VERSION" ] && BENCH_HADOOP_VERSION="hadoop-1.0.3"
 
-[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
-[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
 
 
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
@@ -212,20 +212,23 @@ BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
 BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
 BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
 BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
+JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
 Master node: $master_name "
 
 
-#TODO fix for non HDD
-if [ "$DISK" == "SSD" ] ; then
-  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
-  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
-  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
-else
-  echo "Incorrect disk specified: $DISK"
-  exit 1
-fi
+HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+
+##TODO fix for non HDD
+#if [ "$DISK" == "L" ] ; then
+#  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
+#elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
+#  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+#elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
+#  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
+#else
+#  echo "Incorrect disk specified: $DISK"
+#  exit 1
+#fi
 
 #BENCH_BASE_DIR="/home/$userAloja/share"
 #BENCH_SOURCE_DIR="/scratch/local/aplic"
@@ -244,9 +247,9 @@ BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
+  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 else
-  trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
+  trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 fi
 
 
@@ -265,6 +268,7 @@ LOG="2>&1 |tee -a $LOG_PATH"
 
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
+loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
 bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
 vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
@@ -280,7 +284,7 @@ if [ ! -z "$EXECUTE_HIBENCH" ] ; then
     $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
 sudo sysctl vm.panic_on_oom=1 > /dev/null;
 sudo sysctl -w fs.file-max=65536 > /dev/null;
-sudo service ufw stop > /dev/null;
+sudo service ufw stop 2>&1 > /dev/null;
 "
 
     #TODO improve mount checking
@@ -317,19 +321,17 @@ if [ ! -z "$EXECUTE_HIBENCH" ] ; then
 fi
 
 #only copy files if version has changed (to save time in azure)
-loggerb  "Checking if to generate source dirs"
+loggerb  "Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
 for node in $node_names ; do
   loggerb  " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BENCH_BASE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     loggerb  "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
-    $DSH_C "mkdir -p $BENCH_SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic/* $SOURCE_DIR/"
+    $DSH_C "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/" #rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/
     break #dont need to check after one is missing
   else
     loggerb  " Host $node up to date"
   fi
 done
-
-
 
 #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
 #  loggerb  "Generating source dirs"

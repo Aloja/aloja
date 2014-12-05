@@ -188,8 +188,8 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="/cygdrive/c/Java/jdk1.7.0_25"
 
-[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
-[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms512m"
+[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
