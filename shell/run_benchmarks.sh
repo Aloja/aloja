@@ -203,8 +203,8 @@ DSH_C="$DSH -c " #concurrent
 
 [ ! "$BENCH_HADOOP_VERSION" ] && BENCH_HADOOP_VERSION="hadoop-1.0.3"
 
-[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms512m"
-[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
+[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
 
 
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
