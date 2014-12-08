@@ -4,6 +4,9 @@ namespace alojaweb\Controller;
 
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\inc\dbscan\DBSCAN;
+use alojaweb\inc\dbscan\Cluster;
+use alojaweb\inc\dbscan\Point;
 
 class RestController extends AbstractController
 {
@@ -521,8 +524,9 @@ VALUES
 				throw new \Exception ( "No execution selected!" );
 				
 			// get the result rows
-			$query = "SELECT e.bench,j.*
-    		from JOB_tasks j JOIN execs e USING (id_exec) 
+			$metric_duration = $db->get_task_metric_query("Duration");
+			$query = "SELECT e.bench,j.*,".$metric_duration('j')." as Duration
+			from JOB_tasks j JOIN execs e USING (id_exec) 
 			where e.valid = TRUE AND j.id_exec = $idExec;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'Histogram query: ' . $query );
@@ -533,6 +537,9 @@ VALUES
 			
 			$result = array();
 			foreach ( $rows as $row ) {
+				// Show only task id (not the whole string)
+				$row['TASKID'] = substr($row['TASKID'], 23);
+
 				$result[$row['JOBID'].'/'.$row['bench']]['tasks'][$row['TASKID']] = $row;
 			}
 			header('Content-Type: application/json');
@@ -544,6 +551,111 @@ VALUES
 
             echo json_encode(array('error' => $noData));
 		}
+    }
+
+    public function histogramTasksDataAction()
+    {
+        $db = $this->container->getDBUtils();
+
+        $jobid = Utils::get_GET_string("jobid");
+        $metric = $db::$TASK_METRICS[Utils::get_GET_int("metric") ?: 0];
+        $metric_select = $db->get_task_metric_query($metric);
+        $task_type_select = $db->get_task_type_query(Utils::get_GET_string("task_type"));
+        $group = Utils::get_GET_int("group") ?: 1;  // Group the rows in groups of this quantity
+        $accumulated = Utils::get_GET_int("accumulated") ?: 0;
+        $divided = Utils::get_GET_int("divided") ?: 0;
+
+        // Accumulated and divided options don't support group
+        if ($accumulated || $divided) {
+            $group = 1;
+        }
+
+        if (!($group > 1)) {
+            $query = "
+                SELECT
+                    t.`TASKID` as TASK_ID,
+                    ".$metric_select('t')." as TASK_VALUE,
+                    SUM(".$metric_select('t2').") as TASK_VALUE_ACCUM,
+                    t.TASK_DURATION,
+                    SUM(t2.`TASK_DURATION`) as TASK_DURATION_ACCUM,
+                    1 as TASK_VALUE_STDDEV
+                FROM (
+                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
+                    FROM `JOB_tasks`
+                ) as t
+                JOIN (
+                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
+                    FROM `JOB_tasks`
+                ) as t2
+                ON (t.`TASKID` >= t2.`TASKID` AND t2.`JOBID` = :jobid_repeated)
+                WHERE t.`JOBID` = :jobid
+                ".$task_type_select('t')."
+                GROUP BY t.`TASKID`
+                ORDER BY t.`TASKID`
+            ;";
+            $query_params = array(":jobid" => $jobid, ":jobid_repeated" => $jobid);
+
+        } else {
+            $query = "
+                SELECT
+                    MIN(t.`TASKID`) as TASK_ID,
+                    AVG(".$metric_select('t').") as TASK_VALUE,
+                    STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
+                    1 as TASK_VALUE_ACCUM,
+                    1 as TASK_DURATION,
+                    1 as TASK_DURATION_ACCUM,
+                    t.`TASK_TYPE`,
+                    CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
+                FROM `JOB_tasks` t
+                WHERE t.`JOBID` = :jobid
+                ".$task_type_select('t')."
+                GROUP BY MYDIV, t.`TASK_TYPE`
+                ORDER BY MIN(t.`TASKID`)
+            ;";
+            $query_params = array(":jobid" => $jobid, ":group" => $group);
+        }
+
+        $rows = $db->get_rows($query, $query_params);
+
+        $seriesData = array();
+        $seriesError = array();
+        foreach ($rows as $row) {
+            $task_id = $row['TASK_ID'];
+            $task_value = $row['TASK_VALUE'] ?: 0;
+            $task_value_accum = $row['TASK_VALUE_ACCUM'] ?: 0;
+            $task_value_stddev = $row['TASK_VALUE_STDDEV'] ?: 0;
+            $task_duration = $row['TASK_DURATION'] ?: 0;
+            $task_duration_accum = $row['TASK_DURATION_ACCUM'] ?: 0;
+
+            // Show only task id (not the whole string)
+            $task_id = substr($task_id, 23);
+
+            if ($accumulated == 1) {
+                $task_value = $task_value_accum;
+            }
+
+            if ($divided == 1) {
+                $task_value = $task_value / $task_duration_accum;
+            }
+
+            $seriesData[] = array($task_id, $task_value);
+
+            if ($group > 1) {
+                $task_value_low = $task_value - $task_value_stddev;
+                $task_value_high = $task_value + $task_value_stddev;
+
+                $seriesError[] = array('low' => $task_value_low, 'high' => $task_value_high, 'stddev' => $task_value_stddev);
+            }
+        }
+
+        $result = [
+            'seriesData' => $seriesData,
+            'seriesError' => $seriesError,
+        ];
+
+        header('Content-Type: application/json');
+        ob_start('ob_gzhandler');
+        echo json_encode($result, JSON_NUMERIC_CHECK);
     }
 
     public function bestConfigDataAction()
@@ -593,5 +705,165 @@ VALUES
             
             echo json_encode(array('aaData' => array($noData)));
     	}
+    }
+
+    public function dbscanDataAction()
+    {
+        $db = $this->container->getDBUtils();
+
+        $jobid = Utils::get_GET_string("jobid");
+        $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
+        $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+        $heuristic = Utils::get_GET_int("heuristic") !== null ? Utils::get_GET_int("heuristic") : 1;
+        $eps = Utils::get_GET_float("eps") !== null ? Utils::get_GET_float("eps") : 250000;
+        $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
+
+        // Heuristic: let DBSCAN choose the parameters
+        if ($heuristic) {
+            $eps = $minPoints = null;
+        }
+
+        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $eps, $minPoints);
+
+        $seriesData = array();
+        foreach ($dbscan->getClusters() as $cluster) {
+
+            $data = array();
+            foreach ($cluster as $point) {
+                $task_id = $point->info['task_id'];
+                $task_value_x = $point->x;
+                $task_value_y = $point->y;
+                $data[] = array('x' => $task_value_x, 'y' => $task_value_y, 'task_id' => $task_id);
+            }
+
+            if ($data) {
+                $seriesData[] = array(
+                    'points' => $data,
+                    'size' => $cluster->count(),
+                    'x_min' => $cluster->getXMin(),
+                    'x_max' => $cluster->getXMax(),
+                    'y_min' => $cluster->getYMin(),
+                    'y_max' => $cluster->getYMax(),
+                );
+            }
+        }
+
+        $noiseData = array();
+        foreach ($dbscan->getNoise() as $point) {
+            $task_id = $point->info['task_id'];
+            $task_value_x = $point->x;
+            $task_value_y = $point->y;
+            $noiseData[] = array('x' => $task_value_x, 'y' => $task_value_y, 'task_id' => $task_id);
+        }
+
+        $result = [
+            'seriesData' => $seriesData,
+            'noiseData' => $noiseData,
+            'heuristic' => $heuristic,
+            'eps' => $dbscan->getEps(),
+            'minPoints' => $dbscan->getMinPoints(),
+        ];
+
+        header('Content-Type: application/json');
+        ob_start('ob_gzhandler');
+        echo json_encode($result, JSON_NUMERIC_CHECK);
+    }
+
+    public function dbscanexecsDataAction()
+    {
+        ini_set('memory_limit', '384M');
+
+        $db = $this->container->getDBUtils();
+
+        $jobid = Utils::get_GET_string("jobid");
+        $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
+        $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+
+        list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
+
+        // Calc pending dbscanexecs (if any)
+        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y);
+        if (count($pending) > 0) {
+            $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y);
+        }
+
+        // Retrieve calculated dbscanexecs from database
+        $query = "
+            SELECT
+                d.`id_exec`,
+                d.`centroid_x`,
+                d.`centroid_y`
+            FROM `JOB_dbscan` d
+            WHERE
+                d.`bench` = :bench AND
+                d.`job_offset` = :job_offset AND
+                d.`metric_x` = :metric_x AND
+                d.`metric_y` = :metric_y
+        ;";
+        $query_params = array(
+            ":bench" => $bench,
+            ":job_offset" => $job_offset,
+            ":metric_x" => $metric_x,
+            ":metric_y" => $metric_y
+        );
+
+        // Since we are calculating new results, we have to bypass the cache
+        $_GET['NO_CACHE'] = 1;
+        $rows = $db->get_rows($query, $query_params);
+
+        $points = new Cluster();  // Used instead of a simple array to calc x/y min/max
+        foreach ($rows as $row) {
+            $points[] = new Point(
+                $row['centroid_x'],
+                $row['centroid_y'],
+                array('id_exec' => $row['id_exec'])
+            );
+        }
+
+        $dbscan = new DBSCAN();
+        list($clusters, $noise) = $dbscan->execute((array)$points);
+
+        $seriesData = array();
+        foreach ($clusters as $cluster) {
+
+            $data = array();
+            foreach ($cluster as $point) {
+                $data[] = array(
+                    'x' => $point->x,
+                    'y' => $point->y,
+                    'id_exec' => $point->info['id_exec']
+                );
+            }
+
+            if ($data) {
+                $seriesData[] = array(
+                    'points' => $data,
+                    'size' => $cluster->count(),
+                    'x_min' => $cluster->getXMin(),
+                    'x_max' => $cluster->getXMax(),
+                    'y_min' => $cluster->getYMin(),
+                    'y_max' => $cluster->getYMax(),
+                );
+            }
+        }
+
+        $noiseData = array();
+        foreach ($noise as $point) {
+            $noiseData[] = array(
+                'x' => $point->x,
+                'y' => $point->y,
+                'id_exec' => $point->info['id_exec']
+            );
+        }
+
+        $result = [
+            'seriesData' => $seriesData,
+            'noiseData' => $noiseData,
+            'pending' => max(0, count($pending) - 1),
+        ];
+
+        header('Content-Type: application/json');
+        ob_start('ob_gzhandler');
+        echo json_encode($result, JSON_NUMERIC_CHECK);
     }
 }

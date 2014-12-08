@@ -1,7 +1,7 @@
 var https = require('https');
  
 // Cluster Authentication Setup
-var clustername = "aloja16";
+var clustername = "alojahdi8";
 var username = require('../../secure/azure_settings.js').username;
 var password = require('../../secure/azure_settings.js').password;
 
@@ -26,7 +26,7 @@ https.get(optionJobs, function (res) {
     });
     res.on('end', function () {
         // Parse the response, we know it`s going to be JSON, so we`re not checking Content-Type
-        var Jobs = JSON.parse(responseString);
+	var Jobs = JSON.parse(responseString);
         Jobs.forEach(function (Job) {
             // Set up the options to get information about a specific Job Id
             var optionJob = {
@@ -43,12 +43,29 @@ https.get(optionJobs, function (res) {
                 res.on('end', function () {
                     var thisJob = JSON.parse(jobResponseString); // Parse the JSON response
 		    if(thisJob.status != undefined && thisJob.status.state == "SUCCEEDED" && thisJob.status.jobName != "TempletonControllerJob" ) {
-		 	var startTime = new Date(thisJob.status.startTime);
-                        var finishTime = new Date(thisJob.status.finishTime);
-			var diff = finishTime - startTime;	
-			console.log("\""+thisJob.status.jobName+"\",\""+thisJob.status.jobId+"\",\""+(diff/1000)+"\"");
+			if(thisJob.parentId != undefined) {	
+			optionJob.path = "/templeton/v1/jobs/" + thisJob.parentId + "?user.name=" + username + "&showall=true";
+			https.get(optionJob, function(res) {
+			  parentResponseString = ""; //Initialize parent response string
+			  res.on('data', function(data) {
+			    parentResponseString += data;
+			  });
+			  res.on('end', function() {
+			    var parentJob = JSON.parse(parentResponseString); 
+			    var startTime = new Date(thisJob.status.startTime);
+                            var finishTime = new Date(thisJob.status.finishTime);
+			    var diff = finishTime - startTime;
+			    var tmp = parentJob.userargs.define;
+			    if(tmp != undefined) {
+				tmp = tmp[0].split('hdInsightJobName=');
+			        console.log("\""+tmp[1]+"\",\""+thisJob.status.jobId+"\",\""+(diff/1000)+"\"");
+			    }
+			    //console.log("\""+thisJob.status.jobName+"\",\""+thisJob.status.jobId+"\",\""+(diff/1000)+"\"");
+			  });
+			});
 		    }
-                });
+                }
+              });
             });
         });
     });
