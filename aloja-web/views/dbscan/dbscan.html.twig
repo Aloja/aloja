@@ -106,6 +106,7 @@
                 // Load chart options from html form
                 var metric_x = form.find("[name='metric_x']");
                 var metric_y = form.find("[name='metric_y']");
+                var task_type = form.find("[name='type']");
                 var heuristic = form.find("[name='heuristic']").hasClass("active");
                 var eps = form.find("[name='eps']");
                 var minPoints = form.find("[name='minPoints']");
@@ -126,6 +127,7 @@
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
+                        task_type: task_type.val(),
                         heuristic: ((heuristic)?1:0),
                         eps: eps.val(),
                         minPoints: minPoints.val(),
@@ -281,6 +283,16 @@
             {% for current_metric in METRICS %}
                 <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
             {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task type:
+            <select name="type" class="form-control">
+                <option value="MAP">Map</option>
+                <option value="REDUCE">Reduce</option>
+                <option value="CLEANUP">Cleanup</option>
+                <option value="SETUP">Setup</option>
+                <option value="">All</option>
             </select>
         </label>
         <button type="button" name="heuristic" class="btn btn-default active" data-toggle="button">Heuristic</button>

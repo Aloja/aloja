@@ -714,6 +714,7 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+        $task_type = $db->get_task_type(Utils::get_GET_string("task_type"));
         $heuristic = Utils::get_GET_int("heuristic") !== null ? Utils::get_GET_int("heuristic") : 1;
         $eps = Utils::get_GET_float("eps") !== null ? Utils::get_GET_float("eps") : 250000;
         $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
@@ -723,7 +724,7 @@ VALUES
             $eps = $minPoints = null;
         }
 
-        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $eps, $minPoints);
+        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $task_type, $eps, $minPoints);
 
         $seriesData = array();
         foreach ($dbscan->getClusters() as $cluster) {
