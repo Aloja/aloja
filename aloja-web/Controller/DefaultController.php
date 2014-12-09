@@ -23,10 +23,10 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-    		'histogram' => 'Histogram',
-           // 'files' => 'Files',
+	    'histogram' => 'Histogram',
+            // 'files' => 'Files',
             'prv' => 'PARAVER',
-            //'version' => 'Hadoop v.',
+            // 'version' => 'Hadoop v.',
             'init_time' => 'End time',
         );
 
@@ -1519,17 +1519,78 @@ class DefaultController extends AbstractController
 	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
 	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
 	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-	    	
-	    	// get the result rows
-	    	$query = "SELECT * FROM execs WHERE valid = TRUE ".$where_configs;
-	    		
+	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);    	
+
+		// get headers for csv
+		$header_names = array(
+			'id_exec' => 'ID',
+			'bench' => 'Benchmark',
+			'exe_time' => 'Exe Time',
+			'exec' => 'Exec Conf',
+			'cost' => 'Running Cost $',
+			'net' => 'Net',
+			'disk' => 'Disk',
+			'maps' => 'Maps',
+			'iosf' => 'IO SFac',
+			'replication' => 'Rep',
+			'iofilebuf' => 'IO FBuf',
+			'comp' => 'Comp',
+			'blk_size' => 'Blk size',
+			'id_cluster' => 'Cluster',
+			'histogram' => 'Histogram',
+			'prv' => 'PARAVER',
+			'end_time' => 'End time',
+		);
+
+	    	$query="SHOW COLUMNS FROM execs;";
+	    	$rows = $db->get_rows ($query);
+		$headers = array();
+		$names = array();
+		$count = 0;
+		foreach($rows as $row) {
+			if (array_key_exists($row['Field'],$header_names)) {
+				$headers[$count] = $row['Field'];
+				$names[$count++] = $header_names[$row['Field']];
+			}
+		}
+		$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+		$names[$count++] = "Running Cost $";	
+
+	    	// dump the result to csv
+	    	$query="SELECT ".implode(",",$headers)."
+			FROM execs
+			WHERE valid = TRUE ".$where_configs.";";
+
+
+		$file_name = getcwd().'/cache/query/tempfile.csv';	//FIXME - Select cache code
+		$fp = fopen($file_name, 'w');
 	    	$rows = $db->get_rows ( $query );
 	    	$c = 0;
+		fputcsv($fp, $names,',','"');
 	    	foreach($rows as $row) {
-	    		$jsonExecs[$c++][] = (int)$row['exe_time'];
-	    		$jsonExecs[$c-1][] = (int)$row['exe_time']/2;
+		        fputcsv($fp, array_values($row),',','"');
 	    	}
+
+		// run the R processor
+		$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$file_name.' -m aloja_regtree -p saveall=m5p1'; //FIXME - Select Method
+		$output = shell_exec($command);
+
+		// read results of the CSV
+		$count = 0;
+		foreach (array("tt", "tv", "tr") as &$value) {
+			if (($handle = fopen(getcwd().'/cache/query/m5p1-'.$value.'.csv', 'r')) !== FALSE) { // FIXME - Select method prefix
+				$header = fgetcsv($handle, 1000, ",");
+
+				$key_exec = array_search('Exe.Time', array_values($header));
+				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
+
+				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+					$jsonExecs[$count++][] = (int)$data[$key_exec];
+					$jsonExecs[$count-1][] = (int)$data[$key_pexec];
+				}
+				fclose($handle);
+			}
+		}
 	    	
     	} catch(\Exception $e) {
     		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
@@ -1538,7 +1599,7 @@ class DefaultController extends AbstractController
     	echo $this->container->getTwig()->render('mltemplate/mltemplate.html.twig',
     			array(
     					'selected' => 'mltemplate',
-    					'jsonExecs' => json_encode($jsonExecs),
+					'jsonExecs' => json_encode($jsonExecs),
     					'benchs' => $benchs,
     					'nets' => $nets,
     					'disks' => $disks,

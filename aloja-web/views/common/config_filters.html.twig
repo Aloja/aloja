@@ -164,12 +164,14 @@
 			</div>
 		</div>
 		{% endif %}
-		<div id="action-button-div" class="row" style="display: none">
+		{% if selected == 'mltemplate' %}
+		<div id="learn-button-div" class="row">
 			<div class="col-md-8">
 				<h2 class="compare body" style="text-align: center;">
-					<input id="action-button" type="submit" value="Action">
+					<input id="learn-button" type="submit" value="Learn Model">
 				</h2>
 			</div>
 		</div>
+		{% endif %}
 	</form>
 </div>

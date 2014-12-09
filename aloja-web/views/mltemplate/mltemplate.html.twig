@@ -14,12 +14,6 @@
 <script type="text/javascript" src="js/utils.js"></script>
 <script type="text/javascript">
       $(document).ready(function() {
-		var elem = document.getElementById('action-button-div');
-		elem.style.display = 'block';
-
-		var elem = document.getElementById('action-button');
-		elem.value = 'Learn model';
-
 		$("input").change(function() {
 			$("form").submit();
 		});
@@ -37,7 +31,7 @@
     		        xAxis: {
     		            title: {
     		                enabled: true,
-    		                text: 'Execution time (s)'
+    		                text: 'Real Execution Time (s)'
     		            },
     		            startOnTick: true,
     		            endOnTick: true,
@@ -45,7 +39,7 @@
     		        },
     		        yAxis: {
     		            title: {
-    		                text: 'Exetime / 2 (s)'
+    		                text: 'Predicted Execution Time (s)'
     		            }
     		        },
 	                credits: {
@@ -89,6 +83,7 @@
     		            name: 'Exe time',
     		            color: 'rgba(223, 83, 83, .5)',
     		            data: {{ jsonExecs | raw}}
+			    //data: '[[0,0],[1,1]]'
 
 			}]
 		});
