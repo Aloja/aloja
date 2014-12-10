@@ -165,6 +165,19 @@
 		</div>
 		{% endif %}
 		{% if selected == 'mltemplate' %}
+		<div class="row">
+			<div class="col-md-4">
+				Learning method:</br> <select class="form-control" name="learn[]" >
+					<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
+					<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
+					<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
+					<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
+				</select>
+			</div>
+			<div class="col-md-4">
+				<!-- Blank space for rent/sale. Put your Ad here! -->
+			</div>
+		</div>
 		<div id="learn-button-div" class="row">
 			<div class="col-md-8">
 				<h2 class="compare body" style="text-align: center;">

@@ -1519,10 +1519,18 @@ class DefaultController extends AbstractController
 	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
 	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
 	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);    	
+	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
 
-		$config = str_replace(array('AND ','IN '),'',$where_configs);
-		$cache_ds = getcwd().'/cache/query/'.md5($config).'-ds.csv';
+		$dummy = "";
+		$learn_param	= Utils::read_params('learn',$dummy,$configurations,$dummy);
+
+		if ($learn_param[0] == 'regtree') $learn_method = 'aloja_regtree -p saveall=';
+		else if ($learn_param[0] == 'nneighbours') $learn_method = 'aloja_nneighbors -p kparam=3:saveall=';
+		else if ($learn_param[0] == 'nnet') $learn_method = 'aloja_nnet -p saveall=';
+		else if ($learn_param[0] == 'polyreg') $learn_method = 'aloja_linreg -p ppoly=3:saveall=';
+
+		$config = str_replace(array('AND ','IN '),'',$where_configs).' '.$learn_param[0];
+		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 		if (!file_exists($cache_ds))
 		{
 			// get headers for csv
@@ -1571,18 +1579,18 @@ class DefaultController extends AbstractController
 		    	}
 
 			// run the R processor
-			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m aloja_regtree -p saveall=m5p1-'.md5($config); // FIXME - Select method
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.md5($config);
 			$output = shell_exec($command);
 
 			// update cache record (for human reading)
-			$register = md5($config).' :'.$config.'\\n';
+			$register = md5($config).' :'.$config."\n";
 			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 		}
 
 		// read results of the CSV
 		$count = 0;
 		foreach (array("tt", "tv", "tr") as &$value) {
-			if (($handle = fopen(getcwd().'/cache/query/m5p1-'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) { // FIXME - Select method prefix
+			if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
 				$header = fgetcsv($handle, 1000, ",");
 
 				$key_exec = array_search('Exe.Time', array_values($header));
@@ -1613,7 +1621,8 @@ class DefaultController extends AbstractController
     					'mapss' => $mapss,
     					'replications' => $replications,
     					'iosfs' => $iosfs,
-    					'iofilebufs' => $iofilebufs
+    					'iofilebufs' => $iofilebufs,
+					'learn' => $learn_param
     			)
     	);
     }

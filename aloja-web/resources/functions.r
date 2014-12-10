@@ -348,10 +348,10 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 {
 	retval <- list();
 
-	if (!is.null(traux)) traux <- aloja_binarize_ds(traux[,c(vout,vin)]);
-	if (!is.null(ntaux)) ntaux <- aloja_binarize_ds(ntaux[,c(vout,vin)]);
-	if (!is.null(tvaux)) tvaux <- aloja_binarize_ds(tvaux[,c(vout,vin)]);
-	if (!is.null(ttaux)) ttaux <- aloja_binarize_ds(ttaux[,c(vout,vin)]);
+	if (!is.null(traux)) traux <- aloja_binarize_ds(traux[,c("ID",vout,vin)]);
+	if (!is.null(ntaux)) ntaux <- aloja_binarize_ds(ntaux[,c("ID",vout,vin)]);
+	if (!is.null(tvaux)) tvaux <- aloja_binarize_ds(tvaux[,c("ID",vout,vin)]);
+	if (!is.null(ttaux)) ttaux <- aloja_binarize_ds(ttaux[,c("ID",vout,vin)]);
 
 	if (!is.null(traux) & !is.null(tvaux) & !is.null(ttaux))
 	{
@@ -424,7 +424,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	# Load and split datasets
 	dsid <- cbind(ds[,"ID"],dsbaux);
 	colnames(dsid) <- c("ID",vout,vin);
-	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
+	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal
 	if (rmols)
@@ -444,11 +444,15 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["minout"]] <- NULL;
 	for (i in c(vout,vin))
 	{
-		trauxnorm <- cbind(trauxnorm, (rt$trainset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
-		tvauxnorm <- cbind(tvauxnorm, (rt$validset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i])));
-		ttauxnorm <- cbind(ttauxnorm, (rt$testset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/max(c(rt$trainset[,i],rt$validset[,i]))); # Same Norm (tr,tv) as not seen before
-		rt[["maxout"]] <- c(rt[["maxout"]],max(c(rt$trainset[,i],rt$validset[,i])));
+		divisor <- max(c(rt$trainset[,i],rt$validset[,i])); if (divisor == 0) divisor = 1e-15;
+		trauxnorm <- cbind(trauxnorm, (rt$trainset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/divisor);
+		tvauxnorm <- cbind(tvauxnorm, (rt$validset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/divisor);
+		ttauxnorm <- cbind(ttauxnorm, (rt$testset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/divisor); # Same Norm (tr,tv) as not seen before
+		rt[["maxout"]] <- c(rt[["maxout"]],divisor);
 		rt[["minout"]] <- c(rt[["minout"]],min(c(rt$trainset[,i],rt$validset[,i])));
+		trauxnorm[is.na(trauxnorm)] <- 0;
+		tvauxnorm[is.na(tvauxnorm)] <- 0;
+		ttauxnorm[is.na(ttauxnorm)] <- 0;
 	}
 	rt[["normtrainset"]] <- trauxnorm;
 	rt[["normvalidset"]] <- tvauxnorm;
@@ -463,9 +467,9 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["varout"]] <- vout;
 	
 	# Training and Validation
-	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,-c(vout,8,26)],size=hlayers,decay=decay,maxit=maxit);
+	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,-c(vout)],size=hlayers,decay=decay,maxit=maxit);	# FIXME - Remember why x had out "8 and 26"
 	rt[["predtrain"]] <- rt$model$fitted.values;
-	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,-c(vout,8,26)]);
+	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,-c(vout)]);						# FIXME - Same as above (x out 8 and 26)
 	if (!is.null(prange))
 	{
 		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
@@ -485,7 +489,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout,8,26)]);
+	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout)]);						# FIXME - Same as above (x out 8 and 26)
 	if (!is.null(prange))
 	{
 		rt$predtest[rt$predtest < prange[1]] <- prange[1];
