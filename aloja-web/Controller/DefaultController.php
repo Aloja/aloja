@@ -1554,7 +1554,7 @@ class DefaultController extends AbstractController
 			}
 		}
 		$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
-		$names[$count++] = "Running Cost $";	
+		$names[$count++] = $header_names['cost'];
 
 	    	// dump the result to csv
 	    	$query="SELECT ".implode(",",$headers)."
@@ -1585,8 +1585,8 @@ class DefaultController extends AbstractController
 				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
 
 				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-					$jsonExecs[$count++][] = (int)$data[$key_exec];
-					$jsonExecs[$count-1][] = (int)$data[$key_pexec];
+					$jsonExecs[$count++][] = (int)$data[$key_pexec];
+					$jsonExecs[$count-1][] = (int)$data[$key_exec];
 				}
 				fclose($handle);
 			}
