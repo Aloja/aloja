@@ -1521,64 +1521,68 @@ class DefaultController extends AbstractController
 	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
 	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);    	
 
-		// get headers for csv
-		$header_names = array(
-			'id_exec' => 'ID',
-			'bench' => 'Benchmark',
-			'exe_time' => 'Exe Time',
-			'exec' => 'Exec Conf',
-			'cost' => 'Running Cost $',
-			'net' => 'Net',
-			'disk' => 'Disk',
-			'maps' => 'Maps',
-			'iosf' => 'IO SFac',
-			'replication' => 'Rep',
-			'iofilebuf' => 'IO FBuf',
-			'comp' => 'Comp',
-			'blk_size' => 'Blk size',
-			'id_cluster' => 'Cluster',
-			'histogram' => 'Histogram',
-			'prv' => 'PARAVER',
-			'end_time' => 'End time',
-		);
+		$config = str_replace(array('AND ','IN '),'',$where_configs);
+		$cache_ds = getcwd().'/cache/query/'.md5($config).'-ds.csv';
+		if (!file_exists($cache_ds))
+		{
+			// get headers for csv
+			$header_names = array(
+				'id_exec' => 'ID',
+				'bench' => 'Benchmark',
+				'exe_time' => 'Exe Time',
+				'exec' => 'Exec Conf',
+				'cost' => 'Running Cost $',
+				'net' => 'Net',
+				'disk' => 'Disk',
+				'maps' => 'Maps',
+				'iosf' => 'IO SFac',
+				'replication' => 'Rep',
+				'iofilebuf' => 'IO FBuf',
+				'comp' => 'Comp',
+				'blk_size' => 'Blk size',
+				'id_cluster' => 'Cluster',
+				'histogram' => 'Histogram',
+				'prv' => 'PARAVER',
+				'end_time' => 'End time',
+			);
 
-	    	$query="SHOW COLUMNS FROM execs;";
-	    	$rows = $db->get_rows ($query);
-		$headers = array();
-		$names = array();
-		$count = 0;
-		foreach($rows as $row) {
-			if (array_key_exists($row['Field'],$header_names)) {
-				$headers[$count] = $row['Field'];
-				$names[$count++] = $header_names[$row['Field']];
+		    	$query="SHOW COLUMNS FROM execs;";
+		    	$rows = $db->get_rows ($query);
+			$headers = array();
+			$names = array();
+			$count = 0;
+			foreach($rows as $row) {
+				if (array_key_exists($row['Field'],$header_names)) {
+					$headers[$count] = $row['Field'];
+					$names[$count++] = $header_names[$row['Field']];
+				}
 			}
+			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+			$names[$count++] = $header_names['cost'];
+
+		    	// dump the result to csv
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+		    	$rows = $db->get_rows ( $query );
+
+			$fp = fopen($cache_ds, 'w');
+			fputcsv($fp, $names,',','"');
+		    	foreach($rows as $row) {
+				fputcsv($fp, array_values($row),',','"');
+		    	}
+
+			// run the R processor
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m aloja_regtree -p saveall=m5p1-'.md5($config); // FIXME - Select method
+			$output = shell_exec($command);
+
+			// update cache record (for human reading)
+			$register = md5($config).' :'.$config.'\\n';
+			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 		}
-		$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
-		$names[$count++] = $header_names['cost'];
-
-	    	// dump the result to csv
-	    	$query="SELECT ".implode(",",$headers)."
-			FROM execs
-			WHERE valid = TRUE ".$where_configs.";";
-
-
-		$file_name = getcwd().'/cache/query/tempfile.csv';	//FIXME - Select cache code
-		$fp = fopen($file_name, 'w');
-	    	$rows = $db->get_rows ( $query );
-	    	$c = 0;
-		fputcsv($fp, $names,',','"');
-	    	foreach($rows as $row) {
-		        fputcsv($fp, array_values($row),',','"');
-	    	}
-
-		// run the R processor
-		$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$file_name.' -m aloja_regtree -p saveall=m5p1'; //FIXME - Select Method
-		$output = shell_exec($command);
 
 		// read results of the CSV
 		$count = 0;
 		foreach (array("tt", "tv", "tr") as &$value) {
-			if (($handle = fopen(getcwd().'/cache/query/m5p1-'.$value.'.csv', 'r')) !== FALSE) { // FIXME - Select method prefix
+			if (($handle = fopen(getcwd().'/cache/query/m5p1-'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) { // FIXME - Select method prefix
 				$header = fgetcsv($handle, 1000, ",");
 
 				$key_exec = array_search('Exe.Time', array_values($header));
