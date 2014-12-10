@@ -141,7 +141,7 @@ source "$CUR_DIR_TMP/common/cluster_functions.sh"
 
 #####
 
-NUMBER_OF_SLAVES="$numberOfNodes"
+NUMBER_OF_DATA_NODES="$numberOfNodes"
 userAloja="pristine"
 
 DSH="ssh "
@@ -188,8 +188,8 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="/cygdrive/c/Java/jdk1.7.0_25"
 
-[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
-[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
+[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
@@ -214,7 +214,7 @@ for node in $node_names ; do
   logger " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     logger "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
-    $DSH "mkdir -p $SOURCE_DIR; cp -ru $BASE_DIR/aplic/* $SOURCE_DIR/"
+    $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic/* $SOURCE_DIR/"
     break #dont need to check after one is missing
   else
     logger " Host $node up to date"
@@ -420,7 +420,7 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
+    if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
@@ -440,10 +440,10 @@ restart_hadoop(){
       DELETE_HDFS="1"
       restart_hadoop no_retry
     elif [ "$i" == "120" ] ; then
-      logger "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
+      logger "$num/$NUMBER_OF_DATA_NODES Datanodes available, EXIT"
       exit 1
     else
-      logger "$num/$NUMBER_OF_SLAVES Datanodes available, wating for $i seconds"
+      logger "$num/$NUMBER_OF_DATA_NODES Datanodes available, wating for $i seconds"
       sleep 1
     fi
   done

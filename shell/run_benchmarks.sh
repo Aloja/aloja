@@ -51,7 +51,7 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -122,9 +122,9 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
     N)
       DELETE_HDFS=0
       ;;
-    S)
-      LIMIT_SLAVE_NODES=$OPTARG
-      echo "LIMIT_SLAVE_NODES $LIMIT_SLAVE_NODES"
+    D)
+      LIMIT_DATA_NODES=$OPTARG
+      echo "LIMIT_DATA_NODES $LIMIT_DATA_NODES"
       ;;
     esac
 done
@@ -147,7 +147,7 @@ loggerb  "INFO: includes loaded"
 #####
 
 
-NUMBER_OF_SLAVES="$numberOfNodes"
+NUMBER_OF_DATA_NODES="$numberOfNodes"
 userAloja="pristine"
 
 DSH="dsh -M -c -m "
@@ -164,7 +164,7 @@ IFACE="eth0"
 
 node_names="$(get_node_names)"
 
-if [ ! -z "$LIMIT_SLAVE_NODES" ] ; then
+if [ ! -z "$LIMIT_DATA_NODES" ] ; then
 
   node_iteration=0
   for node in $node_names ; do
@@ -173,12 +173,12 @@ if [ ! -z "$LIMIT_SLAVE_NODES" ] ; then
     else
       node_tmp="$node"
     fi
-    [[ $node_iteration -ge $LIMIT_SLAVE_NODES ]]  && break;
+    [[ $node_iteration -ge $LIMIT_DATA_NODES ]]  && break;
     node_iteration=$((node_iteration+1))
   done
 
   node_name=$(echo -e "$nodes_tmp")
-  NUMBER_OF_SLAVES="$LIMIT_SLAVE_NODES"
+  NUMBER_OF_DATA_NODES="$LIMIT_DATA_NODES"
 fi
 
 DSH="$DSH $(nl2char "$node_names" ",")"
@@ -196,26 +196,39 @@ DSH_C="$DSH -c " #concurrent
   exit 1
 }
 
-#loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
-#BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
-#BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
-#BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
-#BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
-#Master node: $master_name Nodes:
-#$node_names"
+#Check if values are set, if not use defaults
+
+[ ! "$BENCH_SOURCE_DIR" ] && BENCH_SOURCE_DIR="$BENCH_DEFAULT_SCRATCH/aplic"
+[ ! "$BENCH_SAVE_PREPARE_LOCATION" ] && BENCH_SAVE_PREPARE_LOCATION="$BENCH_DEFAULT_SCRATCH/HiBench_prepare"
+
+[ ! "$BENCH_HADOOP_VERSION" ] && BENCH_HADOOP_VERSION="hadoop-1.0.3"
+
+[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
+[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
 
 
-#TODO fix for non HDD
-if [ "$DISK" == "SSD" ] ; then
-  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
-  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
-  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
-else
-  echo "Incorrect disk specified: $DISK"
-  exit 1
-fi
+loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
+BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
+BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
+BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
+BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
+JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
+Master node: $master_name "
+
+
+HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+
+##TODO fix for non HDD
+#if [ "$DISK" == "L" ] ; then
+#  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
+#elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
+#  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+#elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
+#  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
+#else
+#  echo "Incorrect disk specified: $DISK"
+#  exit 1
+#fi
 
 #BENCH_BASE_DIR="/home/$userAloja/share"
 #BENCH_SOURCE_DIR="/scratch/local/aplic"
@@ -234,22 +247,19 @@ BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
+  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 else
-  trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
+  trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 fi
-
-
-
 
 
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_SLAVES}_${clusterName}"
+  CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 else
-  CONF="conf_${NET}_${DISK}_b${BENCH}_S${NUMBER_OF_SLAVES}_${clusterName}"
+  CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 fi
 
-JOB_NAME="$(get_date_folder)"
+JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
@@ -258,9 +268,7 @@ LOG="2>&1 |tee -a $LOG_PATH"
 
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
-
-[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
-[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
 bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
 vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
@@ -273,27 +281,27 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
-    $DSH "sudo sysctl -w vm.swappiness=0;
-sudo sysctl vm.panic_on_oom=1;
-sudo sysctl -w fs.file-max=65536;
-sudo service ufw stop;
+    $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
+sudo sysctl vm.panic_on_oom=1 > /dev/null;
+sudo sysctl -w fs.file-max=65536 > /dev/null;
+sudo service ufw stop 2>&1 > /dev/null;
 "
 
     #TODO improve mount checking
     correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
-    if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
+    if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
       echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
       #temporary to avoid read-only file system errors
       echo "Re-mounting attached disks"
-      $DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+      $DSH "sudo umount -f /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo pkill -9 sshfs; sudo mount -a"
 
       correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
-      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_SLAVES + 1 ))" ] ; then
+      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
         echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-        echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_SLAVES $NUMBER_OF_SLAVES + 1"
+        echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_DATA_NODES $NUMBER_OF_DATA_NODES + 1"
         exit 1
       fi
     fi
@@ -313,19 +321,17 @@ if [ ! -z "$EXECUTE_HIBENCH" ] ; then
 fi
 
 #only copy files if version has changed (to save time in azure)
-loggerb  "Checking if to generate source dirs"
+loggerb  "Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
 for node in $node_names ; do
   loggerb  " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BENCH_BASE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     loggerb  "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
-    $DSH_C "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
+    $DSH_C "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/" #rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/
     break #dont need to check after one is missing
   else
     loggerb  " Host $node up to date"
   fi
 done
-
-
 
 #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
 #  loggerb  "Generating source dirs"
@@ -374,7 +380,6 @@ start_time=$(date '+%s')
 
 ########################################################
 loggerb  "Starting execution of $BENCH"
-
 
 ##PREPARED="/scratch/local/ssd/pristine/prepared"
 #"wordcount" "sort" "terasort" "kmeans" "pagerank" "bayes" "nutchindexing" "hivebench" "dfsioe"
