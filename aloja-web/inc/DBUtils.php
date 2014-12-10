@@ -233,6 +233,11 @@ class DBUtils
      */
     public function add_dbscan($jobid, $metric_x, $metric_y, $task_type, $clusters)
     {
+        // If DBSCAN result is empty, don't do anything
+        if (empty($clusters)) {
+            return;
+        }
+
         list($bench, $job_offset, $id_exec) = $this->get_jobid_info($jobid);
         $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
 
