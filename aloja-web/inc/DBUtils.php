@@ -343,9 +343,16 @@ class DBUtils
                 d.`id_exec` = s.`id_exec`
                 ".$task_type_select('s')."
 
+            LEFT OUTER JOIN `JOB_tasks` t
+            ON
+                d.`JOBID` = t.`JOBID`
+                ".$task_type_select('t')."
+
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset
             AND s.`id` IS null
+            AND t.`JOBID` IS NOT null
+            GROUP BY e.`bench`, d.`id_exec`, d.`JOBID`
             ORDER BY d.`id_exec`
         ;";
         $query_params = array(
