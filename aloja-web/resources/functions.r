@@ -419,7 +419,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
-	vin <- colnames(dsbaux[,-1]);
+	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
 
 	# Load and split datasets
 	dsid <- cbind(ds[,"ID"],dsbaux);
@@ -457,19 +457,21 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["normtrainset"]] <- trauxnorm;
 	rt[["normvalidset"]] <- tvauxnorm;
 	rt[["normtestset"]] <- ttauxnorm;
+	colnames(rt$normtrainset) <- c(vout,vin);
+	colnames(rt$normvalidset) <- c(vout,vin);
+	colnames(rt$normtestset) <- c(vout,vin);
 	rt[["maxout"]] <- matrix(rt[["maxout"]]);
 	rt[["minout"]] <- matrix(rt[["minout"]]);
 	rownames(rt[["maxout"]]) <- c(vout,vin);
 	rownames(rt[["minout"]]) <- c(vout,vin);
 
-	vout <- 1;
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
 	
 	# Training and Validation
-	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,-c(vout)],size=hlayers,decay=decay,maxit=maxit);	# FIXME - Remember why x had out "8 and 26"
+	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=hlayers,decay=decay,maxit=maxit);	# FIXME - Remember why x had out "8 and 26"
 	rt[["predtrain"]] <- rt$model$fitted.values;
-	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,-c(vout)]);						# FIXME - Same as above (x out 8 and 26)
+	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);						# FIXME - Same as above (x out 8 and 26)
 	if (!is.null(prange))
 	{
 		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
@@ -477,8 +479,8 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 		rt$predval[rt$predval < prange[1]] <- prange[1];
 		rt$predval[rt$predval > prange[2]] <- prange[2];
 	}
-	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
-	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
+	rt[["maeval"]] <- mean(abs(rt$predval*rt$maxout[vout,1]+rt$minout[vout,1] - rt$validset[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval*rt$maxout[vout,1]+rt$minout[vout,1] - rt$validset[,vout])/rt$validset[,vout]));
 
 	if (!is.null(pngval))
 	{
@@ -489,14 +491,14 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,-c(vout)]);						# FIXME - Same as above (x out 8 and 26)
+	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,vin]);						# FIXME - Same as above (x out 8 and 26)
 	if (!is.null(prange))
 	{
 		rt$predtest[rt$predtest < prange[1]] <- prange[1];
 		rt$predtest[rt$predtest > prange[2]] <- prange[2];
 	}
-	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
-	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
+	rt[["maetest"]] <- mean(abs(rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1] - rt$testset[,vout])) ;
+	rt[["raetest"]] <- mean(abs((rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1] - rt$testset[,vout])/rt$testset[,vout]));
 
 	if (!is.null(pngtest))
 	{
@@ -518,7 +520,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	{
 		aloja_save_model(rt$model,tagname=saveall);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt$dataset,rt$trainset,rt$predtrain*rt$maxout[vout,1]+rt$minout[vout,1],rt$validset,rt$predval*rt$maxout[vout,1]+rt$minout[vout,1],rt$testset,rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1],testname=saveall);
 	}
 
 	rt;
@@ -539,7 +541,7 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	# Binarization of variables
 	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
-	vin <- colnames(dsbaux[,-1]);
+	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
 
 	# Load and split datasets
 	dsid <- cbind(ds[,"ID"],dsbaux);

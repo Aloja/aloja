@@ -1524,12 +1524,16 @@ class DefaultController extends AbstractController
 		$dummy = "";
 		$learn_param	= Utils::read_params('learn',$dummy,$configurations,$dummy);
 
-		if ($learn_param[0] == 'regtree') $learn_method = 'aloja_regtree -p saveall=';
-		else if ($learn_param[0] == 'nneighbours') $learn_method = 'aloja_nneighbors -p kparam=3:saveall=';
-		else if ($learn_param[0] == 'nnet') $learn_method = 'aloja_nnet -p saveall=';
-		else if ($learn_param[0] == 'polyreg') $learn_method = 'aloja_linreg -p ppoly=3:saveall=';
-
 		$config = str_replace(array('AND ','IN '),'',$where_configs).' '.$learn_param[0];
+		$learn_options = 'saveall='.md5($config);
+
+		if ($learn_param[0] == 'regtree') $learn_method = 'aloja_regtree';
+		else if ($learn_param[0] == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
+		else if ($learn_param[0] == 'nnet') $learn_method = 'aloja_nnet';
+		else if ($learn_param[0] == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3'; }
+
+		//if ($_GET['params']) $learn_options = $learn_options.":".$_GET['params'];
+
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 		if (!file_exists($cache_ds))
 		{
@@ -1579,7 +1583,7 @@ class DefaultController extends AbstractController
 		    	}
 
 			// run the R processor
-			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.md5($config);
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options;
 			$output = shell_exec($command);
 
 			// update cache record (for human reading)
