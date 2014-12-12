@@ -22,7 +22,8 @@
 #	 ./aloja_cli.r -m aloja_dataset_collapse -d dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1
 #	 ./aloja_cli.r -m aloja_best_configurations -p bvec_name=dsc1 -v
 
-source("/vagrant/workspace/aloja-web/resources/functions.r");
+library(devtools);
+source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r",sha1="c34f0f6f7c8cd059d565c40ae07e0eb2f9d4d022");
 
 ###############################################################################
 # Read arguments from CLI
