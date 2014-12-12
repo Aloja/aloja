@@ -74,16 +74,16 @@
     		                    }
     		                },
     		                tooltip: {
-    		                    headerFormat: '<b>{series.name}</b><br>',
-    		                    pointFormat: '{point.x} s, {point.y} s'
+    		                    headerFormat: '',
+    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
     		                }
     		            }
     		        },
     		        series: [{
     		            name: 'Exe time',
     		            color: 'rgba(223, 83, 83, .5)',
-    		            data: {{ jsonExecs | raw}}
-			    //data: '[[0,0],[1,1]]'
+    		            data: {{ jsonExecs | raw }}
+			    //data: [{x:669,y:630,mydata:"data1"},{x:700,y:700,mydata:"data2"}]
 
 			}]
 		});

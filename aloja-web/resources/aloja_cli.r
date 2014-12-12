@@ -2,7 +2,7 @@
 
 # Josep Ll. Berral-García
 # ALOJA-BSC-MSR hadoop.bsc.es
-# 2014-11-24
+# 2014-12-11
 # Launcher of ALOJA-ML
  
 # usage: ./aloja_cli.r -m method [-d dataset] [-l learned model] [-p param1=aaaa:param2=bbbb:param3=cccc:...] [-a] [-n dims] [-v]
@@ -13,11 +13,16 @@
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p1 -d m5p1-tt.csv -v
 #
 #	 ./aloja_cli.r -m aloja_pca -d dataset.csv -p saveall=pca1
-#	 ./aloja_cli.r -m aloja_regtree -d pca1-transformed.csv -p prange=1e-4,1e+4,saveall=m5p-simple-redim -n 20
+#	 ./aloja_cli.r -m aloja_regtree -d pca1-transformed.csv -p prange=1e-4,1e+4:saveall=m5p-simple-redim -n 20
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p-simple-redim -p inst_predict="1922.904354752,70.1570440421649,2.9694955079494,-3.64259027685954,-0.748746678239734,0.161321484374316,0.617610510007444,-0.459044093400257,0.251211132013151,0.251937462205716,-0.142007748147355,-0.0324862729758309,0.406308900544488,0.13593705166432,0.397452596451088,-0.731635384355167,-0.318297127484775,-0.0876192175148721,-0.0504762335523307,-0.0146283091875174" -v
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p-simple-redim -d m5p-simple-redim-tt.csv -v
+#	 ./aloja_cli.r -m aloja_transform_data -d newdataset.csv -p pca_name=pca1:saveall=newdataset
+#	 ./aloja_cli.r -m aloja_transform_instance -p pca_name=pca1:inst_transform="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
+#
+#	 ./aloja_cli.r -m aloja_dataset_collapse -d dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1
+#	 ./aloja_cli.r -m aloja_best_configurations -p bvec_name=dsc1 -v
 
-source(paste("/vagrant/workspace/aloja-web/resources","functions.r",sep="/")); # FIXME - canviar per el source de github
+source("/vagrant/workspace/aloja-web/resources/functions.r");
 
 ###############################################################################
 # Read arguments from CLI

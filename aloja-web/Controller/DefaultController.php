@@ -1563,8 +1563,10 @@ class DefaultController extends AbstractController
 			$headers = array();
 			$names = array();
 			$count = 0;
-			foreach($rows as $row) {
-				if (array_key_exists($row['Field'],$header_names)) {
+			foreach($rows as $row)
+			{
+				if (array_key_exists($row['Field'],$header_names))
+				{
 					$headers[$count] = $row['Field'];
 					$names[$count++] = $header_names[$row['Field']];
 				}
@@ -1578,9 +1580,12 @@ class DefaultController extends AbstractController
 
 			$fp = fopen($cache_ds, 'w');
 			fputcsv($fp, $names,',','"');
-		    	foreach($rows as $row) {
+		    	foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
 				fputcsv($fp, array_values($row),',','"');
-		    	}
+			}
 
 			// run the R processor
 			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options;
@@ -1593,16 +1598,27 @@ class DefaultController extends AbstractController
 
 		// read results of the CSV
 		$count = 0;
-		foreach (array("tt", "tv", "tr") as &$value) {
+		foreach (array("tt", "tv", "tr") as &$value)
+		{
 			if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
 				$header = fgetcsv($handle, 1000, ",");
 
 				$key_exec = array_search('Exe.Time', array_values($header));
 				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
 
+				$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-					$jsonExecs[$count++][] = (int)$data[$key_pexec];
-					$jsonExecs[$count-1][] = (int)$data[$key_exec];
+					$jsonExecs[$count]['y'] = (int)$data[$key_exec];
+					$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
+
+					$extra_data = "";
+					foreach(array_values($header) as &$value2)
+					{
+						$aux = array_search($value2, array_values($header));
+						if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
+						else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
+					}
+					$jsonExecs[$count++]['mydata'] = $extra_data;
 				}
 				fclose($handle);
 			}
@@ -1611,7 +1627,6 @@ class DefaultController extends AbstractController
     	} catch(\Exception $e) {
     		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
     	}
-    	
     	echo $this->container->getTwig()->render('mltemplate/mltemplate.html.twig',
     			array(
     					'selected' => 'mltemplate',

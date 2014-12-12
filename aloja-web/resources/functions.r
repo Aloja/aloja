@@ -1,7 +1,7 @@
 
 # Josep Ll. Berral-García
 # ALOJA-BSC-MSR hadoop.bsc.es
-# 2014-11-24
+# 2014-12-11
 # Function library for ALOJA-ML
 
 library(stringr);
@@ -469,9 +469,9 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["varout"]] <- vout;
 	
 	# Training and Validation
-	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=hlayers,decay=decay,maxit=maxit);	# FIXME - Remember why x had out "8 and 26"
+	rt[["model"]] <- nnet(y=rt$normtrainset[,vout],x=rt$normtrainset[,vin],size=hlayers,decay=decay,maxit=maxit);
 	rt[["predtrain"]] <- rt$model$fitted.values;
-	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);						# FIXME - Same as above (x out 8 and 26)
+	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);
 	if (!is.null(prange))
 	{
 		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
@@ -491,7 +491,7 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,vin]);						# FIXME - Same as above (x out 8 and 26)
+	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,vin]);
 	if (!is.null(prange))
 	{
 		rt$predtest[rt$predtest < prange[1]] <- prange[1];
@@ -560,6 +560,12 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
 	}
 
+	if (ppoly > 3 || ppoly < 1)
+	{
+		if (ppoly > 3) ppoly <- 3;
+		if (ppoly < 1) ppoly <- 1;
+		print(paste("[WARNING] Parameter ppoly not in [1,3]. ppoly=",ppoly," will be used instead",sep=""));
+	}
 	rt[["ppoly"]] <- ppoly;
 
 	# Training and Validation
@@ -620,13 +626,13 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	rt;
 }
 
-aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = 1, iparam = TRUE)
+aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, kparam = NULL, iparam = TRUE)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
 	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
-	if (!is.integer(kparam)) kparam <- as.integer(kparam);
+	if (!is.integer(kparam) && !is.null(kparam)) kparam <- as.integer(kparam);
 
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
@@ -646,7 +652,12 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	rt[["kparam"]] <- kparam;
 	rt[["iparam"]] <- iparam;
 
-	# Training and Validation TODO - Parameter automatic choice
+	# Training and Validation
+	if (is.null(kparam))
+	{
+		rt[["selected_model"]] <- aloja_knn_select(vout, vin, rt$trainset, rt$validset, c("1","2","3","5","10","25","50","100"), iparam);
+		kparam <- rt$selected_model$kmin;
+	}
 	rt[["model"]] <- IBk(formula=rt$trainset[,vout] ~ . , data = rt$trainset[,vin], control = Weka_control(K = kparam, I = iparam));
 	#evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
 	rt[["predtrain"]] <- rt$model$predictions;
@@ -660,6 +671,12 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 		par(mfrow=c(1,2));
 		plot(rt$predval,rt$validset[,vout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
 		abline(0,1);
+		if (!is.null(rt$selected_model))
+		{
+			plot(rt$selected_model$trmae,ylim=c(min(c(rt$selected_model$trmae,rt$selected_model$tvmae)),max(rt$selected_model$trmae,rt$selected_model$tvmae)),main="Error vs K");
+			points(rt$selected_model$tvmae,col="red");
+			legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
+		}
 		dev.off();
 	}
 
@@ -692,13 +709,14 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	rt;
 }
 
-aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, exsel = NULL, prange = NULL)
+aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, mparam = NULL, exsel = NULL, prange = NULL)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
 	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+	if (!is.integer(mparam) && !is.null(mparam)) mparam <- as.integer(mparam);
 
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
@@ -730,8 +748,12 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	}
 
 	# Training and Validation
-	rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"));
-	rt[["model"]] <- rt$selected_model$ml;
+	if (is.null(mparam))
+	{
+		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"));
+		mparam <- rt$selected_model$mmin;
+	}
+	rt[["model"]] <- M5P(formula=rt$trainset[,vout] ~ .,data=data.frame(rt$trainset[,vin]), control = Weka_control(M = mparam));
 	rt[["predtrain"]] <- rt$model$predictions;
 	rt[["predval"]] <- predict(rt$model,newdata=data.frame(rt$validset));
 	if (!is.null(prange))
@@ -748,11 +770,14 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	{
 		png(paste(pngval,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation M5P M = ",rt$selected_model$mmin));
+		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation M5P M = ",mparam));
 		abline(0,1);
-		plot(rt$selected_model$trmae,ylim=c(min(c(rt$selected_model$trmae,rt$selected_model$tvmae)),max(rt$selected_model$trmae,rt$selected_model$tvmae)),main="Error vs M");
-		points(rt$selected_model$tvmae,col="red");
-		legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
+		if (!is.null(rt$selected_model))
+		{
+			plot(rt$selected_model$trmae,ylim=c(min(c(rt$selected_model$trmae,rt$selected_model$tvmae)),max(rt$selected_model$trmae,rt$selected_model$tvmae)),main="Error vs M");
+			points(rt$selected_model$tvmae,col="red");
+			legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
+		}
 		dev.off();
 	}
 
@@ -882,32 +907,63 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict)
 # Fine-tunning parameters for Learning Algorithms                             #
 ###############################################################################
 
-#TODO - Improve overfitting detection
-aloja_m5p_select <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
+aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals)
 {
-	trmae_1 <- NULL;
-	tvmae_1 <- NULL;
-	for (i in mintervals_1)
+	trmae <- NULL;
+	tvmae <- NULL;
+	mmin <- 0;
+	mminmae <- 9e+15;
+	off_threshold <- 1e-4;
+	for (i in mintervals)
 	{
-		ml_1 <- M5P(formula=traux_1[,vout_1] ~ .,data=data.frame(traux_1[,vin_1]), control = Weka_control(M = i));
-		mae <- (sum(abs(ml_1$predictions - traux_1[,vout_1])))/length(traux_1[,1]);
-		trmae_1 <- c(trmae_1,mae);
+		ml <- M5P(formula=traux[,vout] ~ .,data=data.frame(traux[,vin]), control = Weka_control(M = i));
+		mae <- mean(abs(ml$predictions - traux[,vout]));
+		trmae <- c(trmae,mae);
 
-		prediction <- predict(ml_1,newdata=data.frame(tvaux_1));
-		mae <- (sum(abs(prediction - tvaux_1[,vout_1])))/length(tvaux_1[,1]);
-		tvmae_1 <- c(tvmae_1,mae);
+		prediction <- predict(ml,newdata=data.frame(tvaux));
+		mae <- mean(abs(prediction - tvaux[,vout]));
+		tvmae <- c(tvmae,mae);
+
+		if (mae < mminmae - off_threshold) { mmin <- i; mminmae <- mae;	}
 	}
-
-	mmin_1 <- mintervals_1[which.min(tvmae_1)];
-	ml_1 <- M5P(formula=traux_1[,vout_1] ~ .,data=data.frame(traux_1[,vin_1]), control = Weka_control(M = mmin_1));
-
-	print (mean(abs(ml_1$predictions - traux_1[,vout_1])));
+	print (paste("Selected M:",mmin));	
 
 	retval <- list();
-	retval[["ml"]] <- ml_1;
-	retval[["trmae"]] <- trmae_1;
-	retval[["tvmae"]] <- tvmae_1;
-	retval[["mmin"]] <- mmin_1;
+	retval[["trmae"]] <- trmae;
+	retval[["tvmae"]] <- tvmae;
+	retval[["mmin"]] <- mmin;
+	retval[["mintervals"]] <- mintervals;
+	
+	retval;
+}
+
+aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam)
+{
+	trmae <- NULL;
+	tvmae <- NULL;
+	kmin <- 0;
+	kminmae <- 9e+15;
+	off_threshold <- 1e-4;
+	for (i in kintervals)
+	{
+		ml <- IBk(formula=traux[,vout] ~ .,data=data.frame(traux[,vin]), control = Weka_control(K = i, I = iparam));
+		mae <- mean(abs(ml$predictions - traux[,vout]));
+		trmae <- c(trmae,mae);
+
+		prediction <- predict(ml,newdata=data.frame(tvaux));
+		mae <- mean(abs(prediction - tvaux[,vout]));
+		tvmae <- c(tvmae,mae);
+
+		if (mae < kminmae - off_threshold) { kmin <- i; kminmae <- mae; }
+	}
+	print (paste("Selected K:",kmin));	
+
+	retval <- list();
+	retval[["trmae"]] <- trmae;
+	retval[["tvmae"]] <- tvmae;
+	retval[["kmin"]] <- kmin;
+	retval[["kintervals"]] <- kintervals;
+	retval[["inverse"]] <- iparam;
 	
 	retval;
 }
@@ -918,6 +974,8 @@ aloja_m5p_select <- function (vout_1, vin_1, traux_1, tvaux_1, mintervals_1)
 
 aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 {
+	vinaux <- vin;
+
 	dsbin <- aloja_binarize_ds(ds[,c(vout,vin)]);
 	vin <- colnames(dsbin[,-1]);
 
@@ -927,12 +985,16 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	pc[["pcaset"]] <- cbind(dataset[,"ID"],dsbin[,vout],pc$scores);
 	colnames(pc$pcaset) <- c("ID",vout,colnames(pc$scores));
 
+	pc[["vin_orig"]] <- vinaux;
+	pc[["vin"]] <- vin;
+	pc[["vout"]] <- vout;
+
 	if (!is.null(pngpca))
 	{
 		system("mkdir -p temp");
 		for (var1 in 1:(length(pc$scores[1,])-1))
 		{
-			for (var2 in (var1 + 1):length(pc$scores[1,]))
+			for (var2 in (var1 + 1):ncol(pc$scores))
 			{
 				png(paste("temp/",pngpca,"-",var1,"-",var2,".png",sep=""),width=1000,height=500);
 					plot(1, type="n", xlim=c(min(pc$scores[,var1]),max(pc$scores[,var1])),ylim=c(min(pc$scores[,var2]),max(pc$scores[,var2])), xlab="", ylab="");
@@ -949,10 +1011,90 @@ aloja_pca <- function (ds, vin, vout, pngpca = NULL, saveall = NULL)
 	{
 		write.table(pc$dataset, file = paste(saveall,"-dataset.csv",sep=""), sep = ",", row.names=FALSE);
 		write.table(pc$pcaset, file = paste(saveall,"-transformed.csv",sep=""), sep = ",", row.names=FALSE);
+		aloja_save_object(pc,tagname=saveall);
 	}
 
 	pc;
 }
+
+aloja_transform_data <- function (ds, pca_obj = NULL, pca_name = NULL, saveall = NULL)
+{
+	retval <- NULL;
+	
+	if (is.null(pca_name) && is.null(pca_obj))
+	{
+		print("[WARNING] No PCA object or file introduced");
+		retval;
+	}
+
+	if (!is.null(pca_name))	pca_obj <- aloja_load_object(pca_name);
+
+	dsbaux <- aloja_binarize_ds(ds[,pca_obj$vin_orig]);
+	vin <- colnames(dsbaux);
+
+	retval[["dataset"]] <- dsbaux;
+	retval[["vin"]] <- vin;
+	retval[["pca"]] <- pca_obj;
+
+	dspca <- predict(pca_obj,dsbaux);
+	retval[["pcaset"]] <- dspca;	
+
+	if (!is.null(saveall))
+	{
+		write.table(dspca, file = paste(saveall,"-transformed.csv",sep=""), sep = ",", row.names=FALSE);
+	}
+
+	retval;
+}
+
+aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name = NULL, verbose = 0)
+{
+	retval <- NULL;
+	
+	if (is.null(pca_name) && is.null(pca_obj))
+	{
+		print("[WARNING] No PCA object or file introduced");
+		retval;
+	}
+
+	if (!is.null(pca_name)) pca_obj <- aloja_load_object(pca_name);
+
+	datamodel <- pca_obj$dataset[1,pca_obj$vin];
+	for (name_1 in colnames(datamodel))
+	{
+		if (name_1 %in% pca_obj$vin_orig)
+		{
+			var_aux <- inst_transform[which(pca_obj$vin_orig==name_1)];
+			class(var_aux) <- class(datamodel[1,name_1]);
+			datamodel[1,name_1] <- var_aux;
+		} else {
+			if (length(which(inst_transform==name_1)) >= 1)
+			{
+				datamodel[1,name_1] <- 1;
+			} else {
+				datamodel[1,name_1] <- 0;
+			}
+		}
+	}
+	vin <- colnames(datamodel);
+
+	retval[["instance"]] <- datamodel;
+	retval[["vin"]] <- vin;
+	retval[["pca"]] <- pca_obj;
+
+	dspca <- predict(pca_obj,datamodel);
+	retval[["pcainst"]] <- dspca;
+
+	if (verbose == 2)
+	{
+		retval;
+	} else if (verbose == 1) {
+		retval$pcainst;
+	} else {
+		paste(retval$pcainst,collapse=",");
+	}
+}
+
 
 aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimname1, dimname2, saveall = NULL)
 {
@@ -975,7 +1117,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	{
 		dim1_aux <- dsaux[i,dimname1];
 		dim2_aux <- dsaux[i,dimname2];
-		maux[dim1_aux,dim2_aux] <- dsaux[i,varout];
+		maux[dim1_aux,dim2_aux] <- dsaux[i,vout];
 		midaux[dim1_aux,dim2_aux] <- dsid[i];
 	}
 
@@ -986,6 +1128,7 @@ aloja_dataset_collapse <- function (ds, vin, vout, dimension1, dimension2, dimna
 	{
 		write.table(retval$matrix,file=paste(saveall,"-matrix.csv",sep=""),sep=",",row.names=TRUE);
 		write.table(retval$IDs,file=paste(saveall,"-ids.csv",sep=""),sep=",",row.names=TRUE);
+		aloja_save_object(retval,tagname=saveall);
 	}
 
 	retval;
@@ -1006,8 +1149,8 @@ aloja_dataset_clustering <- function (datamatrix, k = 3, na.predict = NULL)
 		{
 			if (is.na(maux[i]))
 			{
-				row_aux <- ((i-1) %% length(maux[,1])) + 1;
-				col_aux <- ((i-1) %/% length(maux[,1])) + 1;
+				row_aux <- ((i-1) %% nrow(maux)) + 1;
+				col_aux <- ((i-1) %/% nrow(maux)) + 1;
 
 				dim1_aux <- rownames(maux)[row_aux];
 				dim2_aux <- colnames(maux)[col_aux];
@@ -1100,8 +1243,16 @@ aloja_check_cluster <- function (kcluster, bmk.vector) # FIXME - Problema de dis
 	retval;
 }
 
-aloja_best_configurations <- function (bvectors) # bvectors = dsc2
+aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL) # bvectors = dsc2
 {
+	if (is.null(bvectors) && is.null(bvec_name))
+	{
+		print("[WARNING] No Vector Matrix object or file introduced");
+		NULL;
+	}
+
+	if (!is.null(bvec_name)) bvectors <- aloja_load_object(bvec_name);
+
 	result <- data.frame(Config=character(),Variance=numeric(),Benchmarks=integer(),stringsAsFactors=FALSE);
 	for(i in 1:ncol(bvectors$matrix))
 	{
