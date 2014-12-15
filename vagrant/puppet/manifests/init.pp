@@ -45,6 +45,10 @@ exec { 'chmod_vendor':
 }
 
 
+class { 'apt':
+  disable_keys => true, #dissable security check for php5
+}
+
 include apt
 apt::ppa { 'ppa:ondrej/php5': }
 
@@ -158,5 +162,6 @@ File['/var/www/'] -> File['/var/www/aloja-web/logs']
 File['/var/www/'] -> Vcsrepo['/var/presentations/']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
 Class['::mysql::server'] -> Exec['third_party_libs']
+Exec['third_party_libs'] -> Service['php5-fpm']
 Exec['third_party_libs'] -> Exec['chmod_vendor']
 Exec['third_party_libs'] -> Exec['db_migrations']
