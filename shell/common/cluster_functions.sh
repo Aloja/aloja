@@ -959,7 +959,7 @@ vm_set_master_forer() {
 vm_puppet_apply() {
 
   logger "Transfering puppet to VM"
-  vm_local_scp "$puppet" "~/" "-rp"
+  vm_rsync "$puppet" "~/" ""
   logger "Puppet install modules and apply"
 
 	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"
