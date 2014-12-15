@@ -41,30 +41,25 @@ MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-
 DB="aloja2"
 MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
 
-#logger "Dropping database $DB"
-#sudo mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
+#TODO temporal
+mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
+
   sudo mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
-  source "$CUR_DIR/common/create_db.sh"
+  source "$CUR_DIR/create_db.sh"
 fi
 
 ######################################
-
-#filter folders by date
-min_date="20120101"
-min_time="$(date --utc --date "$min_date" +%s)"
 
 logger "Starting"
 
 for folder in 201* ; do
 
-  cd "$BASE_DIR" #make sure we come back to the starting folder
-  logger "Iterating folder\t$folder CP: $(pwd)"
+  logger "Iterating folder\t$folder"
 
-  folder_time="$(date --utc --date "${folder:0:8}" +%s)"
-
-  if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
+  #TODO and folder not in list of folders to avoid repetitions
+  if [[ -d "$folder" ]] && [ "${folder:0:8}" -gt "20120101" ] ; then
     logger "Entering folder\t$folder"
     cd "$folder"
 
@@ -74,7 +69,6 @@ for folder in 201* ; do
 
     if [[ -z $exec_params ]] ; then
       logger "ERROR: cannot find exec details in log. Exiting folder..."
-      cd ..
       continue
     else
       logger "Exec params:\n$exec_params"
@@ -103,7 +97,7 @@ for folder in 201* ; do
         tar -xjf "$bzip_file"
       fi
 
-      if [ -d "$bench_folder" ] ; then
+      if [ ! -d "$bench_folder" ] ; then
 
         logger "Entering $bench_folder"
         cd "$bench_folder"
@@ -150,9 +144,25 @@ for folder in 201* ; do
           #continue
         fi
 
-        #get Job XML configuration if needed
-        #get_job_confs
+        id_exec=""
+        get_id_exec_conf_params "$exec"
+        
+        if [[ ! -z "$id_exec" ]] ; then
+        	jobconfs=""
+          #get_job_confs
 
+			#Dump parameters from valid conf files to DB
+			for job_conf in $jobconfs ; do
+				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+				filename=$(basename "$job_conf")
+				job_name="${filename%.*}"
+				job_name="${job_name:0:(-5)}"
+				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+			done
+      else
+        logger "ERROR: $bench_folder does not exist"
+		  fi
+		
 		    id_exec=""
         get_id_exec "$exec"
 
@@ -297,16 +307,13 @@ for folder in 201* ; do
                   logger "File $bwm_file is INVALID"
                 fi
               done
+
             fi
+
           fi
-          cd ..; logger "Leaving folder $bench_folder\n"
-      else
-        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
-      fi
-    done #end for bzip file
-    cd ..; logger "Leaving folder $folder\n"
-  else
-    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
-    [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
+          cd ..; logger "\n"
+        fi
+    done
+    cd ..; logger "\n"
   fi
-done #end for folder
+done
