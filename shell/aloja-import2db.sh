@@ -144,9 +144,25 @@ for folder in 201* ; do
           #continue
         fi
 
-        #get Job XML configuration if needed
-        #get_job_confs
+        id_exec=""
+        get_id_exec_conf_params "$exec"
+        
+        if [[ ! -z "$id_exec" ]] ; then
+        	jobconfs=""
+          #get_job_confs
 
+			#Dump parameters from valid conf files to DB
+			for job_conf in $jobconfs ; do
+				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+				filename=$(basename "$job_conf")
+				job_name="${filename%.*}"
+				job_name="${job_name:0:(-5)}"
+				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+			done
+      else
+        logger "ERROR: $bench_folder does not exist"
+		  fi
+		
 		    id_exec=""
         get_id_exec "$exec"
 
