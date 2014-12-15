@@ -14,7 +14,9 @@ before_script:
 install:
   - npm install
   - cd aloja-web && composer update && cd ..
-script: bash tests.sh
+script:
+  - bash tests.sh
+  - bash tests_phpunit.sh
 services:
   - mysql
 notifications:
