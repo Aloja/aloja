@@ -93,8 +93,8 @@ class DBUtils
         if($filter_execs === null)
             $filter_execs = "
 AND exe_time > 200
-#AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
-#AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null)
+AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
+AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null)
 ";
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
