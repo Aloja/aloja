@@ -3,7 +3,7 @@ class confvarnish {
     class { 'varnish': 
     varnish_listen_port => 80,
     varnish_storage_size => '1G',
-    varnish_ttl => '365d'
+    varnish_ttl => '5s'
     }
 
     #Default vcl file for varnish
