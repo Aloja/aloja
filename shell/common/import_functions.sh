@@ -110,11 +110,9 @@ insert_conf_params_DB(){
 }
 
 get_job_confs() {
-
   id_exec_conf_params=""
   get_id_exec_conf_params "$exec"
 
-  logger "Attempting to get XML configuration for ID get_id_exec_conf_params"
   if [[ ! -z "$id_exec_conf_params" ]] ; then
     jobconfs=""
     #get Haddop conf files which are NOT jobs of prep
@@ -146,7 +144,7 @@ get_job_confs() {
     done
 
   else
-    logger "ERROR: cannot get id_exec for $bench_folder"
+    logger "ERROR: $bench_folder does not exist"
   fi
 }
 
