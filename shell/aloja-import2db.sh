@@ -3,7 +3,7 @@
 INSERT_DB=1 #if to dump CSV into the DB
 DROP_DB_FIRST= #if to drop whatever is there on the first folder
 REDO_ALL=1 #if to redo folders that have source files
-REDO_UNTARS=1 #if to redo the untars for folders that have it
+REDO_UNTARS= #if to redo the untars for folders that have it
 INSERT_BY_EXEC=1 #if to insert right after each folder
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -41,25 +41,30 @@ MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-
 DB="aloja2"
 MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
 
-#TODO temporal
-mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
+#logger "Dropping database $DB"
+#sudo mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
-
   sudo mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
-  source "$CUR_DIR/create_db.sh"
+  source "$CUR_DIR/common/create_db.sh"
 fi
 
 ######################################
+
+#filter folders by date
+min_date="20120101"
+min_time="$(date --utc --date "$min_date" +%s)"
 
 logger "Starting"
 
 for folder in 201* ; do
 
-  logger "Iterating folder\t$folder"
+  cd "$BASE_DIR" #make sure we come back to the starting folder
+  logger "Iterating folder\t$folder CP: $(pwd)"
 
-  #TODO and folder not in list of folders to avoid repetitions
-  if [[ -d "$folder" ]] && [ "${folder:0:8}" -gt "20120101" ] ; then
+  folder_time="$(date --utc --date "${folder:0:8}" +%s)"
+
+  if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
     logger "Entering folder\t$folder"
     cd "$folder"
 
@@ -69,6 +74,7 @@ for folder in 201* ; do
 
     if [[ -z $exec_params ]] ; then
       logger "ERROR: cannot find exec details in log. Exiting folder..."
+      cd ..
       continue
     else
       logger "Exec params:\n$exec_params"
@@ -97,7 +103,7 @@ for folder in 201* ; do
         tar -xjf "$bzip_file"
       fi
 
-      if [ ! -d "$bench_folder" ] ; then
+      if [ -d "$bench_folder" ] ; then
 
         logger "Entering $bench_folder"
         cd "$bench_folder"
@@ -291,13 +297,16 @@ for folder in 201* ; do
                   logger "File $bwm_file is INVALID"
                 fi
               done
-
             fi
-
           fi
-          cd ..; logger "\n"
-        fi
-    done
-    cd ..; logger "\n"
+          cd ..; logger "Leaving folder $bench_folder\n"
+      else
+        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
+      fi
+    done #end for bzip file
+    cd ..; logger "Leaving folder $folder\n"
+  else
+    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
+    [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
   fi
-done
+done #end for folder
