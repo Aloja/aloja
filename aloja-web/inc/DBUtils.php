@@ -91,15 +91,14 @@ class DBUtils
     public function get_execs($filter_execs = null)
     {
         if($filter_execs === null)
-            $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+            $filter_execs = "
+AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))
+AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
+AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null)  ";
 
-        $filter_execs = "";
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
         join clusters USING (id_cluster)
         WHERE 1 $filter_execs  ;";
-//        #AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null and host not like '%-1001');
-//        #AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001');
-//        ";
 
         return $this->get_rows($query);
     }
