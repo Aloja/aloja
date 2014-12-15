@@ -18,7 +18,7 @@ class php {
     owner => root, group => root, mode => 444,
     notify => Service['php5-fpm'],
     content => "
-#memory_limit = 512MB
+#memory_limit = 1024MB
 #display_errors = 1
 zend_extension=/usr/lib/php5/20121212/xdebug.so
 xdebug.default_enable = 1
