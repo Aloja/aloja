@@ -91,7 +91,7 @@ get_id_exec(){
 }
 
 get_id_exec_conf_params(){
-    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
+    id_exec_conf_params=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
     AND id_exec NOT IN (select distinct (id_exec) from execs_conf_parameters where id_exec is not null)
     LIMIT 1;"| tail -n 1)
 }
@@ -110,23 +110,41 @@ insert_conf_params_DB(){
 }
 
 get_job_confs() {
-  #get Haddop conf files which are NOT jobs of prep
-  if [ -d "prep_$bench_folder" ]; then
-    #1st: get jobs in prep
-    cd ../"prep_$bench_folder"
-    prepjobs=$(find "./history/done" -type f -name "job*.xml");
-    #2nd: get jobs in bench folder
-    cd ../$bench_folder
-    jobconfs=$(find "./history/done" -type f -name "job*.xml");
-    #3rd: 2 files, with one line per job in bench folder and prep folder
-    echo $jobconfs | tr ' ' '\n' > file.tmp
-    echo $prepjobs | tr ' ' '\n' > file2.tmp
-    #4rd: strip jobs in prep folder and cleanup
-    jobconfs=$(grep -v -f file2.tmp file.tmp)
-    rm file.tmp file2.tmp
+  id_exec_conf_params=""
+  get_id_exec_conf_params "$exec"
+
+  if [[ ! -z "$id_exec_conf_params" ]] ; then
+    jobconfs=""
+    #get Haddop conf files which are NOT jobs of prep
+    if [ -d "prep_$bench_folder" ]; then
+      #1st: get jobs in prep
+      cd ../"prep_$bench_folder"
+      prepjobs=$(find "./history/done" -type f -name "job*.xml");
+      #2nd: get jobs in bench folder
+      cd ../$bench_folder
+      jobconfs=$(find "./history/done" -type f -name "job*.xml");
+      #3rd: 2 files, with one line per job in bench folder and prep folder
+      echo $jobconfs | tr ' ' '\n' > file.tmp
+      echo $prepjobs | tr ' ' '\n' > file2.tmp
+      #4rd: strip jobs in prep folder and cleanup
+      jobconfs=$(grep -v -f file2.tmp file.tmp)
+      rm file.tmp file2.tmp
+    else
+      logger "Not prep folder, considering all confs belonging to exec"
+      jobconfs=$(find "./history/done" -type f -name "job*.xml");
+    fi
+
+    #Dump parameters from valid conf files to DB
+    for job_conf in $jobconfs ; do
+      params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+      filename=$(basename "$job_conf")
+      job_name="${filename%.*}"
+      job_name="${job_name:0:(-5)}"
+      insert_conf_params_DB "$params" "$id_exec_conf_params" "$job_name"
+    done
+
   else
-    logger "Not prep folder, considering all confs belonging to exec"
-    jobconfs=$(find "./history/done" -type f -name "job*.xml");
-			fi
+    logger "ERROR: $bench_folder does not exist"
+  fi
 }
 
