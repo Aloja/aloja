@@ -161,7 +161,7 @@ class RestController extends AbstractController
 
     public function export2prvAction()
     {
-        ini_set('memory_limit', '256M');
+        //ini_set('memory_limit', '256M');
         error_reporting(512);
 
         try {
@@ -772,7 +772,7 @@ VALUES
 
     public function dbscanexecsDataAction()
     {
-        ini_set('memory_limit', '384M');
+        //ini_set('memory_limit', '384M');
 
         $db = $this->container->getDBUtils();
 
