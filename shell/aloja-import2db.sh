@@ -3,7 +3,7 @@
 INSERT_DB=1 #if to dump CSV into the DB
 DROP_DB_FIRST= #if to drop whatever is there on the first folder
 REDO_ALL=1 #if to redo folders that have source files
-REDO_UNTARS= #if to redo the untars for folders that have it
+REDO_UNTARS=1 #if to redo the untars for folders that have it
 INSERT_BY_EXEC=1 #if to insert right after each folder
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -144,9 +144,25 @@ for folder in 201* ; do
           #continue
         fi
 
-        #get Job XML configuration if needed
-        #get_job_confs
+        id_exec=""
+        get_id_exec_conf_params "$exec"
+        
+        if [[ ! -z "$id_exec" ]] ; then
+        	jobconfs=""
+          #get_job_confs
 
+			#Dump parameters from valid conf files to DB
+			for job_conf in $jobconfs ; do
+				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
+				filename=$(basename "$job_conf")
+				job_name="${filename%.*}"
+				job_name="${job_name:0:(-5)}"
+				insert_conf_params_DB "$params" "$id_exec" "$job_name"
+			done
+      else
+        logger "ERROR: $bench_folder does not exist"
+		  fi
+		
 		    id_exec=""
         get_id_exec "$exec"
 
