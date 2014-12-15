@@ -108,6 +108,7 @@
                 // Load chart options from html form
                 var metric_x = form.find("[name='metric_x']");
                 var metric_y = form.find("[name='metric_y']");
+                var task_type = form.find("[name='type']");
 
                 // Launch ajax request
                 $.ajax({
@@ -115,6 +116,7 @@
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
+                        task_type: task_type.val(),
                     },
                 })
                 .done(function(data) {
@@ -213,6 +215,7 @@
                 },
                 plotOptions: {
                     series: {
+                        turboThreshold: Number.MAX_VALUE,
                         animation: false,
                         point: {
                             events: {
@@ -262,6 +265,16 @@
             {% for current_metric in METRICS %}
                 <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
             {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task type:
+            <select name="type" class="form-control">
+                <option value="MAP">Map</option>
+                <option value="REDUCE">Reduce</option>
+                <option value="CLEANUP">Cleanup</option>
+                <option value="SETUP">Setup</option>
+                <option value="">All</option>
             </select>
         </label>
     </form>

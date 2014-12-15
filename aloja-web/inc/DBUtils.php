@@ -149,22 +149,47 @@ class DBUtils
         }
     }
 
-    public function get_task_type_query($task_type)
+    public function get_task_type($task_type)
     {
-        if ($task_type === 'MAP' || $task_type === 'REDUCE' || $task_type === 'CLEANUP' || $task_type === 'SETUP') {
+        if ($task_type === 'MAP') {
+            return 'MAP';
+        } else if ($task_type === 'REDUCE') {
+            return 'REDUCE';
+        } else if ($task_type === 'CLEANUP') {
+            return 'CLEANUP';
+        } else if ($task_type === 'SETUP') {
+            return 'SETUP';
+        } else {
+            return null;
+        }
+    }
+
+    public function get_task_type_query($task_type, $filter_null = false)
+    {
+        $task_type = $this->get_task_type($task_type);
+        if ($task_type !== null) {
+            // Filter only by the specified type
             return function($table) use ($task_type) { return "AND $table.`TASK_TYPE` LIKE '$task_type'"; };
         } else {
-            return function($table) use ($task_type) { return ""; };
+            if ($filter_null === true) {
+                // Filter type is null
+                return function($table) use ($task_type) { return "AND $table.`TASK_TYPE` IS NULL"; };
+            } else {
+                // Empty filter
+                // (instead of filtering by null type, avoid this condition)
+                return function($table) use ($task_type) { return ""; };
+            }
         }
     }
 
     /**
      * Calculates the DBSCAN.
      */
-    public function get_dbscan($jobid, $metric_x, $metric_y, $eps = null, $minPoints = null)
+    public function get_dbscan($jobid, $metric_x, $metric_y, $task_type, $eps = null, $minPoints = null)
     {
         $query_select1 = $this->get_task_metric_query($this::$TASK_METRICS[$metric_x]);
         $query_select2 = $this->get_task_metric_query($this::$TASK_METRICS[$metric_y]);
+        $task_type_select = $this->get_task_type_query($task_type);
         $query = "
             SELECT
                 t.`TASKID` as TASK_ID,
@@ -172,6 +197,7 @@ class DBUtils
                 ".$query_select2('t')." as TASK_VALUE_Y
             FROM `JOB_tasks` t
             WHERE t.`JOBID` = :jobid
+            ".$task_type_select('t')."
             ORDER BY t.`TASKID`
         ;";
         $query_params = array(":jobid" => $jobid);
@@ -195,7 +221,7 @@ class DBUtils
 
         // If heuristic was used, cache results in database
         if ($eps === null && $minPoints === null) {
-            $this->add_dbscan($jobid, $metric_x, $metric_y, $dbscan->getClusters());
+            $this->add_dbscan($jobid, $metric_x, $metric_y, $task_type, $dbscan->getClusters());
         }
 
         return $dbscan;
@@ -205,9 +231,15 @@ class DBUtils
      * Adds the clusters of the DBSCAN result to the database. Does NOT replace
      * existing ones.
      */
-    public function add_dbscan($jobid, $metric_x, $metric_y, $clusters)
+    public function add_dbscan($jobid, $metric_x, $metric_y, $task_type, $clusters)
     {
+        // If DBSCAN result is empty, don't do anything
+        if (empty($clusters)) {
+            return;
+        }
+
         list($bench, $job_offset, $id_exec) = $this->get_jobid_info($jobid);
+        $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
 
         // Start transaction
         // We need this here because we are going to SELECT some data to check
@@ -225,6 +257,7 @@ class DBUtils
                 `metric_x` = :metric_x AND
                 `metric_y` = :metric_y AND
                 `id_exec` = :id_exec
+                ".$task_type_select('JOB_dbscan')."
             LOCK IN SHARE MODE
         ;";
         $query_params = array(
@@ -243,7 +276,7 @@ class DBUtils
         }
 
         // Insert new clusters
-        $this->insert_dbscan($bench, $job_offset, $id_exec, $metric_x, $metric_y, $clusters);
+        $this->insert_dbscan($bench, $job_offset, $id_exec, $metric_x, $metric_y, $task_type, $clusters);
 
         // End transaction (outside of que SELECT + INSERT block)
         $this->dbConn->commit();
@@ -289,8 +322,9 @@ class DBUtils
      *
      * Returns a list containing arrays with 'bench', 'id_exec' and 'jobid'.
      */
-    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y)
+    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type)
     {
+        $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
         $query = "
             SELECT
                 e.`bench`,
@@ -307,10 +341,18 @@ class DBUtils
                 s.`metric_x` = :metric_x AND
                 s.`metric_y` = :metric_y AND
                 d.`id_exec` = s.`id_exec`
+                ".$task_type_select('s')."
+
+            LEFT OUTER JOIN `JOB_tasks` t
+            ON
+                d.`JOBID` = t.`JOBID`
+                ".$task_type_select('t')."
 
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset
             AND s.`id` IS null
+            AND t.`JOBID` IS NOT null
+            GROUP BY e.`bench`, d.`id_exec`, d.`JOBID`
             ORDER BY d.`id_exec`
         ;";
         $query_params = array(
@@ -333,9 +375,9 @@ class DBUtils
      *
      * Warning: doesn't check for duplicates neither removes previous clusters.
      */
-    private function insert_dbscan($bench, $job_offset, $id_exec, $metric_x, $metric_y, $clusters)
+    private function insert_dbscan($bench, $job_offset, $id_exec, $metric_x, $metric_y, $task_type, $clusters)
     {
-        $columns = ["`bench`", "`job_offset`", "`metric_x`", "`metric_y`", "`id_exec`", "`centroid_x`", "`centroid_y`"];
+        $columns = ["`bench`", "`job_offset`", "`metric_x`", "`metric_y`", "`TASK_TYPE`", "`id_exec`", "`centroid_x`", "`centroid_y`"];
 
         $query_params = [];
         foreach ($clusters as $cluster) {
@@ -343,6 +385,7 @@ class DBUtils
             $query_params[] = $job_offset;
             $query_params[] = $metric_x;
             $query_params[] = $metric_y;
+            $query_params[] = $task_type;
             $query_params[] = $id_exec;
             $query_params[] = $cluster->getCentroid()->x;
             $query_params[] = $cluster->getCentroid()->y;
