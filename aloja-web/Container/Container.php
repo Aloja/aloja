@@ -37,10 +37,13 @@ class Container
         if ($this->in_dev()) {
             ini_set('display_errors', 'On');
             error_reporting(E_ALL);
-            ini_set('memory_limit', '256M');
+            ini_set('memory_limit', '512M');
             $container['config'] = Yaml::parse('config/config.sample.yml');
             $container['env'] = 'dev';
-        } else {            
+        } else {
+            ini_set('display_errors', 'On');
+            error_reporting(E_ALL);
+            ini_set('memory_limit', '512M');
             $container['config'] = Yaml::parse('config/config.yml');
             $container['env'] = 'prod';
         }
