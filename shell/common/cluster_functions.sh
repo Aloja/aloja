@@ -632,12 +632,13 @@ vm_install_base_packages() {
 
       #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
-      #only update apt sources when is 1 week old (600000) to save time
+      #only update apt sources when is 1 day old (86400) to save time
       local install_packages_command='
-if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 600000 ]; then
-  sudo apt-get update -m;
-fi
+#if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 86400 ]; then
+#  sudo apt-get update -m;
+#fi
 
+sudo apt-get update -m;
 sudo apt-get install -y -f '
 
       local install_packages_command="$install_packages_command ssh $base_packages;"
