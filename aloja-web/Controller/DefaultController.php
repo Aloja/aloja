@@ -431,7 +431,7 @@ class DefaultController extends AbstractController
                     'minerva-2','minerva-3','minerva-4',
                     'minerva-6','minerva-7','minerva-8',
                     'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
-
+                    'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
                 );
             } elseif ($hosts == 'Master') {
                 $selected_hosts = array(
@@ -440,6 +440,7 @@ class DefaultController extends AbstractController
                     'minerva-1',
                     'minerva-6',
                     'minerva-5',
+                    'rl-06-00',
                 );
             } else {
                 $selected_hosts = array($hosts);
