@@ -27,7 +27,7 @@ foreach($benchmark in $benchmarks) {
    foreach($reduceNumber in $reducersNumber) {
 	  $outputfile = "/example/data/"+$benchmark+"-output_"+$c
 	  $inputfile = "/example/data/"+$benchmark+"-input"
-	  $scriptName = "run"+$benchmark+".ps1"
+	  $scriptName = "./run"+$benchmark+".ps1"
 	 # Write-Verbose "Removing output data"
 	  #DeleteStorageFile $outputfile $storageAccount $storageKey $containerName
 	  Write-Verbose "Logging into Azure"
