@@ -15,7 +15,6 @@ try {
     $container = new Container();
     $router = $container->getRouter();
     $router->loadRoutesFromFile('config/router.yml');
-$this->container['log']->addDebug('GOT into index.php');
     if(isset($_GET['c']) && $_GET['c'] == '404') {
     	unset($_GET['c']);
     	$controllerMethod = (isset($_GET['q'])) ? $router->getLegacyRoute($_GET['q']) : null;
@@ -45,3 +44,4 @@ $this->container['log']->addDebug('GOT into index.php');
       $container->displayServerError();
     }
 }
+$this->container['log']->addDebug('GOT into index.php');
