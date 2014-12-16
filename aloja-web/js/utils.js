@@ -14,3 +14,13 @@ function strpos(haystack, needle, offset) {
 function isNumber(n) {
 	return !isNaN(parseFloat(n)) && isFinite(n);
 }
+
+/**
+ * Modifies the current url changing the query parameters to the ones present
+ * in the passed map
+ */
+function setUrlQuery(query) {
+	var uri = new URI();
+	uri.setQuery(query);
+	history.replaceState({}, '', uri.toString());
+}
