@@ -2,10 +2,10 @@
 
 INSERT_DB=1 #if to dump CSV into the DB
 DROP_DB_FIRST= #if to drop whatever is there on the first folder
-REDO_ALL=1 #if to redo folders that have source files
+REDO_ALL=1 #if to redo folders that have source files and IDs in DB
 REDO_UNTARS= #if to redo the untars for folders that have it
-INSERT_BY_EXEC=1 #if to insert right after each folder
-PARALLEL_INSERTS=1 #if to fork subprocecess when inserting data
+PARALLEL_INSERTS= #if to fork subprocecess when inserting data
+MOVE_TO_DONE= #if set moves completed folders to DONE
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
@@ -166,8 +166,7 @@ for folder in 201* ; do
 
           #if dir does not exists or need to insert in DB
           if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
-			
-              extract_hadoop_jobs
+            extract_hadoop_jobs
           fi
 
           #DB inserting scripts
@@ -191,12 +190,14 @@ for folder in 201* ; do
     done #end for bzip file
     cd ..; logger "Leaving folder $folder\n"
 
-    if (( "$folder_OK" >= 3 )) ; then
-      logger "OK=$folder_OK Moving folder $folder to DONE"
-      mkdir -p "$BASE_DIR/DONE"
-      mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
-    else
-      logger "OK=$folder_OK Leaving folder $folder out to revise"
+    if [ "$MOVE_TO_DONE" ] ; then
+      if (( "$folder_OK" >= 3 )) ; then
+        logger "OK=$folder_OK Moving folder $folder to DONE"
+        mkdir -p "$BASE_DIR/DONE"
+        mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
+      else
+        logger "OK=$folder_OK Leaving folder $folder out to revise"
+      fi
     fi
 
   else

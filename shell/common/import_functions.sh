@@ -89,9 +89,18 @@ get_exec_params(){
 }
 
 get_id_exec(){
-    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
-    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'
-    LIMIT 1;"| tail -n 1)
+
+    if [ "$REDO_ALL" ] ; then
+      local filter=""
+    else
+      local filter="AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'"
+    fi
+
+    local query="SELECT id_exec FROM execs WHERE exec = '$1' $filter LIMIT 1;"
+
+    #logger "GET ID EXEC query: $query"
+
+    id_exec=$($MYSQL "$query"| tail -n 1)
 }
 
 get_id_exec_conf_params(){
@@ -159,8 +168,7 @@ extract_hadoop_jobs() {
   job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
 
   logger "Generating Hadoop Job CSVs for $bench_folder"
-  #rm -rf "hadoop_job"
-  #rm -rf "sysstat"
+  rm -rf "hadoop_job"
   mkdir -p "hadoop_job"
 
   for job_file in $job_files ; do
@@ -188,12 +196,12 @@ import_hadoop_jobs() {
       table_name="JOB_${counter}"
       logger "Inserting into DB $csv_file TN $table_name"
       #add host and missing data to csv
-      awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp_${job_name}.csv
+      awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp_${csv_file}.csv
 
       if [ "$PARALLEL_INSERTS" ] ; then
-        insert_DB "${table_name}" "tmp_${job_name}" "" "," &
+        insert_DB "${table_name}" "tmp_${csv_file}.csv" "" "," &
       else
-        insert_DB "${table_name}" "tmp_${job_name}" "" ","
+        insert_DB "${table_name}" "tmp_${csv_file}.csv" "" ","
       fi
 
       local data_OK="1"
