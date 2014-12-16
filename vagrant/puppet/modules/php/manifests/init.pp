@@ -15,7 +15,7 @@ class php {
  if $environment == 'dev' {
   file {'/etc/php5/fpm/conf.d/90-overrides.ini':
     ensure => present,
-    owner => root, group => root, mode => 444,
+    owner => root, group => root, mode => 644,
     notify => Service['php5-fpm'],
     content => "
 #memory_limit = 1024MB
@@ -36,7 +36,7 @@ xdebug.remote_host=10.0.2.2 ; IDE-Environments IP, from vagrant box.
  } else {
   file {'/etc/php5/fpm/conf.d/90-overrides.ini':
     ensure => present,
-    owner => root, group => root, mode => 444,
+    owner => root, group => root, mode => 644,
     notify => Service['php5-fpm'],
     content => "
 	xdebug.default_enable = 0
