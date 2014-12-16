@@ -5,6 +5,7 @@ DROP_DB_FIRST= #if to drop whatever is there on the first folder
 REDO_ALL=1 #if to redo folders that have source files
 REDO_UNTARS= #if to redo the untars for folders that have it
 INSERT_BY_EXEC=1 #if to insert right after each folder
+PARALLEL_INSERTS=1 #if to fork subprocecess when inserting data
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
@@ -173,13 +174,13 @@ for folder in 201* ; do
           if [ "$INSERT_DB" == "1" ] ; then
             #start with Hadoop's
             import_hadoop_jobs
-
+            wait
             import_sar_files
-
+            wait
             import_vmstats_files
-
+            wait
             import_bwm_files
-
+            wait
           fi
         fi
         cd ..; logger "Leaving folder $bench_folder\n"

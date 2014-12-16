@@ -12,6 +12,9 @@ head -n3 "$2"
 
     $MYSQL "
     SET time_zone = '+00:00';
+    SET tx_isolation = 'READ-COMMITTED';
+    SET GLOBAL tx_isolation = 'READ-COMMITTED';
+
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
     FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
     IGNORE 1 LINES;"
@@ -185,9 +188,13 @@ import_hadoop_jobs() {
       table_name="JOB_${counter}"
       logger "Inserting into DB $csv_file TN $table_name"
       #add host and missing data to csv
-      awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp.csv
+      awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp_${job_name}.csv
 
-      insert_DB "${table_name}" "tmp.csv" "" ","
+      if [ "$PARALLEL_INSERTS" ] ; then
+        insert_DB "${table_name}" "tmp_${job_name}" "" "," &
+      else
+        insert_DB "${table_name}" "tmp_${job_name}" "" ","
+      fi
 
       local data_OK="1"
     else
@@ -244,7 +251,11 @@ import_sar_files() {
                         \$2=\"id;id_exec;\" \$2; print \$2} \
                NR > 1  {\$1=\"NULL;${id_exec};\"\$1;  print }" > "$csv_name"
 
-          insert_DB "${table_name}" "$csv_name" "" ";"
+          if [ "$PARALLEL_INSERTS" ] ; then
+            insert_DB "${table_name}" "$csv_name" "" ";" &
+          else
+            insert_DB "${table_name}" "$csv_name" "" ";"
+          fi
 
           local data_OK="1"
         else
@@ -267,9 +278,14 @@ import_vmstats_files() {
       table_name="VMSTATS"
       logger "Inserting into DB $vmstats_file TN $table_name"
 
-      tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp.csv
+      tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp_${vmstats_file}.csv
 
-      insert_DB "${table_name}" "tmp.csv" "" ","
+      if [ "$PARALLEL_INSERTS" ] ; then
+        insert_DB "${table_name}" "tmp_${vmstats_file}.csv" "" "," &
+      else
+        insert_DB "${table_name}" "tmp_${vmstats_file}.csv" "" ","
+      fi
+
     else
       logger "ERROR: File $vmstats_file is INVALID"
     fi
@@ -287,15 +303,20 @@ import_bwm_files() {
       head -n3 "$bwm_file"
       if [[ $bwm_format -gt 9 ]] ; then
         table_name="BWM2"
-        cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;timestamp;iface_name;bytes_out_s;bytes_in_s;bytes_total_s;bytes_in;bytes_out;packets_out_s;packets_in_s;packets_total_s;packets_in;packets_out;errors_out_s;errors_in_s;errors_in;errors_out\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp.csv
+        cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;timestamp;iface_name;bytes_out_s;bytes_in_s;bytes_total_s;bytes_in;bytes_out;packets_out_s;packets_in_s;packets_total_s;packets_in;packets_out;errors_out_s;errors_in_s;errors_in;errors_out\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp_${bwm_file}.csv
       else
         table_name="BWM"
-        cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;unix_timestamp;iface_name;bytes_out;bytes_in;bytes_total;packets_out;packets_in;packets_total;errors_out;errors_in\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp.csv
+        cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;unix_timestamp;iface_name;bytes_out;bytes_in;bytes_total;packets_out;packets_in;packets_total;errors_out;errors_in\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp_${bwm_file}.csv
       fi
 
       logger "Inserting into DB $bwm_file TN $table_name"
 
-      insert_DB "${table_name}" "tmp.csv" "" ";"
+      if [ "$PARALLEL_INSERTS" ] ; then
+        insert_DB "${table_name}" "tmp_${bwm_file}.csv" "" ";" &
+      else
+        insert_DB "${table_name}" "tmp_${bwm_file}.csv" "" ";"
+      fi
+
     else
       logger "File $bwm_file is INVALID"
     fi
