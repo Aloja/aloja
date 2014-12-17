@@ -23,10 +23,10 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-    		'histogram' => 'Histogram',
-           // 'files' => 'Files',
+	    'histogram' => 'Histogram',
+            // 'files' => 'Files',
             'prv' => 'PARAVER',
-            //'version' => 'Hadoop v.',
+            // 'version' => 'Hadoop v.',
             'init_time' => 'End time',
         );
 
@@ -1520,25 +1520,117 @@ class DefaultController extends AbstractController
 	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
 	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
 	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-	    	
-	    	// get the result rows
-	    	$query = "SELECT * FROM execs WHERE valid = TRUE ".$where_configs;
-	    		
-	    	$rows = $db->get_rows ( $query );
-	    	$c = 0;
-	    	foreach($rows as $row) {
-	    		$jsonExecs[$c++][] = (int)$row['exe_time'];
-	    		$jsonExecs[$c-1][] = (int)$row['exe_time']/2;
-	    	}
+
+		$dummy = "";
+		$learn_param	= Utils::read_params('learn',$dummy,$configurations,$dummy);
+
+		$config = str_replace(array('AND ','IN '),'',$where_configs).' '.$learn_param[0];
+		$learn_options = 'saveall='.md5($config);
+
+		if ($learn_param[0] == 'regtree') $learn_method = 'aloja_regtree';
+		else if ($learn_param[0] == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
+		else if ($learn_param[0] == 'nnet') $learn_method = 'aloja_nnet';
+		else if ($learn_param[0] == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3'; }
+
+		//if ($_GET['params']) $learn_options = $learn_options.":".$_GET['params'];
+
+		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+		if (!file_exists($cache_ds))
+		{
+			// get headers for csv
+			$header_names = array(
+				'id_exec' => 'ID',
+				'bench' => 'Benchmark',
+				'exe_time' => 'Exe Time',
+				'exec' => 'Exec Conf',
+				'cost' => 'Running Cost $',
+				'net' => 'Net',
+				'disk' => 'Disk',
+				'maps' => 'Maps',
+				'iosf' => 'IO SFac',
+				'replication' => 'Rep',
+				'iofilebuf' => 'IO FBuf',
+				'comp' => 'Comp',
+				'blk_size' => 'Blk size',
+				'id_cluster' => 'Cluster',
+				'histogram' => 'Histogram',
+				'prv' => 'PARAVER',
+				'end_time' => 'End time',
+			);
+
+		    	$query="SHOW COLUMNS FROM execs;";
+		    	$rows = $db->get_rows ($query);
+			$headers = array();
+			$names = array();
+			$count = 0;
+			foreach($rows as $row)
+			{
+				if (array_key_exists($row['Field'],$header_names))
+				{
+					$headers[$count] = $row['Field'];
+					$names[$count++] = $header_names[$row['Field']];
+				}
+			}
+			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+			$names[$count++] = $header_names['cost'];
+
+		    	// dump the result to csv
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+		    	$rows = $db->get_rows ( $query );
+
+			$fp = fopen($cache_ds, 'w');
+			fputcsv($fp, $names,',','"');
+		    	foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+				fputcsv($fp, array_values($row),',','"');
+			}
+
+			// run the R processor
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options;
+			$output = shell_exec($command);
+
+			// update cache record (for human reading)
+			$register = md5($config).' :'.$config."\n";
+			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+		}
+
+		// read results of the CSV
+		$count = 0;
+		foreach (array("tt", "tv", "tr") as &$value)
+		{
+			if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
+				$header = fgetcsv($handle, 1000, ",");
+
+				$key_exec = array_search('Exe.Time', array_values($header));
+				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
+
+				$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
+				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+					$jsonExecs[$count]['y'] = (int)$data[$key_exec];
+					$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
+
+					$extra_data = "";
+					foreach(array_values($header) as &$value2)
+					{
+						$aux = array_search($value2, array_values($header));
+						if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
+						else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
+					}
+					$jsonExecs[$count++]['mydata'] = $extra_data;
+				}
+				fclose($handle);
+			}
+		}
 	    	
     	} catch(\Exception $e) {
     		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
     	}
-    	
     	echo $this->container->getTwig()->render('mltemplate/mltemplate.html.twig',
     			array(
     					'selected' => 'mltemplate',
-    					'jsonExecs' => json_encode($jsonExecs),
+					'jsonExecs' => json_encode($jsonExecs),
     					'benchs' => $benchs,
     					'nets' => $nets,
     					'disks' => $disks,
@@ -1548,8 +1640,134 @@ class DefaultController extends AbstractController
     					'mapss' => $mapss,
     					'replications' => $replications,
     					'iosfs' => $iosfs,
-    					'iofilebufs' => $iofilebufs
+    					'iofilebufs' => $iofilebufs,
+					'learn' => $learn_param
     			)
     	);
+    }
+
+    public function mldatacollapseAction()
+    {
+    	$jsonExecs = array();
+    	try {
+	    	$db = $this->container->getDBUtils();
+	    	
+	    	$configurations = array ();
+	    	$where_configs = '';
+	    	$concat_config = "";
+	    	
+	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+
+		$dims1 = "Benchmark"; // FIXME - From input
+		$dims2 = "Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster"; // FIXME - From input
+		$dname1 = "Benchmark"; // FIXME - From input
+		$dname2 = "Configuration"; // FIXME - From input
+
+		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2;
+		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config);
+
+		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+		if (!file_exists($cache_ds))
+		{
+			// get headers for csv
+			$header_names = array(
+				'id_exec' => 'ID',
+				'bench' => 'Benchmark',
+				'exe_time' => 'Exe Time',
+				'exec' => 'Exec Conf',
+				'cost' => 'Running Cost $',
+				'net' => 'Net',
+				'disk' => 'Disk',
+				'maps' => 'Maps',
+				'iosf' => 'IO SFac',
+				'replication' => 'Rep',
+				'iofilebuf' => 'IO FBuf',
+				'comp' => 'Comp',
+				'blk_size' => 'Blk size',
+				'id_cluster' => 'Cluster',
+				'histogram' => 'Histogram',
+				'prv' => 'PARAVER',
+				'end_time' => 'End time',
+			);
+
+		    	$query="SHOW COLUMNS FROM execs;";
+		    	$rows = $db->get_rows ($query);
+			$headers = array();
+			$names = array();
+			$count = 0;
+			foreach($rows as $row)
+			{
+				if (array_key_exists($row['Field'],$header_names))
+				{
+					$headers[$count] = $row['Field'];
+					$names[$count++] = $header_names[$row['Field']];
+				}
+			}
+			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+			$names[$count++] = $header_names['cost'];
+
+			// dump the result to csv
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+		    	$rows = $db->get_rows ( $query );
+
+			$fp = fopen($cache_ds, 'w');
+			fputcsv($fp, $names,',','"');
+		    	foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+				fputcsv($fp, array_values($row),',','"');
+			}
+
+			// prepare collapse
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options;
+			$output = shell_exec($command);
+
+			// update cache record (for human reading)
+			$register = md5($config).' :'.$config."\n";
+			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+		}
+
+		// read results of the CSV
+		$count = 0;
+		if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-matrix.csv', 'r')) !== FALSE)
+		{
+			$header = fgetcsv($handle, 1000, ",");
+			$jsonHeader = '[{title:"---"}';
+			foreach ($header as $title)
+			{
+				$jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+			}
+			$jsonHeader = $jsonHeader.']';
+
+			$jsonData = '[';
+			while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+			{
+				if ($jsonData!='[') $jsonData = $jsonData.',';
+				$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
+			}
+			$jsonData = $jsonData.']';
+			fclose($handle);
+		}
+    	}
+	catch(Exception $e)
+	{
+		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+
+		$noData = array();
+		for($i = 0; $i<=sizeof($show_in_result); ++$i) $noData[] = 'error';
+
+		$jsonEncoded = json_encode(array('aaData' => array($noData)));
+	}
+	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig', array('jsonEncoded' => $jsonData,'jsonHeader' => $jsonHeader));
     }
 }

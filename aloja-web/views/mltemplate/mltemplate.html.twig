@@ -1,5 +1,5 @@
 {% extends "layout.html.twig" %} 
-{% block stylesheet %} 
+{% block stylesheet %}
     {{ parent() }}
 {% endblock %}
 {% block content %}
@@ -14,16 +14,16 @@
 <script type="text/javascript" src="js/utils.js"></script>
 <script type="text/javascript">
       $(document).ready(function() {
-	    	  $("input,select").change(function() {
-	  			$("form").submit();
-	  		});
-    		    $('#chart').highcharts({
+		//$("input").change(function() {
+		//	$("form").submit();
+		//});
+		$('#chart').highcharts( {
     		        chart: {
     		            type: 'scatter',
     		            zoomType: 'xy'
     		        },
     		        title: {
-    		            text: 'ML Template'
+    		            text: 'Prediction Results'
     		        },
     		        subtitle: {
     		            text: 'Predictions'
@@ -31,7 +31,7 @@
     		        xAxis: {
     		            title: {
     		                enabled: true,
-    		                text: 'Execution time (s)'
+    		                text: 'Predicted Execution Time (s)'
     		            },
     		            startOnTick: true,
     		            endOnTick: true,
@@ -39,11 +39,11 @@
     		        },
     		        yAxis: {
     		            title: {
-    		                text: 'Exetime / 2 (s)'
+    		                text: 'Real Execution Time (s)'
     		            }
     		        },
 	                credits: {
-						enabled: false
+				enabled: false
 		            },
 //     		        legend: {
 //     		            layout: 'vertical',
@@ -74,18 +74,19 @@
     		                    }
     		                },
     		                tooltip: {
-    		                    headerFormat: '<b>{series.name}</b><br>',
-    		                    pointFormat: '{point.x} s, {point.y} s'
+    		                    headerFormat: '',
+    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
     		                }
     		            }
     		        },
     		        series: [{
     		            name: 'Exe time',
     		            color: 'rgba(223, 83, 83, .5)',
-    		            data: {{ jsonExecs | raw}}
+    		            data: {{ jsonExecs | raw }}
+			    //data: [{x:669,y:630,mydata:"data1"},{x:700,y:700,mydata:"data2"}]
 
-    		        }]
-    		    });
-      });
+			}]
+		});
+	});
     </script>
 {% endblock %}
