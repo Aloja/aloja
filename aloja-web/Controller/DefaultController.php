@@ -1328,7 +1328,7 @@ class DefaultController extends AbstractController
 			else if($paramEval == 'comp')
 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
 		    else if($paramEval == 'id_cluster')
-				$paramOptions = array('Local','Azure');
+				$paramOptions = array('rl-06');
 			else if($paramEval == 'net')
 				$paramOptions = array('Ethernet','Infiniband');
 			else if($paramEval == 'disk')
@@ -1371,10 +1371,7 @@ class DefaultController extends AbstractController
 				if($paramEval == 'comp')
 					$row[$paramEval] = Utils::getCompressionName($row['comp']);
 				else if($paramEval == 'id_cluster') {
-					if($row[$paramEval] == 1)
-						$row[$paramEval] = 'Local';
-					else
-						$row[$paramEval] = 'Azure';
+                    $row[$paramEval] = Utils::getClusterName($row[$paramEval]);
 				} else if($paramEval == 'net')
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')

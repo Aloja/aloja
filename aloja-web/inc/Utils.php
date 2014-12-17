@@ -341,6 +341,17 @@ class Utils
     	
     	return $compName;
     }
+
+    public static function getClusterName($clusterCode)
+    {
+        $clusterName = 'Undefined';
+        if($clusterCode == 1)
+            $clusterName = 'Local';
+        else
+            $clusterName = 'Azure';
+
+        return $clusterName;
+    }
     
     public static function getNetworkName($netShort)
     {
