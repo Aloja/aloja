@@ -282,13 +282,15 @@ class Utils
     
     public static function getExecsOptions($db)
     {
-    	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE valid = TRUE");
-    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE valid = TRUE");
-    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE valid = TRUE");
-    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE valid = TRUE");
-    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE valid = TRUE");
-    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE valid = TRUE");
-    	$clusterOptions = $db->get_rows("SELECT DISTINCT id_cluster FROM execs WHERE valid = TRUE");
+        $filter_execs = DBUtils::getFilterExecs();
+
+        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs");
+    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE 1 $filter_execs");
+    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 $filter_execs");
+    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 $filter_execs");
+    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 $filter_execs");
+    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 $filter_execs");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT id_cluster FROM execs WHERE 1 $filter_execs");
     	 
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';

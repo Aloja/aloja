@@ -67,7 +67,7 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+            $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
@@ -1320,8 +1320,8 @@ class DefaultController extends AbstractController
 			if($minExecs > 0)
 				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
-			$filter_execs = "AND valid = TRUE";
-				
+			$filter_execs = DBUtils::getFilterExecs();
+
 			$paramOptions = array();
 			if($paramEval == 'maps')
 				$paramOptions = array(4,6,8,10,12,16,24,32);

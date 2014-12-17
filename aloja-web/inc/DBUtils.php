@@ -94,13 +94,14 @@ class DBUtils
 AND exe_time between 200 and 15000
 AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
 AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null)
+#AND valid = TRUE
 ";
     }
 
     public function get_execs($filter_execs = null)
     {
         if($filter_execs === null)
-            $filter_execs = self::getFilterExecs();
+            $filter_execs = DBUtils::getFilterExecs();
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
         join clusters USING (id_cluster)
