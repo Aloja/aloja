@@ -1,0 +1,13 @@
+<phpunit
+    bootstrap="./phpunit_bootstrap.php">
+    <testsuites>
+        <testsuite name="aloja">
+            <directory>tests</directory>
+        </testsuite>
+    </testsuites>
+    <groups>
+        <exclude>
+            <group>optimization</group>
+        </exclude>
+    </groups>
+</phpunit>

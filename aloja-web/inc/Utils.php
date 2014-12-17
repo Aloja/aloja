@@ -164,6 +164,12 @@ class Utils
             return filter_var($_GET[$param], FILTER_SANITIZE_NUMBER_INT);
     }
 
+    public static function get_GET_float($param)
+    {
+        if (isset($_GET[$param]))
+            return filter_var($_GET[$param], FILTER_SANITIZE_NUMBER_FLOAT, FILTER_FLAG_ALLOW_FRACTION);
+    }
+
     public static function minimize_array($array)
     {
         foreach ($array as $key=>$value) {
@@ -353,9 +359,11 @@ class Utils
     	if($diskShort == 'HDD')
     		$disks = 'Hard-disk drive';
     	elseif($diskShort == 'SSD')
-    		$disks = 'Solid-state disk';
+    		$disks = 'SSD';
+    	else if(substr($diskShort,2))
+    		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
     	else
-    		$disks = substr($diskShort,2).'remotes';
+    		$disks = substr($diskShort,1).' HDFS remote(s)';
     
     	return $disks;
     }
@@ -370,5 +378,25 @@ class Utils
     	
     	if(key_exists('disk',$execInfo))
     		$execInfo['disk'] = self::getDisksName($execInfo['disk']);
+    }
+    
+    public static function changeParamOptions(&$paramOptions, $paramEval)
+    {
+    	if($paramEval == 'comp') {
+    		foreach($paramOptions as &$option) {
+    			$option['param'] = Utils::getCompressionName($option['param']);
+    		}
+    	}
+    }
+    
+    public static function getParamevalUnit($paramEval)
+    {
+    	$unit = '';
+    	if($paramEval == 'iofilebuf')
+    		$unit = 'KB';
+    	else if($paramEval == 'blk_size')
+    		$unit = 'MB';
+    	
+    	return $unit;
     }
 }

@@ -13,6 +13,9 @@
     </style>
 {% endblock %}
 {% block datatablescontent %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+	  <p></p>
+	</div>
       Click on a <strong>benchmark name</strong> to see execution details.</br>
       Select different rows and <strong>click compare</strong>, to compare charts.</br>
       <strong>Search</strong> to filter results. Shift+Click to order by multiple columns</br>
@@ -335,13 +338,19 @@
                     [10, 25, 50, 100, 200, "All"]
                 ],
                 "fnInitComplete": function(oSettings, json) {
-                    $('#benchmarks').show();
-                    $('#loading').hide();
-                    $("#benchmarks_filter input").each(function() {
-                        $(this).addClass('form-control');
-                     });
-                    $("select[name=benchmarks_length]").addClass('form-control');
-                    $("#benchmarks_paginate").addClass('pagination');
+                    if(json.aaData[0][0] != 'error') {
+	                    $('#benchmarks').show();
+	                    $('#loading').hide();
+	                    $("#benchmarks_filter input").each(function() {
+	                        $(this).addClass('form-control');
+	                     });
+	                    $("select[name=benchmarks_length]").addClass('form-control');
+	                    $("#benchmarks_paginate").addClass('pagination');
+                    } else {
+						$("#jsonError p").text('An error has occurred. No data to display');
+						$("#loading").hide();
+						$("#jsonError").show();
+                    }
                 },
                 "fnDrawCallback": function( oSettings) {
                     $(".tooltip2").each(function() {

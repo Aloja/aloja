@@ -1,27 +1,38 @@
-# -*- mode: ruby -*-
-# vi: set ft=ruby :
-
-# Vagrantfile API/syntax version. Don't touch unless you know what you're doing!
 VAGRANTFILE_API_VERSION = "2"
+
+#avoids having to $ vagrant up --provider docker
+#ENV['VAGRANT_DEFAULT_PROVIDER'] ||= 'docker'
 
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
-  #Default base image to build from scratch
-  #config.vm.box = "hashicorp/precise64"
-  #Prebuilt box for ALOJA
-  config.vm.box = "npoggi/aloja-precise64"
+  #for Virtualbox (Default)
+  config.vm.provider 'virtualbox' do |v|
+    #Default base image to build from scratch
+    #config.vm.box = "hashicorp/precise64"
+    #Prebuilt box for ALOJA
+    config.vm.box = "npoggi/aloja-precise64"
+  end
 
-  #config.vm.box = "yungsang/coreos"
-  #
-  #config.vm.provision "docker" do |d|
-  #  d.build_dir "."
-  #  #d.build_image "/vagrant/app"
-  #end
-
-  config.vm.host_name = "vagrant"
+  #for Docker (optional, but faster on Linux)
+  config.vm.provider 'docker' do |d, override|
+    override.vm.box = nil #Vagrant gets confused with the Virtualbox name
+    #use a prebuilt image ie 'npoggi/vagrant-docker:latest'
+    if ENV['DOCKER_IMAGE'] then
+      print "Using docker image " + ENV['DOCKER_IMAGE'] + " (downloads if necessary)\n"
+      d.image = ENV['DOCKER_IMAGE']
+    else
+      #build from the Dockerfile
+      d.build_dir = '.'
+      d.name = 'aloja-vagrant-docker'
+    end
+    #the docker image must remain running for SSH (See the Dockerfile)
+    d.has_ssh = true
+  end
 
   #web document root
   config.vm.synced_folder "../", "/vagrant/workspace"
+  config.vm.synced_folder "../aloja-web/logs", "/vagrant/workspace/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
+  config.vm.synced_folder "../aloja-web/cache", "/vagrant/workspace/aloja-web/cache", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
 
   #bash scripts
   config.vm.provision :shell, :path => "bootstrap.sh"
@@ -31,11 +42,16 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     puppet.module_path = "puppet/modules"
     puppet.manifests_path = "puppet/manifests"
     puppet.manifest_file = "init.pp"
-    puppet.options = "--environment dev"
+    puppet.options = "--environment dev" 
     #puppet.options = "--verbose --debug"
   end
 
   #net ports
   config.vm.network :forwarded_port, host: 8080, guest: 80 #web
   config.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
+
+  config.vm.provider "virtualbox" do |v|
+    v.memory = 2048
+    v.cpus = 1
+  end
 end

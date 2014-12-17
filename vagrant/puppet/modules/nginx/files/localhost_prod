@@ -13,8 +13,14 @@ server {
     autoindex on;
   }
 
+  location /slides {
+    alias /var/presentations/aloja-web;
+    index template.html;
+  }
+
   location ~ \.php$ {
-    try_files $uri =404;
+    #try_files $uri =404;
+    try_files $uri /index.php?c=404&q=$uri&$args;
     fastcgi_pass unix:/var/run/php5-fpm.sock;
     fastcgi_index index.php;
     include fastcgi_params;

@@ -1,0 +1,358 @@
+{% extends "layout.html.twig" %}
+
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+
+{% block javascript %}
+    {{ parent() }}
+    {{ highcharts_js|raw }}
+
+    <script>
+        $(document).ready(function() {
+
+            // Form with all the chart options
+            var form = $('form#options');
+            var metric_x = form.find("[name='metric_x']");
+            var metric_y = form.find("[name='metric_y']");
+            var task_type = form.find("[name='type']");
+            var heuristic_elem = form.find("[name='heuristic']");
+            var heuristic = heuristic_elem.hasClass("active");
+            var eps = form.find("[name='eps']");
+            var minPoints = form.find("[name='minPoints']");
+
+            // Load form data from URL parameters
+            loadFiltersFromUrl();
+
+            // Call updateChart for form events
+            form.change(updateChart);
+            form.find('button').click(updateChart)
+            form.submit(updateChart);
+
+            // Different zoom actions
+            $('#zoom_reset').click(function () {
+                // Sets the default zoom
+                chart.xAxis[0].setExtremes(null, null, false);
+                chart.yAxis[0].setExtremes(null, null, false);
+                chart.redraw()
+            });
+            $('#zoom_ratio_11').click(zoomRatio11);
+            function zoomRatio11() {
+                // Sets a zoom where both axis have the same aspect ratio (1:1)
+
+                // Iterate all series to obtain the minimum bounding box
+                // (the min&max values for every serie are already calculated)
+                var bbox = {x_min: null, x_max: null, y_min: null, y_max: null};
+                for (i = 0; i < chart.series.length; i++) {
+                    if (bbox.x_min == null) bbox.x_min = chart.series[i].options.x_min;
+                    if (bbox.x_max == null) bbox.x_max = chart.series[i].options.x_max;
+                    if (bbox.y_min == null) bbox.y_min = chart.series[i].options.y_min;
+                    if (bbox.y_max == null) bbox.y_max = chart.series[i].options.y_max;
+                    if (bbox.x_min > chart.series[i].options.x_min) bbox.x_min = chart.series[i].options.x_min;
+                    if (bbox.x_max < chart.series[i].options.x_max) bbox.x_max = chart.series[i].options.x_max;
+                    if (bbox.y_min > chart.series[i].options.y_min) bbox.y_min = chart.series[i].options.y_min;
+                    if (bbox.y_max < chart.series[i].options.y_max) bbox.y_max = chart.series[i].options.y_max;
+                }
+                bbox.w = bbox.x_max - bbox.x_min;
+                bbox.h = bbox.y_max - bbox.y_min;;
+
+                // Calculate the bounding box aspect ratio
+                var bbox_ar = (bbox.x_max - bbox.x_min) / (bbox.y_max - bbox.y_min);
+                // console.log("bbox_ar", bbox_ar);
+
+                // Calculate the current aspect ratio of the graph
+                var x_extremes = chart.xAxis[0].getExtremes();
+                var y_extremes = chart.yAxis[0].getExtremes();
+                var chart_width = chart.xAxis[0].toPixels(x_extremes.max) - chart.xAxis[0].toPixels(x_extremes.min);
+                var chart_height = chart.yAxis[0].toPixels(y_extremes.min) - chart.yAxis[0].toPixels(y_extremes.max);
+                var graph_ar = chart_width / chart_height;
+                // console.log("graph_ar", graph_ar);
+
+                if (bbox_ar > 1) {
+                    // The bounding box is a horizontal rectangle
+                    // console.log("The bounding box is a horizontal rectangle");
+                    if (bbox_ar > graph_ar) {
+                        // The bounding box is "more horizontal" than the viewport
+                        // console.log("The bounding box is more horizontal than the viewport");
+                        var center = (bbox.y_min + bbox.y_max) / 2;
+                        var offset = bbox.w / graph_ar;
+                        chart.xAxis[0].setExtremes(bbox.x_min, bbox.x_max, false);
+                        chart.yAxis[0].setExtremes(center - offset/2, center + offset/2, false);
+                    } else {
+                        // The viewport is "more horizontal" than the bounding box
+                        // console.log("The viewport is more horizontal than the bounding box");
+                        var center = (bbox.x_min + bbox.x_max) / 2;
+                        var offset = bbox.h * graph_ar;
+                        chart.xAxis[0].setExtremes(center - offset/2, center + offset/2, false);
+                        chart.yAxis[0].setExtremes(bbox.y_min, bbox.y_max, false);
+                    }
+                } else {
+                    // The bounding box is a vertical rectangle
+                    // console.log("The bounding box is a vertical rectangle");
+                    if (bbox_ar < graph_ar) {
+                        // The bounding box is "more vertical" than the viewport
+                        // console.log("The bounding box is more vertical than the viewport");
+                        var center = (bbox.x_min + bbox.x_max) / 2;
+                        var offset = bbox.h * graph_ar;
+                        chart.xAxis[0].setExtremes(center - offset/2, center + offset/2, false);
+                        chart.yAxis[0].setExtremes(bbox.y_min, bbox.y_max, false);
+                    } else {
+                        // The viewport is "more vertical" than the bounding box
+                        // console.log("The viewport is more vertical than the bounding box");
+                        var center = (bbox.y_min + bbox.y_max) / 2;
+                        var offset = bbox.w / graph_ar;
+                        chart.xAxis[0].setExtremes(bbox.x_min, bbox.x_max, false);
+                        chart.yAxis[0].setExtremes(center - offset/2, center + offset/2, false);
+                    }
+                }
+
+                chart.redraw()
+            }
+
+            function loadFiltersFromUrl() {
+                var uri = new URI();
+                var uri_query = uri.query(true);
+
+                $.each([
+                    {v: metric_x, s: "metric_x"},
+                    {v: metric_y, s: "metric_y"},
+                    {v: task_type, s: "task_type"},
+                    {v: eps, s: "eps"},
+                    {v: minPoints, s: "minPoints"},
+                ], function(index, value) {
+                    if (uri.hasQuery(value.s) === true) {
+                        value.v.val(uri_query[value.s]);
+                    }
+                });
+
+                // This is a special case
+                if (uri.hasQuery("heuristic") === true) {
+                    if (uri.hasQuery("heuristic", 1) === true) {
+                        heuristic_elem.addClass("active");
+                    } else {
+                        heuristic_elem.removeClass("active");
+                    }
+                }
+            }
+
+            function updateChart(event) {
+                // Start loading
+                chart.showLoading();
+
+                // Load chart options from html form
+                heuristic = heuristic_elem.hasClass("active");
+
+                // Workaround
+                // When a button toggle event is dispatched, the class
+                // "active" is added to the element AFTER the event has
+                // finished executing, so the value is toggled manually here
+                if ($(this).is("button")) {
+                    if ($(this).attr("name") == "heuristic") {
+                        heuristic = !heuristic;
+                    }
+                }
+
+                // Set current form options as url query parameters
+                setUrlQuery({
+                    metric_x: metric_x.val(),
+                    metric_y: metric_y.val(),
+                    task_type: task_type.val(),
+                    heuristic: ((heuristic)?1:0),
+                    eps: eps.val(),
+                    minPoints: minPoints.val(),
+                });
+
+                // Launch ajax request
+                $.ajax({
+                    url: "{{ path('dbscandata', {'jobid': jobid}) }}",
+                    data: {
+                        metric_x: metric_x.val(),
+                        metric_y: metric_y.val(),
+                        task_type: task_type.val(),
+                        heuristic: ((heuristic)?1:0),
+                        eps: eps.val(),
+                        minPoints: minPoints.val(),
+                    },
+                })
+                .done(function(data) {
+                    // Update chart with new options
+                    var metric_x_name = metric_x.find("option:selected").text();
+                    var metric_y_name = metric_y.find("option:selected").text();
+                    chart.xAxis[0].setTitle({text: metric_x_name});
+                    chart.yAxis[0].setTitle({text: metric_y_name});
+
+                    // Check heuristic usage
+                    if (data.heuristic) {
+                        // Disable controls
+                        eps.prop("disabled", true);
+                        minPoints.prop("disabled", true);
+                    } else {
+                        // Enable controls
+                        eps.prop("disabled", false);
+                        minPoints.prop("disabled", false);
+                    }
+                    // Show used values in the form
+                    eps.val(data.eps);
+                    minPoints.val(data.minPoints);
+
+                    // Update used values in the url query parameters
+                    setUrlQuery({
+                        eps: eps.val(),
+                        minPoints: minPoints.val(),
+                    });
+
+                    // Reset series color and symbol iterator
+                    // This way the same cluster will keep it's theme between updates
+                    chart.colorCounter = chart.symbolCounter = 0;
+
+                    // Update chart data
+                    while(chart.series.length > 0) {
+                        chart.series[0].remove(false);
+                    }
+                    for (i = 0; i < data.seriesData.length; i++) {
+                        chart.addSeries({
+                            name: "Cluster #" + (i + 1) + " (" + data.seriesData[i].size + ")",
+                            data: data.seriesData[i].points,
+                            x_min: data.seriesData[i].x_min,
+                            x_max: data.seriesData[i].x_max,
+                            y_min: data.seriesData[i].y_min,
+                            y_max: data.seriesData[i].y_max,
+                        }, false);
+                    }
+                    if (data.noiseData.length > 0) {
+                        chart.addSeries({
+                            name: "Noise",
+                            data: data.noiseData,
+                        }, false);
+                    }
+
+                    // Reset zoom
+                    chart.xAxis[0].setExtremes(null, null, false);
+                    chart.yAxis[0].setExtremes(null, null, false);
+
+                    chart.redraw();
+
+                    // Finished loading
+                    chart.hideLoading();
+                });
+
+                // Prevent form submit
+                if (event && event.type == "submit") {
+                    event.preventDefault();
+                }
+            }
+
+            var chart = new Highcharts.Chart({
+                chart: {
+                    renderTo: 'chart',
+                    type: 'scatter',
+                    zoomType: 'xy',
+                    resetZoomButton: {
+                        theme: {
+                            display: 'none',
+                        },
+                    },
+                },
+                title: {
+                    text: 'DBSCAN'
+                },
+                subtitle: {
+                    text: '{{ jobid }}'
+                },
+                xAxis: {
+                    title: {
+                        text: ""
+                    },
+                    startOnTick: false,
+                    endOnTick: false,
+                },
+                yAxis: {
+                    title: {
+                        text: ""
+                    },
+                    startOnTick: false,
+                    endOnTick: false,
+                },
+                tooltip: {
+                    shared: true,
+                    useHTML: true,
+                    headerFormat: '',
+                    pointFormat: '<span style="font-size: 10px">{point.task_id}</span><br/><span style="font-size: 10px">{series.name}</span><br/><span style="color:{series.color}">\u25CF</span> {series.xAxis.options.title.text}: <b>{point.x}</b><br/><span style="color:{series.color}">\u25CF</span> {series.yAxis.options.title.text}: <b>{point.y}</b><br/>',
+                },
+                plotOptions: {
+                    series: {
+                        turboThreshold: Number.MAX_VALUE,
+                        animation: false,
+                        point: {
+                            events: {
+                                click: function () {
+                                    this.series.chart.xAxis[0].setExtremes(
+                                        this.series.options.x_min,
+                                        this.series.options.x_max
+                                    );
+                                    this.series.chart.yAxis[0].setExtremes(
+                                        this.series.options.y_min,
+                                        this.series.options.y_max
+                                    );
+                                }
+                            },
+                        },
+                    },
+                },
+                series: 
+                    [
+                    ]
+            });
+            updateChart();
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+
+    <form role="form" class="form-inline pull-left">
+        <button type="button" id="zoom_ratio_11" class="btn btn-default">Zoom 1:1</button>
+        <button type="button" id="zoom_reset" class="btn btn-default">Reset Zoom</button>
+    </form>
+
+    <form id="options" role="form" class="form-inline pull-right">
+        <input type="hidden" name="jobid" value="{{ jobid }}">
+        <label>
+            Metric X:
+            <select name="metric_x" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}" {% if loop.index0 == 0 %}selected="selected"{% endif %}>{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+        <label>
+            Metric Y:
+            <select name="metric_y" class="form-control">
+            {% for current_metric in METRICS %}
+                <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
+            {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task type:
+            <select name="type" class="form-control">
+                <option value="MAP">Map</option>
+                <option value="REDUCE">Reduce</option>
+                <option value="CLEANUP">Cleanup</option>
+                <option value="SETUP">Setup</option>
+                <option value="">All</option>
+            </select>
+        </label>
+        <button type="button" name="heuristic" class="btn btn-default active" data-toggle="button">Heuristic</button>
+        <label>
+            Eps:
+            <input type="text" name="eps" class="form-control" size="10" disabled>
+        </label>
+        <label>
+            MinPoints:
+            <input type="text" name="minPoints" class="form-control" size="3" disabled>
+        </label>
+    </form>
+    <div id="chart" style="clear: both;"></div>
+
+{% endblock %}

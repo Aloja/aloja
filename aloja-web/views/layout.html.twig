@@ -10,6 +10,20 @@
 	<style type="text/css" title="currentStyle">
 		@import "css/bootstrap.min.css";
 		@import "css/styles.css";
+		@media (min-width: 768px) and (max-width: 1200px) {
+		  .hidden-desktop {
+		    display: inherit !important;
+		  }
+		  .visible-desktop {
+		    display: none !important ;
+		  }
+		  .visible-tablet {
+		    display: inherit !important;
+		  }
+		  .hidden-tablet {
+		    display: none !important;
+		  }
+		}
 	</style>
 	{% endblock %}
 	<script>
@@ -85,50 +99,64 @@
 		        <span class="icon-bar"></span>
 		        <span class="icon-bar"></span>
 		      </button>
-		      <a class="navbar-brand navlink" href="{{ path('index') }}" >ALOJA</a>
+		      <a class="navbar-brand navlink" href="{{ path('index') }}" >Home</a>
 		    </div>
 
 		    <!-- Collect the nav links, forms, and other content for toggling -->
 		    <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1">
 		      <ul class="nav navbar-nav">
-                  <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>
-                      <a class="navlink" href="{{ path('index') }}"><span >About</span></a>
-                  </li>
-		        <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('benchexecutions') }}"><span >Benchmark Executions</span></a>
+{#                   <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>#}
+{#                       <a class="navlink" href="{{ path('index') }}"><span >About</span></a>#}
+{#                   </li>#}
+			   <li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Benchmark Executions</a></li>
+		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
+		          </ul>		        
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Config Evaluations <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
+		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
+		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a></li>
+		            <li {% if selected is defined and selected == 'Metric vs metric' %}class="active"{% endif %}><a class="navlink" href="{{ path('metricvsmetric') }}">Metric vs metric</a></li>
+		          </ul>
 		        </li>
-		        <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('configimprovement') }}">Config Improvement</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('bestconfig') }}">Best Configuration</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Perf Charts</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('metrics') }}">Perf Counters</a>
-		        </li>
-		        <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a>
-		        </li>
-{# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
-{# 		          <a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
-{# 		        </li>#}
-		        <li {% if selected is defined and selected == 'Metric vs metric' %}class="active"{% endif %}>
-		          <a class="navlink" href="{{ path('metricvsmetric') }}">Metric vs metric</a>
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
+			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
+			        </li>
+		          </ul>
+		        </li>		        
+
+
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance Details<span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
+		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
+                    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
+                    <li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>
+		          </ul>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
- 		         {#<li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}>#}
- 		          {#<a class="navlink" href="#">Publications</a>#}
- 		         {#</li>#}
-                  {#<li {% if selected is defined and selected == 'Videos' %}class="active"{% endif %}>#}
-                      {#<a class="navlink" href="videos.php">Videos</a>#}
-                  {#</li>#}
+                <li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">ALOJA Reference<span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>
+		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications</a></li>
+		            <li {% if selected is defined and selected == 'Team' %}class="active"{% endif %}><a class="navlink" href="{{ path('team') }}">Team & Collaborators</a></li>
+		            <li class="divider"></li>
+		            <li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clusters') }}">Clusters Reference</a></li>
+		            <li {% if selected is defined and selected == 'Clusters Costs' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosts') }}">Clusters Costs Calculations</a></li>
+		            <li class="divider"></li>
+		            <li><a class="navlink" target="_blank" href="http://github.com/Aloja">Browse the code</a></li>
+		          </ul>
+		        </li>
 		        <li>
 		          <a class="navlink" href="http://hadoop.bsc.es/blog"  target="_blank">Blog</a>
 		        </li>
@@ -154,9 +182,15 @@
 	{% block footer %}
 	<div id="copyright">
        <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" style="margin-right: 525px;"/></a>
-       <a target="blank" href="http://research.microsoft.com/"><img height="35" src="img/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
+
+        <a target="blank" href="http://research.microsoft.com/"><img height="35" src="img/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
+        &nbsp;&nbsp;
+        <a target="blank" href="http://cordis.europa.eu/fp7/"><img width="80" src="img/FP7genRGB.gif" alt="FP7 logo" class="logo" /></a>
        <div class="content">
-		 <p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a></p>
+		 <p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a>
+             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+
+         </p>
 		 <p>Copyright 2014 © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
        </div>
     </div>
@@ -167,6 +201,7 @@
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/URI.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
@@ -193,6 +228,10 @@
         	$(".tooltip2").each(function() {
 				$(this).tooltip();
             });
+
+        	if($('.dropdown li.active').length > 0) {
+        		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
+        	}
 		  });
 	</script>
 	{% endblock %}

@@ -55,6 +55,11 @@ histogramdata:
     pattern: "/histogramdata"
     controller: "alojaweb\\Controller\\RestController::histogramDataAction"
 
+
+histogramtasksdata:
+    pattern: "/histogramtasksdata"
+    controller: "alojaweb\\Controller\\RestController::histogramTasksDataAction"
+
 bestconfig:
     pattern: "/bestconfig"
     controller: "alojaweb\\Controller\\DefaultController::bestConfigAction"
@@ -66,3 +71,39 @@ bestconfigdata:
 metricvsmetric:
     pattern: "/metricvsmetric"
     controller: "alojaweb\\Controller\\DefaultController::metricVsMetricAction"
+
+parameval:
+    pattern: "/parameval"
+    controller: "alojaweb\\Controller\\DefaultController::paramEvaluationAction"
+    
+publications:
+    pattern: "/publications"
+    controller: "alojaweb\\Controller\\DefaultController::publicationsAction"
+    
+team:
+    pattern: "/team"
+    controller: "alojaweb\\Controller\\DefaultController::teamAction"
+    
+clusters:
+    pattern: "/clusters"
+    controller: "alojaweb\\Controller\\DefaultController::clustersAction"
+    
+clustercosts:
+    pattern: "/clustercosts"
+    controller: "alojaweb\\Controller\\DefaultController::clusterCostsAction"
+
+dbscan:
+    pattern: "/dbscan"
+    controller: "alojaweb\\Controller\\DefaultController::dbscanAction"
+
+dbscandata:
+    pattern: "/dbscandata"
+    controller: "alojaweb\\Controller\\RestController::dbscanDataAction"
+
+dbscanexecs:
+    pattern: "/dbscanexecs"
+    controller: "alojaweb\\Controller\\DefaultController::dbscanexecsAction"
+
+dbscanexecsdata:
+    pattern: "/dbscanexecsdata"
+    controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"

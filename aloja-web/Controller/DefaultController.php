@@ -425,9 +425,22 @@ class DefaultController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-                $selected_hosts = array('minerva-1002', 'minerva-1003', 'minerva-1004', 'al-1002', 'al-1003', 'al-1004');
+                $selected_hosts = array(
+                    'minerva-1002', 'minerva-1003', 'minerva-1004',
+                    'al-1002', 'al-1003', 'al-1004',
+                    'minerva-2','minerva-3','minerva-4',
+                    'minerva-6','minerva-7','minerva-8',
+                    'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
+
+                );
             } elseif ($hosts == 'Master') {
-                $selected_hosts = array('minerva-1001', 'al-1001');
+                $selected_hosts = array(
+                    'minerva-1001',
+                    'al-1001',
+                    'minerva-1',
+                    'minerva-6',
+                    'minerva-5',
+                );
             } else {
                 $selected_hosts = array($hosts);
             }
@@ -511,8 +524,8 @@ class DefaultController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
                         FROM SAR_load $where $group_by;",
                         'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
-                        'title'     => "CPU Load Averge ($aggr_text, $hosts) $exec_title ",
-                        'group_title' => 'CPU Load Averge '."($aggr_text, $hosts)",
+                        'title'     => "CPU Load Average ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'CPU Load Average '."($aggr_text, $hosts)",
                         'percentage'=> false,
                         'stacked'   => false,
                         'negative'  => false,
@@ -1190,126 +1203,7 @@ class DefaultController extends AbstractController
     			));
     }
     
-    public function bestConfigAction()
-    {	 
     
-    	$db = $this->container->getDBUtils();
-    	$rows_config = '';
-    	$bestexec = '';
-    	$cluster = '';
-    	$comp = '';
-    	$seriesCat = '[';
-    	$seriesData = '';
-    	$execsDetails = array();
-    	try {
-    		$configurations = array();
-    		$where_configs = '';
-    		$concat_config = "";
-    	
-    		$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config,false);
-    		$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config,false);
-    		$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config,false);
-    		$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config,false);
-    		$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config,false);
-    		$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config,false);
-    		$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config,false);
-    		$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config,false);
-    		$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false);
-    		$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false);
-    		$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config,false);
-    		if(!$benchs)
-    			$where_configs .= 'AND bench IN (\'wordcount\')';
-    		$order_type = Utils::get_GET_string('ordertype');
-    		if(!$order_type) $order_type = 'exe_time';
-    		//$concat_config = join(',\'_\',', $configurations);
-    		//$concat_config = substr($concat_config, 1);
-    	
-    		$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
-    		$order_conf = 'LENGTH(conf), conf';
-    	
-    		//get the result rows
-    		$query = "SELECT e.*,
-    		(exe_time/3600)*(cost_hour) cost
-    		from execs e 
-    		join clusters USING (id_cluster) 
-    		WHERE e.valid = TRUE $where_configs 
-    		ORDER BY $order_type ASC;";
-    		
-    		$this->getContainer()->getLog()->addInfo('BestConfig query: '.$query);
-    	
-    		$rows = $db->get_rows($query);
-    	
-    		if (!$rows) {
-	    		throw new \Exception("No results for query!");
-    		}
-    		if($rows) {
-    			$bestexec = $rows[0];
-    			$conf = $bestexec['exec'];
-    			$parameters = explode('_',$conf);
-    			$cluster = (explode('/',$parameters[count($parameters)-1])[0] == 'az') ? 'Azure' : 'Local';
-    			$counter = 0;
-    			foreach($rows as $row) {
-    				if($counter < 30)
-    				{
-    					if($counter == 0) {
-    						$seriesCat .= "'".$row['exec']."'";
-    					} else {
-    						$seriesData .= ',';
-    						$seriesCat .= ",'".$row['exec']."'";
-    					}
-    					
-    					if($order_type == 'cost')
-    						$seriesData .= round($row['cost'],2);
-    					else
-    						$seriesData .= $row['exe_time'];
-    					
-    					Utils::makeExecInfoBeauty($row);
-    					$execsDetails[$row['exec']]['id'] = $row['id_exec'];
-    					$execsDetails[$row['exec']]['bench'] = $row['bench'];
-    					$execsDetails[$row['exec']]['exe_time'] = $row['exe_time'];
-    					$execsDetails[$row['exec']]['cost'] = round($row['cost'],2);
-    					$execsDetails[$row['exec']]['net'] = $row['net'];
-    					$execsDetails[$row['exec']]['disk'] = $row['disk'];
-    					$execsDetails[$row['exec']]['maps'] = $row['maps'];
-    					$execsDetails[$row['exec']]['iosf'] = $row['iosf'];
-    					$execsDetails[$row['exec']]['replication'] = $row['replication'];
-    					$execsDetails[$row['exec']]['iofilebuf'] = $row['iofilebuf'];
-    					$execsDetails[$row['exec']]['comp'] = $row['comp'];
-    					$execsDetails[$row['exec']]['blk_size'] = $row['blk_size'];
-    					$conf = $row['exec'];
-    					$parameters = explode('_',$conf);
-    					$execsDetails[$row['exec']]['cluster'] = (explode('/',$parameters[count($parameters)-1])[0] == 'az') ? 'Azure' : 'Local';
-    				}
-    				$counter++;
-    			}
-    		}
-    	} catch (\Exception $e) {
-    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-    	}
-    	$seriesCat .= ']';
-    	
-    	if(empty($benchs)) $benchs = array('wordcount');
-    	echo $this->container->getTwig()->render('bestconfig/bestconfig.html.twig',
-    		array('selected' => 'Best configuration',
-    				'title' => 'Best Run Configuration',
-    				'execsDetails' => json_encode($execsDetails),
-    				'order_type' => $order_type,
-    				'benchs' => $benchs,
-    				'nets' => $nets,
-    				'disks' => $disks,
-    				'blk_sizes' => $blk_sizes,
-    				'comps' => $comps,
-    				'id_clusters' => $id_clusters,
-    				'mapss' => $mapss,
-    				'replications' => $replications,
-    				'iosfs' => $iosfs,
-    				'iofilebufs' => $iofilebufs,
-    				'money' => $money,
-    				'seriesCat' => $seriesCat,
-    				'seriesData' => $seriesData,
-    				'select_multiple_benchs' => false
-    	));
-    }
     
     public function metricVsMetricAction()
     {
@@ -1396,11 +1290,308 @@ class DefaultController extends AbstractController
     } else
     	$execs = $_GET['execs'][0];
     
-    echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
+  	  echo $this->container->getTwig()->render('metricvsmetric/metricvsmetric.html.twig',
     		array('selected' => 'Metric vs metric',
     				'series' => $result,
     				'execs' => $execs,
     				'aggrY' => $aggrY
     		));
+    }
+
+    public function bestConfigAction() {
+		$db = $this->container->getDBUtils ();
+		$rows_config = '';
+		$bestexec = '';
+		$cluster = '';
+		$comp = '';
+		$execsDetails = array ();
+		try {
+			$configurations = array ();
+			$where_configs = '';
+			$concat_config = "";
+			
+			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
+			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
+			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
+			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config, false );
+			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config, false );
+			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config, false );
+			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config, false );
+			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config, false );
+			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
+			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
+			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
+			if (! $benchs)
+				$where_configs .= 'AND bench IN (\'wordcount\')';
+			$order_type = Utils::get_GET_string ( 'ordertype' );
+			if (! $order_type)
+				$order_type = 'exe_time';
+				// $concat_config = join(',\'_\',', $configurations);
+				// $concat_config = substr($concat_config, 1);
+			
+			$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+			$order_conf = 'LENGTH(conf), conf';
+			
+			// get the result rows
+			$query = "SELECT e.*,
+    		(exe_time/3600)*(cost_hour) cost
+    		from execs e
+    		join clusters USING (id_cluster)
+    		WHERE e.valid = TRUE $where_configs
+    		ORDER BY $order_type ASC;";
+			
+			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
+			
+			$rows = $db->get_rows ( $query );
+			
+			if (! $rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+			if ($rows) {
+				$bestexec = $rows[0];
+				$conf = $bestexec['exec'];
+				$parameters = explode ( '_', $conf );
+				$cluster = (explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+				Utils::makeExecInfoBeauty($bestexec);
+			}
+		} catch ( \Exception $e ) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
+		
+		if (empty ( $benchs ))
+			$benchs = array (
+					'wordcount' 
+			);
+		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
+				'selected' => 'Best configuration',
+				'title' => 'Best Run Configuration',
+				'bestexec' => $bestexec,
+				'cluster' => $cluster,
+				'order_type' => $order_type,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
+				'money' => $money,
+				'select_multiple_benchs' => false 
+		) );
+	}
+	public function paramEvaluationAction() {
+		$db = $this->container->getDBUtils ();
+		$rows = '';
+		$categories = '';
+		$series = '';
+		try {
+			$configurations = array ();
+			$where_configs = '';
+			$concat_config = "";
+			
+			if(!(isset($_GET['benchs'])))
+				$_GET['benchs'][] = 'wordcount';
+			
+			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
+			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
+			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
+			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
+			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
+			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
+			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
+			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
+			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
+			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
+			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
+			// $concat_config = join(',\'_\',', $configurations);
+			// $concat_config = substr($concat_config, 1);
+			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
+			$minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
+			$minExecsFilter = "";
+			if($minExecs > 0)
+				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
+			
+			$filter_execs = "AND valid = TRUE";
+				
+			$paramOptions = array();
+			if($paramEval == 'maps')
+				$paramOptions = array(4,6,8,10,12,16,24,32);
+			else if($paramEval == 'comp')
+				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
+		    else if($paramEval == 'id_cluster')
+				$paramOptions = array('Local','Azure');
+			else if($paramEval == 'net')
+				$paramOptions = array('Ethernet','Infiniband');
+			else if($paramEval == 'disk')
+				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
+			else if($paramEval == 'replication')
+				$paramOptions = array(1,2,3);
+			else if($paramEval == 'iofilebuf')
+				$paramOptions = array(1,4,16,32,64,128,256);
+			else if($paramEval == 'blk_size')
+				$paramOptions = array(32,64,128,256);
+			else if($paramEval == 'iosf')
+				$paramOptions = array(5,10,20,50);
+			
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+						
+			// get the result rows
+			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
+				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
+				"from execs e WHERE 1 $filter_execs $where_configs".
+				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
+			
+			$rows = $db->get_rows ( $query );
+
+			if (!$rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+	
+			$categories = '';
+			$arrayBenchs = array();
+			foreach ( $paramOptions as $param ) {
+				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
+				foreach($benchOptions as $bench) {
+					$arrayBenchs[$bench['bench']][$param] = null;
+				}
+			}
+
+			$series = array();
+			$bench = '';
+			foreach($rows as $row) {
+				if($paramEval == 'comp')
+					$row[$paramEval] = Utils::getCompressionName($row['comp']);
+				else if($paramEval == 'id_cluster') {
+					if($row[$paramEval] == 1)
+						$row[$paramEval] = 'Local';
+					else
+						$row[$paramEval] = 'Azure';
+				} else if($paramEval == 'net')
+					$row[$paramEval] = Utils::getNetworkName($row['net']);
+				else if($paramEval == 'disk')
+					$row[$paramEval] = Utils::getDisksName($row['disk']);
+				else if($paramEval == 'iofilebuf')
+					$row[$paramEval] /= 1024;
+				
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
+			}				
+					
+			foreach($arrayBenchs as $key => $arrayBench)
+			{
+				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
+			}
+			$series = json_encode($series);
+		} catch ( \Exception $e ) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
+		
+		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
+				'selected' => 'Parameter Evaluation',
+				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
+				'categories' => $categories,
+				'series' => $series,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
+				'money' => $money,
+				'paramEval' => $paramEval
+		) );
+	}
+	
+	public function publicationsAction()
+	{
+		echo $this->container->getTwig()->render('publications/publications.html.twig', array(
+				'selected' => 'Publications',
+				'title' => 'ALOJA Publications'));
+	}
+	
+	public function teamAction()
+	{
+		echo $this->container->getTwig()->render('team/team.html.twig', array(
+				'selected' => 'Team',
+				'title' => 'ALOJA Team & Collaborators'));
+	}
+	
+	public function clustersAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
+				'selected' => 'Clusters',
+				'title' => 'ALOJA Clusters'));
+	}
+	
+	public function clusterCostsAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
+				'selected' => 'Clusters Costs',
+				'title' => 'ALOJA Clusters Costs'));
+	}
+
+    public function dbscanAction()
+    {
+        $jobid = Utils::get_GET_string("jobid");
+
+        // if no job requested, show a random one
+        if (strlen($jobid) == 0 || $jobid === "random") {
+            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+            $db = $this->container->getDBUtils();
+            $query = "
+                SELECT DISTINCT(t.`JOBID`)
+                FROM `JOB_tasks` t
+                ORDER BY RAND()
+                LIMIT 1
+            ;";
+            $jobid = $db->get_rows($query)[0]['JOBID'];
+        }
+
+        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+            array(
+                'selected' => 'DBSCAN',
+                'highcharts_js' => HighCharts::getHeader(),
+                'jobid' => $jobid,
+                'METRICS' => DBUtils::$TASK_METRICS,
+            )
+        );
+    }
+
+    public function dbscanexecsAction()
+    {
+        $jobid = Utils::get_GET_string("jobid");
+
+        // if no job requested, show a random one
+        if (strlen($jobid) == 0 || $jobid === "random") {
+            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+            $db = $this->container->getDBUtils();
+            $query = "
+                SELECT DISTINCT(t.`JOBID`)
+                FROM `JOB_tasks` t
+                ORDER BY RAND()
+                LIMIT 1
+            ;";
+            $jobid = $db->get_rows($query)[0]['JOBID'];
+        }
+
+        list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
+
+        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
+            array(
+                'selected' => 'DBSCANexecs',
+                'highcharts_js' => HighCharts::getHeader(),
+                'jobid' => $jobid,
+                'bench' => $bench,
+                'job_offset' => $job_offset,
+                'METRICS' => DBUtils::$TASK_METRICS,
+            )
+        );
     }
 }
