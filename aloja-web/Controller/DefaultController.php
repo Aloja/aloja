@@ -1234,8 +1234,8 @@ class DefaultController extends AbstractController
 				$order_type = 'exe_time';
 				// $concat_config = join(',\'_\',', $configurations);
 				// $concat_config = substr($concat_config, 1);
-			
-			$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+
+            $filter_execs = DBUtils::getFilterExecs();
 			$order_conf = 'LENGTH(conf), conf';
 			
 			// get the result rows
@@ -1243,7 +1243,7 @@ class DefaultController extends AbstractController
     		(exe_time/3600)*(cost_hour) cost
     		from execs e
     		join clusters USING (id_cluster)
-    		WHERE e.valid = TRUE $where_configs
+    		WHERE 1 $filter_execs $where_configs
     		ORDER BY $order_type ASC;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
