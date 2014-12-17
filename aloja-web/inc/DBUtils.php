@@ -91,6 +91,7 @@ class DBUtils
     public static function getFilterExecs()
     {
         return "
+AND bench_type = 'HiBench'
 AND exe_time between 200 and 15000
 AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
 AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null)
