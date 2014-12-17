@@ -67,16 +67,15 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = DBUtils::getFilterExecs();
+            $filter_execs = "AND exe_time between 200 and 150000 AND bench_type = 'HiBench' AND bench not like 'prep_%";
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
             $query = "SELECT count(*) num, concat($concat_config) conf from execs e
                       WHERE 1 $filter_execs $where_configs
-                      GROUP BY conf ORDER BY $order_conf
+                      GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
 
-echo $query;
 
             $rows_config = $db->get_rows($query);
 
@@ -99,12 +98,12 @@ echo $query;
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
                       #(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
                       (select AVG(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) AVG_ALL_exe_time,
+                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MAX_ALL_exe_time,
+                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MIN_ALL_exe_time,
                       'none'
                       from execs e
-                      WHERE 1 $filter_execs $where_configs
+                      WHERE 1  $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
-
-echo "<Br>\n\n". $query;
 
             $rows = $db->get_rows($query);
 
