@@ -39,7 +39,7 @@ MYSQL="mysql $MYSQL_ARGS $DB -e "
 
 if [ "$INSERT_DB" == "1" ] ; then
   mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
-  . "$CUR_DIR/create_db.sh"
+  source "$CUR_DIR/common/create_db.sh"
 fi
 
 #CREATE TABLE AND LOAD VALUES FROM CSV FILE

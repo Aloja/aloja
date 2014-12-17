@@ -145,8 +145,8 @@ LOG="2>&1 |tee -a $LOG_PATH"
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="/scratch/ssd/npoggi/aplic/jdk1.7.0_25"
 
-[ ! "JAVA_XMS" ] && JAVA_XMS="-Xms512m"
-[ ! "JAVA_XMX" ] && JAVA_XMX="-Xmx1024m"
+[ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
+[ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
 
 bwm_source="/scratch/ssd/npoggi/aplic/sge-hadoop-jobs/bin/bwm-ng"
 

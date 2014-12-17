@@ -414,18 +414,18 @@ get_initizalize_disks_test() {
 
 get_share_location() {
 
-  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
 
   if [ "$cloud_provider" == "pedraforca" ] ; then
-    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
   elif [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
     #internal network
     local fs_mount="$minerva_mount
-$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no 0 0"
+$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
   else
     #external network
     local fs_mount="$minerva_mount
-$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222 0 0"
+$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
   fi
 
   echo -e "$fs_mount"
@@ -632,12 +632,13 @@ vm_install_base_packages() {
 
       #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
-      #only update apt sources when is 1 week old (600000) to save time
+      #only update apt sources when is 1 day old (86400) to save time
       local install_packages_command='
-if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 600000 ]; then
-  sudo apt-get update -m;
-fi
+#if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 86400 ]; then
+#  sudo apt-get update -m;
+#fi
 
+sudo apt-get update -m;
 sudo apt-get install -y -f '
 
       local install_packages_command="$install_packages_command ssh $base_packages;"
@@ -668,7 +669,7 @@ vm_install_extra_packages() {
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing extra packages for for VM $vm_name "
 
-      vm_execute "sudo apt-get install -y -f vim mc git;"
+      vm_execute "sudo apt-get install -y -f screen vim mc git iotop htop;"
 
       local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
       if [ ! -z "$test_install_extra_packages" ] ; then
@@ -958,7 +959,7 @@ vm_set_master_forer() {
 vm_puppet_apply() {
 
   logger "Transfering puppet to VM"
-  vm_local_scp "$puppet" "~/" "-rp"
+  vm_rsync "$puppet" "~/" ""
   logger "Puppet install modules and apply"
 
 	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"

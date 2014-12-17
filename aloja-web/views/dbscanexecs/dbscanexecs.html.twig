@@ -13,6 +13,12 @@
 
             // Form with all the chart options
             var form = $('form#options');
+            var metric_x = form.find("[name='metric_x']");
+            var metric_y = form.find("[name='metric_y']");
+            var task_type = form.find("[name='type']");
+
+            // Load form data from URL parameters
+            loadFiltersFromUrl();
 
             // Call updateChart for form events
             form.change(updateChart);
@@ -99,15 +105,33 @@
                 chart.redraw()
             }
 
+            function loadFiltersFromUrl() {
+                var uri = new URI();
+                var uri_query = uri.query(true);
+
+                $.each([
+                    {v: metric_x, s: "metric_x"},
+                    {v: metric_y, s: "metric_y"},
+                    {v: task_type, s: "task_type"},
+                ], function(index, value) {
+                    if (uri.hasQuery(value.s) === true) {
+                        value.v.val(uri_query[value.s]);
+                    }
+                });
+            }
+
             function updateChart(event) {
                 // Start loading (only show first time, if not already present)
                 if (chart.loadingShown !== true) {
                     chart.showLoading();
                 }
 
-                // Load chart options from html form
-                var metric_x = form.find("[name='metric_x']");
-                var metric_y = form.find("[name='metric_y']");
+                // Set current form options as url query parameters
+                setUrlQuery({
+                    metric_x: metric_x.val(),
+                    metric_y: metric_y.val(),
+                    task_type: task_type.val(),
+                });
 
                 // Launch ajax request
                 $.ajax({
@@ -115,6 +139,7 @@
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
+                        task_type: task_type.val(),
                     },
                 })
                 .done(function(data) {
@@ -213,6 +238,7 @@
                 },
                 plotOptions: {
                     series: {
+                        turboThreshold: Number.MAX_VALUE,
                         animation: false,
                         point: {
                             events: {
@@ -262,6 +288,16 @@
             {% for current_metric in METRICS %}
                 <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
             {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task type:
+            <select name="type" class="form-control">
+                <option value="MAP">Map</option>
+                <option value="REDUCE">Reduce</option>
+                <option value="CLEANUP">Cleanup</option>
+                <option value="SETUP">Setup</option>
+                <option value="">All</option>
             </select>
         </label>
     </form>

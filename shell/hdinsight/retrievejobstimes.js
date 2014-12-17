@@ -1,7 +1,7 @@
 var https = require('https');
  
 // Cluster Authentication Setup
-var clustername = "alojahdi8";
+var clustername = "";
 var username = require('../../secure/azure_settings.js').username;
 var password = require('../../secure/azure_settings.js').password;
 

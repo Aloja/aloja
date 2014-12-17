@@ -10,6 +10,7 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
 
 source "$CUR_DIR/common/include_import.sh"
+source "$CUR_DIR/common/import_functions.sh"
 
 #TODO check if these variables are still needed
 DROP_DB_FIRST=""
@@ -32,170 +33,80 @@ fi
 #TABLE MANIPULATION
 #MYSQL_ARGS="-uroot --local-infile -f -b --show-warnings " #--show-warnings -B
 
-MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
+MYSQL_CREDENTIALS="" #using sudo if from same machine
+#MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
 #MYSQL_CREDENTIALS="-u npm -paaa -h gallactica "
 
 MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
 DB="aloja2"
-MYSQL="mysql $MYSQL_ARGS $DB -e "
+MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
 
-#mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
+#logger "Dropping database $DB"
+#sudo mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
-
-  mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
-  source "$CUR_DIR/create_db.sh"
+  sudo mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
+  source "$CUR_DIR/common/create_db.sh"
 fi
-
-#CREATE TABLE AND LOAD VALUES FROM CSV FILE
-# $1 TABLE NAME $2 PATH TO CSV FILE $3 DROP THE DB FIRST $4 DELIMITER $5 DB
-insert_DB(){
-
-  echo "Inserting into DB $sar_file TN $1"
-
-  if [[ $(head "$2"|wc -l) > 1 ]] ; then
-    echo "Loading $2 into $1"
-head -n3 "$2"
-
-    $MYSQL "
-    SET time_zone = '+00:00';
-    LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
-    FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
-    IGNORE 1 LINES;"
-    echo -e "Loaded $2 into $1\n"
-
-  else
-    echo "EMPTY CSV FILE FOR $csv_name $(cat $csv_name)"
-  fi
-
-  rm $2
-}
-
-#$1 cluster
-get_insert_cluster_sql() {
-  local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
-  source "$clusterConfigFile"
-
-  local sql="
-INSERT into clusters set
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link=''
-   ON DUPLICATE KEY UPDATE
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='';\n"
-
-  local nodeName="$(get_master_name)"
-  sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
-
-  for nodeName in $(get_slaves_names) ; do
-    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
-  done
-
-  echo -e "$sql\n"
-}
-
-
-get_exec_params(){
-  #here get the zabbix URL to parse filtering prepares and other benchmarks
-  exec_params="$(grep  -e 'href'  "$1" |grep 8099 |grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|\
-  awk -v exec=$2 ' \
-  { pri_bar = (index($1,"/")+1); \
-  conf = substr($1, 0, (pri_bar-2));\
-  pri_mas = (index($5,">")-7);\
-  time_pos = (index($5,"&stime=")+7);\
-  split(exec, parts,"_"); \
-  bench = substr($5,(pri_mas+8));\
-  zt = substr($5,(time_pos),14);\
-  \
-  if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
-  print \
-  "\"" bench "\",\"" \
-  $(NF-1) "\",\"" \
-  strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
-  strftime("%F %H:%M:%S", $3, 1) "\",\""\
-  parts[4]"\",\"" \
-  parts[5]"\",\"" \
-  substr(parts[6],2)"\",\"" \
-  substr(parts[7],2)"\",\"" \
-  substr(parts[8],2)"\",\"" \
-  substr(parts[9],2)"\",\"" \
-  substr(parts[10],2)"\",\"" \
-  substr(parts[11],2)"\",\"" \
-  substr(parts[12],2) "\",\"" \
-  substr($5,7,(pri_mas-1)) "\"" \
-  } \
-  ' )"
-
-#echo -e "$1\n$exec_params"
-
-  # Time from Zabbix format
-  # substr(zt,0,4) "-" substr(zt,5,2) "-" substr(zt,7,2) " " substr(zt,9,2) ":" substr(zt,11,2) ":" substr(zt,13,2) "\",\"" \
-
-}
-
-get_id_exec(){
-    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
-    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'
-    LIMIT 1;"| tail -n 1)
-}
-
-get_id_exec_conf_params(){
-    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
-    AND id_exec NOT IN (select distinct (id_exec) from execs_conf_parameters where id_exec is not null)
-    LIMIT 1;"| tail -n 1)
-}
-
-insert_conf_params_DB(){
-	job_name=$3;
-	id_exec=$2;
-	params=$1;
-	for param in $params ; do
-		param_name=$(echo $param | cut -d= -f1)
-		param_value=$(echo $param | cut -d= -f2)
-		insert="INSERT INTO execs_conf_parameters (id_execs_conf_parameters, id_exec, job_name, parameter_name, parameter_value)
-			VALUES(NULL, $id_exec, \"$job_name\", \"$param_name\", \"$param_value\" );"
-		$MYSQL "$insert";
-	done
-}
 
 ######################################
 
-echo "Starting"
+#filter folders by date
+min_date="20120101"
+min_time="$(date --utc --date "$min_date" +%s)"
+
+logger "Starting"
 
 for folder in 201* ; do
 
-  #TODO and folder not in list of folders to avoid repetitions
-  if [[ -d "$folder" ]] && [ "${folder:0:8}" -gt "20120101" ] ; then
-    echo "Entering folder $folder"
+  cd "$BASE_DIR" #make sure we come back to the starting folder
+  logger "Iterating folder\t$folder CP: $(pwd)"
+
+  folder_time="$(date --utc --date "${folder:0:8}" +%s)"
+
+  if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
+    logger "Entering folder\t$folder"
     cd "$folder"
 
-    #get all executions detail
+    #get all executions details
     exec_params=""
     get_exec_params "log_${folder}.log" "$folder"
+
     if [[ -z $exec_params ]] ; then
-      echo "CANNOT FIND EXEC DETAILS IN LOG"
-      #continue
+      logger "ERROR: cannot find exec details in log. Exiting folder..."
+      cd ..
+      continue
+    else
+      logger "Exec params:\n$exec_params"
     fi
 
-	##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
-	for bzip_file in prep_*.tar.bz2 ; do
-		bench_folder="${bzip_file%%.*}"
-		#if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
-	        echo "Untaring $bzip_file"
-	        tar -xjf "$bzip_file"
-		#fi
-	done
+    ##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
+    logger "Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
+    for bzip_file in prep_*.tar.bz2 ; do
+      bench_folder="${bzip_file%%.*}"
+      if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
+        logger "Untaring $bzip_file"
+        tar -xjf "$bzip_file"
+      fi
+    done
 	
     for bzip_file in *.tar.bz2 ; do
 
       bench_folder="${bzip_file%%.*}"
-      #if [[ "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "prep_" && "${bench_folder:0:5}" != "conf_" && ( ( ! -d "$bench_folder" ) || "$REDO_UNTARS" == "1" ) ]]  ; then
-        echo "Untaring $bzip_file"
+
+      #skip conf folders
+      [ "$bench_folder" == "host_conf" ] && continue
+
+      if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
+        logger "Untaring $bzip_file in $(pwd)"
+        logger " LS: $(ls -lah "$bzip_file")"
         tar -xjf "$bzip_file"
-      #fi
+      fi
 
-    #if [[ -d "$bench_folder" && "${bench_folder:0:4}" != "prep" && "${bench_folder:0:4}" != "run_" && "${bench_folder:0:5}" != "conf_" && "${bench_folder:(-5)}" != "_conf" ]] ; then
+      if [ -d "$bench_folder" ] ; then
 
+        logger "Entering $bench_folder"
         cd "$bench_folder"
-        echo "Entering $bench_folder"
 
         exec="${folder}/${bench_folder}"
 
@@ -209,7 +120,7 @@ for folder in 201* ; do
 
           $MYSQL "$(get_insert_cluster_sql "$cluster")"
         fi
-        echo "Cluster $cluster"
+        logger "Cluster $cluster"
 
         if [[ ! -z $exec_values ]] ; then
 
@@ -218,11 +129,11 @@ for folder in 201* ; do
                   ON DUPLICATE KEY UPDATE
                   start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
                   end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
-          echo "$insert"
+          logger "$insert"
 
           $MYSQL "$insert"
         elif [ "$bench_folder" == "SCWC" ] ; then
-          echo "Processing SCWC"
+          logger "Processing SCWC"
 
           insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
                   VALUES (NULL, $cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
@@ -230,53 +141,22 @@ for folder in 201* ; do
                   #ON DUPLICATE KEY UPDATE
                   #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
                   #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
-          echo "$insert"
+          logger "$insert"
 
           $MYSQL "$insert"
 
         else
-          echo "CANNOT FIND BENCH $bench_folder EXEC DETAILS IN LOG"
+          logger "ERROR: cannot find bench $bench_folder execution details in log"
           #continue
         fi
 
-        id_exec=""
-        get_id_exec_conf_params "$exec"
-        
-        if [[ ! -z "$id_exec" ]] ; then
-        	jobconfs=""
-        	#get Haddop conf files which are NOT jobs of prep
-#			if [ -d "prep_$bench_folder" ]; then
-#				#1st: get jobs in prep
-#				cd ../"prep_$bench_folder"
-#				prepjobs=$(find "./history/done" -type f -name "job*.xml");
-#				#2nd: get jobs in bench folder
-#				cd ../$bench_folder
-#				jobconfs=$(find "./history/done" -type f -name "job*.xml");
-#				#3rd: 2 files, with one line per job in bench folder and prep folder
-#				echo $jobconfs | tr ' ' '\n' > file.tmp
-#				echo $prepjobs | tr ' ' '\n' > file2.tmp
-#				#4rd: strip jobs in prep folder and cleanup
-#				jobconfs=$(grep -v -f file2.tmp file.tmp)
-#				rm file.tmp file2.tmp
-#			else
-#				echo "Not prep folder, considering all confs belonging to exec"
-#				jobconfs=$(find "./history/done" -type f -name "job*.xml");
-#			fi
-#
-#			#Dump parameters from valid conf files to DB
-#			for job_conf in $jobconfs ; do
-#				params=$($CUR_DIR/getconf_param.sh -f $job_conf);
-#				filename=$(basename "$job_conf")
-#				job_name="${filename%.*}"
-#				job_name="${job_name:0:(-5)}"
-#				insert_conf_params_DB "$params" "$id_exec" "$job_name"
-#			done
-		#fi
-		
-		id_exec=""
+        #get Job XML configuration if needed
+        #get_job_confs
+
+		    id_exec=""
         get_id_exec "$exec"
 
-        echo -e "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
+        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
 			
         if [[ ! -z "$id_exec" ]] ; then
 
@@ -286,7 +166,7 @@ for folder in 201* ; do
               #get the Hadoop job logs
               job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
 
-              echo "Generating Hadoop Job CSVs for $bench_folder"
+              logger "Generating Hadoop Job CSVs for $bench_folder"
               #rm -rf "hadoop_job"
               #rm -rf "sysstat"
               mkdir -p "hadoop_job"
@@ -296,9 +176,9 @@ for folder in 201* ; do
                 job_name="${job_file##*/}"
                 job_name="${job_name:0:21}"
 
-                echo "Processing Job $job_name File $job_file"
+                logger "Processing Job $job_name File $job_file"
 
-                echo "Extrating Job history details for $job_file"
+                logger "Extrating Job history details for $job_file"
                 python2.7 "$CUR_DIR/job_history.py" -j "hadoop_job/${job_name}.details.csv" -d "hadoop_job/${job_name}.status.csv" -t "hadoop_job/${job_name}.tasks.csv" -i "$job_file"
 
               done
@@ -315,16 +195,16 @@ for folder in 201* ; do
                   job_name="${csv_file:0:$(($separator_pos - 1))}"
                   counter="${csv_file:$separator_pos:-4}"
                   table_name="JOB_${counter}"
-                  echo "Inserting into DB $csv_file TN $table_name"
+                  logger "Inserting into DB $csv_file TN $table_name"
                   #add host and missing data to csv
                   awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp.csv
 
                   insert_DB "${table_name}" "tmp.csv" "" ","
                 else
-                  echo -e "File $csv_file is INVALID\n$(cat $csv_file)"
+                  logger "File $csv_file is INVALID\n$(cat $csv_file)"
                 fi
               done
-              cd ..; echo -e "\n"
+              cd ..; logger "\n"
 
               for sar_file in sar*.sar ; do
                 if [[ $(head $sar_file |wc -l) > 1 ]] ; then
@@ -371,11 +251,11 @@ for folder in 201* ; do
 
                       insert_DB "${table_name}" "$csv_name" "" ";"
                     else
-                      echo "ERROR, no command for $table_name"
+                      logger "ERROR: no command for $table_name"
                     fi
                   done
                 else
-                  echo "File $sar_file is INVALID"
+                  logger "ERROR: File $sar_file is INVALID"
                 fi
               done
 
@@ -384,13 +264,13 @@ for folder in 201* ; do
                   #get host name from file name
                   hostn="${vmstats_file:7:-4}"
                   table_name="VMSTATS"
-                  echo "Inserting into DB $vmstats_file TN $table_name"
+                  logger "Inserting into DB $vmstats_file TN $table_name"
 
                   tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp.csv
 
                   insert_DB "${table_name}" "tmp.csv" "" ","
                 else
-                  echo "File $vmstats_file is INVALID"
+                  logger "ERROR: File $vmstats_file is INVALID"
                 fi
               done
 
@@ -400,7 +280,7 @@ for folder in 201* ; do
                   hostn="${bwm_file:4:-4}"
                   #there are two formats, 9 and 15 fields
                   bwm_format="$(head -n 1 "$bwm_file" |grep -o ';'|wc -l)"
-                  echo "BWM format $bwm_format"
+                  logger "BWM format $bwm_format"
                   head -n3 "$bwm_file"
                   if [[ $bwm_format -gt 9 ]] ; then
                     table_name="BWM2"
@@ -410,20 +290,23 @@ for folder in 201* ; do
                     cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;unix_timestamp;iface_name;bytes_out;bytes_in;bytes_total;packets_out;packets_in;packets_total;errors_out;errors_in\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp.csv
                   fi
 
-                  echo "Inserting into DB $bwm_file TN $table_name"
+                  logger "Inserting into DB $bwm_file TN $table_name"
 
                   insert_DB "${table_name}" "tmp.csv" "" ";"
                 else
-                  echo "File $bwm_file is INVALID"
+                  logger "File $bwm_file is INVALID"
                 fi
               done
-
             fi
-
           fi
-          cd ..; echo -e "\n"
-        fi
-    done
-    cd ..; echo -e "\n"
+          cd ..; logger "Leaving folder $bench_folder\n"
+      else
+        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
+      fi
+    done #end for bzip file
+    cd ..; logger "Leaving folder $folder\n"
+  else
+    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
+    [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
   fi
-done
+done #end for folder

@@ -1,3 +1,5 @@
+#file must be sourced
+
 echo "Checking if to create tables"
 
 $MYSQL "

@@ -714,6 +714,7 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+        $task_type = $db->get_task_type(Utils::get_GET_string("task_type"));
         $heuristic = Utils::get_GET_int("heuristic") !== null ? Utils::get_GET_int("heuristic") : 1;
         $eps = Utils::get_GET_float("eps") !== null ? Utils::get_GET_float("eps") : 250000;
         $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
@@ -723,7 +724,7 @@ VALUES
             $eps = $minPoints = null;
         }
 
-        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $eps, $minPoints);
+        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $task_type, $eps, $minPoints);
 
         $seriesData = array();
         foreach ($dbscan->getClusters() as $cluster) {
@@ -778,16 +779,18 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+        $task_type = $db->get_task_type(Utils::get_GET_string("task_type"));
 
         list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
 
         // Calc pending dbscanexecs (if any)
-        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y);
+        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type);
         if (count($pending) > 0) {
-            $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y);
+            $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y, $task_type);
         }
 
         // Retrieve calculated dbscanexecs from database
+        $task_type_select = $db->get_task_type_query($task_type, $filter_null=true);
         $query = "
             SELECT
                 d.`id_exec`,
@@ -799,6 +802,7 @@ VALUES
                 d.`job_offset` = :job_offset AND
                 d.`metric_x` = :metric_x AND
                 d.`metric_y` = :metric_y
+                ".$task_type_select('d')."
         ;";
         $query_params = array(
             ":bench" => $bench,
