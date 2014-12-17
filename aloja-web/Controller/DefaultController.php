@@ -1645,4 +1645,129 @@ class DefaultController extends AbstractController
     			)
     	);
     }
+
+    public function mldatacollapseAction()
+    {
+    	$jsonExecs = array();
+    	try {
+	    	$db = $this->container->getDBUtils();
+	    	
+	    	$configurations = array ();
+	    	$where_configs = '';
+	    	$concat_config = "";
+	    	
+	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+
+		$dims1 = "Benchmark"; // FIXME - From input
+		$dims2 = "Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster"; // FIXME - From input
+		$dname1 = "Benchmark"; // FIXME - From input
+		$dname2 = "Configuration"; // FIXME - From input
+
+		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2;
+		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config);
+
+		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+		if (!file_exists($cache_ds))
+		{
+			// get headers for csv
+			$header_names = array(
+				'id_exec' => 'ID',
+				'bench' => 'Benchmark',
+				'exe_time' => 'Exe Time',
+				'exec' => 'Exec Conf',
+				'cost' => 'Running Cost $',
+				'net' => 'Net',
+				'disk' => 'Disk',
+				'maps' => 'Maps',
+				'iosf' => 'IO SFac',
+				'replication' => 'Rep',
+				'iofilebuf' => 'IO FBuf',
+				'comp' => 'Comp',
+				'blk_size' => 'Blk size',
+				'id_cluster' => 'Cluster',
+				'histogram' => 'Histogram',
+				'prv' => 'PARAVER',
+				'end_time' => 'End time',
+			);
+
+		    	$query="SHOW COLUMNS FROM execs;";
+		    	$rows = $db->get_rows ($query);
+			$headers = array();
+			$names = array();
+			$count = 0;
+			foreach($rows as $row)
+			{
+				if (array_key_exists($row['Field'],$header_names))
+				{
+					$headers[$count] = $row['Field'];
+					$names[$count++] = $header_names[$row['Field']];
+				}
+			}
+			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+			$names[$count++] = $header_names['cost'];
+
+			// dump the result to csv
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+		    	$rows = $db->get_rows ( $query );
+
+			$fp = fopen($cache_ds, 'w');
+			fputcsv($fp, $names,',','"');
+		    	foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+				fputcsv($fp, array_values($row),',','"');
+			}
+
+			// prepare collapse
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options;
+			$output = shell_exec($command);
+
+			// update cache record (for human reading)
+			$register = md5($config).' :'.$config."\n";
+			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+		}
+
+		// read results of the CSV
+		$count = 0;
+		if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-matrix.csv', 'r')) !== FALSE)
+		{
+			$header = fgetcsv($handle, 1000, ",");
+			$jsonHeader = '[{title:"---"}';
+			foreach ($header as $title)
+			{
+				$jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+			}
+			$jsonHeader = $jsonHeader.']';
+
+			$jsonData = '[';
+			while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+			{
+				if ($jsonData!='[') $jsonData = $jsonData.',';
+				$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
+			}
+			$jsonData = $jsonData.']';
+			fclose($handle);
+		}
+    	}
+	catch(Exception $e)
+	{
+		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+
+		$noData = array();
+		for($i = 0; $i<=sizeof($show_in_result); ++$i) $noData[] = 'error';
+
+		$jsonEncoded = json_encode(array('aaData' => array($noData)));
+	}
+	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig', array('jsonEncoded' => $jsonData,'jsonHeader' => $jsonHeader));
+    }
 }

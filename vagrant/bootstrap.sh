@@ -70,6 +70,8 @@ if ! which R > /dev/null; then
 	"libxml2-dev" "gsettings-desktop-schemas" -y --force-yes
 
 	## For Ubuntu 14.04
+	#wget http://security.ubuntu.com/ubuntu/pool/main/t/tiff/libtiff4_3.9.5-2ubuntu1.6_amd64.deb
+	#dpkg -i ./libtiff4_3.9.5-2ubuntu1.6_amd64.deb
 	#apt-get install "openjdk-7-jre-lib" "openjdk-7-jre-headless" "openjdk-7-jdk" "r-base" "r-base-core" "r-base-dev" "r-base-html" \
 	#"r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" \
 	#"r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" \

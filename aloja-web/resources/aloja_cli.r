@@ -23,7 +23,7 @@
 #	 ./aloja_cli.r -m aloja_best_configurations -p bvec_name=dsc1 -v
 
 library(devtools);
-source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r",sha1="c34f0f6f7c8cd059d565c40ae07e0eb2f9d4d022");
+source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r");
 
 ###############################################################################
 # Read arguments from CLI
