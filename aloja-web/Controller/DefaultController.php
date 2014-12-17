@@ -67,7 +67,7 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+            $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
