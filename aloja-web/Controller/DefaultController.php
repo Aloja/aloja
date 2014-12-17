@@ -67,7 +67,7 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = DBUtils::getFilterExecs();
+            $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
@@ -75,6 +75,7 @@ class DefaultController extends AbstractController
                       WHERE 1 $filter_execs $where_configs
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
+echo $query; exit;
 
             $rows_config = $db->get_rows($query);
 
