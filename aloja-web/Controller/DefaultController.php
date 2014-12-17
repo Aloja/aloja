@@ -72,7 +72,7 @@ class DefaultController extends AbstractController
             
             //get configs first (categories)
             $query = "SELECT count(*) num, concat($concat_config) conf from execs e
-                      WHERE 1 $filter_execs $where_configs
+                      WHERE 1 aaaa $filter_execs $where_configs
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
 
@@ -101,7 +101,7 @@ class DefaultController extends AbstractController
                       #(select MIN(exe_time) FROM execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
                       'none'
                       from execs e
-                      WHERE 1 $filter_execs $where_configs
+                      WHERE 1 bbbb $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
 
             $rows = $db->get_rows($query);
