@@ -67,7 +67,7 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = "AND exe_time between 200 and 150000 AND bench_type = 'HiBench' AND bench not like 'prep_%";
+            $filter_execs = "AND exe_time between 200 and 150000 AND bench_type = 'HiBench' AND bench not like 'prep_%' ";
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
