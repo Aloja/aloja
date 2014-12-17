@@ -27,7 +27,7 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
       mkdir $containerName
    }
    
-   $directoryName = $benchName + "r_$reduceTasks"
+   $directoryName = $benchName + "_r_$reduceTasks"
    $result = Test-Path $containerName/$directoryName
    if(!$result) {
      mkdir $containerName/$directoryName
