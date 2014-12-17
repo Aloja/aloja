@@ -46,14 +46,14 @@
 					endif %}
 				</select>
 			</div>
-			<div class="col-md-4">
-				Clusters: (CL)</br> <select class="form-control"
-					name="id_clusters[]" multiple>
-					<option value="1" {% if '1' in id_clusters %} SELECTED {% endif %}>Local</option>
-					<option value="2" {% if '2' in id_clusters %} SELECTED {% endif %}>Azure</option>
-					<option value="None" {% if not id_clusters %} SELECTED {% endif %}>Disabled</option>
-				</select>
-			</div>
+			{#<div class="col-md-4">#}
+				{#Clusters: (CL)</br> <select class="form-control"#}
+					{#name="id_clusters[]" multiple>#}
+					{#<option value="1" {% if '1' in id_clusters %} SELECTED {% endif %}>Local</option>#}
+					{#<option value="2" {% if '2' in id_clusters %} SELECTED {% endif %}>Azure</option>#}
+					{#<option value="None" {% if not id_clusters %} SELECTED {% endif %}>Disabled</option>#}
+				{#</select>#}
+			{#</div>#}
 		</div>
 		<div class="row">
 			<div class="col-md-4">
