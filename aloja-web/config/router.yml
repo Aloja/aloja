@@ -103,9 +103,9 @@ dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
     
-mltemplate:
-    pattern: "/mltemplate"
-    controller: "alojaweb\\Controller\\DefaultController::mltemplateAction"
+mlprediction:
+    pattern: "/mlprediction"
+    controller: "alojaweb\\Controller\\DefaultController::mlpredictionAction"
 
 mldatacollapse:
     pattern: "/mldatacollapse"
