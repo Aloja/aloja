@@ -1670,7 +1670,7 @@ class DefaultController extends AbstractController
 	{
 	    	$db = $this->container->getDBUtils();
 	    	
-	    	$configurations = array ();
+/*	    	$configurations = array ();
 	    	$where_configs = '';
 	    	$concat_config = "";
 	    	
@@ -1684,18 +1684,33 @@ class DefaultController extends AbstractController
 	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
 	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
 	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+*/
+		$dims1 = "Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster"; // FIXME - From input
+		$dims2 = "Benchmark"; // FIXME - From input
+		$dname1 = "Configuration"; // FIXME - From input
+		$dname2 = "Benchmark"; // FIXME - From input
+		$filling = "f9a02da6488bd924d92af2d16c71fb05"; // FIXME - bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144") regtree
 
-		var_dump($_GET);
+		if (file_exists(getcwd().'/cache/query/'.$filling.'-object.rds')) $learning_model = ':model_name='.$filling;
 
-		$dims1 = "Benchmark"; // FIXME - From input
-		$dims2 = "Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster"; // FIXME - From input
-		$dname1 = "Benchmark"; // FIXME - From input
-		$dname2 = "Configuration"; // FIXME - From input
-
-		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2;
-		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config);
+		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$filling;
+		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model;
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+		if (file_exists($cache_ds))
+		{
+			$keep_cache = TRUE;
+			foreach (array("ids", "matrix", "object") as &$value)
+			{
+				$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
+			}
+			if (!$keep_cache)
+			{
+				unlink($cache_ds);
+				shell_exec("sed -i '".md5($config)." : ".$config."/d' ".getcwd()."/cache/query/record.data");
+			}
+		}
+
 		if (!file_exists($cache_ds))
 		{
 			// get headers for csv
@@ -1736,7 +1751,7 @@ class DefaultController extends AbstractController
 			$names[$count++] = $header_names['cost'];
 
 			// dump the result to csv
-		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ";//.$where_configs.";";
 		    	$rows = $db->get_rows ( $query );
 
 			$fp = fopen($cache_ds, 'w');
@@ -1758,23 +1773,39 @@ class DefaultController extends AbstractController
 		}
 
 		// read results of the CSV
-		$count = 0;
-		if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-matrix.csv', 'r')) !== FALSE)
+		if (	($handle = fopen(getcwd().'/cache/query/'.md5($config).'-matrix.csv', 'r')) !== FALSE
+		&&	($handid = fopen(getcwd().'/cache/query/'.md5($config).'-ids.csv', 'r')) !== FALSE )
 		{
 			$header = fgetcsv($handle, 1000, ",");
-			$jsonHeader = '[{title:"---"}';
-			foreach ($header as $title)
-			{
-				$jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-			}
+			$headid = fgetcsv($handid, 1000, ",");
+
+			$jsonHeader = '[{title:""}';
+			foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 			$jsonHeader = $jsonHeader.']';
 
-			$jsonData = '[';
-			while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+			$jsonColumns = '[';
+			for ($i = 1; $i <= count($header); $i++)
 			{
+				if ($jsonColumns != '[') $jsonColumns = $jsonColumns.',';
+				$jsonColumns = $jsonColumns.$i;
+			}
+			$jsonColumns = $jsonColumns.']';
+
+			$jsonData = '[';
+			$jsonColor = '[';
+			while (	($data = fgetcsv($handle, 1000, ",")) !== FALSE
+			&&	($daid = fgetcsv($handid, 1000, ",")) !== FALSE )
+			{
+				$data = str_replace('NA','',$data);
 				if ($jsonData!='[') $jsonData = $jsonData.',';
 				$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
+
+				$aux = array();
+				for ($j = 0; $j < count($daid); $j++) $aux[$j] = ($daid[$j] == 'NA')?0:1;
+				if ($jsonColor!='[') $jsonColor = $jsonColor.',';
+				$jsonColor = $jsonColor.'[\''.implode("','",$daid).'\']';
 			}
+			$jsonColor = $jsonColor.']';
 			$jsonData = $jsonData.']';
 			fclose($handle);
 		}
@@ -1788,6 +1819,13 @@ class DefaultController extends AbstractController
 
 		$jsonEncoded = json_encode(array('aaData' => array($noData)));
 	}
-	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig', array('jsonEncoded' => $jsonData,'jsonHeader' => $jsonHeader));
+	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig',
+		array(
+			'jsonEncoded' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'jsonColumns' => $jsonColumns,
+			'jsonColor' => $jsonColor
+		)
+	);
     }
 }

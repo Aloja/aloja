@@ -12,7 +12,7 @@
             overflow-x:auto;
             width: 100%;
         }
-    </style>
+	</style>
 {% endblock %}
 
 {% block content %}
@@ -21,13 +21,13 @@
 	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
 		<p></p>
 	</div>
-
-	<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
-
-{% endblock %}
-
-	<div style="clear: both;">
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify">[WiP] Put here some explanation of what is going on here...</p>
+		<hr />
 	</div>
+	<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+{% endblock %}
+	<div style="clear: both;"></div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
 	<script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
@@ -43,9 +43,8 @@
 		$('#benchmark').dataTable(
 		{
 			"aaData": {{ jsonEncoded | raw }},
-			"columns": {{ jsonHeader | raw }}
-//			"aaData": [['pagerank','2667','2896'],['terasort','1545','1568'],['wordcount','NA','1277']],
-//			"columns": [{title:'Benchmark'},{title:'ETH:HDD: 8:10:1: 4096:Cmp0: 64:Cl2'},{title:'ETH:HDD: 8:10:1: 32768:Cmp0: 64:Cl2'}]
+			"columns": {{ jsonHeader | raw }},
+			"columnDefs" : [{"targets" : {{ jsonColumns | raw }}, "render" : function (data) { return Math.round(data); }}]
 		}
 		);
 	});
