@@ -8,10 +8,14 @@
         @import "js/datatables/extras/TableTools/media/css/TableTools.css";
         @import "js/datatables/extras/ColVis/media/css/ColVis.css";
         .scrollStyle
-        {
-            overflow-x:auto;
-            width: 100%;
+	{
+		overflow-x:auto;
+		width: 100%;
         }
+	td.highlight {
+		font-weight: italic;
+		color: red;
+	}
 	</style>
 {% endblock %}
 
@@ -40,11 +44,14 @@
 	<script type="text/javascript">
 	$(document).ready(function()
 	{
+		var test = {{ jsonColor | raw }};
+
 		$('#benchmark').dataTable(
 		{
 			"aaData": {{ jsonEncoded | raw }},
 			"columns": {{ jsonHeader | raw }},
-			"columnDefs" : [{"targets" : {{ jsonColumns | raw }}, "render" : function (data) { return Math.round(data); }}]
+			"columnDefs" : [{"targets" : {{ jsonColumns | raw }}, "render" : function (data) { return Math.round(data); }}],
+			"createdRow": function ( row, data, index ) { var i; for (i = 0; i < test[index].length; i++) if ( test[index][i] == 0 ) $('td', row).eq(i).addClass('highlight'); }
 		}
 		);
 	});

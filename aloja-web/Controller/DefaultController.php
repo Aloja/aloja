@@ -1803,7 +1803,7 @@ class DefaultController extends AbstractController
 				$aux = array();
 				for ($j = 0; $j < count($daid); $j++) $aux[$j] = ($daid[$j] == 'NA')?0:1;
 				if ($jsonColor!='[') $jsonColor = $jsonColor.',';
-				$jsonColor = $jsonColor.'[\''.implode("','",$daid).'\']';
+				$jsonColor = $jsonColor.'[\''.implode("','",$aux).'\']';
 			}
 			$jsonColor = $jsonColor.']';
 			$jsonData = $jsonData.']';
