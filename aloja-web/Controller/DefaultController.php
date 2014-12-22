@@ -1665,7 +1665,6 @@ class DefaultController extends AbstractController
 
     public function mldatacollapseAction()
     {
-    	$jsonExecs = array();
     	try
 	{
 	    	$db = $this->container->getDBUtils();
@@ -1800,6 +1799,7 @@ class DefaultController extends AbstractController
 				if ($jsonData!='[') $jsonData = $jsonData.',';
 				$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
 
+
 				$aux = array();
 				for ($j = 0; $j < count($daid); $j++) $aux[$j] = ($daid[$j] == 'NA')?0:1;
 				if ($jsonColor!='[') $jsonColor = $jsonColor.',';
@@ -1808,6 +1808,9 @@ class DefaultController extends AbstractController
 			$jsonColor = $jsonColor.']';
 			$jsonData = $jsonData.']';
 			fclose($handle);
+
+			// Negative prediction values (errors) are considered by default 100 as the minimal value...
+			$jsonData = preg_replace('/(\-\d+\.\d+)/','100.0',$jsonData);
 		}
     	}
 	catch(Exception $e)
@@ -1821,10 +1824,129 @@ class DefaultController extends AbstractController
 	}
 	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig',
 		array(
+			'selected' => 'mldatacollapse',
 			'jsonEncoded' => $jsonData,
 			'jsonHeader' => $jsonHeader,
 			'jsonColumns' => $jsonColumns,
 			'jsonColor' => $jsonColor
+		)
+	);
+    }
+
+
+    public function mlfindattributesAction()
+    {
+    	try
+	{
+	    	$db = $this->container->getDBUtils();
+	    	
+	    	$configurations = array ();
+	    	$where_configs = '';
+	    	$concat_config = "";
+	    	
+	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+
+		// Compose instance:
+		$bench_token = '';
+		if (empty($benchs)) { $bench_token = '*'; }
+		else { foreach ($benchs as $b) $bench_token = $bench_token.(($bench_token != '')?'|':'').$b; }
+
+		$nets_token = '';
+		if (empty($nets)) { $nets_token = '*'; }
+		else { foreach ($nets as $b) $nets_token = $nets_token.(($nets_token != '')?'|':'').$b; }
+
+		$disks_token = '';
+		if (empty($disks)) { $disks_token = '*'; }
+		else { foreach ($disks as $b) $disks_token = $disks_token.(($disks_token != '')?'|':'').$b; }
+
+		$blk_sizes_token = '';
+		if (empty($blk_sizes)) { $blk_sizes_token = '*'; }
+		else { foreach ($blk_sizes as $b) $blk_sizes_token = $blk_sizes_token.(($blk_sizes_token != '')?'|':'').$b; }
+
+		$comps_token = '';
+		if (empty($comps)) { $comps_token = '*'; }
+		else { foreach ($comps as $b) $comps_token = $comps_token.'Cmp'.(($comps_token != '')?'|':'').$b; }
+
+		$id_clusters_token = '';
+		if (empty($id_clusters)) { $id_clusters_token = '*'; }
+		else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.'Cl'.(($id_clusters_token != '')?'|':'').$b; }
+
+		$mapss_token = '';
+		if (empty($mapss)) { $mapss_token = '*'; }
+		else { foreach ($mapss as $b) $mapss_token = $mapss_token.(($mapss_token != '')?'|':'').$b; }
+
+		$replications_token = '';
+		if (empty($replications)) { $replications_token = '*'; }
+		else { foreach ($replications as $b) $replications_token = $replications_token.(($replications_token != '')?'|':'').$b; }
+
+		$iosfs_token = '';
+		if (empty($iosfs)) { $iosfs_token = '*'; }
+		else { foreach ($iosfs as $b) $iosfs_token = $iosfs_token.(($iosfs_token != '')?'|':'').$b; }
+
+		$iofilebufs_token = '';
+		if (empty($iofilebufs)) { $iofilebufs_token = '*'; }
+		else { foreach ($iofilebufs as $b) $iofilebufs_token = $iofilebufs_token.(($iofilebufs_token != '')?'|':'').$b; }
+
+		$instance = $bench_token.','.$nets_token.','.$disks_token.','.$mapss_token.','.$iosfs_token.','.$replications_token.','.$iofilebufs_token.','.$comps_token.','.$blk_sizes_token.','.$id_clusters_token;
+		$model = "f9a02da6488bd924d92af2d16c71fb05"; // FIXME - bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144") regtree
+
+		// drop query
+		$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
+		$output = shell_exec($command);
+
+		// Read results
+		$lines = explode("\n", $output);
+		$jsonData = '[';
+		$i = 1;
+		while($i < count($lines))
+		{
+			if ($lines[$i]=='') break;
+			$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+			if ($jsonData!='[') $jsonData = $jsonData.',';
+			$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+			$i++;
+		}
+		$jsonData = $jsonData.']';
+
+		$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
+		$jsonHeader = '[{title:"A"}';
+		foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+		$jsonHeader = $jsonHeader.']';
+	}
+	catch(Exception $e)
+	{
+		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+
+		$noData = array();
+		for($i = 0; $i<=sizeof($show_in_result); ++$i) $noData[] = 'error';
+
+		$jsonEncoded = json_encode(array('aaData' => array($noData)));
+	}
+	echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
+		array(
+			'selected' => 'mlfindattributes',
+			'instance' => $instance,
+			'benchs' => $benchs,
+			'nets' => $nets,
+			'disks' => $disks,
+			'blk_sizes' => $blk_sizes,
+			'comps' => $comps,
+			'id_clusters' => $id_clusters,
+			'mapss' => $mapss,
+			'replications' => $replications,
+			'iosfs' => $iosfs,
+			'iofilebufs' => $iofilebufs,
+			'jsonData' => $jsonData,
+			'jsonHeader' => $jsonHeader
 		)
 	);
     }

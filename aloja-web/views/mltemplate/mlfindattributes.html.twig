@@ -1,0 +1,57 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %} {{ parent() }}
+	<style type="text/css">
+        @import "js/datatables/media/css/demo_table.css";
+        @import "js/datatables/media/css/jquery.dataTables.css";
+        @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables/extras/TableTools/media/css/TableTools.css";
+        @import "js/datatables/extras/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x:auto;
+            width: 100%;
+        }
+	</style>
+{% endblock %}
+{% block content %}
+
+{% block datacollapsed %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify">[WiP] Put here some explanation of what is going on here...</p>
+		<hr />
+	</div>
+	<div style="float: left; width: 60%;">
+		<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+	</div>
+{% endblock %}
+{% include 'common/config_filters.html.twig' %}
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extras/FixedHeader/js/FixedHeader.nightly.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extras/ColReorder/media/js/ColReorder.nightly.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
+
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$("select.form-control option[value='None']").hide();
+		var div = document.getElementById('introduction');
+		div.innerHTML = div.innerHTML + "<p>" + "{{ instance }}" + "</p>";
+
+		$('#benchmark').dataTable(
+		{
+			"aaData": {{ jsonData | raw }},
+			"columns": {{ jsonHeader | raw }},
+			"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }}]
+		}
+		);
+	});
+	</script>
+{% endblock %}
