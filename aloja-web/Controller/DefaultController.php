@@ -1525,7 +1525,13 @@ class DefaultController extends AbstractController
 		$dummy = "";
 		$learn_param	= Utils::read_params('learn',$dummy,$configurations,$dummy);
 
-		if (count($_GET) > 1)
+		// Check params...
+		$all_ok = !empty($benchs) && !empty($nets) && !empty($disks) && !empty($blk_sizes) && !empty($comps) && !empty($id_clusters) && !empty($mapss) && !empty($replications) && !empty($iosfs) && !empty($iofilebufs);
+
+		$message = "";
+		if (count($_GET) > 1 && !$all_ok) $message = "Select AT LEAST 1 value for each attribute";
+
+		if (count($_GET) > 1 && $all_ok)
 		{
 			$config = str_replace(array('AND ','IN '),'',$where_configs).' '.$learn_param[0];
 			$learn_options = 'saveall='.md5($config);
@@ -1534,8 +1540,6 @@ class DefaultController extends AbstractController
 			else if ($learn_param[0] == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
 			else if ($learn_param[0] == 'nnet') $learn_method = 'aloja_nnet';
 			else if ($learn_param[0] == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3'; }
-
-			//if ($_GET['params']) $learn_options = $learn_options.":".$_GET['params'];
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
@@ -1658,7 +1662,8 @@ class DefaultController extends AbstractController
 			'replications' => $replications,
 			'iosfs' => $iosfs,
 			'iofilebufs' => $iofilebufs,
-			'learn' => $learn_param
+			'learn' => $learn_param,
+			'message' => $message
 		)
     	);
     }
@@ -1690,6 +1695,7 @@ class DefaultController extends AbstractController
 		$dname2 = "Benchmark"; // FIXME - From input
 		$filling = "f9a02da6488bd924d92af2d16c71fb05"; // FIXME - bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144") regtree
 
+		$learning_model = '';
 		if (file_exists(getcwd().'/cache/query/'.$filling.'-object.rds')) $learning_model = ':model_name='.$filling;
 
 		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$filling;
