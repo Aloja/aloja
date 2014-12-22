@@ -107,3 +107,11 @@ dbscanexecs:
 dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+    
+mltemplate:
+    pattern: "/mltemplate"
+    controller: "alojaweb\\Controller\\DefaultController::mltemplateAction"
+
+mldatacollapse:
+    pattern: "/mldatacollapse"
+    controller: "alojaweb\\Controller\\DefaultController::mldatacollapseAction"

@@ -1,0 +1,92 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+{% block content %}
+
+<div id="chart" style="float: left; width: 60%;"></div>
+{% include 'common/config_filters.html.twig' %}
+<div style="clear: both;">
+</div>
+{% endblock %} {% block javascript %} {{ parent() }}
+<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+<script type="text/javascript" src="js/utils.js"></script>
+<script type="text/javascript">
+      $(document).ready(function() {
+		//$("input").change(function() {
+		//	$("form").submit();
+		//});
+		$('#chart').highcharts( {
+    		        chart: {
+    		            type: 'scatter',
+    		            zoomType: 'xy'
+    		        },
+    		        title: {
+    		            text: 'Prediction Results'
+    		        },
+    		        subtitle: {
+    		            text: 'Predictions'
+    		        },
+    		        xAxis: {
+    		            title: {
+    		                enabled: true,
+    		                text: 'Predicted Execution Time (s)'
+    		            },
+    		            startOnTick: true,
+    		            endOnTick: true,
+    		            showLastLabel: true
+    		        },
+    		        yAxis: {
+    		            title: {
+    		                text: 'Real Execution Time (s)'
+    		            }
+    		        },
+	                credits: {
+				enabled: false
+		            },
+//     		        legend: {
+//     		            layout: 'vertical',
+//     		            align: 'left',
+//     		            verticalAlign: 'top',
+//     		            x: 100,
+//     		            y: 70,
+//     		            floating: true,
+//     		            backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF',
+//     		            borderWidth: 1
+//     		        },
+    		        plotOptions: {
+    		            scatter: {
+    		                marker: {
+    		                    radius: 5,
+    		                    states: {
+    		                        hover: {
+    		                            enabled: true,
+    		                            lineColor: 'rgb(100,100,100)'
+    		                        }
+    		                    }
+    		                },
+    		                states: {
+    		                    hover: {
+    		                        marker: {
+    		                            enabled: false
+    		                        }
+    		                    }
+    		                },
+    		                tooltip: {
+    		                    headerFormat: '',
+    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
+    		                }
+    		            }
+    		        },
+    		        series: [{
+    		            name: 'Exe time',
+    		            color: 'rgba(223, 83, 83, .5)',
+    		            data: {{ jsonExecs | raw }}
+			    //data: [{x:669,y:630,mydata:"data1"},{x:700,y:700,mydata:"data2"}]
+
+			}]
+		});
+	});
+    </script>
+{% endblock %}
