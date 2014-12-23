@@ -1863,10 +1863,16 @@ class DefaultController extends AbstractController
 
 		$jsonData = $jsonHeader = "[]";
 		$instance = "";
+		$possible_models = array();
+		$possible_models_id = array();
+		$message = "";
+
+		$current_model = "";
+		if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
 		if (count($_GET) > 1)
 		{
-			// compose instance:
+			// compose instance
 			$bench_token = '';
 			if (empty($benchs)) { $bench_token = '*'; }
 			else { foreach ($benchs as $b) $bench_token = $bench_token.(($bench_token != '')?'|':'').$b; }
@@ -1907,47 +1913,105 @@ class DefaultController extends AbstractController
 			if (empty($iofilebufs)) { $iofilebufs_token = '*'; }
 			else { foreach ($iofilebufs as $b) $iofilebufs_token = $iofilebufs_token.(($iofilebufs_token != '')?'|':'').$b; }
 
-			$instance = $bench_token.','.$nets_token.','.$disks_token.','.$mapss_token.','.$iosfs_token.','.$replications_token.','.$iofilebufs_token.','.$comps_token.','.$blk_sizes_token.','.$id_clusters_token;
-			$model = "f9a02da6488bd924d92af2d16c71fb05"; // FIXME - bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144") regtree
+			// find possible models to predict
+			$model_info = str_replace(array('AND ','IN '),'',$where_configs);
 
-			$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
-			if (!file_exists($cache_filename))
+			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
 			{
-				// drop query
-				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
-				$output = shell_exec($command);
-
-				// read results
-				$lines = explode("\n", $output);
-				$jsonData = '[';
-				$i = 1;
-				while($i < count($lines))
+				while (!feof($fh))
 				{
-					if ($lines[$i]=='') break;
-					$parsed = preg_replace('/\s+/', ',', $lines[$i]);
-					if ($jsonData!='[') $jsonData = $jsonData.',';
-					$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
-					$i++;
+					$line = fgets($fh, 4096);
+					if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
+					{
+						$fts = explode(" : ",$line);
+						$parts = explode(" ",$fts[1]);
+						$buffer = array();
+						$last_part = "";
+						foreach ($parts as $p)
+						{
+							if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+							else $last_part = $p;
+						}
+
+						if ($model_info[0]==' ') $model_info = substr($model_info, 1);
+						$parts_2 = explode(" ",$model_info);
+						$buffer_2 = array();
+						$last_part = "";
+						foreach ($parts_2 as $p)
+						{
+							if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+							else $last_part = $p;
+						}
+
+						$match = TRUE;
+						foreach ($buffer_2 as $bk => $ba)
+						{
+							if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
+							if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+						}
+
+						if ($match)
+						{
+							$possible_models[] = $line;
+							$possible_models_id[] = $fts[0];
+						}
+					}
 				}
-				$jsonData = $jsonData.']';
+				fclose($fh);
+			}
 
-				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
-				$jsonHeader = '[{title:""}';
-				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-				$jsonHeader = $jsonHeader.']';
+			// compose and run instance
+			$instance = $bench_token.','.$nets_token.','.$disks_token.','.$mapss_token.','.$iosfs_token.','.$replications_token.','.$iofilebufs_token.','.$comps_token.','.$blk_sizes_token.','.$id_clusters_token;
 
-				// save at cache
-				file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+			if (!empty($possible_models_id))
+			{
+				if ($current_model != "") $model = $current_model;
+				else $model = $possible_models_id[0];
 
-				// update cache record (for human reading)
-				$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
+				if (!file_exists($cache_filename))
+				{
+					// drop query
+					$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
+					$output = shell_exec($command);
+
+					// read results
+					$lines = explode("\n", $output);
+					$jsonData = '[';
+					$i = 1;
+					while($i < count($lines))
+					{
+						if ($lines[$i]=='') break;
+						$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+						if ($jsonData!='[') $jsonData = $jsonData.',';
+						$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+						$i++;
+					}
+					$jsonData = $jsonData.']';
+
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
+					$jsonHeader = '[{title:""}';
+					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+					$jsonHeader = $jsonHeader.']';
+
+					// save at cache
+					file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+
+					// update cache record (for human reading)
+					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+				}
+				else
+				{
+					// get cache
+					$data = explode("\n",file_get_contents($cache_filename));
+					$jsonHeader = $data[0];
+					$jsonData = $data[1];
+				}
 			}
 			else
 			{
-				$data = explode("\n",file_get_contents($cache_filename));
-				$jsonHeader = $data[0];
-				$jsonData = $data[1];
+				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 			}
 		}
 	}
@@ -1960,7 +2024,8 @@ class DefaultController extends AbstractController
 
 		$jsonData = json_encode(array('aaData' => array($noData)));
 		$jsonHeader = "[]";
-		$instance = "";
+		$instance = $possible_models_id = "";
+		$possible_models = array();
 	}
 	echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
 		array(
@@ -1977,7 +2042,11 @@ class DefaultController extends AbstractController
 			'iosfs' => $iosfs,
 			'iofilebufs' => $iofilebufs,
 			'jsonData' => $jsonData,
-			'jsonHeader' => $jsonHeader
+			'jsonHeader' => $jsonHeader,
+			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+			'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+			'current_model' => $current_model,
+			'message' => $message
 		)
 	);
     }
