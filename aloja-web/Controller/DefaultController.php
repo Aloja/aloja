@@ -1815,7 +1815,7 @@ class DefaultController extends AbstractController
 			$jsonData = $jsonData.']';
 			fclose($handle);
 
-			// Negative prediction values (errors) are considered by default 100 as the minimal value...
+			// negative prediction values (errors) are considered by default 100 as the minimal value...
 			$jsonData = preg_replace('/(\-\d+\.\d+)/','100.0',$jsonData);
 		}
     	}
@@ -1866,7 +1866,7 @@ class DefaultController extends AbstractController
 
 		if (count($_GET) > 1)
 		{
-			// Compose instance:
+			// compose instance:
 			$bench_token = '';
 			if (empty($benchs)) { $bench_token = '*'; }
 			else { foreach ($benchs as $b) $bench_token = $bench_token.(($bench_token != '')?'|':'').$b; }
@@ -1910,28 +1910,45 @@ class DefaultController extends AbstractController
 			$instance = $bench_token.','.$nets_token.','.$disks_token.','.$mapss_token.','.$iosfs_token.','.$replications_token.','.$iofilebufs_token.','.$comps_token.','.$blk_sizes_token.','.$id_clusters_token;
 			$model = "f9a02da6488bd924d92af2d16c71fb05"; // FIXME - bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144") regtree
 
-			// drop query
-			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
-			$output = shell_exec($command);
-
-			// Read results
-			$lines = explode("\n", $output);
-			$jsonData = '[';
-			$i = 1;
-			while($i < count($lines))
+			$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
+			if (!file_exists($cache_filename))
 			{
-				if ($lines[$i]=='') break;
-				$parsed = preg_replace('/\s+/', ',', $lines[$i]);
-				if ($jsonData!='[') $jsonData = $jsonData.',';
-				$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
-				$i++;
-			}
-			$jsonData = $jsonData.']';
+				// drop query
+				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
+				$output = shell_exec($command);
 
-			$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
-			$jsonHeader = '[{title:"A"}';
-			foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-			$jsonHeader = $jsonHeader.']';
+				// read results
+				$lines = explode("\n", $output);
+				$jsonData = '[';
+				$i = 1;
+				while($i < count($lines))
+				{
+					if ($lines[$i]=='') break;
+					$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+					if ($jsonData!='[') $jsonData = $jsonData.',';
+					$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+					$i++;
+				}
+				$jsonData = $jsonData.']';
+
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
+				$jsonHeader = '[{title:""}';
+				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+				$jsonHeader = $jsonHeader.']';
+
+				// save at cache
+				file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+
+				// update cache record (for human reading)
+				$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+			}
+			else
+			{
+				$data = explode("\n",file_get_contents($cache_filename));
+				$jsonHeader = $data[0];
+				$jsonData = $data[1];
+			}
 		}
 	}
 	catch(Exception $e)
