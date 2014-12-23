@@ -114,3 +114,7 @@ mldatacollapse:
 mlfindattributes:
     pattern: "/mlfindattributes"
     controller: "alojaweb\\Controller\\DefaultController::mlfindattributesAction"
+
+mlclearcache:
+    pattern: "/mlclearcache"
+    controller: "alojaweb\\Controller\\DefaultController::mlclearcacheAction"

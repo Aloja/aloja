@@ -1705,9 +1705,9 @@ class DefaultController extends AbstractController
 		if (file_exists($cache_ds))
 		{
 			$keep_cache = TRUE;
-			foreach (array("ids", "matrix", "object") as &$value)
+			foreach (array("ids.csv", "matrix.csv", "object.rds") as &$value)
 			{
-				$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
+				$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value);
 			}
 			if (!$keep_cache)
 			{
@@ -1966,7 +1966,7 @@ class DefaultController extends AbstractController
 			if (!empty($possible_models_id))
 			{
 				if ($current_model != "") $model = $current_model;
-				else $model = $possible_models_id[0];
+				else $current_model = $model = $possible_models_id[0];
 
 				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
 				if (!file_exists($cache_filename))
@@ -2014,6 +2014,10 @@ class DefaultController extends AbstractController
 				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 			}
 		}
+		else
+		{
+			$message = "Select the attributes to create a prediction on the right menu";
+		}
 	}
 	catch(Exception $e)
 	{
@@ -2047,6 +2051,47 @@ class DefaultController extends AbstractController
 			'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 			'current_model' => $current_model,
 			'message' => $message
+		)
+	);
+    }
+
+    public function mlclearcacheAction()
+    {
+    	try
+	{
+		$message = "";
+		$output = array();
+
+		if (array_key_exists("ccache",$_GET))
+		{
+			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+			{
+				while (!feof($fh))
+				{
+					$line = fgets($fh, 4096);
+					$fts = explode(" : ",$line);
+
+					$command = 'rm '.getcwd().'/cache/query/'.$fts[0].'-*';
+					$output[] = shell_exec($command);
+				}
+				fclose($fh);
+
+				$command = 'rm '.getcwd().'/cache/query/record.data';
+				$output[] = shell_exec($command);
+			}
+		}
+	}
+	catch(Exception $e)
+	{
+		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		$message = $e->getMessage();
+		$output = array();
+	}
+	echo $this->container->getTwig()->render('mltemplate/mlclearcache.html.twig',
+		array(
+			'selected' => 'mlclearcache',
+			'message' => $message,
+			'output' => '<li>'.implode("</li><li>",$output).'</li>'
 		)
 	);
     }

@@ -61,6 +61,8 @@
 		$("select.form-control option[value='None']").hide();
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
+		if ("{{jsonData | raw}}" == '[]') $("#footer").hide();
+
 		var target = document.getElementById('select-model');
 		var mid = {{ models_id | raw }};
 		for (i = 0; i < mid.length; i++)
