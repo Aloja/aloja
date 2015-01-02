@@ -44,3 +44,4 @@ try {
       $container->displayServerError();
     }
 }
+$this->container['log']->addDebug('GOT into index.php');
