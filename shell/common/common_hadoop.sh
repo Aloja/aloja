@@ -1,4 +1,3 @@
-
 prepare_hadoop_config(){
 
   #before running hibench, set exports and vars

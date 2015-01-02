@@ -67,7 +67,7 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = "AND exe_time between 200 and 150000 AND bench_type = 'HiBench' AND bench not like 'prep_%' ";
+            $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
@@ -75,7 +75,6 @@ class DefaultController extends AbstractController
                       WHERE 1 $filter_execs $where_configs
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
-
 
             $rows_config = $db->get_rows($query);
 
@@ -97,12 +96,12 @@ class DefaultController extends AbstractController
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
                       #(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
-                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) AVG_ALL_exe_time,
-                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MAX_ALL_exe_time,
-                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MIN_ALL_exe_time,
+                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $where_configs) AVG_ALL_exe_time,
+                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $where_configs) MAX_ALL_exe_time,
+                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
                       'none'
                       from execs e
-                      WHERE 1  $filter_execs $where_configs
+                      WHERE 1 $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
 
             $rows = $db->get_rows($query);
@@ -1329,7 +1328,7 @@ class DefaultController extends AbstractController
 			else if($paramEval == 'comp')
 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
 		    else if($paramEval == 'id_cluster')
-				$paramOptions = array('rl-06');
+				$paramOptions = array('Local','Cloud');
 			else if($paramEval == 'net')
 				$paramOptions = array('Ethernet','Infiniband');
 			else if($paramEval == 'disk')
