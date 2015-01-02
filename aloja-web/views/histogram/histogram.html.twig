@@ -7,6 +7,52 @@
 
 			// Form with all the chart options
 			var form = $('form#options');
+			var metric = form.find("[name='metric']");
+			var task_type = form.find("[name='type']");
+			var group = form.find("[name='group']");
+			var accumulated_elem = form.find("[name='accumulated']");
+			var accumulated = accumulated_elem.hasClass("active");
+			var divided_elem = form.find("[name='divided']");
+			var divided = divided_elem.hasClass("active");
+
+			var tasks_chart = null;
+
+			// Load form data from URL parameters
+			loadFiltersFromUrl();
+
+			function loadFiltersFromUrl() {
+				var uri = new URI();
+				var uri_query = uri.query(true);
+
+				$.each([
+					{v: metric, s: "metric"},
+					{v: task_type, s: "task_type"},
+					{v: group, s: "group"},
+				], function(index, value) {
+					if (uri.hasQuery(value.s) === true) {
+						value.v.val(uri_query[value.s]);
+					}
+				});
+
+				// This is a special case
+				$.each([
+					{v: accumulated_elem, s: "accumulated"},
+					{v: divided_elem, s: "divided"},
+				], function(index, value) {
+					if (uri.hasQuery(value.s) === true) {
+						if (uri.hasQuery(value.s, 1) === true) {
+							value.v.addClass("active");
+						} else {
+							value.v.removeClass("active");
+						}
+					}
+				});
+
+				// Another special case
+				if (uri.hasQuery("tasks_chart") === true) {
+					tasks_chart = uri_query["tasks_chart"];
+				}
+			}
 
 			var globalData = null;
 		    var chart = null;
@@ -120,14 +166,17 @@
 			
 			function updateTasksChart(selected, source)
 			{
+				// First time use the value loaded from the url and reset it
+				if (tasks_chart !== null) {
+					selected = tasks_chart;
+					tasks_chart = null;
+				}
+
 				var jobid = selected.split("/")[0];
 
 				// Load chart options from html form
-				var metric = form.find("[name='metric']");
-				var task_type = form.find("[name='type']");
-				var group = form.find("[name='group']");
-				var accumulated = form.find("[name='accumulated']").hasClass("active");
-				var divided = form.find("[name='divided']").hasClass("active");
+				accumulated = accumulated_elem.hasClass("active");
+				divided = divided_elem.hasClass("active");
 
 				// Workaround
 				// When a button toggle event is dispatched, the class
@@ -148,6 +197,16 @@
 				} else {
 					group.prop("disabled", false);
 				}
+
+				// Set current form options as url query parameters
+				setUrlQuery({
+					metric: metric.val(),
+					task_type: task_type.val(),
+					group: group.val(),
+					accumulated: ((accumulated)?1:0),
+					divided: ((divided)?1:0),
+					tasks_chart: selected,
+				});
 
 				// Launch ajax request
 				$.ajax({
