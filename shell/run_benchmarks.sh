@@ -216,19 +216,18 @@ JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
 Master node: $master_name "
 
 
-HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
 
-##TODO fix for non HDD
-#if [ "$DISK" == "L" ] ; then
-#  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-#elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
-#  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
-#elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
-#  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
-#else
-#  echo "Incorrect disk specified: $DISK"
-#  exit 1
-#fi
+
+if [ "$DISK" == "HDD" ] ; then
+  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
+  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
+  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
+else
+  echo "Incorrect disk specified: $DISK"
+  exit 1
+fi
 
 #BENCH_BASE_DIR="/home/$userAloja/share"
 #BENCH_SOURCE_DIR="/scratch/local/aplic"
