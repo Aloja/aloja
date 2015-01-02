@@ -361,17 +361,23 @@ echo -e "HDD=$HDD \nHDIR=${H_DIR}"
   IO_MB="$((IO_FACTOR * 10))"
 
 if [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] ; then
-  HDFS_DIR="$HDD"
+  HDFS_NDIR="$HDD/dfs/name"
+  HDFS_DDIR="$HDD/dfs/data"
 elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ]; then
-  HDFS_DIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/hadoop"
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data"
 elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ]; then
-  HDFS_DIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/hadoop\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/hadoop"
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data"
 elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ]; then
-  HDFS_DIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/hadoop\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/hadoop\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/hadoop"
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
 else
   echo "Incorrect disk specified2: $DISK"
   exit 1
 fi
+
+logger "DEBUG: HDFS_NDIR: $HDFS_NDIR \nHDFS_DDIR: $HDFS_DDIR"
 
 MAX_REDS="$MAX_MAPS"
 
@@ -384,7 +390,8 @@ s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
 s,##NAMENODE##,$MASTER,g;
 s,##TMP_DIR##,$HDD,g;
-s,##HDFS_DIR##,$HDFS_DIR,g;
+s,##HDFS_NDIR##,$HDFS_NDIR,g;
+s,##HDFS_DDIR##,$HDFS_DDIR,g;
 s,##MAX_MAPS##,$MAX_MAPS,g;
 s,##MAX_REDS##,$MAX_REDS,g;
 s,##IFACE##,$IFACE,g;
@@ -470,12 +477,20 @@ restart_hadoop(){
 
   if [ "$DELETE_HDFS" == "1" ] ; then
     logger "Deleting previous Hadoop HDFS"
-#$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
-#$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
+
     $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
-    #send multiple yes to format
+#TODO fix for variable paths
+$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{dfs,mapred,logs}" 2>&1 |tee -a $LOG_PATH
+$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/dfs/data;" 2>&1 |tee -a $LOG_PATH
+$DSH "mkdir -p /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data" 2>&1 |tee -a $LOG_PATH
+
+    #yes Y | send multiple yes to format
+    logger "Formating datanodes"
+    $DSH "yes Y | $H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+
+    logger "Formating namenode"
     $DSH_MASTER "yes Y | $H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
-    $DSH_MASTER "yes Y | $H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+
   fi
 
   $DSH_MASTER $H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
