@@ -53,7 +53,7 @@ update execs SET disk='RR3' where disk='R3';
 update execs SET bench_type='HiBench' where bench_type='';
 update execs SET bench_type='HiBench-min' where bench_type='-min';
 update execs SET bench_type='HiBench-10' where bench_type='-10';
-update execs SET bench_type='HiBench-10' where bench IN ('prep_terasort', 'terasort') and start_time < '2014-12-02';
+update execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
 "
 
 $MYSQL "
