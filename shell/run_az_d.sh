@@ -162,6 +162,9 @@ DSH="dsh -M -c -m "
 
 IFACE="eth0"
 
+master_name="$(get_master_name)"
+DSH_MASTER="ssh $master_name"
+
 node_names="$(get_node_names)"
 
 if [ ! -z "$LIMIT_DATA_NODES" ] ; then
@@ -183,11 +186,7 @@ fi
 
 DSH="$DSH $(nl2char "$node_names" ",")"
 
-#nodes="$(nl2char "$node_names" " ")"
-
-master_name="$(get_master_name)"
-DSH_MASTER="ssh $master_name"
-DSH_SLAVE="ssh $master_name" #TODO check if OK
+DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 
 if [ "$DISK" == "SSD" ] ; then
@@ -233,16 +232,38 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 #temporary OS config
 $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
 
+  #temporary to avoid read-only file system errors
+  echo "Checking if to remount /home/$userAloja/share"
+  $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+
+  for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+    echo "Checking if to remount $mount_point"
+    $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
+  done
+
+  #$DSH "sudo mount -o force /home/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
+
 correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
 if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
   #temporary to avoid read-only file system errors
-  echo "Re-mounting attached disks"
-  $DSH "sudo umount /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo mount -a"
+  echo "Checking if to remount /home/$userAloja/share"
+  $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+
+  for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+    echo "Checking if to remount $mount_point"
+    $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
+  done
 
   correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+
+  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
+    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
+    $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
+    sleep 90 2>&1 |tee -a $LOG_PATH
+  fi
 
   if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
     echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
@@ -250,7 +271,6 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
     exit 1
   fi
 fi
-
 
 #create dir to save files in one host
 $DSH_MASTER "mkdir -p $JOB_PATH"
@@ -617,7 +637,7 @@ execute_bench(){
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S') && echo "end $start_date" 2>&1 |tee -a $LOG_PATH
   logger "# EXECUTING ${3}${1}"
 
-  $DSH_SLAVE "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
+  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
 
   local end_exec=$(date '+%s') && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
 

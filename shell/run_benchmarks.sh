@@ -162,6 +162,9 @@ DSH="dsh -M -c -m "
 
 IFACE="eth0"
 
+master_name="$(get_master_name)"
+DSH_MASTER="ssh $master_name"
+
 node_names="$(get_node_names)"
 
 if [ ! -z "$LIMIT_DATA_NODES" ] ; then
@@ -182,14 +185,10 @@ if [ ! -z "$LIMIT_DATA_NODES" ] ; then
 fi
 
 DSH="$DSH $(nl2char "$node_names" ",")"
-
-#nodes="$(nl2char "$node_names" " ")"
-
-master_name="$(get_master_name)"
-DSH_MASTER="ssh $master_name"
-DSH_SLAVE="ssh $master_name" #TODO check if OK
-
 DSH_C="$DSH -c " #concurrent
+
+DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
+
 
 [ -z "BENCH_HDD" ] || [ -z "BENCH_SOURCE_DIR" ] || [ -z "BENCH_HADOOP_VERSION" ] && {
   loggerb  "ERROR: Init variables not set"
@@ -286,17 +285,38 @@ sudo sysctl -w fs.file-max=65536 > /dev/null;
 sudo service ufw stop 2>&1 > /dev/null;
 "
 
-    #TODO improve mount checking
+      #temporary to avoid read-only file system errors
+      echo "Checking if to remount /home/$userAloja/share"
+      $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+
+      for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+        echo "Checking if to remount $mount_point"
+        $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
+      done
+
+      #$DSH "sudo mount -o force /home/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
+
     correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
     if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
       echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
       #temporary to avoid read-only file system errors
-      echo "Re-mounting attached disks"
-      $DSH "sudo umount -f /home/$userAloja/share /scratch/attached/1 /scratch/attached/2 /scratch/attached/3; sudo pkill -9 sshfs; sudo mount -a"
+      echo "Checking if to remount /home/$userAloja/share"
+      $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+
+      for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+        echo "Checking if to remount $mount_point"
+        $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
+      done
 
       correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+
+      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
+        echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
+        $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
+        sleep 90 2>&1 |tee -a $LOG_PATH
+      fi
 
       if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
         echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
@@ -304,6 +324,7 @@ sudo service ufw stop 2>&1 > /dev/null;
         exit 1
       fi
     fi
+
   fi
 fi
 
