@@ -10,19 +10,8 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 
-#global vars
-
-if [ "$cloud_provider" == "azure" ] ; then
-   devicePrefix="sd"
-   cloud_drive_letters="$(echo {c..z})"
-elif [ "$cloud_provider" == "rackspace" ] ; then
-   devicePrefix="xvd"
-   cloud_drive_letters="$(echo {b..z})"
-else
-  logger "WARNING: Provider $cloud_provider has no devices definition."
-  #exit 1
-fi
-
+#####################################################################################
+# Start functions
 
 #$1 vm_name $2 ssh_port
 vm_check_create() {
@@ -472,7 +461,7 @@ get_mount_disks() {
 
   local create_string="
     mkdir -p ~/{share,minerva};
-    sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
+    sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     sudo chown -R $userAloja: /scratch;
     sudo mount -a;
     sudo chown -R $userAloja /scratch
