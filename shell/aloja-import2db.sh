@@ -1,11 +1,10 @@
 #!/bin/bash
 
-INSERT_DB=1 #if to dump CSV into the DB
-DROP_DB_FIRST= #if to drop whatever is there on the first folder
-REDO_ALL=1 #if to redo folders that have source files and IDs in DB
-REDO_UNTARS= #if to redo the untars for folders that have it
-PARALLEL_INSERTS= #if to fork subprocecess when inserting data
-MOVE_TO_DONE= #if set moves completed folders to DONE
+INSERT_DB="1" #if to dump CSV into the DB
+REDO_ALL="" #if to redo folders that have source files and IDs in DB
+REDO_UNTARS="" #if to redo the untars for folders that have it
+PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
+MOVE_TO_DONE="" #if set moves completed folders to DONE
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
@@ -14,7 +13,6 @@ source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
 #TODO check if these variables are still needed
-DROP_DB_FIRST=""
 first_host=""
 hostn=""
 
