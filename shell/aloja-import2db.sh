@@ -200,6 +200,6 @@ for folder in 201* ; do
 
   else
     [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
-    [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
+    [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
   fi
 done #end for folder
