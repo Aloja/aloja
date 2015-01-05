@@ -51,17 +51,17 @@ do
 for REPLICATION in {1..3}
 do
   #DELETE=" "
-for MAX_MAPS in "8" "6" "10" "4" #"24" # "4" "8" "16" "32"
+for MAX_MAPS in "8" "6" "10" #"24" # "4" "8" "16" "32"
 do
 for IO_FACTOR in "10" #"5" "20" #"50"
 do
-for IO_FILE in  "65536" #"32768" "131072" "4096"
+for IO_FILE in  "65536" "32768" "131072" "4096"
 do
 for COMPRESS_TYPE in {0..3}
 do
 for BLOCK_SIZE in "67108864" "33554432" "67108864" "134217728" "268435456" #
 do
-for LIST_BENCHS in "terasort" "kmeans" "wordcount" "sort"  "pagerank" "dfsioe" # "terasort" "bayes"
+for LIST_BENCHS in  "wordcount" "sort" "dfsioe" "pagerank"  # "terasort" "bayes" "kmeans"
 do
 
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
