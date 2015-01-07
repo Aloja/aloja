@@ -41,7 +41,8 @@ backend default {
 #     }
      return (lookup);
  }
-# 
+#
+
  sub vcl_pipe {
 #     # Note that only the first request to the backend will have
 #     # X-Forwarded-For set.  If you use X-Forwarded-For and want to
@@ -67,7 +68,12 @@ backend default {
  }
 # 
  sub vcl_hit {
-     return (deliver);
+  if (req.http.Cache-Control ~ "no-cache"){
+   ban(req.url);
+  }
+  else {
+    return (deliver);
+  }
  }
 # 
  sub vcl_miss {
