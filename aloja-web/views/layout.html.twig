@@ -138,11 +138,19 @@
 		          <ul class="dropdown-menu" role="menu">
 		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
 		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
-		            <li {% if selected is defined and selected == 'mltemplate' %}class="active"{% endif %}><a class="navlink" href="{{ path('mltemplate') }}">ML Template</a></li>
-		            <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">ML Data Collapse</a></li>
-                    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
+		    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
                     <li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>
 		          </ul>
+		        </li>
+
+				<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">ML Prediction</a></li>
+		            <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">ML Data Collapse</a></li>
+		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">ML Find Attributes</a></li>
+		            <li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">ML Chear Cache</a></li>
+                          </ul>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
