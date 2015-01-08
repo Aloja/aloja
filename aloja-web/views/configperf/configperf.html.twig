@@ -4,7 +4,15 @@
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript">
-	$(function () {
+	$(function ()
+	{
+		$("#select-model").change(function()
+		{
+			var url = window.location.href;    
+			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val();
+			else url = url + '?current_model=' + $("#select-model").val();
+			window.location.href = url;
+		});
 
 		if ('{{series | raw}}' == '[]') $("#footer").hide();
 
