@@ -1384,12 +1384,6 @@ class DefaultController extends AbstractController
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
 			}				
-			
-			foreach($arrayBenchs as $key => $arrayBench)
-			{
-				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
-			}
-			$series = json_encode($series);
 
 			// ----------------------------------------------------
 			// Add predictions to the series
@@ -1399,6 +1393,7 @@ class DefaultController extends AbstractController
 			$instance = "";
 			$possible_models = array();
 			$possible_models_id = array();
+			$arrayBenchs_pred = array();
 
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
@@ -1558,7 +1553,6 @@ class DefaultController extends AbstractController
 
 				if ($position > -1)
 				{
-					$arrayBenchs_pred = array();
 					foreach ($paramOptions as $param)
 					{
 						foreach($benchOptions as $bench)
@@ -1591,18 +1585,22 @@ class DefaultController extends AbstractController
 						$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
 						//$arrayBenchs_pred[$bench][$value]['color'] = 'red';
 					}
-
-					foreach($arrayBenchs_pred as $key => $value)
-					{
-						$series_pred[] = array('name' => $key, 'data' => array_values($value));
-					}
-					$series_pred = json_encode($series_pred);
-					$series = substr($series,0,-1).",".substr($series_pred,1);
 				}
 			}
 			// ----------------------------------------------------
 			// END - Add predictions to the series
 			// ----------------------------------------------------
+
+			foreach($arrayBenchs as $key => $arrayBench)
+			{
+				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
+				if (!empty($arrayBenchs_pred))
+				{
+					$value = $arrayBenchs_pred[$key.'_pred'];
+					$series[] = array('name' => $key.'_pred', 'data' => array_values($value));
+				}
+			}
+			$series = json_encode($series);
 
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
