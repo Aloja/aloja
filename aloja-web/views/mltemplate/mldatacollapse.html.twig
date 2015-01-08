@@ -32,6 +32,16 @@
 	<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 {% endblock %}
 	<div style="clear: both;"></div>
+	<div id="footer" style="float: left; width: 100%;">
+		<hr />
+		<p>Current used model: {{current_model}}</p>
+		<div style="float: left; width: 70%;">
+			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+		</div>
+		<div style="float: left; width: 30%;">
+			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+		</div>
+	</div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
 	<script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
@@ -44,6 +54,23 @@
 	<script type="text/javascript">
 	$(document).ready(function()
 	{
+		$("#select-model").change(function()
+		{
+			var url = window.location.href;    
+			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val();
+			else url = url + '?current_model=' + $("#select-model").val();
+			window.location.href = url;
+		});
+
+		var target = document.getElementById('select-model');
+		var mid = {{ models_id | raw }};
+		for (i = 0; i < mid.length; i++)
+		{
+			var newhtml = "<option value='" + mid[i] + "'";
+			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
+			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
+		}
+
 		var test = {{ jsonColor | raw }};
 
 		$('#benchmark').dataTable(

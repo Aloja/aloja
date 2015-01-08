@@ -1693,12 +1693,63 @@ class DefaultController extends AbstractController
 		$dims2 = "Benchmark"; // FIXME - From input
 		$dname1 = "Configuration"; // FIXME - From input
 		$dname2 = "Benchmark"; // FIXME - From input
-		$filling = "f9a02da6488bd924d92af2d16c71fb05"; // FIXME - bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144") regtree
+		$model_info = 'bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144")'; // FIXME - From input
+
+		// Model for filling
+		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+		{
+			while (!feof($fh))
+			{
+				$line = fgets($fh, 4096);
+				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
+				{
+					$fts = explode(" : ",$line);
+					$parts = explode(" ",$fts[1]);
+					$buffer = array();
+					$last_part = "";
+					foreach ($parts as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
+
+					if ($model_info[0]==' ') $model_info = substr($model_info, 1);
+					$parts_2 = explode(" ",$model_info);
+					$buffer_2 = array();
+					$last_part = "";
+					foreach ($parts_2 as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
+
+					$match = TRUE;
+					foreach ($buffer_2 as $bk => $ba)
+					{
+						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
+						if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+					}
+
+					if ($match)
+					{
+						$possible_models[] = $line;
+						$possible_models_id[] = $fts[0];
+					}
+				}
+			}
+			fclose($fh);
+		}
+
+		$current_model = "";
+		if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+
+		if ($current_model != "") $model = $current_model;
+		else $current_model = $model = $possible_models_id[0];
 
 		$learning_model = '';
-		if (file_exists(getcwd().'/cache/query/'.$filling.'-object.rds')) $learning_model = ':model_name='.$filling;
+		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model;
 
-		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$filling;
+		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$model;
 		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model;
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
@@ -1834,7 +1885,10 @@ class DefaultController extends AbstractController
 			'jsonEncoded' => $jsonData,
 			'jsonHeader' => $jsonHeader,
 			'jsonColumns' => $jsonColumns,
-			'jsonColor' => $jsonColor
+			'jsonColor' => $jsonColor,
+			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+			'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+			'current_model' => $current_model
 		)
 	);
     }
