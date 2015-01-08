@@ -1582,6 +1582,7 @@ class DefaultController extends AbstractController
 
 			    	$query="SHOW COLUMNS FROM execs;";
 			    	$rows = $db->get_rows ($query);
+				if (empty($rows)) throw new Exception('No data matches with your critteria.');
 				$headers = array();
 				$names = array();
 				$count = 0;
@@ -1792,6 +1793,7 @@ class DefaultController extends AbstractController
 
 		    	$query="SHOW COLUMNS FROM execs;";
 		    	$rows = $db->get_rows ($query);
+			if (empty($rows)) throw new Exception('No data matches with your critteria.');
 			$headers = array();
 			$names = array();
 			$count = 0;
