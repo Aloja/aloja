@@ -3,8 +3,20 @@
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
-	<script>
+	<script type="text/javascript">
 	$(function () {
+
+		if ('{{series | raw}}' == '[]') $("#footer").hide();
+
+		var target = document.getElementById('select-model');
+		var mid = {{ models_id | raw }};
+		for (i = 0; i < mid.length; i++)
+		{
+			var newhtml = "<option value='" + mid[i] + "'";
+			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
+			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
+		}
+
 		$('select[name="parameval"]').change(function()
 		{
 				var name = $(this).val()+'s[]';
@@ -14,7 +26,7 @@
 		{
 		    $(this).parents('form').submit();
 		});
-        
+
 		$('#chart').highcharts(
 		{
 			chart: {
@@ -53,7 +65,8 @@
 					borderWidth: 0
 				}
 			},
-			series: {{ series | raw }}
+			series: {{ series | raw }},
+			colors: {{ gammacolors | raw }}
 		});
 	});
 	</script>
@@ -64,7 +77,7 @@
 		<div style="width: 50%; margin-left: 10%;">
 		<div style="width: 40%; margin: 0 auto;">
 		Parameter to evaluate:	<select class="form-control" name="parameval">
-						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
+						<option value="maps" {% if paramEval == 'maps' %}selected="selected"{% endif %}>Maps</option>
 						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
 						<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
 						<option value="net" {% if paramEval == 'net' %}selected="selected"{% endif %}>Network</option>
@@ -80,9 +93,17 @@
 	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
 	{% include 'common/config_filters.html.twig' %}
 	</div>
-	<p style="clear: both;"></p>
-	<p style="clear: both;">{{instance}}<br/><ul>{{models | raw}}</ul></p>
-	<p style="clear: both;">{{series | raw}}</p>
+	<div style="clear: both;"></div>
+	<div id="footer" style="float: left; width: 100%;">
+		<hr />
+		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}}</p>
+		<div style="float: left; width: 70%;">
+			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+		</div>
+		<div style="float: left; width: 30%;">
+			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+		</div>
+	</div>
 {% endblock %}
 
 

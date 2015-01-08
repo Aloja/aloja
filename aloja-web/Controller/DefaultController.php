@@ -1602,6 +1602,9 @@ class DefaultController extends AbstractController
 			}
 			$series = json_encode($series);
 
+			if (!empty($arrayBenchs_pred)) $colors = "['#7cb5ec','#9cd5fc','#434348','#636368','#90ed7d','#b0fd9d','#f7a35c','#f7c37c','#8085e9','#a0a5f9','#f15c80','#f17ca0','#e4d354','#f4f374','#8085e8','#a0a5f8','#8d4653','#ad6673','#91e8e1','#b1f8f1']";
+			else $colors = "['#7cb5ec','#434348','#90ed7d','#f7a35c','#8085e9','#f15c80','#e4d354','#8085e8','#8d4653','#91e8e1']";
+
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
@@ -1632,7 +1635,8 @@ class DefaultController extends AbstractController
 				'jsonHeader' => $jsonHeader,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
-				'current_model' => $current_model			
+				'current_model' => $current_model,
+				'gammacolors' => $colors
 		) );
 	}
 	
