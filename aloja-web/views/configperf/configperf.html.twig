@@ -14,7 +14,8 @@
 			window.location.href = url;
 		});
 
-		if ('{{series | raw}}' == '[]') $("#footer").hide();
+		var series_raw = '{{series | raw}}';
+		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
 
 		var target = document.getElementById('select-model');
 		var mid = {{ models_id | raw }};

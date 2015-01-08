@@ -1442,7 +1442,7 @@ class DefaultController extends AbstractController
 			// find possible models to predict
 			$model_info = str_replace(array('AND ','IN '),'',$where_configs);
 			
-			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+			if (file_exists(getcwd().'/cache/query/record.data') && ($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
 			{
 				while (!feof($fh))
 				{
@@ -1561,7 +1561,6 @@ class DefaultController extends AbstractController
 						}
 					}
 
-					$series_pred = array();
 					foreach ($sliced as $slice)
 					{
 						$line = explode("','",substr($slice,1,-1));
@@ -1631,8 +1630,6 @@ class DefaultController extends AbstractController
 				'money' => $money,
 				'paramEval' => $paramEval,
 				'instance' => $instance,
-				'jsonData' => $series_pred,
-				'jsonHeader' => $jsonHeader,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $current_model,
