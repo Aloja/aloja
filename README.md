@@ -5,7 +5,7 @@
 
 Before installing ALOJA you need the following packages:
 
-- Vagrant: http://www.vagrantup.com/downloads.html
+- Vagrant (minimum version 1.6.3): http://www.vagrantup.com/downloads.html
 - Sysstats package (apt-get install sysstat on debian-based distributions)
 - gawk package for awk 
 - puppet
