@@ -1417,11 +1417,11 @@ class DefaultController extends AbstractController
 
 			$comps_token = '';
 			if (empty($comps)) { $comps_token = '*'; }
-			else { foreach ($comps as $b) $comps_token = $comps_token.'Cmp'.(($comps_token != '')?'|':'').$b; }
+			else { foreach ($comps as $b) $comps_token = $comps_token.(($comps_token != '')?'|':'').'Cmp'.$b; }
 
 			$id_clusters_token = '';
 			if (empty($id_clusters)) { $id_clusters_token = '*'; }
-			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.'Cl'.(($id_clusters_token != '')?'|':'').$b; }
+			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.($id_clusters_token != '')?'|':'').'Cl'.$b; }
 
 			$mapss_token = '';
 			if (empty($mapss)) { $mapss_token = '*'; }
@@ -1582,7 +1582,6 @@ class DefaultController extends AbstractController
 
 						$arrayBenchs_pred[$bench][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
 						$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
-						//$arrayBenchs_pred[$bench][$value]['color'] = 'red';
 					}
 				}
 			}
