@@ -1351,9 +1351,7 @@ class DefaultController extends AbstractController
 			
 			$rows = $db->get_rows ( $query );
 
-			if (!$rows) {
-				throw new \Exception ( "No results for query!" );
-			}
+			if (empty($rows)) throw new Exception ( "No results for query!" );
 	
 			$categories = '';
 			$arrayBenchs = array();
@@ -1421,7 +1419,7 @@ class DefaultController extends AbstractController
 
 			$id_clusters_token = '';
 			if (empty($id_clusters)) { $id_clusters_token = '*'; }
-			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.($id_clusters_token != '')?'|':'').'Cl'.$b; }
+			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.(($id_clusters_token != '')?'|':'').'Cl'.$b; }
 
 			$mapss_token = '';
 			if (empty($mapss)) { $mapss_token = '*'; }
