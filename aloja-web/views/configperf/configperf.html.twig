@@ -4,7 +4,7 @@
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript">
-	$(function ()
+	$(document).ready(function ()
 	{
 		$("#select-model").change(function()
 		{
@@ -13,6 +13,8 @@
 			else url = url + '?current_model=' + $("#select-model").val();
 			window.location.href = url;
 		});
+
+		$("select.form-control option[value='None']").text("ALL");
 
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
@@ -33,7 +35,10 @@
 		});
 	    	$('select, input').change(function()
 		{
-		    $(this).parents('form').submit();
+			var configForm = document.getElementsByName('configFilters');
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>";
+
+			$(this).parents('form').submit();
 		});
 
 		$('#chart').highcharts(
