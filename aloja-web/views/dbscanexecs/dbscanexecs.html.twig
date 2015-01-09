@@ -301,6 +301,10 @@
             </select>
         </label>
     </form>
-    <div id="chart" style="clear: both;"></div>
+    <div id="chart" style="clear: both; width: 75%; float: left;"></div>
+    <div style="width: 25%; float: right;">
+        {% include 'common/config_filters.html.twig' %}
+    </div>
+    <div class="clearfix"></div>
 
 {% endblock %}
