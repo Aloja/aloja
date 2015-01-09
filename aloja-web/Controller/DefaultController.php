@@ -1601,6 +1601,8 @@ class DefaultController extends AbstractController
 			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
+				if (empty($rows)) throw new Exception('No data matches with your critteria.');
+
 				$fp = fopen($cache_ds, 'w');
 				fputcsv($fp, $names,',','"');
 			    	foreach($rows as $row)
@@ -1947,11 +1949,11 @@ class DefaultController extends AbstractController
 
 			$comps_token = '';
 			if (empty($comps)) { $comps_token = '*'; }
-			else { foreach ($comps as $b) $comps_token = $comps_token.'Cmp'.(($comps_token != '')?'|':'').$b; }
+			else { foreach ($comps as $b) $comps_token = $comps_token.(($comps_token != '')?'|':'').'Cmp'.$b; }
 
 			$id_clusters_token = '';
 			if (empty($id_clusters)) { $id_clusters_token = '*'; }
-			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.'Cl'.(($id_clusters_token != '')?'|':'').$b; }
+			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.(($id_clusters_token != '')?'|':'').'Cl'.$b; }
 
 			$mapss_token = '';
 			if (empty($mapss)) { $mapss_token = '*'; }
@@ -2044,6 +2046,9 @@ class DefaultController extends AbstractController
 						$i++;
 					}
 					$jsonData = $jsonData.']';
+
+					$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData);
+					foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
 					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
 					$jsonHeader = '[{title:""}';
