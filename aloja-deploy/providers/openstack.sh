@@ -260,6 +260,8 @@ vm_update_hosts_file() {
 
   #vm_execute "$hosts_file_command"
   vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
+
+  #162.209.77.102 	aloja-fs
 }
 
 #$1 filename on remote machine $2 template part content $3 change permissions
