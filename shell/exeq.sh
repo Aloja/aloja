@@ -54,13 +54,20 @@ do
     mv "$Q_PATH/$current_file" "$EXEC_PATH/" 2>&1 |tee -a "$LOG_FILE"
 
     #execute command(s)
-    /bin/bash "$EXEC_PATH/$current_file" 2>&1 >> "$LOG_FILE"
+    if [ -f "$EXEC_PATH/$current_file" ] ; then
+      /bin/bash "$EXEC_PATH/$current_file" 2>&1 >> "$LOG_FILE"
+    else
+      echo "ERROR: Cannot access $current_file" 2>&1 |tee -a "$LOG_FILE"
+      mv  "$EXEC_PATH/$current_file" "$FAIL_PATH/" 2>&1 |tee -a "$LOG_FILE"
+      sleep 1
+      continue #jump to next file
+    fi
 
     if [ "$?" == "0" ] ; then
       echo "Done $current_file" 2>&1 |tee -a "$LOG_FILE"
       mv  "$EXEC_PATH/$current_file" "$DONE_PATH/" 2>&1 |tee -a "$LOG_FILE"
     else
-      echo "Done $current_file" 2>&1 |tee -a "$LOG_FILE"
+      echo "ERROR: Failed executing $current_file" 2>&1 |tee -a "$LOG_FILE"
       mv  "$EXEC_PATH/$current_file" "$FAIL_PATH/" 2>&1 |tee -a "$LOG_FILE"
     fi
   else
