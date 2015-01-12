@@ -1325,11 +1325,11 @@ class DefaultController extends AbstractController
 
 			$paramOptions = array();
 			if($paramEval == 'maps')
-				$paramOptions = array(4,6,8,10,12,16,24,32);
+				$paramOptions = array(4,6,8,10,12);
 			else if($paramEval == 'comp')
 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
 		    else if($paramEval == 'id_cluster')
-				$paramOptions = array('Local','Cloud');
+				$paramOptions = array('rl-06','rl-16', 'rl-19');
 			else if($paramEval == 'net')
 				$paramOptions = array('Ethernet','Infiniband');
 			else if($paramEval == 'disk')
