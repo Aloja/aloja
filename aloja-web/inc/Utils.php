@@ -109,8 +109,9 @@ class Utils
                     } elseif ($key_name == 'cost') {
                         $jsonRow[] = number_format($value_row['cost'], 2);
                     } elseif ($key_name == 'id_cluster') {
-                        if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
-                        else $jsonRow[] = "Local 1";
+                        //if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
+                        //else $jsonRow[] = "Local 1";
+                        $jsonRow[] = $value_row['cluster_name'];
                     } elseif (stripos($key_name, 'BYTES') !== false) {
                         $jsonRow[] = round(($value_row[$key_name])/(1024*1024));
                     } elseif ($key_name == 'FINISH_TIME') {
