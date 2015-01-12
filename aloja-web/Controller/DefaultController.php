@@ -1494,6 +1494,7 @@ class DefaultController extends AbstractController
                 'bench' => $bench,
                 'job_offset' => $job_offset,
                 'METRICS' => DBUtils::$TASK_METRICS,
+                'show_filter_benchs' => false,
             )
         );
     }
