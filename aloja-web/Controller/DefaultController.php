@@ -1228,7 +1228,7 @@ class DefaultController extends AbstractController
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
 			if (! $benchs)
-				$where_configs .= 'AND bench IN (\'wordcount\')';
+				$where_configs .= 'AND bench IN (\'terasort\')';
 			$order_type = Utils::get_GET_string ( 'ordertype' );
 			if (! $order_type)
 				$order_type = 'exe_time';
@@ -1257,7 +1257,7 @@ class DefaultController extends AbstractController
 				$bestexec = $rows[0];
 				$conf = $bestexec['exec'];
 				$parameters = explode ( '_', $conf );
-				$cluster = (explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+				$cluster = '' ;//(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
 				Utils::makeExecInfoBeauty($bestexec);
 			}
 		} catch ( \Exception $e ) {
@@ -1266,7 +1266,7 @@ class DefaultController extends AbstractController
 		
 		if (empty ( $benchs ))
 			$benchs = array (
-					'wordcount' 
+					'terasort'
 			);
 		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
 				'selected' => 'Best configuration',
@@ -1298,8 +1298,9 @@ class DefaultController extends AbstractController
 			$where_configs = '';
 			$concat_config = "";
 			
-			if(!(isset($_GET['benchs'])))
-				$_GET['benchs'][] = 'wordcount';
+			if(!(isset($_GET['benchs']))) {
+				$_GET['benchs'] = array('wordcount', 'terasort', 'sort');
+            }
 			
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
