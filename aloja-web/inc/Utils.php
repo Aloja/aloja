@@ -35,11 +35,11 @@ class Utils
             $items = Utils::delete_none($items);
         } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
-                $items = array('pagerank', 'terasort', 'wordcount');
+                $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
-                $items = array('IB', 'ETH');
+                $items = array();
             } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD');
+                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
             } else {
                 $items = array();
             }
@@ -326,10 +326,7 @@ class Utils
     		$discreteOptions['blk_size'][] = array_shift($option);
     	}
     	foreach($clusterOptions as $option) {
-    		$value = array_shift($option);
-    		if($value == 1) $value = 'Local 1';
-    		else if($value == 2) $value = 'Azure L';
-    		$discreteOptions['id_cluster'][] = $value;
+            $discreteOptions['blk_size'][] = array_shift($option);
     	}
     	
     	return $discreteOptions;
