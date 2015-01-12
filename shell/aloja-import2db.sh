@@ -66,26 +66,35 @@ for folder in 201* ; do
 			jobTimestamp=${array[2]}
 			jobName="`../shell/jq -r '.job_name' globals.out`"
 			startTime="`../shell/jq -r '.LAUNCH_TIME' globals.out`"
+			startTime="`expr $startTime / 1000`"
 			finishTime="`../shell/jq -r '.FINISH_TIME' globals.out`"
-			$totalTime= `expr $finishTime - $startTime`
-			$totalTime= `expr $totalTime / 1000`
+			finishTime="`expr $finishTime / 1000`"
+			totalTime="`expr $finishTime - $startTime`"
+			totalTime="`expr $totalTime / 1000`"
+			startTime=`date -d @$startTime +"%Y-%m-%d %H:%I:%S"`
+			finishTime=`date -d @$finishTime +"%Y-%m-%d %H:%I:%S"`
 			if [[ $jobName =~ "word" ]]; then
 				jobName="wordcount"
 			fi
+			if [[ $jobName =~ "tera" ]]; then
+				jobName="terasort"
+			fi
+			
 			if [ $jobName != "TempletonControllerJob" ]; then
 				id_exec=""
 		        get_id_exec "$folder"
+		        if [ -z $id_exec ]; then
+		        	id_exec="NULL"
+		    	fi
 		        
 				insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-		                VALUES ($id_exec, 3, \"$folder\", $jobName,$totalTime,$startTime,$finishTime,"n/a","n/a","n/a","n/a","n/a","n/a","n/a","n/a","n/a","n/a")
+		                VALUES ($id_exec, 3, \"$folder\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,0,0,0,0,0,0,0,\"n/a\")
 		                  ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime';"
-		          logger "$insert"
+		        logger "$insert"
 		
-		          $MYSQL "$insert"
-		        
-		        
+		        $MYSQL "$insert"
 			fi
 			
 			#cleaning
