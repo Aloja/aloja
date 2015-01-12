@@ -93,8 +93,28 @@ for folder in 201* ; do
 		                  start_time='$startTime',
 		                  end_time='$finishTime';"
 		        logger "$insert"
-		
+
 		        $MYSQL "$insert"
+		        
+		        jobId=`../shell/jq '.JobId' globals.out`
+		        insert="INSERT INTO HDI_JOB_details (id_exec,JOB_ID,BYTES_READ,BYTES_WRITTEN,COMMITTED_HEAP_BYTES,CPU_MILLISECONDS,FAILED_MAPS,FAILED_REDUCES,FAILED_SHUFFLE,FILE_BYTES_READ,FILE_BYTES_WRITTEN,FILE_LARGE_READ_OPS,FILE_READ_OPS,FILE_WRITE_OPS,FINISHED_MAPS,FINISH_TIME,GC_TIME_MILLIS,JOB_PRIORITY,LAUNCH_TIME,MAP_INPUT_RECORDS,MAP_OUTPUT_RECORDS,MB_MILLIS_MAPS,MERGED_MAP_OUTPUTS,MILLIS_MAPS,OTHER_LOCAL_MAPS,PHYSICAL_MEMORY_BYTES,SLOTS_MILLIS_MAPS,SPILLED_RECORDS,SPLIT_RAW_BYTES,SUBMIT_TIME,TOTAL_LAUNCHED_MAPS,TOTAL_MAPS,TOTAL_REDUCES,USER,VCORES_MILLIS_MAPS,VIRTUAL_MEMORY_BYTES,WASB_BYTES_READ,WASB_BYTES_WRITTEN,WASB_LARGE_READ_OPS,WASB_READ_OPS,WASB_WRITE_OPS)
+		                   VALUES ($id_exec,$jobId)
+		                   ON DUPLICATE KEY UPDATE
+		                  start_time='$startTime',
+		                  end_time='$finishTime';"
+		        logger "$insert"
+
+		        #$MYSQL "$insert"
+
+				exit
+		        ../shell/jq -r 'keys' tasks.out > output.tmp
+		        sed 's/,/\ /g' output.tmp > tmp.tmp
+		        read -a tasks <<< `cat tmp.tmp`
+		        rm tmp.tmp
+		        rm output.tmp
+		    	for task in tasks ; do
+		    	 `../shell/jq --raw-output '.$task.TASK_STATUS' tasks.out`
+		    	done
 			fi
 			
 			#cleaning

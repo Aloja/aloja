@@ -63,7 +63,7 @@ public class JhistToJSON {
 	public static JSONObject getGlobalCounters(JobInfo jobInfo) throws JSONException
 	{
 		JSONObject result = new JSONObject();
-		result.put("JobId",jobInfo.getJobId().toString());
+		result.put("JOB_ID",jobInfo.getJobId().toString());
 		String jobName = jobInfo.getJobname();
 		
 		//Iterate over counter groups
