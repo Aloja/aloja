@@ -23,29 +23,31 @@
 			{% endif %}
 			<div class="row">
 				<div class="col-md-6">
-					{% if select_multiple_benchs is not defined or
-					select_multiple_benchs %}Benchmarks:{% else %}Benchmark:{% endif %}</br>
-					<select class="form-control" class="control-form" name="benchs[]"
-						 {% if select_multiple_benchs is not defined or select_multiple_benchs %}
-						multiple {% endif %}>
-						<option value="bayes"  {% if 'bayes' in benchs %}
-							SELECTED  {% endif %}>bayes</option>
-						<option value="pagerank"  {% if 'pagerank' in benchs %} SELECTED
-							{% endif %}>pagerank</option>
-						<option value="sort"  {% if 'sort' in benchs %} SELECTED
-							{% endif %}>sort</option>
-						<option value="terasort"  {% if 'terasort' in benchs %} SELECTED
-							{% endif %}>terasort</option>
-						<option value="wordcount"  {% if 'wordcount' in benchs %} SELECTED
-							{% endif %}>wordcount</option>
-						<option value="dfsioe_read"  {% if 'dfsioe_read' in benchs %}
-							SELECTED  {% endif %}>dfsioe_read</option>
-						<option value="dfsioe_write"  {% if 'dfsioe_write' in benchs %}
-							SELECTED  {% endif %}>dfsioe_write</option> {% if
-						select_multiple_benchs is not defined or select_multiple_benchs %}
-						<option value="None"  {% if not benchs %} SELECTED {% endif %}>ALL</option>{%
-						endif %}
-					</select>
+					{% if show_filter_benchs is not defined or show_filter_benchs == true %}
+						{% if select_multiple_benchs is not defined or
+						select_multiple_benchs %}Benchmarks:{% else %}Benchmark:{% endif %}</br>
+						<select class="form-control" class="control-form" name="benchs[]"
+							 {% if select_multiple_benchs is not defined or select_multiple_benchs %}
+							multiple {% endif %}>
+							<option value="bayes"  {% if 'bayes' in benchs %}
+								SELECTED  {% endif %}>bayes</option>
+							<option value="pagerank"  {% if 'pagerank' in benchs %} SELECTED
+								{% endif %}>pagerank</option>
+							<option value="sort"  {% if 'sort' in benchs %} SELECTED
+								{% endif %}>sort</option>
+							<option value="terasort"  {% if 'terasort' in benchs %} SELECTED
+								{% endif %}>terasort</option>
+							<option value="wordcount"  {% if 'wordcount' in benchs %} SELECTED
+								{% endif %}>wordcount</option>
+							<option value="dfsioe_read"  {% if 'dfsioe_read' in benchs %}
+								SELECTED  {% endif %}>dfsioe_read</option>
+							<option value="dfsioe_write"  {% if 'dfsioe_write' in benchs %}
+								SELECTED  {% endif %}>dfsioe_write</option> {% if
+							select_multiple_benchs is not defined or select_multiple_benchs %}
+							<option value="None"  {% if not benchs %} SELECTED {% endif %}>ALL</option>{%
+							endif %}
+						</select>
+					{% endif %}
 				</div>
 				<div class="col-md-6">
 					Clusters: (CL)</br> <select class="form-control"

@@ -776,6 +776,23 @@ VALUES
 
         $db = $this->container->getDBUtils();
 
+        $configurations = array();
+        $where_configs = '';
+        $concat_config = "";
+        $table_name = "e";
+
+        $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config,false,$table_name);
+        $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config,false,$table_name);
+        $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config,false,$table_name);
+        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config,false,$table_name);
+        $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config,false,$table_name);
+        $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config,false,$table_name);
+        $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config,false,$table_name);
+        $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config,false,$table_name);
+        $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false,$table_name);
+        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false,$table_name);
+        $money          = Utils::read_params('money',$where_configs,$configurations,$concat_config,false,$table_name);
+
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
@@ -784,7 +801,7 @@ VALUES
         list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
 
         // Calc pending dbscanexecs (if any)
-        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type);
+        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs);
         if (count($pending) > 0) {
             $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y, $task_type);
         }
@@ -796,13 +813,15 @@ VALUES
                 d.`id_exec`,
                 d.`centroid_x`,
                 d.`centroid_y`
-            FROM `JOB_dbscan` d
+            FROM `JOB_dbscan` d, `execs` e
             WHERE
+                d.`id_exec` = e.`id_exec` AND
                 d.`bench` = :bench AND
                 d.`job_offset` = :job_offset AND
                 d.`metric_x` = :metric_x AND
                 d.`metric_y` = :metric_y
                 ".$task_type_select('d')."
+                $where_configs
         ;";
         $query_params = array(
             ":bench" => $bench,

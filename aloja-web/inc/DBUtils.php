@@ -322,7 +322,7 @@ class DBUtils
      *
      * Returns a list containing arrays with 'bench', 'id_exec' and 'jobid'.
      */
-    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type)
+    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs = null)
     {
         $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
         $query = "
@@ -347,6 +347,7 @@ class DBUtils
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."
+                $where_configs
 
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset
