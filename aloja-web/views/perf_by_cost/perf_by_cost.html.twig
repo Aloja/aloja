@@ -172,7 +172,9 @@
     {% block content %}
            <div id="navigation" style="text-align: center;">
 	            <div id="chart" style="width: 800px; margin: 0 auto; margin-left: 10%; float: left; height: 800px;"></div>
-	            {% include "common/config_filters.html.twig" %}
+                <div style="width: 30%; float: right;">
+                    {% include "common/config_filters.html.twig" %}
+                </div>
 	            <h1 class="compare title">Edit cluster configuration costs:</h1>
 	            <div style="margin: 0 auto; width: 90%; text-align: left;">
 	                <div class="row">

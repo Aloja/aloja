@@ -18,7 +18,7 @@ class Utils
         return $array;
     }
 
-    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true)
+    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true, $table_name = null)
     {
     	if($item_name == 'money' && isset($_GET['money'])) {
     		$money = $_GET['money'];
@@ -66,6 +66,11 @@ class Utils
                     $concat_config .= " $single_item_name";
                 }
             }
+
+            if ($table_name !== null) {
+                $single_item_name = $table_name.'.`'.$single_item_name.'`';
+            }
+
             $where_configs .=
             ' AND '.
             $single_item_name. //remove trailing 's'
