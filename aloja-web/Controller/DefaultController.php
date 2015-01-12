@@ -1601,7 +1601,7 @@ class DefaultController extends AbstractController
 			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
-				if (empty($rows)) throw new Exception('No data matches with your critteria.');
+				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
 				fputcsv($fp, $names,',','"');
@@ -1677,26 +1677,23 @@ class DefaultController extends AbstractController
 	{
 	    	$db = $this->container->getDBUtils();
 	    	
-/*	    	$configurations = array ();
+	    	$configurations = array();
 	    	$where_configs = '';
 	    	$concat_config = "";
-	    	
-	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
-	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
-	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
-	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
-	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
-	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
-	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
-	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
-	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-*/
-		$dims1 = "Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster"; // FIXME - From input
-		$dims2 = "Benchmark"; // FIXME - From input
-		$dname1 = "Configuration"; // FIXME - From input
-		$dname2 = "Benchmark"; // FIXME - From input
-		$model_info = 'bench ("bayes","pagerank","sort","terasort","wordcount","dfsioe_read","dfsioe_write") net ("IB","ETH") disk ("SSD","HDD","RL1","RL2","RL3","R1","R2","R3") blk_size ("32","64","128","256") comp ("0","1","2","3") id_cluster ("1","2") maps ("4","6","8","10","12","16","24","32") replication ("1","2","3") iosf ("5","10","20","50") iofilebuf ("1024","4096","16384","32768","65536","131072","262144")'; // FIXME - From input
+
+		$params = array();
+		$param_names = array('benchs','nets','disks','blk_sizes','comps','id_clusters','mapss','replications','iosfs','iofilebufs');
+		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+
+		$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
+		$dims1 = $dims1.((empty($params['id_clusters']))?'':'Cluster,').((empty($params['mapss']))?'':'Maps,').((empty($params['replications']))?'':'Rep,').((empty($params['iosfs']))?'':'IO.SFac,').((empty($params['iofilebufs']))?'':'IO.FBuf');
+		if (substr($dims1, -1) == ',') $dims1 = substr($dims1,0,-1);
+
+		$dims2 = "Benchmark";
+		$dname1 = "Configuration";
+		$dname2 = "Benchmark";
+
+		$model_info = str_replace(array('AND ','IN '),'',$where_configs);
 
 		// Model for filling
 		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
@@ -1750,9 +1747,9 @@ class DefaultController extends AbstractController
 		else $current_model = $model = $possible_models_id[0];
 
 		$learning_model = '';
-		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model;
+		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model.':preds=before';
 
-		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$model;
+		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$model.'-'.$model_info;
 		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model;
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
@@ -1811,8 +1808,10 @@ class DefaultController extends AbstractController
 			$names[$count++] = $header_names['cost'];
 
 			// dump the result to csv
-		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ";//.$where_configs.";";
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
 		    	$rows = $db->get_rows ( $query );
+
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 			$fp = fopen($cache_ds, 'w');
 			fputcsv($fp, $names,',','"');
@@ -1874,18 +1873,24 @@ class DefaultController extends AbstractController
 			$jsonData = preg_replace('/(\-\d+\.\d+)/','100.0',$jsonData);
 		}
     	}
-	catch(Exception $e)
+	catch(\Exception $e)
 	{
 		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-
-		$noData = array();
-		for($i = 0; $i<=sizeof($show_in_result); ++$i) $noData[] = 'error';
-
-		$jsonEncoded = json_encode(array('aaData' => array($noData)));
+		$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 	}
 	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig',
 		array(
 			'selected' => 'mldatacollapse',
+			'benchs' => $params['benchs'],
+			'nets' => $params['nets'],
+			'disks' => $params['disks'],
+			'blk_sizes' => $params['blk_sizes'],
+			'comps' => $params['comps'],
+			'id_clusters' => $params['id_clusters'],
+			'mapss' => $params['mapss'],
+			'replications' => $params['replications'],
+			'iosfs' => $params['iosfs'],
+			'iofilebufs' => $params['iofilebufs'],
 			'jsonEncoded' => $jsonData,
 			'jsonHeader' => $jsonHeader,
 			'jsonColumns' => $jsonColumns,
@@ -2080,7 +2085,7 @@ class DefaultController extends AbstractController
 			$message = "Select the attributes to create a prediction on the right menu";
 		}
 	}
-	catch(Exception $e)
+	catch(\Exception $e)
 	{
 		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
