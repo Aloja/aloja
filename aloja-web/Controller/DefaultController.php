@@ -1228,7 +1228,7 @@ class DefaultController extends AbstractController
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
 			if (! $benchs)
-				$where_configs .= 'AND bench IN (\'wordcount\', \'terasort\', \'sort\')';
+				$where_configs .= 'AND bench IN (\'terasort\')';
 			$order_type = Utils::get_GET_string ( 'ordertype' );
 			if (! $order_type)
 				$order_type = 'exe_time';
@@ -1266,7 +1266,7 @@ class DefaultController extends AbstractController
 		
 		if (empty ( $benchs ))
 			$benchs = array (
-					'wordcount', 'terasort', 'sort'
+					'terasort'
 			);
 		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
 				'selected' => 'Best configuration',
