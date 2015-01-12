@@ -73,9 +73,9 @@
 						<option value="RL1" {% if 'RL1' in disks %} SELECTED  {% endif %}>RL1</option>
 						<option value="RL2" {% if 'RL2' in disks %} SELECTED  {% endif %}>RL2</option>
 						<option value="RL3" {% if 'RL3' in disks %} SELECTED  {% endif %}>RL3</option>
-						<option value="R1" {% if 'R1' in disks %} SELECTED  {% endif %}>RR1</option>
-						<option value="R2" {% if 'R2' in disks %} SELECTED  {% endif %}>RR2</option>
-						<option value="R3" {% if 'R3' in disks %} SELECTED  {% endif %}>RR3</option>
+						<option value="RR1" {% if 'RR1' in disks %} SELECTED  {% endif %}>RR1</option>
+						<option value="RR2" {% if 'RR2' in disks %} SELECTED  {% endif %}>RR2</option>
+						<option value="RR3" {% if 'RR3' in disks %} SELECTED  {% endif %}>RR3</option>
 						<option value="None" {% if not disks %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
@@ -83,6 +83,7 @@
 			<div class="row">
 				<div class="col-md-6">
 					Maps: (m)</br> <select class="form-control" name="mapss[]" multiple>
+                        <option value="2" {% if '4' in mapss %} SELECTED  {% endif %}>4</option>
 						<option value="4" {% if '4' in mapss %} SELECTED  {% endif %}>4</option>
 						<option value="6" {% if '6' in mapss %} SELECTED  {% endif %}>6</option>
 						<option value="8" {% if '8' in mapss %} SELECTED  {% endif %}>8</option>
