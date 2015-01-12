@@ -27,13 +27,13 @@ if $environment == 'prod' {
     'bind-address' => '0.0.0.0',
     'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
     'datadir' => '/scratch/attached/1/mysql',
-    'innodb_buffer_pool_size' => '512M',
+    'innodb_buffer_pool_size' => '128M',
     'innodb_file_per_table' => '1',
     'innodb_flush_method' => 'O_DIRECT',
-    'query_cache_size' => '128M',
-    'max_connections' => '300',
+    'query_cache_size' => '32M',
+    'max_connections' => '32',
     'thread_cache_size' => '50',
-    'table_open_cache' => '600',
+    'table_open_cache' => '60',
   }
 } else {
   $mysql_options = {
