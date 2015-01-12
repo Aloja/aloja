@@ -3,8 +3,8 @@
 INSERT_DB="1" #if to dump CSV into the DB
 REDO_ALL="" #if to redo folders that have source files and IDs in DB
 REDO_UNTARS="" #if to redo the untars for folders that have it
-PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
-MOVE_TO_DONE="" #if set moves completed folders to DONE
+PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+MOVE_TO_DONE="1" #if set moves completed folders to DONE
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
@@ -16,11 +16,12 @@ source "$CUR_DIR/common/import_functions.sh"
 first_host=""
 hostn=""
 
+DEV_PC="" #set to true to insert to vagrant
 #Check if to use a special version of sar or the system one
 #nico pc
-#if [[ "$HOSTNAME" == "darchi" ]] ; then
 if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
   sadf="$CUR_DIR/sar/archlinux/sadf"
+  DEV_PC="true"
 #ubuntu
 #elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
 #  sadf="$CUR_DIR/sar/ubuntu/sadf"
@@ -32,9 +33,13 @@ fi
 #TABLE MANIPULATION
 #MYSQL_ARGS="-uroot --local-infile -f -b --show-warnings " #--show-warnings -B
 
-MYSQL_CREDENTIALS="" #using sudo if from same machine
-#MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
-#MYSQL_CREDENTIALS="-u npm -paaa -h gallactica "
+if [ ! "$DEV_PC" ] ; then
+  MYSQL_CREDENTIALS="" #using sudo if from same machine
+  #MYSQL_CREDENTIALS="-u npm -paaa -h gallactica "
+  REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+else
+  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
+fi
 
 MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
 DB="aloja2"
