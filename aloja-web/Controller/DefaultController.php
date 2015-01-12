@@ -1257,7 +1257,7 @@ class DefaultController extends AbstractController
 				$bestexec = $rows[0];
 				$conf = $bestexec['exec'];
 				$parameters = explode ( '_', $conf );
-				$cluster = '' ;//(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+				$cluster =  explode ( '/', $parameters [count ( $parameters ) - 1] )[0]; //(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
 				Utils::makeExecInfoBeauty($bestexec);
 			}
 		} catch ( \Exception $e ) {
