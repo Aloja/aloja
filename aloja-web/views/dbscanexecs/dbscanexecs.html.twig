@@ -16,6 +16,7 @@
             var metric_x = form.find("[name='metric_x']");
             var metric_y = form.find("[name='metric_y']");
             var task_type = form.find("[name='type']");
+            var configFilters = $("form[name='configFilters']");
 
             // Load form data from URL parameters
             loadFiltersFromUrl();
@@ -24,6 +25,8 @@
             form.change(updateChart);
             form.find('button').click(updateChart)
             form.submit(updateChart);
+            configFilters.change(updateChart);
+            configFilters.submit(updateChart);
 
             // Different zoom actions
             $('#zoom_reset').click(function () {
@@ -131,16 +134,16 @@
                     metric_x: metric_x.val(),
                     metric_y: metric_y.val(),
                     task_type: task_type.val(),
-                });
+                }, configFilters.serialize());
 
                 // Launch ajax request
                 $.ajax({
                     url: "{{ path('dbscanexecsdata', {'jobid': jobid}) }}",
-                    data: {
+                    data: $.param({
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
                         task_type: task_type.val(),
-                    },
+                    }) + '&' + configFilters.serialize(),
                 })
                 .done(function(data) {
 
@@ -301,6 +304,10 @@
             </select>
         </label>
     </form>
-    <div id="chart" style="clear: both;"></div>
+    <div id="chart" style="clear: both; width: 75%; float: left;"></div>
+    <div style="width: 25%; float: right;">
+        {% include 'common/config_filters.html.twig' %}
+    </div>
+    <div class="clearfix"></div>
 
 {% endblock %}

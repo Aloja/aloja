@@ -71,10 +71,12 @@
 						<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
 						<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
 					</select>
-			 </div>
-		   </div>
-             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
-             {% include 'common/config_filters.html.twig' %}
-        </div>
-        <p style="clear: both;"></p>
-    {% endblock %}
+				</div>
+			</div>
+			<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
+			<div style="width: 30%; float: right;">
+				{% include 'common/config_filters.html.twig' %}
+			</div>
+		</div>
+		<p style="clear: both;"></p>
+	{% endblock %}

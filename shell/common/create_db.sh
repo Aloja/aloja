@@ -50,6 +50,7 @@ insert ignore into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, t
 update execs SET disk='RR1' where disk='R1';
 update execs SET disk='RR2' where disk='R2';
 update execs SET disk='RR3' where disk='R3';
+update execs SET bench_type='HiBench' where bench_type='b';
 update execs SET bench_type='HiBench' where bench_type='';
 update execs SET bench_type='HiBench-min' where bench_type='-min';
 update execs SET bench_type='HiBench-10' where bench_type='-10';

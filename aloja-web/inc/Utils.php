@@ -18,7 +18,7 @@ class Utils
         return $array;
     }
 
-    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true)
+    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true, $table_name = null)
     {
     	if($item_name == 'money' && isset($_GET['money'])) {
     		$money = $_GET['money'];
@@ -66,6 +66,11 @@ class Utils
                     $concat_config .= " $single_item_name";
                 }
             }
+
+            if ($table_name !== null) {
+                $single_item_name = $table_name.'.`'.$single_item_name.'`';
+            }
+
             $where_configs .=
             ' AND '.
             $single_item_name. //remove trailing 's'
@@ -104,8 +109,9 @@ class Utils
                     } elseif ($key_name == 'cost') {
                         $jsonRow[] = number_format($value_row['cost'], 2);
                     } elseif ($key_name == 'id_cluster') {
-                        if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
-                        else $jsonRow[] = "Local 1";
+                        //if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
+                        //else $jsonRow[] = "Local 1";
+                        $jsonRow[] = $value_row['cluster_name'];
                     } elseif (stripos($key_name, 'BYTES') !== false) {
                         $jsonRow[] = round(($value_row[$key_name])/(1024*1024));
                     } elseif ($key_name == 'FINISH_TIME') {

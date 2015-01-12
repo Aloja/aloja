@@ -105,7 +105,7 @@ AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null
         if($filter_execs === null)
             $filter_execs = DBUtils::getFilterExecs();
 
-        $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
+        $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name  FROM execs e
         join clusters USING (id_cluster)
         WHERE 1 $filter_execs  ;";
 
@@ -330,7 +330,7 @@ AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null
      *
      * Returns a list containing arrays with 'bench', 'id_exec' and 'jobid'.
      */
-    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type)
+    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs = null)
     {
         $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
         $query = "
@@ -355,6 +355,7 @@ AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."
+                $where_configs
 
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset
