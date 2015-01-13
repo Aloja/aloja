@@ -187,7 +187,13 @@
                         task_type: task_type.val(),
                     }) + '&' + configFilters.serialize(),
                 })
-                .done(function(data) {
+                .done(function(data, status, xhr) {
+
+                    // Check for server errors
+                    if (!xhr.responseJSON) {
+                        alert("Server error");
+                        return;
+                    }
 
                     // Update loading dialog
                     chart.showLoading("Loading... <br>(" + data.pending + " remaining)");
