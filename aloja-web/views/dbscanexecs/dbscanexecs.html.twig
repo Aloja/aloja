@@ -7,6 +7,7 @@
 {% block javascript %}
     {{ parent() }}
     {{ highcharts_js|raw }}
+    <script type="text/javascript" src="js/jquery.deserialize.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -121,6 +122,44 @@
                         value.v.val(uri_query[value.s]);
                     }
                 });
+
+                // Load config filters form
+                var something_changed = false;
+                configFilters.deserialize(uri.query(), {change: function () {
+                    something_changed = true;
+                }});
+                if (something_changed) {
+                    // Workaround: options selected by default on page load aren't unselected
+                    // by the deserialize plugin, so we have to unselect everything first.
+                    // But only in the case something changed, otherwise we would be unselecting
+                    // the form's default values the first time the page is opened.
+                    configFilters.find("select option").prop("selected", false);
+                    configFilters.deserialize(uri.query());
+                }
+
+                // Update "reset filter" link with current parameters
+                updateFiltersResetUrl();
+            }
+
+            function updateFiltersResetUrl() {
+                var current_uri = new URI();
+                // Extract current path
+                var reset_filter_link = new URI(current_uri.path());
+
+                // Add only these parameters to the reset url (if present)
+                $.each([
+                    "jobid",
+                    "metric_x",
+                    "metric_y",
+                    "task_type",
+                ], function(index, value) {
+                    if (current_uri.hasQuery(value) === true) {
+                        reset_filter_link.setQuery(value, current_uri.query(true)[value])
+                    }
+                });
+
+                // Update link
+                configFilters.find("#filter_reset").attr("href", reset_filter_link.toString());
             }
 
             function updateChart(event) {
@@ -135,6 +174,9 @@
                     metric_y: metric_y.val(),
                     task_type: task_type.val(),
                 }, configFilters.serialize());
+
+                // Update "reset filter" link with current parameters
+                updateFiltersResetUrl();
 
                 // Launch ajax request
                 $.ajax({
