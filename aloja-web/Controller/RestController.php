@@ -786,7 +786,6 @@ VALUES
         $concat_config = "";
         $table_name = "e";
 
-        $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config,false,$table_name);
         $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config,false,$table_name);
         $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config,false,$table_name);
         $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config,false,$table_name);
@@ -796,7 +795,6 @@ VALUES
         $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config,false,$table_name);
         $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false,$table_name);
         $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false,$table_name);
-        $money          = Utils::read_params('money',$where_configs,$configurations,$concat_config,false,$table_name);
 
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
