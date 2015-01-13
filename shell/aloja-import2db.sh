@@ -16,7 +16,7 @@ source "$CUR_DIR/common/import_functions.sh"
 first_host=""
 hostn=""
 
-DEV_PC="" #set to true to insert to vagrant
+DEV_PC="true" #set to true to insert to vagrant
 #Check if to use a special version of sar or the system one
 #nico pc
 if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
@@ -67,7 +67,6 @@ for folder in 201* ; do
 		#HDINSIGHT log
 		for jhist in `find $folder/mapred/history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
 			java -cp ../aloja-tools/lib/aloja-tools.jar JhistToJSON $jhist tasks.out globals.out
-			IFS='_' read -a array <<< "$folder"
 			jobTimestamp=${array[2]}
 			jobName="`../shell/jq -r '.job_name' globals.out`"
 			startTime="`../shell/jq -r '.LAUNCH_TIME' globals.out`"
@@ -97,9 +96,17 @@ for folder in 201* ; do
 					benchType="HDI-prep"
 				fi
 				
-		        
-				insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid)
-		                VALUES ($id_exec, 20, \"$folder\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",0,0,0,0,0,0,\"n/a\",1)
+				##Select cluster number
+				IFS='_' read -a array <<< "$folder"
+				IFS='_' read -ra folderArray <<< "$folder"
+				numberOfNodes=`echo ${folderArray[1]} | grep -oP "[0-9]+`
+				cluster=20
+				if [ "$numberOfNodes" -eq "4" ]; then
+					cluster=20	 
+				fi  	        
+				
+				insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version)
+		                VALUES ($id_exec, $cluster, \"$folder\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",0,0,0,0,0,0,\"n/a\",1,2)
 		                  ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime';"
