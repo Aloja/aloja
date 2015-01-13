@@ -1897,16 +1897,16 @@ class DefaultController extends AbstractController
 	    	$where_configs = '';
 	    	$concat_config = "";
 	    	
-	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
-	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
-	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
-	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
-	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
-	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
-	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
-	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
-	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+		$params = array();
+		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+
+		// Set defaults manually, just in case...
+		if (count($_GET) <= 1)
+		{
+			$params['iofilebufs'] = array('32768','65536','131072');
+			$params['comps'] = array('0');
+		}
 
 		$jsonData = $jsonHeader = "[]";
 		$instance = "";
@@ -1917,156 +1917,117 @@ class DefaultController extends AbstractController
 		$current_model = "";
 		if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
-		if (count($_GET) > 1)
+		// compose instance
+		$tokens = array();
+		$instance = '';
+		foreach ($param_names as $p)
 		{
-			// compose instance
-			$bench_token = '';
-			if (empty($benchs)) { $bench_token = '*'; }
-			else { foreach ($benchs as $b) $bench_token = $bench_token.(($bench_token != '')?'|':'').$b; }
+			$tokens[$p] = '';
+			if (empty($params[$p])) { $tokens[$p] = '*'; }
+			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+		}
 
-			$nets_token = '';
-			if (empty($nets)) { $nets_token = '*'; }
-			else { foreach ($nets as $b) $nets_token = $nets_token.(($nets_token != '')?'|':'').$b; }
 
-			$disks_token = '';
-			if (empty($disks)) { $disks_token = '*'; }
-			else { foreach ($disks as $b) $disks_token = $disks_token.(($disks_token != '')?'|':'').$b; }
+		// find possible models to predict
+		$model_info = str_replace(array('AND ','IN '),'',$where_configs);
 
-			$blk_sizes_token = '';
-			if (empty($blk_sizes)) { $blk_sizes_token = '*'; }
-			else { foreach ($blk_sizes as $b) $blk_sizes_token = $blk_sizes_token.(($blk_sizes_token != '')?'|':'').$b; }
-
-			$comps_token = '';
-			if (empty($comps)) { $comps_token = '*'; }
-			else { foreach ($comps as $b) $comps_token = $comps_token.(($comps_token != '')?'|':'').'Cmp'.$b; }
-
-			$id_clusters_token = '';
-			if (empty($id_clusters)) { $id_clusters_token = '*'; }
-			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.(($id_clusters_token != '')?'|':'').'Cl'.$b; }
-
-			$mapss_token = '';
-			if (empty($mapss)) { $mapss_token = '*'; }
-			else { foreach ($mapss as $b) $mapss_token = $mapss_token.(($mapss_token != '')?'|':'').$b; }
-
-			$replications_token = '';
-			if (empty($replications)) { $replications_token = '*'; }
-			else { foreach ($replications as $b) $replications_token = $replications_token.(($replications_token != '')?'|':'').$b; }
-
-			$iosfs_token = '';
-			if (empty($iosfs)) { $iosfs_token = '*'; }
-			else { foreach ($iosfs as $b) $iosfs_token = $iosfs_token.(($iosfs_token != '')?'|':'').$b; }
-
-			$iofilebufs_token = '';
-			if (empty($iofilebufs)) { $iofilebufs_token = '*'; }
-			else { foreach ($iofilebufs as $b) $iofilebufs_token = $iofilebufs_token.(($iofilebufs_token != '')?'|':'').$b; }
-
-			// find possible models to predict
-			$model_info = str_replace(array('AND ','IN '),'',$where_configs);
-
-			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+		{
+			while (!feof($fh))
 			{
-				while (!feof($fh))
+				$line = fgets($fh, 4096);
+				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
 				{
-					$line = fgets($fh, 4096);
-					if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
+					$fts = explode(" : ",$line);
+					$parts = explode(" ",$fts[1]);
+					$buffer = array();
+					$last_part = "";
+					foreach ($parts as $p)
 					{
-						$fts = explode(" : ",$line);
-						$parts = explode(" ",$fts[1]);
-						$buffer = array();
-						$last_part = "";
-						foreach ($parts as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
+						if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
 
-						if ($model_info[0]==' ') $model_info = substr($model_info, 1);
-						$parts_2 = explode(" ",$model_info);
-						$buffer_2 = array();
-						$last_part = "";
-						foreach ($parts_2 as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
+					if ($model_info[0]==' ') $model_info = substr($model_info, 1);
+					$parts_2 = explode(" ",$model_info);
+					$buffer_2 = array();
+					$last_part = "";
+					foreach ($parts_2 as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
 
-						$match = TRUE;
-						foreach ($buffer_2 as $bk => $ba)
-						{
-							if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-							if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
-						}
+					$match = TRUE;
+					foreach ($buffer_2 as $bk => $ba)
+					{
+						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
+						if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+					}
 
-						if ($match)
-						{
-							$possible_models[] = $line;
-							$possible_models_id[] = $fts[0];
-						}
+					if ($match)
+					{
+						$possible_models[] = $line;
+						$possible_models_id[] = $fts[0];
 					}
 				}
-				fclose($fh);
 			}
+			fclose($fh);
+		}
 
-			// compose and run instance
-			$instance = $bench_token.','.$nets_token.','.$disks_token.','.$mapss_token.','.$iosfs_token.','.$replications_token.','.$iofilebufs_token.','.$comps_token.','.$blk_sizes_token.','.$id_clusters_token;
+		if (!empty($possible_models_id))
+		{
+			if ($current_model != "") $model = $current_model;
+			else $current_model = $model = $possible_models_id[0];
 
-			if (!empty($possible_models_id))
+			$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
+			if (!file_exists($cache_filename))
 			{
-				if ($current_model != "") $model = $current_model;
-				else $current_model = $model = $possible_models_id[0];
+				// drop query
+				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
+				$output = shell_exec($command);
 
-				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
-				if (!file_exists($cache_filename))
+				// read results
+				$lines = explode("\n", $output);
+				$jsonData = '[';
+				$i = 1;
+				while($i < count($lines))
 				{
-					// drop query
-					$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
-					$output = shell_exec($command);
-
-					// read results
-					$lines = explode("\n", $output);
-					$jsonData = '[';
-					$i = 1;
-					while($i < count($lines))
-					{
-						if ($lines[$i]=='') break;
-						$parsed = preg_replace('/\s+/', ',', $lines[$i]);
-						if ($jsonData!='[') $jsonData = $jsonData.',';
-						$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
-						$i++;
-					}
-					$jsonData = $jsonData.']';
-
-					$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData);
-					foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
-
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
-					$jsonHeader = '[{title:""}';
-					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-					$jsonHeader = $jsonHeader.']';
-
-					// save at cache
-					file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
-
-					// update cache record (for human reading)
-					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
-					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+					if ($lines[$i]=='') break;
+					$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+					if ($jsonData!='[') $jsonData = $jsonData.',';
+					$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+					$i++;
 				}
-				else
-				{
-					// get cache
-					$data = explode("\n",file_get_contents($cache_filename));
-					$jsonHeader = $data[0];
-					$jsonData = $data[1];
-				}
+				$jsonData = $jsonData.']';
+
+				$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData);
+				foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
+
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
+				$jsonHeader = '[{title:""}';
+				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+				$jsonHeader = $jsonHeader.']';
+
+				// save at cache
+				file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+
+				// update cache record (for human reading)
+				$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 			}
 			else
 			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
+				// get cache
+				$data = explode("\n",file_get_contents($cache_filename));
+				$jsonHeader = $data[0];
+				$jsonData = $data[1];
 			}
 		}
 		else
 		{
-			$message = "Select the attributes to create a prediction on the right menu";
+			$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 		}
 	}
 	catch(\Exception $e)
@@ -2085,16 +2046,16 @@ class DefaultController extends AbstractController
 		array(
 			'selected' => 'mlfindattributes',
 			'instance' => $instance,
-			'benchs' => $benchs,
-			'nets' => $nets,
-			'disks' => $disks,
-			'blk_sizes' => $blk_sizes,
-			'comps' => $comps,
-			'id_clusters' => $id_clusters,
-			'mapss' => $mapss,
-			'replications' => $replications,
-			'iosfs' => $iosfs,
-			'iofilebufs' => $iofilebufs,
+			'benchs' => $params['benchs'],
+			'nets' => $params['nets'],
+			'disks' => $params['disks'],
+			'blk_sizes' => $params['blk_sizes'],
+			'comps' => $params['comps'],
+			'id_clusters' => $params['id_clusters'],
+			'mapss' => $params['mapss'],
+			'replications' => $params['replications'],
+			'iosfs' => $params['iosfs'],
+			'iofilebufs' => $params['iofilebufs'],
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
