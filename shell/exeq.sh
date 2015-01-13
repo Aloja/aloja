@@ -43,8 +43,8 @@ get_first_file(){
 }
 
 iteration=0
-while true
-do
+while true ; do
+
   get_first_file
   current_file="$file_name"
   mod=$((iteration % 10))
