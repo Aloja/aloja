@@ -1647,7 +1647,7 @@ class DefaultController extends AbstractController
 						foreach ($buffer_2 as $bk => $ba)
 						{
 							if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-							if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+							if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
 						}
 
 						if ($match)
