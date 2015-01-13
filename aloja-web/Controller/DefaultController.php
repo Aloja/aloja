@@ -1511,148 +1511,140 @@ class DefaultController extends AbstractController
 	    	$where_configs = '';
 	    	$concat_config = "";
 	    	
-	    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
-	    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
-	    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
-	    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
-	    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
-	    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
-	    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
-	    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
-	    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-	    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+		$params = array();
+		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
-		$dummy = "";
-		$learn_param	= Utils::read_params('learn',$dummy,$configurations,$dummy);
+		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'';
 
-		// Check params...
-		$all_ok = !empty($benchs) && !empty($nets) && !empty($disks) && !empty($blk_sizes) && !empty($comps) && !empty($id_clusters) && !empty($mapss) && !empty($replications) && !empty($iosfs) && !empty($iofilebufs);
-
-		$message = "";
-		if (count($_GET) > 1 && !$all_ok) $message = "Select AT LEAST 1 value for each attribute";
-
-		if (count($_GET) > 1 && $all_ok)
+		if (count($_GET) <= 1)
 		{
-			$config = str_replace(array('AND ','IN '),'',$where_configs).' '.$learn_param[0];
-			$learn_options = 'saveall='.md5($config);
+			$params['iofilebufs'] = array('32768','65536','131072');
+			$params['comps'] = array('0');
+			$learn_param = 'regtree';
+		}
 
-			if ($learn_param[0] == 'regtree') $learn_method = 'aloja_regtree';
-			else if ($learn_param[0] == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
-			else if ($learn_param[0] == 'nnet') $learn_method = 'aloja_nnet';
-			else if ($learn_param[0] == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3'; }
+		$extra_config = '';
+		foreach ($param_names as $p) $extra_config = $extra_config.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':'');
 
-			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+		$config = str_replace(array('AND ','IN '),'',$where_configs).$extra_config.' '.$learn_param;
+		$learn_options = 'saveall='.md5($config);
 
-			if (file_exists($cache_ds))
-			{
-				$keep_cache = TRUE;
-				foreach (array("tt", "tv", "tr") as &$value)
-				{
-					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
-				}
-				if (!$keep_cache)
-				{
-					unlink($cache_ds);
-					shell_exec("sed -i '".md5($config)." :".$config."/d' ".getcwd()."/cache/query/record.data");
-				}
-			}
+		if ($learn_param == 'regtree') $learn_method = 'aloja_regtree';
+		else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
+		else if ($learn_param == 'nnet') $learn_method = 'aloja_nnet';
+		else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3'; }
 
-			if (!file_exists($cache_ds))
-			{
-				// get headers for csv
-				$header_names = array(
-					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
-					'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
-					'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
-				);
+		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			    	$query="SHOW COLUMNS FROM execs;";
-			    	$rows = $db->get_rows ($query);
-				if (empty($rows)) throw new Exception('No data matches with your critteria.');
-				$headers = array();
-				$names = array();
-				$count = 0;
-				foreach($rows as $row)
-				{
-					if (array_key_exists($row['Field'],$header_names))
-					{
-						$headers[$count] = $row['Field'];
-						$names[$count++] = $header_names[$row['Field']];
-					}
-				}
-				$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
-				$names[$count++] = $header_names['cost'];
-
-			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
-			    	$rows = $db->get_rows ( $query );
-
-				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
-
-				$fp = fopen($cache_ds, 'w');
-				fputcsv($fp, $names,',','"');
-			    	foreach($rows as $row)
-				{
-					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
-					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
-					fputcsv($fp, array_values($row),',','"');
-				}
-
-				// run the R processor
-				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options;
-				$output = shell_exec($command);
-
-				// update cache record (for human reading)
-				$register = md5($config).' :'.$config."\n";
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-			}
-
-			// read results of the CSV
-			$count = 0;
+		if (file_exists($cache_ds))
+		{
+			$keep_cache = TRUE;
 			foreach (array("tt", "tv", "tr") as &$value)
 			{
-				if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
-					$header = fgetcsv($handle, 1000, ",");
+				$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
+			}
+			if (!$keep_cache)
+			{
+				unlink($cache_ds);
+				shell_exec("sed -i '".md5($config)." :".$config."/d' ".getcwd()."/cache/query/record.data");
+			}
+		}
 
-					$key_exec = array_search('Exe.Time', array_values($header));
-					$key_pexec = array_search('Pred.Exe.Time', array_values($header));
+		if (!file_exists($cache_ds))
+		{
+			// get headers for csv
+			$header_names = array(
+				'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
+				'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
+				'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
+			);
 
-					$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-					while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
-						$jsonExecs[$count]['y'] = (int)$data[$key_exec];
-						$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
-
-						$extra_data = "";
-						foreach(array_values($header) as &$value2)
-						{
-							$aux = array_search($value2, array_values($header));
-							if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
-							else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
-						}
-						$jsonExecs[$count++]['mydata'] = $extra_data;
-					}
-					fclose($handle);
+		    	$query="SHOW COLUMNS FROM execs;";
+		    	$rows = $db->get_rows ($query);
+			if (empty($rows)) throw new Exception('No data matches with your critteria.');
+			$headers = array();
+			$names = array();
+			$count = 0;
+			foreach($rows as $row)
+			{
+				if (array_key_exists($row['Field'],$header_names))
+				{
+					$headers[$count] = $row['Field'];
+					$names[$count++] = $header_names[$row['Field']];
 				}
 			}
-	    	}
+			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
+			$names[$count++] = $header_names['cost'];
+
+		    	// dump the result to csv
+		    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+		    	$rows = $db->get_rows ( $query );
+
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+			$fp = fopen($cache_ds, 'w');
+			fputcsv($fp, $names,',','"');
+		    	foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+				fputcsv($fp, array_values($row),',','"');
+			}
+
+			// run the R processor
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options;
+			$output = shell_exec($command);
+
+			// update cache record (for human reading)
+			$register = md5($config).' :'.$config."\n";
+			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+		}
+
+		// read results of the CSV
+		$count = 0;
+		foreach (array("tt", "tv", "tr") as &$value)
+		{
+			if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
+				$header = fgetcsv($handle, 1000, ",");
+
+				$key_exec = array_search('Exe.Time', array_values($header));
+				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
+
+				$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
+				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+					$jsonExecs[$count]['y'] = (int)$data[$key_exec];
+					$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
+
+					$extra_data = "";
+					foreach(array_values($header) as &$value2)
+					{
+						$aux = array_search($value2, array_values($header));
+						if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
+						else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
+					}
+					$jsonExecs[$count++]['mydata'] = $extra_data;
+				}
+				fclose($handle);
+			}
+		}
     	}
 	catch(\Exception $e) { $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" ); }
     	echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig',
 		array(
 			'selected' => 'mlprediction',
 			'jsonExecs' => json_encode($jsonExecs),
-			'benchs' => $benchs,
-			'nets' => $nets,
-			'disks' => $disks,
-			'blk_sizes' => $blk_sizes,
-			'comps' => $comps,
-			'id_clusters' => $id_clusters,
-			'mapss' => $mapss,
-			'replications' => $replications,
-			'iosfs' => $iosfs,
-			'iofilebufs' => $iofilebufs,
-			'learn' => $learn_param,
-			'message' => $message
+			'benchs' => $params['benchs'],
+			'nets' => $params['nets'],
+			'disks' => $params['disks'],
+			'blk_sizes' => $params['blk_sizes'],
+			'comps' => $params['comps'],
+			'id_clusters' => $params['id_clusters'],
+			'mapss' => $params['mapss'],
+			'replications' => $params['replications'],
+			'iosfs' => $params['iosfs'],
+			'iofilebufs' => $params['iofilebufs'],
+			'learn' => $learn_param
 		)
     	);
     }
@@ -1724,7 +1716,7 @@ class DefaultController extends AbstractController
 					foreach ($buffer_2 as $bk => $ba)
 					{
 						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-						if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+						if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
 					}
 
 					if ($match)
@@ -1963,7 +1955,7 @@ class DefaultController extends AbstractController
 					foreach ($buffer_2 as $bk => $ba)
 					{
 						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-						if (array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+						if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
 					}
 
 					if ($match)
