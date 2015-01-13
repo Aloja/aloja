@@ -1561,23 +1561,9 @@ class DefaultController extends AbstractController
 			{
 				// get headers for csv
 				$header_names = array(
-					'id_exec' => 'ID',
-					'bench' => 'Benchmark',
-					'exe_time' => 'Exe Time',
-					'exec' => 'Exec Conf',
-					'cost' => 'Running Cost $',
-					'net' => 'Net',
-					'disk' => 'Disk',
-					'maps' => 'Maps',
-					'iosf' => 'IO SFac',
-					'replication' => 'Rep',
-					'iofilebuf' => 'IO FBuf',
-					'comp' => 'Comp',
-					'blk_size' => 'Blk size',
-					'id_cluster' => 'Cluster',
-					'histogram' => 'Histogram',
-					'prv' => 'PARAVER',
-					'end_time' => 'End time',
+					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
+					'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
+					'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
 				);
 
 			    	$query="SHOW COLUMNS FROM execs;";
@@ -1594,7 +1580,7 @@ class DefaultController extends AbstractController
 						$names[$count++] = $header_names[$row['Field']];
 					}
 				}
-				$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+				$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
 				$names[$count++] = $header_names['cost'];
 
 			    	// dump the result to csv
@@ -1682,7 +1668,7 @@ class DefaultController extends AbstractController
 	    	$concat_config = "";
 
 		$params = array();
-		$param_names = array('benchs','nets','disks','blk_sizes','comps','id_clusters','mapss','replications','iosfs','iofilebufs');
+		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
 		$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
@@ -1692,6 +1678,17 @@ class DefaultController extends AbstractController
 		$dims2 = "Benchmark";
 		$dname1 = "Configuration";
 		$dname2 = "Benchmark";
+
+		// compose instance
+		$tokens = array();
+		$instance = '';
+		foreach ($param_names as $p)
+		{
+			$tokens[$p] = '';
+			if (empty($params[$p])) { $tokens[$p] = '*'; }
+			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+		}
 
 		$model_info = str_replace(array('AND ','IN '),'',$where_configs);
 
@@ -1747,10 +1744,10 @@ class DefaultController extends AbstractController
 		else $current_model = $model = $possible_models_id[0];
 
 		$learning_model = '';
-		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model.':preds=before';
+		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model;
 
 		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$model.'-'.$model_info;
-		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model;
+		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model.':inst_general="'.$instance.'"';
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 		if (file_exists($cache_ds))
@@ -1771,28 +1768,14 @@ class DefaultController extends AbstractController
 		{
 			// get headers for csv
 			$header_names = array(
-				'id_exec' => 'ID',
-				'bench' => 'Benchmark',
-				'exe_time' => 'Exe Time',
-				'exec' => 'Exec Conf',
-				'cost' => 'Running Cost $',
-				'net' => 'Net',
-				'disk' => 'Disk',
-				'maps' => 'Maps',
-				'iosf' => 'IO SFac',
-				'replication' => 'Rep',
-				'iofilebuf' => 'IO FBuf',
-				'comp' => 'Comp',
-				'blk_size' => 'Blk size',
-				'id_cluster' => 'Cluster',
-				'histogram' => 'Histogram',
-				'prv' => 'PARAVER',
-				'end_time' => 'End time',
+				'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
+				'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
+				'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
 			);
 
 		    	$query="SHOW COLUMNS FROM execs;";
 		    	$rows = $db->get_rows ($query);
-			if (empty($rows)) throw new Exception('No data matches with your critteria.');
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 			$headers = array();
 			$names = array();
 			$count = 0;
@@ -1804,7 +1787,7 @@ class DefaultController extends AbstractController
 					$names[$count++] = $header_names[$row['Field']];
 				}
 			}
-			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What kind of anarchy is this?!
+			$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
 			$names[$count++] = $header_names['cost'];
 
 			// dump the result to csv
@@ -1823,7 +1806,7 @@ class DefaultController extends AbstractController
 			}
 
 			// prepare collapse
-			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options;
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options;
 			$output = shell_exec($command);
 
 			// update cache record (for human reading)
@@ -1832,8 +1815,8 @@ class DefaultController extends AbstractController
 		}
 
 		// read results of the CSV
-		if (	($handle = fopen(getcwd().'/cache/query/'.md5($config).'-matrix.csv', 'r')) !== FALSE
-		&&	($handid = fopen(getcwd().'/cache/query/'.md5($config).'-ids.csv', 'r')) !== FALSE )
+		if (	($handle = fopen(getcwd().'/cache/query/'.md5($config).'-cmatrix.csv', 'r')) !== FALSE
+		&&	($handid = fopen(getcwd().'/cache/query/'.md5($config).'-cids.csv', 'r')) !== FALSE )
 		{
 			$header = fgetcsv($handle, 1000, ",");
 			$headid = fgetcsv($handid, 1000, ",");
@@ -1897,7 +1880,8 @@ class DefaultController extends AbstractController
 			'jsonColor' => $jsonColor,
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 			'models_id' => '[\''.implode("','",$possible_models_id).'\']',
-			'current_model' => $current_model
+			'current_model' => $current_model,
+			'instance' => $instance
 		)
 	);
     }
