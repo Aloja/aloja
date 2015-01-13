@@ -1,6 +1,7 @@
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.io.PrintWriter;
 
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.CounterGroup;
@@ -25,10 +26,14 @@ public class JhistToJSON {
 	public static void main(String args[]) {
 		try {
 			String path = "";//"/home/mort/hdplogsalojahdi32st0Dec-12-1418900789/mapred/history/done/2014/12/15/000000/job_1418479492350_0031-1418672913693-pristine-word+count-1418673035092-0-256-SUCCEEDED-default-1418672922170.jhist"
-			if(args.length > 0)
+			String tasksCountersFile = "";
+			String globalCountersFile = "";
+			if(args.length > 1) {
 				path = args[0];
-			else {
-				System.err.println("You must indicate a path!");
+				tasksCountersFile = args[1];
+				globalCountersFile = args[2];
+			} else {
+				System.err.println("USAGE: JhistToJSON path tasksCountersFile globalCountersFile");
 				System.exit(1);
 			}
 			
@@ -42,7 +47,12 @@ public class JhistToJSON {
 			JSONObject globalCounters = getGlobalCounters(jobInfo);
 			Map<TaskID,JobHistoryParser.TaskInfo> tasksMap = jobInfo.getAllTasks();
 			JSONObject tasksCounters = getTasksCounters(tasksMap);
-			System.out.println(tasksCounters.toString()+"\n"+globalCounters.toString());
+			PrintWriter writer = new PrintWriter(tasksCountersFile, "UTF-8");
+			PrintWriter writer2 = new PrintWriter(globalCountersFile, "UTF-8");
+			writer.println(tasksCounters.toString());
+			writer2.println(globalCounters.toString());
+			writer.close();
+			writer2.close();
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
@@ -53,7 +63,7 @@ public class JhistToJSON {
 	public static JSONObject getGlobalCounters(JobInfo jobInfo) throws JSONException
 	{
 		JSONObject result = new JSONObject();
-		result.put("JobId",jobInfo.getJobId().toString());
+		result.put("JOB_ID",jobInfo.getJobId().toString());
 		String jobName = jobInfo.getJobname();
 		
 		//Iterate over counter groups
