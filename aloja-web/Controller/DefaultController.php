@@ -1300,19 +1300,225 @@ class DefaultController extends AbstractController
 			if(!(isset($_GET['benchs'])))
 				$_GET['benchs'][] = 'wordcount';
 			
-			$benchs		= Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
-			$nets		= Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
-			$disks		= Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
-			$blk_sizes	= Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
-			$comps		= Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
-			$id_clusters	= Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
-			$mapss		= Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
-			$replications	= Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
-			$iosfs		= Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
-			$iofilebufs	= Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
-			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
+			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
+			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
+			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
+			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
+			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
+			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
+			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
+			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
+			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
+			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
+			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
+			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
+			$minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
+			$minExecsFilter = "";
+			if($minExecs > 0)
+				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
+			
+			$filter_execs = "AND valid = TRUE";
+				
+			$paramOptions = array();
+			if($paramEval == 'maps')
+				$paramOptions = array(4,6,8,10,12,16,24,32);
+			else if($paramEval == 'comp')
+				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
+		    else if($paramEval == 'id_cluster')
+				$paramOptions = array('Local','Azure');
+			else if($paramEval == 'net')
+				$paramOptions = array('Ethernet','Infiniband');
+			else if($paramEval == 'disk')
+				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
+			else if($paramEval == 'replication')
+				$paramOptions = array(1,2,3);
+			else if($paramEval == 'iofilebuf')
+				$paramOptions = array(1,4,16,32,64,128,256);
+			else if($paramEval == 'blk_size')
+				$paramOptions = array(32,64,128,256);
+			else if($paramEval == 'iosf')
+				$paramOptions = array(5,10,20,50);
+			
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+						
+			// get the result rows
+			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
+				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
+				"from execs e WHERE 1 $filter_execs $where_configs".
+				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
+			
+			$rows = $db->get_rows ( $query );
+
+			if (!$rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+	
+			$categories = '';
+			$arrayBenchs = array();
+			foreach ( $paramOptions as $param ) {
+				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
+				foreach($benchOptions as $bench) {
+					$arrayBenchs[$bench['bench']][$param] = null;
+				}
+			}
+
+			$series = array();
+			$bench = '';
+			foreach($rows as $row) {
+				if($paramEval == 'comp')
+					$row[$paramEval] = Utils::getCompressionName($row['comp']);
+				else if($paramEval == 'id_cluster') {
+					if($row[$paramEval] == 1)
+						$row[$paramEval] = 'Local';
+					else
+						$row[$paramEval] = 'Azure';
+				} else if($paramEval == 'net')
+					$row[$paramEval] = Utils::getNetworkName($row['net']);
+				else if($paramEval == 'disk')
+					$row[$paramEval] = Utils::getDisksName($row['disk']);
+				else if($paramEval == 'iofilebuf')
+					$row[$paramEval] /= 1024;
+				
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
+				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
+			}				
+					
+			foreach($arrayBenchs as $key => $arrayBench)
+			{
+				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
+			}
+			$series = json_encode($series);
+		} catch ( \Exception $e ) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
+		
+		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
+				'selected' => 'Parameter Evaluation',
+				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
+				'categories' => $categories,
+				'series' => $series,
+				'benchs' => $benchs,
+				'nets' => $nets,
+				'disks' => $disks,
+				'blk_sizes' => $blk_sizes,
+				'comps' => $comps,
+				'id_clusters' => $id_clusters,
+				'mapss' => $mapss,
+				'replications' => $replications,
+				'iosfs' => $iosfs,
+				'iofilebufs' => $iofilebufs,
+				'money' => $money,
+				'paramEval' => $paramEval
+		) );
+	}
+	
+	public function publicationsAction()
+	{
+		echo $this->container->getTwig()->render('publications/publications.html.twig', array(
+				'selected' => 'Publications',
+				'title' => 'ALOJA Publications'));
+	}
+	
+	public function teamAction()
+	{
+		echo $this->container->getTwig()->render('team/team.html.twig', array(
+				'selected' => 'Team',
+				'title' => 'ALOJA Team & Collaborators'));
+	}
+	
+	public function clustersAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
+				'selected' => 'Clusters',
+				'title' => 'ALOJA Clusters'));
+	}
+	
+	public function clusterCostsAction()
+	{
+		echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
+				'selected' => 'Clusters Costs',
+				'title' => 'ALOJA Clusters Costs'));
+	}
+
+    public function dbscanAction()
+    {
+        $jobid = Utils::get_GET_string("jobid");
+
+        // if no job requested, show a random one
+        if (strlen($jobid) == 0 || $jobid === "random") {
+            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+            $db = $this->container->getDBUtils();
+            $query = "
+                SELECT DISTINCT(t.`JOBID`)
+                FROM `JOB_tasks` t
+                ORDER BY RAND()
+                LIMIT 1
+            ;";
+            $jobid = $db->get_rows($query)[0]['JOBID'];
+        }
+
+        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+            array(
+                'selected' => 'DBSCAN',
+                'highcharts_js' => HighCharts::getHeader(),
+                'jobid' => $jobid,
+                'METRICS' => DBUtils::$TASK_METRICS,
+            )
+        );
+    }
+
+    public function dbscanexecsAction()
+    {
+        $jobid = Utils::get_GET_string("jobid");
+
+        // if no job requested, show a random one
+        if (strlen($jobid) == 0 || $jobid === "random") {
+            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+            $db = $this->container->getDBUtils();
+            $query = "
+                SELECT DISTINCT(t.`JOBID`)
+                FROM `JOB_tasks` t
+                ORDER BY RAND()
+                LIMIT 1
+            ;";
+            $jobid = $db->get_rows($query)[0]['JOBID'];
+        }
+
+        list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
+
+        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
+            array(
+                'selected' => 'DBSCANexecs',
+                'highcharts_js' => HighCharts::getHeader(),
+                'jobid' => $jobid,
+                'bench' => $bench,
+                'job_offset' => $job_offset,
+                'METRICS' => DBUtils::$TASK_METRICS,
+            )
+        );
+    }
+
+	public function mlparamEvaluationAction()
+	{
+		$db = $this->container->getDBUtils ();
+		$rows = '';
+		$categories = '';
+		$series = '';
+		try {
+			$configurations = array ();
+			$where_configs = '';
+			$concat_config = "";
+			
+			if(!(isset($_GET['benchs'])))
+				$_GET['benchs'][] = 'wordcount';
+			
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+
+			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
 			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
 			$minExecs	= (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
 			$minExecsFilter = "";
@@ -1397,45 +1603,15 @@ class DefaultController extends AbstractController
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
 			// compose instance
-			$bench_token = '';
-			if (empty($benchs)) { $bench_token = '*'; }
-			else { foreach ($benchs as $b) $bench_token = $bench_token.(($bench_token != '')?'|':'').$b; }
-
-			$nets_token = '';
-			if (empty($nets)) { $nets_token = '*'; }
-			else { foreach ($nets as $b) $nets_token = $nets_token.(($nets_token != '')?'|':'').$b; }
-
-			$disks_token = '';
-			if (empty($disks)) { $disks_token = '*'; }
-			else { foreach ($disks as $b) $disks_token = $disks_token.(($disks_token != '')?'|':'').$b; }
-
-			$blk_sizes_token = '';
-			if (empty($blk_sizes)) { $blk_sizes_token = '*'; }
-			else { foreach ($blk_sizes as $b) $blk_sizes_token = $blk_sizes_token.(($blk_sizes_token != '')?'|':'').$b; }
-
-			$comps_token = '';
-			if (empty($comps)) { $comps_token = '*'; }
-			else { foreach ($comps as $b) $comps_token = $comps_token.(($comps_token != '')?'|':'').'Cmp'.$b; }
-
-			$id_clusters_token = '';
-			if (empty($id_clusters)) { $id_clusters_token = '*'; }
-			else { foreach ($id_clusters as $b) $id_clusters_token = $id_clusters_token.(($id_clusters_token != '')?'|':'').'Cl'.$b; }
-
-			$mapss_token = '';
-			if (empty($mapss)) { $mapss_token = '*'; }
-			else { foreach ($mapss as $b) $mapss_token = $mapss_token.(($mapss_token != '')?'|':'').$b; }
-
-			$replications_token = '';
-			if (empty($replications)) { $replications_token = '*'; }
-			else { foreach ($replications as $b) $replications_token = $replications_token.(($replications_token != '')?'|':'').$b; }
-
-			$iosfs_token = '';
-			if (empty($iosfs)) { $iosfs_token = '*'; }
-			else { foreach ($iosfs as $b) $iosfs_token = $iosfs_token.(($iosfs_token != '')?'|':'').$b; }
-
-			$iofilebufs_token = '';
-			if (empty($iofilebufs)) { $iofilebufs_token = '*'; }
-			else { foreach ($iofilebufs as $b) $iofilebufs_token = $iofilebufs_token.(($iofilebufs_token != '')?'|':'').$b; }
+			$tokens = array();
+			$instance = '';
+			foreach ($param_names as $p)
+			{
+				$tokens[$p] = '';
+				if (empty($params[$p])) { $tokens[$p] = '*'; }
+				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+			}
 
 			// find possible models to predict
 			$model_info = str_replace(array('AND ','IN '),'',$where_configs);
@@ -1483,9 +1659,6 @@ class DefaultController extends AbstractController
 				}
 				fclose($fh);
 			}
-
-			// compose and run instance
-			$instance = $bench_token.','.$nets_token.','.$disks_token.','.$mapss_token.','.$iosfs_token.','.$replications_token.','.$iofilebufs_token.','.$comps_token.','.$blk_sizes_token.','.$id_clusters_token;
 
 			if (!empty($possible_models_id))
 			{
@@ -1609,21 +1782,21 @@ class DefaultController extends AbstractController
 			$instance = $possible_models_id = "";
 			$possible_models = array();
 		}
-		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
-				'selected' => 'Parameter Evaluation',
+		echo $this->container->getTwig ()->render ('mltemplate/mlconfigperf.html.twig', array (
+				'selected' => 'ML Parameter Evaluation',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
 				'series' => $series,
-				'benchs' => $benchs,
-				'nets' => $nets,
-				'disks' => $disks,
-				'blk_sizes' => $blk_sizes,
-				'comps' => $comps,
-				'id_clusters' => $id_clusters,
-				'mapss' => $mapss,
-				'replications' => $replications,
-				'iosfs' => $iosfs,
-				'iofilebufs' => $iofilebufs,
+				'benchs' => $params['benchs'],
+				'nets' => $params['nets'],
+				'disks' => $params['disks'],
+				'blk_sizes' => $params['blk_sizes'],
+				'comps' => $params['comps'],
+				'id_clusters' => $params['id_clusters'],
+				'mapss' => $params['mapss'],
+				'replications' => $params['replications'],
+				'iosfs' => $params['iosfs'],
+				'iofilebufs' => $params['iofilebufs'],
 				'money' => $money,
 				'paramEval' => $paramEval,
 				'instance' => $instance,
@@ -1633,90 +1806,4 @@ class DefaultController extends AbstractController
 				'gammacolors' => $colors
 		) );
 	}
-	
-	public function publicationsAction()
-	{
-		echo $this->container->getTwig()->render('publications/publications.html.twig', array(
-				'selected' => 'Publications',
-				'title' => 'ALOJA Publications'));
-	}
-	
-	public function teamAction()
-	{
-		echo $this->container->getTwig()->render('team/team.html.twig', array(
-				'selected' => 'Team',
-				'title' => 'ALOJA Team & Collaborators'));
-	}
-	
-	public function clustersAction()
-	{
-		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
-				'selected' => 'Clusters',
-				'title' => 'ALOJA Clusters'));
-	}
-	
-	public function clusterCostsAction()
-	{
-		echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
-				'selected' => 'Clusters Costs',
-				'title' => 'ALOJA Clusters Costs'));
-	}
-
-    public function dbscanAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
-
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
-
-        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
-            array(
-                'selected' => 'DBSCAN',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'METRICS' => DBUtils::$TASK_METRICS,
-            )
-        );
-    }
-
-    public function dbscanexecsAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
-
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
-
-        list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
-
-        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
-            array(
-                'selected' => 'DBSCANexecs',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'bench' => $bench,
-                'job_offset' => $job_offset,
-                'METRICS' => DBUtils::$TASK_METRICS,
-            )
-        );
-    }
 }
