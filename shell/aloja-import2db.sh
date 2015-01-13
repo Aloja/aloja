@@ -86,9 +86,15 @@ for folder in 201* ; do
 		        if [ -z $id_exec ]; then
 		        	id_exec="NULL"
 		    	fi
+		    	
+		    	benchType="HDI"
+		    	if [ $jobName="random-text-writer" ]; then
+					benchType="HDI-prep"
+				fi
+				
 		        
-				insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-		                VALUES ($id_exec, 3, \"$folder\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,0,0,0,0,0,0,0,\"n/a\")
+				insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid)
+		                VALUES ($id_exec, 20, \"$folder\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",0,0,0,0,0,0,\"n/a\",1)
 		                  ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime';"
@@ -96,24 +102,25 @@ for folder in 201* ; do
 
 		        $MYSQL "$insert"
 		        
-		        jobId=`../shell/jq '.JobId' globals.out`
-		        insert="INSERT INTO HDI_JOB_details (id_exec,JOB_ID,BYTES_READ,BYTES_WRITTEN,COMMITTED_HEAP_BYTES,CPU_MILLISECONDS,FAILED_MAPS,FAILED_REDUCES,FAILED_SHUFFLE,FILE_BYTES_READ,FILE_BYTES_WRITTEN,FILE_LARGE_READ_OPS,FILE_READ_OPS,FILE_WRITE_OPS,FINISHED_MAPS,FINISH_TIME,GC_TIME_MILLIS,JOB_PRIORITY,LAUNCH_TIME,MAP_INPUT_RECORDS,MAP_OUTPUT_RECORDS,MB_MILLIS_MAPS,MERGED_MAP_OUTPUTS,MILLIS_MAPS,OTHER_LOCAL_MAPS,PHYSICAL_MEMORY_BYTES,SLOTS_MILLIS_MAPS,SPILLED_RECORDS,SPLIT_RAW_BYTES,SUBMIT_TIME,TOTAL_LAUNCHED_MAPS,TOTAL_MAPS,TOTAL_REDUCES,USER,VCORES_MILLIS_MAPS,VIRTUAL_MEMORY_BYTES,WASB_BYTES_READ,WASB_BYTES_WRITTEN,WASB_LARGE_READ_OPS,WASB_READ_OPS,WASB_WRITE_OPS)
-		                   VALUES ($id_exec,$jobId)
+		        values=`../shell/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g' | sed 's/JobId/JOB_ID/'`
+		        insert="INSERT INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
 		                   ON DUPLICATE KEY UPDATE
-		                  start_time='$startTime',
-		                  end_time='$finishTime';"
+		                LAUNCH_TIME=`../shell/jq '.["LAUNCH_TIME"]' globals.out`,
+		            	FINISH_TIME=`../shell/jq '.["SUBMIT_TIME"]' globals.out`;"
 		        logger "$insert"
 
-		        #$MYSQL "$insert"
+		        $MYSQL "$insert"
+				
+		        read -a tasks <<< `../shell/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
+		    	for task in $tasks ; do
+		    		taskId=`echo $task | sed 's/"/\ /g'`
+		    		values=`../shell/jq --raw-output ".$task.TASK_STATUS" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=`../shell/jq '.[\"JobId\"]' globals.out`,${values%?}
+		                ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID;"
 
-				exit
-		        ../shell/jq -r 'keys' tasks.out > output.tmp
-		        sed 's/,/\ /g' output.tmp > tmp.tmp
-		        read -a tasks <<< `cat tmp.tmp`
-		        rm tmp.tmp
-		        rm output.tmp
-		    	for task in tasks ; do
-		    	 `../shell/jq --raw-output '.$task.TASK_STATUS' tasks.out`
+					logger $insert
+					
+					$MYSQL "$insert"
 		    	done
 			fi
 			
