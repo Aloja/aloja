@@ -69,6 +69,7 @@ for folder in 201* ; do
 			java -cp ../aloja-tools/lib/aloja-tools.jar JhistToJSON $jhist tasks.out globals.out
 			jobTimestamp=${array[2]}
 			jobName="`../shell/jq -r '.job_name' globals.out`"
+			jobId="`../shell/jq '.JOB_ID' globals.out`"
 			startTime="`../shell/jq -r '.LAUNCH_TIME' globals.out`"
 			startTime="`expr $startTime / 1000`"
 			finishTime="`../shell/jq -r '.FINISH_TIME' globals.out`"
@@ -97,9 +98,8 @@ for folder in 201* ; do
 				fi
 				
 				##Select cluster number
-				IFS='_' read -a array <<< "$folder"
 				IFS='_' read -ra folderArray <<< "$folder"
-				numberOfNodes=`echo ${folderArray[1]} | grep -oP "[0-9]+`
+				numberOfNodes=`echo ${folderArray[1]} | grep -oP "[0-9]+"`
 				cluster=20
 				if [ "$numberOfNodes" -eq "4" ]; then
 					cluster=20	 
@@ -114,7 +114,7 @@ for folder in 201* ; do
 
 		        $MYSQL "$insert"
 		        
-		        values=`../shell/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g' | sed 's/JobId/JOB_ID/'`
+		        values=`../shell/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 		        insert="INSERT INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
 		                   ON DUPLICATE KEY UPDATE
 		                LAUNCH_TIME=`../shell/jq '.["LAUNCH_TIME"]' globals.out`,
@@ -122,20 +122,22 @@ for folder in 201* ; do
 		        logger "$insert"
 
 		        $MYSQL "$insert"
+		        
 				
 		        read -a tasks <<< `../shell/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
 		    	for task in $tasks ; do
 		    		taskId=`echo $task | sed 's/"/\ /g'`
-		    		values=`../shell/jq --raw-output ".$task.TASK_STATUS" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
-		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=`../shell/jq '.[\"JobId\"]' globals.out`,${values%?}
-		                ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID;"
+		    		values=`../shell/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
+		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,${values%?}
+						ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID;"
+
+					echo $insert
 					logger $insert
-					
 					$MYSQL "$insert"
 		    	done
 			fi
-			
+
 			#cleaning
 			rm tasks.out
 			rm globals.out
