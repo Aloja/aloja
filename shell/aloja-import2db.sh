@@ -66,7 +66,7 @@ for folder in 201* ; do
 	if [[ $folder =~ $hdinsight ]]; then
 		#HDINSIGHT log
 		for jhist in `find $folder/mapred/history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
-			java -cp ../aloja-tools/lib/aloja-tools.jar JhistToJSON $jhist tasks.out globals.out
+			java -cp ../aloja-tools/lib/aloja-tools.jar alojatools.JhistToJSON $jhist tasks.out globals.out
 			jobTimestamp=${array[2]}
 			jobName="`../shell/jq -r '.job_name' globals.out`"
 			jobId="`../shell/jq '.JOB_ID' globals.out`"

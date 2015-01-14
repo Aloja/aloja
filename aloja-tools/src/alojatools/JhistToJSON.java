@@ -26,10 +26,13 @@ import org.codehaus.jettison.json.JSONObject;
  */
 public class JhistToJSON {
 	public static void main(String args[]) {
+		JobInfo jobInfo = null;
+		String tasksCountersFile = "";
+		String globalCountersFile = "";
+		
 		try {
 			String path = "";//"/home/mort/hdplogsalojahdi32st0Dec-12-1418900789/mapred/history/done/2014/12/15/000000/job_1418479492350_0031-1418672913693-pristine-word+count-1418673035092-0-256-SUCCEEDED-default-1418672922170.jhist"
-			String tasksCountersFile = "";
-			String globalCountersFile = "";
+
 			if(args.length > 1) {
 				path = args[0];
 				tasksCountersFile = args[1];
@@ -45,24 +48,48 @@ public class JhistToJSON {
 
 			JobHistoryParser parser = new JobHistoryParser(localFileSystem,jhistPath);
 			
-			JobInfo jobInfo = parser.parse();
-			JSONObject globalCounters = getGlobalCounters(jobInfo);
-			Map<TaskID,JobHistoryParser.TaskInfo> tasksMap = jobInfo.getAllTasks();
-			JSONObject tasksCounters = getTasksCounters(tasksMap);
-			PrintWriter writer = new PrintWriter(tasksCountersFile, "UTF-8");
-			PrintWriter writer2 = new PrintWriter(globalCountersFile, "UTF-8");
-			writer.println(tasksCounters.toString());
-			writer2.println(globalCounters.toString());
-			writer.close();
-			writer2.close();
+			jobInfo = parser.parse();
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
 		}
+		
+		JSONObject globalCounters = null;
+		JSONObject tasksCounters = null;
+//		try {
+//			globalCounters = getGlobalCounters(jobInfo);
+//		} catch(JSONException | NullPointerException e) {
+//			globalCounters = null;
+//		}
+		
+		try {
+			Map<TaskID,JobHistoryParser.TaskInfo> tasksMap = jobInfo.getAllTasks();
+			tasksCounters = getTasksCounters(tasksMap);
+		} catch(JSONException | NullPointerException e) {
+			tasksCounters = null;
+		}
+		
+		try {
+			if(tasksCounters != null) {
+				PrintWriter writer = new PrintWriter(tasksCountersFile, "UTF-8");
+				writer.println(tasksCounters.toString());
+				writer.close();
+			}
+				
+//			if(globalCounters != null ) {
+//				PrintWriter writer2 = new PrintWriter(globalCountersFile, "UTF-8");
+//				writer2.println(globalCounters.toString());
+//				writer2.close();
+//			}	
+		} catch (Exception e) {
+			e.printStackTrace();
+			System.exit(1);
+		}
+		
 		System.exit(0);
 	}
 	
-	public static JSONObject getGlobalCounters(JobInfo jobInfo) throws JSONException
+	public static JSONObject getGlobalCounters(JobInfo jobInfo) throws JSONException, NullPointerException
 	{
 		JSONObject result = new JSONObject();
 		result.put("JOB_ID",jobInfo.getJobId().toString());
@@ -70,32 +97,35 @@ public class JhistToJSON {
 		
 		//Iterate over counter groups
 		Counters counters = jobInfo.getTotalCounters();
-		Iterator<CounterGroup> it = counters.iterator();
-		while(it.hasNext()) {
-			CounterGroup group = it.next();
-			Iterator<Counter> itCounter = group.iterator();
-			//Iterate over counters of this group
-			while(itCounter.hasNext())
-			{
-				Counter counter = itCounter.next();
-				result.put(counter.getName(),counter.getValue());
+		if(counters != null) {
+			Iterator<CounterGroup> it = counters.iterator();
+			while(it.hasNext()) {
+				CounterGroup group = it.next();
+				Iterator<Counter> itCounter = group.iterator();
+				//Iterate over counters of this group
+				while(itCounter.hasNext())
+				{
+					Counter counter = itCounter.next();
+					result.put(counter.getName(),counter.getValue());
+				}
 			}
-		}
-		
-		//Data out of counters info
-		result.put("job_name", jobName);
-		result.put("SUBMIT_TIME", jobInfo.getSubmitTime());
-		result.put("LAUNCH_TIME", jobInfo.getLaunchTime());
-		result.put("FINISH_TIME", jobInfo.getFinishTime());
-		result.put("TOTAL_MAPS", jobInfo.getTotalMaps());
-		result.put("FAILED_MAPS", jobInfo.getFailedMaps());
-		result.put("FINISHED_MAPS", jobInfo.getFinishedMaps());
-		result.put("TOTAL_REDUCES", jobInfo.getTotalReduces());
-		result.put("FAILED_REDUCES", jobInfo.getFailedReduces());
-		result.put("JOB_PRIORITY", jobInfo.getPriority());
-		result.put("USER", jobInfo.getUsername());
-		
-		return result;
+			
+			//Data out of counters info
+			result.put("job_name", jobName);
+			result.put("SUBMIT_TIME", jobInfo.getSubmitTime());
+			result.put("LAUNCH_TIME", jobInfo.getLaunchTime());
+			result.put("FINISH_TIME", jobInfo.getFinishTime());
+			result.put("TOTAL_MAPS", jobInfo.getTotalMaps());
+			result.put("FAILED_MAPS", jobInfo.getFailedMaps());
+			result.put("FINISHED_MAPS", jobInfo.getFinishedMaps());
+			result.put("TOTAL_REDUCES", jobInfo.getTotalReduces());
+			result.put("FAILED_REDUCES", jobInfo.getFailedReduces());
+			result.put("JOB_PRIORITY", jobInfo.getPriority());
+			result.put("USER", jobInfo.getUsername());
+			
+			return result;
+		} else
+			throw new JSONException("Not enough counters found");
 	}
 	
 	public static JSONObject getTasksCounters(Map<TaskID,JobHistoryParser.TaskInfo> tasksMap) throws JSONException
