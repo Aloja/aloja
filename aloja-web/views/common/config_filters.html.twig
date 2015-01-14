@@ -167,7 +167,7 @@
 		{% if selected == 'mlprediction' %}
 		<div class="row">
 			<div class="col-md-4">
-				Learning method:</br> <select class="form-control" name="learn[]" >
+				Learning method:</br> <select class="form-control" name="learn" >
 					<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
 					<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
 					<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
@@ -195,6 +195,14 @@
 			</div>
 		</div>
 		{% endif %}
-
+		{% if selected == 'mldatacollapse' %}
+		<div id="predict-button-div" class="row">
+			<div class="col-md-8">
+				<h2 class="compare body" style="text-align: center;">
+					<input id="predict-button" type="submit" value="Apply Filter">
+				</h2>
+			</div>
+		</div>
+		{% endif %}
 	</form>
 </div>
