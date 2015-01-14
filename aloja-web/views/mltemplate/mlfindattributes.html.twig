@@ -19,7 +19,7 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify">[WiP] Put here some explanation of what is going on here...</p>
+		<p style="text-align:justify">[WiP] Select the attributes you want to define from the filter, to predict all their combinations, so you can sort them by Predicted time or by attribute.</p>
 		<hr />
 	</div>
 	<div style="float: left; width: 60%;">
@@ -60,7 +60,7 @@
 			$("form").submit();
 		});
 
-		$("select.form-control option[value='None']").hide();
+		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{jsonData | raw}}" == '[]') $("#footer").hide();

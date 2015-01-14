@@ -22,7 +22,7 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 	$(document).ready(function() {
-		$("select.form-control option[value='None']").hide();
+		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 		$('#chart').highcharts( {
     		        chart: {
