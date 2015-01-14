@@ -234,14 +234,12 @@ $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo serv
 
   #temporary to avoid read-only file system errors
   echo "Checking if to remount /home/$userAloja/share"
-  $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+  $DSH_SLAVES "[ ! \"\$(ls /home/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f /home/$userAloja/share; sudo fusermount -uz /home/$userAloja/share;  sudo mount /home/$userAloja/share; sudo mount -a; }"
 
   for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
     echo "Checking if to remount $mount_point"
-    $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
+    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
   done
-
-  #$DSH "sudo mount -o force /home/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
 
 correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
@@ -250,11 +248,11 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
 
   #temporary to avoid read-only file system errors
   echo "Checking if to remount /home/$userAloja/share"
-  $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+  $DSH_SLAVES "[ ! \"\$(ls /home/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f /home/$userAloja/share; sudo fusermount -uz /home/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount /home/$userAloja/share; sudo mount -a; }"
 
   for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
     echo "Checking if to remount $mount_point"
-    $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
+    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
   done
 
   correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)

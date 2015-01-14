@@ -19,8 +19,11 @@ function isNumber(n) {
  * Modifies the current url changing the query parameters to the ones present
  * in the passed map
  */
-function setUrlQuery(query) {
+function setUrlQuery(query, extra_parameters_string) {
 	var uri = new URI();
 	uri.setQuery(query);
+	if (typeof extra_parameters_string !== "undefined") {
+		uri.setQuery(URI.parseQuery(extra_parameters_string));
+	}
 	history.replaceState({}, '', uri.toString());
 }

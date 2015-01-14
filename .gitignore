@@ -97,6 +97,7 @@ local.properties
 .loadpath
 .project
 .buildpath
+aloja-tools/.classpath
 # External tool builders
 .externalToolBuilders/
 
