@@ -18,7 +18,7 @@ class Utils
         return $array;
     }
 
-    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true)
+    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true, $table_name = null)
     {
     	if($item_name == 'money' && isset($_GET['money'])) {
     		$money = $_GET['money'];
@@ -35,11 +35,11 @@ class Utils
             $items = Utils::delete_none($items);
         } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
-                $items = array('pagerank', 'terasort', 'wordcount');
+                $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
-                $items = array('IB', 'ETH');
+                $items = array();
             } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD');
+                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
             } else {
                 $items = array();
             }
@@ -66,6 +66,11 @@ class Utils
                     $concat_config .= " $single_item_name";
                 }
             }
+
+            if ($table_name !== null) {
+                $single_item_name = $table_name.'.`'.$single_item_name.'`';
+            }
+
             $where_configs .=
             ' AND '.
             $single_item_name. //remove trailing 's'
@@ -104,8 +109,9 @@ class Utils
                     } elseif ($key_name == 'cost') {
                         $jsonRow[] = number_format($value_row['cost'], 2);
                     } elseif ($key_name == 'id_cluster') {
-                        if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
-                        else $jsonRow[] = "Local 1";
+                        //if (strpos($value_row['exec'], '_az')) $jsonRow[] = 'Azure L';
+                        //else $jsonRow[] = "Local 1";
+                        $jsonRow[] = $value_row['cluster_name'];
                     } elseif (stripos($key_name, 'BYTES') !== false) {
                         $jsonRow[] = round(($value_row[$key_name])/(1024*1024));
                     } elseif ($key_name == 'FINISH_TIME') {
@@ -282,13 +288,15 @@ class Utils
     
     public static function getExecsOptions($db)
     {
-    	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE valid = TRUE");
-    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE valid = TRUE");
-    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE valid = TRUE");
-    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE valid = TRUE");
-    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE valid = TRUE");
-    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE valid = TRUE");
-    	$clusterOptions = $db->get_rows("SELECT DISTINCT id_cluster FROM execs WHERE valid = TRUE");
+        $filter_execs = DBUtils::getFilterExecs();
+
+        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs");
+    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE 1 $filter_execs");
+    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 $filter_execs");
+    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 $filter_execs");
+    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 $filter_execs");
+    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 $filter_execs");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT id_cluster FROM execs WHERE 1 $filter_execs");
     	 
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
@@ -318,10 +326,7 @@ class Utils
     		$discreteOptions['blk_size'][] = array_shift($option);
     	}
     	foreach($clusterOptions as $option) {
-    		$value = array_shift($option);
-    		if($value == 1) $value = 'Local 1';
-    		else if($value == 2) $value = 'Azure L';
-    		$discreteOptions['id_cluster'][] = $value;
+            $discreteOptions['blk_size'][] = array_shift($option);
     	}
     	
     	return $discreteOptions;
@@ -340,6 +345,17 @@ class Utils
     		$compName = 'Snappy';
     	
     	return $compName;
+    }
+
+    public static function getClusterName($clusterCode)
+    {
+        $clusterName = 'Undefined';
+        if($clusterCode == 1)
+            $clusterName = 'Local';
+        else
+            $clusterName = 'Azure';
+
+        return $clusterName;
     }
     
     public static function getNetworkName($netShort)

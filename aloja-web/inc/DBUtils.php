@@ -88,18 +88,26 @@ class DBUtils
         return $rows;
     }
 
+    public static function getFilterExecs()
+    {
+        return "
+AND bench_type = 'HiBench'
+AND bench not like 'prep_%'
+AND exe_time between 200 and 15000
+AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
+AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null)
+";
+//AND valid = TRUE
+    }
+
     public function get_execs($filter_execs = null)
     {
         if($filter_execs === null)
-            $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+            $filter_execs = DBUtils::getFilterExecs();
 
-        $filter_execs = "";
-        $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost  FROM execs e
+        $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name  FROM execs e
         join clusters USING (id_cluster)
         WHERE 1 $filter_execs  ;";
-//        #AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null and host not like '%-1001');
-//        #AND id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001');
-//        ";
 
         return $this->get_rows($query);
     }
@@ -322,7 +330,7 @@ class DBUtils
      *
      * Returns a list containing arrays with 'bench', 'id_exec' and 'jobid'.
      */
-    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type)
+    public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs = null)
     {
         $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
         $query = "
@@ -347,6 +355,7 @@ class DBUtils
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."
+                $where_configs
 
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset

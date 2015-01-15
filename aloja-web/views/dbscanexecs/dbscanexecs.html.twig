@@ -7,6 +7,7 @@
 {% block javascript %}
     {{ parent() }}
     {{ highcharts_js|raw }}
+    <script type="text/javascript" src="js/jquery.deserialize.js"></script>
 
     <script>
         $(document).ready(function() {
@@ -16,6 +17,7 @@
             var metric_x = form.find("[name='metric_x']");
             var metric_y = form.find("[name='metric_y']");
             var task_type = form.find("[name='type']");
+            var configFilters = $("form[name='configFilters']");
 
             // Load form data from URL parameters
             loadFiltersFromUrl();
@@ -24,6 +26,8 @@
             form.change(updateChart);
             form.find('button').click(updateChart)
             form.submit(updateChart);
+            configFilters.change(updateChart);
+            configFilters.submit(updateChart);
 
             // Different zoom actions
             $('#zoom_reset').click(function () {
@@ -118,6 +122,44 @@
                         value.v.val(uri_query[value.s]);
                     }
                 });
+
+                // Load config filters form
+                var something_changed = false;
+                configFilters.deserialize(uri.query(), {change: function () {
+                    something_changed = true;
+                }});
+                if (something_changed) {
+                    // Workaround: options selected by default on page load aren't unselected
+                    // by the deserialize plugin, so we have to unselect everything first.
+                    // But only in the case something changed, otherwise we would be unselecting
+                    // the form's default values the first time the page is opened.
+                    configFilters.find("select option").prop("selected", false);
+                    configFilters.deserialize(uri.query());
+                }
+
+                // Update "reset filter" link with current parameters
+                updateFiltersResetUrl();
+            }
+
+            function updateFiltersResetUrl() {
+                var current_uri = new URI();
+                // Extract current path
+                var reset_filter_link = new URI(current_uri.path());
+
+                // Add only these parameters to the reset url (if present)
+                $.each([
+                    "jobid",
+                    "metric_x",
+                    "metric_y",
+                    "task_type",
+                ], function(index, value) {
+                    if (current_uri.hasQuery(value) === true) {
+                        reset_filter_link.setQuery(value, current_uri.query(true)[value])
+                    }
+                });
+
+                // Update link
+                configFilters.find("#filter_reset").attr("href", reset_filter_link.toString());
             }
 
             function updateChart(event) {
@@ -131,18 +173,27 @@
                     metric_x: metric_x.val(),
                     metric_y: metric_y.val(),
                     task_type: task_type.val(),
-                });
+                }, configFilters.serialize());
+
+                // Update "reset filter" link with current parameters
+                updateFiltersResetUrl();
 
                 // Launch ajax request
                 $.ajax({
                     url: "{{ path('dbscanexecsdata', {'jobid': jobid}) }}",
-                    data: {
+                    data: $.param({
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
                         task_type: task_type.val(),
-                    },
+                    }) + '&' + configFilters.serialize(),
                 })
-                .done(function(data) {
+                .done(function(data, status, xhr) {
+
+                    // Check for server errors
+                    if (!xhr.responseJSON) {
+                        alert("Server error");
+                        return;
+                    }
 
                     // Update loading dialog
                     chart.showLoading("Loading... <br>(" + data.pending + " remaining)");
@@ -301,6 +352,10 @@
             </select>
         </label>
     </form>
-    <div id="chart" style="clear: both;"></div>
+    <div id="chart" style="clear: both; width: 75%; float: left;"></div>
+    <div style="width: 25%; float: right;">
+        {% include 'common/config_filters.html.twig' %}
+    </div>
+    <div class="clearfix"></div>
 
 {% endblock %}

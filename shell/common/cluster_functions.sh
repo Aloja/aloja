@@ -9,20 +9,11 @@ source "$CONF_DIR/provider_functions.sh"
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
+#global variables
+sharedDir="/home/$userAloja/share"
 
-#global vars
-
-if [ "$cloud_provider" == "azure" ] ; then
-   devicePrefix="sd"
-   cloud_drive_letters="$(echo {c..z})"
-elif [ "$cloud_provider" == "rackspace" ] ; then
-   devicePrefix="xvd"
-   cloud_drive_letters="$(echo {b..z})"
-else
-  logger "WARNING: Provider $cloud_provider has no devices definition."
-  #exit 1
-fi
-
+#####################################################################################
+# Start functions
 
 #$1 vm_name $2 ssh_port
 vm_check_create() {
@@ -472,7 +463,7 @@ get_mount_disks() {
 
   local create_string="
     mkdir -p ~/{share,minerva};
-    sudo mkdir -p /scratch/attached/{1,2,3} /scratch/local;
+    sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     sudo chown -R $userAloja: /scratch;
     sudo mount -a;
     sudo chown -R $userAloja /scratch
@@ -928,6 +919,13 @@ vm_set_master_crontab() {
   fi
 }
 
+#$1 share path
+verify_share_cmd() {
+  echo -e "[ ! \"\$(ls $1/safe_store )\" ] && { echo 'ERROR: share not mounted correctly, remounting'; sudo umount -f $1; sudo fusermount -uz $1; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $1; sudo mount -a; }"
+
+#[[ ! \"\$(mount |grep '$1'| grep 'rw,' )\" || \"\$(touch $1/touch )\" ]] && { echo 'ERROR: $1 not R/W remounting'; sudo umount -f $1; sudo fusermount -uz $1; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $1; sudo mount -a; }
+}
+
 vm_set_master_forer() {
 
   if check_bootstraped "vm_set_master_forer" "set" "master"; then
@@ -940,12 +938,23 @@ vm_set_master_forer() {
   if [ -z "$test_action" ] ; then
     #TODO shouldn't be necessary but...
     logger "DEBUG: Re-mounting disks"
-    cluster_execute "sudo mount -a"
-    cluster_execute "ls -lah ~/share/safe_store"
+    local verify_share="$(verify_share_cmd "/home/$userAloja/share")"
+
+    cluster_execute "$verify_share"
 
     logger "Generating jobs (forer)"
 
-    vm_execute_master "bash /home/$userAloja/share/shell/forer_az.sh $clusterName"
+    if [ -f "$CONF_DIR/../forer_$clusterName.sh" ] ; then
+      logger " synching forer files"
+      vm_rsync "$CONF_DIR/../" "$sharedDir/shell/"
+
+      logger " executing forer_$clusterName.sh"
+      vm_execute_master "bash /home/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
+    else
+      logger " executing forer_az.sh $CONF_DIR/../forer_$clusterName.sh"
+      vm_execute_master "bash /home/$userAloja/share/shell/forer_az.sh $clusterName"
+    fi
+
   else
     logger " queues already setup"
   fi
@@ -980,48 +989,46 @@ vm_make_fs() {
     local share_disk_path="$1"
   fi
 
-  shared_dir="/home/$userAloja/share"
-
   if [ -z "$homeIsShared" ] ; then
-    logger "Checking if $shared_dir is correctly linked"
-    test_action="$(vm_execute "[ -d $shared_dir ] && [ -L $shared_dir ] && ls $shared_dir/safe_store && echo '$testKey'")"
+    logger "Checking if $sharedDir is correctly linked"
+    test_action="$(vm_execute "[ -d $sharedDir ] && [ -L $sharedDir ] && ls $sharedDir/safe_store && echo '$testKey'")"
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
     if [ -z "$test_action" ] ; then
-      logger " Linking $shared_dir"
+      logger " Linking $sharedDir"
       vm_execute "sudo chown -R ${userAloja} /scratch;
-[ -d $shared_dir ] && [ ! -L $shared_dir ] && mv $shared_dir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path $shared_dir;
-touch $shared_dir/safe_store;
+[ -d $sharedDir ] && [ ! -L $sharedDir ] && mv $sharedDir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $share_disk_path $sharedDir;
+touch $sharedDir/safe_store;
     "
     else
-      logger " $shared_dir is correctly mounted"
+      logger " $sharedDir is correctly mounted"
     fi
 
   else
     logger "NOTICE: /home is marked as shared, creating the dir if necessary"
-    vm_execute "mkdir -p $shared_dir; touch $shared_dir/safe_store"
+    vm_execute "mkdir -p $sharedDir; touch $sharedDir/safe_store"
   fi
 
-  vm_rsync "../shell" "$shared_dir"
-  vm_rsync "../aloja-deploy" "$shared_dir"
+  vm_rsync "../shell" "$sharedDir"
+  vm_rsync "../aloja-deploy" "$sharedDir"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
-  test_action="$(vm_execute "ls $shared_dir/aplic/aplic_version && echo '$testKey'")"
+  test_action="$(vm_execute "ls $sharedDir/aplic/aplic_version && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $shared_dir; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    vm_execute "cd $sharedDir; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
-    vm_execute "cd $shared_dir; tar -jxf aplic.tar.bz2"
+    vm_execute "cd $sharedDir; tar -jxf aplic.tar.bz2"
   fi
 
   logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$shared_dir"
+  vm_rsync "../blobs/aplic" "$sharedDir"
 
 }
 

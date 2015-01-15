@@ -67,7 +67,7 @@ class DefaultController extends AbstractController
                 $disks = array('HDD');
             }
 
-            $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+            $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
             
             //get configs first (categories)
@@ -86,6 +86,7 @@ class DefaultController extends AbstractController
             }
 
             //get the result rows
+            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
             $query = "SELECT #count(*),
             		  e.id_exec,
                       concat($concat_config) conf, bench,
@@ -95,13 +96,12 @@ class DefaultController extends AbstractController
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
-                      #(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
-                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) AVG_ALL_exe_time,
-                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MAX_ALL_exe_time,
-                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $filter_execs $where_configs) MIN_ALL_exe_time,
+                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $where_configs) AVG_ALL_exe_time,
+                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $where_configs) MAX_ALL_exe_time,
+                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
                       'none'
                       from execs e
-                      WHERE 1  $filter_execs $where_configs
+                      WHERE 1 $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
 
             $rows = $db->get_rows($query);
@@ -196,7 +196,7 @@ class DefaultController extends AbstractController
 
     public function costPerfEvaluationAction()
     {
-        $filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+        $filter_execs = DBUtils::getFilterExecs();
         $filter_execs_max_time = "AND exe_time < 10000";
         $dbUtils = $this->container->getDBUtils();
         try {
@@ -431,7 +431,7 @@ class DefaultController extends AbstractController
                     'minerva-2','minerva-3','minerva-4',
                     'minerva-6','minerva-7','minerva-8',
                     'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
-
+                    'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
                 );
             } elseif ($hosts == 'Master') {
                 $selected_hosts = array(
@@ -440,6 +440,7 @@ class DefaultController extends AbstractController
                     'minerva-1',
                     'minerva-6',
                     'minerva-5',
+                    'rl-06-00',
                 );
             } else {
                 $selected_hosts = array($hosts);
@@ -1227,14 +1228,14 @@ class DefaultController extends AbstractController
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
 			if (! $benchs)
-				$where_configs .= 'AND bench IN (\'wordcount\')';
+				$where_configs .= 'AND bench IN (\'terasort\')';
 			$order_type = Utils::get_GET_string ( 'ordertype' );
 			if (! $order_type)
 				$order_type = 'exe_time';
 				// $concat_config = join(',\'_\',', $configurations);
 				// $concat_config = substr($concat_config, 1);
-			
-			$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+
+            $filter_execs = DBUtils::getFilterExecs();
 			$order_conf = 'LENGTH(conf), conf';
 			
 			// get the result rows
@@ -1242,7 +1243,7 @@ class DefaultController extends AbstractController
     		(exe_time/3600)*(cost_hour) cost
     		from execs e
     		join clusters USING (id_cluster)
-    		WHERE e.valid = TRUE $where_configs
+    		WHERE 1 $filter_execs $where_configs
     		ORDER BY $order_type ASC;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
@@ -1256,7 +1257,7 @@ class DefaultController extends AbstractController
 				$bestexec = $rows[0];
 				$conf = $bestexec['exec'];
 				$parameters = explode ( '_', $conf );
-				$cluster = (explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+				$cluster =  explode ( '/', $parameters [count ( $parameters ) - 1] )[0]; //(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
 				Utils::makeExecInfoBeauty($bestexec);
 			}
 		} catch ( \Exception $e ) {
@@ -1265,7 +1266,7 @@ class DefaultController extends AbstractController
 		
 		if (empty ( $benchs ))
 			$benchs = array (
-					'wordcount' 
+					'terasort'
 			);
 		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
 				'selected' => 'Best configuration',
@@ -1297,8 +1298,9 @@ class DefaultController extends AbstractController
 			$where_configs = '';
 			$concat_config = "";
 			
-			if(!(isset($_GET['benchs'])))
-				$_GET['benchs'][] = 'wordcount';
+			if(!(isset($_GET['benchs']))) {
+				$_GET['benchs'] = array('wordcount', 'terasort', 'sort');
+            }
 			
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
@@ -1319,15 +1321,15 @@ class DefaultController extends AbstractController
 			if($minExecs > 0)
 				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
-			$filter_execs = "AND valid = TRUE";
-				
+			$filter_execs = DBUtils::getFilterExecs();
+
 			$paramOptions = array();
 			if($paramEval == 'maps')
 				$paramOptions = array(4,6,8,10,12,16,24,32);
 			else if($paramEval == 'comp')
 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
 		    else if($paramEval == 'id_cluster')
-				$paramOptions = array('Local','Azure');
+				$paramOptions = array('rl-06');
 			else if($paramEval == 'net')
 				$paramOptions = array('Ethernet','Infiniband');
 			else if($paramEval == 'disk')
@@ -1370,10 +1372,7 @@ class DefaultController extends AbstractController
 				if($paramEval == 'comp')
 					$row[$paramEval] = Utils::getCompressionName($row['comp']);
 				else if($paramEval == 'id_cluster') {
-					if($row[$paramEval] == 1)
-						$row[$paramEval] = 'Local';
-					else
-						$row[$paramEval] = 'Azure';
+                    $row[$paramEval] = Utils::getClusterName($row[$paramEval]);
 				} else if($paramEval == 'net')
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')
@@ -1496,6 +1495,7 @@ class DefaultController extends AbstractController
                 'bench' => $bench,
                 'job_offset' => $job_offset,
                 'METRICS' => DBUtils::$TASK_METRICS,
+                'show_filter_benchs' => false,
             )
         );
     }
@@ -1515,13 +1515,15 @@ class DefaultController extends AbstractController
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
-		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'';
+		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 
-		if (count($_GET) <= 1)
+		// FIXME - Set defaults manually, just in case...
+		if (count($_GET) < 1)
 		{
-			$params['iofilebufs'] = array('32768','65536','131072');
+			$params['disks'] = array('SSD','HDD');
+			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
-			$learn_param = 'regtree';
+			$params['replications'] = array('1');
 		}
 
 		$extra_config = '';
@@ -1612,7 +1614,8 @@ class DefaultController extends AbstractController
 				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
 
 				$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 1000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+				{
 					$jsonExecs[$count]['y'] = (int)$data[$key_exec];
 					$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
 
@@ -1662,6 +1665,15 @@ class DefaultController extends AbstractController
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+
+		// FIXME - Set defaults manually, just in case...
+		if (count($_GET) <= 1)
+		{
+			$params['disks'] = array('SSD','HDD');
+			$params['iofilebufs'] = array('32768','131072');
+			$params['comps'] = array('0');
+			$params['replications'] = array('1');
+		}
 
 		$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
 		$dims1 = $dims1.((empty($params['id_clusters']))?'':'Cluster,').((empty($params['mapss']))?'':'Maps,').((empty($params['replications']))?'':'Rep,').((empty($params['iosfs']))?'':'IO.SFac,').((empty($params['iofilebufs']))?'':'IO.FBuf');
@@ -1893,11 +1905,13 @@ class DefaultController extends AbstractController
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
-		// Set defaults manually, just in case...
+		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) <= 1)
 		{
-			$params['iofilebufs'] = array('32768','65536','131072');
+			$params['disks'] = array('SSD','HDD');
+			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
+			$params['replications'] = array('1');
 		}
 
 		$jsonData = $jsonHeader = "[]";

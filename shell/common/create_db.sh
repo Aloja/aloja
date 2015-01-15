@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`blk_size\` int(11) DEFAULT NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
   \`valid\` BOOLEAN DEFAULT TRUE,
+ \`hadoop_version\` int(11) NOT NULL DEFAULT \'1\'
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`)
 ) ENGINE=InnoDB;
@@ -33,6 +34,8 @@ create table if not exists hosts (
   role varchar(45) DEFAULT NULL,
   PRIMARY KEY (id_host)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
+ALTER TABLE execs ADD COLUMN hadoop_version INT NOT NULL DEFAULT 1;
+
 insert ignore into hosts set id_host=1, id_cluster=1, host_name='minerva-1001', role='master';
 insert ignore into hosts set id_host=2, id_cluster=1, host_name='minerva-1002', role='slave';
 insert ignore into hosts set id_host=3, id_cluster=1, host_name='minerva-1003', role='slave';
@@ -50,6 +53,12 @@ insert ignore into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, t
 update execs SET disk='RR1' where disk='R1';
 update execs SET disk='RR2' where disk='R2';
 update execs SET disk='RR3' where disk='R3';
+update execs SET bench_type='HiBench' where bench_type='b';
+update execs SET bench_type='HiBench' where bench_type='';
+update execs SET bench_type='HiBench-min' where bench_type='-min';
+update execs SET bench_type='HiBench-10' where bench_type='-10';
+update execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
+INSERT INTO clusters(id_cluster,name,cost_hour,type,link,nodes_number) values(20,'HDInsight','0.32','PaaS','http://azure.microsoft.com/en-gb/pricing/details/hdinsight/',4);
 "
 
 $MYSQL "
@@ -492,6 +501,91 @@ CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
   KEY \`index2\` (\`id_exec\`),
   KEY \`index_job_name\` (\`job_name\`)
 ) ENGINE=InnoDB;
+
+CREATE TABLE \`HDI_JOB_details\` (
+  \`hdi_job_details_id\` int(11) NOT NULL AUTO_INCREMENT,
+  \`id_exec\` int(11) NOT NULL,
+  \`JOB_ID\` varchar(255) NOT NULL,
+  \`BYTES_READ\` bigint(20) NOT NULL,
+  \`BYTES_WRITTEN\` bigint(20) NOT NULL,
+  \`COMMITTED_HEAP_BYTES\` bigint(20) NOT NULL,
+  \`CPU_MILLISECONDS\` bigint(20) NOT NULL,
+  \`FAILED_MAPS\` bigint(20) NOT NULL,
+  \`FAILED_REDUCES\` bigint(20) NOT NULL,
+  \`FAILED_SHUFFLE\` bigint(20) NOT NULL,
+  \`FILE_BYTES_READ\` bigint(20) NOT NULL,
+  \`FILE_BYTES_WRITTEN\` bigint(20) NOT NULL,
+  \`FILE_LARGE_READ_OPS\` bigint(20) NOT NULL,
+  \`FILE_READ_OPS\` bigint(20) NOT NULL,
+  \`FILE_WRITE_OPS\` bigint(20) NOT NULL,
+  \`FINISHED_MAPS\` bigint(20) NOT NULL,
+  \`FINISH_TIME\` bigint(20) NOT NULL,
+  \`GC_TIME_MILLIS\` bigint(20) NOT NULL,
+  \`JOB_PRIORITY\` varchar(255) NOT NULL,
+  \`LAUNCH_TIME\` bigint(20) NOT NULL,
+  \`MAP_INPUT_RECORDS\` bigint(20) NOT NULL,
+  \`MAP_OUTPUT_RECORDS\` bigint(20) NOT NULL,
+  \`MB_MILLIS_MAPS\` bigint(20) NOT NULL,
+  \`MERGED_MAP_OUTPUTS\` bigint(20) NOT NULL,
+  \`MILLIS_MAPS\` bigint(20) NOT NULL,
+  \`OTHER_LOCAL_MAPS\` bigint(20) NOT NULL,
+  \`PHYSICAL_MEMORY_BYTES\` bigint(20) NOT NULL,
+  \`SLOTS_MILLIS_MAPS\` bigint(20) NOT NULL,
+  \`SPILLED_RECORDS\` bigint(20) NOT NULL,
+  \`SPLIT_RAW_BYTES\` bigint(20) NOT NULL,
+  \`SUBMIT_TIME\` bigint(20) NOT NULL,
+  \`TOTAL_LAUNCHED_MAPS\` bigint(20) NOT NULL,
+  \`TOTAL_MAPS\` bigint(20) NOT NULL,
+  \`TOTAL_REDUCES\` bigint(20) NOT NULL,
+  \`USER\` varchar(255) NOT NULL,
+  \`VCORES_MILLIS_MAPS\` bigint(20) NOT NULL,
+  \`VIRTUAL_MEMORY_BYTES\` bigint(20) NOT NULL,
+  \`WASB_BYTES_READ\` bigint(20) NOT NULL,
+  \`WASB_BYTES_WRITTEN\` bigint(20) NOT NULL,
+  \`WASB_LARGE_READ_OPS\` bigint(20) NOT NULL,
+  \`WASB_READ_OPS\` bigint(20) NOT NULL,
+  \`WASB_WRITE_OPS\` bigint(20) NOT NULL,
+  \`job_name\` varchar(255) DEFAULT NULL,
+  \`RECORDS_WRITTEN\` bigint(20) DEFAULT NULL,
+  PRIMARY KEY (\`hdi_job_details_id\`),
+  UNIQUE KEY \`job_id_uq\` (\`JOB_ID\`),
+  KEY \`id_exec\` (\`id_exec\`),
+  CONSTRAINT \`HDI_JOB_details_ibfk_1\` FOREIGN KEY (\`id_exec\`) REFERENCES \`execs\` (\`id_exec\`) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+
+CREATE TABLE \`HDI_JOB_tasks\` (
+  \`hdi_job_task_id\` int(11) NOT NULL AUTO_INCREMENT,
+  \`JOB_ID\` varchar(255) NOT NULL,
+  \`TASK_ID\` varchar(255) NOT NULL,
+  \`BYTES_READ\` bigint(20) NOT NULL,
+  \`BYTES_WRITTEN\` bigint(20) NOT NULL,
+  \`COMMITTED_HEAP_BYTES\` bigint(20) NOT NULL,
+  \`CPU_MILLISECONDS\` bigint(20) NOT NULL,
+  \`FAILED_SHUFFLE\` bigint(20) NOT NULL,
+  \`FILE_BYTES_READ\` bigint(20) NOT NULL,
+  \`FILE_BYTES_WRITTEN\` bigint(20) NOT NULL,
+  \`FILE_READ_OPS\` bigint(20) NOT NULL,
+  \`FILE_WRITE_OPS\` bigint(20) NOT NULL,
+  \`GC_TIME_MILLIS\` bigint(20) NOT NULL,
+  \`MAP_INPUT_RECORDS\` bigint(20) NOT NULL,
+  \`MAP_OUTPUT_RECORDS\` bigint(20) NOT NULL,
+  \`MERGED_MAP_OUTPUTS\` bigint(20) NOT NULL,
+  \`PHYSICAL_MEMORY_BYTES\` bigint(20) NOT NULL,
+  \`SPILLED_RECORDS\` bigint(20) NOT NULL,
+  \`SPLIT_RAW_BYTES\` bigint(20) NOT NULL,
+  \`TASK_ERROR\` bigint(20) NOT NULL,
+  \`TASK_FINISH_TIME\` bigint(20) NOT NULL,
+  \`TASK_START_TIME\` bigint(20) NOT NULL,
+  \`TASK_STATUS\` bigint(20) NOT NULL,
+  \`TASK_TYPE\` bigint(20) NOT NULL,
+  \`VIRTUAL_MEMORY_BYTES\` bigint(20) NOT NULL,
+  \`WASB_BYTES_READ\` bigint(20) NOT NULL,
+  \`WASB_BYTES_WRITTEN\` bigint(20) NOT NULL,
+  \`WASB_LARGE_READ_OPS\` bigint(20) NOT NULL,
+  \`WASB_READ_OPS\` bigint(20) NOT NULL,
+  \`WASB_WRITE_OPS\` bigint(20) NOT NULL,
+  PRIMARY KEY (\`hdi_job_task_id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 #CREATE TABLE IF NOT EXISTS \`JOB_job_history\` (
 #  \`id_JOB_job_history\` int(11) NOT NULL AUTO_INCREMENT,

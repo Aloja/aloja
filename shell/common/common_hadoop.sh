@@ -1,4 +1,3 @@
-
 prepare_hadoop_config(){
 
   #before running hibench, set exports and vars
@@ -41,18 +40,26 @@ $DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$P
 
   IO_MB="$((IO_FACTOR * 10))"
 
+
+
 if [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] ; then
-  HDFS_DIR="$HDD"
+  HDFS_NDIR="$HDD/dfs/name"
+  HDFS_DDIR="$HDD/dfs/data"
 elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ]; then
-  HDFS_DIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/hadoop"
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data"
 elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ]; then
-  HDFS_DIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/hadoop\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/hadoop"
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data"
 elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ]; then
-  HDFS_DIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/hadoop\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/hadoop\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/hadoop"
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
 else
   echo "Incorrect disk specified2: $DISK"
   exit 1
 fi
+
+logger "DEBUG: HDFS_NDIR: $HDFS_NDIR \nHDFS_DDIR: $HDFS_DDIR"
 
 MAX_REDS="$MAX_MAPS"
 
@@ -65,7 +72,8 @@ s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
 s,##NAMENODE##,$MASTER,g;
 s,##TMP_DIR##,$HDD,g;
-s,##HDFS_DIR##,$HDFS_DIR,g;
+s,##HDFS_NDIR##,$HDFS_NDIR,g;
+s,##HDFS_DDIR##,$HDFS_DDIR,g;
 s,##MAX_MAPS##,$MAX_MAPS,g;
 s,##MAX_REDS##,$MAX_REDS,g;
 s,##IFACE##,$IFACE,g;
