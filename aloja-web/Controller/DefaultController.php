@@ -1515,22 +1515,15 @@ class DefaultController extends AbstractController
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
+		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+
 		// FIXME - Set defaults manually, just in case...
-		if (count($_GET) <= 1)
+		if (count($_GET) < 1)
 		{
 			$params['disks'] = array('SSD','HDD');
 			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
 			$params['replications'] = array('1');
-		}
-
-		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'';
-
-		if (count($_GET) <= 1)
-		{
-			$params['iofilebufs'] = array('32768','65536','131072');
-			$params['comps'] = array('0');
-			$learn_param = 'regtree';
 		}
 
 		$extra_config = '';
@@ -1621,7 +1614,8 @@ class DefaultController extends AbstractController
 				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
 
 				$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE) {
+				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 1000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+				{
 					$jsonExecs[$count]['y'] = (int)$data[$key_exec];
 					$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
 
@@ -1633,7 +1627,6 @@ class DefaultController extends AbstractController
 						else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
 					}
 					$jsonExecs[$count++]['mydata'] = $extra_data;
-					if ($count > 4500) break; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 				}
 				fclose($handle);
 			}
