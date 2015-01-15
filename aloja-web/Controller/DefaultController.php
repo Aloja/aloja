@@ -1515,6 +1515,15 @@ class DefaultController extends AbstractController
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
+		// FIXME - Set defaults manually, just in case...
+		if (count($_GET) <= 1)
+		{
+			$params['disks'] = array('SSD','HDD');
+			$params['iofilebufs'] = array('32768','131072');
+			$params['comps'] = array('0');
+			$params['replications'] = array('1');
+		}
+
 		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'';
 
 		if (count($_GET) <= 1)
@@ -1624,6 +1633,7 @@ class DefaultController extends AbstractController
 						else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
 					}
 					$jsonExecs[$count++]['mydata'] = $extra_data;
+					if ($count > 4500) break; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 				}
 				fclose($handle);
 			}
@@ -1662,6 +1672,15 @@ class DefaultController extends AbstractController
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+
+		// FIXME - Set defaults manually, just in case...
+		if (count($_GET) <= 1)
+		{
+			$params['disks'] = array('SSD','HDD');
+			$params['iofilebufs'] = array('32768','131072');
+			$params['comps'] = array('0');
+			$params['replications'] = array('1');
+		}
 
 		$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
 		$dims1 = $dims1.((empty($params['id_clusters']))?'':'Cluster,').((empty($params['mapss']))?'':'Maps,').((empty($params['replications']))?'':'Rep,').((empty($params['iosfs']))?'':'IO.SFac,').((empty($params['iofilebufs']))?'':'IO.FBuf');
@@ -1893,11 +1912,13 @@ class DefaultController extends AbstractController
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
 
-		// Set defaults manually, just in case...
+		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) <= 1)
 		{
-			$params['iofilebufs'] = array('32768','65536','131072');
+			$params['disks'] = array('SSD','HDD');
+			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
+			$params['replications'] = array('1');
 		}
 
 		$jsonData = $jsonHeader = "[]";
