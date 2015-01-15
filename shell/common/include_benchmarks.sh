@@ -8,55 +8,48 @@ source "$CONF_DIR/common.sh"
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
-#make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
-#trap 'echo "RUNNING TRAP "; [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM #EXIT
+###################
 
-#2) load cluter/node config to get the default provider
+logger "INFO: loading benchmarks_defaults.conf"
+source "$CONF_DIR/../conf/benchmarks_defaults.conf"
 
 #test and load cluster config
 clusterConfigFile="cluster_${clusterName}.conf"
 
-ConfigFolderPath="$CONF_DIR/../conf"
+configFolderPath="$CONF_DIR/../conf"
 
-[ ! -f "$ConfigFolderPath/$clusterConfigFile" ] && { logger "$ConfigFolderPath/$clusterConfigFile is not a file." ; exit 1;}
+[ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config
-source "$ConfigFolderPath/$clusterConfigFile"
+logger "INFO: loading $configFolderPath/$clusterConfigFile"
+source "$configFolderPath/$clusterConfigFile"
 
-#3) Load the secured provider settings
+## load defaultProvider
+#if [ -z $2 ]; then
+#  securedProviderFile="$CONF_DIR/../../secure/${defaultProvider}_settings.conf"
+##load user specified provider conf file
+#elif [ -z $3 ]; then
+#  securedProviderFile="$CONF_DIR/../../secure/${2}_settings.conf"
+##load user specified conf file
+#else
+#	securedProviderFile="$CONF_DIR/../../secure/$3"
+#fi
+#
+##check for secured conf file
+#if [ ! -f "$securedProviderFile" ]; then
+#  echo "WARNING: Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
+#  #exit
+#else
+#  #load non versioned conf first (order is important for overrides)
+#  logger "INFO: loading $securedProviderFile"
+#  source "$securedProviderFile"
+#fi
 
-# load defaultProvider
-if [ -z $2 ]; then
-  securedProviderFile="$CONF_DIR/../../secure/${defaultProvider}_settings.conf"
-#load user specified provider conf file
-elif [ -z $3 ]; then
-  securedProviderFile="$CONF_DIR/../../secure/${2}_settings.conf"
-#load user specified conf file
-else
-	securedProviderFile="$CONF_DIR/../../secure/$3"
-fi
+source "$configFolderPath/$clusterConfigFile"
 
-#check for secured conf file
-if [ ! -f "$securedProviderFile" ]; then
-  echo "WARNING: Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
-  #exit
-else
-  #load non versioned conf first (order is important for overrides)
-  source "$securedProviderFile"
-fi
-
-#3) Re-load cluster config file (for overrides)
-
-source "$ConfigFolderPath/$clusterConfigFile"
-
-logger "Starting ALOJA deploy tools for Provider: $cloud_provider"
-
-#4) Load the common cluster functions
+logger "Starting ALOJA deploy tools for Provider: $default_provider"
 
 source "$CONF_DIR/cluster_functions.sh"
-
-
-#5) load the provider functions
 
 if [ ! -z "defaultProvider" ] ; then
   providerFunctionsFile="$CONF_DIR/../../aloja-deploy/providers/${defaultProvider}.sh"
@@ -85,11 +78,9 @@ fi
 #    exit 1
 #  fi
 #fi
+
 logger "INFO: loading $providerFunctionsFile"
 source "$providerFunctionsFile"
-
-logger "INFO: loading benchmarks_defaults.conf"
-source "$CONF_DIR/../conf/benchmarks_defaults.conf"
 
 #bencmark sources
 logger "INFO: loading $CONF_DIR/common_benchmarks.sh"

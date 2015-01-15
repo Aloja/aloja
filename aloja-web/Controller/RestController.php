@@ -161,7 +161,7 @@ class RestController extends AbstractController
 
     public function export2prvAction()
     {
-        ini_set('memory_limit', '256M');
+        //ini_set('memory_limit', '256M');
         error_reporting(512);
 
         try {
@@ -454,8 +454,9 @@ VALUES
                  AVG(s.`%system`), MAX(s.`%system`), MIN(s.`%system`), STDDEV_POP(s.`%system`), VAR_POP(s.`%system`),
                  AVG(s.`%iowait`), MAX(s.`%iowait`), MIN(s.`%iowait`), STDDEV_POP(s.`%iowait`), VAR_POP(s.`%iowait`),
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
-                 AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time'.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                 AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time,
+                 c.name cluster_name '.
+                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
@@ -466,8 +467,9 @@ VALUES
                     'AVG(s.`avgqu-sz`), MAX(s.`avgqu-sz`), MIN(s.`avgqu-sz`), STDDEV_POP(s.`avgqu-sz`), VAR_POP(s.`avgqu-sz`), 
                     AVG(s.await), MAX(s.`await`), MIN(s.`await`), STDDEV_POP(s.`await`), VAR_POP(s.`await`), 
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
-                    AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time'.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                    AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time,
+                    c.name cluster_name '.
+                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     'AVG(su.kbmemfree), MAX(su.kbmemfree), MIN(su.kbmemfree), STDDEV_POP(su.kbmemfree), VAR_POP(su.kbmemfree),  
@@ -478,9 +480,10 @@ VALUES
                      AVG(su.kbcommit), MAX(su.kbcommit), MIN(su.kbcommit), STDDEV_POP(su.kbcommit), VAR_POP(su.kbcommit), 
                      AVG(su.`%commit`), MAX(su.`%commit`), MIN(su.`%commit`), STDDEV_POP(su.`%commit`), VAR_POP(su.`%commit`), 
                      AVG(su.kbactive), MAX(su.kbactive), MIN(su.kbactive), STDDEV_POP(su.kbactive), VAR_POP(su.kbactive), 
-                     AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time'.
+                     AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time,
+                     c.name cluster_name '.
                     ' FROM SAR_memory_util su '.
-                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.IFACE,AVG(s.`rxpck/s`),MAX(s.`rxpck/s`),MIN(s.`rxpck/s`),STDDEV_POP(s.`rxpck/s`),VAR_POP(s.`rxpck/s`),SUM(s.`rxpck/s`),
@@ -490,8 +493,10 @@ VALUES
                     AVG(s.`rxcmp/s`),MAX(s.`rxcmp/s`),MIN(s.`rxcmp/s`),STDDEV_POP(s.`rxcmp/s`),VAR_POP(s.`rxcmp/s`),SUM(s.`rxcmp/s`),
                     AVG(s.`txcmp/s`),MAX(s.`txcmp/s`),MIN(s.`txcmp/s`),STDDEV_POP(s.`txcmp/s`),VAR_POP(s.`txcmp/s`),SUM(s.`txcmp/s`),
                     AVG(s.`rxmcst/s`),MAX(s.`rxmcst/s`),MIN(s.`rxmcst/s`),STDDEV_POP(s.`rxmcst/s`),VAR_POP(s.`rxmcst/s`),SUM(s.`rxmcst/s`),'.
-                    'e.id_cluster,e.end_time FROM SAR_net_devices s '.
-                    'JOIN execs e USING (id_exec) JOIN clusters USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                    'e.id_cluster,e.end_time,
+                    c.name cluster_name
+                    FROM SAR_net_devices s
+                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
             }
         
             $exec_rows = $dbUtil->get_rows($query);
@@ -687,7 +692,7 @@ VALUES
     			$disks = array('HDD');
     		}
     		 
-    		$filter_execs = "AND exe_time > 200 AND (id_cluster = 1 OR (bench != 'bayes' AND id_cluster=2))";
+    		$filter_execs = DBUtils::getFilterExecs();
     		$order_conf = 'LENGTH(conf), conf';
     		 
     		//get best config
@@ -714,6 +719,7 @@ VALUES
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+        $task_type = $db->get_task_type(Utils::get_GET_string("task_type"));
         $heuristic = Utils::get_GET_int("heuristic") !== null ? Utils::get_GET_int("heuristic") : 1;
         $eps = Utils::get_GET_float("eps") !== null ? Utils::get_GET_float("eps") : 250000;
         $minPoints = Utils::get_GET_int("minPoints") !== null ? Utils::get_GET_int("minPoints") : 1;
@@ -723,7 +729,7 @@ VALUES
             $eps = $minPoints = null;
         }
 
-        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $eps, $minPoints);
+        $dbscan = $db->get_dbscan($jobid, $metric_x, $metric_y, $task_type, $eps, $minPoints);
 
         $seriesData = array();
         foreach ($dbscan->getClusters() as $cluster) {
@@ -771,34 +777,54 @@ VALUES
 
     public function dbscanexecsDataAction()
     {
-        ini_set('memory_limit', '384M');
+        //ini_set('memory_limit', '384M');
 
         $db = $this->container->getDBUtils();
+
+        $configurations = array();
+        $where_configs = '';
+        $concat_config = "";
+        $table_name = "e";
+
+        $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config,false,$table_name);
+        $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config,false,$table_name);
+        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config,false,$table_name);
+        $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config,false,$table_name);
+        $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config,false,$table_name);
+        $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config,false,$table_name);
+        $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config,false,$table_name);
+        $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config,false,$table_name);
+        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config,false,$table_name);
 
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
+        $task_type = $db->get_task_type(Utils::get_GET_string("task_type"));
 
         list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
 
         // Calc pending dbscanexecs (if any)
-        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y);
+        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs);
         if (count($pending) > 0) {
-            $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y);
+            $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y, $task_type);
         }
 
         // Retrieve calculated dbscanexecs from database
+        $task_type_select = $db->get_task_type_query($task_type, $filter_null=true);
         $query = "
             SELECT
                 d.`id_exec`,
                 d.`centroid_x`,
                 d.`centroid_y`
-            FROM `JOB_dbscan` d
+            FROM `JOB_dbscan` d, `execs` e
             WHERE
+                d.`id_exec` = e.`id_exec` AND
                 d.`bench` = :bench AND
                 d.`job_offset` = :job_offset AND
                 d.`metric_x` = :metric_x AND
                 d.`metric_y` = :metric_y
+                ".$task_type_select('d')."
+                $where_configs
         ;";
         $query_params = array(
             ":bench" => $bench,

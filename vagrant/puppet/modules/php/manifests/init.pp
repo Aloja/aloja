@@ -12,39 +12,36 @@ class php {
     require => Package['php5-fpm'],
   }
 
- if $environment == 'dev' {
-  file {'/etc/php5/fpm/conf.d/90-overrides.ini':
-    ensure => present,
-    owner => root, group => root, mode => 444,
-    notify => Service['php5-fpm'],
-    content => "
-#memory_limit = 512MB
+if $environment == 'dev' {
+file {'/etc/php5/fpm/conf.d/90-overrides.ini':
+  ensure => present,
+  owner => root, group => root, mode => 644,
+  notify => Service['php5-fpm', 'nginx'],
+  content => "#memory_limit = 1024M
 #display_errors = 1
-zend_extension=/usr/lib/php5/20121212/xdebug.so
-xdebug.default_enable = 1
-xdebug.idekey = \"vagrant\"
-xdebug.remote_enable = 1
-xdebug.remote_autostart = 0
-xdebug.remote_port = 9000
-xdebug.remote_handler=dbgp
-xdebug.remote_log=\"/var/log/xdebug/xdebug.log\"
-xdebug.remote_host=10.0.2.2 ; IDE-Environments IP, from vagrant box.
-
+#zend_extension=/usr/lib/php5/20121212/xdebug.so
+#xdebug.default_enable = 1
+#xdebug.idekey = \"vagrant\"
+#xdebug.remote_enable = 1
+#xdebug.remote_autostart = 0
+#xdebug.remote_port = 9000
+#xdebug.remote_handler=dbgp
+#xdebug.remote_log=\"/var/log/xdebug/xdebug.log\"
+#xdebug.remote_host=10.0.2.2 ; IDE-Environments IP, from vagrant box.
 ",
 
-  }
- } else {
-  file {'/etc/php5/fpm/conf.d/90-overrides.ini':
-    ensure => present,
-    owner => root, group => root, mode => 444,
-    notify => Service['php5-fpm'],
-    content => "
-	xdebug.default_enable = 0
-	xdebug.remote_enable = 0
-	
+}
+} else {
+file {'/etc/php5/fpm/conf.d/90-overrides.ini':
+  ensure => present,
+  owner => root, group => root, mode => 644,
+  notify => Service['php5-fpm', 'nginx'],
+  content => "memory_limit = 1024M
+xdebug.default_enable = 0
+xdebug.remote_enable = 0
 ",
-  }
- }
+}
+}
 
 #
 #  # Use a custom mysql configuration file

@@ -1,27 +1,49 @@
-param($clusterName,[String]$inputData="example/data/1TB-sort-input",[String]$outputData="example/data/1TB-sort-output", [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32[]]$reducersNumber=(12,12), [String]$subscriptionName)
+param($clusterName, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32[]]$reducersNumber=(12,12), [Int32]$nodesNumber=16, [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String]$minervaLogin, [String[]]$benchmarks = ("wordcount","terasort"))
 
 . ./common.ps1
 
 Write-Verbose "Logging into Azure"
 AzureLogin
 SelectSubscription $subscriptionName
+Set-AzureSubscription -SubscriptionName $subscriptionName -CurrentStorageAccountName $storageAccount
 Write-Verbose "Logged into Azure"
 
-if($runTeragen) {
-   Write-Verbose "Removing teragen output data"
-   DeleteStorageFile $inputData $storageAccount $storageKey $containerName
+$secPassword = ConvertTo-SecureString -string $password -AsPlainText -Force
+$cred = New-Object System.Management.Automation.PsCredential($fullUsername, $secPassword)
+
+createCluster $clusterName $nodesNumber $storageAccount $storageKey $createContainer $containerName $subscriptionName $cred
+Write-Verbose "Waiting 1 minute"
+Start-Sleep -s 60
+
+#if($runTeragen) {
+#   Write-Verbose "Removing teragen output data"
+#   DeleteStorageFile $inputData $storageAccount $storageKey $containerName
+#}
+
+foreach($benchmark in $benchmarks) {
+   Write-Verbose "Starting executing $benchmark"
+   $c = 0
+   $runPrepare = $runTeragen
+   foreach($reduceNumber in $reducersNumber) {
+	  $outputfile = "/example/data/"+$benchmark+"-output_"+$c
+	  $inputfile = "/example/data/"+$benchmark+"-input"
+	  $scriptName = "./run"+$benchmark+".ps1"
+	 # Write-Verbose "Removing output data"
+	  #DeleteStorageFile $outputfile $storageAccount $storageKey $containerName
+	  Write-Verbose "Logging into Azure"
+	  AzureLogin
+	  SelectSubscription "$subscriptionName"
+	  Write-Verbose "Logged into Azure"
+	  # & indicates that we are gonna run a script named $scriptName with the given parameters
+	  & $scriptName -runPrepare $runPrepare -reduceTasks $reduceNumber -containerName $containerName -inputData $inputfile -outputData $outputfile
+	  $runPrepare = $False
+	  $c++
+	}
+	Write-Verbose "Execution of $benchmark completed successfully"
 }
 
-Write-Verbose "Removing output data"
-DeleteStorageFile $outputData $storageAccount $storageKey $containerName
-foreach($reduceNumber in $reducersNumber) {
-  Write-Verbose "Logging into Azure"
-  AzureLogin
-  SelectSubscription $subscriptionName
-  Write-Verbose "Logged into Azure"
-  
-  Write-Verbose "Running terasort with $reduceNumber reducer tasks"
-  ./runterasort.ps1 -runTeragen $runTeragen -reduceTasks $reduceNumber -containerName $containerName
-  $runTeragen = $False
+RetrieveData $storageAccount $storageContainer $logsDir $storageKey $minervaLogin
+
+if($destroyCluster -eq $True) {
+   destroyCluster $clusterName $storageName $storageKey $destroyContainer $containerName $subscriptionName
 }
-Write-Verbose "Execution completed successfully"

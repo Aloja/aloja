@@ -13,6 +13,16 @@
 
             // Form with all the chart options
             var form = $('form#options');
+            var metric_x = form.find("[name='metric_x']");
+            var metric_y = form.find("[name='metric_y']");
+            var task_type = form.find("[name='type']");
+            var heuristic_elem = form.find("[name='heuristic']");
+            var heuristic = heuristic_elem.hasClass("active");
+            var eps = form.find("[name='eps']");
+            var minPoints = form.find("[name='minPoints']");
+
+            // Load form data from URL parameters
+            loadFiltersFromUrl();
 
             // Call updateChart for form events
             form.change(updateChart);
@@ -99,16 +109,38 @@
                 chart.redraw()
             }
 
+            function loadFiltersFromUrl() {
+                var uri = new URI();
+                var uri_query = uri.query(true);
+
+                $.each([
+                    {v: metric_x, s: "metric_x"},
+                    {v: metric_y, s: "metric_y"},
+                    {v: task_type, s: "task_type"},
+                    {v: eps, s: "eps"},
+                    {v: minPoints, s: "minPoints"},
+                ], function(index, value) {
+                    if (uri.hasQuery(value.s) === true) {
+                        value.v.val(uri_query[value.s]);
+                    }
+                });
+
+                // This is a special case
+                if (uri.hasQuery("heuristic") === true) {
+                    if (uri.hasQuery("heuristic", 1) === true) {
+                        heuristic_elem.addClass("active");
+                    } else {
+                        heuristic_elem.removeClass("active");
+                    }
+                }
+            }
+
             function updateChart(event) {
                 // Start loading
                 chart.showLoading();
 
                 // Load chart options from html form
-                var metric_x = form.find("[name='metric_x']");
-                var metric_y = form.find("[name='metric_y']");
-                var heuristic = form.find("[name='heuristic']").hasClass("active");
-                var eps = form.find("[name='eps']");
-                var minPoints = form.find("[name='minPoints']");
+                heuristic = heuristic_elem.hasClass("active");
 
                 // Workaround
                 // When a button toggle event is dispatched, the class
@@ -120,18 +152,36 @@
                     }
                 }
 
+                // Set current form options as url query parameters
+                setUrlQuery({
+                    metric_x: metric_x.val(),
+                    metric_y: metric_y.val(),
+                    task_type: task_type.val(),
+                    heuristic: ((heuristic)?1:0),
+                    eps: eps.val(),
+                    minPoints: minPoints.val(),
+                });
+
                 // Launch ajax request
                 $.ajax({
                     url: "{{ path('dbscandata', {'jobid': jobid}) }}",
                     data: {
                         metric_x: metric_x.val(),
                         metric_y: metric_y.val(),
+                        task_type: task_type.val(),
                         heuristic: ((heuristic)?1:0),
                         eps: eps.val(),
                         minPoints: minPoints.val(),
                     },
                 })
-                .done(function(data) {
+                .done(function(data, status, xhr) {
+
+                    // Check for server errors
+                    if (!xhr.responseJSON) {
+                        alert("Server error");
+                        return;
+                    }
+
                     // Update chart with new options
                     var metric_x_name = metric_x.find("option:selected").text();
                     var metric_y_name = metric_y.find("option:selected").text();
@@ -151,6 +201,12 @@
                     // Show used values in the form
                     eps.val(data.eps);
                     minPoints.val(data.minPoints);
+
+                    // Update used values in the url query parameters
+                    setUrlQuery({
+                        eps: eps.val(),
+                        minPoints: minPoints.val(),
+                    });
 
                     // Reset series color and symbol iterator
                     // This way the same cluster will keep it's theme between updates
@@ -232,6 +288,7 @@
                 },
                 plotOptions: {
                     series: {
+                        turboThreshold: Number.MAX_VALUE,
                         animation: false,
                         point: {
                             events: {
@@ -281,6 +338,16 @@
             {% for current_metric in METRICS %}
                 <option value="{{ loop.index0 }}" {% if loop.index0 == 1 %}selected="selected"{% endif %}>{{ current_metric }}</option>
             {% endfor %}
+            </select>
+        </label>
+        <label>
+            Task type:
+            <select name="type" class="form-control">
+                <option value="MAP">Map</option>
+                <option value="REDUCE">Reduce</option>
+                <option value="CLEANUP">Cleanup</option>
+                <option value="SETUP">Setup</option>
+                <option value="">All</option>
             </select>
         </label>
         <button type="button" name="heuristic" class="btn btn-default active" data-toggle="button">Heuristic</button>

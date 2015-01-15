@@ -1,8 +1,15 @@
+class { 'apt':
+  disable_keys => true, #dissable security check for php5
+}
+
 include apt
 apt::ppa { 'ppa:ondrej/php5': }
 
+
+
 exec { 'apt-get update':
-  path => '/usr/bin'
+  #path => '/usr/bin',
+  command => "/usr/bin/apt-get update -y --force-yes",
 }
 
 package { ['python-software-properties', 'vim', 'git', 'dsh', 'sysstat', 'bwm-ng']:
@@ -19,7 +26,7 @@ if $environment == 'prod' {
   $mysql_options = {
     'bind-address' => '0.0.0.0',
     'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
-    'datadir' => '/scratch/attached/1/mysql'
+    'datadir' => '/scratch/attached/1/mysql',
     'innodb_buffer_pool_size' => '512M',
     'innodb_file_per_table' => '1',
     'innodb_flush_method' => 'O_DIRECT',
@@ -37,6 +44,7 @@ if $environment == 'prod' {
 }
 
 if $environment == 'prod' {
+    include confvarnish
     #Logrotate rules
     logrotate::rule { 'aloja-logs':
       path => '/var/www/aloja-web/logs/*.log',
@@ -51,10 +59,20 @@ if $environment == 'prod' {
         source => "https://github.com/Aloja/aloja.git",
         revision => 'prod',
     }
-
-    include confvarnish
-    
 }
+
+class { '::mysql::server':
+  override_options => {
+  'mysqld' => $mysql_options
+  },
+  require => Exec['apt-get update'],
+  restart => true,
+}
+
+class { '::mysql::client':
+  require => Exec['apt-get update'],
+}
+
 
 vcsrepo { "/var/presentations/":
         ensure => latest,
@@ -102,17 +120,6 @@ Vcsrepo['/var/www/'] -> File['/var/www/aloja-web/logs']
 Vcsrepo['/var/www/'] -> Vcsrepo['/var/presentations/']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
 Class['::mysql::server'] -> Exec['third_party_libs']
+Exec['third_party_libs'] -> Service['php5-fpm']
 Exec['third_party_libs'] -> Exec['chmod_vendor']
 Exec['third_party_libs'] -> Exec['db_migrations']
-
-class { '::mysql::server':
-  override_options => {
-    'mysqld' => $mysql_options
-  },
-  require => Exec['apt-get update'],
-  restart => true,
-}
-
-class { '::mysql::client':
-  require => Exec['apt-get update'],
-}
