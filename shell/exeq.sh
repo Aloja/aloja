@@ -24,11 +24,12 @@ Q_SOURCE_PATH="/home/$USER/share/shell/queue"
 Q_PATH="/home/$USER/local/queue_$CLUSTER_NAME"
 
 #prepare dirs for first time
-mkdir -p $Q_PATH/{exec,done,conf,hold}
+mkdir -p $Q_PATH/{exec,done,conf,fail,hold}
 
 EXEC_PATH="$Q_PATH/exec"
 DONE_PATH="$Q_PATH/done"
 CONF_PATH="$Q_PATH/conf"
+FAIL_PATH="$Q_PATH/fail"
 LOG_FILE="$Q_PATH/queue.log"
 
 cd "$Q_PATH"
@@ -42,8 +43,8 @@ get_first_file(){
 }
 
 iteration=0
-while true
-do
+while true ; do
+
   get_first_file
   current_file="$file_name"
   mod=$((iteration % 10))
@@ -53,10 +54,22 @@ do
     mv "$Q_PATH/$current_file" "$EXEC_PATH/" 2>&1 |tee -a "$LOG_FILE"
 
     #execute command(s)
-    /bin/bash "$EXEC_PATH/$current_file" 2>&1 >> "$LOG_FILE"
+    if [ -f "$EXEC_PATH/$current_file" ] ; then
+      /bin/bash "$EXEC_PATH/$current_file" 2>&1 >> "$LOG_FILE"
+    else
+      echo "ERROR: Cannot access $current_file" 2>&1 |tee -a "$LOG_FILE"
+      mv  "$EXEC_PATH/$current_file" "$FAIL_PATH/" 2>&1 |tee -a "$LOG_FILE"
+      sleep 1
+      continue #jump to next file
+    fi
 
-    echo "Done $current_file" 2>&1 |tee -a "$LOG_FILE"
-    mv  "$EXEC_PATH/$current_file" "$DONE_PATH/" 2>&1 |tee -a "$LOG_FILE"
+    if [ "$?" == "0" ] ; then
+      echo "Done $current_file" 2>&1 |tee -a "$LOG_FILE"
+      mv  "$EXEC_PATH/$current_file" "$DONE_PATH/" 2>&1 |tee -a "$LOG_FILE"
+    else
+      echo "ERROR: Failed executing $current_file" 2>&1 |tee -a "$LOG_FILE"
+      mv  "$EXEC_PATH/$current_file" "$FAIL_PATH/" 2>&1 |tee -a "$LOG_FILE"
+    fi
   else
     if [ "$mod" == "0" ] ; then
       echo "Sleeping, iteration $iteration" 2>&1 |tee -a "$LOG_FILE"

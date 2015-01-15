@@ -16,12 +16,12 @@ source "$CONF_DIR/common.sh"
 #test and load cluster config
 clusterConfigFile="cluster_defaults.conf"
 
-ConfigFolderPath="$CONF_DIR/../conf"
+configFolderPath="$CONF_DIR/../conf"
 
-[ ! -f "$ConfigFolderPath/$clusterConfigFile" ] && { logger "$ConfigFolderPath/$clusterConfigFile is not a file." ; exit 1;}
+[ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config
-source "$ConfigFolderPath/$clusterConfigFile"
+source "$configFolderPath/$clusterConfigFile"
 
 
 logger "Starting ALOJA import2db tool"
