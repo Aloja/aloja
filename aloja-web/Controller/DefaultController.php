@@ -1532,10 +1532,10 @@ class DefaultController extends AbstractController
 		$config = str_replace(array('AND ','IN '),'',$where_configs).$extra_config.' '.$learn_param;
 		$learn_options = 'saveall='.md5($config);
 
-		if ($learn_param == 'regtree') $learn_method = 'aloja_regtree';
+		if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
 		else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
-		else if ($learn_param == 'nnet') $learn_method = 'aloja_nnet';
-		else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3'; }
+		else if ($learn_param == 'nnet') { $learn_method = 'aloja_nnet'; $learn_options .= ':prange=0,20000'; }
+		else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3:prange=0,20000'; }
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
