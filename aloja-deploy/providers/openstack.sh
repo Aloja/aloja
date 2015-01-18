@@ -174,19 +174,19 @@ echo '${insecureKey}' >> /home/$userAloja/.ssh/authorized_keys &&
 chown -R $userAloja: /home/$userAloja/.ssh ;
 cp /home/$userAloja/.profile /home/$userAloja/.bashrc /root/ ;
 
-chmod 777 /etc/security/limits.conf;
-echo -e '* soft nproc 450756
-* hard nproc 450756
-* soft nofile 65535
-* hard nofile 65535' >> /etc/security/limits.conf;
-chmod 644 /etc/security/limits.conf;
-chmod 777 /etc/pam.d/common-session;
-echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
-chmod 644 /etc/pam.d/common-session;
-
 adduser $userAloja adm;
 ufw disable;
 "
+
+#chmod 777 /etc/security/limits.conf;
+#echo -e '* soft nproc 450756
+#* hard nproc 450756
+#* soft nofile 65535
+#* hard nofile 65535' >> /etc/security/limits.conf;
+#chmod 644 /etc/security/limits.conf;
+#chmod 777 /etc/pam.d/common-session;
+#echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
+#chmod 644 /etc/pam.d/common-session;
 
       test_action="$(vm_execute " [ -d /home/$userAloja/.ssh ] && echo '$testKey'")"
 
