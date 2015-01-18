@@ -293,9 +293,11 @@ vm_local_scp() {
 #$1 source files $2 destination $3 extra options
 #$vm_ssh_port must be set first
 vm_rsync() {
+    set_shh_proxy
+
     logger "RSynching: $1 To: $2"
     #eval is for parameter expansion  --progress
-    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
