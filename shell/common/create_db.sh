@@ -502,7 +502,7 @@ CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
   KEY \`index_job_name\` (\`job_name\`)
 ) ENGINE=InnoDB;
 
-CREATE TABLE \`HDI_JOB_details\` (
+CREATE TABLE IF NOT EXISTS \`HDI_JOB_details\` (
   \`hdi_job_details_id\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_exec\` int(11) NOT NULL,
   \`JOB_ID\` varchar(255) NOT NULL,
@@ -553,7 +553,7 @@ CREATE TABLE \`HDI_JOB_details\` (
   CONSTRAINT \`HDI_JOB_details_ibfk_1\` FOREIGN KEY (\`id_exec\`) REFERENCES \`execs\` (\`id_exec\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
-CREATE TABLE \`HDI_JOB_tasks\` (
+CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   \`hdi_job_task_id\` int(11) NOT NULL AUTO_INCREMENT,
   \`JOB_ID\` varchar(255) NOT NULL,
   \`TASK_ID\` varchar(255) NOT NULL,
