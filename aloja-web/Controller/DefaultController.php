@@ -1538,8 +1538,9 @@ class DefaultController extends AbstractController
 		else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3:prange=0,20000'; }
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+		$in_process = shell_exec('ps aux | grep "'.(str_replace('*','\*',$learn_method.' -p '.$learn_options)).'" | grep -v grep');
 
-		if (file_exists($cache_ds))
+		if (file_exists($cache_ds) && $in_process == NULL)
 		{
 			$keep_cache = TRUE;
 			foreach (array("tt", "tv", "tr") as &$value)
@@ -1549,11 +1550,11 @@ class DefaultController extends AbstractController
 			if (!$keep_cache)
 			{
 				unlink($cache_ds);
-				shell_exec("sed -i '".md5($config)." :".$config."/d' ".getcwd()."/cache/query/record.data");
+				shell_exec("sed -i '/".md5($config)." :".$config."/d' ".getcwd()."/cache/query/record.data");
 			}
 		}
 
-		if (!file_exists($cache_ds))
+		if (!file_exists($cache_ds) && $in_process == NULL)
 		{
 			// get headers for csv
 			$header_names = array(
@@ -1595,40 +1596,51 @@ class DefaultController extends AbstractController
 			}
 
 			// run the R processor
-			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options;
-			$output = shell_exec($command);
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null &';
+			exec($command);
 
 			// update cache record (for human reading)
 			$register = md5($config).' :'.$config."\n";
 			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 		}
 
-		// read results of the CSV
-		$count = 0;
-		foreach (array("tt", "tv", "tr") as &$value)
+		$in_process = shell_exec('ps aux | grep "'.(str_replace('*','\*',$learn_method.' -p '.$learn_options)).'" | grep -v grep');
+		$must_wait = "NO";
+
+		if ($in_process != NULL)
 		{
-			if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
-				$header = fgetcsv($handle, 1000, ",");
+			$jsonExecs = "[]";
+			$must_wait = "YES";
+		}
+		else
+		{
+			// read results of the CSV
+			$count = 0;
+			foreach (array("tt", "tv", "tr") as &$value)
+			{
+				if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
+					$header = fgetcsv($handle, 1000, ",");
 
-				$key_exec = array_search('Exe.Time', array_values($header));
-				$key_pexec = array_search('Pred.Exe.Time', array_values($header));
+					$key_exec = array_search('Exe.Time', array_values($header));
+					$key_pexec = array_search('Pred.Exe.Time', array_values($header));
 
-				$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 1000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
-				{
-					$jsonExecs[$count]['y'] = (int)$data[$key_exec];
-					$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
-
-					$extra_data = "";
-					foreach(array_values($header) as &$value2)
+					$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
+					while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 1000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 					{
-						$aux = array_search($value2, array_values($header));
-						if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
-						else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
+						$jsonExecs[$count]['y'] = (int)$data[$key_exec];
+						$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
+
+						$extra_data = "";
+						foreach(array_values($header) as &$value2)
+						{
+							$aux = array_search($value2, array_values($header));
+							if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
+							else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
+						}
+						$jsonExecs[$count++]['mydata'] = $extra_data;
 					}
-					$jsonExecs[$count++]['mydata'] = $extra_data;
+					fclose($handle);
 				}
-				fclose($handle);
 			}
 		}
     	}
@@ -1647,7 +1659,8 @@ class DefaultController extends AbstractController
 			'replications' => $params['replications'],
 			'iosfs' => $params['iosfs'],
 			'iofilebufs' => $params['iofilebufs'],
-			'learn' => $learn_param
+			'learn' => $learn_param,
+			'must_wait' => $must_wait
 		)
     	);
     }
@@ -1748,13 +1761,15 @@ class DefaultController extends AbstractController
 		else $current_model = $model = $possible_models_id[0];
 
 		$learning_model = '';
-		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model;
+		if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model.':inst_general="'.$instance.'"';
 
 		$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$model.'-'.$model_info;
-		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model.':inst_general="'.$instance.'"';
+		$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).$learning_model;
 
 		$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
-		if (file_exists($cache_ds))
+		$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options)).'" | grep -v grep');
+
+		if (file_exists($cache_ds) && $in_process == NULL)
 		{
 			$keep_cache = TRUE;
 			foreach (array("ids.csv", "matrix.csv", "object.rds") as &$value)
@@ -1764,11 +1779,11 @@ class DefaultController extends AbstractController
 			if (!$keep_cache)
 			{
 				unlink($cache_ds);
-				shell_exec("sed -i '".md5($config)." : ".$config."/d' ".getcwd()."/cache/query/record.data");
+				shell_exec("sed -i '/".md5($config)." : ".$config."/d' ".getcwd()."/cache/query/record.data");
 			}
 		}
 
-		if (!file_exists($cache_ds))
+		if (!file_exists($cache_ds) && $in_process == NULL)
 		{
 			// get headers for csv
 			$header_names = array(
@@ -1810,54 +1825,65 @@ class DefaultController extends AbstractController
 			}
 
 			// prepare collapse
-			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options;
-			$output = shell_exec($command);
+			$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options.' > /dev/null &';
+			exec($command);
 
 			// update cache record (for human reading)
 			$register = md5($config).' : '.$config."\n";
 			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 		}
 
-		// read results of the CSV
-		if (	($handle = fopen(getcwd().'/cache/query/'.md5($config).'-cmatrix.csv', 'r')) !== FALSE
-		&&	($handid = fopen(getcwd().'/cache/query/'.md5($config).'-cids.csv', 'r')) !== FALSE )
+		$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options)).'" | grep -v grep');
+		$must_wait = 'NO';
+
+		if ($in_process != NULL)
 		{
-			$header = fgetcsv($handle, 1000, ",");
-			$headid = fgetcsv($handid, 1000, ",");
-
-			$jsonHeader = '[{title:""}';
-			foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-			$jsonHeader = $jsonHeader.']';
-
-			$jsonColumns = '[';
-			for ($i = 1; $i <= count($header); $i++)
+			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+			$must_wait = 'YES';
+		}
+		else
+		{
+			// read results of the CSV
+			if (	($handle = fopen(getcwd().'/cache/query/'.md5($config).'-cmatrix.csv', 'r')) !== FALSE
+			&&	($handid = fopen(getcwd().'/cache/query/'.md5($config).'-cids.csv', 'r')) !== FALSE )
 			{
-				if ($jsonColumns != '[') $jsonColumns = $jsonColumns.',';
-				$jsonColumns = $jsonColumns.$i;
+				$header = fgetcsv($handle, 1000, ",");
+				$headid = fgetcsv($handid, 1000, ",");
+
+				$jsonHeader = '[{title:""}';
+				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+				$jsonHeader = $jsonHeader.']';
+
+				$jsonColumns = '[';
+				for ($i = 1; $i <= count($header); $i++)
+				{
+					if ($jsonColumns != '[') $jsonColumns = $jsonColumns.',';
+					$jsonColumns = $jsonColumns.$i;
+				}
+				$jsonColumns = $jsonColumns.']';
+
+				$jsonData = '[';
+				$jsonColor = '[';
+				while (	($data = fgetcsv($handle, 1000, ",")) !== FALSE
+				&&	($daid = fgetcsv($handid, 1000, ",")) !== FALSE )
+				{
+					$data = str_replace('NA','',$data);
+					if ($jsonData!='[') $jsonData = $jsonData.',';
+					$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
+
+
+					$aux = array();
+					for ($j = 0; $j < count($daid); $j++) $aux[$j] = ($daid[$j] == 'NA')?0:1;
+					if ($jsonColor!='[') $jsonColor = $jsonColor.',';
+					$jsonColor = $jsonColor.'[\''.implode("','",$aux).'\']';
+				}
+				$jsonColor = $jsonColor.']';
+				$jsonData = $jsonData.']';
+				fclose($handle);
+
+				// negative prediction values (errors) are considered by default 100 as the minimal value...
+				$jsonData = preg_replace('/(\-\d+\.\d+)/','100.0',$jsonData);
 			}
-			$jsonColumns = $jsonColumns.']';
-
-			$jsonData = '[';
-			$jsonColor = '[';
-			while (	($data = fgetcsv($handle, 1000, ",")) !== FALSE
-			&&	($daid = fgetcsv($handid, 1000, ",")) !== FALSE )
-			{
-				$data = str_replace('NA','',$data);
-				if ($jsonData!='[') $jsonData = $jsonData.',';
-				$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
-
-
-				$aux = array();
-				for ($j = 0; $j < count($daid); $j++) $aux[$j] = ($daid[$j] == 'NA')?0:1;
-				if ($jsonColor!='[') $jsonColor = $jsonColor.',';
-				$jsonColor = $jsonColor.'[\''.implode("','",$aux).'\']';
-			}
-			$jsonColor = $jsonColor.']';
-			$jsonData = $jsonData.']';
-			fclose($handle);
-
-			// negative prediction values (errors) are considered by default 100 as the minimal value...
-			$jsonData = preg_replace('/(\-\d+\.\d+)/','100.0',$jsonData);
 		}
     	}
 	catch(\Exception $e)
@@ -1885,7 +1911,8 @@ class DefaultController extends AbstractController
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 			'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 			'current_model' => $current_model,
-			'instance' => $instance
+			'instance' => $instance,
+			'must_wait' => $must_wait
 		)
 	);
     }
@@ -1933,7 +1960,7 @@ class DefaultController extends AbstractController
 			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 		}
-
+		$varin = ":vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster";
 
 		// find possible models to predict
 		$model_info = str_replace(array('AND ','IN '),'',$where_configs);
@@ -1988,14 +2015,21 @@ class DefaultController extends AbstractController
 			else $current_model = $model = $possible_models_id[0];
 
 			$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
-			if (!file_exists($cache_filename))
+			$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance)).$varin.'" | grep -v grep');
+
+			$tmp_file = getcwd().'/cache/query/'.md5($instance.'-'.$model).'.tmp';
+
+			if (!file_exists($cache_filename) && $in_process == NULL && (!file_exists($tmp_file) || filesize($tmp_file) == 0))
 			{
 				// drop query
-				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
-				$output = shell_exec($command);
+				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.$varin.'" -v | grep -v "WARNING" > '.$tmp_file.' &';
+				exec($command);
+			}
 
+			if (!file_exists($cache_filename) && (file_exists($tmp_file) && filesize($tmp_file) > 0))
+			{
 				// read results
-				$lines = explode("\n", $output);
+				$lines = explode("\n", file_get_contents($tmp_file));
 				$jsonData = '[';
 				$i = 1;
 				while($i < count($lines))
@@ -2021,9 +2055,19 @@ class DefaultController extends AbstractController
 
 				// update cache record (for human reading)
 				$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 			}
-			else
+			$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance)).'" | grep -v grep');
+			$must_wait = 'NO';
+
+			if (!file_exists($cache_filename) && $in_process != NULL)
+			{
+				$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+				$must_wait = 'YES';
+			}
+
+			if (file_exists($cache_filename))
 			{
 				// get cache
 				$data = explode("\n",file_get_contents($cache_filename));
@@ -2067,7 +2111,8 @@ class DefaultController extends AbstractController
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 			'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 			'current_model' => $current_model,
-			'message' => $message
+			'message' => $message,
+			'must_wait' => $must_wait
 		)
 	);
     }

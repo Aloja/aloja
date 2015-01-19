@@ -29,7 +29,7 @@
 		<p style="text-align:justify">[WiP] In this page we can collapse the execution times for a set of given benchmarks, aggregating (averaging) the attributes we don't want to display. Also we can select the predictors (from the ones created at ML-Predictions page) to fill the configurations with no run experiments (in red).</p>
 		<hr />
 	</div>
-	<div style="float: left; width: 70%;">
+	<div id="benchdiv" style="float: left; width: 70%;">
 		<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 	</div>
 	{% endblock %}
@@ -76,16 +76,23 @@
 			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
 		}
 
-		var test = {{ jsonColor | raw }};
-
-		$('#benchmark').dataTable(
+		if ("{{must_wait}}" == "NO")
 		{
-			"aaData": {{ jsonEncoded | raw }},
-			"columns": {{ jsonHeader | raw }},
-			"columnDefs" : [{"targets" : {{ jsonColumns | raw }}, "render" : function (data) { return Math.round(data); }}],
-			"createdRow": function ( row, data, index ) { var i; for (i = 0; i < test[index].length; i++) if ( test[index][i] == 0 ) $('td', row).eq(i).addClass('highlight'); }
+			var test = {{ jsonColor | raw }};
+
+			$('#benchmark').dataTable(
+			{
+				"aaData": {{ jsonEncoded | raw }},
+				"columns": {{ jsonHeader | raw }},
+				"columnDefs" : [{"targets" : {{ jsonColumns | raw }}, "render" : function (data) { return Math.round(data); }}],
+				"createdRow": function ( row, data, index ) { var i; for (i = 0; i < test[index].length; i++) if ( test[index][i] == 0 ) $('td', row).eq(i).addClass('highlight'); }
+			}
+			);
 		}
-		);
+		else
+		{
+			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+		}
 	});
 	</script>
 
