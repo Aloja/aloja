@@ -9,9 +9,11 @@
 #	 ./aloja_cli.r --method method [--dataset dataset] [--learned learned model] [--params param1=aaaa:param2=bbbb:param3=cccc:...] [--allvars] [--numvars dims] [--verbose]
 #
 #	 ./aloja_cli.r -m aloja_regtree -d aloja-dataset.csv -p saveall=m5p1
+#	 ./aloja_cli.r -m aloja_regtree -d aloja-dataset.csv -p saveall=m5p1-small:vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size"
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p1 -d m5p1-tt.csv -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":sorted=asc -v
+#	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":sorted=asc -v
 #
 #	 ./aloja_cli.r -m aloja_pca -d aloja-dataset.csv -p saveall=pca1
 #	 ./aloja_cli.r -m aloja_regtree -d pca1-transformed.csv -p prange=1e-4,1e+4:saveall=m5p-simple-redim -n 20
@@ -22,6 +24,7 @@
 #
 #	 ./aloja_cli.r -m aloja_dataset_collapse -d aloja-dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1
 #	 ./aloja_cli.r -m aloja_dataset_collapse -d aloja-dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1:model_name=m5p1
+#	 ./aloja_cli.r -m aloja_dataset_collapse_expand -d aloja-dataset.csv -p dimension1="Benchmark":dimension2="Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":dimname1="Benchmark":dimname2="Configuration":saveall=dsc1:model_name=m5p1:inst_general="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L"
 #	 ./aloja_cli.r -m aloja_best_configurations -p bvec_name=dsc1 -v
 
 library(devtools);
@@ -73,16 +76,20 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 	params <- list();
 	params[["ds"]] <- dataset;
 
-	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse"))
+	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand"))
 	{
-		params[["vout"]] = "Exe.Time";
-		if (opt$allvars)
+		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
+
+		if (is.null(opt$vin))
 		{
-			params[["vin"]] = colnames(dataset)[!(colnames(dataset) %in% c("ID",params$vout))];
-		} else if (!is.null(opt$numvars)) {
-			params[["vin"]] = (colnames(dataset)[!(colnames(dataset) %in% c("ID",params$vout))])[1:opt$numvars];
-		} else {
-			params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+			if (opt$allvars)
+			{
+				params[["vin"]] = colnames(dataset)[!(colnames(dataset) %in% c("ID",params$vout))];
+			} else if (!is.null(opt$numvars)) {
+				params[["vin"]] = (colnames(dataset)[!(colnames(dataset) %in% c("ID",params$vout))])[1:opt$numvars];
+			} else {
+				params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+			}
 		}
 	}
 
@@ -91,7 +98,6 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 		params_2 <- list();
 		params_2[["tagname"]] <- opt$learned;
 		params[["learned_model"]] <- do.call(aloja_load_object,params_2);
-		params[["vin"]] <- params$learned_model$varin;
 	}
 
 	if (opt$method == "aloja_dataset_clustering")
@@ -111,6 +117,25 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 			params[[saux_2[[i]][1]]] <- strsplit(saux_2[[i]][2],",")[[1]];
 		}
 		rm(saux_1,saux_2);
+	}
+
+	if (is.null(params$vin) && opt$method  == "aloja_predict_instance")
+	{
+		if (length(params$inst_predict) == length(params$learned_model$varin))
+		{
+			params[["vin"]] <- params$learned_model$varin;
+		} else {
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+		}
+	}
+	if (is.null(params$vin) && opt$method  == "aloja_predict_dataset")
+	{
+		if (all(colnames(params$ds) %in% params$learned_model$varin))
+		{
+			params[["vin"]] <- params$learned_model$varin;
+		} else {
+			params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster");
+		}
 	}
 
 ###############################################################################

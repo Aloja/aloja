@@ -1441,64 +1441,64 @@ class DefaultController extends AbstractController
 				'title' => 'ALOJA Clusters Costs'));
 	}
 
-    public function dbscanAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
+	public function dbscanAction()
+	{
+		$jobid = Utils::get_GET_string("jobid");
 
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
+		// if no job requested, show a random one
+		if (strlen($jobid) == 0 || $jobid === "random") {
+		    $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+		    $db = $this->container->getDBUtils();
+		    $query = "
+			SELECT DISTINCT(t.`JOBID`)
+			FROM `JOB_tasks` t
+			ORDER BY RAND()
+			LIMIT 1
+		    ;";
+		    $jobid = $db->get_rows($query)[0]['JOBID'];
+		}
 
-        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
-            array(
-                'selected' => 'DBSCAN',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'METRICS' => DBUtils::$TASK_METRICS,
-            )
-        );
-    }
+		echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+		    array(
+			'selected' => 'DBSCAN',
+			'highcharts_js' => HighCharts::getHeader(),
+			'jobid' => $jobid,
+			'METRICS' => DBUtils::$TASK_METRICS,
+		    )
+		);
+	}
 
-    public function dbscanexecsAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
+	public function dbscanexecsAction()
+	{
+		$jobid = Utils::get_GET_string("jobid");
 
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
+		// if no job requested, show a random one
+		if (strlen($jobid) == 0 || $jobid === "random") {
+		    $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+		    $db = $this->container->getDBUtils();
+		    $query = "
+			SELECT DISTINCT(t.`JOBID`)
+			FROM `JOB_tasks` t
+			ORDER BY RAND()
+			LIMIT 1
+		    ;";
+		    $jobid = $db->get_rows($query)[0]['JOBID'];
+		}
 
-        list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
+		list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
 
-        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
-            array(
-                'selected' => 'DBSCANexecs',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'bench' => $bench,
-                'job_offset' => $job_offset,
-                'METRICS' => DBUtils::$TASK_METRICS,
-                'show_filter_benchs' => false,
-            )
-        );
-    }
+		echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
+		    array(
+			'selected' => 'DBSCANexecs',
+			'highcharts_js' => HighCharts::getHeader(),
+			'jobid' => $jobid,
+			'bench' => $bench,
+			'job_offset' => $job_offset,
+			'METRICS' => DBUtils::$TASK_METRICS,
+			'show_filter_benchs' => false,
+		    )
+		);
+	}
 
 	public function mlparamEvaluationAction()
 	{
@@ -1510,13 +1510,20 @@ class DefaultController extends AbstractController
 			$configurations = array ();
 			$where_configs = '';
 			$concat_config = "";
-			
-			if(!(isset($_GET['benchs'])))
-				$_GET['benchs'][] = 'wordcount';
+
+			// FIXME - Set defaults manually, just in case...
+			if (count($_GET) <= 1)
+			{
+				$params['benchs'] = array('wordcount');
+				$params['disks'] = array('SSD','HDD');
+				$params['iofilebufs'] = array('32768','131072');
+				$params['comps'] = array('0');
+				$params['replications'] = array('1');
+			}
 			
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-			foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
 			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
@@ -1666,14 +1673,20 @@ class DefaultController extends AbstractController
 				else $current_model = $model = $possible_models_id[0];
 
 				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
-				if (!file_exists($cache_filename))
+				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict='.$instance)).'" | grep -v grep');
+				$tmp_file = getcwd().'/cache/query/'.md5($instance.'-'.$model).'.tmp';
+
+				if (!file_exists($cache_filename) && $in_process == NULL && (!file_exists($tmp_file) || filesize($tmp_file) == 0))
 				{
 					// drop query
-					$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING"';
-					$output = shell_exec($command);
+					$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING" > '.$tmp_file.' &';
+					exec($command);
+				}
 
+				if (!file_exists($cache_filename) && (file_exists($tmp_file) && filesize($tmp_file) > 0))
+				{
 					// read results
-					$lines = explode("\n", $output);
+					$lines = explode("\n", file_get_contents($tmp_file));
 					$jsonData = '[';
 					$i = 1;
 					while($i < count($lines))
@@ -1696,63 +1709,75 @@ class DefaultController extends AbstractController
 
 					// update cache record (for human reading)
 					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+					shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+				}
+				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict='.$instance)).'" | grep -v grep');
+				$must_wait = 'NO';
+
+				if ($in_process != NULL)
+				{
+					$jsonData = $jsonHeader = '[]';
+					$must_wait = 'YES';
 				}
 				else
 				{
-					// get cache
-					$data = explode("\n",file_get_contents($cache_filename));
-					$jsonHeader = $data[0];
-					$jsonData = $data[1];
-
-					$header = explode("\"},{title:\"",substr($jsonHeader,9,-3));
-					$header = array_splice($header,1);
-				}
-
-				// Slice and Aggregate JSON data
-				$sliced = explode("],[",substr($jsonData,2,-2));
-				$position = -1;
-				if($paramEval == 'maps') $position = array_search('Maps', $header); 
-				else if($paramEval == 'comp') $position = array_search('Comp', $header);
-				else if($paramEval == 'id_cluster') $position = array_search('Cluster', $header);
-				else if($paramEval == 'net') $position = array_search('Net', $header);
-				else if($paramEval == 'disk') $position = array_search('Disk', $header);
-				else if($paramEval == 'replication') $position = array_search('Rep', $header);
-				else if($paramEval == 'iofilebuf') $position = array_search('IO.FBuf', $header);
-				else if($paramEval == 'blk_size') $position = array_search('Blk.Size', $header);
-				else if($paramEval == 'iosf') $position = array_search('IO.SFS', $header);
-
-				if ($position > -1)
-				{
-					foreach ($paramOptions as $param)
+					if (file_exists($cache_filename))
 					{
-						foreach($benchOptions as $bench)
-						{
-							$arrayBenchs_pred[$bench['bench'].'_pred'][$param] = null;
-						}
+						// get cache
+						$data = explode("\n",file_get_contents($cache_filename));
+						$jsonHeader = $data[0];
+						$jsonData = $data[1];
+
+						$header = explode("\"},{title:\"",substr($jsonHeader,9,-3));
+						$header = array_splice($header,1);
 					}
 
-					foreach ($sliced as $slice)
+					// Slice and Aggregate JSON data
+					$sliced = explode("],[",substr($jsonData,2,-2));
+					$position = -1;
+					if($paramEval == 'maps') $position = array_search('Maps', $header); 
+					else if($paramEval == 'comp') $position = array_search('Comp', $header);
+					else if($paramEval == 'id_cluster') $position = array_search('Cluster', $header);
+					else if($paramEval == 'net') $position = array_search('Net', $header);
+					else if($paramEval == 'disk') $position = array_search('Disk', $header);
+					else if($paramEval == 'replication') $position = array_search('Rep', $header);
+					else if($paramEval == 'iofilebuf') $position = array_search('IO.FBuf', $header);
+					else if($paramEval == 'blk_size') $position = array_search('Blk.Size', $header);
+					else if($paramEval == 'iosf') $position = array_search('IO.SFS', $header);
+
+					if ($position > -1)
 					{
-						$line = explode("','",substr($slice,1,-1));
-						$line = array_splice($line,1);
+						foreach ($paramOptions as $param)
+						{
+							foreach($benchOptions as $bench)
+							{
+								$arrayBenchs_pred[$bench['bench'].'_pred'][$param] = null;
+							}
+						}
+
+						foreach ($sliced as $slice)
+						{
+							$line = explode("','",substr($slice,1,-1));
+							$line = array_splice($line,1);
 				
-						$class = $line[$position];
-						$pred = $line[array_search('Prediction', $header)];
-						$bench = $line[array_search('Benchmark', $header)].'_pred';
+							$class = $line[$position];
+							$pred = $line[array_search('Prediction', $header)];
+							$bench = $line[array_search('Benchmark', $header)].'_pred';
 
-						if($paramEval == 'comp') $value = Utils::getCompressionName($class);
-						else if($paramEval == 'id_cluster') $value = ($class == 'Cl1')?'Local':'Azure';
-						else if($paramEval == 'net') $value = Utils::getNetworkName($class);
-						else if($paramEval == 'disk') $value = Utils::getDisksName($class);
-						else if($paramEval == 'iofilebuf') $value = $class / 1024;
-						else $value = $class;
+							if($paramEval == 'comp') $value = Utils::getCompressionName($class);
+							else if($paramEval == 'id_cluster') $value = ($class == 'Cl1')?'Local':'Azure';
+							else if($paramEval == 'net') $value = Utils::getNetworkName($class);
+							else if($paramEval == 'disk') $value = Utils::getDisksName($class);
+							else if($paramEval == 'iofilebuf') $value = $class / 1024;
+							else $value = $class;
 
-						$prev_y = (is_null($arrayBenchs_pred[$bench][$value]['y']))?0:$arrayBenchs_pred[$bench][$value]['y'];
-						$prev_count = (is_null($arrayBenchs_pred[$bench][$value]['count']))?0:$arrayBenchs_pred[$bench][$value]['count'];
+							$prev_y = (is_null($arrayBenchs_pred[$bench][$value]['y']))?0:$arrayBenchs_pred[$bench][$value]['y'];
+							$prev_count = (is_null($arrayBenchs_pred[$bench][$value]['count']))?0:$arrayBenchs_pred[$bench][$value]['count'];
 
-						$arrayBenchs_pred[$bench][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
-						$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
+							$arrayBenchs_pred[$bench][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
+							$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
+						}
 					}
 				}
 			}
@@ -1777,8 +1802,8 @@ class DefaultController extends AbstractController
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
-			$jsonData = json_encode(array('aaData' => array($noData)));
-			$jsonHeader = "[]";
+			$series = json_encode(array('aaData' => array($noData)));
+			$jsonHeader = $colors = "[]";
 			$instance = $possible_models_id = "";
 			$possible_models = array();
 		}
@@ -1803,7 +1828,8 @@ class DefaultController extends AbstractController
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $current_model,
-				'gammacolors' => $colors
+				'gammacolors' => $colors,
+				'must_wait' => $must_wait
 		) );
 	}
 }
