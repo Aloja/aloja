@@ -1,0 +1,31 @@
+{% extends "layout.html.twig" %}
+{% use "common/datatables.html.twig" %}
+{% block stylesheet %}
+	{{ parent() }}
+	{% block stylesheetdatatables %}{{ parent() }}{% endblock %}
+{% endblock %}
+    {% block content %}
+        <div id="navigation" style="text-align: center;">
+	        <h2 class="compare body">
+	            <strong>Job counter types:</strong>
+	            <a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
+	            <a href="{{ modifyUrl({'type': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
+	            <a href="{{ modifyUrl({'type': 'REDUCE'}) }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>
+	            <a href="{{ modifyUrl({'type': 'FILE-IO'}) }}"><span {% if type == 'FILE-IO' %}style="font-weight: bold;"{% endif %}>FILE-IO</span></a>
+	            <a href="{{ modifyUrl({'type': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAIL</span></a>
+	            {% if execs is defined %}
+	            <a href="{{ modifyUrl({'type': 'TASKS'}) }}"><span {% if type == 'TASKS' %}style="font-weight: bold;"{% endif %}>JOB/S TASKS</span></a>
+	            {% endif %}
+	        </h2>
+	    </div>
+	    Click on a <strong>Job Name</strong> to see it's tasks and history </br>
+
+     {% block datatablescontent %}{{ parent() }}{% endblock %}
+    <div id="chart"></div>
+
+</div>
+{% endblock %}
+{% block javascript %}
+    {{ parent() }}
+      {% block javascriptdatatables %}{{ parent() }}{% endblock %}
+    {% endblock %}

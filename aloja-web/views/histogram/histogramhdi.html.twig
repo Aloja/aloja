@@ -1,0 +1,369 @@
+{% extends "layout.html.twig" %} {% block javascript %} {{ parent() }}
+<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+<script type="text/javascript">
+	$(document).ready(function() {
+		$(function () {
+
+			// Form with all the chart options
+			var form = $('form#options');
+			var metric = form.find("[name='metric']");
+			var task_type = form.find("[name='type']");
+			var group = form.find("[name='group']");
+			var accumulated_elem = form.find("[name='accumulated']");
+			var accumulated = accumulated_elem.hasClass("active");
+			var divided_elem = form.find("[name='divided']");
+			var divided = divided_elem.hasClass("active");
+
+			var tasks_chart = null;
+
+			// Load form data from URL parameters
+			loadFiltersFromUrl();
+
+			function loadFiltersFromUrl() {
+				var uri = new URI();
+				var uri_query = uri.query(true);
+
+				$.each([
+					{v: metric, s: "metric"},
+					{v: task_type, s: "task_type"},
+					{v: group, s: "group"},
+				], function(index, value) {
+					if (uri.hasQuery(value.s) === true) {
+						value.v.val(uri_query[value.s]);
+					}
+				});
+
+				// This is a special case
+				$.each([
+					{v: accumulated_elem, s: "accumulated"},
+					{v: divided_elem, s: "divided"},
+				], function(index, value) {
+					if (uri.hasQuery(value.s) === true) {
+						if (uri.hasQuery(value.s, 1) === true) {
+							value.v.addClass("active");
+						} else {
+							value.v.removeClass("active");
+						}
+					}
+				});
+
+				// Another special case
+				if (uri.hasQuery("tasks_chart") === true) {
+					tasks_chart = uri_query["tasks_chart"];
+				}
+			}
+
+			var globalData = null;
+		    var chart = null;
+		    var chart_column = null;
+		    requestData();
+		    function requestData() {
+			    $.ajax({
+			        url: "{{ path('histogramhdidata', {'id_exec': idExec}) }}",
+			        type: "GET",
+			        dataType: "json",
+			        success: function(dades) {
+				        globalData = dades;
+				        updateChart();
+			        },
+			        cache: false
+			    });
+			}
+			function updateChart(event) {
+				var metricSel = $('select[name="metric"]').find(':selected');
+		        var taskType = $('select[name="type"]').find(':selected').val();
+		        var dades = globalData;
+		        var myData = Array();
+		        var first = null;
+		        var sufix = $(metricSel).attr('division') ? 'MB' : '';
+		        var categories = Array();
+		        $.each(dades, function(index, value) {
+			        if(!first)
+				        first = index;
+			        
+			        categories.push(index);
+					var values = Array();
+					$.each(value['tasks'], function(ind, val) {
+						if(val['TASK_TYPE'] == taskType) {
+						  var valor = val[$(metricSel).data("db-name")];
+						  if($(metricSel).attr('division'))
+							  valor /= $(metricSel).attr('division');
+
+						  values.push(valor);
+						}
+					});
+					var max = Math.round(Math.max.apply(Math,values)*100)/100;
+					var min = Math.round(Math.min.apply(Math,values)*100)/100;
+
+					myData.push(Array(min,max));
+			    });
+		        chart = new Highcharts.Chart({
+			        chart: {
+				        renderTo: 'chart',
+			            type: 'columnrange',
+			            inverted: true,
+			        },
+			        title: {
+			            text: $(metricSel).text()
+			        },
+			        subtitle: {
+				        text: '(Aggregated with all tasks)'
+					},
+			        yAxis: {
+			            title: {
+			                text: sufix
+			            }
+			        },
+			        tooltip: {
+			            valueSuffix: ' '+sufix
+			        },
+			        plotOptions: {
+			            columnrange: {
+			                dataLabels: {
+			                    enabled: true,
+			                    formatter: function () {
+			                        return this.y + ' '+ sufix;
+			                    }
+			                }
+			            },
+			            series: {
+	                    	cursor: 'pointer',
+	                        point: {
+	                            events: {
+	                                click: function () {
+	                                    var id = this.series.points[this.x].category;
+	                                    updateTasksChart(id, $(this));
+	                                }
+	                            }
+	                        }
+	                    }
+			        },
+			        legend: {
+			            enabled: false
+			        },
+					credits: {
+						enabled: false
+					},
+			    });
+			    chart.xAxis[0].setCategories(categories,false);
+	            chart.addSeries({
+	              name: $(metricSel).text(),
+	              data: myData
+	            });
+	            
+				$('.highcharts-xaxis-labels text').css('cursor','pointer');
+			    $('.highcharts-xaxis-labels text').click(function() {
+			        updateTasksChart($(this).text());
+			    });
+				updateTasksChart(first, $(this));
+			    
+				// Prevent form submit
+				if (event && event.type == "submit") {
+					event.preventDefault();
+				}
+			}
+			
+			function updateTasksChart(selected, source)
+			{
+				// First time use the value loaded from the url and reset it
+				if (tasks_chart !== null) {
+					selected = tasks_chart;
+					tasks_chart = null;
+				}
+
+				var jobid = selected.split("/")[0];
+
+				// Load chart options from html form
+				accumulated = accumulated_elem.hasClass("active");
+				divided = divided_elem.hasClass("active");
+
+				// Workaround
+				// When a button toggle event is dispatched, the class
+				// "active" is added to the element AFTER the event has
+				// finished executing, so the value is toggled manually here
+				if (source && source.is("button")) {
+					if (source.attr("name") == "accumulated") {
+						accumulated = !accumulated;
+					} else if (source.attr("name") == "divided") {
+						divided = !divided;
+					}
+				}
+
+				// Accumulated and divided options don't support group
+				if (accumulated || divided) {
+					group.val(1);
+					group.prop("disabled", true);
+				} else {
+					group.prop("disabled", false);
+				}
+
+				// Set current form options as url query parameters
+				setUrlQuery({
+					metric: metric.val(),
+					task_type: task_type.val(),
+					group: group.val(),
+					accumulated: ((accumulated)?1:0),
+					divided: ((divided)?1:0),
+					tasks_chart: selected,
+				});
+
+				// Launch ajax request
+				$.ajax({
+					url: "{{ path('histogramhditasksdata') }}",
+					data: {
+						jobid: jobid,
+						metric: metric.val(),
+						task_type: task_type.val(),
+						group: group.val(),
+						accumulated: ((accumulated)?1:0),
+						divided: ((divided)?1:0),
+					},
+				})
+				.done(function(data) {
+
+					if(chart_column != null)
+						chart_column.destroy();
+					var metricSel = $('select[name="metric"]').find(':selected');
+			        var taskType = $('select[name="type"]').find(':selected').val();
+			        var sufix = $(metricSel).attr('division') ? 'MB' : '';
+					var myData = Array();
+			        var categories = Array();
+					var values = Array();
+					if ($(metricSel).attr('division')) {
+						var division = $(metricSel).attr('division');
+						for (var i = 0; i < data.seriesData.length; i++) {
+							data.seriesData[i][1] = data.seriesData[i][1] / division;
+						}
+						for (var i = 0; i < data.seriesError.length; i++) {
+							data.seriesError[i]["low"] = data.seriesError[i]["low"] / division;
+							data.seriesError[i]["high"] = data.seriesError[i]["high"] / division;
+							data.seriesError[i]["stddev"] = (data.seriesError[i]["high"] - data.seriesError[i]["low"]) / 2;
+						}
+					}
+				    chart_column = new Highcharts.Chart({
+				        chart: {
+				            type: 'column',
+				            renderTo: 'chart_column'
+				        },
+				        title: {
+				            text: 'Tasks of '+selected
+				        },
+				        subtitle: {
+							text: $(metricSel).text()
+					    },
+				        xAxis: {
+							type: 'category',
+							labels: {
+							    rotation: -45,
+							}
+				        },
+				        yAxis: {
+				            title: {
+				                text: sufix
+				            }
+				        },
+				        tooltip: {
+				            headerFormat: '<span style="font-size:10px">{point.key}</span><table>',
+				            pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+				                '<td style="padding:0"><b>{point.y:.2f} '+sufix+'</b></td></tr>',
+				            footerFormat: '</table>',
+				            shared: true,
+				            useHTML: true
+				        },
+						plotOptions: {
+							column: {
+								groupPadding: 0,
+								pointPadding: 0,
+								borderWidth: 0,
+							},
+							series: {
+								turboThreshold: Number.MAX_VALUE,
+							},
+						},
+				        legend: {
+							enabled: false
+					    },
+					    credits: {
+						    enabled: false
+						},
+						series: 
+							[
+								{
+									name: $(metricSel).text(),
+									showInLegend: false,
+									data: [],
+								},
+								{
+									name: "Error",
+									type: 'errorbar',
+									showInLegend: false,
+									color: '#DF5353',
+									stemWidth: 3,
+									whiskerLength: 0,
+									tooltip: {
+										pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td><td style="padding:0"><b>&plusmn;{point.stddev:.2f} '+sufix+'</b></td></tr>',
+									},
+									data: [],
+								},
+							]
+				    });
+				    chart_column.xAxis[0].setCategories(categories,false);
+
+					// Update chart data
+					chart_column.series[0].setData(data.seriesData);
+					chart_column.series[1].setData(data.seriesError);
+				});
+			}
+
+			// Call updateChart for form events
+			form.change(updateChart);
+			form.find('button').click(updateChart);
+			form.submit(updateChart);
+		});
+	});
+	</script>
+{% endblock %}
+{% block content %}
+  <form id="options" role="form" class="form-inline pull-right">
+{#     <p style="text-align: center; font-size: 2em;">Filters:</p>#}
+    Metric:
+	<select name="metric" class="form-control">
+	  <option value="0" data-db-name="Duration">Duration</option>
+	  <option value="1" data-db-name="Bytes Read" division="1051648">MB Read</option>
+	  <option value="2" data-db-name="Bytes Written" division="1051648">MB Written</option>
+	  <option value="3" data-db-name="FILE_BYTES_WRITTEN" division="1051648">File MB written</option>
+	  <option value="4" data-db-name="FILE_BYTES_READ" division="1051648">File MB read</option>
+	  <option value="5" data-db-name="HDFS_BYTES_WRITTEN" division="1051648">HDFS MB written</option>
+	  <option value="6" data-db-name="HDFS_BYTES_READ" division="1051648">HDFS MB read</option>
+	  <option value="7" data-db-name="Spilled Records">Spilled Records</option>
+	  <option value="8" data-db-name="SPLIT_RAW_BYTES" division="1051648">Split raw MB</option>
+	  <option value="9" data-db-name="Map input records">Map input records</option>
+	  <option value="10" data-db-name="Map output records">Map output records</option>
+	  <option value="11" data-db-name="Map input bytes" division="1051648">Map input MB</option>
+	  <option value="12" data-db-name="Map output bytes" division="1051648">Map output MB</option>
+	  <option value="13" data-db-name="Map output materialized bytes" division="1051648">Map ouptut materialized MB</option>
+	  <option value="14" data-db-name="Reduce input groups">Reduce input groups</option>
+	  <option value="15" data-db-name="Reduce input records">Reduce input records</option>
+	  <option value="16" data-db-name="Reduce output records">Reduce output records</option>
+	  <option value="17" data-db-name="Reduce shuffle bytes" division="1051648">Reduce shuffle MB</option>
+	  <option value="18" data-db-name="Combine input records">Combine input records</option>
+	  <option value="19" data-db-name="Combine output records">Combine output records</option>
+	</select>
+	Task type:
+	<select name="type" class="form-control">
+	  <option value="MAP">Map</option>
+	  <option value="REDUCE">Reduce</option>
+	  <option value="CLEANUP">Cleanup</option>
+	  <option value="SETUP">Setup</option>
+	</select>
+	<label>
+		Group every:
+		<input type="text" name="group" class="form-control" value="1" size="4">
+	</label>
+	<button type="button" name="accumulated" class="btn btn-default" data-toggle="button">Accumulate metric</button>
+	<button type="button" name="divided" class="btn btn-default" data-toggle="button">Divided by duration</button>
+  </form>
+	<div id="chart" style="clear: both;"></div>
+	<div id="chart_column"></div>
+{% endblock %}
