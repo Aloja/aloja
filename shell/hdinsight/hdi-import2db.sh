@@ -17,9 +17,6 @@ importHDIJobs() {
 		if [[ $jobName =~ "word" ]]; then
 			jobName="wordcount"
 		fi
-		if [[ $jobName =~ "tera" ]]; then
-			jobName="terasort"
-		fi
 		
 		if [ "$jobName" != "TempletonControllerJob" ]; then
 			tmp=`../shell/jq -r '.JOB_ID' globals.out`
@@ -35,6 +32,9 @@ importHDIJobs() {
 		    if [ $jobName == "random-text-writer" ]; then
 				benchType="HDI-prep"
 			fi
+			if [[ $jobName =~ "TeraGen" ]]; then
+				benchType="HDI-prep"
+			fi
 			
 			##Select cluster number
 			IFS='_' read -ra folderArray <<< "$folder"
@@ -48,10 +48,12 @@ importHDIJobs() {
 				cluster=24
 			elif [ "$numberOfNodes" -eq "32" ]; then
 				cluster=25
-			fi  	        
+			fi
+			
+			valid=`echo "$jhist" | grep SUCCEEDED | wc -l`  	        
 			
 			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version)
-		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",0,0,0,0,0,0,\"n/a\",1,2)
+		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",0,0,0,0,0,0,\"n/a\",$valid,2)
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime';"
