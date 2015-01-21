@@ -86,7 +86,7 @@ importHDIJobs() {
 			
 		    runnignTime=`expr $finishTimeTS - $startTimeTS`
 		     read -a tasks <<< `../shell/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
-		    for task in $tasks ; do
+		    for task in "${tasks[@]}" ; do
 		    	taskId=`echo $task | sed 's/"/\ /g'`
 		    	taskStatus=`../shell/jq --raw-output ".$task.TASK_STATUS" tasks.out`
 				taskType=`../shell/jq --raw-output ".$task.TASK_TYPE" tasks.out`
@@ -96,9 +96,10 @@ importHDIJobs() {
 				taskFinishTime=`expr $taskFinishTime / 1000`
 		    	values=`../shell/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
-		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,${values%?}
-						ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID;"
+		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
+						ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 
+				echo $insert
 				logger $insert
 				$MYSQL "$insert"
 				
