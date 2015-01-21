@@ -1621,8 +1621,9 @@ class DefaultController extends AbstractController
 			}
 
 			// find possible models to predict
-			$model_info = str_replace(array('AND ','IN '),'',$where_configs);
-			
+			$model_info = '';
+			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+		
 			if (file_exists(getcwd().'/cache/query/record.data') && ($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
 			{
 				while (!feof($fh))
