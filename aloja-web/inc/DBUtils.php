@@ -152,7 +152,7 @@ AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu wh
     public function get_task_metric_query($metric)
     {
         if ($metric === 'Duration') {
-            return function($table, $startField = "START_TIME") { return "TIMESTAMPDIFF(SECOND, $table.`$startField`, $table.`FINISH_TIME`)"; };
+            return function($table, $startField = "START_TIME", $finishField = "FINISH_TIME") { return "TIMESTAMPDIFF(SECOND, $table.`$startField`, $table.`$finishField`)"; };
         } else {
             return function($table) use ($metric)  { return "$table.`$metric`"; };
         }

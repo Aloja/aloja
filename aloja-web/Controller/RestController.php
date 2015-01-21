@@ -726,21 +726,21 @@ VALUES
     	if (!($group > 1)) {
     		$query = "
                 SELECT
-                    t.`TASKID` as TASK_ID,
-                    ".$metric_select('t')." as TASK_VALUE,
-                    SUM(".$metric_select('t2').") as TASK_VALUE_ACCUM,
+                    t.`TASK_ID` as TASK_ID,
+                    ".$metric_select('t','TASK_START_TIME','TASK_FINISH_TIME')." as TASK_VALUE,
+                    SUM(".$metric_select('t2','TASK_START_TIME','TASK_FINISH_TIME').") as TASK_VALUE_ACCUM,
                     t.TASK_DURATION,
                     SUM(t2.`TASK_DURATION`) as TASK_DURATION_ACCUM,
                     1 as TASK_VALUE_STDDEV
                 FROM (
-                    SELECT *, TIMESTAMPDIFF(SECOND, `LAUNCH_TIME`, `FINISH_TIME`) as TASK_DURATION
-                    FROM `JOB_tasks`
+                    SELECT *, TIMESTAMPDIFF(SECOND, `TASK_START_TIME`, `TASK_FINISH_TIME`) as TASK_DURATION
+                    FROM `HDI_JOB_tasks`
                 ) as t
                 JOIN (
-                    SELECT *, TIMESTAMPDIFF(SECOND, `LAUNCH_TIME`, `FINISH_TIME`) as TASK_DURATION
-                    FROM `JOB_tasks`
+                    SELECT *, TIMESTAMPDIFF(SECOND, `TASK_START_TIME`, `TASK_FINISH_TIME`) as TASK_DURATION
+                    FROM `HDI_JOB_tasks`
                 ) as t2
-                ON (t.`TASKID` >= t2.`TASKID` AND t2.`JOB_ID` = :jobid_repeated)
+                ON (t.`TASK_ID` >= t2.`TASK_ID` AND t2.`JOB_ID` = :jobid_repeated)
                 WHERE t.`JOB_ID` = :jobid
                 ".$task_type_select('t')."
                 GROUP BY t.`TASK_ID`
@@ -750,25 +750,25 @@ VALUES
     	} else {
     		$query = "
                 SELECT
-                    MIN(t.`TASKID`) as TASK_ID,
-                    AVG(".$metric_select('t').") as TASK_VALUE,
-                    STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
+                    MIN(t.`TASK_ID`) as TASK_ID,
+                    AVG(".$metric_select('t','TASK_START_TIME','TASK_FINISH_TIME').") as TASK_VALUE,
+                    STDDEV(".$metric_select('t','TASK_START_TIME','TASK_FINISH_TIME').") as TASK_VALUE_STDDEV,
                     1 as TASK_VALUE_ACCUM,
                     1 as TASK_DURATION,
                     1 as TASK_DURATION_ACCUM,
                     t.`TASK_TYPE`,
-                    CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
-                FROM `JOB_tasks` t
+                    CONVERT(SUBSTRING(t.`TASK_ID`, 26), UNSIGNED INT) DIV :group as MYDIV
+                FROM `HDI_JOB_tasks` t
                 WHERE t.`JOB_ID` = :jobid
                 ".$task_type_select('t')."
                 GROUP BY MYDIV, t.`TASK_TYPE`
-                ORDER BY MIN(t.`TASKID`)
+                ORDER BY MIN(t.`TASK_ID`)
             ;";
     		$query_params = array(":jobid" => $jobid, ":group" => $group);
     	}
-    
+    	
     	$rows = $db->get_rows($query, $query_params);
-    
+
     	$seriesData = array();
     	$seriesError = array();
     	foreach ($rows as $row) {
@@ -805,6 +805,7 @@ VALUES
     			'seriesError' => $seriesError,
     			];
     
+    	
     	header('Content-Type: application/json');
     	ob_start('ob_gzhandler');
     	echo json_encode($result, JSON_NUMERIC_CHECK);
