@@ -89,7 +89,8 @@ class Utils
         foreach ($csv as $value_row) {
             $jsonRow = array();
             $jsonRow[] = $value_row['id_exec'];
-            $clusterName = $value_row['cluster_name'];
+            if(key_exists("cluster_name",$value_row))
+           	 $clusterName = $value_row['cluster_name'];
             
             foreach (array_keys($show_in_result) as $key_name) {
                 if ($precision !== null && is_numeric($value_row[$key_name])) {
