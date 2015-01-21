@@ -12,8 +12,8 @@ importHDIJobs() {
 		finishTimeTS="`expr $finishTime / 1000`"
 		totalTime="`expr $finishTime - $startTime`"
 		totalTime="`expr $totalTime / 1000`"
-		startTime=`date -d @$startTimeTS +"%Y-%m-%d %H:%I:%S"`
-		finishTime=`date -d @$finishTimeTS +"%Y-%m-%d %H:%I:%S"`
+		startTime=`date -d @$startTimeTS +"%Y-%m-%d %H:%M:%S"`
+		finishTime=`date -d @$finishTimeTS +"%Y-%m-%d %H:%M:%S"`
 		if [[ $jobName =~ "word" ]]; then
 			jobName="wordcount"
 		fi
@@ -99,7 +99,6 @@ importHDIJobs() {
 		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 						ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 
-				echo $insert
 				logger $insert
 				$MYSQL "$insert"
 				
@@ -125,8 +124,7 @@ importHDIJobs() {
 		    done
 		    for i in `seq 0 1 $totalTime`; do
 		    	currentTime=`expr $startTimeTS + $i`
-		    	currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%I:%S"`
-		    	
+		    	currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
 		    	insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
 						VALUES ($id_exec,'$jobName',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 						ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
