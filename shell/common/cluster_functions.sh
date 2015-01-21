@@ -31,6 +31,8 @@ vm_create_node() {
 
   if [ "$vmType" != 'windows' ] ; then
 
+    requireRootFirst="true" #for some providers that need root user first it is dissabled further on
+
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
@@ -40,6 +42,7 @@ vm_create_node() {
     else
       vm_provision
     fi
+
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -77,8 +80,9 @@ vm_create_connect() {
 #requires $vm_name and $type to be set
 vm_provision() {
   vm_initial_bootstrap
-  vm_set_ssh
+  requireRootFirst="" #disable root/admin user from this part on
 
+  vm_set_ssh
   vm_install_base_packages
 
   #[ "$type" != "cluster" ] && {
