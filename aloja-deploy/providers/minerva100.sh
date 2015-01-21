@@ -29,15 +29,18 @@ vm_initial_bootstrap() {
 sudo useradd --create-home --home $home_prefix/$userAloja -s /bin/bash $userAloja;
 sudo echo -n '$userAloja:$passwordAloja' |sudo chpasswd;
 sudo adduser $userAloja sudo;
-sudo sed -i.bkp -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers;
+sudo adduser $userAloja adm;
+
+sudo bash -c \"echo '%sudo ALL=NOPASSWD:ALL' >> /etc/sudoers\";
 
 sudo mkdir -p $home_prefix/$userAloja/.ssh;
 sudo bash -c \"echo '${insecureKey}' >> sudo $home_prefix/$userAloja/.ssh/authorized_keys\";
 sudo chown -R $userAloja: $home_prefix/$userAloja/.ssh;
 sudo cp $home_prefix/$userAloja/.profile $home_prefix/$userAloja/.bashrc /root/;
-
-sudo adduser $userAloja adm;
 "
+
+    #allow sudo from our new user
+    #vm_update_template "/etc/sudoers" "%sudo ALL=NOPASSWD:ALL" "secured_file"
 
     test_action="$(vm_execute " [ -f $home_prefix/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
 
