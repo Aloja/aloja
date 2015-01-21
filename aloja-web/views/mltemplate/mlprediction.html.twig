@@ -56,6 +56,9 @@
 					enabled: false
 				    },
 	    		        plotOptions: {
+				    series: {
+					turboThreshold: 5000
+				    },
 	    		            scatter: {
 	    		                marker: {
 	    		                    radius: 5,
@@ -89,6 +92,7 @@
 		else
 		{
 			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+			setInterval( function() { window.location.reload(); }, 300000 );
 		}	
 	});
     </script>

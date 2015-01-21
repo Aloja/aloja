@@ -1513,23 +1513,23 @@ class DefaultController extends AbstractController
 	    	
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+		foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 
 		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) < 1)
 		{
-			$params['disks'] = array('SSD','HDD');
+			$params['disks'] = array('HDD','SSD');
 			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
 			$params['replications'] = array('1');
 		}
 
 		$extra_config = '';
-		foreach ($param_names as $p) $extra_config = $extra_config.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':'');
+		foreach ($param_names as $p) $extra_config = $extra_config.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
 
-		$config = str_replace(array('AND ','IN '),'',$where_configs).$extra_config.' '.$learn_param;
+		$config = $extra_config.' '.$learn_param;
 		$learn_options = 'saveall='.md5($config);
 
 		if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
@@ -1601,6 +1601,7 @@ class DefaultController extends AbstractController
 
 			// update cache record (for human reading)
 			$register = md5($config).' :'.$config."\n";
+			shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 		}
 
@@ -1625,7 +1626,7 @@ class DefaultController extends AbstractController
 					$key_pexec = array_search('Pred.Exe.Time', array_values($header));
 
 					$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-					while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 1000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+					while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 					{
 						$jsonExecs[$count]['y'] = (int)$data[$key_exec];
 						$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
@@ -1677,7 +1678,7 @@ class DefaultController extends AbstractController
 
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+		foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) <= 1)
@@ -1707,7 +1708,8 @@ class DefaultController extends AbstractController
 			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 		}
 
-		$model_info = str_replace(array('AND ','IN '),'',$where_configs);
+		$model_info = '';
+		foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
 
 		// Model for filling
 		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
@@ -1830,6 +1832,7 @@ class DefaultController extends AbstractController
 
 			// update cache record (for human reading)
 			$register = md5($config).' : '.$config."\n";
+			shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 			file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 		}
 
@@ -1930,7 +1933,7 @@ class DefaultController extends AbstractController
 	    	
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-		foreach ($param_names as $p) $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config);
+		foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) <= 1)
@@ -1963,7 +1966,8 @@ class DefaultController extends AbstractController
 		$varin = ":vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster";
 
 		// find possible models to predict
-		$model_info = str_replace(array('AND ','IN '),'',$where_configs);
+		$model_info = '';
+		foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
 
 		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
 		{
