@@ -50,7 +50,7 @@ function RetrieveData([String]$storageAccount, [String]$storageContainer, [Strin
    cp -R $storageContainer $logsDir/
    Write-Verbose "Copying to minerva account"
    $date = [int][double]::Parse((Get-Date -UFormat %s))
-   $year = (Get-Date -f yyyy)
+   $year = (Get-Date -f yyyyMMdd)
    scp -r "$logsDir" "$minervaLogin@minerva.bsc.es:~/${year}_${storageAccount}_$date"
    Write-Verbose "Retrieval and saving of logs completed"
 }
