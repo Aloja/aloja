@@ -104,19 +104,22 @@ importHDIJobs() {
 				
 				if [ "$taskStatus" == "FAILED" ]; then
 					normalStartTime=`expr $taskStartTime - $startTimeTS`
-					normalFinishTime=`expr $finishTimeTS - $taskFinishTime`
+					normalFinishTime=`expr $taskFinishTime - $taskStartTime`
+					#normalFinishTime=`expr $finishTimeTS - $taskFinishTime`
 					for i in `seq $normalStartTime 1 $normalFinishTime`; do
 						waste[$i]=`expr ${waste[$i]} + 1`
 					done
 				elif [ "$taskType" == "MAP" ]; then
 					normalStartTime=`expr $taskStartTime - $startTimeTS`
-					normalFinishTime=`expr $finishTimeTS - $taskFinishTime`
+					normalFinishTime=`expr $taskFinishTime - $taskStartTime`
+					#normalFinishTime=`expr $finishTimeTS - $taskFinishTime`
 					for i in `seq $normalStartTime 1 $normalFinishTime`; do
 						map[$i]=`expr ${map[$i]} + 1`
 					done
 				elif [ "$taskType" == "REDUCE" ]; then
 					normalStartTime=`expr $taskStartTime - $startTimeTS`
-					normalFinishTime=`expr $finishTimeTS - $taskFinishTime`
+					normalFinishTime=`expr $taskFinishTime - $taskStartTime`
+					#normalFinishTime=`expr $finishTimeTS - $taskFinishTime`
 					for i in `seq $normalStartTime 1 $normalFinishTime`; do
 						reduce[$i]=`expr ${reduce[$i]} + 1`
 					done
