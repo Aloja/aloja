@@ -1507,23 +1507,25 @@ class DefaultController extends AbstractController
 		$categories = '';
 		$series = '';
 		try {
-			$configurations = array ();
+			$configurations = array ();	// Useless here
 			$where_configs = '';
-			$concat_config = "";
-
-			// FIXME - Set defaults manually, just in case...
-			if (count($_GET) <= 1)
-			{
-				$params['benchs'] = array('wordcount');
-				$params['disks'] = array('SSD','HDD');
-				$params['iofilebufs'] = array('32768','131072');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-			}
+			$concat_config = ""; 		// Useless here
 			
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+
+			if (count($_GET) <= 1)
+			{
+				$params['benchs'] = array('terasort');
+				$params['nets'] = array('ETH');
+				$params['disks'] = array('SSD','HDD');
+				$params['iofilebufs'] = array('32768','65536','131072');
+				$params['iosfs'] = array('10');
+				$params['comps'] = array('0');
+				$params['replications'] = array('1');
+				$where_configs = ' AND bench IN ("terasort") AND net IN ("ETH") AND disk IN ("SSD","HDD") AND iofilebuf IN ("32768","65536","131072") AND iosf IN ("10") AND comp IN ("0") AND replication IN ("1")';
+			}
 
 			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
 			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
@@ -1564,7 +1566,7 @@ class DefaultController extends AbstractController
 			
 			$rows = $db->get_rows ( $query );
 
-			if (empty($rows)) throw new Exception ( "No results for query!" );
+			if (empty($rows)) throw new \Exception ( "No results for query!" );
 	
 			$categories = '';
 			$arrayBenchs = array();
@@ -1803,10 +1805,10 @@ class DefaultController extends AbstractController
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
-			$series = json_encode(array('aaData' => array($noData)));
-			$jsonHeader = $colors = "[]";
-			$instance = $possible_models_id = "";
-			$possible_models = array();
+			$series = $jsonHeader = $colors = "[]";
+			$instance = $current_model = "";
+			$possible_models = $possible_models_id = array();
+			$must_wait = "NO";
 		}
 		echo $this->container->getTwig ()->render ('mltemplate/mlconfigperf.html.twig', array (
 				'selected' => 'ML Parameter Evaluation',
