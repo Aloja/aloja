@@ -96,6 +96,7 @@ sudo chown -R pristine: /scratch/attached/1;
 }
 
 vm_final_bootstrap() {
-  logger "INFO: Creating RAID0 on 6 disks"
-  vm_create_RAID0
+  #logger "INFO: Creating RAID0 on 6 disks"
+  #vm_create_RAID0
+  :
 }
