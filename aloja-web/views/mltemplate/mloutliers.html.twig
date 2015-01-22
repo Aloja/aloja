@@ -15,6 +15,17 @@
 	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
+	<div id="footer" style="float: left; width: 100%;">
+		<hr />
+		<p>Current used model: {{current_model}}</p>
+		<div style="float: left; width: 70%;">
+			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+		</div>
+		<div style="float: left; width: 30%;">
+			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+		</div>
+	</div>
+	<div style="clear: both;"></div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
@@ -24,6 +35,17 @@
 	$(document).ready(function() {
 		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		if ('{{jsonData | raw}}' == '[]' && '{{jsonWarns | raw}}' == '[]' && '{{jsonOuts | raw}}' == '[]') $("#footer").hide();
+
+		var target = document.getElementById('select-model');
+		var mid = {{ models_id | raw }};
+		for (i = 0; i < mid.length; i++)
+		{
+			var newhtml = "<option value='" + mid[i] + "'";
+			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
+			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
+		}
 
 		if ("{{must_wait}}"== "NO")
 		{

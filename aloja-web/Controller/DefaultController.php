@@ -1705,6 +1705,7 @@ class DefaultController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonOuts = $jsonWarns = '[]';
 			$model = '';
+			$possible_models_id = $possible_models = array();
 		}
 		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig',
 			array(
@@ -1723,6 +1724,8 @@ class DefaultController extends AbstractController
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
 				'must_wait' => $must_wait,
+				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $model,
 				'message' => $message
 			)
