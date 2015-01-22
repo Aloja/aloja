@@ -1507,9 +1507,9 @@ class DefaultController extends AbstractController
 	{
 	    	$db = $this->container->getDBUtils();
 	    	
-	    	$configurations = array ();
+	    	$configurations = array ();	// Useless here
 	    	$where_configs = '';
-	    	$concat_config = "";
+	    	$concat_config = "";		// Useless here
 	    	
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
@@ -1517,13 +1517,13 @@ class DefaultController extends AbstractController
 
 		$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 
-		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) < 1)
 		{
 			$params['disks'] = array('HDD','SSD');
 			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
 			$params['replications'] = array('1');
+			$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
 		}
 
 		$extra_config = '';
@@ -1672,9 +1672,9 @@ class DefaultController extends AbstractController
 	{
 	    	$db = $this->container->getDBUtils();
 	    	
-	    	$configurations = array();
+	    	$configurations = array();	// Useless here
 	    	$where_configs = '';
-	    	$concat_config = "";
+	    	$concat_config = "";		// Useless here
 
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
@@ -1683,10 +1683,11 @@ class DefaultController extends AbstractController
 		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) <= 1)
 		{
-			$params['disks'] = array('SSD','HDD');
+			$params['disks'] = array('HDD','SSD');
 			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
 			$params['replications'] = array('1');
+			$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
 		}
 
 		$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
@@ -1927,21 +1928,21 @@ class DefaultController extends AbstractController
 	{
 	    	$db = $this->container->getDBUtils();
 	    	
-	    	$configurations = array ();
+	    	$configurations = array ();	// Useless here
 	    	$where_configs = '';
-	    	$concat_config = "";
+	    	$concat_config = "";		// Useless here
 	    	
 		$params = array();
 		$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 		foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-		// FIXME - Set defaults manually, just in case...
 		if (count($_GET) <= 1)
 		{
-			$params['disks'] = array('SSD','HDD');
+			$params['disks'] = array('HDD','SSD');
 			$params['iofilebufs'] = array('32768','131072');
 			$params['comps'] = array('0');
 			$params['replications'] = array('1');
+			$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
 		}
 
 		$jsonData = $jsonHeader = "[]";
