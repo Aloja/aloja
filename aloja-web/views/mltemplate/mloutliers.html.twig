@@ -1,0 +1,100 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify">[WiP] Set stuff here...</p>
+		<hr />
+	</div>
+	<div id="chart" style="float: left; width: 70%;"></div>
+	<div style="float: right; width: 30%;">
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$("select.form-control option[value='None']").text("ALL");
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#chart').highcharts( {
+	    		        chart: {
+	    		            type: 'scatter',
+	    		            zoomType: 'xy'
+	    		        },
+	    		        title: {
+	    		            text: 'Outlier Detection'
+	    		        },
+	    		        subtitle: {
+	    		            text: 'Model vs Observation'
+	    		        },
+	    		        xAxis: {
+	    		            title: {
+	    		                enabled: true,
+	    		                text: 'Model Execution Time (s)'
+	    		            },
+	    		            startOnTick: true,
+	    		            endOnTick: true,
+	    		            showLastLabel: true
+	    		        },
+	    		        yAxis: {
+	    		            title: {
+	    		                text: 'Observed Execution Time (s)'
+	    		            }
+	    		        },
+			        credits: {
+					enabled: false
+				    },
+	    		        plotOptions: {
+				    series: {
+					turboThreshold: 5000
+				    },
+	    		            scatter: {
+	    		                marker: {
+	    		                    radius: 5,
+	    		                    states: {
+	    		                        hover: {
+	    		                            enabled: true,
+	    		                            lineColor: 'rgb(100,100,100)'
+	    		                        }
+	    		                    }
+	    		                },
+	    		                states: {
+	    		                    hover: {
+	    		                        marker: {
+	    		                            enabled: false
+	    		                        }
+	    		                    }
+	    		                },
+	    		                tooltip: {
+	    		                    headerFormat: '',
+	    		                    pointFormat: '<b>{point.name}</b> <br/> {point.x} s, {point.y} s'
+	    		                }
+	    		            }
+	    		        },
+	    		        series: [
+					{name: 'Correct Executions', color: '#AAF', data: {{ jsonData | raw }}},
+					{name: 'Highlighted Executions', color: '#F80', data: {{ jsonWarns | raw }}},
+					{name: 'Outlier Executions', color: '#F66', data: {{ jsonOuts | raw }}},
+					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[1, 1], [2999, 2999]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
+				]
+			});
+		}
+		else
+		{
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}	
+	});
+    </script>
+{% endblock %}
