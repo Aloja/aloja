@@ -1441,64 +1441,64 @@ class DefaultController extends AbstractController
 				'title' => 'ALOJA Clusters Costs'));
 	}
 
-    public function dbscanAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
+	public function dbscanAction()
+	{
+		$jobid = Utils::get_GET_string("jobid");
 
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
+		// if no job requested, show a random one
+		if (strlen($jobid) == 0 || $jobid === "random") {
+		    $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+		    $db = $this->container->getDBUtils();
+		    $query = "
+			SELECT DISTINCT(t.`JOBID`)
+			FROM `JOB_tasks` t
+			ORDER BY RAND()
+			LIMIT 1
+		    ;";
+		    $jobid = $db->get_rows($query)[0]['JOBID'];
+		}
 
-        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
-            array(
-                'selected' => 'DBSCAN',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'METRICS' => DBUtils::$TASK_METRICS,
-            )
-        );
-    }
+		echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+		    array(
+			'selected' => 'DBSCAN',
+			'highcharts_js' => HighCharts::getHeader(),
+			'jobid' => $jobid,
+			'METRICS' => DBUtils::$TASK_METRICS,
+		    )
+		);
+	}
 
-    public function dbscanexecsAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
+	public function dbscanexecsAction()
+	{
+		$jobid = Utils::get_GET_string("jobid");
 
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
+		// if no job requested, show a random one
+		if (strlen($jobid) == 0 || $jobid === "random") {
+		    $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+		    $db = $this->container->getDBUtils();
+		    $query = "
+			SELECT DISTINCT(t.`JOBID`)
+			FROM `JOB_tasks` t
+			ORDER BY RAND()
+			LIMIT 1
+		    ;";
+		    $jobid = $db->get_rows($query)[0]['JOBID'];
+		}
 
-        list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
+		list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
 
-        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
-            array(
-                'selected' => 'DBSCANexecs',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'bench' => $bench,
-                'job_offset' => $job_offset,
-                'METRICS' => DBUtils::$TASK_METRICS,
-                'show_filter_benchs' => false,
-            )
-        );
-    }
+		echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
+		    array(
+			'selected' => 'DBSCANexecs',
+			'highcharts_js' => HighCharts::getHeader(),
+			'jobid' => $jobid,
+			'bench' => $bench,
+			'job_offset' => $job_offset,
+			'METRICS' => DBUtils::$TASK_METRICS,
+			'show_filter_benchs' => false,
+		    )
+		);
+	}
 
 	public function mlsummariesAction()
 	{
