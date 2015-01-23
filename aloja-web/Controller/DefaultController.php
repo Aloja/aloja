@@ -1612,11 +1612,13 @@ class DefaultController extends AbstractController
 		{
 			$jsonExecs = "[]";
 			$must_wait = "YES";
+			$max_x = $max_y = 0;
 		}
 		else
 		{
 			// read results of the CSV
 			$count = 0;
+			$max_x = $max_y = 0;
 			foreach (array("tt", "tv", "tr") as &$value)
 			{
 				if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
@@ -1639,6 +1641,9 @@ class DefaultController extends AbstractController
 							else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
 						}
 						$jsonExecs[$count++]['mydata'] = $extra_data;
+
+						if ((int)$data[$key_exec] > $max_y) $max_y = (int)$data[$key_exec];
+						if ((int)$data[$key_pexec] > $max_x) $max_x = (int)$data[$key_pexec];
 					}
 					fclose($handle);
 				}
@@ -1650,6 +1655,7 @@ class DefaultController extends AbstractController
 		array(
 			'selected' => 'mlprediction',
 			'jsonExecs' => json_encode($jsonExecs),
+			'max_p' => min(array($max_x,$max_y)),
 			'benchs' => $params['benchs'],
 			'nets' => $params['nets'],
 			'disks' => $params['disks'],
