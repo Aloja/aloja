@@ -102,3 +102,7 @@ dbscanexecs:
 dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+
+mlsummaries:
+    pattern: "/mlsummaries"
+    controller: "alojaweb\\Controller\\DefaultController::mlsummariesAction"

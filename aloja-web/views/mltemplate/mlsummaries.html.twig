@@ -1,0 +1,27 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify">[WiP] Set stuff here...</p>
+		<hr />
+	</div>
+	<div id="dataframe" style="float: left; width: 70%;"><p style="text-align: left; font-family:'Courier New'">{{displaydata | raw}}</p></div>
+	<div style="float: right; width: 30%;">
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$("select.form-control option[value='None']").text("ALL");
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+	});
+    </script>
+{% endblock %}
