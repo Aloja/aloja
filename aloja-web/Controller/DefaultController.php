@@ -1900,6 +1900,8 @@ class DefaultController extends AbstractController
 	{
 		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 		$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+		$possible_models = array();
+		$possible_models_id = '';
 	}
 	echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig',
 		array(
@@ -2095,13 +2097,10 @@ class DefaultController extends AbstractController
 	{
 		$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
-		$noData = array();
-		for($i = 0; $i<=sizeof($show_in_result); ++$i) $noData[] = 'error';
-
-		$jsonData = json_encode(array('aaData' => array($noData)));
-		$jsonHeader = "[]";
+		$jsonData = $jsonHeader = "[]";
 		$instance = $possible_models_id = "";
 		$possible_models = array();
+		$must_wait = 'NO';
 	}
 	echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
 		array(
