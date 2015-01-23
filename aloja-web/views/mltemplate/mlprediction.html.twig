@@ -24,64 +24,75 @@
 	$(document).ready(function() {
 		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
-		$('#chart').highcharts( {
-    		        chart: {
-    		            type: 'scatter',
-    		            zoomType: 'xy'
-    		        },
-    		        title: {
-    		            text: 'Predicted Exec.Time vs Real Exec.Time'
-    		        },
-    		        subtitle: {
-    		            text: 'Predictions'
-    		        },
-    		        xAxis: {
-    		            title: {
-    		                enabled: true,
-    		                text: 'Predicted Execution Time (s)'
-    		            },
-    		            startOnTick: true,
-    		            endOnTick: true,
-    		            showLastLabel: true
-    		        },
-    		        yAxis: {
-    		            title: {
-    		                text: 'Real Execution Time (s)'
-    		            }
-    		        },
-	                credits: {
-				enabled: false
-		            },
-    		        plotOptions: {
-    		            scatter: {
-    		                marker: {
-    		                    radius: 5,
-    		                    states: {
-    		                        hover: {
-    		                            enabled: true,
-    		                            lineColor: 'rgb(100,100,100)'
-    		                        }
-    		                    }
-    		                },
-    		                states: {
-    		                    hover: {
-    		                        marker: {
-    		                            enabled: false
-    		                        }
-    		                    }
-    		                },
-    		                tooltip: {
-    		                    headerFormat: '',
-    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
-    		                }
-    		            }
-    		        },
-    		        series: [{
-    		            name: 'Exe time',
-    		            color: 'rgba(223, 83, 83, .5)',
-    		            data: {{ jsonExecs | raw }}
-			}]
-		});
+
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#chart').highcharts( {
+	    		        chart: {
+	    		            type: 'scatter',
+	    		            zoomType: 'xy'
+	    		        },
+	    		        title: {
+	    		            text: 'Predicted Exec.Time vs Real Exec.Time'
+	    		        },
+	    		        subtitle: {
+	    		            text: 'Predictions'
+	    		        },
+	    		        xAxis: {
+	    		            title: {
+	    		                enabled: true,
+	    		                text: 'Predicted Execution Time (s)'
+	    		            },
+	    		            startOnTick: true,
+	    		            endOnTick: true,
+	    		            showLastLabel: true
+	    		        },
+	    		        yAxis: {
+	    		            title: {
+	    		                text: 'Real Execution Time (s)'
+	    		            }
+	    		        },
+			        credits: {
+					enabled: false
+				    },
+	    		        plotOptions: {
+				    series: {
+					turboThreshold: 5000
+				    },
+	    		            scatter: {
+	    		                marker: {
+	    		                    radius: 5,
+	    		                    states: {
+	    		                        hover: {
+	    		                            enabled: true,
+	    		                            lineColor: 'rgb(100,100,100)'
+	    		                        }
+	    		                    }
+	    		                },
+	    		                states: {
+	    		                    hover: {
+	    		                        marker: {
+	    		                            enabled: false
+	    		                        }
+	    		                    }
+	    		                },
+	    		                tooltip: {
+	    		                    headerFormat: '',
+	    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
+	    		                }
+	    		            }
+	    		        },
+	    		        series: [
+					{name: 'Exe time', color: 'rgba(223, 83, 83, .5)', data: {{ jsonExecs | raw }}	},
+					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[50, 50], [{{max_p|raw}}, {{max_p|raw}}]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
+				]
+			});
+		}
+		else
+		{
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}	
 	});
     </script>
 {% endblock %}

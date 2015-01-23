@@ -22,7 +22,7 @@
 		<p style="text-align:justify">[WiP] Select the attributes you want to define from the filter, to predict all their combinations, so you can sort them by Predicted time or by attribute.</p>
 		<hr />
 	</div>
-	<div style="float: left; width: 70%;">
+	<div id="benchdiv" style="float: left; width: 70%;">
 		<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 	</div>
 	<div style="float: right; width: 30%;">
@@ -74,13 +74,22 @@
 			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
 		}
 
-		$('#benchmark').dataTable(
+		if ("{{must_wait}}" == "NO")
 		{
-			"aaData": {{ jsonData | raw }},
-			"columns": {{ jsonHeader | raw }},
-			"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }}]
+			$('#benchmark').dataTable(
+			{
+				"aaData": {{ jsonData | raw }},
+				"columns": {{ jsonHeader | raw }},
+				"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }}]
+			}
+			);
 		}
-		);
+		else
+		{
+			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+			$('#footer').hide();
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}
 	});
 	</script>
 {% endblock %}
