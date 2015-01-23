@@ -1664,6 +1664,7 @@ class DefaultController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 						$count = 0;
 						$count_ind = array(0,0,0);
+						$max_x = $max_y = 0;
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 						{
 							if ((int)$data[0] == 0)
@@ -1685,6 +1686,9 @@ class DefaultController extends AbstractController
 								$jsonOuts[$count_ind[2]++]['name'] = $data[3];							
 							}
 							$count++;
+
+							if ((int)$data[1] > $max_y) $max_y = (int)$data[1];
+							if ((int)$data[2] > $max_x) $max_x = (int)$data[2];
 						}
 						fclose($handle);
 
@@ -1713,6 +1717,7 @@ class DefaultController extends AbstractController
 				'jsonData' => $jsonData,
 				'jsonWarns' => $jsonWarns,
 				'jsonOuts' => $jsonOuts,
+				'max_p' => min(array($max_x,$max_y)),
 				'benchs' => $params['benchs'],
 				'nets' => $params['nets'],
 				'disks' => $params['disks'],

@@ -108,14 +108,14 @@
 					{name: 'Correct Executions', color: '#AAF', data: {{ jsonData | raw }}},
 					{name: 'Highlighted Executions', color: '#F80', data: {{ jsonWarns | raw }}},
 					{name: 'Outlier Executions', color: '#F66', data: {{ jsonOuts | raw }}},
-					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[1, 1], [2999, 2999]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
+					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[50, 50], [50+{{max_p|raw}}, 50+{{max_p|raw}}]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
 				]
 			});
 		}
 		else
 		{
 			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
-			setInterval( function() { window.location.reload(); }, 300000 );
+			setInterval( function() { window.location.reload(); }, 30000 );
 		}	
 	});
     </script>
