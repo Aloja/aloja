@@ -151,4 +151,3 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 
 	quit(save="no", status=0);
 
-

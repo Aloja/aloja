@@ -102,6 +102,7 @@ dbscanexecs:
 dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+<<<<<<< HEAD
     
 mlprediction:
     pattern: "/mlprediction"
@@ -122,3 +123,7 @@ mlclearcache:
 mlparameval:
     pattern: "/mlparameval"
     controller: "alojaweb\\Controller\\DefaultController::mlparamEvaluationAction"
+
+mloutliers:
+    pattern: "/mloutliers"
+    controller: "alojaweb\\Controller\\DefaultController::mloutliersAction"
