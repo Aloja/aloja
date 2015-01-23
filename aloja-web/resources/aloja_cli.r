@@ -94,6 +94,11 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 		}
 	}
 
+	if (opt$method  == "aloja_print_individual_summaries" || opt$method  == "aloja_print_summaries")
+	{
+		params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Exe.Time"); 
+	}
+
 	if (opt$method  == "aloja_predict_instance" || opt$method  == "aloja_predict_dataset" || opt$method == "aloja_outlier_dataset")
 	{
 		params_2 <- list();
