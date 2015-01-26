@@ -35,6 +35,8 @@ class AddMissingHdiTasksColumns extends AbstractMigration
     	$this->execute("ALTER TABLE HDI_JOB_tasks ADD COLUMN CONNECTION BIGINT");
     	$this->execute("ALTER TABLE HDI_JOB_tasks ADD COLUMN WRONG_MAP BIGINT");
     	$this->execute("ALTER TABLE HDI_JOB_tasks ADD COLUMN WRONG_REDUCE BIGINT");
+    	$this->execute("ALTER TABLE HDI_JOB_tasks ADD COLUMN CHECKSUM VARCHAR(255)");
+    	$this->execute("ALTER TABLE HDI_JOB_tasks ADD COLUMN NUM_FAILED_MAPS VARCHAR(255)");
     }
 
     /**
@@ -55,5 +57,7 @@ class AddMissingHdiTasksColumns extends AbstractMigration
     	$this->execute("ALTER TABLE HDI_JOB_tasks DROP COLUMN CONNECTION");
     	$this->execute("ALTER TABLE HDI_JOB_tasks DROP COLUMN WRONG_MAP");
     	$this->execute("ALTER TABLE HDI_JOB_tasks DROP COLUMN WRONG_REDUCE");
+    	$this->execute("ALTER TABLE HDI_JOB_tasks DROP COLUMN CHECKSUM");
+    	$this->execute("ALTER TABLE HDI_JOB_tasks DROP COLUMN NUM_FAILED_MAPS");
     }
 }
