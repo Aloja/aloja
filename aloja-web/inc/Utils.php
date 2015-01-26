@@ -296,7 +296,7 @@ class Utils
     	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 $filter_execs");
     	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 $filter_execs");
     	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 $filter_execs");
-    	$clusterOptions = $db->get_rows("SELECT DISTINCT id_cluster FROM execs WHERE 1 $filter_execs");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT clusters.name FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
     	 
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
@@ -326,7 +326,7 @@ class Utils
     		$discreteOptions['blk_size'][] = array_shift($option);
     	}
     	foreach($clusterOptions as $option) {
-            $discreteOptions['blk_size'][] = array_shift($option);
+            $discreteOptions['id_cluster'][] = array_shift($option);
     	}
     	
     	return $discreteOptions;

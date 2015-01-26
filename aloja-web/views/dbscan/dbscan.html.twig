@@ -174,7 +174,14 @@
                         minPoints: minPoints.val(),
                     },
                 })
-                .done(function(data) {
+                .done(function(data, status, xhr) {
+
+                    // Check for server errors
+                    if (!xhr.responseJSON) {
+                        alert("Server error");
+                        return;
+                    }
+
                     // Update chart with new options
                     var metric_x_name = metric_x.find("option:selected").text();
                     var metric_y_name = metric_y.find("option:selected").text();
