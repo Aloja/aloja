@@ -3,7 +3,6 @@ CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/on-premise.sh"
 
 #overrides and custom minerva100 functions
-alojaHomePrefix="/users/scratch"
 
 #minerva needs *real* user first
 get_ssh_user() {
@@ -25,20 +24,20 @@ vm_initial_bootstrap() {
     logger "Bootstraping $vm_name "
 
     vm_execute "
-sudo useradd --create-home --home $alojaHomePrefix/$userAloja -s /bin/bash $userAloja;
+sudo useradd --create-home --home $homePrefixAloja/$userAloja -s /bin/bash $userAloja;
 sudo echo -n '$userAloja:$passwordAloja' |sudo chpasswd;
 sudo adduser $userAloja sudo;
 sudo adduser $userAloja adm;
 
 sudo bash -c \"echo '%sudo ALL=NOPASSWD:ALL' >> /etc/sudoers\";
 
-sudo mkdir -p $alojaHomePrefix/$userAloja/.ssh;
-sudo bash -c \"echo '${insecureKey}' >> sudo $alojaHomePrefix/$userAloja/.ssh/authorized_keys\";
-sudo chown -R $userAloja: $alojaHomePrefix/$userAloja/.ssh;
-sudo cp $alojaHomePrefix/$userAloja/.profile $alojaHomePrefix/$userAloja/.bashrc /root/;
+sudo mkdir -p $homePrefixAloja/$userAloja/.ssh;
+sudo bash -c \"echo '${insecureKey}' >> sudo $homePrefixAloja/$userAloja/.ssh/authorized_keys\";
+sudo chown -R $userAloja: $homePrefixAloja/$userAloja/.ssh;
+sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc /root/;
 "
 
-    test_action="$(vm_execute " [ -f $alojaHomePrefix/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock

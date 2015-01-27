@@ -200,7 +200,7 @@ else
   exit 1
 fi
 
-BASE_DIR="$alojaHomePrefix/$userAloja/share"
+BASE_DIR="$homePrefixAloja/$userAloja/share"
 SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
 H_DIR="$HDD/aplic/$HADOOP_VERSION" #execution dir
@@ -214,7 +214,7 @@ DATE='date +%Y%m%d_%H%M%S'
 CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="`$DATE`_$CONF"
 
-JOB_PATH="$alojaHomePrefix/$userAloja/share/jobs_$clusterName/$JOB_NAME"
+JOB_PATH="$homePrefixAloja/$userAloja/share/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
@@ -233,8 +233,8 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
 
   #temporary to avoid read-only file system errors
-  #echo "Checking if to remount $alojaHomePrefix/$userAloja/share"
-  #$DSH_SLAVES "[ ! \"\$(ls $alojaHomePrefix/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $alojaHomePrefix/$userAloja/share; sudo fusermount -uz $alojaHomePrefix/$userAloja/share;  sudo mount $alojaHomePrefix/$userAloja/share; sudo mount -a; }"
+  #echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  #$DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
 
   for mount_point in "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" "/scratch/attached/4" "/scratch/attached/5" "/scratch/attached/6"; do
     echo "Checking if to remount $mount_point"
@@ -247,8 +247,8 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
   #temporary to avoid read-only file system errors
-  #echo "Checking if to remount $alojaHomePrefix/$userAloja/share"
-  #$DSH_SLAVES "[ ! \"\$(ls $alojaHomePrefix/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $alojaHomePrefix/$userAloja/share; sudo fusermount -uz $alojaHomePrefix/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $alojaHomePrefix/$userAloja/share; sudo mount -a; }"
+  #echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  #$DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
 
   for mount_point in "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" "/scratch/attached/4" "/scratch/attached/5" "/scratch/attached/6"; do
     echo "Checking if to remount $mount_point"
@@ -309,7 +309,7 @@ done
 
 zabbix_sender(){
   :
-  #echo "al-1001 $1" | $alojaHomePrefix/pristine/share/aplic/zabbix/bin/zabbix_sender -c $alojaHomePrefix/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
+  #echo "al-1001 $1" | $homePrefixAloja/pristine/share/aplic/zabbix/bin/zabbix_sender -c $homePrefixAloja/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
   #>> $LOG_PATH
 }
 

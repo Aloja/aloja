@@ -168,11 +168,11 @@ useradd --create-home -s /bin/bash $userAloja &&
 adduser $userAloja sudo &&
 echo -n '$userAloja:$passwordAloja' | chpasswd &&
 sed -i.bkp -e 's/%sudo\s\+ALL=(ALL\(:ALL\)\?)\s\+ALL/%sudo ALL=NOPASSWD:ALL/g' /etc/sudoers &&
-mkdir -p $alojaHomePrefix/$userAloja/.ssh ;
+mkdir -p $homePrefixAloja/$userAloja/.ssh ;
 
-echo '${insecureKey}' >> $alojaHomePrefix/$userAloja/.ssh/authorized_keys &&
-chown -R $userAloja: $alojaHomePrefix/$userAloja/.ssh ;
-cp $alojaHomePrefix/$userAloja/.profile $alojaHomePrefix/$userAloja/.bashrc /root/ ;
+echo '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys &&
+chown -R $userAloja: $homePrefixAloja/$userAloja/.ssh ;
+cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc /root/ ;
 
 adduser $userAloja adm;
 ufw disable;
@@ -188,7 +188,7 @@ ufw disable;
 #echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
 #chmod 644 /etc/pam.d/common-session;
 
-      test_action="$(vm_execute " [ -d $alojaHomePrefix/$userAloja/.ssh ] && echo '$testKey'")"
+      test_action="$(vm_execute " [ -d $homePrefixAloja/$userAloja/.ssh ] && echo '$testKey'")"
 
       if [ "$test_action" == "$testKey" ] ; then
         #set the lock

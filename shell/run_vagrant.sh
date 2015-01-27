@@ -168,7 +168,7 @@ logger(){
 
 zabbix_sender(){
   :
-  #echo "minerva-1001 $1" | $alojaHomePrefix/npoggi/aplic/zabbix/bin/zabbix_sender -c $alojaHomePrefix/npoggi/aplic/zabbix/conf/zabbix_agentd.conf -T -i - 2>&1 > /dev/null
+  #echo "minerva-1001 $1" | $homePrefixAloja/npoggi/aplic/zabbix/bin/zabbix_sender -c $homePrefixAloja/npoggi/aplic/zabbix/conf/zabbix_agentd.conf -T -i - 2>&1 > /dev/null
   #>> $LOG_PATH
 }
 
