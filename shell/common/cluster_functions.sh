@@ -10,7 +10,7 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #global variables
-sharedDir="/home/$userAloja/share"
+sharedDir="$alojaHomePrefix/$userAloja/share"
 
 #####################################################################################
 # Start functions
@@ -411,18 +411,18 @@ get_initizalize_disks_test() {
 
 get_share_location() {
 
-  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ $alojaHomePrefix/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
 
   if [ "$cloud_provider" == "pedraforca" ] ; then
-    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+    local fs_mount="$userAloja@minerva.bsc.es:$alojaHomePrefix/$userAloja/aloja/ $alojaHomePrefix/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$alojaHomePrefix/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
   elif [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
     #internal network
     local fs_mount="$minerva_mount
-$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+$userAloja@aloja-fs:$alojaHomePrefix/$userAloja/share/ $alojaHomePrefix/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$alojaHomePrefix/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
   else
     #external network
     local fs_mount="$minerva_mount
-$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
+$userAloja@al-1001.cloudapp.net:$alojaHomePrefix/$userAloja/share/ $alojaHomePrefix/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$alojaHomePrefix/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
   fi
 
   echo -e "$fs_mount"
@@ -911,14 +911,14 @@ vm_set_master_crontab() {
     logger "Setting ALOJA crontab to master"
 
     crontab="# m h  dom mon dow   command
-* * * * * export USER=$userAloja && bash /home/$userAloja/share/shell/exeq.sh $clusterName
+* * * * * export USER=$userAloja && bash $alojaHomePrefix/$userAloja/share/shell/exeq.sh $clusterName
 #backup data
-#0 * * * * cp -ru share/jobs_$clusterName local >> /home/$userAloja/cron.log 2>&1"
+#0 * * * * cp -ru share/jobs_$clusterName local >> $alojaHomePrefix/$userAloja/cron.log 2>&1"
 
     vm_execute_master "echo '$crontab' |crontab"
 
     #start the queue so dirs are created
-    vm_execute_master "export USER=$userAloja && bash /home/$userAloja/share/shell/exeq.sh $clusterName"
+    vm_execute_master "export USER=$userAloja && bash $alojaHomePrefix/$userAloja/share/shell/exeq.sh $clusterName"
 
   else
     logger "Crontab already installed in master"
@@ -944,7 +944,7 @@ vm_set_master_forer() {
   if [ -z "$test_action" ] ; then
     #TODO shouldn't be necessary but...
     logger "DEBUG: Re-mounting disks"
-    local verify_share="$(verify_share_cmd "/home/$userAloja/share")"
+    local verify_share="$(verify_share_cmd "$alojaHomePrefix/$userAloja/share")"
 
     cluster_execute "$verify_share"
 
@@ -955,10 +955,10 @@ vm_set_master_forer() {
       vm_rsync "$CONF_DIR/../" "$sharedDir/shell/"
 
       logger " executing forer_$clusterName.sh"
-      vm_execute_master "bash /home/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
+      vm_execute_master "bash $alojaHomePrefix/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
     else
       logger " executing forer_az.sh $CONF_DIR/../forer_$clusterName.sh"
-      vm_execute_master "bash /home/$userAloja/share/shell/forer_az.sh $clusterName"
+      vm_execute_master "bash $alojaHomePrefix/$userAloja/share/shell/forer_az.sh $clusterName"
     fi
 
   else

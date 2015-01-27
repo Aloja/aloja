@@ -228,7 +228,7 @@ else
   exit 1
 fi
 
-#BENCH_BASE_DIR="/home/$userAloja/share"
+#BENCH_BASE_DIR="$alojaHomePrefix/$userAloja/share"
 #BENCH_SOURCE_DIR="/scratch/local/aplic"
 
 #BENCH_HADOOP_VERSION="hadoop-1.0.3"
@@ -286,15 +286,15 @@ sudo service ufw stop 2>&1 > /dev/null;
 "
 
       #temporary to avoid read-only file system errors
-      echo "Checking if to remount /home/$userAloja/share"
-      $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+      echo "Checking if to remount $alojaHomePrefix/$userAloja/share"
+      $DSH "[ ! \"\$\(ls $alojaHomePrefix/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force $alojaHomePrefix/$userAloja/share; }"
 
-      for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+      for mount_point in "$alojaHomePrefix/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
         echo "Checking if to remount $mount_point"
         $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
       done
 
-      #$DSH "sudo mount -o force /home/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
+      #$DSH "sudo mount -o force $alojaHomePrefix/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
 
     correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
@@ -302,10 +302,10 @@ sudo service ufw stop 2>&1 > /dev/null;
       echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
       #temporary to avoid read-only file system errors
-      echo "Checking if to remount /home/$userAloja/share"
-      $DSH "[ ! \"\$\(ls /home/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force /home/$userAloja/share; }"
+      echo "Checking if to remount $alojaHomePrefix/$userAloja/share"
+      $DSH "[ ! \"\$\(ls $alojaHomePrefix/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force $alojaHomePrefix/$userAloja/share; }"
 
-      for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+      for mount_point in "$alojaHomePrefix/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
         echo "Checking if to remount $mount_point"
         $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
       done
