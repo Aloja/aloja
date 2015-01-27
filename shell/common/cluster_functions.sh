@@ -10,7 +10,6 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #global variables
-sharedDir="$alojaHomePrefix/$userAloja/share"
 
 #####################################################################################
 # Start functions
@@ -952,7 +951,7 @@ vm_set_master_forer() {
 
     if [ -f "$CONF_DIR/../forer_$clusterName.sh" ] ; then
       logger " synching forer files"
-      vm_rsync "$CONF_DIR/../" "$sharedDir/shell/"
+      vm_rsync "$CONF_DIR/../" "$alojaHomePrefix/$userAloja/share/shell/"
 
       logger " executing forer_$clusterName.sh"
       vm_execute_master "bash $alojaHomePrefix/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
@@ -996,45 +995,45 @@ vm_make_fs() {
   fi
 
   if [ -z "$homeIsShared" ] ; then
-    logger "Checking if $sharedDir is correctly linked"
-    test_action="$(vm_execute "[ -d $sharedDir ] && [ -L $sharedDir ] && ls $sharedDir/safe_store && echo '$testKey'")"
+    logger "Checking if $alojaHomePrefix/$userAloja/share is correctly linked"
+    test_action="$(vm_execute "[ -d $alojaHomePrefix/$userAloja/share ] && [ -L $alojaHomePrefix/$userAloja/share ] && ls $alojaHomePrefix/$userAloja/share/safe_store && echo '$testKey'")"
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
     if [ -z "$test_action" ] ; then
-      logger " Linking $sharedDir"
+      logger " Linking $alojaHomePrefix/$userAloja/share"
       vm_execute "sudo chown -R ${userAloja} /scratch;
-[ -d $sharedDir ] && [ ! -L $sharedDir ] && mv $sharedDir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path $sharedDir;
-touch $sharedDir/safe_store;
+[ -d $alojaHomePrefix/$userAloja/share ] && [ ! -L $alojaHomePrefix/$userAloja/share ] && mv $alojaHomePrefix/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $share_disk_path $alojaHomePrefix/$userAloja/share;
+touch $alojaHomePrefix/$userAloja/share/safe_store;
     "
     else
-      logger " $sharedDir is correctly mounted"
+      logger " $alojaHomePrefix/$userAloja/share is correctly mounted"
     fi
 
   else
     logger "NOTICE: /home is marked as shared, creating the dir if necessary"
-    vm_execute "mkdir -p $sharedDir; touch $sharedDir/safe_store"
+    vm_execute "mkdir -p $alojaHomePrefix/$userAloja/share; touch $alojaHomePrefix/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell" "$sharedDir"
-  vm_rsync "../aloja-deploy" "$sharedDir"
+  vm_rsync "../shell" "$alojaHomePrefix/$userAloja/share"
+  vm_rsync "../aloja-deploy" "$alojaHomePrefix/$userAloja/share"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
-  test_action="$(vm_execute "ls $sharedDir/aplic/aplic_version && echo '$testKey'")"
+  test_action="$(vm_execute "ls $alojaHomePrefix/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $sharedDir; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    vm_execute "cd $alojaHomePrefix/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
-    vm_execute "cd $sharedDir; tar -jxf aplic.tar.bz2"
+    vm_execute "cd $alojaHomePrefix/$userAloja/share; tar -jxf aplic.tar.bz2"
   fi
 
   logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$sharedDir"
+  vm_rsync "../blobs/aplic" "$alojaHomePrefix/$userAloja/share"
 
 }
 
