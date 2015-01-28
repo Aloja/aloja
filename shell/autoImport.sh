@@ -22,7 +22,7 @@ while true ; do
   cd /var/www/;
   sudo git reset --hard HEAD;
   sudo git pull origin master;
-  sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_*;
+  #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_*;
   sudo rm -rf /tmp/twig/;
   sudo /etc/init.d/varnish restart;
   sudo service php5-fpm restart;
@@ -31,6 +31,22 @@ while true ; do
 
   logger "\nGenerating basic caches...\n\n"
   cd /tmp
+  wget 'http://localhost/?NO_CACHE=1'
+  wget 'http://localhost/benchdata?NO_CACHE=1'
+  wget 'http://localhost/counters?NO_CACHE=1'
+  wget 'http://localhost/benchexecs?NO_CACHE=1'
+  wget 'http://localhost/bestconfig?NO_CACHE=1'
+  wget 'http://localhost/configimprovement?NO_CACHE=1'
+  wget 'http://localhost/parameval?NO_CACHE=1'
+  wget 'http://localhost/costperfeval?NO_CACHE=1'
+  wget 'http://localhost/perfcharts?random=1?NO_CACHE=1'
+  wget 'http://localhost/metrics?NO_CACHE=1'
+  wget 'http://localhost/metrics?type=MEMORY&NO_CACHE=1'
+  wget 'http://localhost/metrics?type=DISK&NO_CACHE=1'
+  wget 'http://localhost/metrics?type=NETWORK&NO_CACHE=1'
+  wget 'http://localhost/dbscan?NO_CACHE=1'
+  wget 'http://localhost/dbscanexecs?NO_CACHE=1'
+
   wget 'http://localhost/'
   wget 'http://localhost/benchdata'
   wget 'http://localhost/counters'
