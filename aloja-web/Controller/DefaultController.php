@@ -1441,62 +1441,186 @@ class DefaultController extends AbstractController
 				'title' => 'ALOJA Clusters Costs'));
 	}
 
-    public function dbscanAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
+	public function dbscanAction()
+	{
+		$jobid = Utils::get_GET_string("jobid");
 
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
+		// if no job requested, show a random one
+		if (strlen($jobid) == 0 || $jobid === "random") {
+		    $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+		    $db = $this->container->getDBUtils();
+		    $query = "
+			SELECT DISTINCT(t.`JOBID`)
+			FROM `JOB_tasks` t
+			ORDER BY RAND()
+			LIMIT 1
+		    ;";
+		    $jobid = $db->get_rows($query)[0]['JOBID'];
+		}
 
-        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
-            array(
-                'selected' => 'DBSCAN',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'METRICS' => DBUtils::$TASK_METRICS,
-            )
-        );
-    }
+		echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+		    array(
+			'selected' => 'DBSCAN',
+			'highcharts_js' => HighCharts::getHeader(),
+			'jobid' => $jobid,
+			'METRICS' => DBUtils::$TASK_METRICS,
+		    )
+		);
+	}
 
-    public function dbscanexecsAction()
-    {
-        $jobid = Utils::get_GET_string("jobid");
+	public function dbscanexecsAction()
+	{
+		$jobid = Utils::get_GET_string("jobid");
 
-        // if no job requested, show a random one
-        if (strlen($jobid) == 0 || $jobid === "random") {
-            $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
-            $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
-            ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
-        }
+		// if no job requested, show a random one
+		if (strlen($jobid) == 0 || $jobid === "random") {
+		    $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
+		    $db = $this->container->getDBUtils();
+		    $query = "
+			SELECT DISTINCT(t.`JOBID`)
+			FROM `JOB_tasks` t
+			ORDER BY RAND()
+			LIMIT 1
+		    ;";
+		    $jobid = $db->get_rows($query)[0]['JOBID'];
+		}
 
-        list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
+		list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
 
-        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
-            array(
-                'selected' => 'DBSCANexecs',
-                'highcharts_js' => HighCharts::getHeader(),
-                'jobid' => $jobid,
-                'bench' => $bench,
-                'job_offset' => $job_offset,
-                'METRICS' => DBUtils::$TASK_METRICS,
-                'show_filter_benchs' => false,
-            )
-        );
-    }
+		echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
+		    array(
+			'selected' => 'DBSCANexecs',
+			'highcharts_js' => HighCharts::getHeader(),
+			'jobid' => $jobid,
+			'bench' => $bench,
+			'job_offset' => $job_offset,
+			'METRICS' => DBUtils::$TASK_METRICS,
+			'show_filter_benchs' => false,
+		    )
+		);
+	}
+
+	public function mlcrossvarAction()
+	{
+		$jsonData = array();
+		$message = '';
+		try
+		{
+			$db = $this->container->getDBUtils();
+		    	
+		    	$configurations = array ();	// Useless here
+		    	$where_configs = '';
+		    	$concat_config = "";		// Useless here
+		    	
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+
+			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
+			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
+
+			if (count($_GET) <= 1)
+			{
+				$params['benchs'] = '';
+				$params['disks'] = array('HDD','SSD');
+				$params['iofilebufs'] = array('32768','131072');
+				$params['comps'] = array('0');
+				$params['replications'] = array('1');
+				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
+			}
+
+			$model_info = '';
+			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+
+
+			$cache_ds = getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cache.csv';
+			if (!file_exists($cache_ds))
+			{
+				// dump the result to csv
+			    	$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2 FROM execs WHERE valid = TRUE ".$where_configs.";";
+			    	$rows = $db->get_rows ( $query );
+
+				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+				$fp = fopen($cache_ds, 'w');
+			    	foreach($rows as $row) fputcsv($fp, array_values($row),',','"');
+
+/*				// launch query
+				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$model.' -p sigma=3:hdistance=3:saveall='.md5($model_info.'-'.$model).' > /dev/null &';
+				exec($command);
+*/
+				// update cache record (for human reading)
+				$register = md5($model_info.$cross_var1.$cross_var2).' : '.$model_info.'-'.$cross_var1."-".$cross_var2."\n";
+				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
+				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+			}
+
+			// read results of the CSV
+			if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cache.csv', 'r')) !== FALSE)
+			{
+				$map_var1 = $map_var2 = array();
+				$count_var1 = $count_var2 = 0;
+				$categories1 = $categories2 = '';
+				$count = 0;
+				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+				{
+					if (in_array($cross_var1, array("net","disk","bench")))
+					{
+						if (!array_key_exists($data[0],$map_var1))
+						{
+							$map_var1[$data[0]] = $count_var1++;
+							$categories1 = $categories1.(($categories1!='')?",":"")."\"".$data[0]."\"";
+						}
+						$jsonData[$count]['y'] = $map_var1[$data[0]]*(rand(990,1010)/1000);
+					}
+					else $jsonData[$count]['y'] = (int)$data[0]*(rand(990,1010)/1000);
+
+					if (in_array($cross_var2, array("net","disk","bench")))
+					{
+						if (!array_key_exists($data[1],$map_var2))
+						{
+							$map_var2[$data[1]] = $count_var2++;
+							$categories2 = $categories2.(($categories2!='')?",":"")."\"".$data[1]."\"";
+						}
+						$jsonData[$count]['x'] = $map_var2[$data[1]]*(rand(990,1010)/1000);
+					}
+					else $jsonData[$count]['x'] = (int)$data[1]*(rand(990,1010)/1000);
+
+					$jsonData[$count++]['name'] = $data[0]." - ".$data[1];
+				}
+				fclose($handle);
+
+				$jsonData = json_encode($jsonData);
+				if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
+				if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
+			}
+		}
+		catch(\Exception $e)
+		{
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			$jsonData = '[]';
+			$cross_var1 = $cross_var2 = $categories1 = $categories2 = '';
+		}
+		echo $this->container->getTwig()->render('mltemplate/mlcrossvar.html.twig',
+			array(
+				'selected' => 'mlcrossvar',
+				'jsonData' => $jsonData,
+				'variable1' => $cross_var1,
+				'variable2' => $cross_var2,
+				'categories1' => $categories1,
+				'categories2' => $categories2,
+				'benchs' => $params['benchs'],
+				'nets' => $params['nets'],
+				'disks' => $params['disks'],
+				'blk_sizes' => $params['blk_sizes'],
+				'comps' => $params['comps'],
+				'id_clusters' => $params['id_clusters'],
+				'mapss' => $params['mapss'],
+				'replications' => $params['replications'],
+				'iosfs' => $params['iosfs'],
+				'iofilebufs' => $params['iofilebufs'],
+				'message' => $message
+			)
+		);	
+	}
 }
