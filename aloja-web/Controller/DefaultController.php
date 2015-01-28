@@ -2055,8 +2055,38 @@ class DefaultController extends AbstractController
 					{
 						if ($lines[$i]=='') break;
 						$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+
+						// Fetch Real Value
+						$realexecval = 0;
+
+						$comp_instance = '';
+						$attributes = explode(',',$parsed);
+						$count_aux = 0;
+						foreach ($attributes as $part)
+						{
+							if ($count_aux < 1 || $count_aux > 10) { $count_aux++; continue; }
+							$comp_instance = $comp_instance.(($comp_instance!='')?",":"").((is_numeric($part))?$part:"\\\"".$part."\\\"");
+							$count_aux++;
+						}
+						$output = shell_exec("grep \"".$comp_instance."\" ".getcwd().'/cache/query/'.$current_model.'-ds.csv');
+
+						if (!is_null($output))
+						{
+							$solutions = explode("\n",$output);
+							$count_sols = 0;
+							foreach ($solutions as $solution)
+							{
+								if ($solution == '') continue;
+								$attributes = explode(",",$solution);
+								$realexecval = $realexecval + (int)$attributes[1];
+								$count_sols++;
+							}
+							$realexecval = $realexecval / $count_sols;
+						}
+						// END - Fetch Real Value
+
 						if ($jsonData!='[') $jsonData = $jsonData.',';
-						$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+						$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\',\''.$realexecval.'\']';
 						$i++;
 					}
 					$jsonData = $jsonData.']';
@@ -2064,7 +2094,7 @@ class DefaultController extends AbstractController
 					$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData);
 					foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
