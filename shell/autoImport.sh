@@ -1,15 +1,9 @@
 #!/bin/bash
-
 #simple script to check if folder has been imported before to move it or not
+
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BASE_DIR=$(pwd)
 
-source "$CUR_DIR/common/common.sh"
-
-SHARE_DIR="$CUR_DIR/.."
-IMPORT_DIR="$CUR_DIR/../import-jobs"
-DONE_DIR="$IMPORT_DIR/DONE"
-FAIL_DIR="$IMPORT_DIR/FAIL"
+source "$CUR_DIR/common/include_process_jobs.sh"
 
 while true ; do
 
@@ -27,7 +21,7 @@ while true ; do
 
   cd /var/www/;
   sudo git reset --hard HEAD;
-  sudo git pull origin provider/rackspace;
+  sudo git pull origin master;
   sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_*;
   sudo rm -rf /tmp/twig/;
   sudo /etc/init.d/varnish restart;
