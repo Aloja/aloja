@@ -200,7 +200,7 @@ else
   exit 1
 fi
 
-BASE_DIR="/home/$userAloja/share"
+BASE_DIR="$homePrefixAloja/$userAloja/share"
 SOURCE_DIR="/scratch/local/aplic"
 HADOOP_VERSION="hadoop-1.0.3"
 H_DIR="$HDD/aplic/$HADOOP_VERSION" #execution dir
@@ -214,7 +214,7 @@ DATE='date +%Y%m%d_%H%M%S'
 CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_S${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="`$DATE`_$CONF"
 
-JOB_PATH="/home/$userAloja/share/jobs_$clusterName/$JOB_NAME"
+JOB_PATH="$homePrefixAloja/$userAloja/share/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
@@ -233,10 +233,10 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
 
   #temporary to avoid read-only file system errors
-  echo "Checking if to remount /home/$userAloja/share"
-  $DSH_SLAVES "[ ! \"\$(ls /home/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f /home/$userAloja/share; sudo fusermount -uz /home/$userAloja/share;  sudo mount /home/$userAloja/share; sudo mount -a; }"
+  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
 
-  for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
     echo "Checking if to remount $mount_point"
     $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
   done
@@ -247,10 +247,10 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
   #temporary to avoid read-only file system errors
-  echo "Checking if to remount /home/$userAloja/share"
-  $DSH_SLAVES "[ ! \"\$(ls /home/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f /home/$userAloja/share; sudo fusermount -uz /home/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount /home/$userAloja/share; sudo mount -a; }"
+  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
 
-  for mount_point in "/home/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
     echo "Checking if to remount $mount_point"
     $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
   done

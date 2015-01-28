@@ -326,7 +326,7 @@ class Utils
     		$discreteOptions['blk_size'][] = array_shift($option);
     	}
     	foreach($clusterOptions as $option) {
-            $discreteOptions['blk_size'][] = array_shift($option);
+            $discreteOptions['id_cluster'][] = array_shift($option);
     	}
     	
     	return $discreteOptions;

@@ -1,15 +1,9 @@
 #!/bin/bash
-
 #simple script to check if folder has been imported before to move it or not
+
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BASE_DIR=$(pwd)
 
-source "$CUR_DIR/common/common.sh"
-
-SHARE_DIR="$CUR_DIR/.."
-IMPORT_DIR="$CUR_DIR/../import-jobs"
-DONE_DIR="$IMPORT_DIR/DONE"
-FAIL_DIR="$IMPORT_DIR/FAIL"
+source "$CUR_DIR/common/include_process_jobs.sh"
 
 while true ; do
 
@@ -37,6 +31,22 @@ while true ; do
 
   logger "\nGenerating basic caches...\n\n"
   cd /tmp
+  wget 'http://localhost/?NO_CACHE=1'
+  wget 'http://localhost/benchdata?NO_CACHE=1'
+  wget 'http://localhost/counters?NO_CACHE=1'
+  wget 'http://localhost/benchexecs?NO_CACHE=1'
+  wget 'http://localhost/bestconfig?NO_CACHE=1'
+  wget 'http://localhost/configimprovement?NO_CACHE=1'
+  wget 'http://localhost/parameval?NO_CACHE=1'
+  wget 'http://localhost/costperfeval?NO_CACHE=1'
+  wget 'http://localhost/perfcharts?random=1?NO_CACHE=1'
+  wget 'http://localhost/metrics?NO_CACHE=1'
+  wget 'http://localhost/metrics?type=MEMORY&NO_CACHE=1'
+  wget 'http://localhost/metrics?type=DISK&NO_CACHE=1'
+  wget 'http://localhost/metrics?type=NETWORK&NO_CACHE=1'
+  wget 'http://localhost/dbscan?NO_CACHE=1'
+  wget 'http://localhost/dbscanexecs?NO_CACHE=1'
+
   wget 'http://localhost/'
   wget 'http://localhost/benchdata'
   wget 'http://localhost/counters'
