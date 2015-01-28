@@ -1951,11 +1951,12 @@ class DefaultController extends AbstractController
 
 			if (count($_GET) <= 1)
 			{
+				$params['benchs'] = array('wordcount');
 				$params['disks'] = array('HDD','SSD');
 				$params['iofilebufs'] = array('32768','131072');
 				$params['comps'] = array('0');
 				$params['replications'] = array('1');
-				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = ' AND bench == "wordcount" AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
 			}
 
 			$jsonData = $jsonHeader = "[]";
