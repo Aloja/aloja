@@ -1650,7 +1650,13 @@ class DefaultController extends AbstractController
 				}
 			}
 		}
-		catch(\Exception $e) { $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" ); }
+		catch(\Exception $e)
+		{
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			$jsonExecs = '[]';
+			$max_x = $max_y = 0;
+			$must_wait = 'NO';
+		}
 		echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig',
 			array(
 				'selected' => 'mlprediction',
