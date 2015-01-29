@@ -32,11 +32,11 @@
 	<div style="clear: both;"></div>
 	<div id="footer" style="float: left; width: 100%;">
 		<hr />
-		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}}</p>
-		<div style="float: left; width: 70%;">
+		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
+		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
 		</div>
-		<div style="float: left; width: 30%;">
+		<div style="float: right; width: 30%;">
 			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
 		</div>
 	</div>
@@ -79,6 +79,7 @@
 		{
 			$('#benchmark').dataTable(
 			{
+				"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
 				"aaData": {{ jsonData | raw }},
 				"columns": {{ jsonHeader | raw }},
 				"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }}]

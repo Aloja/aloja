@@ -1960,10 +1960,9 @@ class DefaultController extends AbstractController
 			}
 
 			$jsonData = $jsonHeader = "[]";
-			$instance = "";
-			$possible_models = array();
-			$possible_models_id = array();
-			$message = "";
+			$message = $instance = "";
+			$possible_models = $possible_models_id = array();
+			$mae = $rae = $count_preds = 0;
 
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
@@ -2064,7 +2063,7 @@ class DefaultController extends AbstractController
 						$count_aux = 0;
 						foreach ($attributes as $part)
 						{
-							if ($count_aux < 1 || $count_aux > 10) { $count_aux++; continue; }
+							if ($count_aux < 1 || $count_aux > 10) { $count_aux++; continue; } #FIXME - Indexes hardcoded for file-ds.csv
 							$comp_instance = $comp_instance.(($comp_instance!='')?",":"").((is_numeric($part))?$part:"\\\"".$part."\\\"");
 							$count_aux++;
 						}
@@ -2077,11 +2076,14 @@ class DefaultController extends AbstractController
 							foreach ($solutions as $solution)
 							{
 								if ($solution == '') continue;
-								$attributes = explode(",",$solution);
-								$realexecval = $realexecval + (int)$attributes[1];
+								$attributes2 = explode(",",$solution);
+								$realexecval = $realexecval + (int)$attributes2[1];
 								$count_sols++;
 							}
 							$realexecval = $realexecval / $count_sols;
+							$mae = $mae + abs((int)$attributes[11] - $realexecval); #FIXME - Indexes hardcoded for file-ds.csv
+							$rae = $rae + abs(((float)$attributes[11] - $realexecval) / $realexecval); #FIXME - Indexes hardcoded for file-ds.csv
+							$count_preds++;
 						}
 						// END - Fetch Real Value
 
@@ -2090,6 +2092,8 @@ class DefaultController extends AbstractController
 						$i++;
 					}
 					$jsonData = $jsonData.']';
+					$mae = number_format($mae / $count_preds,3);
+					$rae = number_format($rae / $count_preds,5);
 
 					$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData);
 					foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
@@ -2101,6 +2105,7 @@ class DefaultController extends AbstractController
 
 					// save at cache
 					file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+					file_put_contents(str_replace('.csv','.data',$cache_filename), $mae."\n".$rae);
 
 					// update cache record (for human reading)
 					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
@@ -2122,6 +2127,10 @@ class DefaultController extends AbstractController
 					$data = explode("\n",file_get_contents($cache_filename));
 					$jsonHeader = $data[0];
 					$jsonData = $data[1];
+
+					$data = explode("\n",file_get_contents(str_replace('.csv','.data',$cache_filename)));
+					$mae = $data[0];
+					$rae = $data[1];
 				}
 			}
 			else
@@ -2137,6 +2146,7 @@ class DefaultController extends AbstractController
 			$instance = $possible_models_id = "";
 			$possible_models = array();
 			$must_wait = 'NO';
+			$mae = $rae = 0;
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
 			array(
@@ -2158,6 +2168,8 @@ class DefaultController extends AbstractController
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $current_model,
 				'message' => $message,
+				'mae' => $mae,
+				'rae' => $rae,
 				'must_wait' => $must_wait
 			)
 		);
