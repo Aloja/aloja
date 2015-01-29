@@ -974,9 +974,9 @@ vm_puppet_apply() {
   vm_rsync "$puppet" "~/" ""
   logger "Puppet install modules and apply"
 
-	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"
+	vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetBootFile'"
 	if [ ! -z "$puppetPostScript" ]; then
-	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
+	 vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetPostScript'"
 	fi
 }
 
