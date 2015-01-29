@@ -1523,17 +1523,17 @@ class DefaultController extends AbstractController
 			{
 				$params['benchs'] = '';
 				$params['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = array('32768','131072');
+				$params['iofilebufs'] = array('32768','65536','131072');
 				$params['comps'] = array('0');
 				$params['replications'] = array('1');
-				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","65536","131072") AND comp IN ("0") AND replication IN ("1")';
 			}
 
 			$model_info = '';
 			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
 
 
-			$cache_ds = getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cache.csv';
+			$cache_ds = getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cross.csv';
 			if (!file_exists($cache_ds))
 			{
 				// dump the result to csv
@@ -1556,7 +1556,7 @@ class DefaultController extends AbstractController
 			}
 
 			// read results of the CSV
-			if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cache.csv', 'r')) !== FALSE)
+			if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cross.csv', 'r')) !== FALSE)
 			{
 				$map_var1 = $map_var2 = array();
 				$count_var1 = $count_var2 = 0;
