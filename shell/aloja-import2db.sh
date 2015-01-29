@@ -16,7 +16,7 @@ source "$CUR_DIR/common/import_functions.sh"
 first_host=""
 hostn=""
 
-DEV_PC="true" #set to true to insert to vagrant
+#DEV_PC="true" #set to true to insert to vagrant
 #Check if to use a special version of sar or the system one
 #nico pc
 if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then

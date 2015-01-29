@@ -2,16 +2,8 @@
 
 #simple script to check if folder has been imported before to move it or not
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-BASE_DIR=$(pwd)
 
-source "$CUR_DIR/common/common.sh"
-
-SHARE_DIR="$CUR_DIR/.."
-IMPORT_DIR="$CUR_DIR/../import-jobs"
-DONE_DIR="$IMPORT_DIR/DONE"
-FAIL_DIR="$IMPORT_DIR/FAIL"
-
-mkdir -p "$IMPORT_DIR" "$DONE_DIR" "$FAIL_DIR"
+source "$CUR_DIR/common/include_process_jobs.sh"
 
 #$1 folder to look
 folder_already_DONE() {
@@ -22,7 +14,6 @@ folder_already_DONE() {
     logger "Not found $1"
     return 1
   fi
-
 }
 
 #main loop
