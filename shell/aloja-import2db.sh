@@ -1,7 +1,7 @@
 #!/bin/bash
 
 INSERT_DB="1" #if to dump CSV into the DB
-REDO_ALL="" #if to redo folders that have source files and IDs in DB
+REDO_ALL="1" #if to redo folders that have source files and IDs in DB
 REDO_UNTARS="" #if to redo the untars for folders that have it
 PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
 MOVE_TO_DONE="1" #if set moves completed folders to DONE
