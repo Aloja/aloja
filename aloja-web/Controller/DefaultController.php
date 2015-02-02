@@ -2030,7 +2030,25 @@ class DefaultController extends AbstractController
 			if (!empty($possible_models_id))
 			{
 				if ($current_model != "") $model = $current_model;
-				else $current_model = $model = $possible_models_id[0];
+				else
+				{
+					$best_id = $possible_models_id[0];
+					$best_mae = 9E15;
+					foreach ($possible_models_id as $model_id)
+					{
+						$data_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model_id).'-ipred.data';
+						if (file_exists($data_filename))
+						{
+							$data = explode("\n",file_get_contents($data_filename));
+							if ($data[0] < $best_mae)
+							{
+								$best_mae = $data[0];
+								$best_id = $model_id;
+							}
+						}
+					}
+					$current_model = $model = $best_id;
+				}
 
 				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
 				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance)).$varin.'" | grep -v grep');
