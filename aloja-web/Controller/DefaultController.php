@@ -1621,7 +1621,8 @@ class DefaultController extends AbstractController
 				$max_x = $max_y = 0;
 				foreach (array("tt", "tv", "tr") as &$value)
 				{
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE) {
+					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
+					{
 						$header = fgetcsv($handle, 1000, ",");
 
 						$key_exec = array_search('Exe.Time', array_values($header));
@@ -1692,8 +1693,7 @@ class DefaultController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			// FIXME - Set defaults manually, just in case...
-			if (count($_GET) <= 1)
+			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
 				$params['disks'] = array('HDD','SSD');
 				$params['iofilebufs'] = array('32768','131072');
@@ -1949,7 +1949,7 @@ class DefaultController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			if (count($_GET) <= 1)
+			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
 				$params['benchs'] = array('wordcount');
 				$params['disks'] = array('HDD','SSD');
@@ -2081,11 +2081,11 @@ class DefaultController extends AbstractController
 						$count_aux = 0;
 						foreach ($attributes as $part)
 						{
-							if ($count_aux < 1 || $count_aux > 10) { $count_aux++; continue; } #FIXME - Indexes hardcoded for file-ds.csv
+							if ($count_aux < 1 || $count_aux > 10) { $count_aux++; continue; } #FIXME - Indexes hardcoded for file-dsorig.csv
 							$comp_instance = $comp_instance.(($comp_instance!='')?",":"").((is_numeric($part))?$part:"\\\"".$part."\\\"");
 							$count_aux++;
 						}
-						$output = shell_exec("grep \"".$comp_instance."\" ".getcwd().'/cache/query/'.$current_model.'-ds.csv');
+						$output = shell_exec("grep \"".$comp_instance."\" ".getcwd().'/cache/query/'.$current_model.'-dsorig.csv');
 
 						if (!is_null($output))
 						{
@@ -2099,8 +2099,8 @@ class DefaultController extends AbstractController
 								$count_sols++;
 							}
 							$realexecval = $realexecval / $count_sols;
-							$mae = $mae + abs((int)$attributes[11] - $realexecval); #FIXME - Indexes hardcoded for file-ds.csv
-							$rae = $rae + abs(((float)$attributes[11] - $realexecval) / $realexecval); #FIXME - Indexes hardcoded for file-ds.csv
+							$mae = $mae + abs((int)$attributes[11] - $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
+							$rae = $rae + abs(((float)$attributes[11] - $realexecval) / $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
 							$count_preds++;
 						}
 						// END - Fetch Real Value
