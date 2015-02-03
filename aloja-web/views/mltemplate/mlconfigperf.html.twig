@@ -30,14 +30,16 @@
 
 		$('select[name="parameval"]').change(function()
 		{
-				var name = $(this).val()+'s[]';
-				$('select[name="'+name+'"]').val('None');
+			var name = $(this).val()+'s[]';
+			$('select[name="'+name+'"]').val('None');
+			var configForm = document.getElementsByName('configFilters');
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
+			$(this).parents('form').submit();
 		});
 	    	$('input').change(function()
 		{
 			var configForm = document.getElementsByName('configFilters');
 			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>";
-
 			$(this).parents('form').submit();
 		});
 
@@ -87,8 +89,8 @@
 		}
 		else
 		{
-			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
-+			$('#footer').hide();
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<br/>{{instance}}</p>";
+			$('#footer').hide();
 			setInterval( function() { window.location.reload(); }, 60000 ); 
 		}
 	});
