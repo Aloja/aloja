@@ -53,8 +53,8 @@ link varchar(255),
 datanodes int DEFAULT NULL,
 primary key (id_cluster)) engine InnoDB;
 
-insert ignore into clusters set name='Local 1',     id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
-insert ignore into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, type='IaaS Cloud', link='http://www.windowsazure.com/en-us/pricing/calculator/';
+insert ignore into clusters set name='m-1000',     id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+insert ignore into clusters set name='al-02', id_cluster=2, cost_hour=7, type='IaaS Cloud', link='http://www.windowsazure.com/en-us/pricing/calculator/';
 
 #TODO move this to end of execution
 update execs SET disk='RR1' where disk='R1';
