@@ -1507,7 +1507,8 @@ class DefaultController extends AbstractController
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
-		$message = '';
+		$message = $instance = '';
+		$max_x = $max_y = 0;
 		try
 		{
 			$db = $this->container->getDBUtils();
@@ -1522,17 +1523,28 @@ class DefaultController extends AbstractController
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 
-			if (count($_GET) < 1)
+			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
-				$params['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = array('32768','131072');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = '';
+				$params['disks'] = array('SSD','HDD'); $where_configs .= ' AND disk IN ("SSD","HDD")';
+				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
+				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 			}
 
+			$filter_options = Utils::getFilterOptions($db);
+			$paramAllOptions = $tokens = array();
 			$model_info = '';
-			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+			foreach ($param_names as $p) 
+			{
+				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+				$model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+			
+ 				$tokens[$p] = '';
+				if (empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+ 			}
 
 			// Model for filling
 			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
@@ -1736,7 +1748,9 @@ class DefaultController extends AbstractController
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $model,
-				'message' => $message
+				'message' => $message,
+				'instance' => $instance,
+				'options' => Utils::getFilterOptions($db)
 			)
 		);	
 	}
