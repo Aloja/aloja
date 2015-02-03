@@ -29,21 +29,10 @@
 						<select class="form-control" class="control-form" name="benchs[]"
 							 {% if select_multiple_benchs is not defined or select_multiple_benchs %}
 							multiple {% endif %}>
-							<option value="bayes"  {% if 'bayes' in benchs %}
-								SELECTED  {% endif %}>bayes</option>
-							<option value="pagerank"  {% if 'pagerank' in benchs %} SELECTED
-								{% endif %}>pagerank</option>
-							<option value="sort"  {% if 'sort' in benchs %} SELECTED
-								{% endif %}>sort</option>
-							<option value="terasort"  {% if 'terasort' in benchs %} SELECTED
-								{% endif %}>terasort</option>
-							<option value="wordcount"  {% if 'wordcount' in benchs %} SELECTED
-								{% endif %}>wordcount</option>
-							<option value="dfsioe_read"  {% if 'dfsioe_read' in benchs %}
-								SELECTED  {% endif %}>dfsioe_read</option>
-							<option value="dfsioe_write"  {% if 'dfsioe_write' in benchs %}
-								SELECTED  {% endif %}>dfsioe_write</option> {% if
-							select_multiple_benchs is not defined or select_multiple_benchs %}
+							{% for selopt in options['benchs'] %}
+							  <option value="{{ selopt['bench'] }}" {% if selopt['bench'] in benchs %}SELECTED{% endif %}>{{ selopt['bench'] }}</option>
+							{% endfor %}
+							{% if select_multiple_benchs is not defined or select_multiple_benchs %}
 							<option value="None"  {% if not benchs %} SELECTED {% endif %}>ALL</option>{%
 							endif %}
 						</select>
@@ -52,30 +41,27 @@
 				<div class="col-md-6">
 					Clusters: (CL)</br> <select class="form-control"
 						name="id_clusters[]" multiple>
-						<option value="1" {% if '1' in id_clusters %} SELECTED {% endif %}>Local</option>
-						<option value="2" {% if '2' in id_clusters %} SELECTED {% endif %}>Azure</option>
-						<option value="None" {% if not id_clusters %} SELECTED {% endif %}>Disabled</option>
+						{% for selopt in options['id_cluster'] %}
+						  <option value="{{ selopt['id_cluster'] }}" {% if selopt['id_cluster'] in id_clusters %} SELECTED {% endif %}>{{ selopt['name'] }}</option>
+						{% endfor %}
+						<option value="None" {% if not id_clusters %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
 					Networks:</br> <select class="form-control" name="nets[]" multiple>
-						<option value="IB" {% if 'IB' in nets %} SELECTED  {% endif %}>InfiniBand</option>
-						<option value="ETH" {% if 'ETH' in nets %} SELECTED  {% endif %}>GbEthernet</option>
+					{% for selopt in options['net'] %}
+						 <option value="{{ selopt['net'] }}" {% if selopt['net'] in nets %} SELECTED {% endif %}>{% if selopt['net'] == 'IB' %}InfiniBand{% else %}Ethernet{% endif %}</option>
+					{% endfor %}
 						<option value="None" {% if not nets %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
 				<div class="col-md-6">
 					Disks:</br> <select class="form-control" name="disks[]" multiple>
-						<option value="SSD" {% if 'SSD' in disks %} SELECTED  {% endif %}>SSD</option>
-						<option value="HDD" {% if 'HDD' in disks %} SELECTED  {% endif %}>HDD</option>
-						<option value="RL1" {% if 'RL1' in disks %} SELECTED  {% endif %}>RL1</option>
-						<option value="RL2" {% if 'RL2' in disks %} SELECTED  {% endif %}>RL2</option>
-						<option value="RL3" {% if 'RL3' in disks %} SELECTED  {% endif %}>RL3</option>
-						<option value="RR1" {% if 'RR1' in disks %} SELECTED  {% endif %}>RR1</option>
-						<option value="RR2" {% if 'RR2' in disks %} SELECTED  {% endif %}>RR2</option>
-						<option value="RR3" {% if 'RR3' in disks %} SELECTED  {% endif %}>RR3</option>
+					  {% for selopt in options['disk'] %}
+					    <option value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}SELECTED{% endif %}>{{ selopt['disk'] }}</option>
+					  {% endfor %}
 						<option value="None" {% if not disks %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
@@ -83,25 +69,28 @@
 			<div class="row">
 				<div class="col-md-6">
 					Maps: (m)</br> <select class="form-control" name="mapss[]" multiple>
-                        <option value="2" {% if '2' in mapss %} SELECTED  {% endif %}>2</option>
-						<option value="4" {% if '4' in mapss %} SELECTED  {% endif %}>4</option>
-						<option value="6" {% if '6' in mapss %} SELECTED  {% endif %}>6</option>
-						<option value="8" {% if '8' in mapss %} SELECTED  {% endif %}>8</option>
-						<option value="10" {% if '10' in mapss %} SELECTED  {% endif %}>10</option>
-						<option value="12" {% if '12' in mapss %} SELECTED  {% endif %}>12</option>
-						<option value="16" {% if '16' in mapss %} SELECTED  {% endif %}>16</option>
-						<option value="24" {% if '24' in mapss %} SELECTED  {% endif %}>24</option>
-						<option value="32" {% if '32' in mapss %} SELECTED  {% endif %}>32</option>
+					  {% for selopt in options['maps'] %}
+					    <option value="{{ selopt['maps'] }}" {% if selopt['maps'] in mapss %}SELECTED{% endif %}>{{ selopt['maps'] }}</option>
+                      {% endfor %}
 						<option value="None" {% if not mapss %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
 				<div class="col-md-6">
 					Compression: (c)</br> <select class="form-control" name="comps[]"
 						multiple>
-						<option value="0" {% if '0' in comps %} SELECTED  {% endif %}>None</option>
-						<option value="1" {% if '1' in comps %} SELECTED  {% endif %}>ZLIB</option>
-						<option value="2" {% if '2' in comps %} SELECTED  {% endif %}>BZIP2</option>
-						<option value="3" {% if '3' in comps %} SELECTED  {% endif %}>Snappy</option>
+					  {% for selopt in options['comp'] %}
+					    <option value="{{ selopt['comp'] }}" {% if selopt['comp'] in compss %}SELECTED{% endif %}>
+					     {% if selopt['comp'] == 0 %}
+					       None
+					     {% elseif selopt['comp'] == 1 %}
+					       ZLIB
+					     {% elseif selopt['comp'] == 2 %}
+					       BZIP2
+					     {% else %}
+					       Snappy
+					     {% endif %}
+					    </option>
+					  {% endfor %}
 						<option value="None" {% if not comps %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
@@ -110,21 +99,18 @@
 				<div class="col-md-6">
 					Replication: (r)</br> <select class="form-control"
 						name="replications[]" multiple>
-						<option value="1" {% if '1' in replications %} SELECTED {% endif %}>1</option>
-						<option value="2" {% if '2' in replications %} SELECTED {% endif %}>2</option>
-						<option value="3" {% if '3' in replications %} SELECTED {% endif %}>3</option>
+					  {% for selopt in options['replication'] %}
+					    <option value="{{ selopt['replication'] }}" {% if selopt['replication'] in replications %}SELECTED{% endif %}>{{ selopt['replication'] }}</option>
+					  {% endfor %}
 						<option value="None" {% if not replications %} SELECTED {% endif %}>Disabled</option>
 					</select>
 				</div>
 				<div class="col-md-6">
 					Block size: (b)</br> <select class="form-control" name="blk_sizes[]"
 						multiple>
-						<option value="32" {% if '32' in blk_sizes %} SELECTED {% endif %}>32MB</option>
-						<option value="64" {% if '64' in blk_sizes %} SELECTED {% endif %}>64MB</option>
-						<option value="128" {% if '128' in blk_sizes %} SELECTED
-							{% endif %}>128MB</option>
-						<option value="256" {% if '256' in blk_sizes %} SELECTED
-							{% endif %}>256MB</option>
+						{% for selopt in options['blk_size'] %}
+					    <option value="{{ selopt['blk_size'] }}" {% if selopt['blk_size'] in blk_sizes %}SELECTED{% endif %}>{{ selopt['blk_size'] }}MB</option>
+					   {% endfor %}
 						<option value="None" {% if not blk_sizes %} SELECTED  {% endif %}>Disabled</option>
 					</select>
 				</div>
@@ -133,30 +119,18 @@
 				<div class="col-md-6">
 					I/O Sort Factor: (I)</br> <select class="form-control" name="iosfs[]"
 						multiple>
-						<option value="5" {% if '5' in iosfs %} SELECTED {% endif %}>5</option>
-						<option value="10" {% if '10' in iosfs %} SELECTED {% endif %}>10</option>
-						<option value="20" {% if '20' in iosfs %} SELECTED {% endif %}>20</option>
-						<option value="50" {% if '50' in iosfs %} SELECTED {% endif %}>50</option>
+						{% for selopt in options['iosf'] %}
+					    <option value="{{ selopt['iosf'] }}" {% if selopt['iosf'] in iosfs %}SELECTED{% endif %}>{{ selopt['iosf'] }}</option>
+					   {% endfor %}
 						<option value="None" {% if not iosfs %} SELECTED {% endif %}>Disabled</option>
 					</select>
 				</div>
 				<div class="col-md-6">
 					I/O File Buffer: </br> <select class="form-control"
 						name="iofilebufs[]" multiple>
-						<option value="1024" {% if '1024' in iofilebufs %} SELECTED
-							{% endif %}>1KB</option>
-						<option value="4096" {% if '4096' in iofilebufs %} SELECTED
-							{% endif %}>4KB</option>
-						<option value="16384" {% if '16384' in iofilebufs %} SELECTED
-							{% endif %}>16KB</option>
-						<option value="32768" {% if '32768' in iofilebufs %} SELECTED
-							{% endif %}>32KB</option>
-						<option value="65536" {% if '65536' in iofilebufs %} SELECTED
-							{% endif %}>64KB</option>
-						<option value="131072" {% if '131072' in iofilebufs %} SELECTED
-							{% endif %}>128KB</option>
-						<option value="262144" {% if '262144' in iofilebufs %} SELECTED
-							{% endif %}>256KB</option>
+						{% for selopt in options['iofilebuf'] %}
+					    <option value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}SELECTED{% endif %}>{{ selopt['iofilebuf'] }}KB</option>
+					   {% endfor %}
 						<option value="None" {% if not iofilebufs %} SELECTED {% endif %}>Disabled</option>
 					</select>
 				</div>
