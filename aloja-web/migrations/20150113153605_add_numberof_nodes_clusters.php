@@ -22,7 +22,7 @@ class AddNumberofNodesClusters extends AbstractMigration
      */
     public function up()
     {
-    	$this->execute("ALTER TABLE clusters ADD COLUMN nodes_number INT");
+    	$this->execute("ALTER TABLE clusters ADD COLUMN datanodes INT");
     }
 
     /**
@@ -30,6 +30,6 @@ class AddNumberofNodesClusters extends AbstractMigration
      */
     public function down()
     {
-    	$this->execute("ALTER TABLE clusters DROP COLUMN nodes_number");
+    	$this->execute("ALTER TABLE clusters DROP COLUMN datanodes");
     }
 }

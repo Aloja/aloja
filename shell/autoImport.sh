@@ -8,7 +8,7 @@ source "$CUR_DIR/common/include_process_jobs.sh"
 while true ; do
 
   logger "\nChecking for new files to copy...\n\n"
-  bash $CUR_DIR/moveJobs2Import.sh
+  bash $CUR_DIR/moveJobs2Import.sh "$IMPORT_DIR"
 
   logger "\nImporting jobs\n\n"
   cd "$IMPORT_DIR"

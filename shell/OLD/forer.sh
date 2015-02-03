@@ -36,7 +36,7 @@ DELETE=" "
 #echo "starting"
 line=0
 
-Q_PATH="/home/npoggi/qsub/queue"
+Q_PATH="~/qsub/queue"
 CONF_PATH="$Q_PATH/conf"
 
 
@@ -71,7 +71,7 @@ for LIST_BENCHS in  "kmeans" "wordcount" "sort"  "pagerank" "bayes" "dfsioe" # "
 do
 
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))"
-  current_command="/home/npoggi/qsub/run.sh -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
+  current_command="~/qsub/run.sh -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
   output="${output}${current_command}
   "
 

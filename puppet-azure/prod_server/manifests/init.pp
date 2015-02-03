@@ -39,7 +39,6 @@ if $environment == 'prod' {
   $mysql_options = {
     'bind-address' => '0.0.0.0',
     'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
-    'datadir' => '/scratch/attached/1/mysql',
   }
 }
 
@@ -73,6 +72,10 @@ class { '::mysql::client':
   require => Exec['apt-get update'],
 }
 
+exec { 'changemysqlconfig': 
+  command => 'sudo /usr/sbin/service mysql stop && sed -i "s/var\/lib\/mysql/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf && sudo cp -Rp /var/lib/mysql /scratch/attached/1/ && sudo /usr/sbin/service mysql start',
+  path => '/usr/bin:/bin:/usr/sbin'
+}
 
 vcsrepo { "/var/presentations/":
         ensure => latest,
@@ -90,17 +93,6 @@ vcsrepo { "/var/presentations/":
 #  mode => '755'
 #}
 
-exec { 'third_party_libs':
-  command => 'bash -c "cd /var/www/aloja-web && sudo php composer.phar self-update && sudo php composer.phar update"',
-  onlyif => '[ ! -h /var/www/aloja-web/vendor ]',
-  path => '/usr/bin:/bin'
-}
-
-exec { 'db_migrations':
-  command => 'bash -c "cd /var/www/aloja-web && php vendor/bin/phinx -cconfig/phinx.yml -eproduction migrate"',
-  path => '/usr/bin:/bin'
-}
-
 file { '/var/www/aloja-web/logs':
   ensure => 'directory',
   mode => '776',
@@ -109,17 +101,10 @@ file { '/var/www/aloja-web/logs':
   recurse => true
 }
 
-exec { 'chmod_vendor':
-  command => 'sudo chown www-data.www-data -R /var/www/aloja-web/vendor && sudo chmod 775 -R /var/www/aloja-web/vendor',
-  path => '/bin:/usr/bin'
-}
-
 ##Dependencies
 Exec['apt-get update'] -> Vcsrepo['/var/www/']
 Vcsrepo['/var/www/'] -> File['/var/www/aloja-web/logs']
 Vcsrepo['/var/www/'] -> Vcsrepo['/var/presentations/']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
-Class['::mysql::server'] -> Exec['third_party_libs']
-Exec['third_party_libs'] -> Service['php5-fpm']
-Exec['third_party_libs'] -> Exec['chmod_vendor']
-Exec['third_party_libs'] -> Exec['db_migrations']
+Class['::mysql::server'] -> Exec['changemysqlconfig']
+Exec['changemysqlconfig'] -> Service['php5-fpm']
