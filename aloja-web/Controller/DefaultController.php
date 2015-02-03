@@ -1507,7 +1507,7 @@ class DefaultController extends AbstractController
 	public function mlcrossvarAction()
 	{
 		$jsonData = array();
-		$message = '';
+		$message = $instance = '';
 		try
 		{
 			$db = $this->container->getDBUtils();
@@ -1523,19 +1523,29 @@ class DefaultController extends AbstractController
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 
-			if (count($_GET) <= 1)
+			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
-				$params['benchs'] = '';
-				$params['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = array('32768','65536','131072');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","65536","131072") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = '';
+				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
+				$params['disks'] = array('SSD','HDD'); $where_configs .= ' AND disk IN ("SSD","HDD")';
+				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
+				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")'; 			
 			}
 
+			$filter_options = Utils::getFilterOptions($db);
+			$paramAllOptions = $tokens = array();
 			$model_info = '';
-			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
-
+			foreach ($param_names as $p) 
+			{
+				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+				$model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+			
+ 				$tokens[$p] = '';
+				if (empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+ 			}
 
 			$cache_ds = getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cross.csv';
 			if (!file_exists($cache_ds))
@@ -1623,7 +1633,9 @@ class DefaultController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
-				'message' => $message
+				'message' => $message,
+				'instance' => $instance,
+				'options' => Utils::getFilterOptions($db)
 			)
 		);	
 	}
