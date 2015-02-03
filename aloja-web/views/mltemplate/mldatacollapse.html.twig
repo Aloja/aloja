@@ -67,6 +67,8 @@
 			window.location.href = url;
 		});
 
+		$("select.form-control option[value='None']").text("Collapse");
+
 		var target = document.getElementById('select-model');
 		var mid = {{ models_id | raw }};
 		for (i = 0; i < mid.length; i++)
@@ -91,7 +93,7 @@
 		}
 		else
 		{
-			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<br/>{{instance}}</p>";
 			$('#footer').hide();
 			setInterval( function() { window.location.reload(); }, 300000 );
 		}
