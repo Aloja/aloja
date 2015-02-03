@@ -30,7 +30,7 @@ line=0
 [ -z "$1" ] && CLUSTER_NAME="" || CLUSTER_NAME="$1"
 
 
-Q_PATH="/home/$USER/local/queue_$CLUSTER_NAME"
+Q_PATH="~/local/queue_$CLUSTER_NAME"
 CONF_PATH="$Q_PATH/conf"
 
 
@@ -65,7 +65,7 @@ for LIST_BENCHS in  "wordcount" "sort" "dfsioe" "pagerank"  # "terasort" "bayes"
 do
 
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
-  current_command="bash /home/$USER/share/shell/run_az_d.sh -C ${CLUSTER_NAME} -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
+  current_command="bash ~/share/shell/run_az_d.sh -C ${CLUSTER_NAME} -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
   output="${output}${current_command}
   "
   #date_with_nano=$(date +%s%N | cut -b1-13)

@@ -1,3 +1,6 @@
+#on previous versions it does not download the image automatically
+Vagrant.require_version ">= 1.6"
+
 VAGRANTFILE_API_VERSION = "2"
 
 #avoids having to $ vagrant up --provider docker
