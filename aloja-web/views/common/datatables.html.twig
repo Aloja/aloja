@@ -63,6 +63,8 @@
     			      {% set column_name = column_name ~ makeTooltip('Kind of cluster.') %}
     			    {% elseif column_name == 'Histogram' %}
     			      {% set column_name = column_name ~ makeTooltip('Look at job\'s and task\'s metrics histograms.') %}
+    			    {% elseif column_name == 'CHARTS' %}
+    			      {% set column_name = column_name ~ makeTooltip('Look at job\'s and task\'s metrics histograms (H), DBSCAN of all the tasks (DB), and DBSCANexecs of all configs (DBe).') %}
     			    {% elseif column_name == 'Files' %}
     			      {% set column_name = column_name ~ makeTooltip('Download execution files and logs.') %}
     			    {% elseif column_name == 'PARAVER' %}
@@ -367,6 +369,8 @@
                      {% if selected == 'Hadoop Job Counters' %}
                        	if(headTitle == 'JOBID')
         					$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
+                        else if(headTitle == 'CHARTS')
+                            $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> <a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>');
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
                      {% elseif selected == 'Benchmark Executions' %}

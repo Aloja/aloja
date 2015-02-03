@@ -179,7 +179,8 @@ class DefaultController extends AbstractController
                 'iofilebufs' => $iofilebufs,
                 'count' => $count,
                 'height' => $height,
-             	'money' => $money
+             	'money' => $money,
+             	'options' => Utils::getFilterOptions($db)
              )
         );
     }
@@ -372,7 +373,8 @@ class DefaultController extends AbstractController
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-        	'money' => $money
+        	'money' => $money,
+        	'options' => Utils::getFilterOptions($dbUtils)
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
                 ));
     }
@@ -1041,7 +1043,7 @@ class DefaultController extends AbstractController
 
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
-                c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES
+                c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS
                 FROM JOB_details c $join";
             } elseif ($type == 'MAP') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -1285,7 +1287,8 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
-				'select_multiple_benchs' => false 
+				'select_multiple_benchs' => false,
+				'options' => Utils::getFilterOptions($db)
 		) );
 	}
 	public function paramEvaluationAction() {
@@ -1409,7 +1412,8 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
-				'paramEval' => $paramEval
+				'paramEval' => $paramEval,
+				'options' => Utils::getFilterOptions($db)
 		) );
 	}
 	

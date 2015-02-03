@@ -19,9 +19,9 @@ trap 'kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
 [ -z "$1" ] && CLUSTER_NAME="az" || CLUSTER_NAME="$1"
 
-Q_SOURCE_PATH="/home/$USER/share/shell/queue"
+Q_SOURCE_PATH="~/share/shell/queue"
 
-Q_PATH="/home/$USER/local/queue_$CLUSTER_NAME"
+Q_PATH="~/local/queue_$CLUSTER_NAME"
 
 #prepare dirs for first time
 mkdir -p $Q_PATH/{exec,done,conf,fail,hold}

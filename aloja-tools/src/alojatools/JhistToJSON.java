@@ -56,11 +56,11 @@ public class JhistToJSON {
 		
 		JSONObject globalCounters = null;
 		JSONObject tasksCounters = null;
-//		try {
-//			globalCounters = getGlobalCounters(jobInfo);
-//		} catch(JSONException | NullPointerException e) {
-//			globalCounters = null;
-//		}
+		try {
+			globalCounters = getGlobalCounters(jobInfo);
+		} catch(JSONException | NullPointerException e) {
+			globalCounters = null;
+		}
 		
 		try {
 			Map<TaskID,JobHistoryParser.TaskInfo> tasksMap = jobInfo.getAllTasks();
@@ -76,11 +76,11 @@ public class JhistToJSON {
 				writer.close();
 			}
 				
-//			if(globalCounters != null ) {
-//				PrintWriter writer2 = new PrintWriter(globalCountersFile, "UTF-8");
-//				writer2.println(globalCounters.toString());
-//				writer2.close();
-//			}	
+			if(globalCounters != null ) {
+				PrintWriter writer2 = new PrintWriter(globalCountersFile, "UTF-8");
+				writer2.println(globalCounters.toString());
+				writer2.close();
+			}	
 		} catch (Exception e) {
 			e.printStackTrace();
 			System.exit(1);
