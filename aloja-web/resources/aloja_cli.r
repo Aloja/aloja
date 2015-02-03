@@ -77,7 +77,7 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 	params <- list();
 	params[["ds"]] <- dataset;
 
-	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand","aloja_outlier_dataset"))
+	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand","aloja_outlier_dataset","aloja_binarize_instance"))
 	{
 		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
 
@@ -93,6 +93,7 @@ source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r"
 			}
 		}
 	}
+
 	if (opt$method  == "aloja_print_individual_summaries" || opt$method  == "aloja_print_summaries")
 	{
 		params[["vin"]] = c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Exe.Time"); 

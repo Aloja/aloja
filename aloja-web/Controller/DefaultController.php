@@ -1519,16 +1519,16 @@ class DefaultController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			if (count($_GET) <= 1)
+			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('parameval',$_GET)) || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
 				$params['benchs'] = array('terasort');
-				$params['nets'] = array('ETH');
-				$params['disks'] = array('SSD','HDD');
-				$params['iofilebufs'] = array('32768','65536','131072');
-				$params['iosfs'] = array('10');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-				$where_configs = ' AND bench IN ("terasort") AND net IN ("ETH") AND disk IN ("SSD","HDD") AND iofilebuf IN ("32768","65536","131072") AND iosf IN ("10") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = ' AND bench IN ("terasort")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'net') $params['nets'] = array('ETH'); $where_configs .= ' AND net IN ("ETH")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = array('SSD','HDD'); $where_configs .= ' AND disk IN ("SSD","HDD")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofilebuf') $params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'comp') $params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'replication') $params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 			}
 
 			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
@@ -1539,27 +1539,15 @@ class DefaultController extends AbstractController
 				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
 			$filter_execs = "AND valid = TRUE";
-				
+
+			$filter_options = Utils::getFilterOptions($db);
 			$paramOptions = array();
-			if($paramEval == 'maps')
-				$paramOptions = array(4,6,8,10,12,16,24,32);
-			else if($paramEval == 'comp')
-				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
-		   	else if($paramEval == 'id_cluster')
-				$paramOptions = array('Local','Azure');
-			else if($paramEval == 'net')
-				$paramOptions = array('Ethernet','Infiniband');
-			else if($paramEval == 'disk')
-				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
-			else if($paramEval == 'replication')
-				$paramOptions = array(1,2,3);
-			else if($paramEval == 'iofilebuf')
-				$paramOptions = array(1,4,16,32,64,128,256);
-			else if($paramEval == 'blk_size')
-				$paramOptions = array(32,64,128,256);
-			else if($paramEval == 'iosf')
-				$paramOptions = array(5,10,20,50);
-			
+			$paramOptions = array_column($filter_options[$paramEval],$paramEval);
+			if ($paramEval == 'disk') $paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD'); #FIXME - Standarize
+			if ($paramEval == 'net') $paramOptions = array('Ethernet','Infiniband'); #FIXME - Standarize
+			$paramAllOptions = array();
+			foreach ($param_names as $p) if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+
 			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
 			// get the result rows
@@ -1621,7 +1609,7 @@ class DefaultController extends AbstractController
 			foreach ($param_names as $p)
 			{
 				$tokens[$p] = '';
-				if (empty($params[$p])) { $tokens[$p] = '*'; }
+				if (empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 			}
@@ -1836,7 +1824,8 @@ class DefaultController extends AbstractController
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $current_model,
 				'gammacolors' => $colors,
-				'must_wait' => $must_wait
+				'must_wait' => $must_wait,
+				'options' => Utils::getFilterOptions($db)
 		) );
 	}
 }
