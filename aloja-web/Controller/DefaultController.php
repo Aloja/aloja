@@ -1507,6 +1507,7 @@ class DefaultController extends AbstractController
 	public function mlpredictionAction()
 	{
 		$jsonExecs = array();
+		$instance = '';
 		try
 		{
 		    	$db = $this->container->getDBUtils();
@@ -1520,20 +1521,35 @@ class DefaultController extends AbstractController
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
-			if (count($_GET) < 1)
+			if (count($_GET) <= 1)
+ 			{
+				$where_configs = '';
+				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
+				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				$unrestricted = TRUE;			
+ 			}
+
+			$filter_options = Utils::getFilterOptions($db);
+			$paramAllOptions = $tokens = array();
+ 			$model_info = '';
+			foreach ($param_names as $p) 
 			{
-				$params['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = array('32768','131072');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
-			}
+				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+				if ($unrestricted) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+				else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
 
-			$extra_config = '';
-			foreach ($param_names as $p) $extra_config = $extra_config.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+				$tokens[$p] = '';
+				if ($unrestricted && empty($params[$p])) { $tokens[$p] = '*'; }
+				elseif (!$unrestricted && empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+ 			}
 
-			$config = $extra_config.' '.$learn_param;
+			$config = $model_info.' '.$learn_param;
 			$learn_options = 'saveall='.md5($config);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
@@ -1677,14 +1693,18 @@ class DefaultController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'unrestricted' => $unrestricted,
 				'learn' => $learn_param,
-				'must_wait' => $must_wait
+				'must_wait' => $must_wait,
+				'instance' => $instance,
+				'options' => Utils::getFilterOptions($db)
 			)
 		);
 	}
 
 	public function mldatacollapseAction()
 	{
+		$instance = '';
 		try
 		{
 		    	$db = $this->container->getDBUtils();
@@ -1697,13 +1717,16 @@ class DefaultController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
+			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
+
 			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
-				$params['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = array('32768','131072');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-				$where_configs = ' AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = '';
+				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
+				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				$unseen = FALSE;
 			}
 
 			$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
@@ -1715,18 +1738,21 @@ class DefaultController extends AbstractController
 			$dname2 = "Benchmark";
 
 			// compose instance
-			$tokens = array();
-			$instance = '';
-			foreach ($param_names as $p)
+			$filter_options = Utils::getFilterOptions($db);
+			$paramAllOptions = $tokens = array();
+ 			$model_info = '';
+			foreach ($param_names as $p) 
 			{
-				$tokens[$p] = '';
-				if (empty($params[$p])) { $tokens[$p] = '*'; }
-				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
-			}
-
-			$model_info = '';
-			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+				if ($unseen) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+				else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+ 			
+ 				$tokens[$p] = '';
+				if ($unseen && empty($params[$p])) { $tokens[$p] = '*'; }
+				elseif (!$unseen && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+ 			}
 
 			// Model for filling
 			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
@@ -1932,15 +1958,19 @@ class DefaultController extends AbstractController
 				'jsonColor' => $jsonColor,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'unseen' => $unseen,
 				'current_model' => $current_model,
 				'instance' => $instance,
-				'must_wait' => $must_wait
+				'must_wait' => $must_wait,
+				'options' => Utils::getFilterOptions($db)
 			)
 		);
 	}
 
 	public function mlfindattributesAction()
 	{
+		$instance = '';
+		$must_wait = 'NO';
 		try
 		{
 		    	$db = $this->container->getDBUtils();
@@ -1953,14 +1983,17 @@ class DefaultController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
+			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
+
 			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
-				$params['benchs'] = array('wordcount');
-				$params['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = array('32768','131072');
-				$params['comps'] = array('0');
-				$params['replications'] = array('1');
-				$where_configs = ' AND bench == "wordcount" AND disk IN ("HDD","SSD") AND iofilebuf IN ("32768","131072") AND comp IN ("0") AND replication IN ("1")';
+				$where_configs = '';
+				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
+				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
+				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				$unseen = FALSE;
 			}
 
 			$jsonData = $jsonHeader = "[]";
@@ -1972,21 +2005,24 @@ class DefaultController extends AbstractController
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
 			// compose instance
-			$tokens = array();
-			$instance = '';
-			foreach ($param_names as $p)
+			$filter_options = Utils::getFilterOptions($db);
+			$paramAllOptions = $tokens = array();
+ 			$model_info = '';
+			foreach ($param_names as $p) 
 			{
-				$tokens[$p] = '';
-				if (empty($params[$p])) { $tokens[$p] = '*'; }
-				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
-			}
+				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+				if ($unseen) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+				else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+ 			
+ 				$tokens[$p] = '';
+				if ($unseen && empty($params[$p])) { $tokens[$p] = '*'; }
+				elseif (!$unseen && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+ 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+ 			}
 			$varin = ":vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster";
 
 			// find possible models to predict
-			$model_info = '';
-			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
-
 			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
 			{
 				while (!feof($fh))
@@ -2135,7 +2171,6 @@ class DefaultController extends AbstractController
 					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 				}
 				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance)).'" | grep -v grep');
-				$must_wait = 'NO';
 
 				if (!file_exists($cache_filename) && $in_process != NULL)
 				{
@@ -2157,7 +2192,7 @@ class DefaultController extends AbstractController
 			}
 			else
 			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
+				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.".$instance;
 			}
 		}
 		catch(\Exception $e)
@@ -2192,7 +2227,8 @@ class DefaultController extends AbstractController
 				'message' => $message,
 				'mae' => $mae,
 				'rae' => $rae,
-				'must_wait' => $must_wait
+				'must_wait' => $must_wait,
+				'options' => Utils::getFilterOptions($db)
 			)
 		);
 	}
@@ -2201,38 +2237,39 @@ class DefaultController extends AbstractController
 	{
 		try
 		{
-			$message = "";
-			$output = array();
-
-			if (array_key_exists("ccache",$_GET))
+			if (file_exists(getcwd().'/cache/query/record.data'))
 			{
-				if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
-				{
-					while (!feof($fh))
-					{
-						$line = fgets($fh, 4096);
-						$fts = explode(" : ",$line);
+				$output = array();
 
-						$command = 'rm '.getcwd().'/cache/query/'.$fts[0].'-*';
+				if (array_key_exists("ccache",$_GET))
+				{
+					if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+					{
+						while (!feof($fh))
+						{
+							$line = fgets($fh, 4096);
+							$fts = explode(" : ",$line);
+
+							$command = 'rm '.getcwd().'/cache/query/'.$fts[0].'-*';
+							$output[] = shell_exec($command);
+						}
+						fclose($fh);
+
+						$command = 'rm '.getcwd().'/cache/query/record.data';
 						$output[] = shell_exec($command);
 					}
-					fclose($fh);
-
-					$command = 'rm '.getcwd().'/cache/query/record.data';
-					$output[] = shell_exec($command);
 				}
 			}
+			else $this->container->getTwig ()->addGlobal ( 'message', "ML cache cleared.\n" );
 		}
 		catch(Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-			$message = $e->getMessage();
 			$output = array();
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlclearcache.html.twig',
 			array(
 				'selected' => 'mlclearcache',
-				'message' => $message,
 				'output' => '<li>'.implode("</li><li>",$output).'</li>'
 			)
 		);
