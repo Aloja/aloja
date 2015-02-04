@@ -639,13 +639,26 @@ class MLTemplatesController extends AbstractController
 							{
 								if ($solution == '') continue;
 								$attributes2 = explode(",",$solution);
-								$realexecval = $realexecval + (int)$attributes2[1];
-								$count_sols++;
+
+								# Decide if the value is OUTLIER
+								$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_instance -l '.$model.' -p instance="'.str_replace("\\\"","",$comp_instance).'":observed='.(int)$attributes2[1].':display=1 -v 2> /dev/null';
+								$output = shell_exec($command);
+								$isout = explode("\n",$output);
+
+								if (strpos($isout[0],'[1] "2"') === false)
+								{
+									$realexecval = $realexecval + (int)$attributes2[1];
+									$count_sols++;
+								}
 							}
-							$realexecval = $realexecval / $count_sols;
-							$mae = $mae + abs((int)$attributes[11] - $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
-							$rae = $rae + abs(((float)$attributes[11] - $realexecval) / $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
-							$count_preds++;
+							if ($count_sols > 0)
+							{
+								$realexecval = $realexecval / $count_sols;
+
+								$mae = $mae + abs((int)$attributes[11] - $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
+								$rae = $rae + abs(((float)$attributes[11] - $realexecval) / $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
+								$count_preds++;
+							}
 						}
 						// END - Fetch Real Value
 
