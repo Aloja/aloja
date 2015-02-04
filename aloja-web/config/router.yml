@@ -130,3 +130,7 @@ mloutliers:
 mlcrossvar:
     pattern: "/mlcrossvar"
     controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+
+mlsummaries:
+    pattern: "/mlsummaries"
+    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
