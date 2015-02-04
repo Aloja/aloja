@@ -105,4 +105,4 @@ dbscanexecsdata:
 
 mlcrossvar:
     pattern: "/mlcrossvar"
-    controller: "alojaweb\\Controller\\DefaultController::mlcrossvarAction"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
