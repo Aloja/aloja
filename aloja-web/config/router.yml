@@ -105,4 +105,4 @@ dbscanexecsdata:
 
 mloutliers:
     pattern: "/mloutliers"
-    controller: "alojaweb\\Controller\\DefaultController::mloutliersAction"
+    controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
