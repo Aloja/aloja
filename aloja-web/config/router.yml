@@ -118,3 +118,7 @@ mlfindattributes:
 mlclearcache:
     pattern: "/mlclearcache"
     controller: "alojaweb\\Controller\\MLTemplatesController::mlclearcacheAction"
+
+mlparameval:
+    pattern: "/mlparameval"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
