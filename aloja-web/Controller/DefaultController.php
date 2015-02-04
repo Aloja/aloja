@@ -1326,25 +1326,39 @@ class DefaultController extends AbstractController
 			
 			$filter_execs = DBUtils::getFilterExecs();
 
+			$options = Utils::getFilterOptions($db);
 			$paramOptions = array();
-			if($paramEval == 'maps')
-				$paramOptions = array(4,6,8,10,12,16,24,32);
-			else if($paramEval == 'comp')
-				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
-		    else if($paramEval == 'id_cluster')
-				$paramOptions = array('rl-06');
-			else if($paramEval == 'net')
-				$paramOptions = array('Ethernet','Infiniband');
-			else if($paramEval == 'disk')
-				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
-			else if($paramEval == 'replication')
-				$paramOptions = array(1,2,3);
-			else if($paramEval == 'iofilebuf')
-				$paramOptions = array(1,4,16,32,64,128,256);
-			else if($paramEval == 'blk_size')
-				$paramOptions = array(32,64,128,256);
-			else if($paramEval == 'iosf')
-				$paramOptions = array(5,10,20,50);
+			foreach($options[$paramEval] as $option) {
+				if($paramEval == 'id_cluster')
+					$paramOptions[] = $option['name'];
+				else if($paramEval == 'comp')
+					$paramOptions[] = Utils::getCompressionName($option[$paramEval]);
+				else if($paramEval == 'net')
+					$paramOptions[] = Utils::getNetworkName($option[$paramEval]);
+				else if($paramEval == 'disk')
+					$paramOptions[] = Utils::getDisksName($option[$paramEval]);
+				else
+					$paramOptions[] = $option[$paramEval];
+			}
+						
+// 			if($paramEval == 'maps')
+// 				$paramOptions = array(4,6,8,10,12,16,24,32);
+// 			else if($paramEval == 'comp')
+// 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
+// 		    else if($paramEval == 'id_cluster')
+// 				$paramOptions = array('rl-06');
+// 			else if($paramEval == 'net')
+// 				$paramOptions = array('Ethernet','Infiniband');
+// 			else if($paramEval == 'disk')
+// 				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
+// 			else if($paramEval == 'replication')
+// 				$paramOptions = array(1,2,3);
+// 			else if($paramEval == 'iofilebuf')
+// 				$paramOptions = array(1,4,16,32,64,128,256);
+// 			else if($paramEval == 'blk_size')
+// 				$paramOptions = array(32,64,128,256);
+// 			else if($paramEval == 'iosf')
+// 				$paramOptions = array(5,10,20,50);
 			
 			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
@@ -1353,7 +1367,7 @@ class DefaultController extends AbstractController
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
 				"from execs e WHERE 1 $filter_execs $where_configs".
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
-			
+
 			$rows = $db->get_rows ( $query );
 
 			if (!$rows) {
@@ -1363,7 +1377,7 @@ class DefaultController extends AbstractController
 			$categories = '';
 			$arrayBenchs = array();
 			foreach ( $paramOptions as $param ) {
-				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
+				$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
 				foreach($benchOptions as $bench) {
 					$arrayBenchs[$bench['bench']][$param] = null;
 				}
@@ -1380,8 +1394,6 @@ class DefaultController extends AbstractController
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')
 					$row[$paramEval] = Utils::getDisksName($row['disk']);
-				else if($paramEval == 'iofilebuf')
-					$row[$paramEval] /= 1024;
 				
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
@@ -1395,8 +1407,8 @@ class DefaultController extends AbstractController
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 		}
-		
-		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
+
+		echo $this->container->getTwig ()->render ('parameval/parameval.html.twig', array (
 				'selected' => 'Parameter Evaluation',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
@@ -1413,7 +1425,7 @@ class DefaultController extends AbstractController
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
 				'paramEval' => $paramEval,
-				'options' => Utils::getFilterOptions($db)
+				'options' => $options
 		) );
 	}
 	
