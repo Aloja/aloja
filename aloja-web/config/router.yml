@@ -105,4 +105,4 @@ dbscanexecsdata:
 
 mlparameval:
     pattern: "/mlparameval"
-    controller: "alojaweb\\Controller\\DefaultController::mlparamEvaluationAction"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
