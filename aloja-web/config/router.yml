@@ -105,4 +105,4 @@ dbscanexecsdata:
 
 mlsummaries:
     pattern: "/mlsummaries"
-    controller: "alojaweb\\Controller\\DefaultController::mlsummariesAction"
+    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
