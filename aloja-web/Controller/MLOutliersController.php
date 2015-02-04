@@ -30,7 +30,7 @@ class MLOutliersController extends AbstractController
 			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
 				$where_configs = '';
-				$params['disks'] = array('SSD','HDD'); $where_configs .= ' AND disk IN ("SSD","HDD")';
+				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
