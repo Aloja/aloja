@@ -351,9 +351,9 @@ class Utils
     {
         $clusterName = 'Undefined';
         if($clusterCode == 1)
-            $clusterName = 'Local';
+            $clusterName = 'Local 1';
         else
-            $clusterName = 'Azure';
+            $clusterName = 'Azure Linux';
 
         return $clusterName;
     }
@@ -362,7 +362,7 @@ class Utils
     {
     	$netName = '';
     	if($netShort == 'IB')
-    		$netName = 'Infiniband';
+    		$netName = 'InfiniBand';
     	else
     		$netName = 'Ethernet';
     	
