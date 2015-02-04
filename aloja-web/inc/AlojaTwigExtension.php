@@ -172,6 +172,8 @@ class AlojaTwigExtension extends Twig_Extension
 			$title = 'HDFS block size';
 		else if($paramEval == 'iosf')
 			$title = 'I/O Sort Factor';
+		else
+			$title = 'Cluster';
 		
 		return $title;
     }

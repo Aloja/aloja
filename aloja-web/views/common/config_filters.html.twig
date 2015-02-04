@@ -79,7 +79,7 @@
 					Compression: (c)</br> <select class="form-control" name="comps[]"
 						multiple>
 					  {% for selopt in options['comp'] %}
-					    <option value="{{ selopt['comp'] }}" {% if selopt['comp'] in compss %}SELECTED{% endif %}>
+					    <option value="{{ selopt['comp'] }}" {% if selopt['comp'] in comps %}SELECTED{% endif %}>
 					     {% if selopt['comp'] == 0 %}
 					       None
 					     {% elseif selopt['comp'] == 1 %}

@@ -70,7 +70,7 @@ sudo mkfs.ext4 /dev/md0;
 #parted -s /dev/sdf -- mklabel gpt mkpart primary 0% 100% set 1 raid on
 
     logger "INFO: Updating /etc/fstab template"
-    vm_update_template "/etc/fstab" "/dev/md0                /scratch/attached/1              ext4    deaults         0 0" "secured_file"
+    vm_update_template "/dev/md0	/scratch/attached/1	ext4	defaults	0	0" "secured_file"
 
     logger "INFO: remounting disks according to fstab"
     vm_execute "
