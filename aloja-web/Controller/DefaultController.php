@@ -1389,7 +1389,7 @@ class DefaultController extends AbstractController
 				if($paramEval == 'comp')
 					$row[$paramEval] = Utils::getCompressionName($row['comp']);
 				else if($paramEval == 'id_cluster') {
-                    $row[$paramEval] = Utils::getClusterName($row[$paramEval]);
+                    $row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
 				} else if($paramEval == 'net')
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')

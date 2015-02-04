@@ -347,15 +347,11 @@ class Utils
     	return $compName;
     }
 
-    public static function getClusterName($clusterCode)
+    public static function getClusterName($clusterCode, $db)
     {
-        $clusterName = 'Undefined';
-        if($clusterCode == 1)
-            $clusterName = 'Local 1';
-        else
-            $clusterName = 'Azure Linux';
+        $clusterName = $db->get_rows("SELECT name FROM clusters WHERE id_cluster=$clusterCode");
 
-        return $clusterName;
+        return $clusterName[0]['name'];
     }
     
     public static function getNetworkName($netShort)
