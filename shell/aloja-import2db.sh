@@ -123,13 +123,21 @@ for folder in 201* ; do
 	
 	        #insert config and get ID_exec
 	        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
-	        #TODO need to add ol naming scheme
+
 	        if [[  $folder == *_az ]] ; then
-	          cluster="2"
+	          id_cluster="2"
 	        else
-	          cluster="${folder:(-2):2}"
-	
-	          $MYSQL "$(get_insert_cluster_sql "$cluster")"
+
+	          id_cluster="${folder:(-2):2}"
+
+	          clusterConfigFile="$(get_clusterConfigFile)"
+
+            #TODO this check wont work for old folders with numeric values at the end, need another strategy
+            if [ -f "$clusterConfigFile" ] ; then
+	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
+	          else
+	            id_cluster="1"
+	          fi
 	        fi
 	        logger "Cluster $cluster"
 	
