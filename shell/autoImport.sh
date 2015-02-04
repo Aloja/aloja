@@ -8,7 +8,7 @@ source "$CUR_DIR/common/include_process_jobs.sh"
 while true ; do
 
   logger "\nChecking for new files to copy...\n\n"
-  bash $CUR_DIR/moveJobs2Import.sh "$IMPORT_DIR"
+  source $CUR_DIR/moveJobs2Import.sh "$IMPORT_DIR"
 
   logger "\nImporting jobs\n\n"
   cd "$IMPORT_DIR"
@@ -20,10 +20,8 @@ while true ; do
   logger "\nDeleting caches\n\n"
 
   cd /var/www/;
-  sudo git reset --hard HEAD;
   sudo git pull origin master;
-  #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_*;
-  sudo rm -rf /tmp/twig/;
+  sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_* /tmp/twig/*;
   sudo /etc/init.d/varnish restart;
   sudo service php5-fpm restart;
   sudo /etc/init.d/nginx restart;
