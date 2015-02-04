@@ -122,3 +122,7 @@ mlclearcache:
 mlparameval:
     pattern: "/mlparameval"
     controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
+
+mloutliers:
+    pattern: "/mloutliers"
+    controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
