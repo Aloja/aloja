@@ -105,16 +105,16 @@ dbscanexecsdata:
     
 mlprediction:
     pattern: "/mlprediction"
-    controller: "alojaweb\\Controller\\DefaultController::mlpredictionAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
 
 mldatacollapse:
     pattern: "/mldatacollapse"
-    controller: "alojaweb\\Controller\\DefaultController::mldatacollapseAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mldatacollapseAction"
 
 mlfindattributes:
     pattern: "/mlfindattributes"
-    controller: "alojaweb\\Controller\\DefaultController::mlfindattributesAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlfindattributesAction"
 
 mlclearcache:
     pattern: "/mlclearcache"
-    controller: "alojaweb\\Controller\\DefaultController::mlclearcacheAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlclearcacheAction"
