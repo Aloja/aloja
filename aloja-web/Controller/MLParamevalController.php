@@ -28,7 +28,7 @@ class MLParamevalController extends AbstractController
 				$params['benchs'] = array('terasort');
 				$where_configs = ' AND bench IN ("terasort")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'net') $params['nets'] = array('ETH'); $where_configs .= ' AND net IN ("ETH")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = array('SSD','HDD'); $where_configs .= ' AND disk IN ("SSD","HDD")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofilebuf') $params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'comp') $params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
