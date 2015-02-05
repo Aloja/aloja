@@ -427,23 +427,36 @@ class DefaultController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-                $selected_hosts = array(
-                    'minerva-1002', 'minerva-1003', 'minerva-1004',
-                    'al-1002', 'al-1003', 'al-1004',
-                    'minerva-2','minerva-3','minerva-4',
-                    'minerva-6','minerva-7','minerva-8',
-                    'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
-                    'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
-                );
+            	$selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
+            	
+            	$selected_hosts = array();
+            	foreach($selectedHosts as $host) {
+            		array_push($selected_hosts, $host['host_name']);
+            	}
+//                 $selected_hosts = array(
+//                     'minerva-1002', 'minerva-1003', 'minerva-1004',
+//                     'al-1002', 'al-1003', 'al-1004',
+//                     'minerva-2','minerva-3','minerva-4',
+//                     'minerva-6','minerva-7','minerva-8',
+//                     'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
+//                     'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
+//                 );
             } elseif ($hosts == 'Master') {
-                $selected_hosts = array(
-                    'minerva-1001',
-                    'al-1001',
-                    'minerva-1',
-                    'minerva-6',
-                    'minerva-5',
-                    'rl-06-00',
-                );
+            	$selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
+            	 
+            	$selected_hosts = array();
+            	foreach($selectedHosts as $host) {
+            		array_push($selected_hosts, $host['host_name']);
+            	}
+            	
+//                 $selected_hosts = array(
+//                     'minerva-1001',
+//                     'al-1001',
+//                     'minerva-1',
+//                     'minerva-6',
+//                     'minerva-5',
+//                     'rl-06-00',
+//                 );
             } else {
                 $selected_hosts = array($hosts);
             }
