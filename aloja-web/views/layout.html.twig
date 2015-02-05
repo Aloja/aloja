@@ -142,7 +142,7 @@
 		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
 		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
                     <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
-                    <li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>
+                    {% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
 		          </ul>
 		        </li>
 		      </ul>
