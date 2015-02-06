@@ -102,3 +102,7 @@ dbscanexecs:
 dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+
+mlminconfigs:
+    pattern: "/mlminconfigs"
+    controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"

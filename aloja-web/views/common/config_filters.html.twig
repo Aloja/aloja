@@ -142,6 +142,29 @@
 				</div>
 			</div>
 			{% endif %}
+			{% if selected == 'mlminconfigs' %}
+			<div class="row">
+				<div class="col-md-6">
+					Learning method:</br> <select class="form-control" name="learn" >
+						<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
+						<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
+						<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
+						<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
+					<!--Parameters:<input type="string" name="params"/>-->
+				</div>
+			</div>
+			<div id="predict-button-div" class="row">
+				<div class="col-md-12">
+					<h2 class="compare body" style="text-align: center;">
+						<input id="predict-button" type="submit" value="Find configurations">
+					</h2>
+				</div>
+			</div>
+			{% endif %}
 		</form>
 	</div>
 </div>
