@@ -24,7 +24,10 @@ class MLMinconfigsController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('learn',$_GET)))
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('learn',$_GET))
+			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('learn',$_GET)))
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
@@ -111,7 +114,7 @@ class MLMinconfigsController extends AbstractController
 				$names[$count++] = $header_names['cost'];
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE AND bench_type = 'HiBench' AND bench not like 'prep_%' ".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
@@ -153,6 +156,19 @@ class MLMinconfigsController extends AbstractController
 			}
 			else
 			{
+				if (isset($_GET['dump']))
+				{
+					try
+					{
+						if (($handle = @fopen(getcwd().'/cache/query/'.md5($config.'R').'-dsk'.$_GET['dump'].'.csv', 'r')) !== FALSE)
+						{
+							while (($data = fgets($handle, 1000)) !== FALSE) echo str_replace("\"","",$data)."\n";
+						}
+					}
+					catch(\Exception $e) { }
+					exit(0);
+				}
+
 				// read results of the CSV - MAE
 				if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-maes.csv', 'r')) !== FALSE)
 				{
@@ -208,6 +224,7 @@ class MLMinconfigsController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonHeader = $configs = '[]';
 			$max_x = $max_y = 0;
+			$must_wait = 'NO';
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlminconfigs.html.twig',
 			array(
