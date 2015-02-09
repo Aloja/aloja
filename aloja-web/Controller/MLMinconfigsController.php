@@ -160,9 +160,25 @@ class MLMinconfigsController extends AbstractController
 				{
 					try
 					{
+						$sizes = NULL;
+						if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-sizes.csv', 'r')) !== FALSE)
+						{
+							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+							{
+								if (count($data) == (int)$_GET['dump']) $sizes = $data;
+							}
+							fclose($handle);
+						}
+
 						if (($handle = @fopen(getcwd().'/cache/query/'.md5($config.'R').'-dsk'.$_GET['dump'].'.csv', 'r')) !== FALSE)
 						{
-							while (($data = fgets($handle, 1000)) !== FALSE) echo str_replace("\"","",$data)."\n";
+							$count = 0;
+							echo str_replace(array("\"","\n"),"",fgets($handle, 1000)).",Instances\n";
+							while (($data = fgets($handle, 1000)) !== FALSE)
+							{
+								echo str_replace(array("\"","\n"),"",$data).",".$sizes[$count++]."\n";
+							}
+							fclose($handle);
 						}
 					}
 					catch(\Exception $e) { }
@@ -192,6 +208,16 @@ class MLMinconfigsController extends AbstractController
 				$jsonHeader = '[]';
 				foreach ($jsonData as $cluster)
 				{
+					$sizes = NULL;
+					if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-sizes.csv', 'r')) !== FALSE)
+					{
+						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+						{
+							if (count($data) == (int)$cluster['x']) $sizes = $data;
+						}
+						fclose($handle);
+					}
+
 					if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-dsk'.$cluster['x'].'.csv', 'r')) !== FALSE)
 					{
 						$header = fgetcsv($handle, 1000, ",");
@@ -199,14 +225,15 @@ class MLMinconfigsController extends AbstractController
 						{
 							$jsonHeader = '[{title:""}';
 							foreach ($header as $title) if ($title != "ID") $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-							$jsonHeader = $jsonHeader.']';
+							$jsonHeader = $jsonHeader.',{title:"Instances"}]';
 						}
 
+						$count = 0;
 						$jsonConfig = '[';
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
 							if ($jsonConfig!='[') $jsonConfig = $jsonConfig.',';
-							$jsonConfig = $jsonConfig.'[\''.implode("','",$data).'\']';
+							$jsonConfig = $jsonConfig.'[\''.implode("','",$data).'\',\''.$sizes[$count++].'\']';
 
 						}
 						$jsonConfig = $jsonConfig.']';
