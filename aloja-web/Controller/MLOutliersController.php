@@ -183,10 +183,15 @@ class MLOutliersController extends AbstractController
 				{
 					if (isset($_GET['dump']))
 					{
-						if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-resolutions.csv', 'r')) !== FALSE)
+						try
 						{
-							while (($data = fgets($handle, 1000)) !== FALSE) echo str_replace("\"","",$data)."\r\n";
+							if (($handle = @fopen(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-resolutions.csv', 'r')) !== FALSE)
+							{
+								while (($data = fgets($handle, 1000)) !== FALSE) echo str_replace("\"","",$data)."\n";
+								fclose($handle);
+							}
 						}
+						catch(\Exception $e) { }
 						exit(0);
 					}
 
