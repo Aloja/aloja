@@ -370,7 +370,7 @@
                        	if(headTitle == 'JOBID')
         					$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
                         else if(headTitle == 'CHARTS')
-                            $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> <a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>');
+                            $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> {% if not PROD %}<a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>{% endif %}');
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
                      {% elseif selected == 'Benchmark Executions' %}

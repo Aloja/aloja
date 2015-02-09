@@ -134,3 +134,7 @@ mlcrossvar:
 mlsummaries:
     pattern: "/mlsummaries"
     controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
+
+mlminconfigs:
+    pattern: "/mlminconfigs"
+    controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"

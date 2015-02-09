@@ -141,8 +141,8 @@
 		          <ul class="dropdown-menu" role="menu">
 		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
 		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
-		    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
-                    <li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>
+	                    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
+	                    {% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
 		          </ul>
 
 			<li class="dropdown">
@@ -153,6 +153,7 @@
 		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">ML Find Attributes</a></li>
  		            <li {% if selected is defined and selected == 'ML Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">ML Parameter Evaluation</a></li>
 		            <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">ML Outliers</a></li>
+		            <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
 		            <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Cross Variables</a></li>
 		            <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
 		            <li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">ML Clear Cache</a></li>

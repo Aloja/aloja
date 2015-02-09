@@ -133,6 +133,7 @@ for folder in 201* ; do
 	          clusterConfigFile="$(get_clusterConfigFile)"
 
             #TODO this check wont work for old folders with numeric values at the end, need another strategy
+            #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
             if [ -f "$clusterConfigFile" ] ; then
 	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
 	          else
