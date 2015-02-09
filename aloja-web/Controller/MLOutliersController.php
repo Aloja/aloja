@@ -27,7 +27,10 @@ class MLOutliersController extends AbstractController
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 
-			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET)))
 			{
 				$where_configs = '';
 				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
@@ -178,6 +181,20 @@ class MLOutliersController extends AbstractController
 				}
 				else
 				{
+					if (isset($_GET['dump']))
+					{
+						try
+						{
+							if (($handle = @fopen(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-resolutions.csv', 'r')) !== FALSE)
+							{
+								while (($data = fgets($handle, 1000)) !== FALSE) echo str_replace("\"","",$data)."\n";
+								fclose($handle);
+							}
+						}
+						catch(\Exception $e) { }
+						exit(0);
+					}
+
 					// read results of the CSV
 					if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-resolutions.csv', 'r')) !== FALSE)
 					{
@@ -191,19 +208,22 @@ class MLOutliersController extends AbstractController
 							{
 								$jsonData[$count_ind[0]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
 								$jsonData[$count_ind[0]]['y'] = (int)$data[2];
-								$jsonData[$count_ind[0]++]['name'] = $data[3];							
+								$jsonData[$count_ind[0]]['name'] = $data[3];							
+								$jsonData[$count_ind[0]++]['id'] = $data[4];							
 							}
 							else if ((int)$data[0] == 1)
 							{
 								$jsonWarns[$count_ind[1]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
 								$jsonWarns[$count_ind[1]]['y'] = (int)$data[2];
-								$jsonWarns[$count_ind[1]++]['name'] = $data[3];							
+								$jsonWarns[$count_ind[1]]['name'] = (int)$data[3];
+								$jsonWarns[$count_ind[1]++]['id'] = $data[4];
 							}
 							else
 							{
 								$jsonOuts[$count_ind[2]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
 								$jsonOuts[$count_ind[2]]['y'] = (int)$data[2];
-								$jsonOuts[$count_ind[2]++]['name'] = $data[3];							
+								$jsonOuts[$count_ind[2]]['name'] = (int)$data[3];
+								$jsonOuts[$count_ind[2]++]['id'] = $data[4];							
 							}
 							$count++;
 
@@ -256,7 +276,7 @@ class MLOutliersController extends AbstractController
 				'instance' => $instance,
 				'options' => Utils::getFilterOptions($db)
 			)
-		);	
+		);
 	}
 }
 ?>

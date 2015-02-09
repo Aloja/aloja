@@ -10,7 +10,18 @@
 		<p style="text-align:justify">[WiP] Set stuff here...</p>
 		<hr />
 	</div>
-	<div id="chart" style="float: left; width: 70%;"></div>
+	<div id="stuffdiv" style="float: left; width: 70%;">
+		<div id="chart" style="float: left; width: 100%;"></div>
+		<div id="controls" style="float: left; width: 100%;">
+			<form>
+				<table style="float: right; width: 20%;">
+				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
+				<td><input class="form-control" type="number" step="100" id="maxy" value="0" /></td>
+				<td><input class="form-control" type="button" id="maxy-apply" value="Apply" /></td>
+				</tr></table>
+			</form>
+		</div>
+	</div>
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}
 	</div>
@@ -53,6 +64,12 @@
 			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val();
 			else url = url + '?current_model=' + $("#select-model").val();
 			window.location.href = url;
+		});
+
+		$("#maxy-apply").click(function()
+		{
+			if ($("#maxy").val() < 1) $('#chart').highcharts().yAxis[0].setExtremes(null, null);
+			else $('#chart').highcharts().yAxis[0].update({ max: $("#maxy").val() });
 		});
 
 		if ("{{must_wait}}"== "NO")
