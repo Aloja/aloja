@@ -1,3 +1,58 @@
+function GetPsCredential
+{
+	[string] $PASSWORD_FILE="c:\temp\accounts.txt"
+    [string] $ENV_USER_NAME=$env:username
+    [string] $ENV_USER_DOMAIN=$env:USERDOMAIN
+    [string] $FULL_USER_NAME="$ENV_USER_DOMAIN\$ENV_USER_NAME"
+    
+    if (Test-Path $PASSWORD_FILE -ErrorAction SilentlyContinue)
+    {
+        $USER_PASSWORD=[string] @(([string] (Get-Content $PASSWORD_FILE |Select-String -pattern $ENV_USER_NAME)).Split(" "))[1]
+        $USER_PASSWORD=$USER_PASSWORD.Trim()
+    }
+    else 
+    {    
+        Write_Host "Can not access $PASSWORD_FILE" -ForegroundColor Red
+        exit 1
+    }
+
+    $CRED = New-Object System.Management.Automation.PsCredential($FULL_USER_NAME, $(ConvertTo-SecureString -string $USER_PASSWORD -AsPlainText –force))
+    return $CRED 
+}
+
+function CreatePerformanceMonitoringCounter($Credentials, [String]$numberOfNodes)
+{	
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path C:\counters$(hostname).txt ) { rm C:\counters$(hostname).txt; }; add-content "C:\counters$(hostname).txt" "\System\*`r\Processor(*)\*`r\Processor Information\*`r\Processor Performance\*`r\Process(*)\*`r\Memory\*`r\Network Interface\*"; logman create counter "hdicounters" -cf  "C:\counters$(hostname).txt" -si "00:00:01" -f csv -v mmddhhmm -o "C:\perfmetrics$(hostname).csv" }
+    }
+}
+
+function StartPerformanceMonitoring($Credentials, [String]$numberOfNodes)
+{
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path "C:\perfmetrics$(hostname).csv" ) { rm "C:\perfmetrics$(hostname).csv"; }; logman start "hdicounters" }
+    }
+}
+
+function StopPerformanceMonitoring($Credentials, [String]$numberOfNodes)
+{
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { logman stop "hdicounters" }
+    }
+}
+
+function CollectPerfMetricsLogs([String]$numberOfNodes)
+{
+	if ( Test-Path -Path C:\perflogs ) {
+		rmdir C:\perflogs -Recurse -Force
+	}
+	mkdir C:\perflogs
+	
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Copy-Item  -Recurse -Force -Path \\"workernode$i"\c$\"perfmetricsworkernode$i.csv" -Destination \\$(hostname)\c$\perflogs\"perfmetricsworkernode$i.csv"
+    }
+}
+
 function AzureLogin([String]$credentialsFile)
 {
   Import-AzurePublishSettingsFile $credentialsFile
