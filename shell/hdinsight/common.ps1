@@ -1,64 +1,43 @@
-function GetPsCredential
-{
-	[string] $PASSWORD_FILE="c:\temp\accounts.txt"
-    [string] $ENV_USER_NAME=$env:username
-    [string] $ENV_USER_DOMAIN=$env:USERDOMAIN
-    [string] $FULL_USER_NAME="$ENV_USER_DOMAIN\$ENV_USER_NAME"
-    
-    if (Test-Path $PASSWORD_FILE -ErrorAction SilentlyContinue)
-    {
-        $USER_PASSWORD=[string] @(([string] (Get-Content $PASSWORD_FILE |Select-String -pattern $ENV_USER_NAME)).Split(" "))[1]
-        $USER_PASSWORD=$USER_PASSWORD.Trim()
-    }
-    else 
-    {    
-        Write_Host "Can not access $PASSWORD_FILE" -ForegroundColor Red
-        exit 1
-    }
-
-    $CRED = New-Object System.Management.Automation.PsCredential($FULL_USER_NAME, $(ConvertTo-SecureString -string $USER_PASSWORD -AsPlainText –force))
-    return $CRED 
-}
-
 function CreatePerformanceMonitoringCounter($Credentials, [String]$numberOfNodes)
 {	
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
-	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path C:\counters$(hostname).txt ) { rm C:\counters$(hostname).txt; }; add-content "C:\counters$(hostname).txt" "\System\*`r\Processor(*)\*`r\Processor Information\*`r\Processor Performance\*`r\Process(*)\*`r\Memory\*`r\Network Interface\*"; logman create counter "hdicounters" -cf  "C:\counters$(hostname).txt" -si "00:00:01" -f csv -v mmddhhmm -o "C:\perfmetrics$(hostname).csv" }
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path C:\counters$(hostname).txt ) { rm C:\counters$(hostname).txt; }; add-content "C:\counters$(hostname).txt" "\System\*`r\Processor(*)\*`r\Processor Information\*`r\Processor Performance\*`r\Process(*)\*`r\Memory\*`r\Network Interface\*"; logman create counter "hdicounters" -cf  "C:\counters$(hostname).txt" -si "00:00:01" -f csv -v mmddhhmm -o "C:\perfmetrics$(hostname).csv" } -AsJob | Wait-Job
     }
 }
 
 function StartPerformanceMonitoring($Credentials, [String]$numberOfNodes)
 {
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
-	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path "C:\perfmetrics$(hostname).csv" ) { rm "C:\perfmetrics$(hostname).csv"; }; logman start "hdicounters" }
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path "C:\perfmetrics$(hostname).csv" ) { rm "C:\perfmetrics$(hostname).csv"; }; logman start "hdicounters" } -AsJob | Wait-Job
     }
 }
 
 function StopPerformanceMonitoring($Credentials, [String]$numberOfNodes)
 {
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
-	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { logman stop "hdicounters" }
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { logman stop "hdicounters" } -AsJob | Wait-Job
     }
 }
 
 function CollectPerfMetricsLogs([String]$numberOfNodes,[String]$minervaLogin="acall")
 {
-	if ( Test-Path -Path C:\perflogs ) {
-		rmdir C:\perflogs -Recurse -Force
-	}
-	mkdir C:\perflogs
+	rmdir C:\perflogs* -Recurse -Force
+
+	$date = [int][double]::Parse((Get-Date -UFormat %s))
+    $year = (Get-Date -f yyyyMMdd)
+    
+	$dirLogs = "perflogs_${year}_${storageAccount}_$date"
+	mkdir "C:\$dirLogs"
 	
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
-	    Copy-Item  -Recurse -Force -Path \\"workernode$i"\c$\"perfmetricsworkernode$i.csv" -Destination \\$(hostname)\c$\perflogs\"perfmetricsworkernode$i.csv"
+	    Copy-Item  -Recurse -Force -Path \\"workernode$i"\c$\"perfmetricsworkernode${i}*.csv" -Destination \\$(hostname)\c$\"$dirLogs"\"perfmetricsworkernode${i}.csv"
     }
     
     if ( !(Test-Path "pscp.exe") ) {
-    	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe')
+    	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe','pscp.exe')
     }
-    
-   $date = [int][double]::Parse((Get-Date -UFormat %s))
-   $year = (Get-Date -f yyyyMMdd)
-   pscp.exe -r "C:\perflogs" "$minervaLogin@minerva.bsc.es:perfmetrics_${year}_${storageAccount}_$date"
+
+   .\pscp.exe -r "C:\$dirLogs" "$minervaLogin@minerva.bsc.es:"
    Write-Verbose "Retrieval and saving of logs completed"
 }
 
