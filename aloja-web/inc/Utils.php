@@ -364,22 +364,18 @@ class Utils
     	return $compName;
     }
 
-    public static function getClusterName($clusterCode)
+    public static function getClusterName($clusterCode, $db)
     {
-        $clusterName = 'Undefined';
-        if($clusterCode == 1)
-            $clusterName = 'Local';
-        else
-            $clusterName = 'Azure';
+        $clusterName = $db->get_rows("SELECT name FROM clusters WHERE id_cluster=$clusterCode");
 
-        return $clusterName;
+        return $clusterName[0]['name'];
     }
     
     public static function getNetworkName($netShort)
     {
     	$netName = '';
     	if($netShort == 'IB')
-    		$netName = 'Infiniband';
+    		$netName = 'InfiniBand';
     	else
     		$netName = 'Ethernet';
     	
@@ -431,5 +427,20 @@ class Utils
     		$unit = 'MB';
     	
     	return $unit;
+    }
+    
+    public static function getFilterOptions($dbUtils) {
+    	$options['benchs'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+    	$options['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
+    	$options['disk'] = $items = $dbUtils->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
+    	$options['blk_size'] = $items = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
+    	$options['comp'] = $items = $dbUtils->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
+    	$options['id_cluster'] = $items = $dbUtils->get_rows("select distinct id_cluster,c.name from execs join clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+    	$options['maps'] = $items = $dbUtils->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
+    	$options['replication'] = $items = $dbUtils->get_rows("SELECT DISTINCT replication FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
+    	$options['iosf'] = $items = $dbUtils->get_rows("SELECT DISTINCT iosf FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
+    	$options['iofilebuf'] = $items = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
+    	
+    	return $options;
     }
 }

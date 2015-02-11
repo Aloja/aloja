@@ -181,7 +181,8 @@ class DefaultController extends AbstractController
                 'iofilebufs' => $iofilebufs,
                 'count' => $count,
                 'height' => $height,
-             	'money' => $money
+             	'money' => $money,
+             	'options' => Utils::getFilterOptions($db)
              )
         );
     }
@@ -374,7 +375,8 @@ class DefaultController extends AbstractController
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-        	'money' => $money
+        	'money' => $money,
+        	'options' => Utils::getFilterOptions($dbUtils)
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
                 ));
     }
@@ -427,23 +429,36 @@ class DefaultController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-                $selected_hosts = array(
-                    'minerva-1002', 'minerva-1003', 'minerva-1004',
-                    'al-1002', 'al-1003', 'al-1004',
-                    'minerva-2','minerva-3','minerva-4',
-                    'minerva-6','minerva-7','minerva-8',
-                    'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
-                    'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
-                );
+            	$selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
+            	
+            	$selected_hosts = array();
+            	foreach($selectedHosts as $host) {
+            		array_push($selected_hosts, $host['host_name']);
+            	}
+//                 $selected_hosts = array(
+//                     'minerva-1002', 'minerva-1003', 'minerva-1004',
+//                     'al-1002', 'al-1003', 'al-1004',
+//                     'minerva-2','minerva-3','minerva-4',
+//                     'minerva-6','minerva-7','minerva-8',
+//                     'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
+//                     'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
+//                 );
             } elseif ($hosts == 'Master') {
-                $selected_hosts = array(
-                    'minerva-1001',
-                    'al-1001',
-                    'minerva-1',
-                    'minerva-6',
-                    'minerva-5',
-                    'rl-06-00',
-                );
+            	$selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
+            	 
+            	$selected_hosts = array();
+            	foreach($selectedHosts as $host) {
+            		array_push($selected_hosts, $host['host_name']);
+            	}
+            	
+//                 $selected_hosts = array(
+//                     'minerva-1001',
+//                     'al-1001',
+//                     'minerva-1',
+//                     'minerva-6',
+//                     'minerva-5',
+//                     'rl-06-00',
+//                 );
             } else {
                 $selected_hosts = array($hosts);
             }
@@ -1306,7 +1321,8 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
-				'select_multiple_benchs' => false 
+				'select_multiple_benchs' => false,
+				'options' => Utils::getFilterOptions($db)
 		) );
 	}
 	public function paramEvaluationAction() {
@@ -1344,25 +1360,39 @@ class DefaultController extends AbstractController
 			
 			$filter_execs = DBUtils::getFilterExecs();
 
+			$options = Utils::getFilterOptions($db);
 			$paramOptions = array();
-			if($paramEval == 'maps')
-				$paramOptions = array(4,6,8,10,12,16,24,32);
-			else if($paramEval == 'comp')
-				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
-		    else if($paramEval == 'id_cluster')
-				$paramOptions = array('rl-06');
-			else if($paramEval == 'net')
-				$paramOptions = array('Ethernet','Infiniband');
-			else if($paramEval == 'disk')
-				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
-			else if($paramEval == 'replication')
-				$paramOptions = array(1,2,3);
-			else if($paramEval == 'iofilebuf')
-				$paramOptions = array(1,4,16,32,64,128,256);
-			else if($paramEval == 'blk_size')
-				$paramOptions = array(32,64,128,256);
-			else if($paramEval == 'iosf')
-				$paramOptions = array(5,10,20,50);
+			foreach($options[$paramEval] as $option) {
+				if($paramEval == 'id_cluster')
+					$paramOptions[] = $option['name'];
+				else if($paramEval == 'comp')
+					$paramOptions[] = Utils::getCompressionName($option[$paramEval]);
+				else if($paramEval == 'net')
+					$paramOptions[] = Utils::getNetworkName($option[$paramEval]);
+				else if($paramEval == 'disk')
+					$paramOptions[] = Utils::getDisksName($option[$paramEval]);
+				else
+					$paramOptions[] = $option[$paramEval];
+			}
+						
+// 			if($paramEval == 'maps')
+// 				$paramOptions = array(4,6,8,10,12,16,24,32);
+// 			else if($paramEval == 'comp')
+// 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
+// 		    else if($paramEval == 'id_cluster')
+// 				$paramOptions = array('rl-06');
+// 			else if($paramEval == 'net')
+// 				$paramOptions = array('Ethernet','Infiniband');
+// 			else if($paramEval == 'disk')
+// 				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
+// 			else if($paramEval == 'replication')
+// 				$paramOptions = array(1,2,3);
+// 			else if($paramEval == 'iofilebuf')
+// 				$paramOptions = array(1,4,16,32,64,128,256);
+// 			else if($paramEval == 'blk_size')
+// 				$paramOptions = array(32,64,128,256);
+// 			else if($paramEval == 'iosf')
+// 				$paramOptions = array(5,10,20,50);
 			
 			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
@@ -1371,7 +1401,7 @@ class DefaultController extends AbstractController
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
 				"from execs e WHERE 1 $filter_execs $where_configs".
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
-			
+
 			$rows = $db->get_rows ( $query );
 
 			if (!$rows) {
@@ -1381,7 +1411,7 @@ class DefaultController extends AbstractController
 			$categories = '';
 			$arrayBenchs = array();
 			foreach ( $paramOptions as $param ) {
-				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
+				$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
 				foreach($benchOptions as $bench) {
 					$arrayBenchs[$bench['bench']][$param] = null;
 				}
@@ -1393,13 +1423,11 @@ class DefaultController extends AbstractController
 				if($paramEval == 'comp')
 					$row[$paramEval] = Utils::getCompressionName($row['comp']);
 				else if($paramEval == 'id_cluster') {
-                    $row[$paramEval] = Utils::getClusterName($row[$paramEval]);
+                    $row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
 				} else if($paramEval == 'net')
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')
 					$row[$paramEval] = Utils::getDisksName($row['disk']);
-				else if($paramEval == 'iofilebuf')
-					$row[$paramEval] /= 1024;
 				
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
@@ -1413,8 +1441,8 @@ class DefaultController extends AbstractController
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 		}
-		
-		echo $this->container->getTwig ()->render ('configperf/configperf.html.twig', array (
+
+		echo $this->container->getTwig ()->render ('parameval/parameval.html.twig', array (
 				'selected' => 'Parameter Evaluation',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
@@ -1430,7 +1458,8 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
-				'paramEval' => $paramEval
+				'paramEval' => $paramEval,
+				'options' => $options
 		) );
 	}
 	

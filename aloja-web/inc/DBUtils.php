@@ -58,6 +58,8 @@ class DBUtils
             $use_cache = true;
         }
 
+        if (!$this->dbConn) $this->init();
+
         //check for cache first
         if ($use_cache &&
                 file_exists($file_path) &&
@@ -66,8 +68,6 @@ class DBUtils
         ) {
             $this->container['log']->addDebug('CACHED: '.$sql);
         } else {
-            if (!$this->dbConn) $this->init();
-
             $this->container['log']->addDebug('NO CACHE: '.$sql);
 
             try {

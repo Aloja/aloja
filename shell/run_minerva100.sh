@@ -67,7 +67,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     d)
       DISK=$OPTARG
-      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || usage
+      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || usage
       ;;
     b)
       BENCH=$OPTARG
@@ -148,7 +148,7 @@ source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 #####
 
 NUMBER_OF_DATA_NODES="$numberOfNodes"
-userAloja="pristine"
+userAloja="npoggi"
 
 DSH="dsh -M -c -m "
 
@@ -191,7 +191,7 @@ DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 if [ "$DISK" == "SSD" ] ; then
   HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
+elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]; then
   HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
 elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
   HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
@@ -233,10 +233,10 @@ echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 $DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
 
   #temporary to avoid read-only file system errors
-  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
+  #echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  #$DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
 
-  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+  for mount_point in "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" "/scratch/attached/4" "/scratch/attached/5" "/scratch/attached/6"; do
     echo "Checking if to remount $mount_point"
     $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
   done
@@ -247,21 +247,21 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
   echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
 
   #temporary to avoid read-only file system errors
-  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
+  #echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  #$DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
 
-  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+  for mount_point in "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" "/scratch/attached/4" "/scratch/attached/5" "/scratch/attached/6"; do
     echo "Checking if to remount $mount_point"
     $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
   done
 
   correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
 
-  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
-    $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
-    sleep 90 2>&1 |tee -a $LOG_PATH
-  fi
+#  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
+#    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
+#    $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
+#    sleep 90 2>&1 |tee -a $LOG_PATH
+#  fi
 
   if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
     echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
@@ -309,7 +309,7 @@ done
 
 zabbix_sender(){
   :
-  #echo "al-1001 $1" | /home/pristine/share/aplic/zabbix/bin/zabbix_sender -c /home/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
+  #echo "al-1001 $1" | $homePrefixAloja/pristine/share/aplic/zabbix/bin/zabbix_sender -c $homePrefixAloja/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
   #>> $LOG_PATH
 }
 
@@ -381,15 +381,24 @@ echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 if [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] ; then
   HDFS_NDIR="$HDD/dfs/name"
   HDFS_DDIR="$HDD/dfs/data"
-elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ]; then
+elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "HD1" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ]; then
+elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "HD2" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ]; then
+elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "HD3" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "HD4" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "HD5" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "HD6" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/data"
 else
   echo "Incorrect disk specified2: $DISK"
   exit 1

@@ -16,7 +16,7 @@ source "$CUR_DIR/common/import_functions.sh"
 first_host=""
 hostn=""
 
-DEV_PC="true" #set to true to insert to vagrant
+#DEV_PC="true" #set to true to insert to vagrant
 #Check if to use a special version of sar or the system one
 #nico pc
 if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
@@ -122,22 +122,31 @@ for folder in 201* ; do
 	
 	        #insert config and get ID_exec
 	        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
-	        #TODO need to add ol naming scheme
+
 	        if [[  $folder == *_az ]] ; then
-	          cluster="2"
+	          id_cluster="2"
 	        else
-	          cluster="${folder:(-2):2}"
-	
-	          $MYSQL "$(get_insert_cluster_sql "$cluster")"
+
+	          id_cluster="${folder:(-2):2}"
+
+	          clusterConfigFile="$(get_clusterConfigFile)"
+
+            #TODO this check wont work for old folders with numeric values at the end, need another strategy
+            #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
+            if [ -f "$clusterConfigFile" ] ; then
+	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
+	          else
+	            id_cluster="1"
+	          fi
 	        fi
-	        logger "Cluster $cluster"
+	        logger "Cluster $id_cluster"
 	
 	        if [[ ! -z $exec_values ]] ; then
 	
 	          folder_OK="$(( folder_OK + 1 ))"
 	
 	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-	                  VALUES (NULL, $cluster, \"$exec\", $exec_values)
+	                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
 	                  ON DUPLICATE KEY UPDATE
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
 	                  end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
@@ -148,7 +157,7 @@ for folder in 201* ; do
 	          logger "Processing SCWC"
 	
 	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-	                  VALUES (NULL, $cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+	                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
 	                  ;"
 	                  #ON DUPLICATE KEY UPDATE
 	                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
@@ -168,7 +177,7 @@ for folder in 201* ; do
 			    id_exec=""
 	        get_id_exec "$exec"
 	
-	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
+	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 				
 	        if [[ ! -z "$id_exec" ]] ; then
 	

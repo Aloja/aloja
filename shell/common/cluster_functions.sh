@@ -10,7 +10,6 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #global variables
-sharedDir="/home/$userAloja/share"
 
 #####################################################################################
 # Start functions
@@ -31,6 +30,8 @@ vm_create_node() {
 
   if [ "$vmType" != 'windows' ] ; then
 
+    requireRootFirst="true" #for some providers that need root user first it is dissabled further on
+
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
@@ -40,6 +41,7 @@ vm_create_node() {
     else
       vm_provision
     fi
+
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -77,8 +79,9 @@ vm_create_connect() {
 #requires $vm_name and $type to be set
 vm_provision() {
   vm_initial_bootstrap
-  vm_set_ssh
+  requireRootFirst="" #disable root/admin user from this part on
 
+  vm_set_ssh
   vm_install_base_packages
 
   #[ "$type" != "cluster" ] && {
@@ -293,9 +296,11 @@ vm_local_scp() {
 #$1 source files $2 destination $3 extra options
 #$vm_ssh_port must be set first
 vm_rsync() {
+    set_shh_proxy
+
     logger "RSynching: $1 To: $2"
     #eval is for parameter expansion  --progress
-    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p "$(get_ssh_port)" " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
 get_master_name() {
@@ -405,19 +410,17 @@ get_initizalize_disks_test() {
 
 get_share_location() {
 
-  local minerva_mount="npoggi@minerva.bsc.es:/home/npoggi/tmp/ /home/$userAloja/minerva fuse.sshfs noauto,_netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+#  if [ "$cloud_provider" == "pedraforca" ] ; then
+#    local fs_mount="$userAloja@minerva.bsc.es:$homePrefixAloja/$userAloja/aloja/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+#  elif [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
+#    #internal network
+#    local fs_mount="$userAloja@aloja-fs:$homePrefixAloja/$userAloja/share/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+#  else
+#    #external network
+#    local fs_mount="$userAloja@al-1001.cloudapp.net:$homePrefixAloja/$userAloja/share/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
+#  fi
 
-  if [ "$cloud_provider" == "pedraforca" ] ; then
-    local fs_mount="$userAloja@minerva.bsc.es:/home/$userAloja/aloja/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
-  elif [ "$subscriptionID" == "8869e7b1-1d63-4c82-ad1e-a4eace52a8b4" ] && [ "$virtualNetworkName" == "west-europe-net" ] || [ "$cloud_provider" != "azure" ] ; then
-    #internal network
-    local fs_mount="$minerva_mount
-$userAloja@aloja-fs:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
-  else
-    #external network
-    local fs_mount="$minerva_mount
-$userAloja@al-1001.cloudapp.net:/home/$userAloja/share/ /home/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=/home/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
-  fi
+  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
 
   echo -e "$fs_mount"
 }
@@ -905,14 +908,14 @@ vm_set_master_crontab() {
     logger "Setting ALOJA crontab to master"
 
     crontab="# m h  dom mon dow   command
-* * * * * export USER=$userAloja && bash /home/$userAloja/share/shell/exeq.sh $clusterName
+* * * * * export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName
 #backup data
-#0 * * * * cp -ru share/jobs_$clusterName local >> /home/$userAloja/cron.log 2>&1"
+#0 * * * * cp -ru share/jobs_$clusterName local >> $homePrefixAloja/$userAloja/cron.log 2>&1"
 
     vm_execute_master "echo '$crontab' |crontab"
 
     #start the queue so dirs are created
-    vm_execute_master "export USER=$userAloja && bash /home/$userAloja/share/shell/exeq.sh $clusterName"
+    vm_execute_master "export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName"
 
   else
     logger "Crontab already installed in master"
@@ -938,7 +941,7 @@ vm_set_master_forer() {
   if [ -z "$test_action" ] ; then
     #TODO shouldn't be necessary but...
     logger "DEBUG: Re-mounting disks"
-    local verify_share="$(verify_share_cmd "/home/$userAloja/share")"
+    local verify_share="$(verify_share_cmd "$homePrefixAloja/$userAloja/share")"
 
     cluster_execute "$verify_share"
 
@@ -946,13 +949,13 @@ vm_set_master_forer() {
 
     if [ -f "$CONF_DIR/../forer_$clusterName.sh" ] ; then
       logger " synching forer files"
-      vm_rsync "$CONF_DIR/../" "$sharedDir/shell/"
+      vm_rsync "$CONF_DIR/../" "$homePrefixAloja/$userAloja/share/shell/"
 
       logger " executing forer_$clusterName.sh"
-      vm_execute_master "bash /home/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
+      vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
     else
       logger " executing forer_az.sh $CONF_DIR/../forer_$clusterName.sh"
-      vm_execute_master "bash /home/$userAloja/share/shell/forer_az.sh $clusterName"
+      vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_az.sh $clusterName"
     fi
 
   else
@@ -971,9 +974,9 @@ vm_puppet_apply() {
   vm_rsync "$puppet" "~/" ""
   logger "Puppet install modules and apply"
 
-	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"
+	vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetBootFile'"
 	if [ ! -z "$puppetPostScript" ]; then
-	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
+	 vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetPostScript'"
 	fi
 }
 
@@ -990,45 +993,45 @@ vm_make_fs() {
   fi
 
   if [ -z "$homeIsShared" ] ; then
-    logger "Checking if $sharedDir is correctly linked"
-    test_action="$(vm_execute "[ -d $sharedDir ] && [ -L $sharedDir ] && ls $sharedDir/safe_store && echo '$testKey'")"
+    logger "Checking if $homePrefixAloja/$userAloja/share is correctly linked"
+    test_action="$(vm_execute "[ -d $homePrefixAloja/$userAloja/share ] && [ -L $homePrefixAloja/$userAloja/share ] && ls $homePrefixAloja/$userAloja/share/safe_store && echo '$testKey'")"
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
     if [ -z "$test_action" ] ; then
-      logger " Linking $sharedDir"
+      logger " Linking $homePrefixAloja/$userAloja/share"
       vm_execute "sudo chown -R ${userAloja} /scratch;
-[ -d $sharedDir ] && [ ! -L $sharedDir ] && mv $sharedDir ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path $sharedDir;
-touch $sharedDir/safe_store;
+[ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;
+touch $homePrefixAloja/$userAloja/share/safe_store;
     "
     else
-      logger " $sharedDir is correctly mounted"
+      logger " $homePrefixAloja/$userAloja/share is correctly mounted"
     fi
 
   else
     logger "NOTICE: /home is marked as shared, creating the dir if necessary"
-    vm_execute "mkdir -p $sharedDir; touch $sharedDir/safe_store"
+    vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell" "$sharedDir"
-  vm_rsync "../aloja-deploy" "$sharedDir"
+  vm_rsync "../shell" "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../aloja-deploy" "$homePrefixAloja/$userAloja/share"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
-  test_action="$(vm_execute "ls $sharedDir/aplic/aplic_version && echo '$testKey'")"
+  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $sharedDir; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
-    vm_execute "cd $sharedDir; tar -jxf aplic.tar.bz2"
+    vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
   fi
 
   logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$sharedDir"
+  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share"
 
 }
 
