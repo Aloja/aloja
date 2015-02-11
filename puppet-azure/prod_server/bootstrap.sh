@@ -4,7 +4,6 @@
 #ln -fs /vagrant/workspace /var/www
 #
 
-#passwordless login to localhost
 if ! which puppet > /dev/null; then
   sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list
   wget http://apt.puppetlabs.com/puppetlabs-release-stable.deb -O /tmp/puppetlabs-release-stable.deb && \
