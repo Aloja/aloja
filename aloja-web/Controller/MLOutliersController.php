@@ -215,14 +215,14 @@ class MLOutliersController extends AbstractController
 							{
 								$jsonWarns[$count_ind[1]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
 								$jsonWarns[$count_ind[1]]['y'] = (int)$data[2];
-								$jsonWarns[$count_ind[1]]['name'] = (int)$data[3];
+								$jsonWarns[$count_ind[1]]['name'] = $data[3];
 								$jsonWarns[$count_ind[1]++]['id'] = $data[4];
 							}
 							else
 							{
 								$jsonOuts[$count_ind[2]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
 								$jsonOuts[$count_ind[2]]['y'] = (int)$data[2];
-								$jsonOuts[$count_ind[2]]['name'] = (int)$data[3];
+								$jsonOuts[$count_ind[2]]['name'] = $data[3];
 								$jsonOuts[$count_ind[2]++]['id'] = $data[4];							
 							}
 							$count++;
