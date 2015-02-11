@@ -94,7 +94,6 @@ sudo chown -R pristine: /scratch/attached/1;
 }
 
 vm_final_bootstrap() {
-  #logger "INFO: Creating RAID0 on 6 disks"
-  #vm_create_RAID0
-  :
+  #making sure hadoop is not installed
+  vm_execute "sudo apt-get -y purge hadoop"
 }
