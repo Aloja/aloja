@@ -41,7 +41,7 @@ function StopPerformanceMonitoring($Credentials, [String]$numberOfNodes)
     }
 }
 
-function CollectPerfMetricsLogs([String]$numberOfNodes)
+function CollectPerfMetricsLogs([String]$numberOfNodes,[String]$minervaLogin="acall")
 {
 	if ( Test-Path -Path C:\perflogs ) {
 		rmdir C:\perflogs -Recurse -Force
@@ -51,6 +51,15 @@ function CollectPerfMetricsLogs([String]$numberOfNodes)
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
 	    Copy-Item  -Recurse -Force -Path \\"workernode$i"\c$\"perfmetricsworkernode$i.csv" -Destination \\$(hostname)\c$\perflogs\"perfmetricsworkernode$i.csv"
     }
+    
+    if ( !(Test-Path "pscp.exe") ) {
+    	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe')
+    }
+    
+   $date = [int][double]::Parse((Get-Date -UFormat %s))
+   $year = (Get-Date -f yyyyMMdd)
+   pscp.exe -r "C:\perflogs" "$minervaLogin@minerva.bsc.es:perfmetrics_${year}_${storageAccount}_$date"
+   Write-Verbose "Retrieval and saving of logs completed"
 }
 
 function AzureLogin([String]$credentialsFile)
