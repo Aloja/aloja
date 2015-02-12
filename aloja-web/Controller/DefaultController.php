@@ -23,7 +23,7 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-    		'nodes_number' => 'Nodes',
+    		'datanodes' => 'Datanodes',
     		'histogram' => 'Histogram',
            // 'files' => 'Files',
             'prv' => 'PARAVER',

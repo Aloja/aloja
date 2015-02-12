@@ -27,7 +27,7 @@ class RestController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-        	'nodes_number' => 'Nodes',
+        	'datanodes' => 'Datanodes',
             'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
