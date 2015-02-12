@@ -469,7 +469,6 @@ get_mount_disks() {
     sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     sudo chown -R $userAloja: /scratch;
     sudo mount -a;
-    sudo chown -R $userAloja /scratch
   "
   echo -e "$create_string"
 }
@@ -1000,7 +999,8 @@ vm_make_fs() {
 
     if [ -z "$test_action" ] ; then
       logger " Linking $homePrefixAloja/$userAloja/share"
-      vm_execute "sudo chown -R ${userAloja} /scratch;
+#sudo chown -R ${userAloja} /scratch;
+      vm_execute "
 [ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;
 touch $homePrefixAloja/$userAloja/share/safe_store;
