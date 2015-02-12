@@ -35,15 +35,6 @@ create table if not exists hosts (
   PRIMARY KEY (id_host)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 
-insert ignore into hosts set id_host=1, id_cluster=1, host_name='minerva-1001', role='master';
-insert ignore into hosts set id_host=2, id_cluster=1, host_name='minerva-1002', role='slave';
-insert ignore into hosts set id_host=3, id_cluster=1, host_name='minerva-1003', role='slave';
-insert ignore into hosts set id_host=4, id_cluster=1, host_name='minerva-1004', role='slave';
-insert ignore into hosts set id_host=5, id_cluster=2, host_name='al-1001', role='master';
-insert ignore into hosts set id_host=6, id_cluster=2, host_name='al-1002', role='slave';
-insert ignore into hosts set id_host=7, id_cluster=2, host_name='al-1003', role='slave';
-insert ignore into hosts set id_host=8, id_cluster=2, host_name='al-1004', role='slave';
-
 create table if not exists clusters (
 id_cluster int,
 name varchar(127),
@@ -53,20 +44,42 @@ link varchar(255),
 datanodes int DEFAULT NULL,
 primary key (id_cluster)) engine InnoDB;
 
-insert ignore into clusters set name='m1000-01',     id_cluster=1, cost_hour=12, type='on-premise', link='http://hadoop.bsc.es/?page_id=51';
-insert ignore into clusters set name='al-02', id_cluster=2, cost_hour=7, type='IaaS', link='http://www.windowsazure.com/en-us/pricing/calculator/';
 
-#TODO move this to end of execution
-update execs SET disk='RR1' where disk='R1';
-update execs SET disk='RR2' where disk='R2';
-update execs SET disk='RR3' where disk='R3';
-update execs SET bench_type='HiBench' where bench_type='b';
-update execs SET bench_type='HiBench' where bench_type='';
-update execs SET bench_type='HiBench-min' where bench_type='-min';
-update execs SET bench_type='HiBench-10' where bench_type='-10';
-update execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
-INSERT INTO clusters(id_cluster,name,cost_hour,type,link,datanodes) values(20,'HDInsight','0.32','PaaS','http://azure.microsoft.com/en-gb/pricing/details/hdinsight/',4);
 "
+
+$MYSQL "alter ignore table  clusters add  datanodes int DEFAULT NULL;"
+
+$MYSQL "
+
+update ignore execs SET disk='RR1' where disk='R1';
+update ignore execs SET disk='RR2' where disk='R2';
+update ignore execs SET disk='RR3' where disk='R3';
+update ignore execs SET bench_type='HiBench' where bench_type='b';
+update ignore execs SET bench_type='HiBench' where bench_type='';
+update ignore execs SET bench_type='HiBench-min' where bench_type='-min';
+update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
+update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
+
+"
+
+
+#$MYSQL "
+#
+##insert ignore into clusters set name='m1000-01',     id_cluster=1, cost_hour=12, type='on-premise', link='http://hadoop.bsc.es/?page_id=51';
+##insert ignore into clusters set name='al-02', id_cluster=2, cost_hour=7, type='IaaS', link='http://www.windowsazure.com/en-us/pricing/calculator/';
+##INSERT ignore INTO clusters(id_cluster,name,cost_hour,type,link,datanodes) values(20,'HDInsight','0.32','PaaS','http://azure.microsoft.com/en-gb/pricing/details/hdinsight/',4);
+#
+##insert ignore into hosts set id_host=1, id_cluster=1, host_name='minerva-1001', role='master';
+##insert ignore into hosts set id_host=2, id_cluster=1, host_name='minerva-1002', role='slave';
+##insert ignore into hosts set id_host=3, id_cluster=1, host_name='minerva-1003', role='slave';
+##insert ignore into hosts set id_host=4, id_cluster=1, host_name='minerva-1004', role='slave';
+##insert ignore into hosts set id_host=5, id_cluster=2, host_name='al-1001', role='master';
+##insert ignore into hosts set id_host=6, id_cluster=2, host_name='al-1002', role='slave';
+##insert ignore into hosts set id_host=7, id_cluster=2, host_name='al-1003', role='slave';
+##insert ignore into hosts set id_host=8, id_cluster=2, host_name='al-1004', role='slave';
+#"
+
+
 
 $MYSQL "
 CREATE TABLE IF NOT EXISTS \`SAR_cpu\` (
