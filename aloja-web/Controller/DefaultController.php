@@ -23,13 +23,14 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-    		'nodes_number' => 'Nodes',
+    		'datanodes' => 'Datanodes',
     		'histogram' => 'Histogram',
            // 'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
-    		'hadoop_version' => 'Hadoop version'
+    		'hadoop_version' => 'H Version',
+            'bench_type' => 'Bench',
         );
 
     public function indexAction()
