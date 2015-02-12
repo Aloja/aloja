@@ -21,7 +21,6 @@ hostn=""
 #sudo mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
-  sudo mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
   source "$CUR_DIR/common/create_db.sh"
 fi
 
