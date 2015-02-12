@@ -8,7 +8,7 @@ function CreatePerformanceMonitoringCounter($Credentials, [String]$numberOfNodes
 function StartPerformanceMonitoring($Credentials, [String]$numberOfNodes)
 {
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
-	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path "C:\perfmetrics$(hostname).csv" ) { rm "C:\perfmetrics$(hostname).csv"; }; logman start "hdicounters" } -AsJob | Wait-Job
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { rm "C:\perfmetrics$(hostname)*.csv"; logman start "hdicounters" } -AsJob | Wait-Job
     }
 }
 
