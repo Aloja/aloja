@@ -34,35 +34,35 @@
 			</tr>
 			<tr>
 				<th>Net</th>
-				<td>{{ bestexec['net'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['net'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>Disk</th>
-				<td>{{ bestexec['disk'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['disk'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>Number of hadoop mappers</th>
-				<td>{{ bestexec['maps'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['maps'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>IO Sort File Factor {{ makeTooltip('The number of streams to merge at once while sorting files. This determines the number of open file handles.') | raw }}</th>
-				<td>{{ bestexec['iosf'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['iosf'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>Number of replicas</th>
-				<td>{{ bestexec['replication'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['replication'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>IO File Buffer {{ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') | raw }}</th>
-				<td>{{ bestexec['iofilebuf'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['iofilebuf'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>Compression algorithm</th>
-				<td>{{ bestexec['comp'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['comp'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>Block size</th>
-				<td>{{ bestexec['blk_size'] }}</td>
+				<td>{% if cluster != 'HDInsight' %}{{ bestexec['blk_size'] }}{% else %}Not available{% endif %}</td>
 			</tr>
 			<tr>
 				<th>Cluster</th>
