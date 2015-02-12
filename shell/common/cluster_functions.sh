@@ -1014,8 +1014,7 @@ touch $homePrefixAloja/$userAloja/share/safe_store;
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell" "$homePrefixAloja/$userAloja/share"
-  vm_rsync "../aloja-deploy" "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools" "$homePrefixAloja/$userAloja/share"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
