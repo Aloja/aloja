@@ -338,9 +338,11 @@ class DefaultController extends AbstractController
         foreach ($rows as $row) {
 
             $exec = substr($row['exec'], 21);
-
+			
             if (strpos($exec, '_az') > 0) {
                 $exec = "AZURE " . $exec;
+            } else if (strpos($row['exec'], 'alojahdi') > 0) {
+            	$exec = "HDINSIGHT " . substr($row['exec'],0,26);
             } else {
                 $exec = "LOCAL " . $exec;
             }
