@@ -32,7 +32,8 @@ class RestController extends AbstractController
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
-        	'hadoop_version' => 'HDP Version'
+        	'hadoop_version' => 'H Version',
+            'bench_type' => 'Bench',
         );
 
         try {
