@@ -94,6 +94,18 @@ sudo chown -R pristine: /scratch/attached/1;
 }
 
 vm_final_bootstrap() {
-  #making sure hadoop is not installed
-  vm_execute "sudo apt-get -y purge hadoop"
+
+  logger "INFO: removing security packages and configs from Ubuntu 14.04"
+  vm_execute "
+sudo service apparmor stop
+sudo update-rc.d -f apparmor remove
+sudo apt-get purge -y apparmor apparmor-utils -y
+sudo ufw disable;
+"
+
+  logger "INFO: making sure minerva-100 config is up to date"
+  vm_execute "
+sudo apt-get -y purge hadoop
+"
+
 }

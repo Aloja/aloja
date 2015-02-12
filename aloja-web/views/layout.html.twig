@@ -113,6 +113,7 @@
 		          <ul class="dropdown-menu" role="menu">
 		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Benchmark Executions</a></li>
 		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
+		             <li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
 		          </ul>
 		        </li>
 {# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}

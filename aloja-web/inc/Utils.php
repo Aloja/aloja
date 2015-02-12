@@ -39,7 +39,7 @@ class Utils
             } elseif ($item_name == 'nets') {
                 $items = array();
             } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
+                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1',0);
             } else {
                 $items = array();
             }
@@ -85,16 +85,22 @@ class Utils
         $jsonData = array();
 
         $i = 0;
+        $naValues=array('net','disk','maps','iosf','replication','iofilebuf','comp','blk_size',);
         foreach ($csv as $value_row) {
             $jsonRow = array();
             $jsonRow[] = $value_row['id_exec'];
+            if(key_exists("cluster_name",$value_row))
+           	 $clusterName = $value_row['cluster_name'];
+            
             foreach (array_keys($show_in_result) as $key_name) {
                 if ($precision !== null && is_numeric($value_row[$key_name])) {
                     $value_row[$key_name] = round($value_row[$key_name], $precision);
                 }
-
+                
                 if (!$type) {
-                    if ($key_name == 'bench') {
+                	if ($clusterName == 'HDInsight' && in_array($key_name,$naValues))
+                		$jsonRow[] = 'N/A';
+                    elseif ($key_name == 'bench') {
                         $jsonRow[] = $value_row[$key_name];
                     } elseif ($key_name == 'init_time') {
                         $jsonRow[] = date('YmdHis', strtotime($value_row['end_time']));
@@ -297,7 +303,9 @@ class Utils
     	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 $filter_execs");
     	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 $filter_execs");
     	$clusterOptions = $db->get_rows("SELECT DISTINCT clusters.name FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
-    	 
+    	$clusterNodes = $db->get_rows("SELECT DISTINCT clusters.nodes_number FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
+    	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 $filter_execs");
+    	
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
     	$discreteOptions['net'][] = 'All';
@@ -306,6 +314,9 @@ class Utils
     	$discreteOptions['comp'][] = 'All';
     	$discreteOptions['blk_size'][] = 'All';
     	$discreteOptions['id_cluster'][] = 'All';
+    	$discreteOptions['nodes_number'][] = 'All';
+    	$discreteOptions['hadoop_version'][] = 'All';
+    	
     	foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
     	}
@@ -327,6 +338,12 @@ class Utils
     	}
     	foreach($clusterOptions as $option) {
             $discreteOptions['id_cluster'][] = array_shift($option);
+    	}
+    	foreach($clusterNodes as $option) {
+    		$discreteOptions['nodes_number'][] = array_shift($option);
+    	}
+    	foreach($hadoopVersion as $option) {
+    		$discreteOptions['hadoop_version'][] = array_shift($option);
     	}
     	
     	return $discreteOptions;
