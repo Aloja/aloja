@@ -4,11 +4,11 @@ importHDIJobs() {
 	for jhist in `find $folder/mapred/history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
 		java -cp "$CUR_DIR/../aloja-tools/lib/aloja-tools.jar" alojatools.JhistToJSON $jhist tasks.out globals.out
 		jobTimestamp=${array[2]}
-		jobName="`../shell/jq -r '.job_name' globals.out`"
-		jobId="`../shell/jq '.JOB_ID' globals.out`"
-		startTime="`../shell/jq -r '.LAUNCH_TIME' globals.out`"
+		jobName="`../aloja-tools/jq -r '.job_name' globals.out`"
+		jobId="`../aloja-tools/jq '.JOB_ID' globals.out`"
+		startTime="`../aloja-tools/jq -r '.LAUNCH_TIME' globals.out`"
 		startTimeTS="`expr $startTime / 1000`"
-		finishTime="`../shell/jq -r '.FINISH_TIME' globals.out`"
+		finishTime="`../aloja-tools/jq -r '.FINISH_TIME' globals.out`"
 		finishTimeTS="`expr $finishTime / 1000`"
 		totalTime="`expr $finishTime - $startTime`"
 		totalTime="`expr $totalTime / 1000`"
@@ -19,7 +19,7 @@ importHDIJobs() {
 		fi
 		
 		if [ "$jobName" != "TempletonControllerJob" ]; then
-			tmp=`../shell/jq -r '.JOB_ID' globals.out`
+			tmp=`../aloja-tools/jq -r '.JOB_ID' globals.out`
 			exec="$folder/$jobName_$tmp"
 
 			id_exec=""
@@ -65,11 +65,11 @@ importHDIJobs() {
 		    	get_id_exec "$exec"
 			 fi
 		        
-		     values=`../shell/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+		     values=`../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 	    	 insert="INSERT INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
 		               ON DUPLICATE KEY UPDATE
-		             LAUNCH_TIME=`../shell/jq '.["LAUNCH_TIME"]' globals.out`,
-		             FINISH_TIME=`../shell/jq '.["SUBMIT_TIME"]' globals.out`;"
+		             LAUNCH_TIME=`../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
+		             FINISH_TIME=`../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
 		     logger "$insert"
 
 		     $MYSQL "$insert"
@@ -84,16 +84,16 @@ importHDIJobs() {
 			done
 			
 		    runnignTime=`expr $finishTimeTS - $startTimeTS`
-		     read -a tasks <<< `../shell/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
+		     read -a tasks <<< `../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
 		    for task in "${tasks[@]}" ; do
 		    	taskId=`echo $task | sed 's/"/\ /g'`
-		    	taskStatus=`../shell/jq --raw-output ".$task.TASK_STATUS" tasks.out`
-				taskType=`../shell/jq --raw-output ".$task.TASK_TYPE" tasks.out`
-				taskStartTime=`../shell/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
-				taskFinishTime=`../shell/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
+		    	taskStatus=`../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out`
+				taskType=`../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out`
+				taskStartTime=`../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
+				taskFinishTime=`../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
 				taskStartTime=`expr $taskStartTime / 1000`
 				taskFinishTime=`expr $taskFinishTime / 1000`
-		    	values=`../shell/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+		    	values=`../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
 		    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 						ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
