@@ -20,9 +20,9 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`iofilebuf\` int(11) DEFAULT NULL,
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
+  hadoop_version varchar(128) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
   \`valid\` BOOLEAN DEFAULT TRUE,
- \`hadoop_version\` int(11) NOT NULL DEFAULT 1,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`)
 ) ENGINE=InnoDB;
@@ -47,7 +47,10 @@ primary key (id_cluster)) engine InnoDB;
 
 "
 
-$MYSQL "alter ignore table  clusters add  datanodes int DEFAULT NULL;"
+$MYSQL "
+alter ignore table  clusters add  datanodes int DEFAULT NULL;
+alter ignore table execs add hadoop_version varchar(128) default NULL;
+"
 
 $MYSQL "
 
