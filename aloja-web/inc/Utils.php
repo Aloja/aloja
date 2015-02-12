@@ -305,6 +305,7 @@ class Utils
     	$clusterOptions = $db->get_rows("SELECT DISTINCT clusters.name FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
     	$clusterNodes = $db->get_rows("SELECT DISTINCT clusters.datanodes FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
     	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 $filter_execs");
+        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs WHERE 1 $filter_execs");
     	
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
@@ -316,6 +317,7 @@ class Utils
     	$discreteOptions['id_cluster'][] = 'All';
     	$discreteOptions['datanodes'][] = 'All';
     	$discreteOptions['hadoop_version'][] = 'All';
+        $discreteOptions['bench_type'][] = 'All';
     	
     	foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
@@ -345,6 +347,9 @@ class Utils
     	foreach($hadoopVersion as $option) {
     		$discreteOptions['hadoop_version'][] = array_shift($option);
     	}
+        foreach($benchType as $option) {
+            $discreteOptions['bench_type'][] = array_shift($option);
+        }
     	
     	return $discreteOptions;
     }

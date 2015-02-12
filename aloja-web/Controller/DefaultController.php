@@ -29,7 +29,8 @@ class DefaultController extends AbstractController
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
-    		'hadoop_version' => 'Hadoop version'
+    		'hadoop_version' => 'H Version',
+            'bench_type' => 'Bench',
         );
 
     public function indexAction()
