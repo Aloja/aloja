@@ -23,7 +23,7 @@ for clusterConfigFile in $configFolderPath/cluster_* ; do
   #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
   if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
     sql_tmp="$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
-    echo "Executing $MYSQL $sql_tmp"
+    echo "Executing $sql_tmp"
     $MYSQL "$sql_tmp"
   fi
 
