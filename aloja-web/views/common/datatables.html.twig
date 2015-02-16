@@ -230,7 +230,7 @@
             oTable.fnDraw();
         }
 
-        {% if selected == 'Hadoop Job Counters' %}
+        {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
             var buildExecParams = new Array();
             var index = 0;
             {% for execP in execsParam %}
@@ -289,17 +289,17 @@
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
-                "oSearch": {"sSearch": $.urlParam('search')},
+                "oSearch": {"bCaseInsensitive":false, "sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
-                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}{% endif %}",
+                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}{% endif %}",
                 //Trick to allow ajax cache
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
                       "dataType": 'json',
                       "type": "GET",
                       "url": sSource,
-                      {% if selected == 'Hadoop Job Counters'  %} 
+                      {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
                       {% endif %}
                       "success": fnCallback
@@ -307,7 +307,7 @@
                 },
                 {% if selected == 'Performance Metrics' %}
                 "aaSorting": [[ {{ getArrayIndex(theaders,'End time')+1 }}, "desc" ]],
-                {% elseif selected == 'Hadoop Job Counters' %}
+                {% elseif selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
                 "aaSorting": [[ 2, "desc" ]],
                 {% elseif selected == 'Benchmark Executions' %}
                 "aaSorting": [[ 17, "desc" ]],
@@ -321,7 +321,7 @@
                 //"bStateSave": true,
                 "aoColumnDefs": [
                     {% if selected == 'Benchmark Executions' %}
-                      {"bVisible": false, "aTargets": [ 4,17 ] }
+                      {"bVisible": false, "aTargets": [ 4,18 ] }
                     {% elseif selected == 'Performance Metrics' %}
                       {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
                     {% endif %}
@@ -366,11 +366,11 @@
                             index += 1;
 
                     	var headTitle = $("#benchmarks thead tr:first-child th:nth-child("+index+")").text();
-                     {% if selected == 'Hadoop Job Counters' %}
+                     {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
                        	if(headTitle == 'JOBID')
         					$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
                         else if(headTitle == 'CHARTS')
-                            $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> <a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>');
+                            $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> {% if not PROD %}<a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>{% endif %}');
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
                      {% elseif selected == 'Benchmark Executions' %}
@@ -382,14 +382,18 @@
         					var tooltip = '';
         					if(aData[6] == 'ETH')
         						tooltip = 'Ethernet';
-        					else
+        					else if(aData[6] == 'IB')
         						tooltip = 'Infiniband';
+        					else
+            					tooltip = 'No apply';
         					$(this).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
                        	} else if(headTitle == 'Disk') {
         					if(aData[7] == 'HDD')
         						tooltip = 'Hard disk';
         					else if(aData[7] == 'SSD')
         						tooltip = 'Solid-state disk';
+        					else if(aData[7] == 'N/A')
+            					tooltip = 'No apply';
         					else
         						tooltip = aData[7].substring(2) + ' remote(s)';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
@@ -398,7 +402,10 @@
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
 						} else if(headTitle == 'Histogram') {
-							$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
+							if(aData[14] == 'HDInsight') {
+								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
+							} else
+								$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
                         } else if(headTitle == 'PARAVER') {
         					$(this).html('<a href="{{ path('export2prv') }}?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
                         }

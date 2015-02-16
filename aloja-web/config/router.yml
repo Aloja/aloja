@@ -102,3 +102,23 @@ dbscanexecs:
 dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+
+hdp2counters:
+    pattern: "/hdp2counters"
+    controller: "alojaweb\\Controller\\DefaultController::hdp2CountersAction"
+    
+hdp2countersdata:
+    pattern: "/hdpcountersdata"
+    controller: "alojaweb\\Controller\\RestController::hdp2countersDataAction"
+   
+histogramhdi:
+    pattern: "/histogramhdi"
+    controller: "alojaweb\\Controller\\DefaultController::histogramHDIAction"
+     
+histogramhdidata:
+    pattern: "/histogramhdidata"
+    controller: "alojaweb\\Controller\\RestController::histogramHDIDataAction"
+    
+histogramhditasksdata:
+    pattern: "/histogramhditasksdata"
+    controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"

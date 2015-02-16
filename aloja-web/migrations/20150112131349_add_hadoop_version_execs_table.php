@@ -22,7 +22,7 @@ class AddHadoopVersionExecsTable extends AbstractMigration
      */
     public function up()
     {
-    	$this->execute("ALTER TABLE execs ADD COLUMN hadoop_version INT NOT NULL DEFAULT 1");
+    	$this->execute("ALTER TABLE execs ADD COLUMN hadoop_version varchar(128) default NULL");
     }
 
     /**

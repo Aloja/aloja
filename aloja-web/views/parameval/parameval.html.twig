@@ -1,0 +1,82 @@
+{% extends "layout.html.twig" %}
+{% block javascript %}
+	{{ parent() }}
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+    <script>
+    $(function () {
+        $('select[name="parameval"]').change(function() {
+			var name = $(this).val()+'s[]';
+			$('select[name="'+name+'"]').val('None');
+        });
+    	$('select, input').change(function() {
+            $(this).parents('form').submit();
+        });
+        
+        $('#chart').highcharts({
+            chart: {
+                type: 'column'
+            },
+            title: {
+                text: '{{ getParamevalTitleName(paramEval) }} evaluation'
+            },
+            credits: {
+                enabled: false
+            },
+            xAxis: {
+                categories: [{{ categories | raw}}],
+                title: {
+                    text: '{{ getParamevalTitleName(paramEval) }}'
+                }
+            },
+            yAxis: {
+                min: 0,
+                title: {
+                    text: 'Execution time'
+                }
+            },
+            tooltip: {
+                headerFormat: '<table>',
+                pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+                    '<td style="padding:0"><b>{point.y:.1f} s</b></td></tr>'+
+                    '<tr><td>Average of {point.count} executions</tr>',
+                footerFormat: '</table>',
+                shared: true,
+                useHTML: true
+            },
+            plotOptions: {
+                column: {
+                    pointPadding: 0.2,
+                    borderWidth: 0
+                }
+            },
+            series: {{ series | raw }}
+        });
+    });
+    </script>
+    {% endblock %}
+    {% block content %}
+        <div id="navigation" style="text-align: center;">
+         <form>
+        	<div style="width: 50%; margin-left: 10%;">
+        	 <div style="width: 40%; margin: 0 auto;">
+        	 Parameter to evaluate: <select class="form-control" name="parameval">
+						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
+						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
+						<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+						<option value="net" {% if paramEval == 'net' %}selected="selected"{% endif %}>Network</option>
+						<option value="disk" {% if paramEval == 'disk' %}selected="selected"{% endif %}>Disk</option>
+						<option value="replication" {% if paramEval == 'replication' %}selected="selected"{% endif %}>Replication</option>
+						<option value="iofilebuf" {% if paramEval == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+						<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
+						<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
+					</select>
+				</div>
+			</div>
+			<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
+			<div style="width: 30%; float: right;">
+				{% include 'common/config_filters.html.twig' %}
+			</div>
+		</div>
+		<p style="clear: both;"></p>
+	{% endblock %}

@@ -1,55 +1,26 @@
 #!/bin/bash
 
-INSERT_DB="1" #if to dump CSV into the DB
-REDO_ALL="" #if to redo folders that have source files and IDs in DB
-REDO_UNTARS="" #if to redo the untars for folders that have it
-PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
-MOVE_TO_DONE="1" #if set moves completed folders to DONE
-
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
 
 source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
+INSERT_DB="1" #if to dump CSV into the DB
+REDO_ALL="" #if to redo folders that have source files and IDs in DB
+REDO_UNTARS="" #if to redo the untars for folders that have it
+PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
+MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
 #TODO check if these variables are still needed
 first_host=""
 hostn=""
 
-#DEV_PC="true" #set to true to insert to vagrant
-#Check if to use a special version of sar or the system one
-#nico pc
-if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
-  sadf="$CUR_DIR/sar/archlinux/sadf"
-  DEV_PC="true"
-#ubuntu
-#elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
-#  sadf="$CUR_DIR/sar/ubuntu/sadf"
-#other
-else
-  sadf="/usr/bin/sadf"
-fi
-
-#TABLE MANIPULATION
-#MYSQL_ARGS="-uroot --local-infile -f -b --show-warnings " #--show-warnings -B
-
-if [ ! "$DEV_PC" ] ; then
-  MYSQL_CREDENTIALS="" #using sudo if from same machine
-  #MYSQL_CREDENTIALS="-u npm -paaa -h gallactica "
-  REDO_ALL="1" #if to redo folders that have source files and IDs in DB
-else
-  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
-fi
-
-MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
-DB="aloja2"
-MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
 
 #logger "Dropping database $DB"
 #sudo mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
-  sudo mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
   source "$CUR_DIR/common/create_db.sh"
 fi
 
@@ -62,8 +33,7 @@ min_time="$(date --utc --date "$min_date" +%s)"
 logger "Starting"
 
 for folder in 201* ; do
-	hdinsight='^[0-9]{4}_(.*)$'
-	if [[ $folder =~ $hdinsight ]]; then
+	if [[ $folder == *"_alojahdi"* ]]; then
 		#HDINSIGHT log
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
 		importHDIJobs
@@ -123,22 +93,31 @@ for folder in 201* ; do
 	
 	        #insert config and get ID_exec
 	        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
-	        #TODO need to add ol naming scheme
+
 	        if [[  $folder == *_az ]] ; then
-	          cluster="2"
+	          id_cluster="2"
 	        else
-	          cluster="${folder:(-2):2}"
-	
-	          $MYSQL "$(get_insert_cluster_sql "$cluster")"
+
+	          id_cluster="${folder:(-2):2}"
+
+	          clusterConfigFile="$(get_clusterConfigFile)"
+
+            #TODO this check wont work for old folders with numeric values at the end, need another strategy
+            #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
+            if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
+	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
+	          else
+	            id_cluster="1"
+	          fi
 	        fi
-	        logger "Cluster $cluster"
+	        logger "Cluster $id_cluster"
 	
 	        if [[ ! -z $exec_values ]] ; then
 	
 	          folder_OK="$(( folder_OK + 1 ))"
 	
 	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-	                  VALUES (NULL, $cluster, \"$exec\", $exec_values)
+	                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
 	                  ON DUPLICATE KEY UPDATE
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
 	                  end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
@@ -149,7 +128,7 @@ for folder in 201* ; do
 	          logger "Processing SCWC"
 	
 	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-	                  VALUES (NULL, $cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+	                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
 	                  ;"
 	                  #ON DUPLICATE KEY UPDATE
 	                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
@@ -169,7 +148,7 @@ for folder in 201* ; do
 			    id_exec=""
 	        get_id_exec "$exec"
 	
-	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $cluster"
+	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 				
 	        if [[ ! -z "$id_exec" ]] ; then
 	

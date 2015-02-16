@@ -27,25 +27,45 @@ head -n3 "$2"
   rm $2
 }
 
-#$1 cluster
-get_insert_cluster_sql() {
+
+#$1 id_cluster
+get_clusterConfigFile() {
   local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
-  source "$clusterConfigFile"
+  echo "$clusterConfigFile";
+}
 
-  local sql="
+#$1 id_cluster $2 clusterConfigFile (optional)
+get_insert_cluster_sql() {
+
+  if [ "$2" ] ; then
+    local clusterConfigFile="$2"
+  else
+    local clusterConfigFile="$(get_clusterConfigFile)"
+  fi
+
+  if [ -f "$clusterConfigFile" ] ; then
+
+    source "$clusterConfigFile"
+
+    local sql="
 INSERT into clusters set
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link=''
-   ON DUPLICATE KEY UPDATE
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='';\n"
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='',
+      provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription'
+ON DUPLICATE KEY UPDATE
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='',
+      provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
-  local nodeName="$(get_master_name)"
-  sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+    local nodeName="$(get_master_name)"
+    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
 
-  for nodeName in $(get_slaves_names) ; do
-    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
-  done
+    for nodeName in $(get_slaves_names) ; do
+      sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+    done
 
-  echo -e "$sql\n"
+    echo -e "$sql\n"
+    else
+       logger "ERROR: cannot find cluster definition file"
+    fi
 }
 
 
