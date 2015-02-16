@@ -23,13 +23,14 @@ class DefaultController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
-    		'nodes_number' => 'Nodes',
+    		'datanodes' => 'Datanodes',
     		'histogram' => 'Histogram',
            // 'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
-    		'hadoop_version' => 'Hadoop version'
+    		'hadoop_version' => 'H Version',
+            'bench_type' => 'Bench',
         );
 
     public function indexAction()
@@ -1034,7 +1035,7 @@ class DefaultController extends AbstractController
     {
         try {
         	$db = $this->container->getDBUtils();
-        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = TRUE");
+        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = 1");
         	
         	$discreteOptions = array();
         	$discreteOptions['bench'][] = 'All';
@@ -1103,8 +1104,8 @@ class DefaultController extends AbstractController
             } elseif ($type == 'TASKS') {
                 $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM JOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
-                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
-                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
 
                 $discreteOptions['TASK_STATUS'][] = 'All';
                 $discreteOptions['TASK_TYPE'][] = 'All';
@@ -1556,7 +1557,7 @@ class DefaultController extends AbstractController
     {
     	try {
     		$db = $this->container->getDBUtils();
-    		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = TRUE");
+    		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
     		 
     		$discreteOptions = array();
     		$discreteOptions['bench'][] = 'All';
@@ -1625,8 +1626,8 @@ class DefaultController extends AbstractController
     			$query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
-    			$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
-    			$typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+    			$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+    			$typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
     
     			$discreteOptions['TASK_STATUS'][] = 'All';
     			$discreteOptions['TASK_TYPE'][] = 'All';

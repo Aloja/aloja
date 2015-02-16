@@ -303,8 +303,9 @@ class Utils
     	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 $filter_execs");
     	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 $filter_execs");
     	$clusterOptions = $db->get_rows("SELECT DISTINCT clusters.name FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
-    	$clusterNodes = $db->get_rows("SELECT DISTINCT clusters.nodes_number FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
+    	$clusterNodes = $db->get_rows("SELECT DISTINCT clusters.datanodes FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
     	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 $filter_execs");
+        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs WHERE 1 $filter_execs");
     	
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
@@ -314,8 +315,9 @@ class Utils
     	$discreteOptions['comp'][] = 'All';
     	$discreteOptions['blk_size'][] = 'All';
     	$discreteOptions['id_cluster'][] = 'All';
-    	$discreteOptions['nodes_number'][] = 'All';
+    	$discreteOptions['datanodes'][] = 'All';
     	$discreteOptions['hadoop_version'][] = 'All';
+        $discreteOptions['bench_type'][] = 'All';
     	
     	foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
@@ -340,11 +342,14 @@ class Utils
             $discreteOptions['id_cluster'][] = array_shift($option);
     	}
     	foreach($clusterNodes as $option) {
-    		$discreteOptions['nodes_number'][] = array_shift($option);
+    		$discreteOptions['datanodes'][] = array_shift($option);
     	}
     	foreach($hadoopVersion as $option) {
     		$discreteOptions['hadoop_version'][] = array_shift($option);
     	}
+        foreach($benchType as $option) {
+            $discreteOptions['bench_type'][] = array_shift($option);
+        }
     	
     	return $discreteOptions;
     }

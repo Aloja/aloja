@@ -1,55 +1,26 @@
 #!/bin/bash
 
-INSERT_DB="1" #if to dump CSV into the DB
-REDO_ALL="" #if to redo folders that have source files and IDs in DB
-REDO_UNTARS="" #if to redo the untars for folders that have it
-PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
-MOVE_TO_DONE="1" #if set moves completed folders to DONE
-
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
 
 source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
+INSERT_DB="1" #if to dump CSV into the DB
+REDO_ALL="" #if to redo folders that have source files and IDs in DB
+REDO_UNTARS="" #if to redo the untars for folders that have it
+PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
+MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
 #TODO check if these variables are still needed
 first_host=""
 hostn=""
 
-#DEV_PC="true" #set to true to insert to vagrant
-#Check if to use a special version of sar or the system one
-#nico pc
-if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
-  sadf="$CUR_DIR/sar/archlinux/sadf"
-  DEV_PC="true"
-#ubuntu
-#elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
-#  sadf="$CUR_DIR/sar/ubuntu/sadf"
-#other
-else
-  sadf="/usr/bin/sadf"
-fi
-
-#TABLE MANIPULATION
-#MYSQL_ARGS="-uroot --local-infile -f -b --show-warnings " #--show-warnings -B
-
-if [ ! "$DEV_PC" ] ; then
-  MYSQL_CREDENTIALS="" #using sudo if from same machine
-  #MYSQL_CREDENTIALS="-u npm -paaa -h gallactica "
-  REDO_ALL="1" #if to redo folders that have source files and IDs in DB
-else
-  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h127.0.0.1 -P4306"
-fi
-
-MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
-DB="aloja2"
-MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
 
 #logger "Dropping database $DB"
 #sudo mysql $MYSQL_CREDENTIALS -e "DROP database $DB;"
 
 if [ "$INSERT_DB" == "1" ] ; then
-  sudo mysql $MYSQL_CREDENTIALS -e "CREATE DATABASE IF NOT EXISTS \`$DB\`;"
   source "$CUR_DIR/common/create_db.sh"
 fi
 
@@ -133,7 +104,7 @@ for folder in 201* ; do
 
             #TODO this check wont work for old folders with numeric values at the end, need another strategy
             #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
-            if [ -f "$clusterConfigFile" ] ; then
+            if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
 	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
 	          else
 	            id_cluster="1"
