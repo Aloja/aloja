@@ -1,6 +1,9 @@
 #!/bin/bash
 
 importHDIJobs() {
+     ### NOTE: Converting perf metrics windows time to Linux
+     ## date -d"02/13/2015 11:30:24.300" +"%Y-%m-%d %H:%M:%S"
+    ##to timestamp: date -d"02/13/2015 11:30:24.300" +"%s"
 	for jhist in `find $folder/mapred/history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
 		java -cp "$CUR_DIR/../aloja-tools/lib/aloja-tools.jar" alojatools.JhistToJSON $jhist tasks.out globals.out
 		jobTimestamp=${array[2]}
