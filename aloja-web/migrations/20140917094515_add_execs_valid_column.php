@@ -34,6 +34,6 @@ class AddExecsValidColumn extends AbstractMigration
     	$execsTable = $this->table('execs');
     	$execsTable->addColumn('valid','boolean',array('default' => true))
     		->update();
-    	$this->execute("UPDATE execs SET valid = FALSE WHERE exe_time < 200;");
+    	$this->execute("UPDATE execs SET valid = 0 WHERE exe_time < 200;");
     }
 }

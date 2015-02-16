@@ -98,7 +98,7 @@ AND exe_time between 200 and 15000
 AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
 AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null))
 ";
-//AND valid = TRUE
+//AND valid = 1
     }
 
     public function get_execs($filter_execs = null)
