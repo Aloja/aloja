@@ -87,8 +87,8 @@ function RetrieveData([String]$storageAccount, [String]$storageContainer, [Strin
    mkdir $logsDir
    Write-Verbose "Copying from storage blob"
    AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:mapred /Y
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:app-logs /Y
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:yarn /Y
+   #AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:app-logs /Y
+   #AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:yarn /Y
    Write-Verbose "Copying job logs to logs dir"
    cp -R $storageContainer $logsDir/
    Write-Verbose "Copying to minerva account"
