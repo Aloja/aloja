@@ -42,7 +42,7 @@ foreach($benchmark in $benchmarks) {
 	Write-Verbose "Execution of $benchmark completed successfully"
 }
 
-RetrieveData $storageAccount $storageContainer $logsDir $storageKey $minervaLogin
+RetrieveData $storageAccount $containerName $logsDir $storageKey $minervaLogin
 
 if($destroyCluster -eq $True) {
    destroyCluster $clusterName $storageName $storageKey $destroyContainer $containerName $subscriptionName
