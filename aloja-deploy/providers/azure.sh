@@ -50,7 +50,7 @@ vm_create() {
             --connect "$dnsName" `#Deployment name` \
             --vm-name "$1" \
             --vm-size "$vmSize" \
-            --location 'West Europe' \
+            --location "$azureLocation" \
             --ssh "$ssh_port" \
             --ssh-cert "$sshCert" \
             "$vmImage" \
