@@ -1,7 +1,7 @@
 function CreatePerformanceMonitoringCounter($Credentials, [String]$numberOfNodes)
 {	
 	for($i = 0; $i -lt $numberOfNodes; ++$i) {
-	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path C:\counters$(hostname).txt ) { rm C:\counters$(hostname).txt; }; add-content "C:\counters$(hostname).txt" "\System\*`n\Processor(*)\*`n\Processor Information\*`n\Processor Performance\*`n\Process(*)\*`n\Memory\*`n\Network Interface\*"; logman create counter "hdicounters" -cf  "C:\counters$(hostname).txt" -si "00:00:01" -f csv -v mmddhhmm -o "C:\perfmetrics$(hostname).csv" } -AsJob | Wait-Job
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path C:\counters$(hostname).txt ) { rm C:\counters$(hostname).txt; }; add-content "C:\counters$(hostname).txt" "\PhysicalDisk(_Total)\*`n\Processor(_Total)\*`n\Memory\*`n\Network Interface(Microsoft Hyper-V Network Adapter)\*"; logman create counter "hdicounters" -cf  "C:\counters$(hostname).txt" -si "00:00:01" -f csv -v mmddhhmm -o "C:\perfmetrics$(hostname).csv" } -AsJob | Wait-Job
     }
 }
 
@@ -128,7 +128,10 @@ function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$st
    Write-Verbose "Storage container assigned to cluster"
    
    Write-Verbose "Creating HDInsight cluster"
-   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location "West Europe" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
+   $config = New-AzureHDInsightClusterConfig -ClusterSizeInNodes $nodesNumber
+   $config = Add-AzureHDInsightScriptAction -Config $config -Name configadmin -Uri https://alojahdi6.blob.core.windows.net/alojahdi6/configadmin.ps1 -ClusterRoleCollection HeadNode,DataNode
+
+   New-AzureHDInsightCluster -Config $config -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location "West US" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
    Write-Verbose "HDInsight cluster created successfully"
 }
 
