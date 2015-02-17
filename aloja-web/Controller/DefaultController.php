@@ -1714,7 +1714,7 @@ class DefaultController extends AbstractController
     	try {
     		$rows = $db->get_rows($query);
     		foreach($rows as $row) {
-    			$set = array(round($row['exe_time'],0), round($row['cost'],0), round($row['exe_time']*$row['cost'],0));
+    			$set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
     			array_push($data, array('data' => array($set), 'name' => $row['clustername']));
     		}
     	} catch (\Exception $e) {
