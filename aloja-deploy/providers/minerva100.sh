@@ -12,7 +12,7 @@ get_ssh_user() {
     #"WARNINIG: connecting as root"
     echo "npoggi"
   else
-    echo "$userAloja /${requireRootFirst[$vm_name]}/"
+    echo "$userAloja"
   fi
 }
 
