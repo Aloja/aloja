@@ -13,7 +13,7 @@ $cred = New-Object System.Management.Automation.PsCredential($fullUsername, $sec
 
 createCluster $clusterName $nodesNumber $storageAccount $storageKey $createContainer $containerName $subscriptionName $cred
 Write-Verbose "Waiting 1 minute"
-Start-Sleep -s 60
+Start-Sleep -s 240
 
 #if($runTeragen) {
 #   Write-Verbose "Removing teragen output data"
