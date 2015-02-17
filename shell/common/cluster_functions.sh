@@ -253,8 +253,6 @@ set_shh_proxy() {
 #interactive SSH $1 use password
 vm_connect() {
 
-  echo "$(get_ssh_user)"
-
   set_shh_proxy
 
   local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
@@ -302,7 +300,7 @@ vm_rsync() {
     set_shh_proxy
 
     logger "RSynching: $1 To: $2"
-    #eval is for parameter expansion  --progress
+    #eval is for parameter expansion  --progress --copy-links
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
@@ -1023,6 +1021,7 @@ touch $homePrefixAloja/$userAloja/share/safe_store;
   fi
 
   vm_rsync "../shell ../aloja-deploy ../aloja-tools" "$homePrefixAloja/$userAloja/share"
+  #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
