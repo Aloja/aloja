@@ -113,7 +113,7 @@ get_ssh_port() {
 get_ssh_user() {
 
   #check if we can change from root user
-  if [ -z "${requireRootFirst[$vm_name]}" ] && [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] && [ -z "${vmBootStrapped[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
     echo "root"
   else

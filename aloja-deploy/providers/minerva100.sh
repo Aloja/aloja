@@ -8,11 +8,11 @@ source "$CUR_DIR_TMP/on-premise.sh"
 get_ssh_user() {
 
   #check if we can change from root user
-  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
     echo "npoggi"
   else
-    echo "$userAloja"
+    echo "$userAloja /${requireRootFirst[$vm_name]}/"
   fi
 }
 

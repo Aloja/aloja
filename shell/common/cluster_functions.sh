@@ -253,6 +253,9 @@ set_shh_proxy() {
 #interactive SSH $1 use password
 vm_connect() {
 
+  echo "$(get_ssh_user)"
+  exit 1
+
   set_shh_proxy
 
   local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
