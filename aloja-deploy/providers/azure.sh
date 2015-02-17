@@ -26,21 +26,36 @@ vm_create() {
 
     logger "Creating Linux VM $1 with SSH port $ssh_port..."
 
-    azure vm create \
-          -s "$subscriptionID" \
-          --connect "$dnsName" `#Deployment name` \
-          --vm-name "$1" \
-          --vm-size "$vmSize" \
-          `#--location 'West Europe'` \
-          --affinity-group "$affinityGroup" \
-          --virtual-network-name "$virtualNetworkName" \
-          --subnet-names "$subnetNames" \
-          --ssh "$ssh_port" \
-          --ssh-cert "$sshCert" \
-          `#-v` \
-          `#'test-11'` `#DNS name` \
-          "$vmImage" \
-          "$userAloja" "$passwordAloja"
+    #if a virtual network is specified
+    if [ "$virtualNetworkName" ] ; then
+      azure vm create \
+            -s "$subscriptionID" \
+            --connect "$dnsName" `#Deployment name` \
+            --vm-name "$1" \
+            --vm-size "$vmSize" \
+            `#--location 'West Europe'` \
+            --affinity-group "$affinityGroup" \
+            --virtual-network-name "$virtualNetworkName" \
+            --subnet-names "$subnetNames" \
+            --ssh "$ssh_port" \
+            --ssh-cert "$sshCert" \
+            `#-v` \
+            `#'test-11'` `#DNS name` \
+            "$vmImage" \
+            "$userAloja" "$passwordAloja"
+    #no virtual network preference
+    else
+      azure vm create \
+            -s "$subscriptionID" \
+            --connect "$dnsName" `#Deployment name` \
+            --vm-name "$1" \
+            --vm-size "$vmSize" \
+            --location "$azureLocation" \
+            --ssh "$ssh_port" \
+            --ssh-cert "$sshCert" \
+            "$vmImage" \
+            "$userAloja" "$passwordAloja"
+    fi
   else
     logger "Creating Windows VM $1 with RDP port $ssh_port..."
 

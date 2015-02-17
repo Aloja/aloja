@@ -8,7 +8,7 @@ source "$CUR_DIR_TMP/on-premise.sh"
 get_ssh_user() {
 
   #check if we can change from root user
-  if [ "$requireRootFirst" ] ; then
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
     echo "npoggi"
   else
@@ -29,10 +29,11 @@ sudo echo -n '$userAloja:$passwordAloja' |sudo chpasswd;
 sudo adduser $userAloja sudo;
 sudo adduser $userAloja adm;
 
+
 sudo bash -c \"echo '%sudo ALL=NOPASSWD:ALL' >> /etc/sudoers\";
 
 sudo mkdir -p $homePrefixAloja/$userAloja/.ssh;
-sudo bash -c \"echo '${insecureKey}' >> sudo $homePrefixAloja/$userAloja/.ssh/authorized_keys\";
+sudo bash -c \"echo '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys\";
 sudo chown -R $userAloja: $homePrefixAloja/$userAloja/.ssh;
 sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc /root/;
 "
