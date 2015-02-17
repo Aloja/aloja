@@ -122,3 +122,7 @@ histogramhdidata:
 histogramhditasksdata:
     pattern: "/histogramhditasksdata"
     controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"
+    
+bubblechart:
+    pattern: "/bubblechart"
+    controller: "alojaweb\\Controller\\DefaultController::bubbleChartAction"
