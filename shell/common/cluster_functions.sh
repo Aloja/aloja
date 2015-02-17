@@ -710,9 +710,14 @@ vm_set_dot_files() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
-    vm_update_template "~/.bashrc" "export HISTSIZE=50000
+    vm_update_template "~/.bashrc" "
+export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'" ""
+
+    vm_update_template "~/.screenrc" "
+defscrollback 99999
+startup_message off" ""
 
     test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' ~/.bashrc\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
