@@ -129,7 +129,7 @@ function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$st
    
    Write-Verbose "Creating HDInsight cluster"
    $config = New-AzureHDInsightClusterConfig -ClusterSizeInNodes $nodesNumber
-   $config = Add-AzureHDInsightScriptAction -Config $config -Name configadmin -Uri https://alojahdi6.blob.core.windows.net/alojahdi6/configadmin.ps1 -ClusterRoleCollection HeadNode,DataNode
+   #$config = Add-AzureHDInsightScriptAction -Config $config -Name configadmin -Uri https://alojahdi6.blob.core.windows.net/alojahdi6/configadmin.ps1 -ClusterRoleCollection HeadNode,DataNode
    $config = Set-AzureHDInsightDefaultStorage -Config $config -StorageAccountKey $storageKey -StorageAccountName $storageName -StorageContainerName $containerName
 
    New-AzureHDInsightCluster -Config $config -Name $clusterName -Location "West US" -Credential $cred
