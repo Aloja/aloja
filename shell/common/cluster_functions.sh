@@ -254,7 +254,6 @@ set_shh_proxy() {
 vm_connect() {
 
   echo "$(get_ssh_user)"
-  exit 1
 
   set_shh_proxy
 
