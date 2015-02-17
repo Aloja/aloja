@@ -125,7 +125,6 @@
 		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
 		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
 		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a>
-		            <li {% if selected is defined and selected == 'Bubble Chart' %}class="active"{% endif %}><a class="navlink" href="{{ path('bubblechart') }}">Bubble Chart</a>
 		          </ul>
 		        </li>
 				<li class="dropdown">
@@ -134,6 +133,7 @@
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
 			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
 			        </li>
+			         <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
 		          </ul>
 		        </li>		        
 

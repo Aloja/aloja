@@ -1672,7 +1672,7 @@ class DefaultController extends AbstractController
     			));
     }
     
-    public function bubbleChartAction()
+    public function clusterCostEffectivenessAction()
     {
     	$db = $this->container->getDBUtils ();
     	$data = array();
@@ -1721,8 +1721,8 @@ class DefaultController extends AbstractController
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
     	
-    	echo $this->container->getTwig()->render('bubblechart/bubblechart.html.twig', array(
-    			'selected' => 'Bubble Chart',
+    	echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
+    			'selected' => 'Cost-Effectiveness of clusters',
     			'series' => json_encode($data),
     			'benchs' => $bench,
     			'nets' => $nets,

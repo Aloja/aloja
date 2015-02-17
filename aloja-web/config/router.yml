@@ -123,6 +123,6 @@ histogramhditasksdata:
     pattern: "/histogramhditasksdata"
     controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"
     
-bubblechart:
-    pattern: "/bubblechart"
-    controller: "alojaweb\\Controller\\DefaultController::bubbleChartAction"
+clustercosteffectiveness:
+    pattern: "/clustercosteffectiveness"
+    controller: "alojaweb\\Controller\\DefaultController::clusterCostEffectivenessAction"
