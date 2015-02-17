@@ -10,6 +10,7 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #global variables
+declare -A requireRootFirst
 
 #####################################################################################
 # Start functions
@@ -30,7 +31,7 @@ vm_create_node() {
 
   if [ "$vmType" != 'windows' ] ; then
 
-    requireRootFirst="true" #for some providers that need root user first it is dissabled further on
+    requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
@@ -79,7 +80,7 @@ vm_create_connect() {
 #requires $vm_name and $type to be set
 vm_provision() {
   vm_initial_bootstrap
-  requireRootFirst="" #disable root/admin user from this part on
+  requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
 
   vm_set_ssh
   vm_install_base_packages
