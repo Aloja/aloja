@@ -12,6 +12,7 @@ while true ; do
 
   logger "\nImporting jobs\n\n"
   cd "$IMPORT_DIR"
+  bash $CUR_DIR/aloja-import2db.sh "ONLY_META_DATA"
   bash $CUR_DIR/aloja-import2db.sh
 
   logger "\nRestarting MySQL\n\n"

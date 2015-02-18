@@ -131,8 +131,9 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
+			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a>
 			        </li>
+			         <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
 		          </ul>
 		        </li>		        
 

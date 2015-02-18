@@ -113,7 +113,7 @@ get_ssh_port() {
 get_ssh_user() {
 
   #check if we can change from root user
-  if [ "$requireRootFirst" ] && [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] && [ -z "${vmBootStrapped[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
     echo "root"
   else
@@ -124,7 +124,7 @@ get_ssh_user() {
 vm_already_bootstraped() {
 
   #check if we can change to regular user
-  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+  if [ -z "${requireRootFirst[$vm_name]}" ] ; then
     vm_already_bootstraped
   fi
 

@@ -1035,7 +1035,7 @@ class DefaultController extends AbstractController
     {
         try {
         	$db = $this->container->getDBUtils();
-        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = TRUE");
+        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = 1");
         	
         	$discreteOptions = array();
         	$discreteOptions['bench'][] = 'All';
@@ -1104,8 +1104,8 @@ class DefaultController extends AbstractController
             } elseif ($type == 'TASKS') {
                 $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM JOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
-                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
-                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
 
                 $discreteOptions['TASK_STATUS'][] = 'All';
                 $discreteOptions['TASK_TYPE'][] = 'All';
@@ -1557,7 +1557,7 @@ class DefaultController extends AbstractController
     {
     	try {
     		$db = $this->container->getDBUtils();
-    		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = TRUE");
+    		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
     		 
     		$discreteOptions = array();
     		$discreteOptions['bench'][] = 'All';
@@ -1626,8 +1626,8 @@ class DefaultController extends AbstractController
     			$query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
-    			$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
-    			$typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = TRUE");
+    			$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+    			$typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
     
     			$discreteOptions['TASK_STATUS'][] = 'All';
     			$discreteOptions['TASK_TYPE'][] = 'All';
@@ -1670,5 +1670,72 @@ class DefaultController extends AbstractController
     					'discreteOptions' => $discreteOptions
     					//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     			));
+    }
+    
+    public function clusterCostEffectivenessAction()
+    {
+    	$db = $this->container->getDBUtils ();
+    	$data = array();
+    	
+    	$filter_execs = DBUtils::getFilterExecs();
+    	$configurations = array();
+    	$where_configs = '';
+    	$concat_config = "";
+    	
+    	// $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+    	$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false ); 	 
+    	$nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
+    	$disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
+    	$blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
+    	$comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
+    	$id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
+    	$mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
+    	$replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
+    	$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
+    	$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
+    	
+    	if(isset($_GET['benchs']))
+    		$_GET['benchs'] = $_GET['benchs'][0];
+    	
+   		if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
+          $bench = $_GET['benchs'];
+          $bench_where = " AND bench = '$bench'";
+        } else {
+          $bench = 'terasort';
+          $bench_where = " AND bench = '$bench'";
+        }
+    	
+    	$query = "SELECT e.*,
+	    	(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes
+    		from execs e
+    		join clusters c USING (id_cluster)
+    		WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name HAVING COUNT(DISTINCT c.name)=1 ORDER BY exe_time,cost ASC;";
+    	
+    	try {
+    		$rows = $db->get_rows($query);
+    		foreach($rows as $row) {
+    			$set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
+    			array_push($data, array('data' => array($set), 'name' => $row['clustername']));
+    		}
+    	} catch (\Exception $e) {
+    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+    	}
+    	
+    	echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
+    			'selected' => 'Cost-Effectiveness of clusters',
+    			'series' => json_encode($data),
+    			'benchs' => $bench,
+    			'nets' => $nets,
+    			'disks' => $disks,
+    			'blk_sizes' => $blk_sizes,
+    			'comps' => $comps,
+    			'id_clusters' => $id_clusters,
+    			'mapss' => $mapss,
+    			'replications' => $replications,
+    			'iosfs' => $iosfs,
+    			'iofilebufs' => $iofilebufs,
+    			'select_multiple_benchs' => false,
+    			'options' => Utils::getFilterOptions($db)
+    		));
     }
 }

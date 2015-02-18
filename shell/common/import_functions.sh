@@ -34,10 +34,14 @@ get_clusterConfigFile() {
   echo "$clusterConfigFile";
 }
 
-#$1 id_cluster
+#$1 id_cluster $2 clusterConfigFile (optional)
 get_insert_cluster_sql() {
 
-  local clusterConfigFile="$(get_clusterConfigFile)"
+  if [ "$2" ] ; then
+    local clusterConfigFile="$2"
+  else
+    local clusterConfigFile="$(get_clusterConfigFile)"
+  fi
 
   if [ -f "$clusterConfigFile" ] ; then
 
@@ -45,9 +49,11 @@ get_insert_cluster_sql() {
 
     local sql="
 INSERT into clusters set
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link=''
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='',
+      provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription'
 ON DUPLICATE KEY UPDATE
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='';\n"
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='',
+      provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
     local nodeName="$(get_master_name)"
     sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
