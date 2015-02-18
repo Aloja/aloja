@@ -122,3 +122,7 @@ histogramhdidata:
 histogramhditasksdata:
     pattern: "/histogramhditasksdata"
     controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"
+    
+clustercosteffectiveness:
+    pattern: "/clustercosteffectiveness"
+    controller: "alojaweb\\Controller\\DefaultController::clusterCostEffectivenessAction"
