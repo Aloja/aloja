@@ -266,66 +266,74 @@ class DefaultController extends AbstractController
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
             $money 	= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+                        
+            $maxCostHour = "(select max((e.exe_time/3600)*c.cost_hour) FROM execs e JOIN clusters USING (id_cluster) WHERE 1 $bench_where $where_configs)";
+            $minCostHour = "(select min((e.exe_time/3600)*c.cost_hour) FROM execs e JOIN clusters USING (id_cluster) WHERE 1 $bench_where $where_configs)";
+            $maxExeTime = "(select max(exe_time) from execs e where 1 $bench_where $where_configs )";
+            $minExeTime = "(select min(exe_time) from execs e where 1 $bench_where $where_configs )";
             
-            $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
-    //        $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
-     //       $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
-            $max_exe_time = "(select max(exe_time) from execs e where $outliers $bench_where $where_configs )";
-            $min_exe_time = "(select min(exe_time) from execs e where $outliers $bench_where $where_configs )";
-            $cost_per_run = "(exe_time/3600)*
-            (
-            if(locate('_SSD_', exec) > 0,
-            if(locate('IB_SSD_', exec) > 0,
-            $cost_hour_SSD_IB,
-            $cost_hour_SSD_ETH
-            ),
-            if (locate('IB_HDD', exec) > 0,
-            $cost_hour_HDD_IB,
-            if (locate('_az', exec) > 0,
-            if (locate('_ETH_R1_', exec) > 0 OR locate('_ETH_RR1_', exec) > 0,
-            " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 1)) . ",
-            if (locate('_ETH_R2_', exec) > 0 OR locate('_ETH_RR2_', exec) > 0,
-                        " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 2)) . ",
-                if (locate('_ETH_R3_', exec) > 0 OR locate('_ETH_RR3_', exec) > 0,
-                            " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 3)) . ",
-                    if (locate('_RL1_', exec) > 0,
-                    " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 1)) . ",
-                                if (locate('_RL2_', exec) > 0,
-                    " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 2)) . ",
-                                    if (locate('_RL3_', exec) > 0,
-                        " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 3)) . ",
-                                        $cost_hour_AZURE
-                                    )
-                        )
-                        )
-                    )
-                    )
-                    ),
-                        $cost_hour_HDD_ETH
-                    )
-                    )
-                    )
-                    )";
+            $query = "SELECT (exe_time - $minExeTime)/($maxExeTime - $minExeTime) exe_time_std,
+            (((e.exe_time/3600)*c.cost_hour) - $minCostHour)/($maxCostHour - $minCostHour)  cost_std,
+            exec, exe_time from execs e JOIN clusters c USING (id_cluster) where 1 $bench_where $where_configs;";            
+            
+//             $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
+//     //        $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
+//      //       $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
+//             $max_exe_time = "(select max(exe_time) from execs e where $outliers $bench_where $where_configs )";
+//             $min_exe_time = "(select min(exe_time) from execs e where $outliers $bench_where $where_configs )";
+//             $cost_per_run = "(exe_time/3600)*
+//             (
+//             if(locate('_SSD_', exec) > 0,
+//             if(locate('IB_SSD_', exec) > 0,
+//             $cost_hour_SSD_IB,
+//             $cost_hour_SSD_ETH
+//             ),
+//             if (locate('IB_HDD', exec) > 0,
+//             $cost_hour_HDD_IB,
+//             if (locate('_az', exec) > 0,
+//             if (locate('_ETH_R1_', exec) > 0 OR locate('_ETH_RR1_', exec) > 0,
+//             " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 1)) . ",
+//             if (locate('_ETH_R2_', exec) > 0 OR locate('_ETH_RR2_', exec) > 0,
+//                         " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 2)) . ",
+//                 if (locate('_ETH_R3_', exec) > 0 OR locate('_ETH_RR3_', exec) > 0,
+//                             " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 3)) . ",
+//                     if (locate('_RL1_', exec) > 0,
+//                     " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 1)) . ",
+//                                 if (locate('_RL2_', exec) > 0,
+//                     " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 2)) . ",
+//                                     if (locate('_RL3_', exec) > 0,
+//                         " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 3)) . ",
+//                                         $cost_hour_AZURE
+//                                     )
+//                         )
+//                         )
+//                     )
+//                     )
+//                     ),
+//                         $cost_hour_HDD_ETH
+//                     )
+//                     )
+//                     )
+//                     )";
 
-        //    $avg_cost_per_run = "(select avg($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-          //  $std_cost_per_run = "(select std($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-            $max_cost_per_run = "(select max($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-            $min_cost_per_run = "(select min($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+//         //    $avg_cost_per_run = "(select avg($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+//           //  $std_cost_per_run = "(select std($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+//             $max_cost_per_run = "(select max($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
+//             $min_cost_per_run = "(select min($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
 
-            // http://minerva.bsc.es:8099/aloja-web/perf_by_cost2.php?bench=wordcount&cost_hour_LOCAL=12&cost_hour_AZURE=7&cost_hour_SSD_IB=40&cost_hour_SSD_ETH=30&cost_hour_HDD_IB=22
+//             // http://minerva.bsc.es:8099/aloja-web/perf_by_cost2.php?bench=wordcount&cost_hour_LOCAL=12&cost_hour_AZURE=7&cost_hour_SSD_IB=40&cost_hour_SSD_ETH=30&cost_hour_HDD_IB=22
 
-            $query = "
-                            SELECT
-                            (exe_time - $min_exe_time)/($max_exe_time - $min_exe_time)  exe_time_std,
-                            ($cost_per_run - $min_cost_per_run)/($max_cost_per_run - $min_cost_per_run) cost_std,
-                            exec, exe_time, $cost_per_run cost,
-                            $min_exe_time min_exe_time, $max_exe_time max_exe_time, $min_exe_time min_exe_time
-                            from execs e
-                            where $outliers $bench_where $where_configs and substr(exec, 1, 8) > '20131220';
-                            ";
+//             $query = "
+//                             SELECT
+//                             (exe_time - $min_exe_time)/($max_exe_time - $min_exe_time)  exe_time_std,
+//                             ($cost_per_run - $min_cost_per_run)/($max_cost_per_run - $min_cost_per_run) cost_std,
+//                             exec, exe_time, $cost_per_run cost,
+//                             $min_exe_time min_exe_time, $max_exe_time max_exe_time, $min_exe_time min_exe_time
+//                             from execs e
+//                             where $outliers $bench_where $where_configs and substr(exec, 1, 8) > '20131220';
+//                             ";
 
             $rows = $dbUtils->get_rows($query);
-
             if ($rows) {
                 // var_dump($rows);
             } else {
