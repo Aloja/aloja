@@ -454,6 +454,13 @@ make_fstab(){
 /mnt       /scratch/local    none bind 0 0"
   fi
 
+  if [ "$cloud_provider" == "minerva100" ] ; then
+    local minerva100_tmp="$homePrefixAloja/$userAloja/tmp"
+    vm_execute "mkdir -p $minerva100_tmp"
+    local create_string="$create_string
+$minerva100_tmp       /scratch/local    none bind 0 0"
+  fi
+
 #sudo chmod 777 /etc/fstab; sudo echo -e '# <file system> <mount point>   <type>  <options>       <dump>  <pass>
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
