@@ -6,8 +6,10 @@ BASE_DIR=$(pwd)
 source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
+[ "$1" ] && ONLY_META_DATA="1"
+
 INSERT_DB="1" #if to dump CSV into the DB
-REDO_ALL="" #if to redo folders that have source files and IDs in DB
+REDO_ALL="1" #if to redo folders that have source files and IDs in DB
 REDO_UNTARS="" #if to redo the untars for folders that have it
 PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
 MOVE_TO_DONE="1" #if set moves completed folders to DONE
@@ -33,7 +35,7 @@ min_time="$(date --utc --date "$min_date" +%s)"
 logger "Starting"
 
 for folder in 201* ; do
-	if [[ $folder == *"_alojahdi"* ]]; then
+	if [[ $folder == *"_alojahdi"* ]] && [ -z "$ONLY_META_DATA" ] ; then
 		#HDINSIGHT log
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
 		importHDIJobs
@@ -149,8 +151,9 @@ for folder in 201* ; do
 	        get_id_exec "$exec"
 	
 	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
-				
-	        if [[ ! -z "$id_exec" ]] ; then
+
+
+	        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 	
 	          #if dir does not exists or need to insert in DB
 	          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
