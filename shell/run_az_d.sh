@@ -67,7 +67,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     d)
       DISK=$OPTARG
-      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || usage
+      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || usage
       ;;
     b)
       BENCH=$OPTARG
@@ -191,7 +191,7 @@ DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 if [ "$DISK" == "SSD" ] ; then
   HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
+elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]; then
   HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
 elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
   HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
@@ -259,8 +259,9 @@ if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
 
   if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
     echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
-    $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
-    sleep 90 2>&1 |tee -a $LOG_PATH
+    exit 1
+    #$DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
+    #sleep 90 2>&1 |tee -a $LOG_PATH
   fi
 
   if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
@@ -309,7 +310,7 @@ done
 
 zabbix_sender(){
   :
-  #echo "al-1001 $1" | /home/pristine/share/aplic/zabbix/bin/zabbix_sender -c /home/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
+  #echo "al-1001 $1" | $homePrefixAloja/pristine/share/aplic/zabbix/bin/zabbix_sender -c $homePrefixAloja/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
   #>> $LOG_PATH
 }
 
@@ -381,15 +382,24 @@ echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 if [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] ; then
   HDFS_NDIR="$HDD/dfs/name"
   HDFS_DDIR="$HDD/dfs/data"
-elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ]; then
+elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "HD1" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ]; then
+elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "HD2" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ]; then
+elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "HD3" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "HD4" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "HD5" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "HD6" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/data"
 else
   echo "Incorrect disk specified2: $DISK"
   exit 1
