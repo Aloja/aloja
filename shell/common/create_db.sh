@@ -695,6 +695,8 @@ update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort'
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
 
+update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
+update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight'; 
 
 #temporary
 update execs set id_cluster = 05 where substring(exec, (locate('/', exec) -3), 3 ) = '-05' and id_cluster =1;
