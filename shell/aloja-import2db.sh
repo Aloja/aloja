@@ -35,10 +35,10 @@ min_time="$(date --utc --date "$min_date" +%s)"
 logger "Starting"
 
 for folder in 201* ; do
-	if [[ $folder == *"_alojahdi"* ]] && [ -z "$ONLY_META_DATA" ] ; then
+	if [[ $folder == *"_alojahdi"* ]]; then
 		#HDINSIGHT log
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
-		importHDIJobs
+		importHDIJobs "$ONLY_META_DATA" 
 	else
 	
 	  folder_OK="0"
