@@ -404,7 +404,7 @@
                        	} else if(headTitle == 'Cluster') {
 							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14] + '"  target="_blank">'+aData[14]+'</a>');         
 						} else if(headTitle == 'Histogram') {
-							if(aData[14] == 'HDInsight') {
+							if(aData[14].indexOf("hdi") > -1) {
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
 							} else
 								$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
