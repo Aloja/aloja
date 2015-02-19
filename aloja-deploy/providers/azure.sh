@@ -12,6 +12,26 @@ vm_exists() {
   fi
 }
 
+#$1 name $2 location
+azure_create_group() {
+  if [ "$1" ] && [ "$2" ] ; then
+    echo "azure account affinity-group create --location $2 -s $subscriptionID --label $1 $1"
+    azure account affinity-group create --location "$2" -s "$subscriptionID" --label "$1" "$1"
+  else
+    logger "ERROR: invalid parameters for creating affinity group name=$1 location=$2"
+  fi
+}
+
+#$1 vnet name $2 affinity group
+azure_create_vnet() {
+  if [ "$1" ] && [ "$2" ] ; then
+    echo "azure network vnet create --affinity-group $2 -s $subscriptionID $1"
+    azure network vnet create --affinity-group "$2"  -s "$subscriptionID" "$1"
+  else
+    logger "ERROR: invalid parameters for creating vnet group name=$1 affinity=$2"
+  fi
+}
+
 # $1 vm name $2 ssh port
 vm_create() {
 
@@ -28,6 +48,11 @@ vm_create() {
 
     #if a virtual network is specified
     if [ "$virtualNetworkName" ] ; then
+
+      #uncomment to create at first deploy
+      #azure_create_group "$affinityGroup" "$azureLocation"
+      #azure_create_vnet  "$virtualNetworkName" "$affinityGroup"
+
       azure vm create \
             -s "$subscriptionID" \
             --connect "$dnsName" `#Deployment name` \
@@ -36,7 +61,7 @@ vm_create() {
             `#--location 'West Europe'` \
             --affinity-group "$affinityGroup" \
             --virtual-network-name "$virtualNetworkName" \
-            --subnet-names "$subnetNames" \
+            `#--subnet-names "$subnetNames"` \
             --ssh "$ssh_port" \
             --ssh-cert "$sshCert" \
             `#-v` \

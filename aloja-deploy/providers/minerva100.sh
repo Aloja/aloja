@@ -3,6 +3,9 @@ CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/on-premise.sh"
 
 #overrides and custom minerva100 functions
+#TODO move to another place, this right now is in secure but it cannot be read when executing benchs
+homePrefixAloja="/users/scratch" #/home is not on the default location on minerva100
+
 
 #minerva needs *real* user first
 get_ssh_user() {
