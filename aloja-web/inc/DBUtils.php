@@ -95,7 +95,7 @@ AND (bench_type = 'HiBench' OR bench_type = 'HDI')
 AND bench not like 'prep_%'
 AND bench_type not like 'HDI-prep%'
 AND exe_time between 200 and 15000
-AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
+AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null))
 AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null))
 ";
 //AND valid = 1
