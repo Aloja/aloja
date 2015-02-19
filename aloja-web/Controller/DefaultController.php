@@ -1482,8 +1482,20 @@ class DefaultController extends AbstractController
 	
 	public function clustersAction()
 	{
+		$clusterNameSelected = null;
+		
+		if(isset($_GET['cluster_name'])) {
+			$clusterNameSelected = $_GET['cluster_name'];
+		}
+		
+		
+		$db = $this->container->getDBUtils();
+		$clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs);");
+		
 		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
 				'selected' => 'Clusters',
+				'clusters' => $clusters,
+				'clusterNameSelected' => $clusterNameSelected,
 				'title' => 'ALOJA Clusters'));
 	}
 	

@@ -401,6 +401,8 @@
 //         					var string = aData[15];
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+                       	} else if(headTitle == 'Cluster') {
+							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14] + '"  target="_blank">'+aData[14]+'</a>');         
 						} else if(headTitle == 'Histogram') {
 							if(aData[14] == 'HDInsight') {
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
