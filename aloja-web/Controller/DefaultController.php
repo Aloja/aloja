@@ -215,17 +215,17 @@ class DefaultController extends AbstractController
                 $bench_where = " AND bench = '$bench'";
             }
 
-            if (isset($_GET['cost_hour_HDD_ETH'])) {
-                $cost_hour_HDD_ETH = $_GET['cost_hour_HDD_ETH'];
-            } else {
-                $cost_hour_HDD_ETH = 7.1;
-            }
+//             if (isset($_GET['cost_hour_HDD_ETH'])) {
+//                 $cost_hour_HDD_ETH = $_GET['cost_hour_HDD_ETH'];
+//             } else {
+//                 $cost_hour_HDD_ETH = 7.1;
+//             }
 
-            if (isset($_GET['cost_hour_AZURE'])) {
-                $cost_hour_AZURE = $_GET['cost_hour_AZURE'];
-            } else {
-                $cost_hour_AZURE = 5.4;
-            }
+//             if (isset($_GET['cost_hour_AZURE'])) {
+//                 $cost_hour_AZURE = $_GET['cost_hour_AZURE'];
+//             } else {
+//                 $cost_hour_AZURE = 5.4;
+//             }
 
             if (isset($_GET['cost_hour_AZURE_1remote'])) {
                 $cost_hour_AZURE_1remote = $_GET['cost_hour_AZURE_1remote'];
@@ -233,23 +233,23 @@ class DefaultController extends AbstractController
                 $cost_hour_AZURE_1remote = 0.313;
             }
 
-            if (isset($_GET['cost_hour_SSD_IB'])) {
-                $cost_hour_SSD_IB = $_GET['cost_hour_SSD_IB'];
-            } else {
-                $cost_hour_SSD_IB = 11.2;
-            }
+//             if (isset($_GET['cost_hour_SSD_IB'])) {
+//                 $cost_hour_SSD_IB = $_GET['cost_hour_SSD_IB'];
+//             } else {
+//                 $cost_hour_SSD_IB = 11.2;
+//             }
 
-            if (isset($_GET['cost_hour_SSD_ETH'])) {
-                $cost_hour_SSD_ETH = $_GET['cost_hour_SSD_ETH'];
-            } else {
-                $cost_hour_SSD_ETH = 7.5;
-            }
+//             if (isset($_GET['cost_hour_SSD_ETH'])) {
+//                 $cost_hour_SSD_ETH = $_GET['cost_hour_SSD_ETH'];
+//             } else {
+//                 $cost_hour_SSD_ETH = 7.5;
+//             }
 
-            if (isset($_GET['cost_hour_HDD_IB'])) {
-                $cost_hour_HDD_IB = $_GET['cost_hour_HDD_IB'];
-            } else {
-                $cost_hour_HDD_IB = 11.6;
-            }
+//             if (isset($_GET['cost_hour_HDD_IB'])) {
+//                 $cost_hour_HDD_IB = $_GET['cost_hour_HDD_IB'];
+//             } else {
+//                 $cost_hour_HDD_IB = 11.6;
+//             }
 
             $configurations = array();
             $where_configs = '';
@@ -361,6 +361,8 @@ class DefaultController extends AbstractController
                 data: [[" . round($row['exe_time_std'], 3) . ", " . round($row['cost_std'], 3) . "]]
         },";
         }
+        
+        $clusters = $dbUtils->get_rows("SELECT * FROM clusters");
 
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
@@ -369,12 +371,12 @@ class DefaultController extends AbstractController
             'seriesData' => $seriesData,
             'benchs' => array($bench),
             'select_multiple_benchs' => false,
-            'cost_hour_SSD_IB' => $cost_hour_SSD_IB,
-            'cost_hour_AZURE' => $cost_hour_AZURE,
+//             'cost_hour_SSD_IB' => $cost_hour_SSD_IB,
+//             'cost_hour_AZURE' => $cost_hour_AZURE,
             'cost_hour_AZURE_1remote' => $cost_hour_AZURE_1remote,
-            'cost_hour_HDD_ETH' => $cost_hour_HDD_ETH,
-            'cost_hour_HDD_IB' => $cost_hour_HDD_IB,
-            'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
+//             'cost_hour_HDD_ETH' => $cost_hour_HDD_ETH,
+//             'cost_hour_HDD_IB' => $cost_hour_HDD_IB,
+//             'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
             // 'benchs' => $benchs,
             'nets' => $nets,
             'disks' => $disks,
@@ -387,7 +389,8 @@ class DefaultController extends AbstractController
             'iofilebufs' => $iofilebufs,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
         	'money' => $money,
-        	'options' => Utils::getFilterOptions($dbUtils)
+        	'options' => Utils::getFilterOptions($dbUtils),
+        	'clusters' => $clusters,
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
                 ));
     }
