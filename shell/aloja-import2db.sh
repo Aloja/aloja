@@ -35,10 +35,10 @@ min_time="$(date --utc --date "$min_date" +%s)"
 logger "Starting"
 
 for folder in 201* ; do
-	if [[ $folder == *"_alojahdi"* ]] && [ -z "$ONLY_META_DATA" ] ; then
+	if [[ $folder == *"_alojahdi"* ]]; then
 		#HDINSIGHT log
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
-		importHDIJobs
+		importHDIJobs "$ONLY_META_DATA" 
 	else
 	
 	  folder_OK="0"
@@ -102,7 +102,9 @@ for folder in 201* ; do
 
 	          id_cluster="${folder:(-2):2}"
 
-	          clusterConfigFile="$(get_clusterConfigFile)"
+	          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+
+            echo "ID cluster $id_cluster CFF $clusterConfigFile"
 
             #TODO this check wont work for old folders with numeric values at the end, need another strategy
             #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
