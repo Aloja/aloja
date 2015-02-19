@@ -41,6 +41,9 @@ create table if not exists hosts (
   host_name varchar(127) NOT NULL,
   id_cluster int(11) NOT NULL,
   role varchar(45) DEFAULT NULL,
+ cost_remote int(11) DEFAULT NULL,
+ cost_SSD int(11) DEFAULT NULL,
+ cost_IB int(11) DEFAULT NULL,
   PRIMARY KEY (id_host)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 
@@ -694,6 +697,9 @@ update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
 "
 
+$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT NULL"
+$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT NULL"
+$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT NULL"
 
 
 #$MYSQL "
