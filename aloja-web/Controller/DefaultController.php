@@ -1717,11 +1717,12 @@ class DefaultController extends AbstractController
           $bench_where = " AND bench = '$bench'";
         }
     	
-    	$query = "SELECT e.*,
-	    	(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes
-    		from execs e
-    		join clusters c USING (id_cluster)
-    		WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name HAVING COUNT(DISTINCT c.name)=1 ORDER BY exe_time,cost ASC;";
+        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster) WHERE  1 $bench_where $filter_execs $where_configs GROUP BY name) t ON e.exe_time = t.minexe WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name;";
+//     	$query = "SELECT e.*,
+// 	    	(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes
+//     		from execs e
+//     		join clusters c USING (id_cluster)
+//     		WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name ORDER BY exe_time,cost ASC;";
     	
     	try {
     		$rows = $db->get_rows($query);
