@@ -678,6 +678,7 @@ $MYSQL "alter ignore table clusters
   add vm_RAM decimal(10,3) default null,
   add description varchar(256) default null;"
 
+$MYSQL "alter ignore table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
 ############################################33
 logger "INFO: Updating records"
 
@@ -696,7 +697,7 @@ update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
 
 update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
-update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight'; 
+update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
 #temporary
 update execs set id_cluster = 05 where substring(exec, (locate('/', exec) -3), 3 ) = '-05' and id_cluster =1;

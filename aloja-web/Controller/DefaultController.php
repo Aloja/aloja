@@ -134,17 +134,17 @@ class DefaultController extends AbstractController
         	$seriesIndex = 0;
             foreach ($rows as $row) {
                 //close previous serie if not first one
-                if ($bench && $bench != $row['bench']) {
+                if ($bench && $bench != strtolower($row['bench'])) {
                     $series .= "]
                         }, ";
                 }
                 //starts a new series
-                if ($bench != $row['bench']) {
+                if ($bench != strtolower($row['bench'])) {
                 	$seriesIndex = 0;
-                    $bench = $row['bench'];
+                    $bench = strtolower($row['bench']);
                     $series .= "
                         {
-                            name: '{$row['bench']}',
+                            name: '".strtolower($row['bench'])."',
                                 data: [";
                 }
                 while($row['conf'] != $confOrders[$seriesIndex]) {
@@ -1432,8 +1432,8 @@ class DefaultController extends AbstractController
 				else if($paramEval == 'disk')
 					$row[$paramEval] = Utils::getDisksName($row['disk']);
 				
-				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
-				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
+				$arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
+				$arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['count'] = (int)$row['count'];
 			}				
 					
 			foreach($arrayBenchs as $key => $arrayBench)
@@ -1717,7 +1717,10 @@ class DefaultController extends AbstractController
           $bench_where = " AND bench = '$bench'";
         }
     	
-        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster) WHERE  1 $bench_where $filter_execs $where_configs GROUP BY name) t ON e.exe_time = t.minexe WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name;";
+        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) 
+        		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
+        					 WHERE  1 $bench_where $filter_execs $where_configs GROUP BY name) 
+        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name;";
 //     	$query = "SELECT e.*,
 // 	    	(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes
 //     		from execs e

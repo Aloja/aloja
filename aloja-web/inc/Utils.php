@@ -98,7 +98,7 @@ class Utils
                 }
                 
                 if (!$type) {
-                	if ($clusterName == 'HDInsight' && in_array($key_name,$naValues))
+                	if (strpos($clusterName,'hdi') !== false && in_array($key_name,$naValues))
                 		$jsonRow[] = 'N/A';
                     elseif ($key_name == 'bench') {
                         $jsonRow[] = $value_row[$key_name];

@@ -53,10 +53,12 @@ importHDIJobs() {
 				cluster=25
 			fi
 			
-			valid=`echo "$jhist" | grep SUCCEEDED | wc -l`  	        
+			valid=`echo "$jhist" | grep SUCCEEDED | wc -l`
+			
+			get_hdi_exec_params "$folder" "`../aloja-tools/jq -r '.JOB_ID' globals.out`"  	        
 			
 			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version)
-		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",0,0,0,0,0,0,\"n/a\",$valid,2)
+		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime';"
@@ -142,4 +144,25 @@ importHDIJobs() {
 		rm tasks.out
 		rm globals.out
 	done
+}
+
+get_hdi_exec_params() {
+	idJob=$2
+	folder=$1	
+	
+	xmlFile=$(find $folder/mapred/history/done/ -type f -name *$idJob*.xml | head -n 1)
+	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
+	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
+	maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
+	blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
+	iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
+	iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
+	
+	if [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
+		compressCodec=3	
+	fi
+	
+	blocksize=`expr $blocksize / 1000000`
+	echo "debug: $replication , $compressCodec , $maps , $blocksize , $iosf , $iofilebuf"
+	
 }
