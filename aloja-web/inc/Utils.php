@@ -85,7 +85,6 @@ class Utils
         $jsonData = array();
 
         $i = 0;
-        $naValues=array('net','disk','maps','iosf','replication','iofilebuf','comp','blk_size',);
         foreach ($csv as $value_row) {
             $jsonRow = array();
             $jsonRow[] = $value_row['id_exec'];
@@ -98,9 +97,7 @@ class Utils
                 }
                 
                 if (!$type) {
-                	if (strpos($clusterName,'hdi') !== false && in_array($key_name,$naValues))
-                		$jsonRow[] = 'N/A';
-                    elseif ($key_name == 'bench') {
+                	if ($key_name == 'bench') {
                         $jsonRow[] = $value_row[$key_name];
                     } elseif ($key_name == 'init_time') {
                         $jsonRow[] = date('YmdHis', strtotime($value_row['end_time']));
@@ -323,10 +320,14 @@ class Utils
     		$discreteOptions['bench'][] = array_shift($option);
     	}
     	foreach($netOptions as $option) {
-    		$discreteOptions['net'][] = array_shift($option);
+    		$current = array_shift($option);
+    		$current = ($current == "0") ? "HDI" : $current;
+    		$discreteOptions['net'][] = $current;
     	}
     	foreach($diskOptions as $option) {
-    		$discreteOptions['disk'][] = array_shift($option);
+    		$current = array_shift($option);
+    		$current = ($current == "0") ? "HDI" : $current;
+    		$discreteOptions['disk'][] = $current;
     	}
     	foreach($mapsOptions as $option) {
     		$discreteOptions['maps'][] = array_shift($option);
@@ -381,6 +382,8 @@ class Utils
     	$netName = '';
     	if($netShort == 'IB')
     		$netName = 'InfiniBand';
+    	elseif($netShort == 'HDI')
+    		$netName = 'HDInsight';
     	else
     		$netName = 'Ethernet';
     	
@@ -394,6 +397,8 @@ class Utils
     		$disks = 'Hard-disk drive';
     	elseif($diskShort == 'SSD')
     		$disks = 'SSD';
+    	elseif($diskShort == "HDI")
+    		$disks = 'Azure Storage';
     	else if(substr($diskShort,2))
     		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
     	else

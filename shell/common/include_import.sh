@@ -40,6 +40,9 @@ if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
 #ubuntu
 #elif [[ ! -z $(lsb_release -a|grep Ubuntu) ]] ; then
 #  sadf="$CUR_DIR/sar/ubuntu/sadf"
+#aaron's machine
+elif [ "$(hostname)" == "acall" ] ; then
+   DEV_PC="true"
 #vagrant
 elif [ "$(hostname)" == "vagrant" ] ; then
   DEV_PC="true"
