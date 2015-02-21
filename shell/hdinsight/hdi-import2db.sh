@@ -61,7 +61,11 @@ importHDIJobs() {
 		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
-		                  end_time='$finishTime';"
+		                  end_time='$finishTime',
+                          maps=$maps,replication=$replication,
+                          iosf=$iosf,iofilebuf=$iofilebuf,
+                          comp=$compressCodec,blk_size=$blocksize
+                          ;"
 		    logger "$insert"
 
 		     $MYSQL "$insert"
