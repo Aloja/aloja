@@ -58,10 +58,11 @@ importHDIJobs() {
 			get_hdi_exec_params "$folder" "`../aloja-tools/jq -r '.JOB_ID' globals.out`"  	        
 			
 			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version)
-		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",\"HDI\",\"HDI\",\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
+		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",\"$net\",\"$disk\",\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime',
+                          net=$net,disk=$disk,
                           maps=$maps,replication=$replication,
                           iosf=$iosf,iofilebuf=$iofilebuf,
                           comp=$compressCodec,blk_size=$blocksize
@@ -167,6 +168,6 @@ get_hdi_exec_params() {
 	fi
 	
 	blocksize=`expr $blocksize / 1000000`
-	echo "debug: $replication , $compressCodec , $maps , $blocksize , $iosf , $iofilebuf"
-	
+    net="HDI"
+    disk="HDI"	
 }
