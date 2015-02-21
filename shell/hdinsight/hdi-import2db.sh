@@ -58,10 +58,15 @@ importHDIJobs() {
 			get_hdi_exec_params "$folder" "`../aloja-tools/jq -r '.JOB_ID' globals.out`"  	        
 			
 			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version)
-		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",0,0,\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
+		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",\"$net\",\"$disk\",\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
-		                  end_time='$finishTime';"
+		                  end_time='$finishTime',
+                          net='$net',disk='$disk',
+                          maps=$maps,replication=$replication,
+                          iosf=$iosf,iofilebuf=$iofilebuf,
+                          comp=$compressCodec,blk_size=$blocksize
+                          ;"
 		    logger "$insert"
 
 		     $MYSQL "$insert"
@@ -78,8 +83,10 @@ importHDIJobs() {
 		     logger "$insert"
 
 		     $MYSQL "$insert"
+
+		    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
 			
-			if [ -z "$1" ]; then	
+			if [ -z "$1" ] && [ $result -eq 0 ]; then	
 				waste=()
 				reduce=()
 				map=()
@@ -163,6 +170,6 @@ get_hdi_exec_params() {
 	fi
 	
 	blocksize=`expr $blocksize / 1000000`
-	echo "debug: $replication , $compressCodec , $maps , $blocksize , $iosf , $iofilebuf"
-	
+    net="HDI"
+    disk="HDI"	
 }
