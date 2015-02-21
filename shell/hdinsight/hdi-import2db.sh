@@ -83,8 +83,10 @@ importHDIJobs() {
 		     logger "$insert"
 
 		     $MYSQL "$insert"
+
+		    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
 			
-			if [ -z "$1" ]; then	
+			if [ -z "$1" ] && [ $result -eq 0 ]; then	
 				waste=()
 				reduce=()
 				map=()
