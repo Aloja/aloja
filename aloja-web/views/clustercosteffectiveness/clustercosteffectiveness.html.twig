@@ -33,6 +33,20 @@
                                 text: 'Total execution cost (US $)'
                             },
                         },
+                        plotOptions: {
+                          series: {
+                            cursor: 'pointer',
+                            point: {
+                               events: {
+                                   click: function () {
+				       console.log(this.series.points);
+                                       var id = this.series.name;
+				       top.location.href="{{ path('clusters') }}?cluster_name="+id;
+                                   }
+                               }
+                            }
+                          }
+                        },
                         title: {
                             text: 'Cost-effectiveness of clusters'
                         },
