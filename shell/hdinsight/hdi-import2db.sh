@@ -62,7 +62,7 @@ importHDIJobs() {
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime',
-                          net=$net,disk=$disk,
+                          net='$net',disk='$disk',
                           maps=$maps,replication=$replication,
                           iosf=$iosf,iofilebuf=$iofilebuf,
                           comp=$compressCodec,blk_size=$blocksize
