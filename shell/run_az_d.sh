@@ -523,7 +523,7 @@ $DSH "mkdir -p /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /s
 
   $DSH_MASTER $H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
 
-  for i in {0..300} #3mins
+  for i in {0..300}
   do
     local report=$($DSH_MASTER $H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
     local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')
