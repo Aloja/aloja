@@ -862,7 +862,7 @@ function cluster_parallel_config() {
 function cluster_queue_jobs() {
   if [ "$vmType" != 'windows' ] ; then
     vm_set_master_crontab
-    vm_set_master_forer &
+    vm_set_master_forer
   fi
 }
 
