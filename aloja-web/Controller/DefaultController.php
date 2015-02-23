@@ -214,43 +214,7 @@ class DefaultController extends AbstractController
                 $bench = 'terasort';
                 $bench_where = " AND bench = '$bench'";
             }
-
-//             if (isset($_GET['cost_hour_HDD_ETH'])) {
-//                 $cost_hour_HDD_ETH = $_GET['cost_hour_HDD_ETH'];
-//             } else {
-//                 $cost_hour_HDD_ETH = 7.1;
-//             }
-
-//             if (isset($_GET['cost_hour_AZURE'])) {
-//                 $cost_hour_AZURE = $_GET['cost_hour_AZURE'];
-//             } else {
-//                 $cost_hour_AZURE = 5.4;
-//             }
-
-            if (isset($_GET['cost_hour_AZURE_1remote'])) {
-                $cost_hour_AZURE_1remote = $_GET['cost_hour_AZURE_1remote'];
-            } else {
-                $cost_hour_AZURE_1remote = 0.313;
-            }
-
-//             if (isset($_GET['cost_hour_SSD_IB'])) {
-//                 $cost_hour_SSD_IB = $_GET['cost_hour_SSD_IB'];
-//             } else {
-//                 $cost_hour_SSD_IB = 11.2;
-//             }
-
-//             if (isset($_GET['cost_hour_SSD_ETH'])) {
-//                 $cost_hour_SSD_ETH = $_GET['cost_hour_SSD_ETH'];
-//             } else {
-//                 $cost_hour_SSD_ETH = 7.5;
-//             }
-
-//             if (isset($_GET['cost_hour_HDD_IB'])) {
-//                 $cost_hour_HDD_IB = $_GET['cost_hour_HDD_IB'];
-//             } else {
-//                 $cost_hour_HDD_IB = 11.6;
-//             }
-
+            
             $configurations = array();
             $where_configs = '';
             $concat_config = "";
@@ -265,8 +229,30 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-            $money 	= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+            //$money 	= Utils::read_params('money',$where_configs,$configurations,$concat_config);
                         
+            //TODO: steps
+            /*
+             * 1. Get execs and cluster associated costs
+             * 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
+             * 3. Calculate max and minimum costs
+             * 4. calculate max and minimum exe times
+             * 5. Normalize costs and exe times
+             * 6. Print results
+             */
+            
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $bench_where $where_configs";
+            $execs = $dbUtils->get_rows($execs);
+            foreach($execs as $exec) {
+            	$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour']['id_cluster'] : $exec['cost_hour'];
+            	$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
+            	
+            	if($exec['provider'] == 'azure') {
+            		$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote']['id_cluster'] : $exec['cost_remote'];
+            		$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
+            	}
+            }
+            
             $maxCostHour = "(select max((e.exe_time/3600)*c.cost_hour) FROM execs e JOIN clusters USING (id_cluster) WHERE 1 $bench_where $where_configs)";
             $minCostHour = "(select min((e.exe_time/3600)*c.cost_hour) FROM execs e JOIN clusters USING (id_cluster) WHERE 1 $bench_where $where_configs)";
             $maxExeTime = "(select max(exe_time) from execs e where 1 $bench_where $where_configs )";
@@ -346,15 +332,7 @@ class DefaultController extends AbstractController
         $seriesData = '';
         foreach ($rows as $row) {
 
-            $exec = substr($row['exec'], 21);
-			
-            if (strpos($exec, '_az') > 0) {
-                $exec = "AZURE " . $exec;
-            } else if (strpos($row['exec'], 'alojahdi') > 0) {
-            	$exec = "HDINSIGHT " . substr($row['exec'],0,26);
-            } else {
-                $exec = "LOCAL " . $exec;
-            }
+            $exec = $row['exec'];
 
             $seriesData .= "{
             name: '" . $exec . "',
@@ -371,13 +349,6 @@ class DefaultController extends AbstractController
             'seriesData' => $seriesData,
             'benchs' => array($bench),
             'select_multiple_benchs' => false,
-//             'cost_hour_SSD_IB' => $cost_hour_SSD_IB,
-//             'cost_hour_AZURE' => $cost_hour_AZURE,
-            'cost_hour_AZURE_1remote' => $cost_hour_AZURE_1remote,
-//             'cost_hour_HDD_ETH' => $cost_hour_HDD_ETH,
-//             'cost_hour_HDD_IB' => $cost_hour_HDD_IB,
-//             'cost_hour_SSD_ETH' => $cost_hour_SSD_ETH,
-            // 'benchs' => $benchs,
             'nets' => $nets,
             'disks' => $disks,
             'blk_sizes' => $blk_sizes,
@@ -388,7 +359,7 @@ class DefaultController extends AbstractController
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-        	'money' => $money,
+//        	'money' => $money,
         	'options' => Utils::getFilterOptions($dbUtils),
         	'clusters' => $clusters,
         // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'

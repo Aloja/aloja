@@ -182,6 +182,8 @@
 	              		<th>Cluster</th>
 	              		<th>Provider</th>
 	              		<th>Type</th>
+	              		<th>VM OS</th>
+	              		<th>Datanodes</th>
 	              		<th>Cost/hour</th>
 	              		<th>Cost remote disk</th>
 	              		<th>Cost SSD</th>
@@ -193,10 +195,12 @@
 	              	     <td>{{ cluster.name }}</td>
 	              	     <td>{{ cluster.provider }}</td>
 	              	     <td>{{ cluster.type }}</td>
-	              	     <td><input type="text" name="cost_hour" value="{{ cluster.cost_hour }}" size="4"></td>
-	              	     <td>{% if cluster.provider == 'azure' %}<input type="text" name="cost_hour_AZURE_1remote" value="{{ cost_hour_AZURE_1remote }}" size="4">{% else %}Not apply{% endif %}</td>
-	              	     <td>{% if cluster.type == 'On-premise' %}<input type="text" name="cost_SSD" value="2" size="4">{% else %}Not apply{% endif %}</td>
-	              	     <td>{% if cluster.type == 'On-premise' %}<input type="text" name="cost_IB" value="3" size="4">{% else %}Not apply{% endif %}</td>
+	              	     <td>{{ cluster.vm_OS }}</td>
+	              	     <td>{{ cluster.datanodes }}</td>
+	              	     <td><input type="text" name="cost_hour['{{ cluster.id_cluster }}']" value="{{ cost_hour[cluster.id_cluster] }}" size="4"></td>
+	              	     <td>{% if cluster.provider == 'azure' %}<input type="text" name="cost_remote['{{ cluster.id_cluster }}']" value="{{ cost_remote[cluster.id_cluster] }}" size="4">{% else %}Not apply{% endif %}</td>
+	              	     <td>{% if cluster.type == 'On-premise' %}<input type="text" name="cost_SSD['{{ cluster.id_cluster }}']" value="{{ cost_SSD[cluster.id_cluster] }}" size="4">{% else %}Not apply{% endif %}</td>
+	              	     <td>{% if cluster.type == 'On-premise' %}<input type="text" name="cost_IB['{{ cluster.id_cluster }}']" value="{{ cost_IB[cluster.id_cluster] }}" size="4">{% else %}Not apply{% endif %}</td>
 	              	   </tr>
 	              	  {% endfor %}
 	              	</tbody>
