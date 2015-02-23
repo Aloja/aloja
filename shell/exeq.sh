@@ -8,22 +8,23 @@ self_pid="$$"
 exists="$(pgrep -f "$self_name"|wc -l)"
 #exists="$(ps aux|grep "$self_name"|wc -l)"
 #echo "$(pgrep -f "$self_name")"
-if [ "$exists" != "3" ] ; then
+if [[ "$exists" -gt "3" ]] ; then
   echo "Process $self_name already running with pid $self_pid. Count $exists"
   exit
 fi
 
 trap 'kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
-#echo "USER $USER"
+echo "USER $USER"
 
 [ -z "$1" ] && CLUSTER_NAME="az" || CLUSTER_NAME="$1"
 
-Q_SOURCE_PATH="~/share/shell/queue"
+CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-Q_PATH="~/local/queue_$CLUSTER_NAME"
+Q_PATH="$CUR_DIR/../../local/queue_$CLUSTER_NAME"
 
 #prepare dirs for first time
+echo "Creating base dirs (if necessary) $Q_PATH/{exec,done,conf,fail,hold}"
 mkdir -p $Q_PATH/{exec,done,conf,fail,hold}
 
 EXEC_PATH="$Q_PATH/exec"
