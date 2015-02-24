@@ -201,7 +201,6 @@ class DefaultController extends AbstractController
     public function costPerfEvaluationAction()
     {
         $filter_execs = DBUtils::getFilterExecs();
-        $filter_execs_max_time = "AND exe_time < 10000";
         $dbUtils = $this->container->getDBUtils();
         try {
             if(isset($_GET['benchs']))
@@ -241,102 +240,73 @@ class DefaultController extends AbstractController
              * 6. Print results
              */
             
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $bench_where $where_configs";
+            $minCost = 0;
+            $maxCost = 0;
+            $minExeTime = 0;
+            $maxExeTime = 0;
+            
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs";
             $execs = $dbUtils->get_rows($execs);
-            foreach($execs as $exec) {
-            	$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour']['id_cluster'] : $exec['cost_hour'];
+            if(!$execs)
+            	throw new \Exception("No results for query!");
+           
+            foreach($execs as &$exec) {
+            	$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
             	$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
             	
             	if($exec['provider'] == 'azure') {
-            		$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote']['id_cluster'] : $exec['cost_remote'];
+            		$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
             		$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-            	}
-            }
-            
-            $maxCostHour = "(select max((e.exe_time/3600)*c.cost_hour) FROM execs e JOIN clusters USING (id_cluster) WHERE 1 $bench_where $where_configs)";
-            $minCostHour = "(select min((e.exe_time/3600)*c.cost_hour) FROM execs e JOIN clusters USING (id_cluster) WHERE 1 $bench_where $where_configs)";
-            $maxExeTime = "(select max(exe_time) from execs e where 1 $bench_where $where_configs )";
-            $minExeTime = "(select min(exe_time) from execs e where 1 $bench_where $where_configs )";
-            
-            $query = "SELECT (exe_time - $minExeTime)/($maxExeTime - $minExeTime) exe_time_std,
-            (((e.exe_time/3600)*c.cost_hour) - $minCostHour)/($maxCostHour - $minCostHour)  cost_std,
-            exec, exe_time from execs e JOIN clusters c USING (id_cluster) where 1 $bench_where $where_configs;";            
-            
-//             $outliers = "(exe_time/3600)*$cost_hour_HDD_ETH < 100 $filter_execs $filter_execs_max_time";
-//     //        $avg_exe_time = "(select avg(exe_time) from execs e where $outliers $bench_where $where_configs )";
-//      //       $std_exe_time = "(select std(exe_time) from execs e where $outliers $bench_where $where_configs )";
-//             $max_exe_time = "(select max(exe_time) from execs e where $outliers $bench_where $where_configs )";
-//             $min_exe_time = "(select min(exe_time) from execs e where $outliers $bench_where $where_configs )";
-//             $cost_per_run = "(exe_time/3600)*
-//             (
-//             if(locate('_SSD_', exec) > 0,
-//             if(locate('IB_SSD_', exec) > 0,
-//             $cost_hour_SSD_IB,
-//             $cost_hour_SSD_ETH
-//             ),
-//             if (locate('IB_HDD', exec) > 0,
-//             $cost_hour_HDD_IB,
-//             if (locate('_az', exec) > 0,
-//             if (locate('_ETH_R1_', exec) > 0 OR locate('_ETH_RR1_', exec) > 0,
-//             " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 1)) . ",
-//             if (locate('_ETH_R2_', exec) > 0 OR locate('_ETH_RR2_', exec) > 0,
-//                         " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 2)) . ",
-//                 if (locate('_ETH_R3_', exec) > 0 OR locate('_ETH_RR3_', exec) > 0,
-//                             " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 3)) . ",
-//                     if (locate('_RL1_', exec) > 0,
-//                     " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 1)) . ",
-//                                 if (locate('_RL2_', exec) > 0,
-//                     " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 2)) . ",
-//                                     if (locate('_RL3_', exec) > 0,
-//                         " . ($cost_hour_AZURE + ($cost_hour_AZURE_1remote * 3)) . ",
-//                                         $cost_hour_AZURE
-//                                     )
-//                         )
-//                         )
-//                     )
-//                     )
-//                     ),
-//                         $cost_hour_HDD_ETH
-//                     )
-//                     )
-//                     )
-//                     )";
-
-//         //    $avg_cost_per_run = "(select avg($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-//           //  $std_cost_per_run = "(select std($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-//             $max_cost_per_run = "(select max($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-//             $min_cost_per_run = "(select min($cost_per_run) from execs e where $outliers $bench_where $where_configs)";
-
-//             // http://minerva.bsc.es:8099/aloja-web/perf_by_cost2.php?bench=wordcount&cost_hour_LOCAL=12&cost_hour_AZURE=7&cost_hour_SSD_IB=40&cost_hour_SSD_ETH=30&cost_hour_HDD_IB=22
-
-//             $query = "
-//                             SELECT
-//                             (exe_time - $min_exe_time)/($max_exe_time - $min_exe_time)  exe_time_std,
-//                             ($cost_per_run - $min_cost_per_run)/($max_cost_per_run - $min_cost_per_run) cost_std,
-//                             exec, exe_time, $cost_per_run cost,
-//                             $min_exe_time min_exe_time, $max_exe_time max_exe_time, $min_exe_time min_exe_time
-//                             from execs e
-//                             where $outliers $bench_where $where_configs and substr(exec, 1, 8) > '20131220';
-//                             ";
-
-            $rows = $dbUtils->get_rows($query);
-            if ($rows) {
-                // var_dump($rows);
-            } else {
-                throw new \Exception("No results for query!");
+            		
+            		/** calculate remote */
+            		if(preg_match("/^RL/", $exec['disk'])) {
+            			$costRemote *= (int)$exec['disk'][2];            			 
+            		} else
+            			$costRemote = 0;
+            		
+            		$exec['cost_std'] = ($exec['exe_time']/3600)*($costRemote + $costHour);          		
+            	} else if($exec['type'] == 'On-premise') {
+            		$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
+            		$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
+            		
+            		$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
+            		$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
+            		
+            		if($exec['net'] == "IB") {
+            			if($exec['disk'] == "SSD")
+            				$exec['cost_std'] = ($exec['exe_time']/3600)*($costIB + $costSSD + $costHour);
+            			else
+            				$exec['cost_std'] = ($exec['exe_time']/3600)*($costIB + $costHour);
+            		}  else
+            			$exec['cost_std'] = ($exec['exe_time']/3600)*$costHour;
+            	} else 
+            		$exec['cost_std'] = ($exec['exe_time']/3600)*$costHour;
+            	
+            	if($exec['cost_std'] > $maxCost)
+            		$maxCost = $exec['cost_std'];
+            	if($exec['cost_std'] < $minCost)
+            		$minCost = $exec['cost_std'];
+            	
+            	if($exec['exe_time']<$minExeTime)
+            		$minExeTime = $exec['exe_time'];
+            	if($exec['exe_time']>$maxExeTime)
+            		$maxExeTime = $exec['exe_time'];
             }
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message', $e->getMessage() . "\n");
         }
 
+//         (exe_time - $min_exe_time)/($max_exe_time - $min_exe_time) exe_time_std,
+//         ($cost_per_run - $min_cost_per_run)/($max_cost_per_run - $min_cost_per_run) cost_std,
+
         $seriesData = '';
-        foreach ($rows as $row) {
-
-            $exec = $row['exec'];
-
+        foreach ($execs as $exec) {
+        	$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
+        	$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+        	
             $seriesData .= "{
-            name: '" . $exec . "',
-                data: [[" . round($row['exe_time_std'], 3) . ", " . round($row['cost_std'], 3) . "]]
+            name: '" . $exec['exec'] . "',
+                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]
         },";
         }
         
@@ -346,6 +316,10 @@ class DefaultController extends AbstractController
             'selected' => 'Cost Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
             // 'show_in_result' => count($show_in_result),
+            'cost_hour' => $_GET['cost_hour'],
+        	'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
+        	'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
+        	'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
             'seriesData' => $seriesData,
             'benchs' => array($bench),
             'select_multiple_benchs' => false,
