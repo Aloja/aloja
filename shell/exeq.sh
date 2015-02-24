@@ -6,16 +6,19 @@
 self_name="$(basename $0)"
 self_pid="$$"
 exists="$(pgrep -f "$self_name"|wc -l)"
-#exists="$(ps aux|grep "$self_name"|wc -l)"
+#exists="$(ps faux|grep "$self_name"|grep -v 'grep'|wc -l)"
 #echo "$(pgrep -f "$self_name")"
-if [[ "$exists" -gt "3" ]] ; then
+if [ "$exists" != "3" ] ; then
   echo "Process $self_name already running with pid $self_pid. Count $exists"
-  exit
+  echo -e "DEBUG: PS\n$(ps fauxwww|grep "$self_name")"
+  exit 1
+else
+  echo "Starting ALOJA job queues"
 fi
 
 trap 'kill $(jobs -p); exit;' SIGINT SIGTERM EXIT
 
-echo "USER $USER"
+#echo "USER $USER"
 
 [ -z "$1" ] && CLUSTER_NAME="az" || CLUSTER_NAME="$1"
 
@@ -24,7 +27,7 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 Q_PATH="$CUR_DIR/../../local/queue_$CLUSTER_NAME"
 
 #prepare dirs for first time
-echo "Creating base dirs (if necessary) $Q_PATH/{exec,done,conf,fail,hold}"
+#echo "Creating base dirs (if necessary) $Q_PATH/{exec,done,conf,fail,hold}"
 mkdir -p $Q_PATH/{exec,done,conf,fail,hold}
 
 EXEC_PATH="$Q_PATH/exec"
