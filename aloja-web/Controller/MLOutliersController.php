@@ -11,7 +11,7 @@ class MLOutliersController extends AbstractController
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
-		$message = $instance = '';
+		$message = $instance = $jsonHeader = $jsonTable = '';
 		$max_x = $max_y = 0;
 		try
 		{
@@ -176,7 +176,7 @@ class MLOutliersController extends AbstractController
 
 				if ($in_process != NULL)
 				{
-					$jsonData = $jsonOuts = $jsonWarns = '[]';
+					$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 					$must_wait = 'YES';
 				}
 				else
@@ -225,6 +225,7 @@ class MLOutliersController extends AbstractController
 								$jsonOuts[$count_ind[2]]['name'] = $data[3];
 								$jsonOuts[$count_ind[2]++]['id'] = $data[4];							
 							}
+							$jsonTable .= (($jsonTable=='')?'':',').'["'.(((int)$data[0] == 0)?'Legitimate':(((int)$data[0] == 1)?'Warning':'Outlier')).'","'.(((int)$data[1] >= 100)?(int)$data[1]:100).'","'.((int)$data[2]).'","'.implode('","',explode(":",$data[3])).'","'.$data[4].'"]';
 							$count++;
 
 							if ((int)$data[1] > $max_y) $max_y = (int)$data[1];
@@ -232,9 +233,18 @@ class MLOutliersController extends AbstractController
 						}
 						fclose($handle);
 
+						$jsonHeader = '[';
+						for ($i = 0; $i < count($header); $i++)
+						{
+							$jsonHeader .= (($jsonHeader=='[')?'':',').'{title:"'.implode('"},{title:"',explode(":",$header[$i])).'"}';
+						}
+						$jsonHeader .= ']';
+
 						$jsonData = json_encode($jsonData);
 						$jsonWarns = json_encode($jsonWarns);
 						$jsonOuts = json_encode($jsonOuts);
+
+						$jsonTable = '['.$jsonTable.']';
 					}
 				}
 			}
@@ -247,7 +257,7 @@ class MLOutliersController extends AbstractController
 		catch(\Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-			$jsonData = $jsonOuts = $jsonWarns = '[]';
+			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$model = '';
 			$possible_models_id = $possible_models = array();
 		}
@@ -257,6 +267,8 @@ class MLOutliersController extends AbstractController
 				'jsonData' => $jsonData,
 				'jsonWarns' => $jsonWarns,
 				'jsonOuts' => $jsonOuts,
+				'jsonHeader' => $jsonHeader,
+				'jsonTable' => $jsonTable,
 				'max_p' => min(array($max_x,$max_y)),
 				'benchs' => $params['benchs'],
 				'nets' => $params['nets'],
