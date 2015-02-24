@@ -306,7 +306,7 @@ class DefaultController extends AbstractController
         },";
         }
         
-        $clusters = $dbUtils->get_rows("SELECT * FROM clusters");
+        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
 
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
