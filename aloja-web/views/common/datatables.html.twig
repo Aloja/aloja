@@ -385,7 +385,7 @@
         					else if(aData[6] == 'IB')
         						tooltip = 'Infiniband';
         					else
-            					tooltip = 'Not apply';
+            					tooltip = 'Does not apply';
         					$(this).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
                        	} else if(headTitle == 'Disk') {
         					if(aData[7] == 'HDD')
@@ -393,7 +393,7 @@
         					else if(aData[7] == 'SSD')
         						tooltip = 'Solid-state disk';
         					else if(aData[7] == 'N/A')
-            					tooltip = 'Not apply';
+            					tooltip = 'Does not apply';
         					else
         						tooltip = aData[7].substring(2) + ' remote(s)';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
