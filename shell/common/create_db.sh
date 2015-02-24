@@ -59,10 +59,12 @@ vm_size varchar(127) default null,
 vm_OS varchar(127) default null,
 vm_cores int default null,
 vm_RAM decimal(10,3) default null,
+cost_remote int default 0,
+cost_SSD int default 0,
+cost_IB int default 0,
 description varchar(256) default null,
 link varchar(255),
 primary key (id_cluster)) engine InnoDB;
-
 "
 
 $MYSQL "
@@ -682,6 +684,11 @@ $MYSQL "alter ignore table clusters
   add description varchar(256) default null;"
 
 $MYSQL "alter ignore table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT 0"
+$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
+$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
+
+
 ############################################33
 logger "INFO: Updating records"
 
@@ -718,9 +725,6 @@ update execs set id_cluster = 12 where substring(exec, (locate('/', exec) -3), 3
 
 "
 
-$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT NULL"
-$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT NULL"
-$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT NULL"
 echo "
 update ignore execs SET valid = 0;
 update ignore execs SET filter = 0;

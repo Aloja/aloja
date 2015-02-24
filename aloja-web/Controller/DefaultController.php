@@ -254,33 +254,29 @@ class DefaultController extends AbstractController
             	$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
             	$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
             	
-            	if($exec['provider'] == 'azure') {
-            		$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
-            		$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
+
+            	$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
+            	$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
+            	
+            	/** calculate remote */
+            	if(preg_match("/^RL/", $exec['disk'])) {
+            		$costRemote *= (int)$exec['disk'][2];            			 
+            	} else
+            		$costRemote = 0;
             		
-            		/** calculate remote */
-            		if(preg_match("/^RL/", $exec['disk'])) {
-            			$costRemote *= (int)$exec['disk'][2];            			 
-            		} else
-            			$costRemote = 0;
+            	        		
+            	$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
+            	$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
             		
-            		$exec['cost_std'] = ($exec['exe_time']/3600)*($costRemote + $costHour);          		
-            	} else if($exec['type'] == 'On-premise') {
-            		$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
-            		$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
+            	$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
+            	$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
             		
-            		$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
-            		$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
-            		
-            		if($exec['net'] == "IB") {
-            			if($exec['disk'] == "SSD")
-            				$exec['cost_std'] = ($exec['exe_time']/3600)*($costIB + $costSSD + $costHour);
-            			else
-            				$exec['cost_std'] = ($exec['exe_time']/3600)*($costIB + $costHour);
-            		}  else
-            			$exec['cost_std'] = ($exec['exe_time']/3600)*$costHour;
-            	} else 
-            		$exec['cost_std'] = ($exec['exe_time']/3600)*$costHour;
+            	if($exec['net'] != "IB")
+            		$costIB = 0;
+            	if($exec['disk'] != "SSD")
+            		$costSSD = 0;
+            	
+            	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);            	
             	
             	if($exec['cost_std'] > $maxCost)
             		$maxCost = $exec['cost_std'];

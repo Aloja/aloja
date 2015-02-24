@@ -200,9 +200,9 @@
 	              	     <td>{{ cluster.vm_OS }}</td>
 	              	     <td>{{ cluster.datanodes }}</td>
 	              	     <td><input type="text" class="form-control" name="cost_hour[{{ cluster.id_cluster }}]" value="{% if cost_hour[cluster.id_cluster] is defined %}{{ cost_hour[cluster.id_cluster] }}{% else %}{{ cluster.cost_hour }}{% endif %}" size="4"></td>
-	              	     <td>{% if cluster.provider == 'azure' %}<input type="text" class="form-control" name="cost_remote[{{ cluster.id_cluster }}]" value="{% if cost_remote[cluster.id_cluster] is defined %}{{ cost_remote[cluster.id_cluster] }}{% else %}{{ cluster.cost_remote }}{% endif %}" size="4">{% else %}Not apply{% endif %}</td>
-	              	     <td>{% if cluster.type == 'On-premise' %}<input type="text" class="form-control" name="cost_SSD[{{ cluster.id_cluster }}]" value="{% if cost_SSD[cluster.id_cluster] is defined %}{{ cost_SSD[cluster.id_cluster] }}{% else %}{{ cluster.cost_SSD }}{% endif %}" size="4">{% else %}Not apply{% endif %}</td>
-	              	     <td>{% if cluster.type == 'On-premise' %}<input type="text" class="form-control" name="cost_IB[{{ cluster.id_cluster }}]" value="{% if cost_IB[cluster.id_cluster] is defined %}{{ cost_IB[cluster.id_cluster] }}{% else %}{{ cluster.cost_IB }}{% endif %}" size="4">{% else %}Not apply{% endif %}</td>
+	              	     <td><input type="text" class="form-control" name="cost_remote[{{ cluster.id_cluster }}]" value="{% if cost_remote[cluster.id_cluster] is defined %}{{ cost_remote[cluster.id_cluster] }}{% else %}{{ cluster.cost_remote }}{% endif %}" size="4"></td>
+	              	     <td><input type="text" class="form-control" name="cost_SSD[{{ cluster.id_cluster }}]" value="{% if cost_SSD[cluster.id_cluster] is defined %}{{ cost_SSD[cluster.id_cluster] }}{% else %}{{ cluster.cost_SSD }}{% endif %}" size="4"></td>
+	              	     <td><input type="text" class="form-control" name="cost_IB[{{ cluster.id_cluster }}]" value="{% if cost_IB[cluster.id_cluster] is defined %}{{ cost_IB[cluster.id_cluster] }}{% else %}{{ cluster.cost_IB }}{% endif %}" size="4"></td>
 	              	   </tr>
 	              	  {% endfor %}
 	              	</tbody>
