@@ -67,7 +67,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     d)
       DISK=$OPTARG
-      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || usage
+      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]  || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]  || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
       BENCH=$OPTARG
@@ -191,9 +191,8 @@ DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 if [ "$DISK" == "SSD" ] ; then
   HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]; then
-  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
+elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]  || [ "$DISK" == "HD7" ]; then  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
+elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]  || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] ; then
   HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
 else
   echo "Incorrect disk specified: $DISK"
@@ -391,15 +390,18 @@ elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "HD2" ] ; then
 elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "HD3" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "HD4" ] ; then
+elif [ "$DISK" == "RL4" ] || [ "$DISK" == "RR4" ] || [ "$DISK" == "HD4" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "HD5" ] ; then
+elif [ "$DISK" == "RL5" ] || [ "$DISK" == "RR5" ] || [ "$DISK" == "HD5" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "HD6" ] ; then
+elif [ "$DISK" == "RL6" ] || [ "$DISK" == "RR7" ] || [ "$DISK" == "HD6" ] ; then
   HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/name"
   HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/data"
+elif [ "$DISK" == "RL7" ] || [ "$DISK" == "RR7" ] || [ "$DISK" == "HD7" ] ; then
+  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/7/hadoop-hibench_$PORT_PREFIX/dfs/name"
+  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/data,/scratch/attached/7/hadoop-hibench_$PORT_PREFIX/dfs/data"
 else
   echo "Incorrect disk specified2: $DISK"
   exit 1
@@ -523,7 +525,7 @@ $DSH "mkdir -p /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /s
 
   $DSH_MASTER $H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
 
-  for i in {0..300} #3mins
+  for i in {0..300}
   do
     local report=$($DSH_MASTER $H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
     local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')

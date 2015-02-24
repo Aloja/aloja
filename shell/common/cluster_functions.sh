@@ -862,7 +862,7 @@ function cluster_parallel_config() {
 function cluster_queue_jobs() {
   if [ "$vmType" != 'windows' ] ; then
     vm_set_master_crontab
-    vm_set_master_forer &
+    vm_set_master_forer
   fi
 }
 
@@ -926,9 +926,6 @@ vm_set_master_crontab() {
 
     vm_execute_master "echo '$crontab' |crontab"
 
-    #start the queue so dirs are created
-    vm_execute_master "export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName"
-
   else
     logger "Crontab already installed in master"
   fi
@@ -945,12 +942,26 @@ vm_set_master_forer() {
 
   if check_bootstraped "vm_set_master_forer" "set" "master"; then
 
+  #logger "INFO: starting queues in background in case dirs are not yet created"
+  #vm_execute_master "bash -c \"(nohup export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName; touch nohup-exit) > /dev/null &\""
+
+  logger "Checking if queues dirs already setup"
+  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/queue.log && echo '$testKey'")"
+  #in case we get a welcome banner we need to grep
+  test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+  if [ -z "$test_action" ] ; then
+    logger "WARN: queues not ready sleeping for 61s."
+    sleep 61
+  fi
+
   logger "Checking if queues already setup"
   test_action="$(vm_execute "ls ~/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
   if [ -z "$test_action" ] ; then
+
     #TODO shouldn't be necessary but...
     logger "DEBUG: Re-mounting disks"
     local verify_share="$(verify_share_cmd "$homePrefixAloja/$userAloja/share")"

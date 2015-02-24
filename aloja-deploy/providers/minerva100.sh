@@ -113,3 +113,16 @@ sudo apt-get -y purge hadoop
 "
 
 }
+
+vm_install_IB() {
+
+wget https://www.dropbox.com/s/d8u924cuiurhy3v/MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64.tgz?dl=0
+#cp /home/dcarrera/MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64.tgz .
+tar xzf MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64.tgz
+apt-get -y remove libopenmpi1.6 openmpi-doc libopenmpi-dev openmpi-common mpi-default-bin openmpi-bin
+cd MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64
+./mlnxofedinstall --without-fw-update --hpc -q
+/etc/init.d/openibd restart
+/usr/bin/hca_self_test.ofed
+
+}
