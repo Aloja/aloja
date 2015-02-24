@@ -4,10 +4,6 @@
 		{{ highcharts_js|raw }}
 	    <script>
         $(document).ready(function() {
-            $('select').change(function() {
-                $(this).parents('form').submit();
-            });
-
             var chart = new Highcharts.Chart({
                 chart: {
                     renderTo: 'chart',

@@ -27,6 +27,22 @@ class Utils
     		}
     		return $_GET['money'];
     	}
+    	    	
+    	if($item_name == 'datefrom' && isset($_GET['datefrom'])) {
+    		$datefrom = $_GET['datefrom'];
+    		if($datefrom != '') {
+    			$where_configs .= " AND start_time >= '$datefrom'";
+    		}
+    		return $datefrom;
+    	}
+    	
+    	if($item_name == 'dateto' && isset($_GET['dateto'])) {
+    		$dateto = $_GET['dateto'];
+    		if($dateto != '') {
+    			$where_configs .= " AND end_time <= '$dateto'";
+    		}
+    		return $dateto;
+    	}
     	
         $single_item_name = substr($item_name, 0, -1);
 

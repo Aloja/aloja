@@ -3,19 +3,8 @@
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
-	<script type="text/javascript">
-	 $(document).ready(function() {
-		$("input,select").change(function() {
-			$("form").submit();
-		});
-	 });
-	</script>
 	<script>
         $(document).ready(function() {
-                    $('select').change(function() {
-                        $(this).parents('form').submit();
-                    });
-
                    $("#chart").highcharts({
                         chart: {
                             type: 'bubble',

@@ -9,9 +9,6 @@
 			var name = $(this).val()+'s[]';
 			$('select[name="'+name+'"]').val('None');
         });
-    	$('select, input').change(function() {
-            $(this).parents('form').submit();
-        });
         
         $('#chart').highcharts({
             chart: {

@@ -1206,6 +1206,8 @@ class DefaultController extends AbstractController
 			$where_configs = '';
 			$concat_config = "";
 			
+			$datefrom		= Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);
+			$dateto			= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
 			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
@@ -1237,7 +1239,6 @@ class DefaultController extends AbstractController
     		ORDER BY $order_type ASC;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
-			
 			$rows = $db->get_rows ( $query );
 			
 			if (! $rows) {
@@ -1265,6 +1266,8 @@ class DefaultController extends AbstractController
 				'bestexec' => $bestexec,
 				'cluster' => $cluster,
 				'order_type' => $order_type,
+				'datefrom' => $datefrom,
+				'dateto' => $dateto,
 				'benchs' => $benchs,
 				'nets' => $nets,
 				'disks' => $disks,
