@@ -39,7 +39,7 @@ class Utils
             } elseif ($item_name == 'nets') {
                 $items = array();
             } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1',0);
+                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1','HDI');
             } else {
                 $items = array();
             }
