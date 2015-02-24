@@ -74,11 +74,16 @@ class MLMinconfigsController extends AbstractController
 				{
 					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
 				}
-				foreach (array("maes.csv", "sizes.csv", "object.rds") as &$value)
+				foreach (array("sizes.csv", "object.rds") as &$value)
 				{
 					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config.'R').'-'.$value);
 				}
-				if (!$keep_cache)
+				$error_cache = FALSE;
+				foreach (array("maes.csv", "raes.csv") as &$value)
+				{
+					$error_cache = $error_cache || file_exists(getcwd().'/cache/query/'.md5($config.'R').'-'.$value);
+				}
+				if (!($keep_cache && $error_cache))
 				{
 					unlink($cache_ds);
 					shell_exec("sed -i '/".md5($config)." : ".$config."-model/d' ".getcwd()."/cache/query/record.data");
@@ -185,8 +190,9 @@ class MLMinconfigsController extends AbstractController
 					exit(0);
 				}
 
-				// read results of the CSV - MAE
-				if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-maes.csv', 'r')) !== FALSE)
+				// read results of the CSV - MAE or RAE
+				if (file_exists(getcwd().'/cache/query/'.md5($config.'R').'-raes.csv')) $error_file = 'raes.csv'; else $error_file = 'maes.csv';
+				if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-'.$error_file, 'r')) !== FALSE)
 				{
 					$count = $max_x = $max_y = 0;
 					$last_y = 9E15;
