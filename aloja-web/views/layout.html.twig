@@ -212,7 +212,14 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
-
+			$("#advancedFilters").on('shown.bs.collapse hidden.bs.collapse', function() {
+				var element = $(this).parent().find(".indicator").first();
+				if(element.hasClass("glyphicon-chevron-down"))
+					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+				else if(element.hasClass("glyphicon-chevron-up"))
+					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+            });
+             
 			$(".datepicker").each(function() {
 				$(this).datepicker({
 					autoclose: true,
