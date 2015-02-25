@@ -639,8 +639,9 @@ vm_install_base_packages() {
 #  sudo apt-get update -m;
 #fi
 
+export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update -m;
-sudo apt-get install -y -f '
+sudo apt-get -o Dpkg::Options::="--force-confold" install -y -f '
 
       local install_packages_command="$install_packages_command ssh $base_packages;"
 
