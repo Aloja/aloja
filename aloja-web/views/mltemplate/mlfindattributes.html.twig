@@ -8,7 +8,8 @@
         @import "js/datatables/extras/ColVis/media/css/ColVis.css";
         .scrollStyle
         {
-            overflow-x:auto;
+            overflow-x: auto;
+	    float: left;
             width: 100%;
         }
 	</style>
@@ -30,8 +31,9 @@
 	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
-	<div id="footer" style="float: left; width: 100%;">
-		<hr />
+	<hr />
+	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+	<div id="footer" style="display:none; float: left; width: 100%;">
 		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
@@ -52,6 +54,14 @@
 
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
 	$(document).ready(function() {
 		$("#select-model").change(function()
 		{
@@ -77,18 +87,20 @@
 
 		if ("{{must_wait}}" == "NO")
 		{
-			$('#benchmark').dataTable(
-			{
+			oTable = $('#benchmark').dataTable({
 				"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
 				"aaData": {{ jsonData | raw }},
 				"columns": {{ jsonHeader | raw }},
 				"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }}]
-			}
-			);
+			});
+			$(window).bind('resize', function () {
+				oTable.fnAdjustColumnSizing();
+			});           
+			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
 		}
 		else
 		{
-			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<br/>{{instance}}</p>";
+			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
 			$('#footer').hide();
 			setInterval( function() { window.location.reload(); }, 300000 );
 		}
