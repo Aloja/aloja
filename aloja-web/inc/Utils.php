@@ -34,7 +34,8 @@ class Utils
     			$where_configs .= " AND start_time >= '$datefrom'";
     		}
     		return $datefrom;
-    	}
+    	} else if($item_name == 'datefrom')
+    		return "";
     	
     	if($item_name == 'dateto' && isset($_GET['dateto'])) {
     		$dateto = $_GET['dateto'];
@@ -42,7 +43,8 @@ class Utils
     			$where_configs .= " AND end_time <= '$dateto'";
     		}
     		return $dateto;
-    	}
+    	} else if($item_name == 'dateto')
+    		return "";
     	
         $single_item_name = substr($item_name, 0, -1);
 

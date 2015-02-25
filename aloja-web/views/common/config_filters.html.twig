@@ -2,11 +2,17 @@
 	<div class="col-md-10 col-md-offset-1">
 		<form name="configFilters" method="GET" role="form">
 			<div class="row">
-				<div class="col-md-12">
-					<h2 class="compare body" style="text-align: center;">
-						Filters: <a id="filter_reset" href="?">(reset)</a>
-					</h2>
-				</div>
+				<div class="col-md-11">
+				   <p style="text-align: center; font-size: 1.5em; margin-bottom: 1.5em;"><span class="label label-default">Filters</span></p>
+			   </div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+				   <button id="submit" type="submit" value="Change" class="btn btn-primary">Change</button>
+			   </div>
+			   <div class="col-md-6">
+				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
+			   </div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
@@ -154,8 +160,11 @@
 			{% endif %}
 			<br />
 			<div class"=row">
-			   <div class="col-md-8">
-				   <button id="submit" type="submit" value="Change" class="btn btn-warning">Change</button>
+			   <div class="col-md-6">
+				   <button id="submit" type="submit" value="Change" class="btn btn-primary">Change</button>
+			   </div>
+			   <div class="col-md-6">
+				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
 			   </div>
 			</div>
 		</form>

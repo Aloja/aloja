@@ -1206,8 +1206,8 @@ class DefaultController extends AbstractController
 			$where_configs = '';
 			$concat_config = "";
 			
-			$datefrom		= Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);
-			$dateto			= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+			$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+			$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
 			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
