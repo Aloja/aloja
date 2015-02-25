@@ -62,7 +62,12 @@ class DefaultController extends AbstractController
 			$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
 			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
 			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
-			
+			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+				
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
 
@@ -187,6 +192,11 @@ class DefaultController extends AbstractController
              	'money' => $money,
              	'datanodess' => $datanodes,
              	'bench_types' => $benchtype,
+            	'vm_sizes' => $vm_sizes,
+             	'vm_coress' => $vm_coress,
+             	'vm_RAMs' => $vm_RAMs,
+             	'hadoop_versions' => $hadoop_versions,
+             	'types' => $types,
              	'options' => Utils::getFilterOptions($db)
              )
         );
@@ -234,6 +244,11 @@ class DefaultController extends AbstractController
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
             $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
             $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
             	
             //TODO: steps
             /*
@@ -335,6 +350,11 @@ class DefaultController extends AbstractController
             'iofilebufs' => $iofilebufs,
         	'datanodess' => $datanodes,
         	'bench_types' => $benchtype,
+        	'vm_sizes' => $vm_sizes,
+        	'vm_coress' => $vm_coress,
+        	'vm_RAMs' => $vm_RAMs,
+        	'hadoop_versions' => $hadoop_versions,
+        	'types' => $types,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
         	'options' => Utils::getFilterOptions($dbUtils),
@@ -1228,6 +1248,11 @@ class DefaultController extends AbstractController
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
 			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
 			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
 			
 			if (! $benchs)
 				$where_configs .= 'AND bench IN (\'terasort\')';
@@ -1270,6 +1295,7 @@ class DefaultController extends AbstractController
 			$benchs = array (
 					'terasort'
 			);
+			
 		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
 				'selected' => 'Best configuration',
 				'title' => 'Best Run Configuration',
@@ -1291,6 +1317,11 @@ class DefaultController extends AbstractController
 				'money' => $money,
 				'datanodess' => $datanodes,
 				'bench_types' => $benchtype,
+				'vm_sizes' => $vm_sizes,
+				'vm_coress' => $vm_coress,
+				'vm_RAMs' => $vm_RAMs,
+				'hadoop_versions' => $hadoop_versions,
+				'types' => $types,
 				'select_multiple_benchs' => false,
 				'options' => Utils::getFilterOptions($db)
 		) );
@@ -1322,6 +1353,11 @@ class DefaultController extends AbstractController
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
 			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
 			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
 				
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
@@ -1433,6 +1469,11 @@ class DefaultController extends AbstractController
 				'money' => $money,
 				'datanodess' => $datanodes,
 				'bench_types' => $benchtype,
+				'vm_sizes' => $vm_sizes,
+				'vm_coress' => $vm_coress,
+				'vm_RAMs' => $vm_RAMs,
+				'hadoop_versions' => $hadoop_versions,
+				'types' => $types,
 				'paramEval' => $paramEval,
 				'options' => $options
 		) );
@@ -1679,7 +1720,12 @@ class DefaultController extends AbstractController
     	$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
     	$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
     	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
-    	
+    	$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+    	$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+    	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+    	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+    	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+    		
     	if(isset($_GET['benchs']))
     		$_GET['benchs'] = $_GET['benchs'][0];
     	
@@ -1726,6 +1772,11 @@ class DefaultController extends AbstractController
     			'iofilebufs' => $iofilebufs,
     			'datanodess' => $datanodes,
     			'bench_types' => $benchtype,
+    			'vm_sizes' => $vm_sizes,
+    			'vm_coress' => $vm_coress,
+    			'vm_RAMs' => $vm_RAMs,
+    			'hadoop_versions' => $hadoop_versions,
+    			'types' => $types,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));

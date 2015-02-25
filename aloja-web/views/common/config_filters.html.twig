@@ -178,6 +178,66 @@
 					</select>
 				</div>
 			</div>
+			<div class="row">
+				<div class="col-md-6">
+					VM size: </br> <select class="form-control" name="vm_sizes[]"
+						multiple>
+						{% for selopt in options['vm_size'] %}
+					    <option value="{{ selopt['vm_size'] }}" {% if selopt['vm_size'] in vm_sizes %}SELECTED{% endif %}>{{ selopt['vm_size'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not vm_sizes %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					VM #Cores: </br> <select class="form-control"
+						name="vm_coress[]" multiple>
+						{% for selopt in options['vm_cores'] %}
+					    <option value="{{ selopt['vm_cores'] }}" {% if selopt['vm_cores'] in vm_coress %}SELECTED{% endif %}>{{ selopt['vm_cores'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not vm_coress %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					VM RAM: </br> <select class="form-control" name="vm_RAMs[]"
+						multiple>
+						{% for selopt in options['vm_ram'] %}
+					    <option value="{{ selopt['vm_RAM'] }}" {% if selopt['vm_RAM'] in vm_RAMs %}SELECTED{% endif %}>{{ selopt['vm_RAM'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not vm_RAMs %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					Hadoop version: </br> <select class="form-control"
+						name="hadoop_versions[]" multiple>
+						{% for selopt in options['hadoopversion'] %}
+					    <option value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}SELECTED{% endif %}>{{ selopt['hadoop_version'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not hadoop_versions %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					Cluster type: </br> <select class="form-control" name="types[]"
+						multiple>
+						{% for selopt in options['type'] %}
+					    <option value="{{ selopt['type'] }}" {% if selopt['type'] in types %}SELECTED{% endif %}>{{ selopt['type'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not types %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+{# 				<div class="col-md-6">#}
+{# 					Benchmark type: </br> <select class="form-control"#}
+{# 						name="bench_types[]" multiple>#}
+{# 						{% for selopt in options['benchtype'] %}#}
+{# 					    <option value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}SELECTED{% endif %}>{{ selopt['bench_type'] }}</option>#}
+{# 					   {% endfor %}#}
+{# 						<option value="None" {% if not bench_types %} SELECTED {% endif %}>Disabled</option>#}
+{# 					</select>#}
+{# 				</div>#}
+			</div>
 			<br />
 			<div class"=row">
 			   <div class="col-md-6" style="padding: 0;">
