@@ -158,25 +158,25 @@
 				</div>
 			</div>
 			{% endif %}
-{# 			<div class="row">#}
-{# 				<div class="col-md-6">#}
-{# 					Datanodes: </br> <select class="form-control" name="datanodes[]"#}
-{# 						multiple>#}
-{# 						{% for selopt in options['datanodes'] %}#}
-{# 					    <option value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodes %}SELECTED{% endif %}>{% if selopt['iosf'] == 0 %}HDI{% else %}{{ selopt['iosf'] }}{% endif %}</option>#}
-{# 					   {% endfor %}#}
-{# 						<option value="None" {% if not iosfs %} SELECTED {% endif %}>Disabled</option>#}
-{# 					</select>#}
-{# 				</div>#}
-{# 				<div class="col-md-6">#}
-{# 					I/O File Buffer: </br> <select class="form-control"#}
-{# 						name="iofilebufs[]" multiple>#}
-{# 						{% for selopt in options['iofilebuf'] %}#}
-{# 					    <option value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}SELECTED{% endif %}>{% if selopt['iofilebuf'] == 0 %}HDI{% else %}{{ selopt['iofilebuf'] }}KB{% endif %}</option>#}
-{# 					   {% endfor %}#}
-{# 						<option value="None" {% if not iofilebufs %} SELECTED {% endif %}>Disabled</option>#}
-{# 					</select>#}
-{# 				</div>#}
+			<div class="row">
+				<div class="col-md-6">
+					Cluster datanodes: </br> <select class="form-control" name="datanodess[]"
+						multiple>
+						{% for selopt in options['datanodes'] %}
+					    <option value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodess %}SELECTED{% endif %}>{{ selopt['datanodes'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not datanodess %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					Benchmark type: </br> <select class="form-control"
+						name="bench_types[]" multiple>
+						{% for selopt in options['benchtype'] %}
+					    <option value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}SELECTED{% endif %}>{{ selopt['bench_type'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not bench_types %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
 			</div>
 			<br />
 			<div class"=row">
