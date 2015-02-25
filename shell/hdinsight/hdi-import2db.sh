@@ -170,6 +170,6 @@ get_hdi_exec_params() {
 	fi
 	
 	blocksize=`expr $blocksize / 1000000`
-    net="HDI"
-    disk="HDI"	
+    net="ETH"
+    disk="RR1"	
 }
