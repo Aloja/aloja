@@ -57,7 +57,7 @@ class Utils
             } elseif ($item_name == 'nets') {
                 $items = array();
             } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1','HDI');
+                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
             } else {
                 $items = array();
             }
@@ -417,10 +417,10 @@ class Utils
     		$disks = 'SSD';
     	elseif($diskShort == "HDI")
     		$disks = 'Azure Storage';
-    	else if(substr($diskShort,2))
+    	else if(preg_match("/^RL/",$diskShort))
     		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
     	else
-    		$disks = substr($diskShort,1).' HDFS remote(s)';
+    		$disks = substr($diskShort,2).' HDFS remote(s)';
     
     	return $disks;
     }
