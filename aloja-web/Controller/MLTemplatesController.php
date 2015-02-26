@@ -10,7 +10,7 @@ class MLTemplatesController extends AbstractController
 {
 	/* GENERAL FUNCTIONS TO USE */	
 
-	private function generateModelInfo($param_names, $params, $unseen)
+	private function generateModelInfo($param_names, $params, $condition)
 	{
 	    	$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
@@ -19,13 +19,13 @@ class MLTemplatesController extends AbstractController
 		foreach ($param_names as $p) 
 		{
 			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-			if ($unseen) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
 			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
 		}
 		return $model_info;
 	}
 
-	private function generateSimpleInstance($param_names, $params, $unseen)
+	private function generateSimpleInstance($param_names, $params, $condition)
 	{
 	    	$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
@@ -36,15 +36,15 @@ class MLTemplatesController extends AbstractController
 			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
 
 			$tokens[$p] = '';
-			if ($unseen && empty($params[$p])) { $tokens[$p] = '*'; }
-			elseif (!$unseen && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
+			elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 		}
 		return $instance;
 	}
 
-	private function generateInstances($param_names, $params, $unseen)
+	private function generateInstances($param_names, $params, $condition)
 	{
 	    	$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
@@ -68,7 +68,7 @@ class MLTemplatesController extends AbstractController
 		}
 
 		// If "No Clusters" -> All clusters
-		if (!$unseen && empty($params['id_clusters']))
+		if (empty($params['id_clusters']))
 		{
 			$params['id_clusters'] = array();
 			$paramAllOptions['id_clusters'] = array_column($filter_options['id_cluster'],'id_cluster');
@@ -88,8 +88,8 @@ class MLTemplatesController extends AbstractController
 					if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
 
 					$tokens[$p] = '';
-					if ($unseen && empty($params[$p])) { $tokens[$p] = '*'; }
-					elseif (!$unseen && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
+					elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 					else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 					$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 				}
@@ -112,7 +112,7 @@ class MLTemplatesController extends AbstractController
 			while (!feof($fh))
 			{
 				$line = fgets($fh, 4096);
-				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
+				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line) && !preg_match('/SUMMARY/',$line))
 				{
 					$fts = explode(" : ",$line);
 					$parts = explode(" ",$fts[1]);

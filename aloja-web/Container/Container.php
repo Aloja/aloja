@@ -81,6 +81,8 @@ class Container
 
             //Twig globals initialization
 			$twig->addGlobal('request',$c['request']);
+            $twig->addGlobal('PROD',$c['env']==='prod');
+            $twig->addGlobal('DEV',$c['env']==='dev');
 //             $twig->addGlobal('message',null);
             return $twig;
         };
