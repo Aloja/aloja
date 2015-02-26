@@ -8,6 +8,152 @@ use alojaweb\inc\DBUtils;
 
 class MLTemplatesController extends AbstractController
 {
+	/* GENERAL FUNCTIONS TO USE */	
+
+	private function generateModelInfo($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = array();
+		$model_info = '';
+		foreach ($param_names as $p) 
+		{
+			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+		}
+		return $model_info;
+	}
+
+	private function generateSimpleInstance($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = array();
+		$instance = '';
+		foreach ($param_names as $p) 
+		{
+			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+
+			$tokens[$p] = '';
+			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
+			elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+		}
+		return $instance;
+	}
+
+	private function generateInstances($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = $instances = array();
+
+		// Get info from clusters (Part of header_names!)
+		$cluster_header_names = array(
+			'id_cluster' => 'Cluster','name' => 'Cl.Name','datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores',
+			'vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+		);
+		$cluster_descriptor = array();
+		$query = "select ".implode(",",array_keys($cluster_header_names))." from clusters;";
+	    	$rows = $db->get_rows($query);
+	    	foreach($rows as $row)
+		{
+			$cid = $row['id_cluster'];
+			foreach(array_keys($cluster_header_names) as $cname)
+			{
+				$cluster_descriptor[$cid][$cname] = $row[$cname];
+			}
+		}
+
+		// If "No Clusters" -> All clusters
+		if (empty($params['id_clusters']))
+		{
+			$params['id_clusters'] = array();
+			$paramAllOptions['id_clusters'] = array_column($filter_options['id_cluster'],'id_cluster');
+			foreach ($paramAllOptions['id_clusters'] as $par) $params['id_clusters'][] = $par;
+		}
+
+		// For each cluster selected, launch an instance...
+		foreach ($params['id_clusters'] as $cl) 
+		{
+			$cl_characteristics = "Cl".implode(",",$cluster_descriptor[$cl]);
+			
+			$instance = '';
+			foreach ($param_names as $p) 
+			{
+				if ($p != "id_clusters")
+				{
+					if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+
+					$tokens[$p] = '';
+					if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
+					elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+				}
+				else
+				{
+					$instance = $instance.(($instance=='')?'':',').$cl_characteristics;
+				}
+			}
+			$instances[] = $instance;
+
+		}
+		return $instances;
+	}
+
+	private function findMatchingModels ($model_info, &$possible_models, &$possible_models_id)
+	{
+		
+		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+		{
+			while (!feof($fh))
+			{
+				$line = fgets($fh, 4096);
+				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line) && !preg_match('/SUMMARY/',$line))
+				{
+					$fts = explode(" : ",$line);
+					$parts = explode(" ",$fts[1]);
+					$buffer = array();
+					$last_part = "";
+					foreach ($parts as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
+
+					if ($model_info[0]==' ') $model_info = substr($model_info, 1);
+					$parts_2 = explode(" ",$model_info);
+					$buffer_2 = array();
+					$last_part = "";
+					foreach ($parts_2 as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
+
+					$match = TRUE;
+					foreach ($buffer_2 as $bk => $ba)
+					{
+						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
+						if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+					}
+
+					if ($match)
+					{
+						$possible_models[] = $line;
+						$possible_models_id[] = $fts[0];
+					}
+				}
+			}
+			fclose($fh);
+		}
+	}
+
+	/* CONTROLLER FUNCTIONS */
+
 	public function mlpredictionAction()
 	{
 		$jsonExecs = array();
@@ -37,21 +183,9 @@ class MLTemplatesController extends AbstractController
 				$unrestricted = TRUE;			
  			}
 
-			$filter_options = Utils::getFilterOptions($db);
-			$paramAllOptions = $tokens = array();
- 			$model_info = '';
-			foreach ($param_names as $p) 
-			{
-				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-				if ($unrestricted) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-				else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-
-				$tokens[$p] = '';
-				if ($unrestricted && empty($params[$p])) { $tokens[$p] = '*'; }
-				elseif (!$unrestricted && empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
- 			}
+			// compose instance
+			$instance = $this->generateSimpleInstance($param_names, $params, $unrestricted);
+			$model_info = $this->generateModelInfo($param_names, $params, $unrestricted);
 
 			$config = $model_info.' '.$learn_param;
 			$learn_options = 'saveall='.md5($config);
@@ -62,9 +196,11 @@ class MLTemplatesController extends AbstractController
 			else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3:prange=0,20000'; }
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
-			$in_process = shell_exec('ps aux | grep "'.(str_replace('*','\*',$learn_method.' -p '.$learn_options)).'" | grep -v grep');
 
-			if (file_exists($cache_ds) && $in_process == NULL)
+			$is_cached = file_exists($cache_ds);
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+
+			if ($is_cached && !$in_process)
 			{
 				$keep_cache = TRUE;
 				foreach (array("tt", "tv", "tr") as &$value)
@@ -78,34 +214,20 @@ class MLTemplatesController extends AbstractController
 				}
 			}
 
-			if (!file_exists($cache_ds) && $in_process == NULL)
+			if (!$is_cached && !$in_process)
 			{
 				// get headers for csv
 				$header_names = array(
-					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
-					'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
-					'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
+					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
+					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
 				);
-
-			    	$query="SHOW COLUMNS FROM execs;";
-			    	$rows = $db->get_rows ($query);
-				if (empty($rows)) throw new Exception('No data matches with your critteria.');
-				$headers = array();
-				$names = array();
-				$count = 0;
-				foreach($rows as $row)
-				{
-					if (array_key_exists($row['Field'],$header_names))
-					{
-						$headers[$count] = $row['Field'];
-						$names[$count++] = $header_names[$row['Field']];
-					}
-				}
-				$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
-				$names[$count++] = $header_names['cost'];
+				$headers = array_keys($header_names);
+				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
@@ -120,7 +242,10 @@ class MLTemplatesController extends AbstractController
 				}
 
 				// run the R processor
-				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null &';
+				$command = '( cd '.getcwd().'/cache/query ; ';
+				$command = $command.'touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
+				$command = $command.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1 ; ';
+				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 &';
 				exec($command);
 
 				// update cache record (for human reading)
@@ -129,10 +254,9 @@ class MLTemplatesController extends AbstractController
 				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 			}
 
-			$in_process = shell_exec('ps aux | grep "'.(str_replace('*','\*',$learn_method.' -p '.$learn_options)).'" | grep -v grep');
-			$must_wait = "NO";
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
-			if ($in_process != NULL)
+			if ($in_process)
 			{
 				$jsonExecs = "[]";
 				$must_wait = "YES";
@@ -141,6 +265,7 @@ class MLTemplatesController extends AbstractController
 			else
 			{
 				// read results of the CSV
+				$must_wait = "NO";
 				$count = 0;
 				$max_x = $max_y = 0;
 				foreach (array("tt", "tv", "tr") as &$value)
@@ -206,9 +331,9 @@ class MLTemplatesController extends AbstractController
 		);
 	}
 
+	/* This function is Shut Down until some re-logics are done */
 	public function mldatacollapseAction()
 	{
-		$instance = '';
 		try
 		{
 		    	$db = $this->container->getDBUtils();
@@ -242,72 +367,19 @@ class MLTemplatesController extends AbstractController
 			$dname2 = "Benchmark";
 
 			// compose instance
-			$filter_options = Utils::getFilterOptions($db);
-			$paramAllOptions = $tokens = array();
- 			$model_info = '';
-			foreach ($param_names as $p) 
-			{
-				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-				if ($unseen) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-				else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
- 			
- 				$tokens[$p] = '';
-				if ($unseen && empty($params[$p])) { $tokens[$p] = '*'; }
-				elseif (!$unseen && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
- 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
- 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
- 			}
-
+			$instance = $this->generateSimpleInstance($param_names, $params, $unseen);
+			$model_info = $this->generateModelInfo($param_names, $params, $unseen);
+			
 			// Model for filling
-			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
-			{
-				while (!feof($fh))
-				{
-					$line = fgets($fh, 4096);
-					if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
-					{
-						$fts = explode(" : ",$line);
-						$parts = explode(" ",$fts[1]);
-						$buffer = array();
-						$last_part = "";
-						foreach ($parts as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
-
-						if ($model_info[0]==' ') $model_info = substr($model_info, 1);
-						$parts_2 = explode(" ",$model_info);
-						$buffer_2 = array();
-						$last_part = "";
-						foreach ($parts_2 as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
-
-						$match = TRUE;
-						foreach ($buffer_2 as $bk => $ba)
-						{
-							if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-							if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
-						}
-
-						if ($match)
-						{
-							$possible_models[] = $line;
-							$possible_models_id[] = $fts[0];
-						}
-					}
-				}
-				fclose($fh);
-			}
+			$possible_models = $possible_models_id = array();
+			$this->findMatchingModels($model_info, $possible_models, $possible_models_id);
 
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
 			if ($current_model != "") $model = $current_model;
 			else $current_model = $model = $possible_models_id[0];
+
 
 			$learning_model = '';
 			if (file_exists(getcwd().'/cache/query/'.$model.'-object.rds')) $learning_model = ':model_name='.$model.':inst_general="'.$instance.'"';
@@ -336,30 +408,16 @@ class MLTemplatesController extends AbstractController
 			{
 				// get headers for csv
 				$header_names = array(
-					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
-					'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
-					'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
+					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
+					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
 				);
-
-			    	$query="SHOW COLUMNS FROM execs;";
-			    	$rows = $db->get_rows ($query);
-				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
-				$headers = array();
-				$names = array();
-				$count = 0;
-				foreach($rows as $row)
-				{
-					if (array_key_exists($row['Field'],$header_names))
-					{
-						$headers[$count] = $row['Field'];
-						$names[$count++] = $header_names[$row['Field']];
-					}
-				}
-				$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
-				$names[$count++] = $header_names['cost'];
+				$headers = array_keys($header_names);
+				$names = array_values($header_names);
 
 				// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE ".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
@@ -473,7 +531,7 @@ class MLTemplatesController extends AbstractController
 
 	public function mlfindattributesAction()
 	{
-		$instance = '';
+		$instance = $message = '';
 		$must_wait = 'NO';
 		try
 		{
@@ -492,84 +550,28 @@ class MLTemplatesController extends AbstractController
 			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
 				$where_configs = '';
-				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
+				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
 				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				$params['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
 				$unseen = FALSE;
 			}
 
 			$jsonData = $jsonHeader = "[]";
-			$message = $instance = "";
-			$possible_models = $possible_models_id = array();
 			$mae = $rae = $count_preds = 0;
+
+			// compose instance
+			$model_info = $this->generateModelInfo($param_names, $params, $unseen);
+			$instance = $this->generateSimpleInstance($param_names, $params, $unseen);			
+			$instances = $this->generateInstances($param_names, $params, $unseen);
+
+			// Model for filling
+			$this->findMatchingModels($model_info, $possible_models, $possible_models_id);
 
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
-
-			// compose instance
-			$filter_options = Utils::getFilterOptions($db);
-			$paramAllOptions = $tokens = array();
- 			$model_info = '';
-			foreach ($param_names as $p) 
-			{
-				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-				if ($unseen) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-				else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
- 			
- 				$tokens[$p] = '';
-				if ($unseen && empty($params[$p])) { $tokens[$p] = '*'; }
-				elseif (!$unseen && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
- 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
- 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
- 			}
-			$varin = ":vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster";
-
-			// find possible models to predict
-			if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
-			{
-				while (!feof($fh))
-				{
-					$line = fgets($fh, 4096);
-					if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
-					{
-						$fts = explode(" : ",$line);
-						$parts = explode(" ",$fts[1]);
-						$buffer = array();
-						$last_part = "";
-						foreach ($parts as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
-
-						if ($model_info[0]==' ') $model_info = substr($model_info, 1);
-						$parts_2 = explode(" ",$model_info);
-						$buffer_2 = array();
-						$last_part = "";
-						foreach ($parts_2 as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
-
-						$match = TRUE;
-						foreach ($buffer_2 as $bk => $ba)
-						{
-							if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-							if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
-						}
-
-						if ($match)
-						{
-							$possible_models[] = $line;
-							$possible_models_id[] = $fts[0];
-						}
-					}
-				}
-				fclose($fh);
-			}
 
 			if (!empty($possible_models_id))
 			{
@@ -595,18 +597,30 @@ class MLTemplatesController extends AbstractController
 				}
 
 				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
-				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance)).$varin.'" | grep -v grep');
-
 				$tmp_file = getcwd().'/cache/query/'.md5($instance.'-'.$model).'.tmp';
 
-				if (!file_exists($cache_filename) && $in_process == NULL && (!file_exists($tmp_file) || filesize($tmp_file) == 0))
+				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				$is_cached = file_exists($cache_filename);
+
+				if (!$in_process && !$finished_process && !$is_cached)
 				{
-					// drop query
-					$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.$varin.'" -v | grep -v "WARNING" > '.$tmp_file.' &';
+					$command = '( cd '.getcwd().'/cache/query; ';
+					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock; ';
+					$command = $command.'rm -f '.$tmp_file.' ';
+					foreach ($instances as $inst)
+					{
+						$command = $command.'&& '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' ';
+					}
+					$command = $command.'&& touch  '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready; ';
+					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 &';
 					exec($command);
 				}
 
-				if (!file_exists($cache_filename) && (file_exists($tmp_file) && filesize($tmp_file) > 0))
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				$is_cached = file_exists($cache_filename);
+
+				if ($finished_process && !$is_cached)
 				{
 					// read results
 					$lines = explode("\n", file_get_contents($tmp_file));
@@ -625,7 +639,7 @@ class MLTemplatesController extends AbstractController
 						$count_aux = 0;
 						foreach ($attributes as $part)
 						{
-							if ($count_aux < 1 || $count_aux > 10) { $count_aux++; continue; } #FIXME - Indexes hardcoded for file-dsorig.csv
+							if ($count_aux < 1 || $count_aux > 19) { $count_aux++; continue; }			#FIXME - Indexes hardcoded for file-tmp
 							$comp_instance = $comp_instance.(($comp_instance!='')?",":"").((is_numeric($part))?$part:"\\\"".$part."\\\"");
 							$count_aux++;
 						}
@@ -655,8 +669,8 @@ class MLTemplatesController extends AbstractController
 							{
 								$realexecval = $realexecval / $count_sols;
 
-								$mae = $mae + abs((int)$attributes[11] - $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
-								$rae = $rae + abs(((float)$attributes[11] - $realexecval) / $realexecval); #FIXME - Indexes hardcoded for file-dsorig.csv
+								$mae = $mae + abs((int)$attributes[20] - $realexecval); 			#FIXME - Indexes hardcoded for file-tmp
+								$rae = $rae + abs(((float)$attributes[20] - $realexecval) / $realexecval);	#FIXME - Indexes hardcoded for file-tmp
 								$count_preds++;
 							}
 						}
@@ -667,13 +681,16 @@ class MLTemplatesController extends AbstractController
 						$i++;
 					}
 					$jsonData = $jsonData.']';
-					$mae = number_format($mae / $count_preds,3);
-					$rae = number_format($rae / $count_preds,5);
+					if ($count_preds > 0)
+					{
+						$mae = number_format($mae / $count_preds,3);
+						$rae = number_format($rae / $count_preds,5);
+					}
 
-					$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData);
+					//$jsonData = str_replace(array('Cl1','Cl2'),array('Local','Azure'),$jsonData); 			# FIXME - Un-hardcode in the future
 					foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction','Observed');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction','Observed'); #FIXME - Header hardcoded for file-dsorig.csv
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -686,16 +703,20 @@ class MLTemplatesController extends AbstractController
 					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
 					shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-				}
-				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance)).'" | grep -v grep');
 
-				if (!file_exists($cache_filename) && $in_process != NULL)
+					// remove remaining locks and readies
+					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				}
+
+				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
+				$is_cached = file_exists($cache_filename);
+
+				if (!$is_cached)
 				{
 					$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 					$must_wait = 'YES';
 				}
-
-				if (file_exists($cache_filename))
+				else
 				{
 					// get cache
 					$data = explode("\n",file_get_contents($cache_filename));
@@ -705,7 +726,7 @@ class MLTemplatesController extends AbstractController
 					$data = explode("\n",file_get_contents(str_replace('.csv','.data',$cache_filename)));
 					$mae = $data[0];
 					$rae = $data[1];
-				}
+				}				
 			}
 			else
 			{
@@ -717,7 +738,7 @@ class MLTemplatesController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
 			$jsonData = $jsonHeader = "[]";
-			$instance = $possible_models_id = "";
+			$instance = $instances = $possible_models_id = "";
 			$possible_models = array();
 			$must_wait = 'NO';
 			$mae = $rae = 0;

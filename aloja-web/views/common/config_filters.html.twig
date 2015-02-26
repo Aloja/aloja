@@ -160,11 +160,6 @@
 					<!--Parameters:<input type="string" name="params"/>-->
 				</div>
 			</div>
-			<div id="learn-button-div" class="row">
-				<h2 class="compare body" style="float: center; width: 100%; text-align: center;">
-					<input id="learn-button" type="submit" value="Learn Model">
-				</h2>
-			</div>
 			{% endif %}
 			{% if selected == 'mlfindattributes' %}
 			<div class="row">
@@ -173,11 +168,6 @@
 					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
 				</div>
 			</div>
-			<div id="predict-button-div" class="row">
-				<h2 class="compare body" style="float: center; width: 100%; text-align: center;">
-					<input id="predict-button" type="submit" value="Find predictions">
-				</h2>
-			</div>
 			{% endif %}
 			{% if selected == 'mldatacollapse' %}
 			<div class="row">
@@ -185,11 +175,6 @@
 				<div class="col-md-6">
 					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
 				</div>
-			</div>
-			<div id="predict-button-div" class="row">
-				<h2 class="compare body" style="float: center; width: 100%; text-align: center;">
-					<input id="predict-button" type="submit" value="Apply Filter">
-				</h2>
 			</div>
 			{% endif %}
 			{% if selected == 'ML Parameter Evaluation' %}
@@ -269,7 +254,7 @@
 			</div>
 			{% endif %}
 			<br />
-			<div class"=row">
+			<div class="row">
 			   <div class="col-md-8">
 				   <button id="submit" type="submit" value="Change" class="btn btn-warning">Change</button>
 			   </div>
