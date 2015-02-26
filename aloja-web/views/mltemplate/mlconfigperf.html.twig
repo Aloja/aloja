@@ -45,8 +45,7 @@
 
 		if ("{{must_wait}}" == "NO")
 		{
-			$('#chart').highcharts(
-			{
+			$('#chart').highcharts({
 				chart: {
 					type: 'column'
 				},
@@ -70,7 +69,7 @@
 				},
 				tooltip: {
 					headerFormat: '<table>',
-					pointFormat:  '<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+					pointFormat:	'<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
 							'<td style="padding:0"><b>{point.y:.1f} s</b></td></tr>'+
 							'<tr><td>Average of {point.count} executions</tr>',
 					footerFormat: '</table>',
@@ -86,6 +85,7 @@
 				series: {{ series | raw }},
 				colors: {{ gammacolors | raw }}
 			});
+
 		}
 		else
 		{

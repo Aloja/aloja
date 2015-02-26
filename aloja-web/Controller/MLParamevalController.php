@@ -191,15 +191,18 @@ class MLParamevalController extends AbstractController
 
 			if($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
-			$filter_execs = " AND valid = TRUE AND exe_time > 100";
+			$filter_execs = DBUtils::getFilterExecs();
 
-			$filter_options = Utils::getFilterOptions($db);
+			$options = Utils::getFilterOptions($db);
 			$paramOptions = array();
-			$paramOptions = array_column($filter_options[$paramEval],$paramEval);
-			if ($paramEval == 'disk') $paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD'); #FIXME - Standarize
-			if ($paramEval == 'net') $paramOptions = array('Ethernet','Infiniband'); #FIXME - Standarize
-			$paramAllOptions = array();
-			foreach ($param_names as $p) if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+			foreach($options[$paramEval] as $option)
+			{
+				if($paramEval == 'id_cluster') $paramOptions[] = $option['name'];
+				else if($paramEval == 'comp') $paramOptions[] = Utils::getCompressionName($option[$paramEval]);
+				else if($paramEval == 'net') $paramOptions[] = Utils::getNetworkName($option[$paramEval]);
+				else if($paramEval == 'disk') $paramOptions[] = Utils::getDisksName($option[$paramEval]);
+				else $paramOptions[] = $option[$paramEval];
+			}
 
 			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
@@ -208,32 +211,26 @@ class MLParamevalController extends AbstractController
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
 				"from execs e WHERE 1 $filter_execs $where_configs".
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
-			
 			$rows = $db->get_rows ( $query );
-			if (empty($rows)) throw new \Exception ( "No results for query!" );
+			if (!$rows) throw new \Exception ( "No results for query!" );
 	
 			$categories = '';
 			$arrayBenchs = array();
-			foreach ( $paramOptions as $param ) {
+			foreach ( $paramOptions as $param )
+			{
 				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
-				foreach($benchOptions as $bench) {
-					$arrayBenchs[$bench['bench']][$param] = null;
-				}
+				foreach($benchOptions as $bench) $arrayBenchs[$bench['bench']][$param] = null;
 			}
 
 			$series = array();
 			$bench = '';
-			foreach($rows as $row) {
-				if($paramEval == 'comp')
-					$row[$paramEval] = Utils::getCompressionName($row['comp']);
-				else if($paramEval == 'id_cluster')
-					$row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
-				else if($paramEval == 'net')
-					$row[$paramEval] = Utils::getNetworkName($row['net']);
-				else if($paramEval == 'disk')
-					$row[$paramEval] = Utils::getDisksName($row['disk']);
-				else if($paramEval == 'iofilebuf')
-					$row[$paramEval] /= 1024;
+			foreach($rows as $row)
+			{
+				if($paramEval == 'comp') $row[$paramEval] = Utils::getCompressionName($row['comp']);
+				else if($paramEval == 'id_cluster') $row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
+				else if($paramEval == 'net') $row[$paramEval] = Utils::getNetworkName($row['net']);
+				else if($paramEval == 'disk') $row[$paramEval] = Utils::getDisksName($row['disk']);
+				else if($paramEval == 'iofilebuf') $row[$paramEval] /= 1024;
 				
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
 				$arrayBenchs[$row['bench']][$row[$paramEval]]['count'] = (int)$row['count'];
@@ -319,6 +316,7 @@ class MLParamevalController extends AbstractController
 					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
 				}
 
+				usleep(500000);
 				$is_cached = file_exists($cache_filename);
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
 
@@ -339,52 +337,52 @@ class MLParamevalController extends AbstractController
 
 						$header = explode("\"},{title:\"",substr($jsonHeader,9,-3));
 						$header = array_splice($header,1);
-					}
 
-					// Slice and Aggregate JSON data
-					$sliced = explode('],[',substr($jsonData,2,-2));
-					$position = -1;
-					if($paramEval == 'maps') $position = array_search('Maps', $header); 
-					else if($paramEval == 'comp') $position = array_search('Comp', $header);
-					else if($paramEval == 'id_cluster') $position = array_search('Cluster', $header);
-					else if($paramEval == 'net') $position = array_search('Net', $header);
-					else if($paramEval == 'disk') $position = array_search('Disk', $header);
-					else if($paramEval == 'replication') $position = array_search('Rep', $header);
-					else if($paramEval == 'iofilebuf') $position = array_search('IO.FBuf', $header);
-					else if($paramEval == 'blk_size') $position = array_search('Blk.Size', $header);
-					else if($paramEval == 'iosf') $position = array_search('IO.SFS', $header);
+						// Slice and Aggregate JSON data
+						$sliced = explode('],[',substr($jsonData,2,-2));
+						$position = -1;
+						if($paramEval == 'maps') $position = array_search('Maps', $header); 
+						else if($paramEval == 'comp') $position = array_search('Comp', $header);
+						else if($paramEval == 'id_cluster') $position = array_search('Cluster', $header);
+						else if($paramEval == 'net') $position = array_search('Net', $header);
+						else if($paramEval == 'disk') $position = array_search('Disk', $header);
+						else if($paramEval == 'replication') $position = array_search('Rep', $header);
+						else if($paramEval == 'iofilebuf') $position = array_search('IO.FBuf', $header);
+						else if($paramEval == 'blk_size') $position = array_search('Blk.Size', $header);
+						else if($paramEval == 'iosf') $position = array_search('IO.SFS', $header);
 
-					if ($position > -1)
-					{
-						foreach ($paramOptions as $param)
+						if ($position > -1)
 						{
-							foreach($benchOptions as $bench)
+							foreach ($paramOptions as $param)
 							{
-								$arrayBenchs_pred[$bench['bench'].'_pred'][$param] = null;
+								foreach($benchOptions as $bench)
+								{
+									$arrayBenchs_pred[$bench['bench'].'_pred'][$param] = null;
+								}
 							}
-						}
 
-						foreach ($sliced as $slice)
-						{
-							$line = explode("','",substr($slice,1,-1));
-							$line = array_splice($line,1);
-				
-							$class = $line[$position];
-							$pred = $line[array_search('Prediction', $header)];
-							$bench = $line[array_search('Benchmark', $header)].'_pred';
+							foreach ($sliced as $slice)
+							{
+								$line = explode("','",substr($slice,1,-1));
+								$line = array_splice($line,1);
+			
+								$class = $line[$position];
+								$pred = $line[array_search('Prediction', $header)];
+								$bench = $line[array_search('Benchmark', $header)].'_pred';
 
-							if($paramEval == 'comp') $value = Utils::getCompressionName($class);
-							else if($paramEval == 'id_cluster') $value = Utils::getClusterName($row[$paramEval],$db);
-							else if($paramEval == 'net') $value = Utils::getNetworkName($class);
-							else if($paramEval == 'disk') $value = Utils::getDisksName($class);
-							else if($paramEval == 'iofilebuf') $value = $class / 1024;
-							else $value = $class;
+								if($paramEval == 'comp') $value = Utils::getCompressionName($class);
+								else if($paramEval == 'id_cluster') $value = Utils::getClusterName($row[$paramEval],$db);
+								else if($paramEval == 'net') $value = Utils::getNetworkName($class);
+								else if($paramEval == 'disk') $value = Utils::getDisksName($class);
+								else if($paramEval == 'iofilebuf') $value = $class / 1024;
+								else $value = $class;
 
-							$prev_y = (is_null($arrayBenchs_pred[$bench][$value]['y']))?0:$arrayBenchs_pred[$bench][$value]['y'];
-							$prev_count = (is_null($arrayBenchs_pred[$bench][$value]['count']))?0:$arrayBenchs_pred[$bench][$value]['count'];
+								$prev_y = (is_null($arrayBenchs_pred[$bench][$value]['y']))?0:$arrayBenchs_pred[$bench][$value]['y'];
+								$prev_count = (is_null($arrayBenchs_pred[$bench][$value]['count']))?0:$arrayBenchs_pred[$bench][$value]['count'];
 
-							$arrayBenchs_pred[$bench][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
-							$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
+								$arrayBenchs_pred[$bench][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
+								$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
+							}
 						}
 					}
 				}
