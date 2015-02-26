@@ -1,0 +1,13 @@
+\Server\*
+\System\*
+\Processor(*)\*
+\Processor Information(*)\*
+\Processor Performance(*)\*
+\PhysicalDisk(*)\*
+\Process(*)\*
+\LogicalDisk(*)\*
+\.NET CLR Memory(*)\*
+\Memory\*
+\Paging File(*)\*
+\Network Interface(*)\*
+\Cache\*
