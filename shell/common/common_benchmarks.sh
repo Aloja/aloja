@@ -15,6 +15,15 @@ zabbix_sender(){
   #>> $LOG_PATH
 }
 
+get_cluster_disks() {
+  if [ CLUSTER_DISKS ] ; then
+    echo -e "$CLUSTER_DISKS"
+  else
+    logger "ERROR: CLUSTER_DISKS not set"
+  fi
+}
+
+
 restart_monit(){
   loggerb "Restarting Monit"
 
