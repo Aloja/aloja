@@ -113,6 +113,7 @@
 		          <ul class="dropdown-menu" role="menu">
 		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Benchmark Executions</a></li>
 		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
+		             <li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
 		          </ul>
 		        </li>
 {# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
@@ -130,8 +131,9 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
+			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a>
 			        </li>
+			         <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
 		          </ul>
 		        </li>		        
 
@@ -157,8 +159,8 @@
                 <li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">ALOJA Reference<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>
-		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications</a></li>
+		            {#<li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>#}
+		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications and Slides</a></li>
 		            <li {% if selected is defined and selected == 'Team' %}class="active"{% endif %}><a class="navlink" href="{{ path('team') }}">Team & Collaborators</a></li>
 		            <li class="divider"></li>
 		            <li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clusters') }}">Clusters Reference</a></li>

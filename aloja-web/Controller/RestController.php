@@ -27,10 +27,13 @@ class RestController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
+        	'datanodes' => 'Datanodes',
             'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
+        	'hadoop_version' => 'H Version',
+            'bench_type' => 'Bench',
         );
 
         try {
@@ -65,7 +68,7 @@ class RestController extends AbstractController
             if (!($type = Utils::get_GET_string('type')))
                 $type = 'SUMMARY';
 
-            $join = "JOIN execs e using (id_exec) WHERE e.valid = TRUE AND JOBNAME NOT IN
+            $join = "JOIN execs e using (id_exec) WHERE e.valid = 1 AND JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
 
@@ -119,7 +122,7 @@ class RestController extends AbstractController
             }
 
             $exec_rows = $db->get_rows($query);
-
+            
             if (count($exec_rows) > 0) {
 
                 $show_in_result_counters = array(
@@ -456,7 +459,7 @@ VALUES
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
                  AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time,
                  c.name cluster_name '.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
@@ -469,7 +472,7 @@ VALUES
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
                     AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time,
                     c.name cluster_name '.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     'AVG(su.kbmemfree), MAX(su.kbmemfree), MIN(su.kbmemfree), STDDEV_POP(su.kbmemfree), VAR_POP(su.kbmemfree),  
@@ -483,7 +486,7 @@ VALUES
                      AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time,
                      c.name cluster_name '.
                     ' FROM SAR_memory_util su '.
-                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.IFACE,AVG(s.`rxpck/s`),MAX(s.`rxpck/s`),MIN(s.`rxpck/s`),STDDEV_POP(s.`rxpck/s`),VAR_POP(s.`rxpck/s`),SUM(s.`rxpck/s`),
@@ -496,7 +499,7 @@ VALUES
                     'e.id_cluster,e.end_time,
                     c.name cluster_name
                     FROM SAR_net_devices s
-                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = TRUE GROUP BY (e.id_exec)';
+                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
             }
         
             $exec_rows = $dbUtil->get_rows($query);
@@ -532,7 +535,7 @@ VALUES
 			$metric_duration = $db->get_task_metric_query("Duration");
 			$query = "SELECT e.bench,j.*,".$metric_duration('j')." as Duration
 			from JOB_tasks j JOIN execs e USING (id_exec) 
-			where e.valid = TRUE AND j.id_exec = $idExec;";
+			where e.valid = 1 AND j.id_exec = $idExec;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'Histogram query: ' . $query );
 			$rows = $db->get_rows ($query);
@@ -661,6 +664,152 @@ VALUES
         header('Content-Type: application/json');
         ob_start('ob_gzhandler');
         echo json_encode($result, JSON_NUMERIC_CHECK);
+    }
+    
+    public function histogramHDIDataAction()
+    {
+    	$db = $this->container->getDBUtils ();
+    	$execsDetails = array ();
+    	try {
+    		$idExec = Utils::get_GET_string('id_exec');
+    		if (!$idExec)
+    			throw new \Exception ( "No execution selected!" );
+    
+    		// get the result rows
+    		$metric_duration = $db->get_task_metric_query("Duration");
+    		$query = "SELECT e.bench,j.*,".$metric_duration('c','LAUNCH_TIME')." as Duration
+    		from HDI_JOB_tasks j JOIN execs e USING (id_exec)
+    		JOIN HDI_JOB_details c USING (JOB_ID)
+    		where e.valid = 1 AND j.id_exec = $idExec;";
+    			
+    		$this->getContainer ()->getLog ()->addInfo ( 'Histogram query: ' . $query );
+    		$rows = $db->get_rows ($query);
+    		if (!$rows) {
+    			throw new \Exception ( "No results for query!" );
+    		}
+    			
+    		$result = array();
+    		foreach ( $rows as $row ) {
+    			// Show only task id (not the whole string)
+    			$row['TASK_ID'] = substr($row['TASK_ID'], 23);
+    
+    			$result[$row['JOB_ID'].'/'.$row['bench']]['tasks'][$row['TASK_ID']] = $row;
+    		}
+    		
+    		header('Content-Type: application/json');
+    		ob_start('ob_gzhandler');
+    		echo json_encode($result);
+    	} catch ( \Exception $e ) {
+    		$noData = array();
+    		$noData[] = $e->getMessage();
+    
+    		echo json_encode(array('error' => $noData));
+    	}
+    }
+    
+    public function histogramHDITasksDataAction()
+    {
+    	$db = $this->container->getDBUtils();
+    
+    	$jobid = Utils::get_GET_string("jobid");
+    	$metric = $db::$TASK_METRICS[Utils::get_GET_int("metric") ?: 0];
+    	$metric_select = $db->get_task_metric_query($metric);
+    	$task_type_select = $db->get_task_type_query(Utils::get_GET_string("task_type"));
+    	$group = Utils::get_GET_int("group") ?: 1;  // Group the rows in groups of this quantity
+    	$accumulated = Utils::get_GET_int("accumulated") ?: 0;
+    	$divided = Utils::get_GET_int("divided") ?: 0;
+    
+    	// Accumulated and divided options don't support group
+    	if ($accumulated || $divided) {
+    		$group = 1;
+    	}
+    
+    	if (!($group > 1)) {
+    		$query = "
+                SELECT
+                    t.`TASK_ID` as TASK_ID,
+                    ".$metric_select('t','TASK_START_TIME','TASK_FINISH_TIME')." as TASK_VALUE,
+                    SUM(".$metric_select('t2','TASK_START_TIME','TASK_FINISH_TIME').") as TASK_VALUE_ACCUM,
+                    t.TASK_DURATION,
+                    SUM(t2.`TASK_DURATION`) as TASK_DURATION_ACCUM,
+                    1 as TASK_VALUE_STDDEV
+                FROM (
+                    SELECT *, TIMESTAMPDIFF(SECOND, `TASK_START_TIME`, `TASK_FINISH_TIME`) as TASK_DURATION
+                    FROM `HDI_JOB_tasks`
+                ) as t
+                JOIN (
+                    SELECT *, TIMESTAMPDIFF(SECOND, `TASK_START_TIME`, `TASK_FINISH_TIME`) as TASK_DURATION
+                    FROM `HDI_JOB_tasks`
+                ) as t2
+                ON (t.`TASK_ID` >= t2.`TASK_ID` AND t2.`JOB_ID` = :jobid_repeated)
+                WHERE t.`JOB_ID` = :jobid
+                ".$task_type_select('t')."
+                GROUP BY t.`TASK_ID`
+                ORDER BY t.`TASK_ID`
+            ;";
+    		$query_params = array(":jobid" => $jobid, ":jobid_repeated" => $jobid);
+    	} else {
+    		$query = "
+                SELECT
+                    MIN(t.`TASK_ID`) as TASK_ID,
+                    AVG(".$metric_select('t','TASK_START_TIME','TASK_FINISH_TIME').") as TASK_VALUE,
+                    STDDEV(".$metric_select('t','TASK_START_TIME','TASK_FINISH_TIME').") as TASK_VALUE_STDDEV,
+                    1 as TASK_VALUE_ACCUM,
+                    1 as TASK_DURATION,
+                    1 as TASK_DURATION_ACCUM,
+                    t.`TASK_TYPE`,
+                    CONVERT(SUBSTRING(t.`TASK_ID`, 26), UNSIGNED INT) DIV :group as MYDIV
+                FROM `HDI_JOB_tasks` t
+                WHERE t.`JOB_ID` = :jobid
+                ".$task_type_select('t')."
+                GROUP BY MYDIV, t.`TASK_TYPE`
+                ORDER BY MIN(t.`TASK_ID`)
+            ;";
+    		$query_params = array(":jobid" => $jobid, ":group" => $group);
+    	}
+    	
+    	$rows = $db->get_rows($query, $query_params);
+
+    	$seriesData = array();
+    	$seriesError = array();
+    	foreach ($rows as $row) {
+    		$task_id = $row['TASK_ID'];
+    		$task_value = $row['TASK_VALUE'] ?: 0;
+    		$task_value_accum = $row['TASK_VALUE_ACCUM'] ?: 0;
+    		$task_value_stddev = $row['TASK_VALUE_STDDEV'] ?: 0;
+    		$task_duration = $row['TASK_DURATION'] ?: 0;
+    		$task_duration_accum = $row['TASK_DURATION_ACCUM'] ?: 0;
+    
+    		// Show only task id (not the whole string)
+    		$task_id = substr($task_id, 23);
+    
+    		if ($accumulated == 1) {
+    			$task_value = $task_value_accum;
+    		}
+    
+    		if ($divided == 1) {
+    			$task_value = $task_value / $task_duration_accum;
+    		}
+    
+    		$seriesData[] = array($task_id, $task_value);
+    
+    		if ($group > 1) {
+    			$task_value_low = $task_value - $task_value_stddev;
+    			$task_value_high = $task_value + $task_value_stddev;
+    
+    			$seriesError[] = array('low' => $task_value_low, 'high' => $task_value_high, 'stddev' => $task_value_stddev);
+    		}
+    	}
+    
+    	$result = [
+    			'seriesData' => $seriesData,
+    			'seriesError' => $seriesError,
+    			];
+    
+    	
+    	header('Content-Type: application/json');
+    	ob_start('ob_gzhandler');
+    	echo json_encode($result, JSON_NUMERIC_CHECK);
     }
 
     public function bestConfigDataAction()
@@ -891,5 +1040,104 @@ VALUES
         header('Content-Type: application/json');
         ob_start('ob_gzhandler');
         echo json_encode($result, JSON_NUMERIC_CHECK);
+    }
+    
+    public function hdp2CountersDataAction()
+    {
+    	$db = $this->container->getDBUtils();
+    	try {
+    		//check the URL
+    		$execs = Utils::get_GET_execs();
+    
+    		if (!($type = Utils::get_GET_string('type')))
+    			$type = 'SUMMARY';
+    
+    		$join = "JOIN execs e using (id_exec) WHERE e.valid = 1 AND job_name NOT IN
+        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
+            ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
+    
+    		if ($type == 'SUMMARY') {
+    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS
+    			FROM HDI_JOB_details c $join";
+    		} elseif ($type == 'MAP') {
+    			$query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
+    			`RACK_LOCAL_MAPS`,
+    			`SPILLED_RECORDS`,
+    			`MAP_INPUT_RECORDS`,
+    			`MAP_OUTPUT_RECORDS`,
+    			`MAP_OUTPUT_BYTES`,
+    			`MAP_OUTPUT_MATERIALIZED_BYTES`
+    			FROM HDI_JOB_details c $join";
+    		} elseif ($type == 'REDUCE') {
+    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
+    			`TOTAL_LAUNCHED_REDUCES`,
+    			`REDUCE_INPUT_GROUPS`,
+    			`REDUCE_INPUT_RECORDS`,
+    			`REDUCE_OUTPUT_RECORDS`,
+    			`REDUCE_SHUFFLE_BYTES`,
+    			`COMBINE_INPUT_RECORDS`,
+    			`COMBINE_OUTPUT_RECORDS`
+    			FROM HDI_JOB_details c $join";
+    		} elseif ($type == 'FILE-IO') {
+    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			c.FINISH_TIME,
+    			`SLOTS_MILLIS_MAPS`,
+    			`SLOTS_MILLIS_REDUCES`,
+    			`SPLIT_RAW_BYTES`,
+    			`FILE_BYTES_WRITTEN`,
+    			`FILE_BYTES_READ`,
+    			`WASB_BYTES_WRITTEN`,
+    			`WASB_BYTES_READ`,
+    			`BYTES_READ`,
+    			`BYTES_WRITTEN`
+    			FROM HDI_JOB_details c $join";
+    		} elseif ($type == 'DETAIL') {
+    			$query = "SELECT e.bench, exe_time, c.* FROM HDI_JOB_details c $join";
+    		} elseif ($type == 'TASKS') {
+    			$query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
+    			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
+    		} else {
+    			throw new \Exception('Unknown type!');
+    		}
+    
+    		$exec_rows = $db->get_rows($query);
+    
+    		if (count($exec_rows) > 0) {
+    
+    			$show_in_result_counters = array(
+    					'id_exec'   => 'ID',
+    					'JOB_ID'     => 'JOBID',
+    					'bench'     => 'Bench',
+    					'job_name'   => 'JOBNAME',
+    			);
+    
+    			$show_in_result_counters = Utils::generate_show($show_in_result_counters, $exec_rows, 4);
+    			$jsonData = Utils::generateJSONTable($exec_rows, $show_in_result_counters, 0, 'COUNTER');
+    
+    			header('Content-Type: application/json');
+    			echo $jsonData;
+    			//         if (count($exec_rows) > 10000) {
+    			//             $message .= 'WARNING, large resulset, please limit the query! Rows: '.count($exec_rows);
+    			//         }
+    
+    		} else {
+    			$noData = array();
+    			for($i = 0; $i<18; ++$i)
+    				$noData[] = 'No Data found';
+    
+    			ob_start('ob_gzhandler');
+    			echo json_encode(array('aaData' => $noData));
+    		}
+    
+    	} catch (Exception $e) {
+    		$noData = array();
+    		for($i = 0; $i<=sizeof($show_in_result); ++$i)
+    			$noData[] = 'error';
+    
+    		echo json_encode(array('aaData' => array($noData)));
+    	}
     }
 }
