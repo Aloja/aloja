@@ -2,13 +2,7 @@
 {% block javascript %} 
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts.js"></script>
-	<script type="text/javascript">
-	 $(document).ready(function() {
-		$("input,select").change(function() {
-			$("form").submit();
-		});
-	 });
-	</script>
+
 {% endblock %} 
 {% block content %}
 <div id="chart"></div>
@@ -34,35 +28,35 @@
 			</tr>
 			<tr>
 				<th>Net</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['net'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['net'] }}</td>
 			</tr>
 			<tr>
 				<th>Disk</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['disk'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['disk'] }}</td>
 			</tr>
 			<tr>
 				<th>Number of hadoop mappers</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['maps'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['maps'] }}</td>
 			</tr>
 			<tr>
 				<th>IO Sort File Factor {{ makeTooltip('The number of streams to merge at once while sorting files. This determines the number of open file handles.') | raw }}</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['iosf'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['iosf'] }}</td>
 			</tr>
 			<tr>
 				<th>Number of replicas</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['replication'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['replication'] }}</td>
 			</tr>
 			<tr>
 				<th>IO File Buffer {{ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') | raw }}</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['iofilebuf'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['iofilebuf'] }}KB</td>
 			</tr>
 			<tr>
 				<th>Compression algorithm</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['comp'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['comp'] }}</td>
 			</tr>
 			<tr>
 				<th>Block size</th>
-				<td>{% if cluster != 'HDInsight' %}{{ bestexec['blk_size'] }}{% else %}Not available{% endif %}</td>
+				<td>{{ bestexec['blk_size'] }}MB</td>
 			</tr>
 			<tr>
 				<th>Cluster</th>
@@ -78,5 +72,4 @@
 <div style="width: 30%; float: right;">
 	{% include 'common/config_filters.html.twig' %}
 </div>
-<div style="clear: both;">&nbsp;</div>
 {% endblock %}

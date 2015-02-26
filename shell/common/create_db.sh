@@ -41,6 +41,9 @@ create table if not exists hosts (
   host_name varchar(127) NOT NULL,
   id_cluster int(11) NOT NULL,
   role varchar(45) DEFAULT NULL,
+ cost_remote int(11) DEFAULT NULL,
+ cost_SSD int(11) DEFAULT NULL,
+ cost_IB int(11) DEFAULT NULL,
   PRIMARY KEY (id_host)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 
@@ -56,10 +59,12 @@ vm_size varchar(127) default null,
 vm_OS varchar(127) default null,
 vm_cores int default null,
 vm_RAM decimal(10,3) default null,
+cost_remote int default 0,
+cost_SSD int default 0,
+cost_IB int default 0,
 description varchar(256) default null,
 link varchar(255),
 primary key (id_cluster)) engine InnoDB;
-
 "
 
 $MYSQL "
@@ -660,6 +665,7 @@ $MYSQL "alter ignore table execs
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
 $MYSQL "alter ignore table execs
+  DROP COLUMN \`valid\`,
   ADD  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
   ADD \`outlier\` int DEFAULT '0';"
@@ -678,6 +684,12 @@ $MYSQL "alter ignore table clusters
   add vm_RAM decimal(10,3) default null,
   add description varchar(256) default null;"
 
+$MYSQL "alter ignore table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT 0"
+$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
+$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
+
+
 ############################################33
 logger "INFO: Updating records"
 
@@ -695,6 +707,8 @@ update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort'
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
 
+update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
+update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
 #temporary
 update execs set id_cluster = 05 where substring(exec, (locate('/', exec) -3), 3 ) = '-05' and id_cluster =1;
