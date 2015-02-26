@@ -32,6 +32,20 @@ nl2char() {
   echo "${tmp::-1}" #remove trailing $2
 }
 
+#$1 list $2 element
+inList() {
+  local found="1" #error code in shell
+
+  for element in $1 ; do
+    if [ "$2" == "$element" ] ; then
+      local found="0" #success
+      break
+    fi
+  done
+
+  return "$found"
+}
+
 #$1 startTime
 getElapsedTime() {
   elapsedTime='ERROR: start time not set.'
