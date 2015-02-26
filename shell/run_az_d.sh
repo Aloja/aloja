@@ -63,11 +63,11 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     n)
       NET=$OPTARG
-      [ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
+      #[ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
       ;;
     d)
       DISK=$OPTARG
-      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]  || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]  || [ "$DISK" == "HD7" ] || usage
+      #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]  || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]  || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
       BENCH=$OPTARG
@@ -147,8 +147,20 @@ source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
 #####
 
+#some validations
+if ! inList "$CLUSTER_DISKS" "$DISK" ; then
+  logger "ERROR: Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
+  usage
+fi
+
+if ! inList "$CLUSTER_NETS" "$NET" ; then
+  logger "ERROR: Disk type $NET not supported for $clusterName\nSupported: $NET"
+  usage
+fi
+
+
 NUMBER_OF_DATA_NODES="$numberOfNodes"
-userAloja="pristine"
+#userAloja="pristine"
 
 DSH="dsh -M -c -m "
 
@@ -189,15 +201,8 @@ DSH="$DSH $(nl2char "$node_names" ",")"
 DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 
-if [ "$DISK" == "SSD" ] ; then
-  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]  || [ "$DISK" == "HD7" ]; then  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]  || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] ; then
-  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
-else
-  echo "Incorrect disk specified: $DISK"
-  exit 1
-fi
+#set the main path for the benchmark
+HDD="${BENCH_DISKS["$DISK"]}/${BENCH_FOLDER}_$PORT_PREFIX"
 
 BASE_DIR="$homePrefixAloja/$userAloja/share"
 SOURCE_DIR="/scratch/local/aplic"
