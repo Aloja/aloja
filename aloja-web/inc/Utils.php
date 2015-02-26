@@ -57,6 +57,13 @@ class Utils
 	    	return "";
     	}
     	
+    	if($item_name == 'prepares') {
+    		if(!isset($_GET['prepares']))
+    			$where_configs .= "AND bench not like 'prep_%' AND bench_type not like 'HDI-prep%'";
+    		
+    		return "";
+    	}
+    	
         $single_item_name = substr($item_name, 0, -1);
 
         if (isset($_GET[$item_name])) {

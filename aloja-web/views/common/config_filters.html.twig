@@ -251,6 +251,7 @@
       <div class="panel-body">
         <input type="checkbox" name="valids[]" value="1" {% if valid is defined and valid is not empty %}checked{% endif %}> Only valid execs<br />
         <input type="checkbox" name="filters[]" value="1" {% if filter is defined and filter is not empty %}checked{% endif %}> Filter execs<br />
+        <input type="checkbox" name="prepares" value="1" {% if prepares is defined and prepares != "" %}checked{% endif %}> Include prepares<br />
         <input type="checkbox" name="outliers" value="1" {% if outliers is defined and outliers != "" %}checked{% endif %}> Show outliers<br />
         <input type="checkbox" name="warnings" value="1" style="margin-left: 1em;" {% if warnings is defined and warnings != "" %}checked{% endif %}> Show warnings
       </div>

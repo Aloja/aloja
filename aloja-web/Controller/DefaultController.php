@@ -1384,9 +1384,12 @@ class DefaultController extends AbstractController
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
 			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config, false );
 			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
-			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
-			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
-							
+			Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+			$outliers = isset($_GET['outliers']) ? $_GET['outliers'] : "";
+			$warnings = isset($_GET['warnings']) ? $_GET['warnings'] : "";
+			Utils::read_params ( 'prepares', $where_configs, $configurations, $concat_config, false );
+			$prepares = isset($_GET['prepares']) ? $_GET['prepares'] : "";
+			
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
 			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
@@ -1506,6 +1509,7 @@ class DefaultController extends AbstractController
 				'filter' => $filter,
 				'outliers' => $outliers,
 				'warnings' => $warnings,
+				'prepares' => $prepares,
 				'paramEval' => $paramEval,
 				'options' => $options
 		) );
