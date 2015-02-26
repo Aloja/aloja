@@ -25,6 +25,7 @@
 		  }
 		}
 	</style>
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker3.min.css" />
 	{% endblock %}
 	<script>
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -206,11 +207,26 @@
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap-datepicker.min.js"></script>
 	<script type="text/javascript" src="js/URI.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
-
+			$("#advancedFilters").on('shown.bs.collapse hidden.bs.collapse', function() {
+				var element = $(this).parent().find(".indicator").first();
+				if(element.hasClass("glyphicon-chevron-down"))
+					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+				else if(element.hasClass("glyphicon-chevron-up"))
+					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+            });
+             
+			$(".datepicker").each(function() {
+				$(this).datepicker({
+					autoclose: true,
+					format: 'yyyy/mm/dd' 
+				});
+			});
+			
             function getCookie(cname) {
            		var name = cname + "=";
           		var ca = document.cookie.split(';');
@@ -228,7 +244,6 @@
         		  	backdrop: 'static'
         		});
         	}
-
 
         	$(".tooltip2").each(function() {
 				$(this).tooltip();

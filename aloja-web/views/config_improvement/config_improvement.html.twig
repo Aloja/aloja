@@ -4,11 +4,7 @@
     {{ highcharts_js|raw }}
     <script>
         $(document).ready(function() {
-                    $('select').change(function() {
-                        $(this).parents('form').submit();
-                    });
-
-                    var chart = new Highcharts.Chart({
+			  var chart = new Highcharts.Chart({
                         chart: {
                             type: 'bar',
                             renderTo: 'chart',
@@ -97,11 +93,10 @@
     </script>
     {% endblock %}
     {% block content %}
-        <div id="navigation" style="text-align: center;">
+        <div id="navigation">
             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
             <div style="width: 30%; float: right;">
                 {% include 'common/config_filters.html.twig' %}
             </div>
-            </br>
         </div>
     {% endblock %}

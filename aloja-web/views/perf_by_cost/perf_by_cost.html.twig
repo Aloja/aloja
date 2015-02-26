@@ -4,10 +4,6 @@
 		{{ highcharts_js|raw }}
 	    <script>
         $(document).ready(function() {
-            $('select').change(function() {
-                $(this).parents('form').submit();
-            });
-
             var chart = new Highcharts.Chart({
                 chart: {
                     renderTo: 'chart',
@@ -170,7 +166,7 @@
 	    </script>
     {% endblock %}
     {% block content %}
-           <div id="navigation" style="text-align: center;">
+           <div id="navigation">
 	            <div id="chart" style="width: 800px; margin: 0 auto; margin-left: 10%; float: left; height: 800px;"></div>
                 <div style="width: 30%; float: right;">
                     {% include "common/config_filters.html.twig" %}
@@ -211,5 +207,4 @@
 	              </form>
 	            </div>
 	    </div>
-	    </br></br>
     {% endblock %}

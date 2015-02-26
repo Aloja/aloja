@@ -9,9 +9,6 @@
 			var name = $(this).val()+'s[]';
 			$('select[name="'+name+'"]').val('None');
         });
-    	$('select, input').change(function() {
-            $(this).parents('form').submit();
-        });
         
         $('#chart').highcharts({
             chart: {
@@ -56,10 +53,10 @@
     </script>
     {% endblock %}
     {% block content %}
-        <div id="navigation" style="text-align: center;">
+        <div id="navigation">
          <form>
         	<div style="width: 50%; margin-left: 10%;">
-        	 <div style="width: 40%; margin: 0 auto;">
+        	 <div style="width: 40%; margin: 0 auto; text-align: center;">
         	 Parameter to evaluate: <select class="form-control" name="parameval">
 						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
 						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
@@ -78,5 +75,4 @@
 				{% include 'common/config_filters.html.twig' %}
 			</div>
 		</div>
-		<p style="clear: both;"></p>
 	{% endblock %}

@@ -3,19 +3,8 @@
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
-	<script type="text/javascript">
-	 $(document).ready(function() {
-		$("input,select").change(function() {
-			$("form").submit();
-		});
-	 });
-	</script>
 	<script>
         $(document).ready(function() {
-                    $('select').change(function() {
-                        $(this).parents('form').submit();
-                    });
-
                    $("#chart").highcharts({
                         chart: {
                             type: 'bubble',
@@ -57,11 +46,10 @@
     </script>
     {% endblock %}
     {% block content %}
-        <div id="navigation" style="text-align: center;">
+        <div id="navigation">
             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
             <div style="width: 30%; float: right;">
                 {% include 'common/config_filters.html.twig' %}
             </div>
-            </br>
         </div>
     {% endblock %}

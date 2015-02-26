@@ -60,6 +60,17 @@ class DefaultController extends AbstractController
             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
 			$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
 			
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
@@ -75,7 +86,7 @@ class DefaultController extends AbstractController
             
             //get configs first (categories)
             $query = "SELECT count(*) num, concat($concat_config) conf from execs e
-                      WHERE 1 $filter_execs $where_configs
+                      JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
 
@@ -103,7 +114,7 @@ class DefaultController extends AbstractController
                       #(select MAX(exe_time) FROM execs WHERE bench = e.bench $where_configs) MAX_ALL_exe_time,
                       #(select MIN(exe_time) FROM execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
                       'none'
-                      from execs e
+                      from execs e JOIN clusters USING (id_cluster)
                       WHERE 1 $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
 
@@ -183,6 +194,17 @@ class DefaultController extends AbstractController
                 'count' => $count,
                 'height' => $height,
              	'money' => $money,
+             	'datanodess' => $datanodes,
+             	'bench_types' => $benchtype,
+            	'vm_sizes' => $vm_sizes,
+             	'vm_coress' => $vm_coress,
+             	'vm_RAMs' => $vm_RAMs,
+             	'hadoop_versions' => $hadoop_versions,
+             	'types' => $types,
+             	'valid' => $valid,
+             	'filter' => $filter,
+             	'outliers' => $outliers,
+             	'warnings' => $warnings,
              	'options' => Utils::getFilterOptions($db)
              )
         );
@@ -228,8 +250,18 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-            //$money 	= Utils::read_params('money',$where_configs,$configurations,$concat_config);
-                        
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+            $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+            $outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+            $warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+            
             //TODO: steps
             /*
              * 1. Get execs and cluster associated costs
@@ -312,7 +344,7 @@ class DefaultController extends AbstractController
             'selected' => 'Cost Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
             // 'show_in_result' => count($show_in_result),
-            'cost_hour' => $_GET['cost_hour'],
+            'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
         	'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
         	'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
         	'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
@@ -328,6 +360,17 @@ class DefaultController extends AbstractController
             'replications' => $replications,
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
+        	'datanodess' => $datanodes,
+        	'bench_types' => $benchtype,
+        	'vm_sizes' => $vm_sizes,
+        	'vm_coress' => $vm_coress,
+        	'vm_RAMs' => $vm_RAMs,
+        	'hadoop_versions' => $hadoop_versions,
+        	'types' => $types,
+        	'valid' => $valid,
+        	'filter' => $filter,
+        	'outliers' => $outliers,
+        	'warnings' => $warnings,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
         	'options' => Utils::getFilterOptions($dbUtils),
@@ -1206,6 +1249,8 @@ class DefaultController extends AbstractController
 			$where_configs = '';
 			$concat_config = "";
 			
+			$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+			$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
 			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
@@ -1217,6 +1262,18 @@ class DefaultController extends AbstractController
 			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
+			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+			
 			if (! $benchs)
 				$where_configs .= 'AND bench IN (\'terasort\')';
 			$order_type = Utils::get_GET_string ( 'ordertype' );
@@ -1237,7 +1294,6 @@ class DefaultController extends AbstractController
     		ORDER BY $order_type ASC;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
-			
 			$rows = $db->get_rows ( $query );
 			
 			if (! $rows) {
@@ -1259,12 +1315,15 @@ class DefaultController extends AbstractController
 			$benchs = array (
 					'terasort'
 			);
+			
 		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
 				'selected' => 'Best configuration',
 				'title' => 'Best Run Configuration',
 				'bestexec' => $bestexec,
 				'cluster' => $cluster,
 				'order_type' => $order_type,
+				'datefrom' => $datefrom,
+				'dateto' => $dateto,
 				'benchs' => $benchs,
 				'nets' => $nets,
 				'disks' => $disks,
@@ -1276,6 +1335,17 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
+				'datanodess' => $datanodes,
+				'bench_types' => $benchtype,
+				'vm_sizes' => $vm_sizes,
+				'vm_coress' => $vm_coress,
+				'vm_RAMs' => $vm_RAMs,
+				'hadoop_versions' => $hadoop_versions,
+				'types' => $types,
+				'valid' => $valid,
+				'filter' => $filter,
+				'outliers' => $outliers,
+				'warnings' => $warnings,
 				'select_multiple_benchs' => false,
 				'options' => Utils::getFilterOptions($db)
 		) );
@@ -1305,6 +1375,21 @@ class DefaultController extends AbstractController
 			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
+			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+			Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+			$outliers = isset($_GET['outliers']) ? $_GET['outliers'] : "";
+			$warnings = isset($_GET['warnings']) ? $_GET['warnings'] : "";
+			Utils::read_params ( 'prepares', $where_configs, $configurations, $concat_config, false );
+			$prepares = isset($_GET['prepares']) ? $_GET['prepares'] : "";
+			
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
 			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
@@ -1349,14 +1434,14 @@ class DefaultController extends AbstractController
 // 			else if($paramEval == 'iosf')
 // 				$paramOptions = array(5,10,20,50);
 			
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN clusters USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
 			// get the result rows
 			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-				"from execs e WHERE 1 $filter_execs $where_configs".
+				"from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs".
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
-
+			
 			$rows = $db->get_rows ( $query );
 
 			if (!$rows) {
@@ -1413,6 +1498,18 @@ class DefaultController extends AbstractController
 				'iosfs' => $iosfs,
 				'iofilebufs' => $iofilebufs,
 				'money' => $money,
+				'datanodess' => $datanodes,
+				'bench_types' => $benchtype,
+				'vm_sizes' => $vm_sizes,
+				'vm_coress' => $vm_coress,
+				'vm_RAMs' => $vm_RAMs,
+				'hadoop_versions' => $hadoop_versions,
+				'types' => $types,
+				'valid' => $valid,
+				'filter' => $filter,
+				'outliers' => $outliers,
+				'warnings' => $warnings,
+				'prepares' => $prepares,
 				'paramEval' => $paramEval,
 				'options' => $options
 		) );
@@ -1641,7 +1738,7 @@ class DefaultController extends AbstractController
     	$db = $this->container->getDBUtils ();
     	$data = array();
     	
-    	$filter_execs = DBUtils::getFilterExecs();
+    	//$filter_execs = DBUtils::getFilterExecs();
     	$configurations = array();
     	$where_configs = '';
     	$concat_config = "";
@@ -1657,6 +1754,17 @@ class DefaultController extends AbstractController
     	$replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
     	$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
     	$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
+    	$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+    	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+    	$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+    	$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+    	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+    	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+    	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+    	$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+    	$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+    	$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+    	$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
     	
     	if(isset($_GET['benchs']))
     		$_GET['benchs'] = $_GET['benchs'][0];
@@ -1671,8 +1779,8 @@ class DefaultController extends AbstractController
     	
         $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) 
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $filter_execs $where_configs GROUP BY name) 
-        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name;";
+        					 WHERE  1 $bench_where $where_configs GROUP BY name) 
+        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name;";
 //     	$query = "SELECT e.*,
 // 	    	(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes
 //     		from execs e
@@ -1702,6 +1810,17 @@ class DefaultController extends AbstractController
     			'replications' => $replications,
     			'iosfs' => $iosfs,
     			'iofilebufs' => $iofilebufs,
+    			'datanodess' => $datanodes,
+    			'bench_types' => $benchtype,
+    			'vm_sizes' => $vm_sizes,
+    			'vm_coress' => $vm_coress,
+    			'vm_RAMs' => $vm_RAMs,
+    			'hadoop_versions' => $hadoop_versions,
+    			'types' => $types,
+    			'valid' => $valid,
+    			'filter' => $filter,
+    			'outliers' => $outliers,
+    			'warnings' => $warnings,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));

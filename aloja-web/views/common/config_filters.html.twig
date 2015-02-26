@@ -1,11 +1,29 @@
-<div class="row">
-	<div class="col-md-10 col-md-offset-1">
+<div class="row panel panel-default" style="width: 100%; margin: 0 auto; margin-bottom: 1em;">
+	<div class="panel-heading"><h3 class="panel-title" style="font-size: 1.5em; text-align: center;">Filters</h3></div>
+	<div class="panel-body col-md-10 col-md-offset-1">
+	  <div>
 		<form name="configFilters" method="GET" role="form">
 			<div class="row">
-				<div class="col-md-12">
-					<h2 class="compare body" style="text-align: center;">
-						Filters: <a id="filter_reset" href="?">(reset)</a>
-					</h2>
+				<div class="col-md-6">
+				   <button id="submit" type="submit" value="Change" class="btn btn-primary">Change</button>
+			   </div>
+			   <div class="col-md-6">
+				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
+			   </div>
+			</div>
+			{% if selected == 'Parameter Evaluation' %}
+			<div class="row">
+				<div class="col-md-6">
+					Minimum executions:<input type="number" step="1" class="form-control" name="minexecs" {% if minexecs is defined and minexecs != null %}value="{{ minexecs }}"{% endif %}/>
+				</div>
+			</div>
+			{% endif %}
+			<div class="row">
+				<div class="col-md-6">
+				  From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
+				</div>
+				<div class="col-md-6">
+				  To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ dateto }}" />
 				</div>
 			</div>
 			{% if selected == 'Best configuration' %}
@@ -52,7 +70,7 @@
 				<div class="col-md-6">
 					Networks:</br> <select class="form-control" name="nets[]" multiple>
 					{% for selopt in options['net'] %}
-						 <option value="{{ selopt['net'] }}" {% if selopt['net'] in nets %} SELECTED {% endif %}>{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}HDI{% endif %}</option>
+						 <option value="{{ selopt['net'] }}" {% if selopt['net'] in nets %} SELECTED {% endif %}>{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}Unknown{% endif %}</option>
 					{% endfor %}
 						<option value="None" {% if not nets %} SELECTED  {% endif %}>Disabled</option>
 					</select>
@@ -60,7 +78,7 @@
 				<div class="col-md-6">
 					Disks:</br> <select class="form-control" name="disks[]" multiple>
 					  {% for selopt in options['disk'] %}
-					    <option value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}SELECTED{% endif %}>{% if selopt['disk'] == "0" %}HDI{% else %}{{ selopt['disk'] }}{% endif %}</option>
+					    <option value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}SELECTED{% endif %}>{{ selopt['disk'] }}</option>
 					  {% endfor %}
 						<option value="None" {% if not disks %} SELECTED  {% endif %}>Disabled</option>
 					</select>
@@ -70,7 +88,7 @@
 				<div class="col-md-6">
 					Maps: (m)</br> <select class="form-control" name="mapss[]" multiple>
 					  {% for selopt in options['maps'] %}
-					    <option value="{{ selopt['maps'] }}" {% if selopt['maps'] in mapss %}SELECTED{% endif %}>{% if selopt['maps'] == 0 %}HDI{% else %}{{ selopt['maps'] }}{% endif %}</option>
+					    <option value="{{ selopt['maps'] }}" {% if selopt['maps'] in mapss %}SELECTED{% endif %}>{{ selopt['maps'] }}</option>
                       {% endfor %}
 						<option value="None" {% if not mapss %} SELECTED  {% endif %}>Disabled</option>
 					</select>
@@ -102,7 +120,7 @@
 					Replication: (r)</br> <select class="form-control"
 						name="replications[]" multiple>
 					  {% for selopt in options['replication'] %}
-					    <option value="{{ selopt['replication'] }}" {% if selopt['replication'] in replications %}SELECTED{% endif %}>{% if selopt['replication'] == 0 %}HDI{% else %}{{ selopt['replication'] }}{% endif %}</option>
+					    <option value="{{ selopt['replication'] }}" {% if selopt['replication'] in replications %}SELECTED{% endif %}>{{ selopt['replication'] }}</option>
 					  {% endfor %}
 						<option value="None" {% if not replications %} SELECTED {% endif %}>Disabled</option>
 					</select>
@@ -111,7 +129,7 @@
 					Block size: (b)</br> <select class="form-control" name="blk_sizes[]"
 						multiple>
 						{% for selopt in options['blk_size'] %}
-					    <option value="{{ selopt['blk_size'] }}" {% if selopt['blk_size'] in blk_sizes %}SELECTED{% endif %}>{% if selopt['blk_size'] == 0 %}HDI{% else %}{{ selopt['blk_size'] }}MB{% endif %}</option>
+					    <option value="{{ selopt['blk_size'] }}" {% if selopt['blk_size'] in blk_sizes %}SELECTED{% endif %}>{{ selopt['blk_size'] }} MB</option>
 					   {% endfor %}
 						<option value="None" {% if not blk_sizes %} SELECTED  {% endif %}>Disabled</option>
 					</select>
@@ -122,7 +140,7 @@
 					I/O Sort Factor: (I)</br> <select class="form-control" name="iosfs[]"
 						multiple>
 						{% for selopt in options['iosf'] %}
-					    <option value="{{ selopt['iosf'] }}" {% if selopt['iosf'] in iosfs %}SELECTED{% endif %}>{% if selopt['iosf'] == 0 %}HDI{% else %}{{ selopt['iosf'] }}{% endif %}</option>
+					    <option value="{{ selopt['iosf'] }}" {% if selopt['iosf'] in iosfs %}SELECTED{% endif %}>{{ selopt['iosf'] }}</option>
 					   {% endfor %}
 						<option value="None" {% if not iosfs %} SELECTED {% endif %}>Disabled</option>
 					</select>
@@ -131,25 +149,114 @@
 					I/O File Buffer: </br> <select class="form-control"
 						name="iofilebufs[]" multiple>
 						{% for selopt in options['iofilebuf'] %}
-					    <option value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}SELECTED{% endif %}>{% if selopt['iofilebuf'] == 0 %}HDI{% else %}{{ selopt['iofilebuf'] }}KB{% endif %}</option>
+					    <option value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}SELECTED{% endif %}>{{ selopt['iofilebuf'] }} KB</option>
 					   {% endfor %}
 						<option value="None" {% if not iofilebufs %} SELECTED {% endif %}>Disabled</option>
 					</select>
 				</div>
 			</div>
-			{% if selected == 'Parameter Evaluation' %}
 			<div class="row">
 				<div class="col-md-6">
-					Minimum executions:<input type="number" step="1" class="form-control" name="minexecs" {% if minexecs is defined and minexecs != null %}value="{{ minexecs }}"{% endif %}/>
+					Cluster datanodes: </br> <select class="form-control" name="datanodess[]"
+						multiple>
+						{% for selopt in options['datanodes'] %}
+					    <option value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodess %}SELECTED{% endif %}>{{ selopt['datanodes'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not datanodess %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					Benchmark type: </br> <select class="form-control"
+						name="bench_types[]" multiple>
+						{% for selopt in options['benchtype'] %}
+					    <option value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}SELECTED{% endif %}>{{ selopt['bench_type'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not bench_types %} SELECTED {% endif %}>Disabled</option>
+					</select>
 				</div>
 			</div>
-			{% endif %}
+			<div class="row">
+				<div class="col-md-6">
+					VM size: </br> <select class="form-control" name="vm_sizes[]"
+						multiple>
+						{% for selopt in options['vm_size'] %}
+					    <option value="{{ selopt['vm_size'] }}" {% if selopt['vm_size'] in vm_sizes %}SELECTED{% endif %}>{{ selopt['vm_size'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not vm_sizes %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					VM #cores: </br> <select class="form-control"
+						name="vm_coress[]" multiple>
+						{% for selopt in options['vm_cores'] %}
+					    <option value="{{ selopt['vm_cores'] }}" {% if selopt['vm_cores'] in vm_coress %}SELECTED{% endif %}>{{ selopt['vm_cores'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not vm_coress %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					VM RAM: </br> <select class="form-control" name="vm_RAMs[]"
+						multiple>
+						{% for selopt in options['vm_ram'] %}
+					    <option value="{{ selopt['vm_RAM'] }}" {% if selopt['vm_RAM'] in vm_RAMs %}SELECTED{% endif %}>{{ selopt['vm_RAM'] | number_format(0,',','.') }} GB</option>
+					   {% endfor %}
+						<option value="None" {% if not vm_RAMs %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					Hadoop version: </br> <select class="form-control"
+						name="hadoop_versions[]" multiple>
+						{% for selopt in options['hadoopversion'] %}
+					    <option value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}SELECTED{% endif %}>{{ selopt['hadoop_version'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not hadoop_versions %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					Cluster type: </br> <select class="form-control" name="types[]"
+						multiple>
+						{% for selopt in options['type'] %}
+					    <option value="{{ selopt['type'] }}" {% if selopt['type'] in types %}SELECTED{% endif %}>{{ selopt['type'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not types %} SELECTED {% endif %}>Disabled</option>
+					</select>
+				</div>
+			</div>
 			<br />
 			<div class"=row">
-			   <div class="col-md-8">
-				   <button id="submit" type="submit" value="Change" class="btn btn-warning">Change</button>
+			   <div class="col-md-6" style="padding: 0;">
+				   <button id="submit" type="submit" value="Change" class="btn btn-primary">Change</button>
+			   </div>
+			   <div class="col-md-6">
+				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
 			   </div>
 			</div>
-		</form>
 	</div>
+  </div>
+  <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+    <div class="panel-heading" role="tab" id="headingAdvancedFilters">
+      <i id="advancedFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" aria-expanded="true" aria-controls="advancedFilters">
+          Advanced filters
+        </a>
+      </h4>
+    </div>
+    <div id="advancedFilters" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingAdvancedFilters">
+      <div class="panel-body">
+        <input type="checkbox" name="valids[]" value="1" {% if valid is defined and valid is not empty %}checked{% endif %}> Only valid execs<br />
+        <input type="checkbox" name="filters[]" value="0" {% if filter is defined and filter is not empty %}checked{% endif %}> Filter execs<br />
+        <input type="checkbox" name="prepares" value="1" {% if prepares is defined and prepares != "" %}checked{% endif %}> Include prepares<br />
+        <input type="checkbox" name="outliers" value="1" {% if outliers is defined and outliers != "" %}checked{% endif %}> Show outliers<br />
+        <input type="checkbox" name="warnings" value="1" style="margin-left: 1em;" {% if warnings is defined and warnings != "" %}checked{% endif %}> Show warnings
+      </div>
+    </div>
+  </div>
+ </form>
+  </div>
 </div>
