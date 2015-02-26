@@ -266,7 +266,7 @@ class MLParamevalController extends AbstractController
 			$must_wait = 'NO';
 		}
 		echo $this->container->getTwig ()->render ('mltemplate/mlconfigperf.html.twig', array (
-				'selected' => 'ML Parameter Evaluation',
+				'selected' => 'mlparameval',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
 				'series' => $series,
