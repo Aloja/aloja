@@ -1408,6 +1408,8 @@ class DefaultController extends AbstractController
 					$paramOptions[] = Utils::getNetworkName($option[$paramEval]);
 				else if($paramEval == 'disk')
 					$paramOptions[] = Utils::getDisksName($option[$paramEval]);
+				else if($paramEval == 'vm_ram')
+					$paramOptions[] = Utils::getBeautyRam($option['vm_RAM']);
 				else
 					$paramOptions[] = $option[$paramEval];
 			}
@@ -1465,6 +1467,8 @@ class DefaultController extends AbstractController
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')
 					$row[$paramEval] = Utils::getDisksName($row['disk']);
+				else if($paramEval == 'vm_ram')
+					$row[$paramEval] = Utils::getBeautyRam($row['vm_ram']);
 				
 				$arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
 				$arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['count'] = (int)$row['count'];
