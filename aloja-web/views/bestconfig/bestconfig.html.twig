@@ -54,7 +54,7 @@
 			</tr>
 			<tr>
 				<th>IO File Buffer {{ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') | raw }}</th>
-				<td>{{ bestexec['iofilebuf'] }}</td>
+				<td>{{ bestexec['iofilebuf'] }}KB</td>
 			</tr>
 			<tr>
 				<th>Compression algorithm</th>
@@ -62,7 +62,7 @@
 			</tr>
 			<tr>
 				<th>Block size</th>
-				<td>{{ bestexec['blk_size'] }}</td>
+				<td>{{ bestexec['blk_size'] }}MB</td>
 			</tr>
 			<tr>
 				<th>Cluster</th>

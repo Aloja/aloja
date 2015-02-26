@@ -1,3 +1,46 @@
+function CreatePerformanceMonitoringCounter($Credentials, [String]$numberOfNodes)
+{	
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { if ( Test-Path C:\counters$(hostname).txt ) { rm C:\counters$(hostname).txt; }; add-content "C:\counters$(hostname).txt" "\System\*`n\Processor(*)\*`n\Processor Information\*`n\Processor Performance\*`n\Process(*)\*`n\Memory\*`n\Network Interface\*"; logman create counter "hdicounters" -cf  "C:\counters$(hostname).txt" -si "00:00:01" -f csv -v mmddhhmm -o "C:\perfmetrics$(hostname).csv" } -AsJob | Wait-Job
+    }
+}
+
+function StartPerformanceMonitoring($Credentials, [String]$numberOfNodes)
+{
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { rm "C:\perfmetrics$(hostname)*.csv"; logman start "hdicounters" } -AsJob | Wait-Job
+    }
+}
+
+function StopPerformanceMonitoring($Credentials, [String]$numberOfNodes)
+{
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Invoke-Command -ComputerName "workernode$i" -Authentication Negotiate -Credential $Credentials -ScriptBlock { logman stop "hdicounters" } -AsJob | Wait-Job
+    }
+}
+
+function CollectPerfMetricsLogs([String]$numberOfNodes,[String]$minervaLogin="acall")
+{
+	rmdir C:\perflogs* -Recurse -Force
+
+	$date = [int][double]::Parse((Get-Date -UFormat %s))
+    $year = (Get-Date -f yyyyMMdd)
+    
+	$dirLogs = "perflogs_${year}_${storageAccount}_$date"
+	mkdir "C:\$dirLogs"
+	
+	for($i = 0; $i -lt $numberOfNodes; ++$i) {
+	    Copy-Item  -Recurse -Force -Path \\"workernode$i"\c$\"perfmetricsworkernode${i}*.csv" -Destination \\$(hostname)\c$\"$dirLogs"\"perfmetricsworkernode${i}.csv"
+    }
+    
+    if ( !(Test-Path "pscp.exe") ) {
+    	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe','pscp.exe')
+    }
+
+   .\pscp.exe -r "C:\$dirLogs" "$minervaLogin@minerva.bsc.es:"
+   Write-Verbose "Retrieval and saving of logs completed"
+}
+
 function AzureLogin([String]$credentialsFile)
 {
   Import-AzurePublishSettingsFile $credentialsFile
@@ -40,6 +83,10 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
 }
 
 function RetrieveData([String]$storageAccount, [String]$storageContainer, [String]$logsDir, [String]$storageKey, [String]$minervaLogin) {
+   $date = [int][double]::Parse((Get-Date -UFormat %s))
+   $year = (Get-Date -f yyyyMMdd)
+   $newLogsDirName="${year}_${storageAccount}_$date"
+   
    rm $logsDir -R
    mkdir $logsDir
    Write-Verbose "Copying from storage blob"
@@ -49,9 +96,13 @@ function RetrieveData([String]$storageAccount, [String]$storageContainer, [Strin
    Write-Verbose "Copying job logs to logs dir"
    cp -R $storageContainer $logsDir/
    Write-Verbose "Copying to minerva account"
-   $date = [int][double]::Parse((Get-Date -UFormat %s))
-   $year = (Get-Date -f yyyy)
-   scp -r "$logsDir" "$minervaLogin@minerva.bsc.es:~/${year}_${storageAccount}_$date"
+   
+   if ( !(Test-Path "pscp.exe") ) {
+    	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe','pscp.exe')
+   }
+   
+   mv $logsDir $newLogsDirName
+   .\pscp.exe -r "$newLogsDirName" "$minervaLogin@minerva.bsc.es:"
    Write-Verbose "Retrieval and saving of logs completed"
 }
 

@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-#rm -rf /var/www
-#ln -fs /vagrant/workspace /var/www
-#
-
-#passwordless login to localhost
 if ! which puppet > /dev/null; then
   sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list
   wget http://apt.puppetlabs.com/puppetlabs-release-stable.deb -O /tmp/puppetlabs-release-stable.deb && \
@@ -42,23 +37,23 @@ for module in "puppetlabs-apt" "puppetlabs-mysql" "puppetlabs-vcsrepo" "maxchk-v
 done
 
 ##MySQL prep to move data to attached disk
-if [ ! -d "/scratch/attached/1/mysql" ]; then
-	sudo cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
-	sudo service apparmor restart
-			
-	if [ "$?" -ne "0" ]; then
-		echo "Moving MySQL data to attached disk failed!"
-	fi
-fi
+#if [ ! -d "/scratch/attached/1/mysql" ]; then
+#	sudo cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
+#	sudo service apparmor restart
+#
+#	if [ "$?" -ne "0" ]; then
+#		echo "Moving MySQL data to attached disk failed!"
+#	fi
+#fi
 
 puppet apply --modulepath=/etc/puppet/modules manifests/init.pp --environment=prod
 
-mysqlshow -uroot aloja2
-retcode=$?
-if [ "$retcode" -ne "0" ]; then
-	mysql -uroot -e "create database aloja2;"
-fi
-mysql -uroot aloja2 < db_schema.sql	
+#mysqlshow -uroot aloja2
+#retcode=$?
+#if [ "$retcode" -ne "0" ]; then
+#	mysql -uroot -e "create database aloja2;"
+#fi
+#mysql -uroot aloja2 < db_schema.sql
 
 add_execs() {
 	tar -xvf execs.sql.tar.gz
@@ -81,6 +76,6 @@ if [ ! -z $1 ]; then
 	fi
 fi
 
-echo "Chaning /var/www permissions"
+echo "Changing /var/www permissions"
 chown -R www-data.www-data /var/www
 chmod -R 755 /var/www
