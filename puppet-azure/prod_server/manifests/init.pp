@@ -27,12 +27,12 @@ if $environment == 'prod' {
     'bind-address' => '0.0.0.0',
     'innodb_autoinc_lock_mode' => '0', #prevent gaps in auto increments
     'datadir' => '/scratch/attached/1/mysql',
-    'innodb_buffer_pool_size' => '512M',
+    'innodb_buffer_pool_size' => '2048M',
     'innodb_file_per_table' => '1',
     'innodb_flush_method' => 'O_DIRECT',
-    'query_cache_size' => '128M',
+    'query_cache_size' => '1024M',
     'max_connections' => '300',
-    'thread_cache_size' => '50',
+    'thread_cache_size' => '500',
     'table_open_cache' => '600',
   }
 } else {
@@ -72,10 +72,10 @@ class { '::mysql::client':
   require => Exec['apt-get update'],
 }
 
-exec { 'changemysqlconfig': 
-  command => 'sudo /usr/sbin/service mysql stop && sed -i "s/var\/lib\/mysql/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf && sudo cp -Rp /var/lib/mysql /scratch/attached/1/ && sudo /usr/sbin/service mysql start',
-  path => '/usr/bin:/bin:/usr/sbin'
-}
+#exec { 'changemysqlconfig':
+#  command => 'sudo /usr/sbin/service mysql stop && sed -i "s/var\/lib\/mysql/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf && sudo cp -Rp /var/lib/mysql /scratch/attached/1/ && sudo /usr/sbin/service mysql start',
+#  path => '/usr/bin:/bin:/usr/sbin'
+#}
 
 vcsrepo { "/var/presentations/":
         ensure => latest,
@@ -106,5 +106,5 @@ Exec['apt-get update'] -> Vcsrepo['/var/www/']
 Vcsrepo['/var/www/'] -> File['/var/www/aloja-web/logs']
 Vcsrepo['/var/www/'] -> Vcsrepo['/var/presentations/']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
-Class['::mysql::server'] -> Exec['changemysqlconfig']
-Exec['changemysqlconfig'] -> Service['php5-fpm']
+#Class['::mysql::server'] -> Exec['changemysqlconfig']
+#Exec['changemysqlconfig'] -> Service['php5-fpm']

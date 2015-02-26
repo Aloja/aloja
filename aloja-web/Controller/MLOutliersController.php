@@ -52,7 +52,7 @@ class MLOutliersController extends AbstractController
 			while (!feof($fh))
 			{
 				$line = fgets($fh, 4096);
-				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
+				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line) && !preg_match('/SUMMARY/',$line))
 				{
 					$fts = explode(" : ",$line);
 					$parts = explode(" ",$fts[1]);

@@ -49,3 +49,7 @@ compile_dsh() {
   }
 "
 }
+
+vm_install_extra_packages() {
+ logger "INFO: No extra packages to be installed for carma cluster"
+}
