@@ -46,6 +46,17 @@ class Utils
     	} else if($item_name == 'dateto')
     		return "";
     	
+    	if($item_name == 'warnings' || $item_name == 'outliers') {
+    		if(isset($_GET['outliers'])) {
+	    		if(isset($_GET["warnings"]))
+	    			$where_configs .= " AND outlier IN (0,1,2)";
+	    		else
+	    			$where_configs .= " AND outlier IN (0,1)";
+    		}
+    		
+	    	return "";
+    	}
+    	
         $single_item_name = substr($item_name, 0, -1);
 
         if (isset($_GET[$item_name])) {
