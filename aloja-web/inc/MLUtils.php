@@ -6,7 +6,7 @@ use alojaweb\inc\Utils;
 
 class MLUtils
 {
-	public function generateModelInfo($param_names, $params, $condition, $db)
+	public static function generateModelInfo($param_names, $params, $condition, $db)
 	{
 		//$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
@@ -21,7 +21,7 @@ class MLUtils
 		return $model_info;
 	}
 
-	public function generateSimpleInstance($param_names, $params, $condition, $db)
+	public static function generateSimpleInstance($param_names, $params, $condition, $db)
 	{
 		//$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
@@ -40,7 +40,7 @@ class MLUtils
 		return $instance;
 	}
 
-	public function generateInstances($param_names, $params, $generalize, $db)
+	public static function generateInstances($param_names, $params, $generalize, $db)
 	{
 		//$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
@@ -100,7 +100,7 @@ class MLUtils
 		return $instances;
 	}
 
-	public function findMatchingModels ($model_info, &$possible_models, &$possible_models_id)
+	public static function findMatchingModels ($model_info, &$possible_models, &$possible_models_id)
 	{
 		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
 		{
