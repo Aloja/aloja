@@ -133,7 +133,7 @@ mlprediction:
 
 mldatacollapse:
     pattern: "/mldatacollapse"
-    controller: "alojaweb\\Controller\\MLTemplatesController::mldatacollapseAction"
+    controller: "alojaweb\\Controller\\MLDataCollapseController::mldatacollapseAction"
 
 mlfindattributes:
     pattern: "/mlfindattributes"
