@@ -159,7 +159,6 @@ class MLParamevalController extends AbstractController
 	{
 		$db = $this->container->getDBUtils ();
 		$rows = $categories = $series = '';
-		$must_wait = 'NO';
 		try {
 			$configurations = array ();	// Useless here
 			$where_configs = '';
@@ -318,6 +317,7 @@ class MLParamevalController extends AbstractController
 				usleep(500000);
 				$is_cached = file_exists($cache_filename);
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
+				$must_wait = 'NO';
 
 				if ($in_process)
 				{
@@ -326,7 +326,6 @@ class MLParamevalController extends AbstractController
 				}
 				else
 				{
-					$must_wait = 'NO';
 					if ($is_cached)
 					{
 						// get cache
