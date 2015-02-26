@@ -8,6 +8,153 @@ use alojaweb\inc\DBUtils;
 
 class MLParamevalController extends AbstractController
 {
+
+	/* GENERAL FUNCTIONS TO USE */
+
+	private function generateModelInfo($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = array();
+		$model_info = '';
+		foreach ($param_names as $p) 
+		{
+			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+		}
+		return $model_info;
+	}
+
+	private function generateSimpleInstance($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = array();
+		$instance = '';
+		foreach ($param_names as $p) 
+		{
+			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+
+			$tokens[$p] = '';
+			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
+			elseif (!$condition && empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+		}
+		return $instance;
+	}
+
+	private function generateInstances($param_names, $params, $generalize)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = $instances = array();
+
+		// Get info from clusters (Part of header_names!)
+		$cluster_header_names = array(
+			'id_cluster' => 'Cluster','name' => 'Cl.Name','datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores',
+			'vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+		);
+		$cluster_descriptor = array();
+		$query = "select ".implode(",",array_keys($cluster_header_names))." from clusters;";
+	    	$rows = $db->get_rows($query);
+	    	foreach($rows as $row)
+		{
+			$cid = $row['id_cluster'];
+			foreach(array_keys($cluster_header_names) as $cname)
+			{
+				$cluster_descriptor[$cid][$cname] = $row[$cname];
+			}
+		}
+
+		// If "No Clusters" -> All clusters
+		if (empty($params['id_clusters']))
+		{
+			$params['id_clusters'] = array();
+			$paramAllOptions['id_clusters'] = array_column($filter_options['id_cluster'],'id_cluster');
+			foreach ($paramAllOptions['id_clusters'] as $par) $params['id_clusters'][] = $par;
+		}
+
+		// For each cluster selected, launch an instance...
+		foreach ($params['id_clusters'] as $cl) 
+		{
+			$cl_characteristics = "Cl".implode(",",$cluster_descriptor[$cl]);
+			
+			$instance = '';
+			foreach ($param_names as $p) 
+			{
+				if ($p != "id_clusters")
+				{
+					if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+
+					$tokens[$p] = '';
+					if ($generalize && empty($params[$p])) { $tokens[$p] = '*'; }
+					elseif (!$generalize && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+				}
+				else
+				{
+					$instance = $instance.(($instance=='')?'':',').$cl_characteristics;
+				}
+			}
+			$instances[] = $instance;
+
+		}
+		return $instances;
+	}
+
+	private function findMatchingModels ($model_info, &$possible_models, &$possible_models_id)
+	{
+		
+		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+		{
+			while (!feof($fh))
+			{
+				$line = fgets($fh, 4096);
+				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line) && !preg_match('/SUMMARY/',$line))
+				{
+					$fts = explode(" : ",$line);
+					$parts = explode(" ",$fts[1]);
+					$buffer = array();
+					$last_part = "";
+					foreach ($parts as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
+
+					if ($model_info[0]==' ') $model_info = substr($model_info, 1);
+					$parts_2 = explode(" ",$model_info);
+					$buffer_2 = array();
+					$last_part = "";
+					foreach ($parts_2 as $p)
+					{
+						if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+						else $last_part = $p;
+					}
+
+					$match = TRUE;
+					foreach ($buffer_2 as $bk => $ba)
+					{
+						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
+						if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+					}
+
+					if ($match)
+					{
+						$possible_models[] = $line;
+						$possible_models_id[] = $fts[0];
+					}
+				}
+			}
+			fclose($fh);
+		}
+	}
+
+	/* CONTROLLER FUNCTIONS */
+
 	public function mlparamEvaluationAction()
 	{
 		$db = $this->container->getDBUtils ();
@@ -23,7 +170,9 @@ class MLParamevalController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('parameval',$_GET)) || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('parameval',$_GET))
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
 				$params['benchs'] = array('terasort');
 				$where_configs = ' AND bench IN ("terasort")';
@@ -39,10 +188,10 @@ class MLParamevalController extends AbstractController
 			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
 			$minExecs	= (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
 			$minExecsFilter = "";
-			if($minExecs > 0)
-				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
+
+			if($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
-			$filter_execs = "AND valid = TRUE";
+			$filter_execs = " AND valid = TRUE AND exe_time > 100";
 
 			$filter_options = Utils::getFilterOptions($db);
 			$paramOptions = array();
@@ -61,7 +210,6 @@ class MLParamevalController extends AbstractController
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 			
 			$rows = $db->get_rows ( $query );
-
 			if (empty($rows)) throw new \Exception ( "No results for query!" );
 	
 			$categories = '';
@@ -78,12 +226,9 @@ class MLParamevalController extends AbstractController
 			foreach($rows as $row) {
 				if($paramEval == 'comp')
 					$row[$paramEval] = Utils::getCompressionName($row['comp']);
-				else if($paramEval == 'id_cluster') {
-					if($row[$paramEval] == 1)
-						$row[$paramEval] = 'Local';
-					else
-						$row[$paramEval] = 'Azure';
-				} else if($paramEval == 'net')
+				else if($paramEval == 'id_cluster')
+					$row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
+				else if($paramEval == 'net')
 					$row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk')
 					$row[$paramEval] = Utils::getDisksName($row['disk']);
@@ -100,71 +245,19 @@ class MLParamevalController extends AbstractController
 
 			$jsonData = $jsonHeader = "[]";
 			$instance = "";
-			$possible_models = array();
-			$possible_models_id = array();
 			$arrayBenchs_pred = array();
 
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
 			// compose instance
-			$tokens = array();
-			$instance = '';
-			foreach ($param_names as $p)
-			{
-				$tokens[$p] = '';
-				if (empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
-			}
+			$instance = $this->generateSimpleInstance($param_names, $params, true);
+			$model_info = $this->generateModelInfo($param_names, $params, true);
+			$instances = $this->generateInstances($param_names, $params, false);
 
-			// find possible models to predict
-			$model_info = '';
-			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
-		
-			if (file_exists(getcwd().'/cache/query/record.data') && ($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
-			{
-				while (!feof($fh))
-				{
-					$line = fgets($fh, 4096);
-					if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line))
-					{
-						$fts = explode(" : ",$line);
-						$parts = explode(" ",$fts[1]);
-						$buffer = array();
-						$last_part = "";
-						foreach ($parts as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
-
-						if ($model_info[0]==' ') $model_info = substr($model_info, 1);
-						$parts_2 = explode(" ",$model_info);
-						$buffer_2 = array();
-						$last_part = "";
-						foreach ($parts_2 as $p)
-						{
-							if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-							else $last_part = $p;
-						}
-
-						$match = TRUE;
-						foreach ($buffer_2 as $bk => $ba)
-						{
-							if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-							if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
-						}
-
-						if ($match)
-						{
-							$possible_models[] = $line;
-							$possible_models_id[] = $fts[0];
-						}
-					}
-				}
-				fclose($fh);
-			}
+			// model for filling
+			$possible_models = $possible_models_id = array();
+			$this->findMatchingModels($model_info, $possible_models, $possible_models_id);
 
 			if (!empty($possible_models_id))
 			{
@@ -172,17 +265,28 @@ class MLParamevalController extends AbstractController
 				else $current_model = $model = $possible_models_id[0];
 
 				$cache_filename = getcwd().'/cache/query/'.md5($instance.'-'.$model).'-ipred.csv';
-				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict='.$instance)).'" | grep -v grep');
 				$tmp_file = getcwd().'/cache/query/'.md5($instance.'-'.$model).'.tmp';
 
-				if (!file_exists($cache_filename) && $in_process == NULL && (!file_exists($tmp_file) || filesize($tmp_file) == 0))
+				$is_cached = file_exists($cache_filename);
+				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+		
+				if (!$is_cached && !$in_process && !$finished_process)
 				{
 					// drop query
-					$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict="'.$instance.'" -v | grep -v "WARNING" > '.$tmp_file.' &';
+					$command = '( cd '.getcwd().'/cache/query ; ';
+					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
+					$command = $command.'rm -f '.$tmp_file.' ';
+					foreach ($instances as $inst)
+					{
+						$command = $command.'&& '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' ';
+					}
+					$command = $command.'&& touch  '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready; ';
+					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 &';
 					exec($command);
 				}
 
-				if (!file_exists($cache_filename) && (file_exists($tmp_file) && filesize($tmp_file) > 0))
+				if (!$is_cached && $finished_process)
 				{
 					// read results
 					$lines = explode("\n", file_get_contents($tmp_file));
@@ -198,7 +302,7 @@ class MLParamevalController extends AbstractController
 					}
 					$jsonData = $jsonData.']';
 
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Prediction');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction'); #FIXME - Header hardcoded for file-tmp
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -210,18 +314,23 @@ class MLParamevalController extends AbstractController
 					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
 					shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-				}
-				$in_process = shell_exec('ps aux | grep "'.(str_replace(array('*','"'),array('\*',''),'aloja_predict_instance -l '.$model.' -p inst_predict='.$instance)).'" | grep -v grep');
-				$must_wait = 'NO';
 
-				if ($in_process != NULL)
+					// remove remaining locks and readies
+					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				}
+
+				$is_cached = file_exists($cache_filename);
+				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
+
+				if ($in_process)
 				{
 					$jsonData = $jsonHeader = '[]';
 					$must_wait = 'YES';
 				}
 				else
 				{
-					if (file_exists($cache_filename))
+					$must_wait = 'NO';
+					if ($is_cached)
 					{
 						// get cache
 						$data = explode("\n",file_get_contents($cache_filename));
@@ -233,7 +342,7 @@ class MLParamevalController extends AbstractController
 					}
 
 					// Slice and Aggregate JSON data
-					$sliced = explode("],[",substr($jsonData,2,-2));
+					$sliced = explode('],[',substr($jsonData,2,-2));
 					$position = -1;
 					if($paramEval == 'maps') $position = array_search('Maps', $header); 
 					else if($paramEval == 'comp') $position = array_search('Comp', $header);
@@ -265,7 +374,7 @@ class MLParamevalController extends AbstractController
 							$bench = $line[array_search('Benchmark', $header)].'_pred';
 
 							if($paramEval == 'comp') $value = Utils::getCompressionName($class);
-							else if($paramEval == 'id_cluster') $value = ($class == 'Cl1')?'Local':'Azure';
+							else if($paramEval == 'id_cluster') $value = Utils::getClusterName($row[$paramEval],$db);
 							else if($paramEval == 'net') $value = Utils::getNetworkName($class);
 							else if($paramEval == 'disk') $value = Utils::getDisksName($class);
 							else if($paramEval == 'iofilebuf') $value = $class / 1024;
@@ -301,10 +410,10 @@ class MLParamevalController extends AbstractController
 		} catch ( \Exception $e ) {
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
-			$series = $jsonHeader = $colors = "[]";
-			$instance = $current_model = "";
+			$series = $jsonHeader = $colors = '[]';
+			$instance = $current_model = '';
 			$possible_models = $possible_models_id = array();
-			$must_wait = "NO";
+			$must_wait = 'NO';
 		}
 		echo $this->container->getTwig ()->render ('mltemplate/mlconfigperf.html.twig', array (
 				'selected' => 'ML Parameter Evaluation',
