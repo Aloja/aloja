@@ -5,47 +5,10 @@ namespace alojaweb\Controller;
 use alojaweb\inc\HighCharts;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\inc\MLUtils;
 
 class MLMinconfigsController extends AbstractController
 {
-	/* GENERAL FUNCTIONS TO USE */
-
-	private function generateModelInfo($param_names, $params, $condition)
-	{
-	    	$db = $this->container->getDBUtils();
-		$filter_options = Utils::getFilterOptions($db);
-		$paramAllOptions = $tokens = array();
-		$model_info = '';
-		foreach ($param_names as $p) 
-		{
-			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
-		}
-		return $model_info;
-	}
-
-	private function generateSimpleInstance($param_names, $params, $condition)
-	{
-	    	$db = $this->container->getDBUtils();
-		$filter_options = Utils::getFilterOptions($db);
-		$paramAllOptions = $tokens = array();
-		$instance = '';
-		foreach ($param_names as $p) 
-		{
-			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-
-			$tokens[$p] = '';
-			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
-			elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
-		}
-		return $instance;
-	}
-
-	/* CONTROLLER FUNCTIONS */
-
 	public function mlminconfigsAction()
 	{
 		$jsonData = array();
@@ -80,8 +43,8 @@ class MLMinconfigsController extends AbstractController
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
 			// compose instance
-			$instance = $this->generateSimpleInstance($param_names, $params, $unrestricted);
-			$model_info = $this->generateModelInfo($param_names, $params, $unrestricted);
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted, $db); // Used only as indicator in the WEB
+			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted, $db);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options = 'prange=0,20000'; }
 			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options ='kparam=3';}
