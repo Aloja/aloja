@@ -453,6 +453,11 @@ class Utils
     	return $disks;
     }
     
+    public static function getBeautyRam($ramAmount)
+    {
+    	return round($ramAmount,0)." GB";
+    }
+    
     public static function makeExecInfoBeauty(&$execInfo)
     {
     	if(key_exists('comp',$execInfo))
@@ -501,7 +506,7 @@ class Utils
     	$options['vm_size'] = $dbUtils->get_rows("SELECT DISTINCT vm_size FROM execs JOIN clusters USING (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
     	$options['vm_cores'] = $dbUtils->get_rows("SELECT DISTINCT vm_cores FROM execs JOIN clusters USING (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
     	$options['vm_ram'] = $dbUtils->get_rows("SELECT DISTINCT vm_RAM FROM execs JOIN clusters USING (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
-    	$options['hadoopversion'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
+    	$options['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
     	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs JOIN clusters USING (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
 
     	return $options;

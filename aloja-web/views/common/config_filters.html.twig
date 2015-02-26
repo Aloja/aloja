@@ -208,7 +208,7 @@
 				<div class="col-md-6">
 					Hadoop version: </br> <select class="form-control"
 						name="hadoop_versions[]" multiple>
-						{% for selopt in options['hadoopversion'] %}
+						{% for selopt in options['hadoop_version'] %}
 					    <option value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}SELECTED{% endif %}>{{ selopt['hadoop_version'] }}</option>
 					   {% endfor %}
 						<option value="None" {% if not hadoop_versions %} SELECTED {% endif %}>Disabled</option>
