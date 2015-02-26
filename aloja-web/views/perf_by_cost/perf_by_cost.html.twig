@@ -177,39 +177,39 @@
                 </div>
 	            <h1 class="compare title">Edit cluster configuration costs:</h1>
 	            <div style="margin: 0 auto; width: 90%; text-align: left;">
-	                <div class="row">
-	                    <div class="col-md-3">
-	                        <label>Cost per hour Azure:</label>
-	                        <input type="text" name="cost_hour_AZURE" value="{{ cost_hour_AZURE }}" size="4">
-	                    </div>
-	                    <div class="col-md-3">
-	                        <label>Cost per hour Azure 1 remote:</label>
-	                        <input type="text" name="cost_hour_AZURE_1remote" value="{{ cost_hour_AZURE_1remote }}" size="4">
-	                    </div>
-	                    <div class="col-md-3">
-	                        <label>Cost per hour HDD Ethernet:</label>
-	                        <input type="text" name="cost_hour_HDD_ETH" value="{{ cost_hour_HDD_ETH }}" size="4">
-	                   </div>
-                    </div>
-                    <div class="row" style="margin-top: 1em;">
-	                   <div class="col-md-3">
-	                        <label>Cost per hour HDD Infiniband:</label>
-	                        <input type="text" name="cost_hour_HDD_IB" value="{{ cost_hour_HDD_IB }}" size="4">
-	                   </div>
-	                   <div class="col-md-3">
-	                        <label>Cost per hour SDD Ethernet:</label>
-	                        <input type="text" name="cost_hour_SSD_ETH" value="{{ cost_hour_SSD_ETH }}" size="4">
-	                   </div>
-	                   <div class="col-md-3">
-	                        <label>Cost per hour SSD Infiniband:</label>
-	                        <input type="text" name="cost_hour_SSD_IB" value="{{ cost_hour_SSD_IB }}" size="4">
-                       </div>
-                       <div class="col-md-1">
-	                        <input type="submit" value="Change" class="btn btn-warning">
-                       </div>
-                    </div>
+	            <form name="clusterFilters" method="GET" role="form">
+	            
+	              <table class="table stripped">
+	              	<thead>
+	              		<th>Cluster</th>
+	              		<th>Provider</th>
+	              		<th>Type</th>
+	              		<th>VM OS</th>
+	              		<th>Datanodes</th>
+	              		<th>Cost/hour</th>
+	              		<th>Cost remote disk</th>
+	              		<th>Cost SSD</th>
+	              		<th>Cost InfiniBand</th>
+	              	</thead>
+	              	<tbody>
+	              	 {% for cluster in clusters %}
+	              	   <tr>
+	              	     <td>{{ cluster.name }}</td>
+	              	     <td>{{ cluster.provider }}</td>
+	              	     <td>{{ cluster.type }}</td>
+	              	     <td>{{ cluster.vm_OS }}</td>
+	              	     <td>{{ cluster.datanodes }}</td>
+	              	     <td><input type="text" class="form-control" name="cost_hour[{{ cluster.id_cluster }}]" value="{% if cost_hour[cluster.id_cluster] is defined %}{{ cost_hour[cluster.id_cluster] }}{% else %}{{ cluster.cost_hour }}{% endif %}" size="4"></td>
+	              	     <td><input type="text" class="form-control" name="cost_remote[{{ cluster.id_cluster }}]" value="{% if cost_remote[cluster.id_cluster] is defined %}{{ cost_remote[cluster.id_cluster] }}{% else %}{{ cluster.cost_remote }}{% endif %}" size="4"></td>
+	              	     <td><input type="text" class="form-control" name="cost_SSD[{{ cluster.id_cluster }}]" value="{% if cost_SSD[cluster.id_cluster] is defined %}{{ cost_SSD[cluster.id_cluster] }}{% else %}{{ cluster.cost_SSD }}{% endif %}" size="4"></td>
+	              	     <td><input type="text" class="form-control" name="cost_IB[{{ cluster.id_cluster }}]" value="{% if cost_IB[cluster.id_cluster] is defined %}{{ cost_IB[cluster.id_cluster] }}{% else %}{{ cluster.cost_IB }}{% endif %}" size="4"></td>
+	              	   </tr>
+	              	  {% endfor %}
+	              	</tbody>
+	              </table>
+	              <button id="submit" type="submit" value="Change" class="btn btn-warning">Change</button>
+	              </form>
 	            </div>
-	        </form>
 	    </div>
 	    </br></br>
     {% endblock %}
