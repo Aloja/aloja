@@ -12,7 +12,7 @@ class MLTemplatesController extends AbstractController
 	public function mlpredictionAction()
 	{
 		$jsonExecs = array();
-		$instance = '';
+		$instance = $error_stats = '';
 		try
 		{
 		    	$db = $this->container->getDBUtils();
@@ -123,8 +123,13 @@ class MLTemplatesController extends AbstractController
 				$must_wait = "NO";
 				$count = 0;
 				$max_x = $max_y = 0;
-				foreach (array("tt", "tv", "tr") as &$value)
+				$error_stats = '';
+				foreach (array("tt", "tv", "tr") as $value)
 				{
+					$mae = 0;
+					$rae = 0;
+					$count_dataset = 0;
+
 					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
 					{
 						$header = fgetcsv($handle, 1000, ",");
@@ -137,6 +142,10 @@ class MLTemplatesController extends AbstractController
 						{
 							$jsonExecs[$count]['y'] = (int)$data[$key_exec];
 							$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
+
+							$mae += abs($jsonExecs[$count]['y'] - $jsonExecs[$count]['x']);
+							$rae += (float)abs($jsonExecs[$count]['y'] - $jsonExecs[$count]['x']) / $jsonExecs[$count]['y'];
+							$count_dataset = $count_dataset + 1;
 
 							$extra_data = "";
 							foreach(array_values($header) as &$value2)
@@ -152,6 +161,7 @@ class MLTemplatesController extends AbstractController
 						}
 						fclose($handle);
 					}
+					$error_stats = $error_stats.'Dataset: '.$value.' => MAE: '.($mae / $count_dataset).' RAE: '.($rae / $count_dataset).'<br/>';
 				}
 			}
 		}
@@ -181,6 +191,7 @@ class MLTemplatesController extends AbstractController
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'instance' => $instance,
+				'error_stats' => $error_stats,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);
