@@ -5,47 +5,10 @@ namespace alojaweb\Controller;
 use alojaweb\inc\HighCharts;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\inc\MLUtils;
 
 class MLCrossvarController extends AbstractController
 {
-	/* GENERAL FUNCTIONS TO USE */
-
-	private function generateModelInfo($param_names, $params, $condition)
-	{
-	    	$db = $this->container->getDBUtils();
-		$filter_options = Utils::getFilterOptions($db);
-		$paramAllOptions = $tokens = array();
-		$model_info = '';
-		foreach ($param_names as $p) 
-		{
-			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
-		}
-		return $model_info;
-	}
-
-	private function generateSimpleInstance($param_names, $params, $condition)
-	{
-	    	$db = $this->container->getDBUtils();
-		$filter_options = Utils::getFilterOptions($db);
-		$paramAllOptions = $tokens = array();
-		$instance = '';
-		foreach ($param_names as $p) 
-		{
-			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-
-			$tokens[$p] = '';
-			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
-			elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
-		}
-		return $instance;
-	}
-
-	/* CONTROLLER FUNCTIONS */
-
 	public function mlcrossvarAction()
 	{
 		$jsonData = array();
@@ -76,8 +39,8 @@ class MLCrossvarController extends AbstractController
 			}
 
 			// compose instance
-			$instance = $this->generateSimpleInstance($param_names, $params, true);
-			$model_info = $this->generateModelInfo($param_names, $params, true);
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
+			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 
 			$cache_ds = getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cross.csv';
 			$is_cached = file_exists($cache_ds);
