@@ -63,12 +63,16 @@ class Utils
     		
     		return "";
     	}
-    	
+    	    	
         $single_item_name = substr($item_name, 0, -1);
-
+        
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
-            $items = Utils::delete_none($items);
+            if($item_name == 'filters')
+            	$items = array('0');
+           	else
+         	   $items = Utils::delete_none($items);
+            
         } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');
@@ -76,6 +80,12 @@ class Utils
                 $items = array();
             } elseif ($item_name == 'disks') {
                 $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
+            } elseif ($item_name == 'bench_types') {
+            	$items = array('HiBench','HDI');
+            } elseif ($item_name == 'valids') {
+            	$items = array('1');
+            } elseif ($item_name == 'filters') {
+            	$items = array(0);
             } else {
                 $items = array();
             }

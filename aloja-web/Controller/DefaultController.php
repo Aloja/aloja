@@ -61,14 +61,14 @@ class DefaultController extends AbstractController
             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
 			$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
 			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
 			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
 			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
 			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
 			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config, false );
-			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
 			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
 			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
 			
@@ -251,14 +251,14 @@ class DefaultController extends AbstractController
             $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
             $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
             $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
             $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
             $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config, false );
-            $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+            $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
             $outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
             $warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
             
@@ -1263,14 +1263,14 @@ class DefaultController extends AbstractController
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
 			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
 			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
 			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
 			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
 			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config, false );
-			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
 			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
 			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
 			
@@ -1376,14 +1376,14 @@ class DefaultController extends AbstractController
 			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
 			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
 			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
 			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
 			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
 			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
 			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config, false );
-			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
 			Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
 			$outliers = isset($_GET['outliers']) ? $_GET['outliers'] : "";
 			$warnings = isset($_GET['warnings']) ? $_GET['warnings'] : "";
@@ -1755,14 +1755,14 @@ class DefaultController extends AbstractController
     	$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
     	$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
     	$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-    	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config, false );
+    	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
     	$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
     	$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
     	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
     	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
     	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-    	$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config, false );
-    	$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+    	$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+    	$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
     	$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
     	$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
     	
