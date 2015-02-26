@@ -158,9 +158,8 @@ class MLParamevalController extends AbstractController
 	public function mlparamEvaluationAction()
 	{
 		$db = $this->container->getDBUtils ();
-		$rows = '';
-		$categories = '';
-		$series = '';
+		$rows = $categories = $series = '';
+		$must_wait = 'NO';
 		try {
 			$configurations = array ();	// Useless here
 			$where_configs = '';
