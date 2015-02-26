@@ -5,95 +5,10 @@ namespace alojaweb\Controller;
 use alojaweb\inc\HighCharts;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\inc\MLUtils;
 
 class MLOutliersController extends AbstractController
 {
-	/* GENERAL FUNCTIONS TO USE */
-
-	private function generateModelInfo($param_names, $params, $condition)
-	{
-	    	$db = $this->container->getDBUtils();
-		$filter_options = Utils::getFilterOptions($db);
-		$paramAllOptions = $tokens = array();
-		$model_info = '';
-		foreach ($param_names as $p) 
-		{
-			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
-		}
-		return $model_info;
-	}
-
-	private function generateSimpleInstance($param_names, $params, $condition)
-	{
-	    	$db = $this->container->getDBUtils();
-		$filter_options = Utils::getFilterOptions($db);
-		$paramAllOptions = $tokens = array();
-		$instance = '';
-		foreach ($param_names as $p) 
-		{
-			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-
-			$tokens[$p] = '';
-			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
-			elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
-		}
-		return $instance;
-	}
-
-	private function findMatchingModels ($model_info, &$possible_models, &$possible_models_id)
-	{
-		
-		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
-		{
-			while (!feof($fh))
-			{
-				$line = fgets($fh, 4096);
-				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line) && !preg_match('/SUMMARY/',$line))
-				{
-					$fts = explode(" : ",$line);
-					$parts = explode(" ",$fts[1]);
-					$buffer = array();
-					$last_part = "";
-					foreach ($parts as $p)
-					{
-						if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-						else $last_part = $p;
-					}
-
-					if ($model_info[0]==' ') $model_info = substr($model_info, 1);
-					$parts_2 = explode(" ",$model_info);
-					$buffer_2 = array();
-					$last_part = "";
-					foreach ($parts_2 as $p)
-					{
-						if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-						else $last_part = $p;
-					}
-
-					$match = TRUE;
-					foreach ($buffer_2 as $bk => $ba)
-					{
-						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-						if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
-					}
-
-					if ($match)
-					{
-						$possible_models[] = $line;
-						$possible_models_id[] = $fts[0];
-					}
-				}
-			}
-			fclose($fh);
-		}
-	}
-
-	/* CONTROLLER FUNCTIONS */
-
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
@@ -126,12 +41,12 @@ class MLOutliersController extends AbstractController
 			}
 
 			// compose instance
-			$instance = $this->generateSimpleInstance($param_names, $params, true);
-			$model_info = $this->generateModelInfo($param_names, $params, true);
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB
+			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 
 			// model for filling
 			$possible_models = $possible_models_id = array();
-			$this->findMatchingModels($model_info, $possible_models, $possible_models_id);
+			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $db);
 
 			$model = '';
 			if (!empty($possible_models_id))
