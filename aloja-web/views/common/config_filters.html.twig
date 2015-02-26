@@ -145,6 +145,7 @@
 			</div>
 
 			{% endif %}
+
 			{% if selected == 'mlprediction' %}
 			<div class="row">
 				<div class="col-md-6">
@@ -194,13 +195,6 @@
 							<option value="Blk.size"  {% if 'Blk.size' == feature %} SELECTED  {% endif %}>Block.Sizes</option>
 							<option value="Cluster"  {% if 'Cluster' == feature %} SELECTED  {% endif %}>Clusters</option>
 					</select>
-				</div>
-			</div>
-			<div id="predict-button-div" class="row">				
-				<div class="col-md-8">
-					<h2 class="compare body" style="text-align: center;">
-						<input id="predict-button" type="submit" value="Show summary">
-					</h2>
 				</div>
 			</div>
 			{% endif %}
