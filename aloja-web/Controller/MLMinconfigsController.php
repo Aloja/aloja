@@ -8,6 +8,44 @@ use alojaweb\inc\DBUtils;
 
 class MLMinconfigsController extends AbstractController
 {
+	/* GENERAL FUNCTIONS TO USE */
+
+	private function generateModelInfo($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = array();
+		$model_info = '';
+		foreach ($param_names as $p) 
+		{
+			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+			if ($condition) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
+			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+		}
+		return $model_info;
+	}
+
+	private function generateSimpleInstance($param_names, $params, $condition)
+	{
+	    	$db = $this->container->getDBUtils();
+		$filter_options = Utils::getFilterOptions($db);
+		$paramAllOptions = $tokens = array();
+		$instance = '';
+		foreach ($param_names as $p) 
+		{
+			if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
+
+			$tokens[$p] = '';
+			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
+			elseif (!$condition && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
+		}
+		return $instance;
+	}
+
+	/* CONTROLLER FUNCTIONS */
+
 	public function mlminconfigsAction()
 	{
 		$jsonData = array();
@@ -41,19 +79,9 @@ class MLMinconfigsController extends AbstractController
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
-			$filter_options = Utils::getFilterOptions($db);
-			$paramAllOptions = $tokens = array();
-			$model_info = '';
-			foreach ($param_names as $p) 
-			{
-				if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));
-				$model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');	
-			
- 				$tokens[$p] = '';
-				if (empty($params[$p])) { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
- 				else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
- 				$instance = $instance.(($instance=='')?'':',').$tokens[$p];
- 			}
+			// compose instance
+			$instance = $this->generateSimpleInstance($param_names, $params, $unrestricted);
+			$model_info = $this->generateModelInfo($param_names, $params, $unrestricted);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options = 'prange=0,20000'; }
 			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options ='kparam=3';}
@@ -63,22 +91,28 @@ class MLMinconfigsController extends AbstractController
 			$config = $model_info.' '.$learn_param.' minconfs';
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
-			$in_process1 = shell_exec('ps aux | grep "'.$learn_method.' -p '.$learn_options.':saveall='.md5($config).'" | grep -v grep');
-			$in_process2 = shell_exec('ps aux | grep "'.md5($config).' -p saveall='.md5($config.'R').':kmax=200" | grep -v grep');
+
+			$is_cached = file_exists($cache_ds);
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
 			// Find cache TODO - Check for prev models
-			if (file_exists($cache_ds) && $in_process1 == NULL && $in_process2 == NULL)
+			if ($is_cached && !$in_process)
 			{
 				$keep_cache = TRUE;
 				foreach (array("tt", "tv", "tr") as &$value)
 				{
 					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
 				}
-				foreach (array("maes.csv", "sizes.csv", "object.rds") as &$value)
+				foreach (array("sizes.csv", "object.rds") as &$value)
 				{
 					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config.'R').'-'.$value);
 				}
-				if (!$keep_cache)
+				$error_cache = FALSE;
+				foreach (array("maes.csv", "raes.csv") as &$value)
+				{
+					$error_cache = $error_cache || file_exists(getcwd().'/cache/query/'.md5($config.'R').'-'.$value);
+				}
+				if (!($keep_cache && $error_cache))
 				{
 					unlink($cache_ds);
 					shell_exec("sed -i '/".md5($config)." : ".$config."-model/d' ".getcwd()."/cache/query/record.data");
@@ -87,34 +121,20 @@ class MLMinconfigsController extends AbstractController
 			}
 
 			// Create Models and Predictions
-			if (!file_exists($cache_ds) && $in_process1 == NULL && $in_process2 == NULL)
+			if (!$is_cached && !$in_process)
 			{
 				// get headers for csv
 				$header_names = array(
-					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe Time','exec' => 'Exec Conf','cost' => 'Running Cost $','net' => 'Net',
-					'disk' => 'Disk','maps' => 'Maps','iosf' => 'IO SFac','replication' => 'Rep','iofilebuf' => 'IO FBuf','comp' => 'Comp',
-					'blk_size' => 'Blk size','id_cluster' => 'Cluster','histogram' => 'Histogram','prv' => 'PARAVER','end_time' => 'End time',
+					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
+					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
 				);
-
-			    	$query="SHOW COLUMNS FROM execs;";
-			    	$rows = $db->get_rows ($query);
-				if (empty($rows)) throw new Exception('No data matches with your critteria.');
-				$headers = array();
-				$names = array();
-				$count = 0;
-				foreach($rows as $row)
-				{
-					if (array_key_exists($row['Field'],$header_names))
-					{
-						$headers[$count] = $row['Field'];
-						$names[$count++] = $header_names[$row['Field']];
-					}
-				}
-				$headers[$count] = 0;	// FIXME - Costs are NOT in the database?! What sort of anarchy is this?!
-				$names[$count++] = $header_names['cost'];
+				$headers = array_keys($header_names);
+				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs WHERE valid = TRUE AND bench_type = 'HiBench' AND bench not like 'prep_%' ".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench_type = 'HiBench' AND bench NOT LIKE 'prep_%' AND e.exe_time > 100".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
@@ -129,9 +149,11 @@ class MLMinconfigsController extends AbstractController
 				}
 
 				// run the R processor
-				$command = 'cd '.getcwd().'/cache/query; '
-				.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' > /dev/null && '
-				.getcwd().'/resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 > /dev/null &';
+				$command = '( cd '.getcwd().'/cache/query; ';
+				$command = $command.'touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
+				$command = $command.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' > /dev/null 2>&1 && ';
+				$command = $command.getcwd().'/resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 > /dev/null 2>&1 ;';
+				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 &';
 				exec($command);
 
 				// update cache record (for human reading)
@@ -143,12 +165,9 @@ class MLMinconfigsController extends AbstractController
 				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
 				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 			}
-			$in_process1 = shell_exec('ps aux | grep "'.$learn_method.' -p '.$learn_options.':saveall='.md5($config).'" | grep -v grep');
-			$in_process2 = shell_exec('ps aux | grep "'.md5($config).' -p saveall='.md5($config.'R').':kmax=200" | grep -v grep');
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
-			$must_wait = "NO";
-
-			if ($in_process1 != NULL || $in_process2 != NULL)
+			if ($in_process)
 			{
 				$jsonData = $jsonHeader = $configs = '[]';
 				$must_wait = "YES";
@@ -156,6 +175,7 @@ class MLMinconfigsController extends AbstractController
 			}
 			else
 			{
+				$must_wait = "NO";
 				if (isset($_GET['dump']))
 				{
 					try
@@ -185,20 +205,21 @@ class MLMinconfigsController extends AbstractController
 					exit(0);
 				}
 
-				// read results of the CSV - MAE
-				if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-maes.csv', 'r')) !== FALSE)
+				// read results of the CSV - MAE or RAE
+				if (file_exists(getcwd().'/cache/query/'.md5($config.'R').'-raes.csv')) $error_file = 'raes.csv'; else $error_file = 'maes.csv';
+				if (($handle = fopen(getcwd().'/cache/query/'.md5($config.'R').'-'.$error_file, 'r')) !== FALSE)
 				{
 					$count = $max_x = $max_y = 0;
 					$last_y = 9E15;
 					while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 					{
 						$jsonData[$count]['x'] = (int)$data[0];
-						if ((int)$data[1] > $last_y) $jsonData[$count++]['y'] = $last_y;
-						else $last_y = $jsonData[$count++]['y'] = (int)$data[1];
+						if ((float)$data[1] > $last_y) $jsonData[$count++]['y'] = $last_y;
+						else $last_y = $jsonData[$count++]['y'] = (float)$data[1];
 
 
 						if ((int)$data[0] > $max_x) $max_x = (int)$data[0];
-						if ((int)$data[1] > $max_y) $max_y = (int)$data[1];
+						if ((float)$data[1] > $max_y) $max_y = (float)$data[1];
 					}
 					fclose($handle);
 				}
