@@ -1,6 +1,19 @@
 {% extends "layout.html.twig" %} 
 {% block stylesheet %}
-    {{ parent() }}
+	{{ parent() }}
+	<style type="text/css">
+        @import "js/datatables/media/css/demo_table.css";
+        @import "js/datatables/media/css/jquery.dataTables.css";
+        @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables/extras/TableTools/media/css/TableTools.css";
+        @import "js/datatables/extras/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+		overflow-x:auto;
+		float: left;
+		width: 100%;
+        }
+	</style>
 {% endblock %}
 {% block content %}
 	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
@@ -12,7 +25,7 @@
 	</div>
 	<div id="stuffdiv" style="float: left; width: 70%;">
 		<div id="chart" style="float: left; width: 100%;"></div>
-		<div id="controls" style="float: left; width: 100%;">
+		<div id="controls" style="display: none; float: left; width: 100%;">
 			<form>
 				<table style="float: right; width: 20%;">
 				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
@@ -26,23 +39,45 @@
 	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
-	<div id="footer" style="float: left; width: 100%;">
-		<hr />
-		<p>Current used model: {{current_model}}</p>
-		<div style="float: left; width: 70%;">
-			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+	<hr />
+	<div id="options" style="display: none">
+		List of outliers : <a id="displayText1" href="javascript:toggle('benchdiv','displayText1');">show</a>
+		<div id="benchdiv" style="display: none; float: left; width: 100%;">
+			<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 		</div>
-		<div style="float: left; width: 30%;">
-			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+		<hr />
+		Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+		<div id="footer" style="display: none; float: left; width: 100%;">	
+			<div style="float: left; width: 70%;">
+				<p>Current used model: {{current_model}}</p>
+				<p>Usable models found:<ul>{{models | raw}}</ul></p>
+			</div>
+			<div style="float: left; width: 30%;">
+				<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+			</div>
 		</div>
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/ColVis/js/dataTables.colVis.min.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
+
 	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
 	$(document).ready(function() {
 		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
@@ -60,8 +95,8 @@
 
 		$("#select-model").change(function()
 		{
-			var url = window.location.href;    
-			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val();
+			var url = window.location.href;   
+			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val(); 
 			else url = url + '?current_model=' + $("#select-model").val();
 			window.location.href = url;
 		});
@@ -74,6 +109,9 @@
 
 		if ("{{must_wait}}"== "NO")
 		{
+			$('#controls').show();
+			$('#options').show();
+
 			$('#chart').highcharts( {
 	    		        chart: {
 	    		            type: 'scatter',
@@ -136,10 +174,20 @@
 					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[50, 50], [50+{{max_p|raw}}, 50+{{max_p|raw}}]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
 				]
 			});
+
+			oTable = $('#benchmark').dataTable({
+				"aaData": {{ jsonTable | raw }},
+				"columns": {{ jsonHeader | raw }},
+				"columnDefs" : [{"targets" : {{ jsonTable | raw }}, "render" : function (data) { return Math.round(data); }}]
+			});
+			$(window).bind('resize', function () {
+				oTable.fnAdjustColumnSizing();
+			});           
+			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
 		}
 		else
 		{
-			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<br/>{{instance}}</p>";
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
 			setInterval( function() { window.location.reload(); }, 300000 );
 		}	
 	});
