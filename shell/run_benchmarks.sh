@@ -148,7 +148,6 @@ loggerb  "INFO: includes loaded"
 
 
 NUMBER_OF_DATA_NODES="$numberOfNodes"
-userAloja="pristine"
 
 DSH="dsh -M -c -m "
 
@@ -263,6 +262,10 @@ JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
 
+#create dir to save files in one host
+$DSH_MASTER "mkdir -p $JOB_PATH"
+$DSH_MASTER "touch $LOG_PATH"
+
 
 #export HADOOP_HOME="$HADOOP_DIR"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
@@ -284,61 +287,9 @@ sudo sysctl vm.panic_on_oom=1 > /dev/null;
 sudo sysctl -w fs.file-max=65536 > /dev/null;
 sudo service ufw stop 2>&1 > /dev/null;
 "
-
-      #temporary to avoid read-only file system errors
-      echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-      $DSH "[ ! \"\$\(ls $homePrefixAloja/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force $homePrefixAloja/$userAloja/share; }"
-
-      for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
-        echo "Checking if to remount $mount_point"
-        $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
-      done
-
-      #$DSH "sudo mount -o force $homePrefixAloja/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
-
-    correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
-
-    if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-      echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
-
-      #temporary to avoid read-only file system errors
-      echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-      $DSH "[ ! \"\$\(ls $homePrefixAloja/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force $homePrefixAloja/$userAloja/share; }"
-
-      for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
-        echo "Checking if to remount $mount_point"
-        $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
-      done
-
-      correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
-
-      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-        echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
-        $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
-        sleep 90 2>&1 |tee -a $LOG_PATH
-      fi
-
-      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-        echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-        echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_DATA_NODES $NUMBER_OF_DATA_NODES + 1"
-        exit 1
-      fi
-    fi
-
   fi
 fi
 
-#create dir to save files in one host
-$DSH_MASTER "mkdir -p $JOB_PATH"
-$DSH_MASTER "touch $LOG_PATH"
-
-
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  if [ -z "$noSudo" ] ; then
-    loggerb  "Setting scratch permissions"
-    $DSH "sudo chown -R $userAloja: /scratch"
-  fi
-fi
 
 #only copy files if version has changed (to save time in azure)
 loggerb  "Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"

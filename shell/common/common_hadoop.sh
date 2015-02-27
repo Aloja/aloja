@@ -94,17 +94,7 @@ export NUM_REDS=$MAX_MAPS && \
   loggerb "Preparing exe dir"
 
 
-
-  if [ "$DELETE_HDFS" == "1" ] ; then
-     loggerb "Deleting previous PORT files"
-     $DSH "rm -rf $HDD/*" 2>&1 |tee -a $LOG_PATH
-$DSH "rm -rf $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
-  else
-     $DSH "rm -rf $HDD/{aplic,logs}" 2>&1 |tee -a $LOG_PATH
-  fi
-
   loggerb "Creating source dir and Copying Hadoop"
-$DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
 
@@ -256,7 +246,7 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
+    if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
@@ -276,10 +266,10 @@ restart_hadoop(){
       DELETE_HDFS="1"
       restart_hadoop no_retry
     elif [ "$i" == "120" ] ; then
-      loggerb "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
+      loggerb "$num/$NUMBER_OF_DATA_NODES Datanodes available, EXIT"
       exit 1
     else
-      loggerb "$num/$NUMBER_OF_SLAVES Datanodes available, wating for $i seconds"
+      loggerb "$num/$NUMBER_OF_DATA_NODES Datanodes available, wating for $i seconds"
       sleep 1
     fi
   done
@@ -330,9 +320,9 @@ execute_HiBench(){
 
       if [ "$DELETE_HDFS" == "1" ] ; then
         if [ "$bench" != "dfsioe" ] ; then
-          execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/prepare.sh "prep_"
+          execute_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare.sh "prep_"
         elif [ "$bench" == "dfsioe" ] ; then
-          execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/prepare-read.sh "prep_"
+          execute_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare-read.sh "prep_"
         fi
       else
         loggerb  "Reusing previous RUN prepared $bench"
@@ -356,13 +346,13 @@ execute_HiBench(){
     loggerb  "$(date +"%H:%M:%S") RUNNING $bench"
 
     if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
-      execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/run.sh
+      execute_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/run.sh
     elif [ "$bench" == "hivebench" ] ; then
-      execute_hadoop hivebench_agregation ${BENCH_HIB_DIR}hivebench/bin/run-aggregation.sh
-      execute_hadoop hivebench_join ${BENCH_HIB_DIR}hivebench/bin/run-join.sh
+      execute_hadoop hivebench_agregation ${BENCH_HIB_DIR}/hivebench/bin/run-aggregation.sh
+      execute_hadoop hivebench_join ${BENCH_HIB_DIR}/hivebench/bin/run-join.sh
     elif [ "$bench" == "dfsioe" ] ; then
-      execute_hadoop dfsioe_read ${BENCH_HIB_DIR}dfsioe/bin/run-read.sh
-      execute_hadoop dfsioe_write ${BENCH_HIB_DIR}dfsioe/bin/run-write.sh
+      execute_hadoop dfsioe_read ${BENCH_HIB_DIR}/dfsioe/bin/run-read.sh
+      execute_hadoop dfsioe_write ${BENCH_HIB_DIR}/dfsioe/bin/run-write.sh
     fi
 
   done
@@ -388,7 +378,7 @@ execute_hadoop(){
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S') && echo "end $start_date" 2>&1 |tee -a $LOG_PATH
   loggerb "# EXECUTING ${3}${1}"
 
-  $DSH_SLAVE "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
+  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
 
   local end_exec=$(date '+%s') && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
 
@@ -432,7 +422,7 @@ save_hadoop() {
   $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  cp "${BENCH_HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
+  cp "${BENCH_HIB_DIR}/$bench/hibench.report" "$JOB_PATH/$1/"
 
   #loggerb "Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
   #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH" 2>&1 |tee -a $LOG_PATH
