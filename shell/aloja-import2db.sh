@@ -184,12 +184,13 @@ for folder in 201* ; do
 	    cd ..; logger "Leaving folder $folder\n"
 	
 	    if [ "$MOVE_TO_DONE" ] ; then
+	      mkdir -p "$BASE_DIR/{DONE,FAIL}"
 	      if (( "$folder_OK" >= 3 )) ; then
 	        logger "OK=$folder_OK Moving folder $folder to DONE"
-	        mkdir -p "$BASE_DIR/DONE"
 	        mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
 	      else
-	        logger "OK=$folder_OK Leaving folder $folder out to revise"
+	        logger "OK=$folder_OK Moving $folder to FAIL for manual check"
+	        mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/"
 	      fi
 	    fi
 	
