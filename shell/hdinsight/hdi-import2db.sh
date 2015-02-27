@@ -34,9 +34,14 @@ importHDIJobs() {
 		    benchType="HDI"
 		    if [ $jobName == "random-text-writer" ]; then
 				benchType="HDI-prep"
+				jobName="prep_wordcount"
 			fi
 			if [[ $jobName =~ "TeraGen" ]]; then
 				benchType="HDI-prep"
+				jobName="prep_terasort"
+			fi
+			if [[ $jobName =~ "TeraSort" ]]; then
+				jobName="terasort"
 			fi
 			
 			##Select cluster number
