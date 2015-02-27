@@ -67,10 +67,8 @@ class DefaultController extends AbstractController
 			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
 			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
-			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
-			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+			$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+			$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 			
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
@@ -201,10 +199,8 @@ class DefaultController extends AbstractController
              	'vm_RAMs' => $vm_RAMs,
              	'hadoop_versions' => $hadoop_versions,
              	'types' => $types,
-             	'valid' => $valid,
-             	'filter' => $filter,
-             	'outliers' => $outliers,
-             	'warnings' => $warnings,
+             	'filters' => $filters,
+             	'allunchecked' => $allunchecked,
              	'options' => Utils::getFilterOptions($db)
              )
         );
@@ -212,11 +208,54 @@ class DefaultController extends AbstractController
 
     public function benchExecutionsAction()
     {
+    	$dbUtils = $this->container->getDBUtils();
+    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+    	$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+    	$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+    	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+    	$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+    	$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+    	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+    	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+    	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+    	$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+    	$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+    	
     	$discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
-            	'discreteOptions' => $discreteOptions
+            	'discreteOptions' => $discreteOptions,
+            	'benchs' => $benchs,
+            	'nets' => $nets,
+            	'disks' => $disks,
+            	'blk_sizes' => $blk_sizes,
+            	'comps' => $comps,
+            	'id_clusters' => $id_clusters,
+            	'mapss' => $mapss,
+            	'replications' => $replications,
+            	'iosfs' => $iosfs,
+            	'iofilebufs' => $iofilebufs,
+            	'money' => $money,
+            	'datanodess' => $datanodes,
+            	'bench_types' => $benchtype,
+            	'vm_sizes' => $vm_sizes,
+            	'vm_coress' => $vm_coress,
+            	'vm_RAMs' => $vm_RAMs,
+            	'hadoop_versions' => $hadoop_versions,
+            	'types' => $types,
+            	'filters' => $filters,
+            	'allunchecked' => $allunchecked,
+            	'options' => Utils::getFilterOptions($dbUtils)
             ));
     }
 
@@ -257,10 +296,8 @@ class DefaultController extends AbstractController
             $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
             $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-            $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
-            $outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
-            $warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
             
             //TODO: steps
             /*
@@ -367,10 +404,8 @@ class DefaultController extends AbstractController
         	'vm_RAMs' => $vm_RAMs,
         	'hadoop_versions' => $hadoop_versions,
         	'types' => $types,
-        	'valid' => $valid,
-        	'filter' => $filter,
-        	'outliers' => $outliers,
-        	'warnings' => $warnings,
+        	'filters' => $filters,
+        	'allunchecked' => $allunchecked,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
         	'options' => Utils::getFilterOptions($dbUtils),
@@ -1269,10 +1304,8 @@ class DefaultController extends AbstractController
 			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
 			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
-			$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
-			$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+			$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+			$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 			
 			if (! $benchs)
 				$where_configs .= 'AND bench IN (\'terasort\')';
@@ -1342,10 +1375,8 @@ class DefaultController extends AbstractController
 				'vm_RAMs' => $vm_RAMs,
 				'hadoop_versions' => $hadoop_versions,
 				'types' => $types,
-				'valid' => $valid,
-				'filter' => $filter,
-				'outliers' => $outliers,
-				'warnings' => $warnings,
+				'filters' => $filters,
+				'allunchecked' => $allunchecked,
 				'select_multiple_benchs' => false,
 				'options' => Utils::getFilterOptions($db)
 		) );
@@ -1383,12 +1414,8 @@ class DefaultController extends AbstractController
 			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
 			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
 			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-			$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
-			Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
-			$outliers = isset($_GET['outliers']) ? $_GET['outliers'] : "";
-			$warnings = isset($_GET['warnings']) ? $_GET['warnings'] : "";
-			Utils::read_params ( 'prepares', $where_configs, $configurations, $concat_config, false );
-			$prepares = isset($_GET['prepares']) ? $_GET['prepares'] : "";
+			$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+			$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 			
 			// $concat_config = join(',\'_\',', $configurations);
 			// $concat_config = substr($concat_config, 1);
@@ -1509,11 +1536,8 @@ class DefaultController extends AbstractController
 				'vm_RAMs' => $vm_RAMs,
 				'hadoop_versions' => $hadoop_versions,
 				'types' => $types,
-				'valid' => $valid,
-				'filter' => $filter,
-				'outliers' => $outliers,
-				'warnings' => $warnings,
-				'prepares' => $prepares,
+				'filters' => $filters,
+				'allunchecked' => $allunchecked,
 				'paramEval' => $paramEval,
 				'options' => $options
 		) );
@@ -1765,10 +1789,8 @@ class DefaultController extends AbstractController
     	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
     	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
     	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-    	$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-    	$filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
-    	$outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
-    	$warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+    	$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+    	$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
     	
     	if(isset($_GET['benchs']))
     		$_GET['benchs'] = $_GET['benchs'][0];
@@ -1821,10 +1843,8 @@ class DefaultController extends AbstractController
     			'vm_RAMs' => $vm_RAMs,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
-    			'valid' => $valid,
-    			'filter' => $filter,
-    			'outliers' => $outliers,
-    			'warnings' => $warnings,
+    			'filters' => $filters,
+    			'allunchecked' => $allunchecked,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));
