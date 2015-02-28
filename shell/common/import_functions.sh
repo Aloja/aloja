@@ -350,3 +350,22 @@ import_bwm_files() {
     fi
   done
 }
+
+#$1 folder
+delete_untars() {
+  logger "INFO: Deleting untared folders to save space"
+  if [ -d "$1" ] ; then
+    #echo "Entering $folder"
+    cd $1
+    for tarball in *.tar.bz2 ; do
+      folder_name="${tarball:0:(-8)}"
+      #echo "Found $tarball Folder $folder_name"
+      if [ -d "$folder_name" ] ; then
+        logger "Deleting $folder_name"
+        rm -rf $folder_name
+      fi
+    done
+    cd ..
+  fi
+
+}

@@ -8,6 +8,7 @@
                    $("#chart").highcharts({
                         chart: {
                             type: 'bubble',
+                            zoomType: 'xy'
                         },
                         credits: {
                             enabled: false
@@ -21,6 +22,7 @@
                         	title: {
                                 text: 'Total execution cost (US $)'
                             },
+                            min: 0
                         },
                         plotOptions: {
                           series: {
