@@ -97,10 +97,10 @@ class MLTemplatesController extends AbstractController
 				}
 
 				// run the R processor
-				$command = '( cd '.getcwd().'/cache/query ; ';
+				$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query ; ';
 				$command = $command.'touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
 				$command = $command.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1 ; ';
-				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 &';
+				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 " &';
 				exec($command);
 
 				// update cache record (for human reading)
@@ -273,7 +273,7 @@ class MLTemplatesController extends AbstractController
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
-					$command = '( cd '.getcwd().'/cache/query; ';
+					$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query; ';
 					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock; ';
 					$command = $command.'rm -f '.$tmp_file.' ';
 					foreach ($instances as $inst)
@@ -281,7 +281,7 @@ class MLTemplatesController extends AbstractController
 						$command = $command.'&& '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' ';
 					}
 					$command = $command.'&& touch  '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready; ';
-					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 &';
+					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 " &';
 					exec($command);
 				}
 
