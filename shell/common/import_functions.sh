@@ -30,7 +30,8 @@ head -n3 "$2"
 
 #$1 id_cluster
 get_clusterConfigFile() {
-  local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
+  CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  local clusterConfigFile="$(find $CUR_DIR_TMP/../conf/ -type f -name cluster_*-$1.conf)"
   echo "$clusterConfigFile";
 }
 
@@ -64,7 +65,7 @@ ON DUPLICATE KEY UPDATE
 
     echo -e "$sql\n"
     else
-       logger "ERROR: cannot find cluster definition file"
+       logger "ERROR: cannot find cluster file: $clusterConfigFile"
     fi
 }
 
