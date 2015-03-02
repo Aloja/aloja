@@ -101,10 +101,10 @@ class MLOutliersController extends AbstractController
 					}
 
 					// launch query
-					$command = '( cd '.getcwd().'/cache/query ; ';
+					$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query ; ';
 					$command = $command.'touch '.getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock ; ';
 					$command = $command.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$model.' -p sigma=3:hdistance=3:saveall='.md5($model_info.'-'.$model).' > /dev/null 2>&1 ; ';
-					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock ; ) > /dev/null 2>&1 &';
+					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock ; ) > /dev/null 2>&1 " &';
 					exec($command);
 
 					// update cache record (for human reading)
