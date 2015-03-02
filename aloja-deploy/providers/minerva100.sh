@@ -221,3 +221,51 @@ get_IB_hostnames() {
 "
 
 }
+
+get_extra_fstab() {
+  if [ clusterName="minerva100-10-18-21" ] ; then
+    echo -e "
+/scratch/attached/6       /scratch/ssd/1    none bind 0 0
+/scratch/attached/7       /scratch/ssd/2    none bind 0 0"
+  fi
+}
+
+get_extra_mount_disks() {
+  if [ clusterName="minerva100-10-18-21" ] ; then
+    echo -e "sudo mkdir -p /scratch/ssd/{1..2};"
+  fi
+}
+
+#for Infiniband on clusters that support it
+get_node_names_IB() {
+  if [ clusterName="minerva100-10-18-21" ] ; then
+    #logger "INFO: generating host name for IB"
+    local nodes="$(get_node_names)"
+    echo -e "$(convert_regular2IB_hostnames "$nodes")"
+  else
+    #logger "WARN: Special hosts for InfiniBand not defined, using regular hostsnames"
+    echo -e "$(get_node_names)"
+  fi
+}
+
+#for Infiniband on clusters that support it
+get_master_name_IB() {
+  if [ clusterName="minerva100-10-18-21" ] ; then
+    #logger "INFO: generating host name for IB"
+    local nodes="$(get_master_name)"
+    echo -e "$(convert_regular2IB_hostnames "$nodes")"
+  else
+    #logger "WARN: Special master name for InfiniBand not defined, using regular"
+    echo "$(get_master_name)"
+  fi
+}
+
+#$1 host list
+convert_regular2IB_hostnames() {
+  for host in $1 ; do
+    local hosts_IB="$hosts_IB\n${host:0:(-4)}-ib${host:(-4)}"
+  done
+
+  echo -e "$(echo -e "$hosts_IB"|tail -n +2 )" #cut the first \n
+}
+
