@@ -325,45 +325,42 @@ echo "<!--EXECS SQL: $execs -->";
             	$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
             	
 
-            	$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
+            	$num_remotes = 0;
+                $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
             	$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
             	
             	/** calculate remote */
             	if(preg_match("/^RL/", $exec['disk'])) {
-            		$costRemote *= (int)$exec['disk'][2];            			 
-            	} else
-            		$costRemote = 0;
+            		$num_remotes = (int)$exec['disk'][2];
+            	}
 
                 /** calculate HDD */
                 if(preg_match("/^HD[0-9]/", $exec['disk'])) {
 echo "<!--FOUND DISK {$exec['disk']}-->";
-                    $costRemote *= (int)$exec['disk'][2];
-                } else
-                    $costRemote = 0;
+                    $num_remotes = (int)$exec['disk'][2];
+                }
 
-
-            	$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
+            	$num_ssds=0;
+                $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
             	$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
 
-                $has_multiple_SSDs = false;
                 /** calculate Multiple SSDs */
-                if(preg_match("/^SD[0-9]/", $exec['disk'])) {
+                if(preg_match("/^SS[0-9]/", $exec['disk'])) {
 echo "<!--FOUND SSD {$exec['disk']}-->";
-                    $costSSD *= (int)$exec['disk'][2];
-                    $has_multiple_SSDs = true;
-                } else
-                    $costRemote = 0;
+                    $num_ssds= (int)$exec['disk'][2];
+                }
 
-            	$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
+            	$num_IB=0;
+                $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
             	$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
             		
-            	if($exec['net'] != "IB")
-            		$costIB = 0;
+            	if($exec['net'] == "IB")
+            		$num_IB = 1;
 
-            	if($exec['disk'] != "SSD" && (! $has_multiple_SSDs))
-            		$costSSD = 0;
+            	if($exec['disk'] != "SSD")
+            		$num_ssds = 1;
             	
-            	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);
+            	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
 
 echo "<!-- ".print_r($exec, true)." CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
 
