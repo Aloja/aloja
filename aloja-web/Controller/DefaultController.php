@@ -314,7 +314,7 @@ class DefaultController extends AbstractController
             $minExeTime = 0;
             $maxExeTime = 0;
             
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs LIMIT 100";
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
             	throw new \Exception("No results for query!");
