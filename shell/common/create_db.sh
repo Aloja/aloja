@@ -739,6 +739,7 @@ echo "
 
 update ignore execs SET filter = 0;
 update ignore execs SET filter = 1 where id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
+update ignore execs SET filter = 1 where id_cluster NOT IN(20,23,24,25) AND id_exec NOT IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
 
 update ignore execs SET valid = 1;
 update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
@@ -753,7 +754,7 @@ update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort
     tmp_table
 );
 
-
+update ignore execs SET valid = 0 WHERE exe_time < 200 OR exe_time > 15000;
 "
 
 $MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);

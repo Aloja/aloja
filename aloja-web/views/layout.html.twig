@@ -226,6 +226,15 @@
 					format: 'yyyy/mm/dd' 
 				});
 			});
+
+			$("input[name='filters[]']").change(function() {
+				var ids = $("input[name='filters[]']:checked");
+				if(ids.length == 0) {
+				   $("#allunchecked").val("allunchecked");
+				}
+				else
+				   $("#allunchecked").val("");
+			});
 			
             function getCookie(cname) {
            		var name = cname + "=";
