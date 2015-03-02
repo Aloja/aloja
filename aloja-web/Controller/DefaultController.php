@@ -310,7 +310,7 @@ class DefaultController extends AbstractController
             $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
             
-            //TODO: steps
+            //Steps
             /*
              * 1. Get execs and cluster associated costs
              * 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -1835,10 +1835,16 @@ class DefaultController extends AbstractController
     	try {
     		$rows = $db->get_rows($query);
     		foreach($rows as $row) {
-    			$clusterDesc = "${row['datanodes']} ${row['vm_size']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
+    			$clusterDesc = "${row['datanodes']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
     			$set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
     			array_push($data, array('data' => array($set), 'name' => $row['clustername'], 'clusterdesc' => $clusterDesc));
     		}
+    		
+    		//This is to order the cluster by cost-effectiveness (ascending)
+    		//This way the labels in the cart are ordered
+    		usort($data,function($a, $b) {
+    			return $a['data'][0][2] >= $b['data'][0][2];
+    		});
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
