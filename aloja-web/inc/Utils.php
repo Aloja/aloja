@@ -20,8 +20,6 @@ class Utils
 
     public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true, $table_name = null)
     {
-$where_configs .= " AND start_time >= '2015-01-01'";
-
         if($item_name == 'money' && isset($_GET['money'])) {
     		$money = $_GET['money'];
     		if($money != '') {
