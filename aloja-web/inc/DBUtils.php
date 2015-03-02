@@ -90,7 +90,7 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-        return "";
+        return " AND exec.start_time > '2014-12-31 23:59:59'";
 //         return "
 // #AND (bench_type = 'HiBench' OR bench_type = 'HDI')
 // #AND bench not like 'prep_%'
