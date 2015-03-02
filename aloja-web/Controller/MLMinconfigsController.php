@@ -112,8 +112,9 @@ class MLMinconfigsController extends AbstractController
 				}
 
 				// run the R processor
-				$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query; ';
+				$command = 'cd '.getcwd().'/cache/query ; ';
 				$command = $command.'touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
+				$command = $command.getcwd().'/resources/queue -c "( ';
 				$command = $command.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' > /dev/null 2>&1 && ';
 				$command = $command.getcwd().'/resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 > /dev/null 2>&1 ;';
 				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 " &';
