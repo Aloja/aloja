@@ -30,7 +30,8 @@ head -n3 "$2"
 
 #$1 id_cluster
 get_clusterConfigFile() {
-  local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
+  CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  local clusterConfigFile="$(find $CUR_DIR_TMP/../conf/ -type f -name cluster_*-$1.conf)"
   echo "$clusterConfigFile";
 }
 
@@ -64,7 +65,7 @@ ON DUPLICATE KEY UPDATE
 
     echo -e "$sql\n"
     else
-       logger "ERROR: cannot find cluster definition file"
+       logger "ERROR: cannot find cluster file: $clusterConfigFile"
     fi
 }
 
@@ -349,4 +350,23 @@ import_bwm_files() {
       logger "File $bwm_file is INVALID"
     fi
   done
+}
+
+#$1 folder
+delete_untars() {
+  logger "INFO: Deleting untared folders to save space"
+  if [ -d "$1" ] ; then
+    #echo "Entering $folder"
+    cd $1
+    for tarball in *.tar.bz2 ; do
+      folder_name="${tarball:0:(-8)}"
+      #echo "Found $tarball Folder $folder_name"
+      if [ -d "$folder_name" ] ; then
+        logger "Deleting $folder_name"
+        rm -rf $folder_name
+      fi
+    done
+    cd ..
+  fi
+
 }
