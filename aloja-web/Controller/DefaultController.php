@@ -362,7 +362,7 @@ echo "<!--FOUND SSD {$exec['disk']}-->";
             	
             	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
 
-echo "<!-- ".print_r($exec, true)." CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
+echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds)) = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
 
             	if($exec['cost_std'] > $maxCost)
             		$maxCost = $exec['cost_std'];
