@@ -52,6 +52,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #net ports
   config.vm.network :forwarded_port, host: 8080, guest: 80 #web
   config.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
+  config.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048

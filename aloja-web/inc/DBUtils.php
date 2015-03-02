@@ -109,7 +109,7 @@ class DBUtils
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
         join clusters USING (id_cluster)
-        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND exe_time between 200 and 15000  ;";
+        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0;";
 
         return $this->get_rows($query);
     }
