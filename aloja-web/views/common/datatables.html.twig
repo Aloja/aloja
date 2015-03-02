@@ -287,6 +287,20 @@
                         oTable.fnSettings(), $(this).parent().index() ) );
             });
 
+
+
+            {% if selected == 'Benchmark Executions' %}
+	            var queryDict = {}
+			    var newQuery = {}
+		            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+			   
+			    for(key in queryDict) {
+					newKey = key.replace("%5B","[").replace("%5D","]");
+					newQuery[newKey] = queryDict[key];
+			    }
+		 	    queryDict = {}	
+		    {% endif %}
+
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
                 "oSearch": {"bCaseInsensitive":false, "sSearch": $.urlParam('search')},
@@ -301,6 +315,8 @@
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
+                      {% elseif selected == 'Benchmark Executions' %}
+                      "data": newQuery,
                       {% endif %}
                       "success": fnCallback
                     } );

@@ -5,7 +5,7 @@
 		<form name="configFilters" method="GET" role="form">
 			<div class="row">
 				<div class="col-md-6">
-				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Change</button>
+				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
 			   </div>
 			   <div class="col-md-6">
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
@@ -229,7 +229,7 @@
 			<br />
 			<div class"=row">
 			   <div class="col-md-6" style="padding: 0;">
-				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Change</button>
+				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
 			   </div>
 			   <div class="col-md-6">
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
@@ -249,11 +249,12 @@
     </div>
     <div id="advancedFilters" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingAdvancedFilters">
       <div class="panel-body">
-        <input type="checkbox" name="valids[]" value="1" {% if valid is defined and valid is not empty %}checked{% endif %}> Only valid execs<br />
-        <input type="checkbox" name="filters[]" value="0" {% if filter is defined and filter is not empty %}checked{% endif %}> Filter execs<br />
-        <input type="checkbox" name="prepares" value="1" {% if prepares is defined and prepares != "" %}checked{% endif %}> Include prepares<br />
-        <input type="checkbox" name="outliers" value="1" {% if outliers is defined and outliers != "" %}checked{% endif %}> Show outliers<br />
-        <input type="checkbox" name="warnings" value="1" style="margin-left: 1em;" {% if warnings is defined and warnings != "" %}checked{% endif %}> Show warnings
+        <input type="checkbox" name="filters[]" value="valid" {% if filters is defined and 'valid' in filters %}checked{% endif %}> Only valid execs<br />
+        <input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter execs<br />
+        <input type="checkbox" name="filters[]" value="prepares" {% if filters is defined and 'prepares' in filters %}checked{% endif %}> Include prepares<br />
+        <input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />
+        <input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings
+        <input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
       </div>
     </div>
   </div>
