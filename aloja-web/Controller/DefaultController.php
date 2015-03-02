@@ -314,7 +314,7 @@ class DefaultController extends AbstractController
             $minExeTime = 0;
             $maxExeTime = 0;
             
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs AND start_time >= '2015-01-01' LIMIT 300";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs AND start_time >= '2015-01-01' LIMIT 3000";
 echo "<!--EXECS SQL: $execs -->";
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
