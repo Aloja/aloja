@@ -30,12 +30,18 @@
                             point: {
                                events: {
                                    click: function () {
-				       console.log(this.series.points);
-                                       var id = this.series.name;
-				       top.location.href="{{ path('clusters') }}?cluster_name="+id;
+                                     var id = this.series.name;
+				      				 top.location.href="{{ path('clusters') }}?cluster_name="+id;
                                    }
                                }
                             }
+                          },
+                          bubble: {
+                              tooltip: {
+                                  headerFormat: '<b>{series.name}</b><br>',
+                                  pointFormat: '{point.x} s, {point.y} US$, {point.z}  rating<br />{series.options.clusterdesc}'
+
+                              }
                           }
                         },
                         title: {

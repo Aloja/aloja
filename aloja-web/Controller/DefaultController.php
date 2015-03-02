@@ -1822,7 +1822,7 @@ class DefaultController extends AbstractController
           $bench_where = " AND bench = '$bench'";
         }
     	
-        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) 
+        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes, c.vm_size,c.vm_RAM,c.vm_OS,c.provider,c.type from execs e JOIN clusters c USING (id_cluster) 
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name) 
         		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name;";
@@ -1835,8 +1835,9 @@ class DefaultController extends AbstractController
     	try {
     		$rows = $db->get_rows($query);
     		foreach($rows as $row) {
+    			$clusterDesc = "${row['datanodes']} ${row['vm_size']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
     			$set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
-    			array_push($data, array('data' => array($set), 'name' => $row['clustername']));
+    			array_push($data, array('data' => array($set), 'name' => $row['clustername'], 'clusterdesc' => $clusterDesc));
     		}
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");

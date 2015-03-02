@@ -282,7 +282,7 @@
                 }
             } );
 
-            $("thead select").change(function() {
+            $("thead select").change(function() {  
             	oTable.fnFilter( $(this).val(), oTable.oApi._fnVisibleToColumnIndex(
                         oTable.fnSettings(), $(this).parent().index() ) );
             });
@@ -418,7 +418,7 @@
 							else if((new RegExp("^HD")).test(aData[7]))
 								tooltip = aData[7].substring(2) + ' HDD drives';
         					else
-        						tooltip = aData[7].substring(2) + ' SSD remote(s) and local HDD';
+        						tooltip = aData[7].substring(2) + ' HDD drives / tmp to SSD';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
 //                         } else if(headTitle == 'Files') {
 //         					var string = aData[15];
