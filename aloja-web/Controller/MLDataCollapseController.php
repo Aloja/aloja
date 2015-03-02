@@ -111,8 +111,9 @@ class MLDataCollapseController extends AbstractController
 				}
 
 				// prepare collapse
-				$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query ; ';
+				$command = 'cd '.getcwd().'/cache/query ; ';
 				$command = $command.'touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
+				$command = $command.getcwd().'/resources/queue -c "( ';
 				if ($learning_model != '') { $command = $command.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1 ; '; }
 				else { $command = $command.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1 ; '; }
 				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 " &';
