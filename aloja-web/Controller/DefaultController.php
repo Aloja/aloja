@@ -363,7 +363,7 @@ echo "<!--EXECS SQL: $execs -->";
             	
             	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);
 
-echo "<!-- CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
+echo "<!-- ".print_r($exec)." CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
 
             	if($exec['cost_std'] > $maxCost)
             		$maxCost = $exec['cost_std'];
