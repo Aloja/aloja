@@ -336,6 +336,7 @@ echo "<!--EXECS SQL: $execs -->";
 
                 /** calculate HDD */
                 if(preg_match("/^HD[0-9]/", $exec['disk'])) {
+echo "<!--FOUND DISK {$exec['disk']}-->";
                     $costRemote *= (int)$exec['disk'][2];
                 } else
                     $costRemote = 0;
@@ -347,6 +348,7 @@ echo "<!--EXECS SQL: $execs -->";
                 $has_multiple_SSDs = false;
                 /** calculate Multiple SSDs */
                 if(preg_match("/^SD[0-9]/", $exec['disk'])) {
+echo "<!--FOUND SSD {$exec['disk']}-->";
                     $costSSD *= (int)$exec['disk'][2];
                     $has_multiple_SSDs = true;
                 } else
@@ -363,7 +365,7 @@ echo "<!--EXECS SQL: $execs -->";
             	
             	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);
 
-echo "<!-- ".print_r($exec)." CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
+echo "<!-- ".print_r($exec, true)." CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
 
             	if($exec['cost_std'] > $maxCost)
             		$maxCost = $exec['cost_std'];
