@@ -250,12 +250,8 @@ else
 fi
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_D${NUMBER_OF_DATA_NODES}_${clusterName}"
-else
-  CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
-fi
-
+# Output directory name
+CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
