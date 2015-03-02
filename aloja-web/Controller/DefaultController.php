@@ -357,7 +357,7 @@ echo "<!--FOUND SSD {$exec['disk']}-->";
             	if($exec['net'] == "IB")
             		$num_IB = 1;
 
-            	if($exec['disk'] != "SSD")
+            	if($exec['disk'] == "SSD")
             		$num_ssds = 1;
             	
             	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
