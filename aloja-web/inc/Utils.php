@@ -456,8 +456,14 @@ class Utils
     		$disks = 'Azure Storage';
     	else if(preg_match("/^RL/",$diskShort))
     		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
-    	else
+    	else if(preg_match("/^RR/",$diskShort))
     		$disks = substr($diskShort,2).' HDFS remote(s)';
+    	else if(preg_match("/^SS([0-9]+)/",$diskShort))
+    		$disks = substr($diskShort,2).' SSD drives';
+//     	else if(preg_match("/^HS([0-9]+)/",$diskShort))
+//     		$disks = substr($diskShort,2).' SSD remote drives and local HDD';
+    	else
+    		$disks = substr($diskShort,2).' Hard-disk drives';
     
     	return $disks;
     }

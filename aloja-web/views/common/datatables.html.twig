@@ -404,14 +404,21 @@
             					tooltip = 'Does not apply';
         					$(this).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
                        	} else if(headTitle == 'Disk') {
+						number = aData[7].substring(2);
         					if(aData[7] == 'HDD')
         						tooltip = 'Hard disk';
         					else if(aData[7] == 'SSD')
         						tooltip = 'Solid-state disk';
-        					else if(aData[7] == 'N/A')
-            					tooltip = 'Does not apply';
+        					else if((new RegExp("^RR")).test(aData[7]))
+            						tooltip = aData[7].substring(2) + ' remote(s)';
+							else if((new RegExp("^RL")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' remote(s) / tmp local';
+							else if((new RegExp("^SS")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' SSD drives';
+							else if((new RegExp("^HD")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' HDD drives';
         					else
-        						tooltip = aData[7].substring(2) + ' remote(s)';
+        						tooltip = aData[7].substring(2) + ' SSD remote(s) and local HDD';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
 //                         } else if(headTitle == 'Files') {
 //         					var string = aData[15];
