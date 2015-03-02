@@ -314,7 +314,7 @@ class DefaultController extends AbstractController
             $minExeTime = 0;
             $maxExeTime = 0;
             
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs LIMIT 500";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs AND start_time >= '2015-01-01' LIMIT 300";
 echo "<!--EXECS SQL: $execs -->";
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -333,21 +333,38 @@ echo "<!--EXECS SQL: $execs -->";
             		$costRemote *= (int)$exec['disk'][2];            			 
             	} else
             		$costRemote = 0;
-            		
-            	        		
+
+                /** calculate HDD */
+                if(preg_match("/^HD[0-9]/", $exec['disk'])) {
+                    $costRemote *= (int)$exec['disk'][2];
+                } else
+                    $costRemote = 0;
+
+
             	$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
             	$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
-            		
+
+                $has_multiple_SSDs = false;
+                /** calculate Multiple SSDs */
+                if(preg_match("/^SD[0-9]/", $exec['disk'])) {
+                    $costSSD *= (int)$exec['disk'][2];
+                    $has_multiple_SSDs = true;
+                } else
+                    $costRemote = 0;
+
             	$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
             	$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
             		
             	if($exec['net'] != "IB")
             		$costIB = 0;
-            	if($exec['disk'] != "SSD")
+
+            	if($exec['disk'] != "SSD" && (! $has_multiple_SSDs))
             		$costSSD = 0;
             	
-            	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);            	
-            	
+            	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);
+
+echo "<!-- CH $costHour + CR $costRemote + CIB $costIB + CSSD $costSSD = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
+
             	if($exec['cost_std'] > $maxCost)
             		$maxCost = $exec['cost_std'];
             	if($exec['cost_std'] < $minCost)
