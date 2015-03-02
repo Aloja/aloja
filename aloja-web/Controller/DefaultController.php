@@ -49,6 +49,8 @@ class DefaultController extends AbstractController
             $where_configs = '';
             $concat_config = "";
 
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
             $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
             $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
@@ -179,6 +181,8 @@ class DefaultController extends AbstractController
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
+             	'datefrom' => $datefrom,
+             	'dateto' => $dateto,
                 'benchs' => $benchs,
                 'nets' => $nets,
                 'disks' => $disks,
@@ -209,6 +213,9 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
     	$dbUtils = $this->container->getDBUtils();
+    	
+    	$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+    	$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
     	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
     	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
     	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
@@ -235,6 +242,8 @@ class DefaultController extends AbstractController
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
             	'discreteOptions' => $discreteOptions,
+            	'datefrom' => $datefrom,
+            	'dateto' => $dateto,
             	'benchs' => $benchs,
             	'nets' => $nets,
             	'disks' => $disks,
@@ -280,6 +289,8 @@ class DefaultController extends AbstractController
             $concat_config = "";
 
             // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
             $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
             $blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
@@ -386,6 +397,8 @@ class DefaultController extends AbstractController
         	'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
         	'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
             'seriesData' => $seriesData,
+        	'datefrom' => $datefrom,
+        	'dateto' => $dateto,
             'benchs' => array($bench),
             'select_multiple_benchs' => false,
             'nets' => $nets,
@@ -1395,6 +1408,8 @@ class DefaultController extends AbstractController
 				$_GET['benchs'] = array('wordcount', 'terasort', 'sort');
             }
 			
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
 			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
 			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
 			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
@@ -1518,6 +1533,8 @@ class DefaultController extends AbstractController
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
 				'series' => $series,
+				'datefrom' => $datefrom,
+				'dateto' => $dateto,
 				'benchs' => $benchs,
 				'nets' => $nets,
 				'disks' => $disks,
@@ -1772,6 +1789,8 @@ class DefaultController extends AbstractController
     	$concat_config = "";
     	
     	// $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+    	$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+    	$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
     	$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false ); 	 
     	$nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
     	$disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
@@ -1826,6 +1845,8 @@ class DefaultController extends AbstractController
     	echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
     			'selected' => 'Cost-Effectiveness of clusters',
     			'series' => json_encode($data),
+    			'datefrom' => $datefrom,
+    			'dateto' => $dateto,
     			'benchs' => $bench,
     			'nets' => $nets,
     			'disks' => $disks,
