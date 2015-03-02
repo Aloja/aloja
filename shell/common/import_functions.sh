@@ -50,10 +50,10 @@ get_insert_cluster_sql() {
 
     local sql="
 INSERT into clusters set
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='',
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', cost_remote='$clusterCostDisk', cost_SSD='$clusterCostSSD', cost_IB='$clusterCostIB', type='$clusterType', link='',
       provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription'
 ON DUPLICATE KEY UPDATE
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='',
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', cost_remote='$clusterCostDisk', cost_SSD='$clusterCostSSD', cost_IB='$clusterCostIB', type='$clusterType', link='',
       provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
     local nodeName="$(get_master_name)"
