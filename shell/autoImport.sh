@@ -22,7 +22,7 @@ while true ; do
 
   cd /var/www/;
   sudo git reset --hard HEAD;
-  sudo git pull origin master;
+  sudo git --no-edit pull origin master;
   #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_* /tmp/twig/*;
   sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
   sudo /etc/init.d/varnish restart;
