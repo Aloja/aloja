@@ -123,7 +123,7 @@ class MLParamevalController extends AbstractController
 				if (!$is_cached && !$in_process && !$finished_process)
 				{
 					// drop query
-					$command = '( cd '.getcwd().'/cache/query ; ';
+					$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query ; ';
 					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
 					$command = $command.'rm -f '.$tmp_file.' ';
 					foreach ($instances as $inst)
@@ -131,7 +131,7 @@ class MLParamevalController extends AbstractController
 						$command = $command.'&& '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' ';
 					}
 					$command = $command.'&& touch  '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready; ';
-					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 &';
+					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 "&';
 					exec($command);
 				}
 
@@ -266,7 +266,7 @@ class MLParamevalController extends AbstractController
 			$must_wait = 'NO';
 		}
 		echo $this->container->getTwig ()->render ('mltemplate/mlconfigperf.html.twig', array (
-				'selected' => 'ML Parameter Evaluation',
+				'selected' => 'mlparameval',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
 				'series' => $series,
