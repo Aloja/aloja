@@ -134,6 +134,12 @@ get_node_names() {
   echo -e "$node_names"
 }
 
+#for Infiniband on clusters that support it
+get_node_names_IB() {
+  #logger "WARN: Special hosts for InfiniBand not defined, using regular hostsnames"
+  echo -e "$(get_node_names)"
+}
+
 get_slaves_names() {
   local node_names=""
   if [ ! -z "$nodeNames" ] ; then #remove the master
@@ -321,6 +327,12 @@ get_master_name() {
   echo "$master_name"
 }
 
+#for Infiniband on clusters that support it
+get_master_name_IB() {
+  #logger "WARN: Special master name for InfiniBand not defined, using regular"
+  echo "$(get_master_name)"
+}
+
 #vm_name must be set
 get_vm_ssh_port() {
   local node_ssh_port=''
@@ -461,6 +473,10 @@ make_fstab(){
 $minerva100_tmp       /scratch/local    none bind 0 0"
   fi
 
+  local create_string="$create_string
+$(get_extra_fstab)"
+
+
 #sudo chmod 777 /etc/fstab; sudo echo -e '# <file system> <mount point>   <type>  <options>       <dump>  <pass>
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
@@ -475,6 +491,7 @@ get_mount_disks() {
   local create_string="
     mkdir -p ~/{share,minerva};
     sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
+    $(get_extra_mount_disks)
     sudo chown -R $userAloja: /scratch;
     sudo mount -a;
   "
@@ -1024,8 +1041,9 @@ vm_make_fs() {
 
     if [ -z "$test_action" ] ; then
       logger " Linking $homePrefixAloja/$userAloja/share"
-#sudo chown -R ${userAloja} /scratch;
+
       vm_execute "
+sudo chown -R ${userAloja}: /scratch;
 [ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;
 touch $homePrefixAloja/$userAloja/share/safe_store;

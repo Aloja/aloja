@@ -746,6 +746,10 @@ update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort
 
 "
 
+$MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
+
 #$MYSQL "
 #
 ##insert ignore into clusters set name='m1000-01',     id_cluster=1, cost_hour=12, type='on-premise', link='http://hadoop.bsc.es/?page_id=51';
