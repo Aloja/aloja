@@ -123,8 +123,9 @@ class MLParamevalController extends AbstractController
 				if (!$is_cached && !$in_process && !$finished_process)
 				{
 					// drop query
-					$command = getcwd().'/resources/queue -c "( cd '.getcwd().'/cache/query ; ';
+					$command = 'cd '.getcwd().'/cache/query ; ';
 					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
+					$command = $command.getcwd().'/resources/queue -c "( ';
 					$command = $command.'rm -f '.$tmp_file.' ';
 					foreach ($instances as $inst)
 					{
