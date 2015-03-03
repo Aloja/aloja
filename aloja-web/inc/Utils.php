@@ -526,4 +526,43 @@ class Utils
 
     	return $options;
     }
+    
+    public static function getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB) { 
+
+    	$num_remotes = 0;
+    	/** calculate remote */
+    	if(preg_match("/^RL/", $exec['disk']) || preg_match("/^RR/", $exec['disk'])) {
+    		$num_remotes = (int)$exec['disk'][2];
+    	}
+    	
+    	/** calculate HDD */
+    	if(preg_match("/^HD[0-9]/", $exec['disk'])) {
+    		$num_remotes = (int)$exec['disk'][2];
+    	}
+    	
+    	$num_ssds=0;
+    	
+    	
+    	/** calculate Multiple SSDs */
+    	if(preg_match("/^SS[0-9]/", $exec['disk'])) {
+    		$num_ssds= (int)$exec['disk'][2];
+    	}
+    	
+    	/** if local SSD, numSSDs + 1, remotes = num HDD */
+    	if(preg_match("/^HS[0-9]/", $exec['disk'])) {
+    		$num_ssds=1;
+    		$num_remotes = (int)$exec['disk'][2];
+    	}
+
+    	$num_IB=0;
+    	 
+    	if($exec['net'] == "IB")
+    		$num_IB = 1;
+    	
+    	if($exec['disk'] == "SSD")
+    		$num_ssds = 1;
+    	
+    	$cost = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+    	return $cost;
+    }
 }

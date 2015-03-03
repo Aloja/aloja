@@ -319,9 +319,9 @@ class DefaultController extends AbstractController
              * 6. Print results
              */
 
-            $minCost = 0;
+            $minCost = -1;
             $maxCost = 0;
-            $minExeTime = 0;
+            $minExeTime = -1;
             $maxExeTime = 0;
 
             $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs LIMIT 3000";
@@ -334,48 +334,23 @@ class DefaultController extends AbstractController
                 $costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
                 $_GET['cost_hour'][$exec['id_cluster']] = $costHour;
 
-
-                $num_remotes = 0;
                 $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
                 $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-
-                /** calculate remote */
-                if(preg_match("/^RL/", $exec['disk'])) {
-                    $num_remotes = (int)$exec['disk'][2];
-                }
-
-                /** calculate HDD */
-                if(preg_match("/^HD[0-9]/", $exec['disk'])) {
-                    $num_remotes = (int)$exec['disk'][2];
-                }
-
-                $num_ssds=0;
+                
                 $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
                 $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
 
-                /** calculate Multiple SSDs */
-                if(preg_match("/^SS[0-9]/", $exec['disk'])) {
-                    $num_ssds= (int)$exec['disk'][2];
-                }
-
-                $num_IB=0;
                 $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
                 $_GET['cost_IB'][$exec['id_cluster']] = $costIB;
 
-                if($exec['net'] == "IB")
-                    $num_IB = 1;
-
-                if($exec['disk'] == "SSD")
-                    $num_ssds = 1;
-
-                $exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+                $exec['cost_std'] = Utils::getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB);
 
                 if($exec['cost_std'] > $maxCost)
                     $maxCost = $exec['cost_std'];
-                if($exec['cost_std'] < $minCost)
+                if($exec['cost_std'] < $minCost || $minCost == -1)
                     $minCost = $exec['cost_std'];
 
-                if($exec['exe_time']<$minExeTime)
+                if($exec['exe_time']<$minExeTime || $minExeTime == -1)
                     $minExeTime = $exec['exe_time'];
                 if($exec['exe_time']>$maxExeTime)
                     $maxExeTime = $exec['exe_time'];
@@ -1344,11 +1319,11 @@ class DefaultController extends AbstractController
             $order_conf = 'LENGTH(conf), conf';
 
             // get the result rows
-            $query = "SELECT e.*,
-    		(exe_time/3600)*(cost_hour) cost, c.name as clustername
+            $query = "SELECT e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
     		from execs e
     		join clusters c USING (id_cluster)
     		WHERE 1 $filter_execs $where_configs
+    		GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
     		ORDER BY $order_type ASC;";
 
             $this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
@@ -1357,12 +1332,27 @@ class DefaultController extends AbstractController
             if (! $rows) {
                 throw new \Exception ( "No results for query!" );
             }
+            
+            $minCost;
+            $minCostIdx = 0;
+            
             if ($rows) {
-                $bestexec = $rows[0];
+            	$bestexec = $row[0];
+            	if($order_type == 'cost') {
+	            	foreach($rows as $key => $exec) {
+	            		$cost = Utils::getExecutionCost($exec,$exec['cost_hour'],$exec['cost_remote'],$exec['cost_SSD'],$exec['cost_IB']);
+	            		if($cost < $minCost) {
+	            			$minCost = $cost;
+	            			$minCostIdx = $key;
+	            		}
+	            	}
+	            	$bestexec = $rows[$minCostIdx];
+            	}
+
                 $conf = $bestexec['exec'];
                 $parameters = explode ( '_', $conf );
                 //$cluster =  explode ( '/', $parameters [count ( $parameters ) - 1] )[0]; //(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
-                $cluster=$rows[0]['clustername'];
+                $cluster=$bestexec['clustername'];
                 Utils::makeExecInfoBeauty($bestexec);
             }
         } catch ( \Exception $e ) {
@@ -1834,7 +1824,7 @@ class DefaultController extends AbstractController
             $bench_where = " AND bench = '$bench'";
         }
 
-        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes, c.vm_size,c.vm_RAM,c.vm_OS,c.provider,c.type from execs e JOIN clusters c USING (id_cluster) 
+        $query = "SELECT e.*, c.* from execs e JOIN clusters c USING (id_cluster) 
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name) 
         		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name;";
@@ -1847,9 +1837,10 @@ class DefaultController extends AbstractController
     	try {
     		$rows = $db->get_rows($query);
     		foreach($rows as $row) {
+    			$cost = Utils::getExecutionCost($row, $row['cost_hour'], $row['cost_remote'], $row['cost_SSD'], $row['cost_IB']);
     			$clusterDesc = "${row['datanodes']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
-    			$set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
-    			array_push($data, array('data' => array($set), 'name' => $row['clustername'], 'clusterdesc' => $clusterDesc));
+    			$set = array(round($row['exe_time'],0), round($cost,2), round($row['exe_time']*$cost,0));
+    			array_push($data, array('data' => array($set), 'name' => $row['name'], 'clusterdesc' => $clusterDesc));
     		}
     		
     		//This is to order the cluster by cost-effectiveness (ascending)
