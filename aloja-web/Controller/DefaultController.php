@@ -325,7 +325,8 @@ class DefaultController extends AbstractController
             $minExeTime = 0;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs LIMIT 3000";
+
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
                 throw new \Exception("No results for query!");
@@ -335,28 +336,40 @@ class DefaultController extends AbstractController
                 $_GET['cost_hour'][$exec['id_cluster']] = $costHour;
 
 
+                $num_remotes = 0;
                 $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
                 $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
 
                 /** calculate remote */
                 if(preg_match("/^RL/", $exec['disk'])) {
-                    $costRemote *= (int)$exec['disk'][2];
-                } else
-                    $costRemote = 0;
+                    $num_remotes = (int)$exec['disk'][2];
+                }
 
+                /** calculate HDD */
+                if(preg_match("/^HD[0-9]/", $exec['disk'])) {
+                    $num_remotes = (int)$exec['disk'][2];
+                }
 
+                $num_ssds=0;
                 $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
                 $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
 
+                /** calculate Multiple SSDs */
+                if(preg_match("/^SS[0-9]/", $exec['disk'])) {
+                    $num_ssds= (int)$exec['disk'][2];
+                }
+
+                $num_IB=0;
                 $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
                 $_GET['cost_IB'][$exec['id_cluster']] = $costIB;
 
-                if($exec['net'] != "IB")
-                    $costIB = 0;
-                if($exec['disk'] != "SSD")
-                    $costSSD = 0;
+                if($exec['net'] == "IB")
+                    $num_IB = 1;
 
-                $exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);
+                if($exec['disk'] == "SSD")
+                    $num_ssds = 1;
+
+                $exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
 
                 if($exec['cost_std'] > $maxCost)
                     $maxCost = $exec['cost_std'];
