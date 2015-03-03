@@ -15,8 +15,10 @@ while true ; do
   bash $CUR_DIR/aloja-import2db.sh "ONLY_META_DATA"
   bash $CUR_DIR/aloja-import2db.sh
 
-  logger "\nRestarting MySQL\n\n"
-  sudo /etc/init.d/mysql restart
+  logger "\nRestarting MySQL and fixing permissions (just in case)\n\n"
+  sudo service mysql stop
+  sudo chown mysql:mysql /scratch/attached/1/mysql
+  sudo service mysql start
 
   logger "\nDeleting caches\n\n"
 
