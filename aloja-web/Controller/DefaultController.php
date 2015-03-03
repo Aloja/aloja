@@ -49,6 +49,8 @@ class DefaultController extends AbstractController
             $where_configs = '';
             $concat_config = "";
 
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
             $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
             $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
@@ -179,6 +181,8 @@ class DefaultController extends AbstractController
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
+                'datefrom' => $datefrom,
+                'dateto' => $dateto,
                 'benchs' => $benchs,
                 'nets' => $nets,
                 'disks' => $disks,
@@ -209,6 +213,9 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
+
+        $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+        $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
         $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
         $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
         $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
@@ -235,6 +242,8 @@ class DefaultController extends AbstractController
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
                 'discreteOptions' => $discreteOptions,
+                'datefrom' => $datefrom,
+                'dateto' => $dateto,
                 'benchs' => $benchs,
                 'nets' => $nets,
                 'disks' => $disks,
@@ -280,6 +289,8 @@ class DefaultController extends AbstractController
             $concat_config = "";
 
             // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
             $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
             $blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
@@ -314,8 +325,7 @@ class DefaultController extends AbstractController
             $minExeTime = 0;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs AND start_time >= '2015-01-01' LIMIT 3000";
-
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs";
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
                 throw new \Exception("No results for query!");
@@ -325,40 +335,28 @@ class DefaultController extends AbstractController
                 $_GET['cost_hour'][$exec['id_cluster']] = $costHour;
 
 
-                $num_remotes = 0;
                 $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
                 $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
 
                 /** calculate remote */
                 if(preg_match("/^RL/", $exec['disk'])) {
-                    $num_remotes = (int)$exec['disk'][2];
-                }
+                    $costRemote *= (int)$exec['disk'][2];
+                } else
+                    $costRemote = 0;
 
-                /** calculate HDD */
-                if(preg_match("/^HD[0-9]/", $exec['disk'])) {
-                    $num_remotes = (int)$exec['disk'][2];
-                }
 
-                $num_ssds=0;
                 $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
                 $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
 
-                /** calculate Multiple SSDs */
-                if(preg_match("/^SS[0-9]/", $exec['disk'])) {
-                    $num_ssds= (int)$exec['disk'][2];
-                }
-
-                $num_IB=0;
                 $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
                 $_GET['cost_IB'][$exec['id_cluster']] = $costIB;
 
-                if($exec['net'] == "IB")
-                    $num_IB = 1;
+                if($exec['net'] != "IB")
+                    $costIB = 0;
+                if($exec['disk'] != "SSD")
+                    $costSSD = 0;
 
-                if($exec['disk'] == "SSD")
-                    $num_ssds = 1;
-
-                $exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+                $exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + $costRemote + $costIB + $costSSD);
 
                 if($exec['cost_std'] > $maxCost)
                     $maxCost = $exec['cost_std'];
@@ -399,6 +397,8 @@ class DefaultController extends AbstractController
             'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
             'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
             'seriesData' => $seriesData,
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
             'benchs' => array($bench),
             'select_multiple_benchs' => false,
             'nets' => $nets,
@@ -1408,6 +1408,8 @@ class DefaultController extends AbstractController
                 $_GET['benchs'] = array('wordcount', 'terasort', 'sort');
             }
 
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
             $nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
             $disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
@@ -1531,6 +1533,8 @@ class DefaultController extends AbstractController
             'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
             'categories' => $categories,
             'series' => $series,
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
             'benchs' => $benchs,
             'nets' => $nets,
             'disks' => $disks,
@@ -1785,6 +1789,8 @@ class DefaultController extends AbstractController
         $concat_config = "";
 
         // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+        $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+        $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
         $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
         $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
         $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
@@ -1816,7 +1822,7 @@ class DefaultController extends AbstractController
             $bench_where = " AND bench = '$bench'";
         }
 
-        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) 
+        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes, c.vm_size,c.vm_RAM,c.vm_OS,c.provider,c.type from execs e JOIN clusters c USING (id_cluster) 
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name) 
         		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name;";
@@ -1829,8 +1835,9 @@ class DefaultController extends AbstractController
         try {
             $rows = $db->get_rows($query);
             foreach($rows as $row) {
+                $clusterDesc = "${row['datanodes']} ${row['vm_size']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
                 $set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
-                array_push($data, array('data' => array($set), 'name' => $row['clustername']));
+                array_push($data, array('data' => array($set), 'name' => $row['clustername'], 'clusterdesc' => $clusterDesc));
             }
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
@@ -1839,6 +1846,8 @@ class DefaultController extends AbstractController
         echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
             'selected' => 'Cost-Effectiveness of clusters',
             'series' => json_encode($data),
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
             'benchs' => $bench,
             'nets' => $nets,
             'disks' => $disks,
