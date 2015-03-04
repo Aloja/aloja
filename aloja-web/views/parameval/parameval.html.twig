@@ -9,9 +9,6 @@
 			var name = $(this).val()+'s[]';
 			$('select[name="'+name+'"]').val('None');
         });
-    	$('select, input').change(function() {
-            $(this).parents('form').submit();
-        });
         
         $('#chart').highcharts({
             chart: {
@@ -24,7 +21,7 @@
                 enabled: false
             },
             xAxis: {
-                categories: [{{ categories | raw}}],
+                categories: [{{ categories | raw }}],
                 title: {
                     text: '{{ getParamevalTitleName(paramEval) }}'
                 }
@@ -56,11 +53,11 @@
     </script>
     {% endblock %}
     {% block content %}
-        <div id="navigation" style="text-align: center;">
+        <div id="navigation">
          <form>
         	<div style="width: 50%; margin-left: 10%;">
-        	 <div style="width: 40%; margin: 0 auto;">
-        	 Parameter to evaluate: <select class="form-control" name="parameval">
+        	 <div style="width: 40%; margin: 0 auto; text-align: center;">
+        	    Parameter to evaluate: <select class="form-control" name="parameval">
 						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
 						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
 						<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
@@ -70,13 +67,18 @@
 						<option value="iofilebuf" {% if paramEval == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
 						<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
 						<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
+						<option value="vm_size" {% if paramEval == 'vm_size' %}selected="selected"{% endif %}> VM Size</option>
+						<option value="vm_cores" {% if paramEval == 'vm_cores' %}selected="selected"{% endif %}> VM Cores</option>
+						<option value="vm_ram" {% if paramEval == 'vm_ram' %}selected="selected"{% endif %}> VM RAM</option>
+						<option value="datanodes" {% if paramEval == 'datanodes' %}selected="selected"{% endif %}> Datanodes</option>
+						<option value="hadoop_version" {% if paramEval == 'hadoop_version' %}selected="selected"{% endif %}> Hadoop version</option>
+						<option value="type" {% if paramEval == 'type' %}selected="selected"{% endif %}> Cluster type</option>
 					</select>
-				</div>
+		      </div>
 			</div>
 			<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
 			<div style="width: 30%; float: right;">
 				{% include 'common/config_filters.html.twig' %}
 			</div>
 		</div>
-		<p style="clear: both;"></p>
 	{% endblock %}

@@ -36,7 +36,7 @@ for module in "puppetlabs-apt" "puppetlabs-mysql" "puppetlabs-vcsrepo" "maxchk-v
   (puppet module list | grep "$module") || puppet module install "$module"
 done
 
-##MySQL prep to move data to attached disk
+#MySQL prep to move data to attached disk
 #if [ ! -d "/scratch/attached/1/mysql" ]; then
 #	sudo cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
 #	sudo service apparmor restart
