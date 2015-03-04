@@ -93,8 +93,6 @@ class Utils
                 $items = array();
             } elseif ($item_name == 'bench_types') {
             	$items = array('HiBench','HDI');
-            } elseif ($item_name == 'id_clusters') {
-            	$items = array('21');
             } else {
                 $items = array();
             }
@@ -569,5 +567,16 @@ class Utils
     	
     	$cost = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
     	return $cost;
+    }
+    
+    public static function getClustersInfo($dbUtils) {
+    	$rows = $dbUtils->get_rows("SELECT * FROM clusters");
+
+    	$clusters = array();
+    	foreach($rows as $row) {
+    		$clusters[$row['name']] = $row;
+    	}
+    	
+    	return json_encode($clusters);
     }
 }

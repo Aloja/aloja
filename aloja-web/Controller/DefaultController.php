@@ -264,6 +264,7 @@ class DefaultController extends AbstractController
                 'types' => $types,
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
+            	'clustersInfo' => Utils::getClustersInfo($dbUtils),
                 'options' => Utils::getFilterOptions($dbUtils)
             ));
     }

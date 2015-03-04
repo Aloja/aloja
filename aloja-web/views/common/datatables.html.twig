@@ -299,6 +299,8 @@
 					newQuery[newKey] = queryDict[key];
 			    }
 		 	    queryDict = {}	
+
+		 	    var clustersInfo = {{ clustersInfo | raw }};
 		    {% endif %}
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
@@ -425,7 +427,9 @@
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
                        	} else if(headTitle == 'Cluster') {
-							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14] + '"  target="_blank">'+aData[14]+'</a>');         
+                           	var cluster = clustersInfo[aData[14]];
+                           	var tooltip = Math.floor(cluster.vm_RAM)+' GB RAM,'+cluster.vm_OS+','+cluster.provider+','+cluster.type;
+							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14] + '"  target="_blank">'+aData[14]+' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');         
 						} else if(headTitle == 'Histogram') {
 							if(aData[14].indexOf("hdi") > -1) {
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
