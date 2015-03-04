@@ -97,11 +97,11 @@ class MLTemplatesController extends AbstractController
 				}
 
 				// run the R processor
-				$command = 'cd '.getcwd().'/cache/query ; ';
-				$command = $command.'touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
-				$command = $command.getcwd().'/resources/queue -c "( ';
-				$command = $command.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1 ; ';
-				$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($config).'.lock ; ) > /dev/null 2>&1 " &';
+				$command = 'cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock';
+				exec($command);
+				$command = 'cd '.getcwd().'/cache/query ; /resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1 " > /dev/null 2>&1 &';
+				exec($command);
+				$command = 'cd '.getcwd().'/cache/query ; /resources/queue -c "rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" > /dev/null 2>&1 &';
 				exec($command);
 
 				// update cache record (for human reading)
@@ -276,14 +276,16 @@ class MLTemplatesController extends AbstractController
 				{
 					$command = 'cd '.getcwd().'/cache/query ; ';
 					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
-					$command = $command.getcwd().'/resources/queue -c "( ';
 					$command = $command.'rm -f '.$tmp_file.' ';
+					exec($command);
 					foreach ($instances as $inst)
 					{
-						$command = $command.'&& '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' ';
+						$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null" >> /dev/null 2>&1 &';
+						exec($command);
 					}
-					$command = $command.'&& touch  '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready; ';
-					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 " &';
+					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready" >> /dev/null 2>&1 &';
+					exec($command);
+					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock" >> /dev/null 2>&1 &';
 					exec($command);
 				}
 
