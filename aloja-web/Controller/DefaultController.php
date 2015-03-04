@@ -1826,21 +1826,30 @@ class DefaultController extends AbstractController
 
         $query = "SELECT e.*, c.* from execs e JOIN clusters c USING (id_cluster) 
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $where_configs GROUP BY name) 
-        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name;";
-//     	$query = "SELECT e.*,
-// 	    	(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes
-//     		from execs e
-//     		join clusters c USING (id_cluster)
-//     		WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name ORDER BY exe_time,cost ASC;";
-    	
+        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+
     	try {
     		$rows = $db->get_rows($query);
-    		foreach($rows as $row) {
+    		$minCost = -1;
+    		$minCostKey = 0;
+    		$previousCluster = "none";
+    		foreach($rows as $key => $row) {
     			$cost = Utils::getExecutionCost($row, $row['cost_hour'], $row['cost_remote'], $row['cost_SSD'], $row['cost_IB']);
-    			$clusterDesc = "${row['datanodes']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
-    			$set = array(round($row['exe_time'],0), round($cost,2), round($row['exe_time']*$cost,0));
-    			array_push($data, array('data' => array($set), 'name' => $row['name'], 'clusterdesc' => $clusterDesc));
+    			if($previousCluster != "none" && $previousCluster != $row['name']) {
+    				$min = $rows[$minCostKey];
+    				$clusterDesc = "${min['datanodes']} datanodes,  ".round($min['vm_RAM'],0)." GB memory, ${min['vm_OS']}, ${min['provider']} ${min['type']}";
+    				$set = array(round($min['exe_time'],0), round($minCost,2), round($min['exe_time']*$minCost,0));
+    				array_push($data, array('data' => array($set), 'name' => $min['name'], 'clusterdesc' => $clusterDesc));
+    				$previousCluster = $row['name'];
+    				$minCost = -1;
+    			} else if($previousCluster == "none")
+    				$previousCluster = $row['name'];
+    			
+    			if($minCost == -1 || $cost < $minCost) {
+    				$minCost = $cost;
+    				$minCostKey = $key;
+    			}
     		}
     		
     		//This is to order the cluster by cost-effectiveness (ascending)
