@@ -130,3 +130,7 @@ clustercosteffectiveness:
 costperfclustereval:
     pattern: "/costperfclustereval"
     controller: "alojaweb\\Controller\\DefaultController::costPerfClusterEvaluationAction"
+    
+bestcostperfclustereval:
+    pattern: "/bestcostperfclustereval"
+    controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"

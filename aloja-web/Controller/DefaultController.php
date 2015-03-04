@@ -365,11 +365,14 @@ class DefaultController extends AbstractController
 
         $seriesData = '';
         foreach ($execs as $exec) {
-        	$exeTimeStd = 0;
-        	$costTimeStd = 0;
+        	$exeTimeStd = 0.01;
+        	$costTimeStd = 0.01;
         	if(count($execs) > 1) {
         		$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
         		$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+        		
+        		if($costTimeStd <= 0.01) $costTimeStd = 0.01;
+        		if($exeTimeStd <= 0.01) $exeTimeStd = 0.01;
         	}
 
             $seriesData .= "{
@@ -1856,6 +1859,10 @@ class DefaultController extends AbstractController
     				$minCostKey = $key;
     			}
     		}
+    		$min = $rows[$minCostKey];
+    		$clusterDesc = "${min['datanodes']} datanodes,  ".round($min['vm_RAM'],0)." GB memory, ${min['vm_OS']}, ${min['provider']} ${min['type']}";
+    		$set = array(round($min['exe_time'],0), round($minCost,2), round($min['exe_time']*$minCost,0));
+    		array_push($data, array('data' => array($set), 'name' => $min['name'], 'clusterdesc' => $clusterDesc));
     		
     		//This is to order the cluster by cost-effectiveness (ascending)
     		//This way the labels in the cart are ordered
@@ -1996,11 +2003,13 @@ class DefaultController extends AbstractController
     
     	$seriesData = '';
     	foreach ($execs as $exec) {
-    		$exeTimeStd = 0;
-    		$costTimeStd = 0;
+    		$exeTimeStd = 0.01;
+    		$costTimeStd = 0.01;
     		if(count($execs) > 1) {
 	    		$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
 	    		$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+	    		if($costTimeStd <= 0.01) $costTimeStd = 0.01;
+	    		if($exeTimeStd <= 0.01) $exeTimeStd = 0.01;
     		}
     
     		$seriesData .= "{
@@ -2013,6 +2022,193 @@ class DefaultController extends AbstractController
     
     	echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
     			'selected' => 'Clusters Cost Evaluation',
+    			'highcharts_js' => HighCharts::getHeader(),
+    			// 'show_in_result' => count($show_in_result),
+    			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
+    			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
+    			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
+    			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
+    			'seriesData' => $seriesData,
+    			'datefrom' => $datefrom,
+    			'dateto' => $dateto,
+    			'benchs' => array($bench),
+    			'select_multiple_benchs' => false,
+    			'nets' => $nets,
+    			'disks' => $disks,
+    			'blk_sizes' => $blk_sizes,
+    			'comps' => $comps,
+    			'id_clusters' => $id_clusters,
+    			'mapss' => $mapss,
+    			'replications' => $replications,
+    			'iosfs' => $iosfs,
+    			'iofilebufs' => $iofilebufs,
+    			'datanodess' => $datanodes,
+    			'bench_types' => $benchtype,
+    			'vm_sizes' => $vm_sizes,
+    			'vm_coress' => $vm_coress,
+    			'vm_RAMs' => $vm_RAMs,
+    			'hadoop_versions' => $hadoop_versions,
+    			'types' => $types,
+    			'filters' => $filters,
+    			'allunchecked' => $allunchecked,
+    			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
+    			//        	'money' => $money,
+    			'options' => Utils::getFilterOptions($dbUtils),
+    			'clusters' => $clusters,
+    			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
+    	));
+    }
+    
+    public function BestCostPerfClusterEvaluationAction()
+    {
+    	$filter_execs = DBUtils::getFilterExecs();
+    	$dbUtils = $this->container->getDBUtils();
+    	try {
+    		if(isset($_GET['benchs']))
+    			$_GET['benchs'] = $_GET['benchs'][0];
+    
+    		if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
+    			$bench = $_GET['benchs'];
+    			$bench_where = " AND bench = '$bench'";
+    		} else {
+    			$bench = 'terasort';
+    			$bench_where = " AND bench = '$bench'";
+    		}
+    
+    		$configurations = array();
+    		$where_configs = '';
+    		$concat_config = "";
+    
+    		// $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+    		$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+    		$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+    		$nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
+    		$disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
+    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
+    		$comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
+    		$id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
+    		$mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
+    		$replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
+    		$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
+    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
+    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+    		$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+    		$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+    		$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+    		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+    
+    		/*
+    		 * 1. Get execs and cluster associated costs
+    		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
+    		* 3. Calculate max and minimum costs
+    		* 4. calculate max and minimum exe times
+    		* 5. Normalize costs and exe times
+    		* 6. Print results
+    		*/
+    
+    		$minCost = -1;
+    		$maxCost = 0;
+    		$minExeTime = -1;
+    		$maxExeTime = 0;
+    
+    		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
+    		  FROM execs e JOIN clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
+        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
+    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+    
+    		$execs = $dbUtils->get_rows($execs);
+    		if(!$execs)
+    			throw new \Exception("No results for query!");
+    
+    		$minCostKey = 0;
+    		$tmpMinCost = -1;
+    		$previousCluster = "none";
+    		$bestExecs = array();
+    		foreach($execs as $key => &$exec) {
+    			if($previousCluster != "none" && $previousCluster != $exec['name']) {
+    				$previousCluster = $exec['name'];
+    				$tmpMinCost = -1;
+    				
+    				if($execs[$minCostKey]['cost_std'] > $maxCost)
+    					$maxCost = $execs[$minCostKey]['cost_std'];
+    				if($execs[$minCostKey]['cost_std'] < $minCost || $minCost == -1)
+    					$minCost = $execs[$minCostKey]['cost_std'];
+    				
+    				if($execs[$minCostKey]['exe_time']<$minExeTime || $minExeTime == -1)
+    					$minExeTime = $execs[$minCostKey]['exe_time'];
+    				if($execs[$minCostKey]['exe_time']>$maxExeTime)
+    					$maxExeTime = $execs[$minCostKey]['exe_time'];
+    				
+    				array_push($bestExecs, $execs[$minCostKey]);
+    			} else if($previousCluster == "none")
+    				$previousCluster = $exec['name'];
+    			
+    			$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
+    			$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
+    
+    			$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
+    			$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
+    
+    			$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
+    			$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
+    
+    			$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
+    			$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
+    
+    			$exec['cost_std'] = Utils::getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB);
+    			
+    			if($tmpMinCost == -1 || $exec['cost_std'] < $tmpMinCost) {
+    				$tmpMinCost = $exec['cost_std'];
+    				$minCostKey = $key;
+    			}
+    		}    		
+    		if($execs[$minCostKey]['cost_std'] > $maxCost)
+    			$maxCost = $execs[$minCostKey]['cost_std'];
+    		if($execs[$minCostKey]['cost_std'] < $minCost || $minCost == -1)
+    			$minCost = $execs[$minCostKey]['cost_std'];
+    		
+    		if($execs[$minCostKey]['exe_time']<$minExeTime || $minExeTime == -1)
+    			$minExeTime = $execs[$minCostKey]['exe_time'];
+    		if($execs[$minCostKey]['exe_time']>$maxExeTime)
+    			$maxExeTime = $execs[$minCostKey]['exe_time'];
+    		
+    		array_push($bestExecs, $execs[$minCostKey]);
+    	} catch (\Exception $e) {
+    		$this->container->getTwig()->addGlobal('message', $e->getMessage() . "\n");
+    	}
+    
+    	//         (exe_time - $min_exe_time)/($max_exe_time - $min_exe_time) exe_time_std,
+    	//         ($cost_per_run - $min_cost_per_run)/($max_cost_per_run - $min_cost_per_run) cost_std,
+    
+    	$seriesData = '';
+    	foreach ($bestExecs as $exec) {
+    		$exeTimeStd = 0.01;
+    		$costTimeStd = 0.01;
+    		if(count($bestExecs) > 1) {
+	    		$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
+	    		$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+	    		if($costTimeStd <= 0.01) $costTimeStd = 0.01;
+	    		if($exeTimeStd <= 0.01) $exeTimeStd = 0.01;
+    		}
+    
+    		$clusterDesc = "${exec['datanodes']} datanodes,  ".round($exec['vm_RAM'],0)." GB memory, ${exec['vm_OS']}, ${exec['provider']} ${exec['type']}";
+    		$seriesData .= "{
+            name: '" . $exec['name'] . "',
+                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . ", ". round($costTimeStd*$exeTimeStd, 3) ."]],
+            clusterdesc: '$clusterDesc'
+        },";
+    	}
+    
+    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
+    
+    	echo $this->container->getTwig()->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
+    			'selected' => 'Best Clusters Cost Evaluation',
     			'highcharts_js' => HighCharts::getHeader(),
     			// 'show_in_result' => count($show_in_result),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
