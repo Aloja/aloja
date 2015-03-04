@@ -461,18 +461,6 @@ make_fstab(){
     num_drives="$((num_drives+1))"
   done
 
-  if [ "$cloud_provider" == "azure" ] ; then
-    local create_string="$create_string
-/mnt       /scratch/local    none bind 0 0"
-  fi
-
-  if [ "$cloud_provider" == "minerva100" ] ; then
-    local minerva100_tmp="$homePrefixAloja/$userAloja/tmp"
-    vm_execute "mkdir -p $minerva100_tmp"
-    local create_string="$create_string
-$minerva100_tmp       /scratch/local    none bind 0 0"
-  fi
-
   local create_string="$create_string
 $(get_extra_fstab)"
 
@@ -1189,7 +1177,37 @@ sudo apt-get install -y percona-server-server-5.5"
     test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
-      logger "INFO: Percona installed succesfully"
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+vm_install_pyxtrabackup() {
+
+  local bootstrap_file="vm_install_pyxtrabackup"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing pip and pyxtrabackup"
+    vm_execute "
+sudo apt-get install -y curl python;
+sudo curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python2.7;
+sudo pip install pyxtrabackup;
+"
+
+    test_action="$(vm_execute " [ \"\$(which pyxtrabackup |grep 'pyxtrabackup')\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
