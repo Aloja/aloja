@@ -9,34 +9,34 @@ use alojaweb\inc\DBUtils;
 class DefaultController extends AbstractController
 {
     public static $show_in_result = array(
-            'id_exec' => 'ID',
-            'bench' => 'Benchmark',
-            'exe_time' => 'Exe Time',
-            'exec' => 'Exec Conf',
-            'cost' => 'Running Cost $',
-            'net' => 'Net',
-            'disk' => 'Disk',
-            'maps' => 'Maps',
-            'iosf' => 'IO SFac',
-            'replication' => 'Rep',
-            'iofilebuf' => 'IO FBuf',
-            'comp' => 'Comp',
-            'blk_size' => 'Blk size',
-            'id_cluster' => 'Cluster',
-    		'datanodes' => 'Datanodes',
-    		'histogram' => 'Histogram',
-           // 'files' => 'Files',
-            'prv' => 'PARAVER',
-            //'version' => 'Hadoop v.',
-            'init_time' => 'End time',
-    		'hadoop_version' => 'H Version',
-            'bench_type' => 'Bench',
-        );
+        'id_exec' => 'ID',
+        'bench' => 'Benchmark',
+        'exe_time' => 'Exe Time',
+        'exec' => 'Exec Conf',
+        'cost' => 'Running Cost $',
+        'net' => 'Net',
+        'disk' => 'Disk',
+        'maps' => 'Maps',
+        'iosf' => 'IO SFac',
+        'replication' => 'Rep',
+        'iofilebuf' => 'IO FBuf',
+        'comp' => 'Comp',
+        'blk_size' => 'Blk size',
+        'id_cluster' => 'Cluster',
+        'datanodes' => 'Datanodes',
+        'histogram' => 'Histogram',
+        // 'files' => 'Files',
+        'prv' => 'PARAVER',
+        //'version' => 'Hadoop v.',
+        'init_time' => 'End time',
+        'hadoop_version' => 'H Version',
+        'bench_type' => 'Bench',
+    );
 
     public function indexAction()
     {
         echo $this->container->get('twig')->render('welcome.html.twig', array(
-         'selected' => 'About'
+            'selected' => 'About'
         ));
     }
 
@@ -49,6 +49,8 @@ class DefaultController extends AbstractController
             $where_configs = '';
             $concat_config = "";
 
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
             $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
             $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
@@ -59,17 +61,17 @@ class DefaultController extends AbstractController
             $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-			$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
-			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
-			$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-			
+            $money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
 
@@ -81,7 +83,7 @@ class DefaultController extends AbstractController
 
             $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
-            
+
             //get configs first (categories)
             $query = "SELECT count(*) num, concat($concat_config) conf from execs e
                       JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs
@@ -140,7 +142,7 @@ class DefaultController extends AbstractController
         $series = '';
         $bench = '';
         if ($rows) {
-        	$seriesIndex = 0;
+            $seriesIndex = 0;
             foreach ($rows as $row) {
                 //close previous serie if not first one
                 if ($bench && $bench != strtolower($row['bench'])) {
@@ -149,7 +151,7 @@ class DefaultController extends AbstractController
                 }
                 //starts a new series
                 if ($bench != strtolower($row['bench'])) {
-                	$seriesIndex = 0;
+                    $seriesIndex = 0;
                     $bench = strtolower($row['bench']);
                     $series .= "
                         {
@@ -157,14 +159,14 @@ class DefaultController extends AbstractController
                                 data: [";
                 }
                 while($row['conf'] != $confOrders[$seriesIndex]) {
-                	$series .= "[null],";
-                	$seriesIndex++;
+                    $series .= "[null],";
+                    $seriesIndex++;
                 }
-	                $series .= "['{$row['conf']}',".
-	                    //round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
-	                    //round(($row['AVG_exe_time']), 3).
-	                    round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
-	                    "],";
+                $series .= "['{$row['conf']}',".
+                    //round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
+                    //round(($row['AVG_exe_time']), 3).
+                    round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
+                    "],";
                 $seriesIndex++;
 
             }
@@ -174,11 +176,13 @@ class DefaultController extends AbstractController
         }
 
         echo $this->container->getTwig()->render('config_improvement/config_improvement.html.twig',
-             array('selected' => 'Config Improvement',
+            array('selected' => 'Config Improvement',
                 'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
+                'datefrom' => $datefrom,
+                'dateto' => $dateto,
                 'benchs' => $benchs,
                 'nets' => $nets,
                 'disks' => $disks,
@@ -191,71 +195,76 @@ class DefaultController extends AbstractController
                 'iofilebufs' => $iofilebufs,
                 'count' => $count,
                 'height' => $height,
-             	'money' => $money,
-             	'datanodess' => $datanodes,
-             	'bench_types' => $benchtype,
-            	'vm_sizes' => $vm_sizes,
-             	'vm_coress' => $vm_coress,
-             	'vm_RAMs' => $vm_RAMs,
-             	'hadoop_versions' => $hadoop_versions,
-             	'types' => $types,
-             	'filters' => $filters,
-             	'allunchecked' => $allunchecked,
-             	'options' => Utils::getFilterOptions($db)
-             )
+                'money' => $money,
+                'datanodess' => $datanodes,
+                'bench_types' => $benchtype,
+                'vm_sizes' => $vm_sizes,
+                'vm_coress' => $vm_coress,
+                'vm_RAMs' => $vm_RAMs,
+                'hadoop_versions' => $hadoop_versions,
+                'types' => $types,
+                'filters' => $filters,
+                'allunchecked' => $allunchecked,
+                'options' => Utils::getFilterOptions($db)
+            )
         );
     }
 
     public function benchExecutionsAction()
     {
-    	$dbUtils = $this->container->getDBUtils();
-    	$benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
-    	$nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
-    	$disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
-    	$blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
-    	$comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
-    	$id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
-    	$mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
-    	$replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
-    	$iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-    	$iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-    	$money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
-    	$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-    	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-    	$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-    	$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-    	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-    	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-    	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-    	$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
-    	$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    	
-    	$discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
+        $dbUtils = $this->container->getDBUtils();
+
+        $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+        $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+        $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+        $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+        $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+        $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+        $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+        $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+        $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+        $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+        $money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+        $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+        $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => self::$show_in_result,
-            	'discreteOptions' => $discreteOptions,
-            	'benchs' => $benchs,
-            	'nets' => $nets,
-            	'disks' => $disks,
-            	'blk_sizes' => $blk_sizes,
-            	'comps' => $comps,
-            	'id_clusters' => $id_clusters,
-            	'mapss' => $mapss,
-            	'replications' => $replications,
-            	'iosfs' => $iosfs,
-            	'iofilebufs' => $iofilebufs,
-            	'money' => $money,
-            	'datanodess' => $datanodes,
-            	'bench_types' => $benchtype,
-            	'vm_sizes' => $vm_sizes,
-            	'vm_coress' => $vm_coress,
-            	'vm_RAMs' => $vm_RAMs,
-            	'hadoop_versions' => $hadoop_versions,
-            	'types' => $types,
-            	'filters' => $filters,
-            	'allunchecked' => $allunchecked,
-            	'options' => Utils::getFilterOptions($dbUtils)
+                'discreteOptions' => $discreteOptions,
+                'datefrom' => $datefrom,
+                'dateto' => $dateto,
+                'benchs' => $benchs,
+                'nets' => $nets,
+                'disks' => $disks,
+                'blk_sizes' => $blk_sizes,
+                'comps' => $comps,
+                'id_clusters' => $id_clusters,
+                'mapss' => $mapss,
+                'replications' => $replications,
+                'iosfs' => $iosfs,
+                'iofilebufs' => $iofilebufs,
+                'money' => $money,
+                'datanodess' => $datanodes,
+                'bench_types' => $benchtype,
+                'vm_sizes' => $vm_sizes,
+                'vm_coress' => $vm_coress,
+                'vm_RAMs' => $vm_RAMs,
+                'hadoop_versions' => $hadoop_versions,
+                'types' => $types,
+                'filters' => $filters,
+                'allunchecked' => $allunchecked,
+                'options' => Utils::getFilterOptions($dbUtils)
             ));
     }
 
@@ -265,8 +274,8 @@ class DefaultController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
         try {
             if(isset($_GET['benchs']))
-             $_GET['benchs'] = $_GET['benchs'][0];
-            
+                $_GET['benchs'] = $_GET['benchs'][0];
+
             if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
                 $bench = $_GET['benchs'];
                 $bench_where = " AND bench = '$bench'";
@@ -274,12 +283,14 @@ class DefaultController extends AbstractController
                 $bench = 'terasort';
                 $bench_where = " AND bench = '$bench'";
             }
-            
+
             $configurations = array();
             $where_configs = '';
             $concat_config = "";
 
             // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
             $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
             $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
             $blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
@@ -298,7 +309,7 @@ class DefaultController extends AbstractController
             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
             $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            
+
             //TODO: steps
             /*
              * 1. Get execs and cluster associated costs
@@ -308,71 +319,77 @@ class DefaultController extends AbstractController
              * 5. Normalize costs and exe times
              * 6. Print results
              */
-            
+
             $minCost = 0;
             $maxCost = 0;
             $minExeTime = 0;
             $maxExeTime = 0;
-            
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs AND start_time >= '2015-01-01' LIMIT 3000";
-echo "<!--EXECS SQL: $execs -->";
+
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs LIMIT 3000";
+
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
-            	throw new \Exception("No results for query!");
-           
+                throw new \Exception("No results for query!");
+
             foreach($execs as &$exec) {
-            	$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
-            	$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
-            	
+                $costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
+                $_GET['cost_hour'][$exec['id_cluster']] = $costHour;
 
-            	$num_remotes = 0;
+
+                $num_remotes = 0;
                 $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
-            	$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-            	
-            	/** calculate remote */
-            	if(preg_match("/^RL/", $exec['disk'])) {
-            		$num_remotes = (int)$exec['disk'][2];
-            	}
+                $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
 
-                /** calculate HDD */
-                if(preg_match("/^HD[0-9]/", $exec['disk'])) {
-echo "<!--FOUND DISK {$exec['disk']}-->";
+                /** calculate remote with local disk */
+                if(preg_match("/^RL/", $exec['disk'])) {
                     $num_remotes = (int)$exec['disk'][2];
                 }
 
-            	$num_ssds=0;
+                /** calculate remote */
+                if(preg_match("/^RR/", $exec['disk'])) {
+                    $num_remotes = (int)$exec['disk'][2];
+                }
+
+                /** calculate remote with SSDs */
+                if(preg_match("/^RS/", $exec['disk'])) {
+                    $num_remotes = (int)$exec['disk'][2];
+                }
+
+                /** calculate HDD */
+                if(preg_match("/^HD[0-9]/", $exec['disk'])) {
+                    $num_remotes = (int)$exec['disk'][2];
+                }
+
+                $num_ssds=0;
                 $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
-            	$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
+                $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
 
                 /** calculate Multiple SSDs */
                 if(preg_match("/^SS[0-9]/", $exec['disk'])) {
-echo "<!--FOUND SSD {$exec['disk']}-->";
                     $num_ssds= (int)$exec['disk'][2];
                 }
 
-            	$num_IB=0;
+                $num_IB=0;
                 $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
-            	$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
-            		
-            	if($exec['net'] == "IB")
-            		$num_IB = 1;
+                $_GET['cost_IB'][$exec['id_cluster']] = $costIB;
 
-            	if($exec['disk'] == "SSD")
-            		$num_ssds = 1;
-            	
-            	$exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+                if($exec['net'] == "IB")
+                    $num_IB = 1;
 
-echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds)) = {$exec['cost_std']} \n Num disk {$exec['disk'][2]} -->";
+                if($exec['disk'] == "SSD")
+                    $num_ssds = 1;
 
-            	if($exec['cost_std'] > $maxCost)
-            		$maxCost = $exec['cost_std'];
-            	if($exec['cost_std'] < $minCost)
-            		$minCost = $exec['cost_std'];
-            	
-            	if($exec['exe_time']<$minExeTime)
-            		$minExeTime = $exec['exe_time'];
-            	if($exec['exe_time']>$maxExeTime)
-            		$maxExeTime = $exec['exe_time'];
+                $exec['cost_std'] = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+
+                if($exec['cost_std'] > $maxCost)
+                    $maxCost = $exec['cost_std'];
+                if($exec['cost_std'] < $minCost)
+                    $minCost = $exec['cost_std'];
+
+                if($exec['exe_time']<$minExeTime)
+                    $minExeTime = $exec['exe_time'];
+                if($exec['exe_time']>$maxExeTime)
+                    $maxExeTime = $exec['exe_time'];
             }
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message', $e->getMessage() . "\n");
@@ -383,15 +400,15 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
 
         $seriesData = '';
         foreach ($execs as $exec) {
-        	$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
-        	$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
-        	
+            $exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
+            $costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+
             $seriesData .= "{
             name: '" . $exec['exec'] . "',
                 data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]
         },";
         }
-        
+
         $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
 
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
@@ -399,10 +416,12 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
             'highcharts_js' => HighCharts::getHeader(),
             // 'show_in_result' => count($show_in_result),
             'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
-        	'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
-        	'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
-        	'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
+            'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
+            'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
+            'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
             'seriesData' => $seriesData,
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
             'benchs' => array($bench),
             'select_multiple_benchs' => false,
             'nets' => $nets,
@@ -414,21 +433,21 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
             'replications' => $replications,
             'iosfs' => $iosfs,
             'iofilebufs' => $iofilebufs,
-        	'datanodess' => $datanodes,
-        	'bench_types' => $benchtype,
-        	'vm_sizes' => $vm_sizes,
-        	'vm_coress' => $vm_coress,
-        	'vm_RAMs' => $vm_RAMs,
-        	'hadoop_versions' => $hadoop_versions,
-        	'types' => $types,
-        	'filters' => $filters,
-        	'allunchecked' => $allunchecked,
+            'datanodess' => $datanodes,
+            'bench_types' => $benchtype,
+            'vm_sizes' => $vm_sizes,
+            'vm_coress' => $vm_coress,
+            'vm_RAMs' => $vm_RAMs,
+            'hadoop_versions' => $hadoop_versions,
+            'types' => $types,
+            'filters' => $filters,
+            'allunchecked' => $allunchecked,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
-        	'options' => Utils::getFilterOptions($dbUtils),
-        	'clusters' => $clusters,
-        // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
-                ));
+            'options' => Utils::getFilterOptions($dbUtils),
+            'clusters' => $clusters,
+            // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
+        ));
     }
 
     public function performanceChartsAction()
@@ -479,12 +498,12 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
             }
 
             if ($hosts == 'Slaves') {
-            	$selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
-            	
-            	$selected_hosts = array();
-            	foreach($selectedHosts as $host) {
-            		array_push($selected_hosts, $host['host_name']);
-            	}
+                $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
+
+                $selected_hosts = array();
+                foreach($selectedHosts as $host) {
+                    array_push($selected_hosts, $host['host_name']);
+                }
 //                 $selected_hosts = array(
 //                     'minerva-1002', 'minerva-1003', 'minerva-1004',
 //                     'al-1002', 'al-1003', 'al-1004',
@@ -494,13 +513,13 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
 //                     'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
 //                 );
             } elseif ($hosts == 'Master') {
-            	$selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
-            	 
-            	$selected_hosts = array();
-            	foreach($selectedHosts as $host) {
-            		array_push($selected_hosts, $host['host_name']);
-            	}
-            	
+                $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
+
+                $selected_hosts = array();
+                foreach($selectedHosts as $host) {
+                    array_push($selected_hosts, $host['host_name']);
+                }
+
 //                 $selected_hosts = array(
 //                     'minerva-1001',
 //                     'al-1001',
@@ -531,12 +550,12 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
 
                 $pos_name = strpos($exec_title, '/');
                 $exec_title =
-                '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
-                strtoupper(substr($exec_title, ($pos_name+1))).
-                '&nbsp;'.
-                ((strpos($exec_title, '_az') > 0) ? 'AZURE':'LOCAL').
-                "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
-                substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
+                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
+                    strtoupper(substr($exec_title, ($pos_name+1))).
+                    '&nbsp;'.
+                    ((strpos($exec_title, '_az') > 0) ? 'AZURE':'LOCAL').
+                    "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
+                    substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
                 ;
 
                 $exec_details[$exec]['time']        = $dbUtil->get_exec_details($exec, 'exe_time',$exec_rows,$id_exec_rows);
@@ -663,108 +682,108 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                         'negative'  => false,
                     ),
                     //            'memory_util3' => array(
-                        //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
-                        //                'fields'    => array('%memused', '%commit',),
-                        //                'title'     => "Memory Utilization % ($aggr_text, $hosts) $exec_title ",
-                        //                'percentage'=> true,
-                        //                'stacked'   => false,
+                    //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
+                    //                'fields'    => array('%memused', '%commit',),
+                    //                'title'     => "Memory Utilization % ($aggr_text, $hosts) $exec_title ",
+                    //                'percentage'=> true,
+                    //                'stacked'   => false,
                     //                'negative'  => false,
                     //            ),
                     'memory' => array(
-                    'metric'    => "Memory",
-                    'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
+                        'metric'    => "Memory",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
                     FROM SAR_memory $where $group_by;",
                         'fields'    => array('frmpg/s','bufpg/s','campg/s'),
                         'title'     => "Memory Stats ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Stats'." ($aggr_text, $hosts)",
-                            'percentage'=> false,
-                            'stacked'   => false,
-                            'negative'  => false, //este tiene valores negativos...
-                        ),
-                            'io_pagging_disk' => array(
-                            'metric'    => "Memory",
-                                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false, //este tiene valores negativos...
+                    ),
+                    'io_pagging_disk' => array(
+                        'metric'    => "Memory",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
                                     FROM SAR_io_paging $where $group_by;",
-                                    'fields'    => array('pgpgin/s', 'pgpgout/s'),
-                                    'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
-                                        'group_title' => 'I/O Paging IN/OUT to disk'." ($aggr_text, $hosts)",
-                                        'percentage'=> false,
-                                        'stacked'   => false,
-                                        'negative'  => false,
-                            ),
-                            'io_pagging' => array(
-                            'metric'    => "Memory",
-                            'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
+                        'fields'    => array('pgpgin/s', 'pgpgout/s'),
+                        'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'I/O Paging IN/OUT to disk'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'io_pagging' => array(
+                        'metric'    => "Memory",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
                                 $aggr(`pgscank/s`) `pgscank/s`, $aggr(`pgscand/s`) `pgscand/s`, $aggr(`pgsteal/s`) `pgsteal/s`
                                     FROM SAR_io_paging $where $group_by;",
-                                    'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
-                                        'title'     => "I/O Paging ($aggr_text, $hosts) $exec_title ",
-                                        'group_title' => 'I/O Paging'." ($aggr_text, $hosts)",
-                                        'percentage'=> false,
-                                        'stacked'   => false,
-                                        'negative'  => false,
-                                            ),
-                                            'io_pagging_vmeff' => array(
-                                            'metric'    => "Memory",
-                                                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
-                                                'fields'    => array('%vmeff'),
-                                                    'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
-                                                    'group_title' => 'I/O Paging %vmeff'." ($aggr_text, $hosts)",
-                                                    'percentage'=> ($aggr == 'SUM' ? '300':100),
-                                                        'stacked'   => false,
-                                                        'negative'  => false,
-                                                    ),
-                                                    'io_transactions' => array(
-                                                        'metric'    => "Disk",
-                                                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
-                                                        FROM SAR_io_rate $where $group_by;",
-                                                        'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
-                                                        'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
-                                                        'group_title' => 'I/O Transactions/s'." ($aggr_text, $hosts)",
-                                                        'percentage'=> false,
-                                                        'stacked'   => false,
-                                        'negative'  => false,
+                        'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
+                        'title'     => "I/O Paging ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'I/O Paging'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
                     ),
-                                        'io_bytes' => array(
-                                            'metric'    => "Disk",
-                                            'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
+                    'io_pagging_vmeff' => array(
+                        'metric'    => "Memory",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
+                        'fields'    => array('%vmeff'),
+                        'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'I/O Paging %vmeff'." ($aggr_text, $hosts)",
+                        'percentage'=> ($aggr == 'SUM' ? '300':100),
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'io_transactions' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
+                                                        FROM SAR_io_rate $where $group_by;",
+                        'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
+                        'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'I/O Transactions/s'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'io_bytes' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
                                             FROM SAR_io_rate $where $group_by;",
-                                            'fields'    => array('KB_read/s', 'KB_wrtn/s'),
-                                            'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
-                                            'group_title' => 'KB R/W'." ($aggr_text, $hosts)",
-                                            'percentage'=> false,
-                                            'stacked'   => false,
-                                            'negative'  => false,
-                                        ),
-                                        // All fields
-                                        //            'block_devices' => array(
-                                            //                'metric'    => "Disk",
-                                            //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, #$aggr(`tps`) `tps`, $aggr(`rd_sec/s`) `rd_sec/s`, $aggr(`wr_sec/s`) `wr_sec/s`,
-                                            //                                   $aggr(`avgrq-sz`) `avgrq-sz`, $aggr(`avgqu-sz`) `avgqu-sz`, $aggr(`await`) `await`,
-                                        //                                   $aggr(`svctm`) `svctm`, $aggr(`%util`) `%util`
-                                        //                            FROM (
-                                        //                                select
-                                        //                                id_exec, host, date,
-                                        //                                #sum(`tps`) `tps`,
-                                        //                                #sum(`rd_sec/s`) `rd_sec/s`,
-                                        //                                #sum(`wr_sec/s`) `wr_sec/s`,
-                                        //                                max(`avgrq-sz`) `avgrq-sz`,
-                                            //                                max(`avgqu-sz`) `avgqu-sz`,
-                                            //                                max(`await`) `await`,
+                        'fields'    => array('KB_read/s', 'KB_wrtn/s'),
+                        'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'KB R/W'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    // All fields
+                    //            'block_devices' => array(
+                    //                'metric'    => "Disk",
+                    //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, #$aggr(`tps`) `tps`, $aggr(`rd_sec/s`) `rd_sec/s`, $aggr(`wr_sec/s`) `wr_sec/s`,
+                    //                                   $aggr(`avgrq-sz`) `avgrq-sz`, $aggr(`avgqu-sz`) `avgqu-sz`, $aggr(`await`) `await`,
+                    //                                   $aggr(`svctm`) `svctm`, $aggr(`%util`) `%util`
+                    //                            FROM (
+                    //                                select
+                    //                                id_exec, host, date,
+                    //                                #sum(`tps`) `tps`,
+                    //                                #sum(`rd_sec/s`) `rd_sec/s`,
+                    //                                #sum(`wr_sec/s`) `wr_sec/s`,
+                    //                                max(`avgrq-sz`) `avgrq-sz`,
+                    //                                max(`avgqu-sz`) `avgqu-sz`,
+                    //                                max(`await`) `await`,
 //                                max(`svctm`) `svctm`,
-                                            //                                max(`%util`) `%util`
-                                                //                                from SAR_block_devices d WHERE id_exec = '$exec'
-                                                //                                GROUP BY date, host
-                                                //                            ) t $where $group_by;",
-                                                //                'fields'    => array('avgrq-sz', 'avgqu-sz', 'await', 'svctm', '%util'),
-                                                //                'title'     => "SAR Block Devices ($aggr_text, $hosts) $exec_title ",
-                                                //                'percentage'=> false,
-                                                //                'stacked'   => false,
+                    //                                max(`%util`) `%util`
+                    //                                from SAR_block_devices d WHERE id_exec = '$exec'
+                    //                                GROUP BY date, host
+                    //                            ) t $where $group_by;",
+                    //                'fields'    => array('avgrq-sz', 'avgqu-sz', 'await', 'svctm', '%util'),
+                    //                'title'     => "SAR Block Devices ($aggr_text, $hosts) $exec_title ",
+                    //                'percentage'=> false,
+                    //                'stacked'   => false,
 //                'negative'  => false,
-        //            ),
-        'block_devices_util' => array(
-        'metric'    => "Disk",
-        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%util_SUM`) `%util_SUM`, $aggr(`%util_MAX`) `%util_MAX`
+                    //            ),
+                    'block_devices_util' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%util_SUM`) `%util_SUM`, $aggr(`%util_MAX`) `%util_MAX`
             FROM (
                 select
                 id_exec, host, date,
@@ -773,16 +792,16 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                     from SAR_block_devices d WHERE id_exec = '$exec'
                     GROUP BY date, host
                 ) t $where $group_by;",
-                'fields'    => array('%util_SUM', '%util_MAX'),
-                'title'     => "Disk Uitlization percentage (All DEVs, $aggr_text, $hosts) $exec_title ",
-                'group_title' => 'Disk Uitlization percentage'." (All DEVs, $aggr_text, $hosts)",
-                'percentage'=> false,
-                'stacked'   => false,
-                'negative'  => false,
-                ),
-                'block_devices_await' => array(
-                'metric'    => "Disk",
-                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`await_SUM`) `await_SUM`, $aggr(`await_MAX`) `await_MAX`
+                        'fields'    => array('%util_SUM', '%util_MAX'),
+                        'title'     => "Disk Uitlization percentage (All DEVs, $aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Disk Uitlization percentage'." (All DEVs, $aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'block_devices_await' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`await_SUM`) `await_SUM`, $aggr(`await_MAX`) `await_MAX`
                     FROM (
                     select
                     id_exec, host, date,
@@ -791,16 +810,16 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                         from SAR_block_devices d WHERE id_exec = '$exec'
                         GROUP BY date, host
                             ) t $where $group_by;",
-                            'fields'    => array('await_SUM', 'await_MAX'),
-                            'title'     => "Disk request wait time in ms (All DEVs, $aggr_text, $hosts) $exec_title ",
-                                'group_title' => 'Disk request wait time in ms'." (All DEVs, $aggr_text, $hosts)",
-                                    'percentage'=> false,
-                                    'stacked'   => false,
-                                    'negative'  => false,
-                                ),
-                                    'block_devices_svctm' => array(
-                                    'metric'    => "Disk",
-                                    'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`svctm_SUM`) `svctm_SUM`, $aggr(`svctm_MAX`) `svctm_MAX`
+                        'fields'    => array('await_SUM', 'await_MAX'),
+                        'title'     => "Disk request wait time in ms (All DEVs, $aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Disk request wait time in ms'." (All DEVs, $aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'block_devices_svctm' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`svctm_SUM`) `svctm_SUM`, $aggr(`svctm_MAX`) `svctm_MAX`
                                         FROM (
                                         select
                                         id_exec, host, date,
@@ -809,16 +828,16 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                                             from SAR_block_devices d WHERE id_exec = '$exec'
                                             GROUP BY date, host
                                         ) t $where $group_by;",
-                                            'fields'    => array('svctm_SUM', 'svctm_MAX'),
-                                            'title'     => "Disk service time in ms (All DEVs, $aggr_text, $hosts) $exec_title ",
-                                                'group_title' => 'Disk service time in ms'." (All DEVs, $aggr_text, $hosts)",
-                                                'percentage'=> false,
-                                                'stacked'   => false,
-                                                'negative'  => false,
-                                            ),
-                                            'block_devices_queues' => array(
-                                                'metric'    => "Disk",
-                                                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`avgrq-sz`) `avg-req-size`, $aggr(`avgqu-sz`) `avg-queue-size`
+                        'fields'    => array('svctm_SUM', 'svctm_MAX'),
+                        'title'     => "Disk service time in ms (All DEVs, $aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Disk service time in ms'." (All DEVs, $aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'block_devices_queues' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`avgrq-sz`) `avg-req-size`, $aggr(`avgqu-sz`) `avg-queue-size`
                                         FROM (
                                         select
                                         id_exec, host, date,
@@ -827,37 +846,37 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                                         from SAR_block_devices d WHERE id_exec = '$exec'
                                         GROUP BY date, host
                                     ) t $where $group_by;",
-                                    'fields'    => array('avg-req-size', 'avg-queue-size'),
-                                    'title'     => "Disk req and queue sizes ($aggr_text, $hosts) $exec_title ",
-                                    'group_title' => 'Disk req and queue sizes'." ($aggr_text, $hosts)",
-                                        'percentage'=> false,
-                                        'stacked'   => false,
-                'negative'  => false,
-        ),
-        'vmstats_io' => array(
-            'metric'    => "Disk",
-            'query' => "SELECT time, $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
+                        'fields'    => array('avg-req-size', 'avg-queue-size'),
+                        'title'     => "Disk req and queue sizes ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Disk req and queue sizes'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'vmstats_io' => array(
+                        'metric'    => "Disk",
+                        'query' => "SELECT time, $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
             FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
-            'fields'    => array('KB_IN', 'KB_OUT'),
-            'title'     => "VMSTATS KB I/O ($aggr_text, $hosts) $exec_title ",
-                'group_title' => 'VMSTATS KB I/O'." ($aggr_text, $hosts)",
-                'percentage'=> false,
-                'stacked'   => false,
-                'negative'  => false,
-                ),
-                'vmstats_rb' => array(
-                'metric'    => "CPU",
-                'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
-                    'fields'    => array('runnable procs', 'sleep procs'),
-                'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
-                            'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
-                    'percentage'=> false,
-                    'stacked'   => false,
-                    'negative'  => false,
-                ),
+                        'fields'    => array('KB_IN', 'KB_OUT'),
+                        'title'     => "VMSTATS KB I/O ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'VMSTATS KB I/O'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'vmstats_rb' => array(
+                        'metric'    => "CPU",
+                        'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+                        'fields'    => array('runnable procs', 'sleep procs'),
+                        'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
                     'vmstats_memory' => array(
-                    'metric'    => "Memory",
-                    'query' => "SELECT time,  $aggr(`buff`) `buff`,
+                        'metric'    => "Memory",
+                        'query' => "SELECT time,  $aggr(`buff`) `buff`,
                     $aggr(`cache`) `cache`,
                         $aggr(`free`) `free`,
                         $aggr(`swpd`) `swpd`
@@ -866,72 +885,72 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                         'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
                         'percentage'=> false,
-                            'stacked'   => true,
-                                'negative'  => false,
-                                        ),
-            'net_devices_kbs' => array(
+                        'stacked'   => true,
+                        'negative'  => false,
+                    ),
+                    'net_devices_kbs' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
                         FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_NET', 'txMB/s_NET'),
-                            'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
-                            'group_title' => 'MB/s received and transmitted'." ($aggr_text, $hosts)",
-                            'percentage'=> false,
-                            'stacked'   => false,
-                            'negative'  => false,
+                        'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'MB/s received and transmitted'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
                     ),
                     'net_devices_kbs_local' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
                         FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_LOCAL', 'txMB/s_LOCAL'),
-                            'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
-                            'group_title' => 'MB/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
-                            'percentage'=> false,
-                                'stacked'   => false,
-                                    'negative'  => false,
-                                        ),
-                                        'net_devices_pcks' => array(
-                                        'metric'    => "Network",
-                                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
+                        'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'MB/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'net_devices_pcks' => array(
+                        'metric'    => "Network",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
                                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
-                                            'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
-                                            'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
-                                            'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
-                                            'percentage'=> false,
-                'stacked'   => false,
-                                            'negative'  => false,
-                                        ),
-                                        'net_devices_pcks_local' => array(
-                                            'metric'    => "Network",
-                                            'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
+                        'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
+                        'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'net_devices_pcks_local' => array(
+                        'metric'    => "Network",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
                                             FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
-                                            'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
-                                            'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
-                                            'group_title' => 'Packets/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
-                                            'percentage'=> false,
-                                                'stacked'   => false,
-                                                    'negative'  => false,
-                                        ),
-                                        'net_sockets_pcks' => array(
-                                            'metric'    => "Network",
-                                            'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`totsck`) `totsck`,
+                        'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
+                        'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Packets/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'net_sockets_pcks' => array(
+                        'metric'    => "Network",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`totsck`) `totsck`,
                                                 $aggr(`tcpsck`) `tcpsck`,
                                                     $aggr(`udpsck`) `udpsck`,
                                                     $aggr(`rawsck`) `rawsck`,
                                                     $aggr(`ip-frag`) `ip-frag`,
                                                     $aggr(`tcp-tw`) `tcp-time-wait`
                                                     FROM SAR_net_sockets $where $group_by;",
-                                                    'fields'    => array('totsck', 'tcpsck', 'udpsck', 'rawsck', 'ip-frag', 'tcp-time-wait'),
-                                                    'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
-                                                    'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
-                                                    'percentage'=> false,
-                                                    'stacked'   => false,
-                                                    'negative'  => false,
-                                                    ),
-                                                        'net_erros' => array(
-                                                        'metric'    => "Network",
-                                                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`rxerr/s`) `rxerr/s`,
+                        'fields'    => array('totsck', 'tcpsck', 'udpsck', 'rawsck', 'ip-frag', 'tcp-time-wait'),
+                        'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'net_erros' => array(
+                        'metric'    => "Network",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`rxerr/s`) `rxerr/s`,
                                                             $aggr(`txerr/s`) `txerr/s`,
                                                             $aggr(`coll/s`) `coll/s`,
                                                             $aggr(`rxdrop/s`) `rxdrop/s`,
@@ -941,41 +960,41 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                                                                 $aggr(`rxfifo/s`) `rxfifo/s`,
                                                                 $aggr(`txfifo/s`) `txfifo/s`
                                                                 FROM SAR_net_errors $where $group_by;",
-                                                                'fields'    => array('rxerr/s', 'txerr/s', 'coll/s', 'rxdrop/s', 'txdrop/s', 'txcarr/s', 'rxfram/s', 'rxfifo/s', 'txfifo/s'),
-                                                                'title'     => "Network errors ($aggr_text, $hosts) $exec_title ",
-                                                                    'group_title' => 'Network errors'." ($aggr_text, $hosts)",
-                                                                    'percentage'=> false,
-                                                                    'stacked'   => false,
-                                                                    'negative'  => false,
-                                                                    ),
-                                                                    'bwm_in_out_total' => array(
-                                                                        'metric'    => "Network",
-                                                                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                        'fields'    => array('rxerr/s', 'txerr/s', 'coll/s', 'rxdrop/s', 'txdrop/s', 'txcarr/s', 'rxfram/s', 'rxfifo/s', 'txfifo/s'),
+                        'title'     => "Network errors ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'Network errors'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'bwm_in_out_total' => array(
+                        'metric'    => "Network",
+                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                                                             $aggr(`bytes_in`)/(1024*1024) `MB_in`,
                                                                                 $aggr(`bytes_out`)/(1024*1024) `MB_out`
                                                                                 FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
-                                                                                'fields'    => array('MB_in', 'MB_out'),
-                                                                                'title'     => "BW Monitor NG Total Bytes IN/OUT ($aggr_text, $hosts) $exec_title",
-                                                                                'group_title' => 'BW Monitor NG Total Bytes IN/OUT'." ($aggr_text, $hosts)",
-                                                                                'percentage'=> false,
-                                                                                'stacked'   => false,
-                                                                                'negative'  => false,
-                                                                                    ),
-                                                                                    'bwm_packets_total' => array(
-                                                                                    'metric'    => "Network",
-                                                                                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                        'fields'    => array('MB_in', 'MB_out'),
+                        'title'     => "BW Monitor NG Total Bytes IN/OUT ($aggr_text, $hosts) $exec_title",
+                        'group_title' => 'BW Monitor NG Total Bytes IN/OUT'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'bwm_packets_total' => array(
+                        'metric'    => "Network",
+                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                                                                         $aggr(`packets_in`) `packets_in`,
                                                                                         $aggr(`packets_out`) `packets_out`
                                                                                             FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
-                                                                                            'fields'    => array('packets_in', 'packets_out'),
-                                                                                            'title'     => "BW Monitor NG Total packets IN/OUT ($aggr_text, $hosts) $exec_title ",
-                                                                                            'group_title' => 'BW Monitor NG Total packets IN/OUT'." ($aggr_text, $hosts)",
-                                                                                            'percentage'=> false,
-                                                                                                'stacked'   => false,
-                                                                                                'negative'  => false,
-                                                                                                ),
-                                                                                                'bwm_errors_total' => array(
-                                                                                                    'metric'    => "Network",
+                        'fields'    => array('packets_in', 'packets_out'),
+                        'title'     => "BW Monitor NG Total packets IN/OUT ($aggr_text, $hosts) $exec_title ",
+                        'group_title' => 'BW Monitor NG Total packets IN/OUT'." ($aggr_text, $hosts)",
+                        'percentage'=> false,
+                        'stacked'   => false,
+                        'negative'  => false,
+                    ),
+                    'bwm_errors_total' => array(
+                        'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                             $aggr(`errors_in`) `errors_in`,
                                             $aggr(`errors_out`) `errors_out`
@@ -1063,33 +1082,33 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
             $exec = '';
 
         echo $this->container->getTwig()->render('perfcharts/perfcharts.html.twig',
-                array('selected' => 'Performance charts',
-                        'show_in_result' => count(self::$show_in_result),
-                        'title' => 'Hadoop Job/s Execution details and System Performance Charts',
-                        'chartsJS' => $chartsJS,
-                        'charts' => $charts,
-                        'metric' => $metric,
-                        'execs' => $execs,
-                        'aggr' => $aggr,
-                        'hosts' => $hosts,
-                        'host_rows' => $dbUtil->get_hosts($clusters),
-                        'detail' => $detail,
-                ));
+            array('selected' => 'Performance charts',
+                'show_in_result' => count(self::$show_in_result),
+                'title' => 'Hadoop Job/s Execution details and System Performance Charts',
+                'chartsJS' => $chartsJS,
+                'charts' => $charts,
+                'metric' => $metric,
+                'execs' => $execs,
+                'aggr' => $aggr,
+                'hosts' => $hosts,
+                'host_rows' => $dbUtil->get_hosts($clusters),
+                'detail' => $detail,
+            ));
 
     }
 
     public function countersAction()
     {
         try {
-        	$db = $this->container->getDBUtils();
-        	$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = 1");
-        	
-        	$discreteOptions = array();
-        	$discreteOptions['bench'][] = 'All';
-        	foreach($benchOptions as $option) {
-        		$discreteOptions['bench'][] = array_shift($option);
-        	}
-        	
+            $db = $this->container->getDBUtils();
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = 1");
+
+            $discreteOptions = array();
+            $discreteOptions['bench'][] = 'All';
+            foreach($benchOptions as $option) {
+                $discreteOptions['bench'][] = array_shift($option);
+            }
+
             $dbUtil = $this->container->getDBUtils();
             $message = null;
 
@@ -1157,10 +1176,10 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                 $discreteOptions['TASK_STATUS'][] = 'All';
                 $discreteOptions['TASK_TYPE'][] = 'All';
                 foreach($taskStatusOptions as $option) {
-                	$discreteOptions['TASK_STATUS'][] = array_shift($option);
+                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
                 }
                 foreach($typeOptions as $option) {
-                	$discreteOptions['TASK_TYPE'][] = array_shift($option);
+                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
                 }
             } else {
                 throw new \Exception('Unknown type!');
@@ -1195,272 +1214,274 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
                 'type' => $type,
                 'execs' => $execs,
                 'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
-            	'discreteOptions' => $discreteOptions
+                'discreteOptions' => $discreteOptions
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
-    
+
     public function performanceTableAction()
     {
         $show_in_result_metrics = array();
         $type = Utils::get_GET_string('type');
         if(!$type || $type == 'CPU') {
-          $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
-              'Avg %user', 'Max %user', 'Min %user', 'Stddev %user', 'Var %user', 
-          	  'Avg %nice', 'Max %nice', 'Min %nice', 'Stddev %nice', 'Var %nice', 
-          	  'Avg %system', 'Max %system', 'Min %system', 'Stddev %system', 'Var %system', 
-          	  'Avg %iowait', 'Max %iowait', 'Min %iowait', 'Stddev %iowait', 'Var %iowait', 
-          	  'Avg %steal', 'Max %steal', 'Min %steal', 'Stddev %steal', 'Var %steal',
-          	  'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster', 'end_time' => 'End time');  
-        } else if($type == 'DISK') { 
             $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
-                'DEV', 'Avg tps', 'Max tps', 'Min tps', 
-            	'Avg rd_sec/s', 'Max rd_sec/s', 'Min rd_sec/s', 'Stddev rd_sec/s', 'Var rd_sec/s', 'Sum rd_sec/s',
-            	'Avg wr_sec/s', 'Max wr_sec/s', 'Min wr_sec/s', 'Stddev wr_sec/s', 'Var wr_sec/s', 'Sum wr_sec/s',
-            	'Avg rq-sz', 'Max rq-sz', 'Min rq-sz', 'Stddev rq-sz', 'Var rq-sz',
-            	'Avg queue sz', 'Max queue sz', 'Min queue sz', 'Stddev queue sz', 'Var queue sz',
-            	'Avg Await', 'Max Await', 'Min Await', 'Stddev Await', 'Var Await',
-            	'Avg %util', 'Max %util', 'Min %util', 'Stddev %util', 'Var %util',
-            	'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster', 'end_time' => 'End time');
+                'Avg %user', 'Max %user', 'Min %user', 'Stddev %user', 'Var %user',
+                'Avg %nice', 'Max %nice', 'Min %nice', 'Stddev %nice', 'Var %nice',
+                'Avg %system', 'Max %system', 'Min %system', 'Stddev %system', 'Var %system',
+                'Avg %iowait', 'Max %iowait', 'Min %iowait', 'Stddev %iowait', 'Var %iowait',
+                'Avg %steal', 'Max %steal', 'Min %steal', 'Stddev %steal', 'Var %steal',
+                'Avg %idle', 'Max %idle', 'Min %idle', 'Stddev %idle', 'Var %idle', 'Cluster', 'end_time' => 'End time');
+        } else if($type == 'DISK') {
+            $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
+                'DEV', 'Avg tps', 'Max tps', 'Min tps',
+                'Avg rd_sec/s', 'Max rd_sec/s', 'Min rd_sec/s', 'Stddev rd_sec/s', 'Var rd_sec/s', 'Sum rd_sec/s',
+                'Avg wr_sec/s', 'Max wr_sec/s', 'Min wr_sec/s', 'Stddev wr_sec/s', 'Var wr_sec/s', 'Sum wr_sec/s',
+                'Avg rq-sz', 'Max rq-sz', 'Min rq-sz', 'Stddev rq-sz', 'Var rq-sz',
+                'Avg queue sz', 'Max queue sz', 'Min queue sz', 'Stddev queue sz', 'Var queue sz',
+                'Avg Await', 'Max Await', 'Min Await', 'Stddev Await', 'Var Await',
+                'Avg %util', 'Max %util', 'Min %util', 'Stddev %util', 'Var %util',
+                'Avg svctm', 'Max svctm', 'Min svctm', 'Stddev svctm', 'Var svctm', 'Cluster', 'end_time' => 'End time');
         } else if($type == 'MEMORY') {
-           $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 
-              'Avg kbmemfree', 'Max kbmemfree', 'Min kbmemfree', 'Stddev kbmemfree', 'Var kbmemfree',
-           	  'Avg kbmemused', 'Max kbmemused', 'Min kbmemused', 'Stddev kbmemused', 'Var kbmemused',
-           	  'Avg %memused', 'Max %memused', 'Min %memused', 'Stddev %memused', 'Var %memused',
-           	  'Avg kbbuffers', 'Max kbbuffers', 'Min kbbuffers', 'Stddev kbbuffers', 'Var kbbuffers',
-              'Avg kbcached', 'Max kbcached', 'Min kbcached', 'Stddev kbcached', 'Var kbcached',
-           	  'Avg kbcommit', 'Max kbcommit', 'Min kbcommit', 'Stddev kbcommit', 'Var kbcommit',
-           	  'Avg %commit', 'Max %commit', 'Min %commit', 'Stddev %commit', 'Var %commit',
-           	  'Avg kbactive', 'Max kbactive', 'Min kbactive', 'Stddev kbactive', 'Var kbactive',
-           	  'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster', 'end_time' => 'End time');                           
+            $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
+                'Avg kbmemfree', 'Max kbmemfree', 'Min kbmemfree', 'Stddev kbmemfree', 'Var kbmemfree',
+                'Avg kbmemused', 'Max kbmemused', 'Min kbmemused', 'Stddev kbmemused', 'Var kbmemused',
+                'Avg %memused', 'Max %memused', 'Min %memused', 'Stddev %memused', 'Var %memused',
+                'Avg kbbuffers', 'Max kbbuffers', 'Min kbbuffers', 'Stddev kbbuffers', 'Var kbbuffers',
+                'Avg kbcached', 'Max kbcached', 'Min kbcached', 'Stddev kbcached', 'Var kbcached',
+                'Avg kbcommit', 'Max kbcommit', 'Min kbcommit', 'Stddev kbcommit', 'Var kbcommit',
+                'Avg %commit', 'Max %commit', 'Min %commit', 'Stddev %commit', 'Var %commit',
+                'Avg kbactive', 'Max kbactive', 'Min kbactive', 'Stddev kbactive', 'Var kbactive',
+                'Avg kbinact', 'Max kbinact', 'Min kbinact', 'Stddev kbinact', 'Var kbinact', 'Cluster', 'end_time' => 'End time');
         } else if($type == 'NETWORK')
-          $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 'Interface', 
-              'Avg rxpck/s', 'Max rxpck/s', 'Min rxpck/s', 'Stddev rxpck/s', 'Var rxpck/s', 'Sum rxpck/s', 
-          	  'Avg txpck/s', 'Max txpck/s', 'Min txpck/s', 'Stddev txpck/s', 'Var txpck/s', 'Sum txpck/s',
-          	  'Avg rxkB/s', 'Max rxkB/s', 'Min rxkB/s', 'Stddev rxkB/s', 'Var rxkB/s', 'Sum rxkB/s',
-          	  'Avg txkB/s', 'Max txkB/s', 'Min txkB/s', 'Stddev txkB/s', 'Var txkB/s', 'Sum txkB/s',
-          	  'Avg rxcmp/s', 'Max rxcmp/s', 'Min rxcmp/s', 'Stddev rxcmp/s', 'Var rxcmp/s', 'Sum rxcmp/s',
-          	  'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
-          	  'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster', 'end_time' => 'End time');
-     
+            $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size', 'Interface',
+                'Avg rxpck/s', 'Max rxpck/s', 'Min rxpck/s', 'Stddev rxpck/s', 'Var rxpck/s', 'Sum rxpck/s',
+                'Avg txpck/s', 'Max txpck/s', 'Min txpck/s', 'Stddev txpck/s', 'Var txpck/s', 'Sum txpck/s',
+                'Avg rxkB/s', 'Max rxkB/s', 'Min rxkB/s', 'Stddev rxkB/s', 'Var rxkB/s', 'Sum rxkB/s',
+                'Avg txkB/s', 'Max txkB/s', 'Min txkB/s', 'Stddev txkB/s', 'Var txkB/s', 'Sum txkB/s',
+                'Avg rxcmp/s', 'Max rxcmp/s', 'Min rxcmp/s', 'Stddev rxcmp/s', 'Var rxcmp/s', 'Sum rxcmp/s',
+                'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
+                'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster', 'end_time' => 'End time');
+
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('metrics/metrics.html.twig',
             array('selected' => 'Performance Metrics',
                 'theaders' => $show_in_result_metrics,
                 'title' => 'Hadoop Performance Counters',
                 'type' => $type ? $type : 'CPU',
-            	'discreteOptions' => $discreteOptions
+                'discreteOptions' => $discreteOptions
             ));
     }
-    
+
     public function histogramAction()
     {
-    	$db = $this->container->getDBUtils();
-    	$idExec = '';
-    	try {
-    		$idExec = Utils::get_GET_string('id_exec');
-    		if(!$idExec)
-    			throw new \Exception("No execution selected!");
-    	} catch (\Exception $e) {
-    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-    	}
-    	
-    	echo $this->container->getTwig()->render('histogram/histogram.html.twig',
-    			array('selected' => 'Histogram',
-    				  'idExec' => $idExec
-    			));
+        $db = $this->container->getDBUtils();
+        $idExec = '';
+        try {
+            $idExec = Utils::get_GET_string('id_exec');
+            if(!$idExec)
+                throw new \Exception("No execution selected!");
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+
+        echo $this->container->getTwig()->render('histogram/histogram.html.twig',
+            array('selected' => 'Histogram',
+                'idExec' => $idExec
+            ));
     }
-    
+
     public function histogramHDIAction()
     {
-    	$db = $this->container->getDBUtils();
-    	$idExec = '';
-    	try {
-    		$idExec = Utils::get_GET_string('id_exec');
-    		if(!$idExec)
-    			throw new \Exception("No execution selected!");
-    	} catch (\Exception $e) {
-    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-    	}
-    	 
-    	echo $this->container->getTwig()->render('histogram/histogramhdi.html.twig',
-    			array('selected' => 'Histogram',
-    					'idExec' => $idExec
-    			));
+        $db = $this->container->getDBUtils();
+        $idExec = '';
+        try {
+            $idExec = Utils::get_GET_string('id_exec');
+            if(!$idExec)
+                throw new \Exception("No execution selected!");
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+
+        echo $this->container->getTwig()->render('histogram/histogramhdi.html.twig',
+            array('selected' => 'Histogram',
+                'idExec' => $idExec
+            ));
     }
 
     public function bestConfigAction() {
-		$db = $this->container->getDBUtils ();
-		$rows_config = '';
-		$bestexec = '';
-		$cluster = '';
-		$comp = '';
-		$execsDetails = array ();
-		try {
-			$configurations = array ();
-			$where_configs = '';
-			$concat_config = "";
-			
-			$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-			$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
-			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
-			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
-			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config, false );
-			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config, false );
-			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config, false );
-			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config, false );
-			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config, false );
-			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
-			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
-			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
-			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
-			$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-			
-			if (! $benchs)
-				$where_configs .= 'AND bench IN (\'terasort\')';
-			$order_type = Utils::get_GET_string ( 'ordertype' );
-			if (! $order_type)
-				$order_type = 'exe_time';
-				// $concat_config = join(',\'_\',', $configurations);
-				// $concat_config = substr($concat_config, 1);
+        $db = $this->container->getDBUtils ();
+        $rows_config = '';
+        $bestexec = '';
+        $cluster = '';
+        $comp = '';
+        $execsDetails = array ();
+        try {
+            $configurations = array ();
+            $where_configs = '';
+            $concat_config = "";
+
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+            $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
+            $nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
+            $disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
+            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config, false );
+            $comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config, false );
+            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config, false );
+            $mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config, false );
+            $replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config, false );
+            $iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
+            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
+            $money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+
+            if (! $benchs)
+                $where_configs .= 'AND bench IN (\'terasort\')';
+            $order_type = Utils::get_GET_string ( 'ordertype' );
+            if (! $order_type)
+                $order_type = 'exe_time';
+            // $concat_config = join(',\'_\',', $configurations);
+            // $concat_config = substr($concat_config, 1);
 
             $filter_execs = DBUtils::getFilterExecs();
-			$order_conf = 'LENGTH(conf), conf';
-			
-			// get the result rows
-			$query = "SELECT e.*,
+            $order_conf = 'LENGTH(conf), conf';
+
+            // get the result rows
+            $query = "SELECT e.*,
     		(exe_time/3600)*(cost_hour) cost, c.name as clustername
     		from execs e
     		join clusters c USING (id_cluster)
     		WHERE 1 $filter_execs $where_configs
     		ORDER BY $order_type ASC;";
-			
-			$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
-			$rows = $db->get_rows ( $query );
-			
-			if (! $rows) {
-				throw new \Exception ( "No results for query!" );
-			}
-			if ($rows) {
-				$bestexec = $rows[0];
-				$conf = $bestexec['exec'];
-				$parameters = explode ( '_', $conf );
-				//$cluster =  explode ( '/', $parameters [count ( $parameters ) - 1] )[0]; //(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
-				$cluster=$rows[0]['clustername'];
-				Utils::makeExecInfoBeauty($bestexec);
-			}
-		} catch ( \Exception $e ) {
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-		}
-		
-		if (empty ( $benchs ))
-			$benchs = array (
-					'terasort'
-			);
-			
-		echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
-				'selected' => 'Best configuration',
-				'title' => 'Best Run Configuration',
-				'bestexec' => $bestexec,
-				'cluster' => $cluster,
-				'order_type' => $order_type,
-				'datefrom' => $datefrom,
-				'dateto' => $dateto,
-				'benchs' => $benchs,
-				'nets' => $nets,
-				'disks' => $disks,
-				'blk_sizes' => $blk_sizes,
-				'comps' => $comps,
-				'id_clusters' => $id_clusters,
-				'mapss' => $mapss,
-				'replications' => $replications,
-				'iosfs' => $iosfs,
-				'iofilebufs' => $iofilebufs,
-				'money' => $money,
-				'datanodess' => $datanodes,
-				'bench_types' => $benchtype,
-				'vm_sizes' => $vm_sizes,
-				'vm_coress' => $vm_coress,
-				'vm_RAMs' => $vm_RAMs,
-				'hadoop_versions' => $hadoop_versions,
-				'types' => $types,
-				'filters' => $filters,
-				'allunchecked' => $allunchecked,
-				'select_multiple_benchs' => false,
-				'options' => Utils::getFilterOptions($db)
-		) );
-	}
-	public function paramEvaluationAction() {
-		$db = $this->container->getDBUtils ();
-		$rows = '';
-		$categories = '';
-		$series = '';
-		try {
-			$configurations = array ();
-			$where_configs = '';
-			$concat_config = "";
-			
-			if(!(isset($_GET['benchs']))) {
-				$_GET['benchs'] = array('wordcount', 'terasort', 'sort');
-            }
-			
-			$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
-			$nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
-			$disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
-			$blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
-			$comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
-			$id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
-			$mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
-			$replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
-			$iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
-			$iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
-			$money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
-			$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-			$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-			$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-			$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-			$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-			$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-			$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-			$valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-			$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
-			$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-			
-			// $concat_config = join(',\'_\',', $configurations);
-			// $concat_config = substr($concat_config, 1);
-			$paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
-			$minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
-			$minExecsFilter = "";
-			if($minExecs > 0)
-				$minExecsFilter = "HAVING COUNT(*) > $minExecs";
-			
-			$filter_execs = DBUtils::getFilterExecs();
 
-			$options = Utils::getFilterOptions($db);
-			$paramOptions = array();
-			foreach($options[$paramEval] as $option) {
-				if($paramEval == 'id_cluster')
-					$paramOptions[] = $option['name'];
-				else if($paramEval == 'comp')
-					$paramOptions[] = Utils::getCompressionName($option[$paramEval]);
-				else if($paramEval == 'net')
-					$paramOptions[] = Utils::getNetworkName($option[$paramEval]);
-				else if($paramEval == 'disk')
-					$paramOptions[] = Utils::getDisksName($option[$paramEval]);
-				else if($paramEval == 'vm_ram')
-					$paramOptions[] = Utils::getBeautyRam($option['vm_RAM']);
-				else
-					$paramOptions[] = $option[$paramEval];
-			}
-						
+            $this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
+            $rows = $db->get_rows ( $query );
+
+            if (! $rows) {
+                throw new \Exception ( "No results for query!" );
+            }
+            if ($rows) {
+                $bestexec = $rows[0];
+                $conf = $bestexec['exec'];
+                $parameters = explode ( '_', $conf );
+                //$cluster =  explode ( '/', $parameters [count ( $parameters ) - 1] )[0]; //(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
+                $cluster=$rows[0]['clustername'];
+                Utils::makeExecInfoBeauty($bestexec);
+            }
+        } catch ( \Exception $e ) {
+            $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+        }
+
+        if (empty ( $benchs ))
+            $benchs = array (
+                'terasort'
+            );
+
+        echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
+            'selected' => 'Best configuration',
+            'title' => 'Best Run Configuration',
+            'bestexec' => $bestexec,
+            'cluster' => $cluster,
+            'order_type' => $order_type,
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
+            'benchs' => $benchs,
+            'nets' => $nets,
+            'disks' => $disks,
+            'blk_sizes' => $blk_sizes,
+            'comps' => $comps,
+            'id_clusters' => $id_clusters,
+            'mapss' => $mapss,
+            'replications' => $replications,
+            'iosfs' => $iosfs,
+            'iofilebufs' => $iofilebufs,
+            'money' => $money,
+            'datanodess' => $datanodes,
+            'bench_types' => $benchtype,
+            'vm_sizes' => $vm_sizes,
+            'vm_coress' => $vm_coress,
+            'vm_RAMs' => $vm_RAMs,
+            'hadoop_versions' => $hadoop_versions,
+            'types' => $types,
+            'filters' => $filters,
+            'allunchecked' => $allunchecked,
+            'select_multiple_benchs' => false,
+            'options' => Utils::getFilterOptions($db)
+        ) );
+    }
+    public function paramEvaluationAction() {
+        $db = $this->container->getDBUtils ();
+        $rows = '';
+        $categories = '';
+        $series = '';
+        try {
+            $configurations = array ();
+            $where_configs = '';
+            $concat_config = "";
+
+            if(!(isset($_GET['benchs']))) {
+                $_GET['benchs'] = array('wordcount', 'terasort', 'sort');
+            }
+
+            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+            $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
+            $nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
+            $disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
+            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
+            $comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
+            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
+            $mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
+            $replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
+            $iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
+            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
+            $money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+
+            // $concat_config = join(',\'_\',', $configurations);
+            // $concat_config = substr($concat_config, 1);
+            $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
+            $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
+            $minExecsFilter = "";
+            if($minExecs > 0)
+                $minExecsFilter = "HAVING COUNT(*) > $minExecs";
+
+            $filter_execs = DBUtils::getFilterExecs();
+
+            $options = Utils::getFilterOptions($db);
+            $paramOptions = array();
+            foreach($options[$paramEval] as $option) {
+                if($paramEval == 'id_cluster')
+                    $paramOptions[] = $option['name'];
+                else if($paramEval == 'comp')
+                    $paramOptions[] = Utils::getCompressionName($option[$paramEval]);
+                else if($paramEval == 'net')
+                    $paramOptions[] = Utils::getNetworkName($option[$paramEval]);
+                else if($paramEval == 'disk')
+                    $paramOptions[] = Utils::getDisksName($option[$paramEval]);
+                else if($paramEval == 'vm_ram')
+                    $paramOptions[] = Utils::getBeautyRam($option['vm_RAM']);
+                else
+                    $paramOptions[] = $option[$paramEval];
+            }
+
 // 			if($paramEval == 'maps')
 // 				$paramOptions = array(4,6,8,10,12,16,24,32);
 // 			else if($paramEval == 'comp')
@@ -1479,126 +1500,128 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
 // 				$paramOptions = array(32,64,128,256);
 // 			else if($paramEval == 'iosf')
 // 				$paramOptions = array(5,10,20,50);
-			
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN clusters USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
-						
-			// get the result rows
-			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
-				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-				"from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs".
-				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
-			
-			$rows = $db->get_rows ( $query );
 
-			if (!$rows) {
-				throw new \Exception ( "No results for query!" );
-			}
-	
-			$categories = '';
-			$arrayBenchs = array();
-			foreach ( $paramOptions as $param ) {
-				$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
-				foreach($benchOptions as $bench) {
-					$arrayBenchs[$bench['bench']][$param] = null;
-				}
-			}
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN clusters USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 
-			$series = array();
-			$bench = '';
-			foreach($rows as $row) {
-				if($paramEval == 'comp')
-					$row[$paramEval] = Utils::getCompressionName($row['comp']);
-				else if($paramEval == 'id_cluster') {
+            // get the result rows
+            $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
+                "exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
+                "from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs".
+                "GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
+
+            $rows = $db->get_rows ( $query );
+
+            if (!$rows) {
+                throw new \Exception ( "No results for query!" );
+            }
+
+            $categories = '';
+            $arrayBenchs = array();
+            foreach ( $paramOptions as $param ) {
+                $categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
+                foreach($benchOptions as $bench) {
+                    $arrayBenchs[$bench['bench']][$param] = null;
+                }
+            }
+
+            $series = array();
+            $bench = '';
+            foreach($rows as $row) {
+                if($paramEval == 'comp')
+                    $row[$paramEval] = Utils::getCompressionName($row['comp']);
+                else if($paramEval == 'id_cluster') {
                     $row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
-				} else if($paramEval == 'net')
-					$row[$paramEval] = Utils::getNetworkName($row['net']);
-				else if($paramEval == 'disk')
-					$row[$paramEval] = Utils::getDisksName($row['disk']);
-				else if($paramEval == 'vm_ram')
-					$row[$paramEval] = Utils::getBeautyRam($row['vm_ram']);
-				
-				$arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
-				$arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['count'] = (int)$row['count'];
-			}				
-					
-			foreach($arrayBenchs as $key => $arrayBench)
-			{
-				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
-			}
-			$series = json_encode($series);
-		} catch ( \Exception $e ) {
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-		}
+                } else if($paramEval == 'net')
+                    $row[$paramEval] = Utils::getNetworkName($row['net']);
+                else if($paramEval == 'disk')
+                    $row[$paramEval] = Utils::getDisksName($row['disk']);
+                else if($paramEval == 'vm_ram')
+                    $row[$paramEval] = Utils::getBeautyRam($row['vm_ram']);
 
-		echo $this->container->getTwig ()->render ('parameval/parameval.html.twig', array (
-				'selected' => 'Parameter Evaluation',
-				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
-				'categories' => $categories,
-				'series' => $series,
-				'benchs' => $benchs,
-				'nets' => $nets,
-				'disks' => $disks,
-				'blk_sizes' => $blk_sizes,
-				'comps' => $comps,
-				'id_clusters' => $id_clusters,
-				'mapss' => $mapss,
-				'replications' => $replications,
-				'iosfs' => $iosfs,
-				'iofilebufs' => $iofilebufs,
-				'money' => $money,
-				'datanodess' => $datanodes,
-				'bench_types' => $benchtype,
-				'vm_sizes' => $vm_sizes,
-				'vm_coress' => $vm_coress,
-				'vm_RAMs' => $vm_RAMs,
-				'hadoop_versions' => $hadoop_versions,
-				'types' => $types,
-				'filters' => $filters,
-				'allunchecked' => $allunchecked,
-				'paramEval' => $paramEval,
-				'options' => $options
-		) );
-	}
-	
-	public function publicationsAction()
-	{
-		echo $this->container->getTwig()->render('publications/publications.html.twig', array(
-				'selected' => 'Publications',
-				'title' => 'ALOJA Publications and Slides'));
-	}
-	
-	public function teamAction()
-	{
-		echo $this->container->getTwig()->render('team/team.html.twig', array(
-				'selected' => 'Team',
-				'title' => 'ALOJA Team & Collaborators'));
-	}
-	
-	public function clustersAction()
-	{
-		$clusterNameSelected = null;
-		
-		if(isset($_GET['cluster_name'])) {
-			$clusterNameSelected = $_GET['cluster_name'];
-		}
-		
-		
-		$db = $this->container->getDBUtils();
-		$clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs);");
-		
-		echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
-				'selected' => 'Clusters',
-				'clusters' => $clusters,
-				'clusterNameSelected' => $clusterNameSelected,
-				'title' => 'ALOJA Clusters'));
-	}
-	
-	public function clusterCostsAction()
-	{
-		echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
-				'selected' => 'Clusters Costs',
-				'title' => 'ALOJA Clusters Costs'));
-	}
+                $arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
+                $arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['count'] = (int)$row['count'];
+            }
+
+            foreach($arrayBenchs as $key => $arrayBench)
+            {
+                $series[] = array('name' => $key, 'data' => array_values($arrayBench));
+            }
+            $series = json_encode($series);
+        } catch ( \Exception $e ) {
+            $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+        }
+
+        echo $this->container->getTwig ()->render ('parameval/parameval.html.twig', array (
+            'selected' => 'Parameter Evaluation',
+            'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
+            'categories' => $categories,
+            'series' => $series,
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
+            'benchs' => $benchs,
+            'nets' => $nets,
+            'disks' => $disks,
+            'blk_sizes' => $blk_sizes,
+            'comps' => $comps,
+            'id_clusters' => $id_clusters,
+            'mapss' => $mapss,
+            'replications' => $replications,
+            'iosfs' => $iosfs,
+            'iofilebufs' => $iofilebufs,
+            'money' => $money,
+            'datanodess' => $datanodes,
+            'bench_types' => $benchtype,
+            'vm_sizes' => $vm_sizes,
+            'vm_coress' => $vm_coress,
+            'vm_RAMs' => $vm_RAMs,
+            'hadoop_versions' => $hadoop_versions,
+            'types' => $types,
+            'filters' => $filters,
+            'allunchecked' => $allunchecked,
+            'paramEval' => $paramEval,
+            'options' => $options
+        ) );
+    }
+
+    public function publicationsAction()
+    {
+        echo $this->container->getTwig()->render('publications/publications.html.twig', array(
+            'selected' => 'Publications',
+            'title' => 'ALOJA Publications and Slides'));
+    }
+
+    public function teamAction()
+    {
+        echo $this->container->getTwig()->render('team/team.html.twig', array(
+            'selected' => 'Team',
+            'title' => 'ALOJA Team & Collaborators'));
+    }
+
+    public function clustersAction()
+    {
+        $clusterNameSelected = null;
+
+        if(isset($_GET['cluster_name'])) {
+            $clusterNameSelected = $_GET['cluster_name'];
+        }
+
+
+        $db = $this->container->getDBUtils();
+        $clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs);");
+
+        echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
+            'selected' => 'Clusters',
+            'clusters' => $clusters,
+            'clusterNameSelected' => $clusterNameSelected,
+            'title' => 'ALOJA Clusters'));
+    }
+
+    public function clusterCostsAction()
+    {
+        echo $this->container->getTwig()->render('clusters/clustercosts.html.twig', array(
+            'selected' => 'Clusters Costs',
+            'title' => 'ALOJA Clusters Costs'));
+    }
 
     public function dbscanAction()
     {
@@ -1658,42 +1681,42 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
             )
         );
     }
-    
+
     public function hdp2CountersAction()
     {
-    	try {
-    		$db = $this->container->getDBUtils();
-    		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
-    		 
-    		$discreteOptions = array();
-    		$discreteOptions['bench'][] = 'All';
-    		foreach($benchOptions as $option) {
-    			$discreteOptions['bench'][] = array_shift($option);
-    		}
-    		 
-    		$dbUtil = $this->container->getDBUtils();
-    		$message = null;
-    
-    		//check the URL
-    		$execs = Utils::get_GET_execs();
-    
-    		if (Utils::get_GET_string('type')) {
-    			$type = Utils::get_GET_string('type');
-    		} else {
-    			$type = 'SUMMARY';
-    		}
-    
-    		$join = "JOIN execs e using (id_exec) WHERE job_name NOT IN
+        try {
+            $db = $this->container->getDBUtils();
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
+
+            $discreteOptions = array();
+            $discreteOptions['bench'][] = 'All';
+            foreach($benchOptions as $option) {
+                $discreteOptions['bench'][] = array_shift($option);
+            }
+
+            $dbUtil = $this->container->getDBUtils();
+            $message = null;
+
+            //check the URL
+            $execs = Utils::get_GET_execs();
+
+            if (Utils::get_GET_string('type')) {
+                $type = Utils::get_GET_string('type');
+            } else {
+                $type = 'SUMMARY';
+            }
+
+            $join = "JOIN execs e using (id_exec) WHERE job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
-            ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
-    
-    		$query = "";
-    		if ($type == 'SUMMARY') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
+
+            $query = "";
+            if ($type == 'SUMMARY') {
+                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS
     			FROM HDI_JOB_details c $join";
-    		} else if ($type == "MAP") {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+            } else if ($type == "MAP") {
+                $query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
     			`RACK_LOCAL_MAPS`,
     			`SPILLED_RECORDS`,
@@ -1702,8 +1725,8 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
     			`MAP_OUTPUT_BYTES`,
     			`MAP_OUTPUT_MATERIALIZED_BYTES`
     			FROM HDI_JOB_details c $join";
-    		} else if ($type == 'REDUCE') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+            } else if ($type == 'REDUCE') {
+                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
     			`TOTAL_LAUNCHED_REDUCES`,
     			`REDUCE_INPUT_GROUPS`,
@@ -1713,8 +1736,8 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
     			`COMBINE_INPUT_RECORDS`,
     			`COMBINE_OUTPUT_RECORDS`
     			FROM HDI_JOB_details c $join";
-    		} else if ($type == 'FILE-IO') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+            } else if ($type == 'FILE-IO') {
+                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME,
     			`SLOTS_MILLIS_MAPS`,
     			`SLOTS_MILLIS_REDUCES`,
@@ -1726,101 +1749,103 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
     			`BYTES_READ`,
     			`BYTES_WRITTEN`
     			FROM HDI_JOB_details c $join";
-    		} else if ($type == 'DETAIL') {
-    			$query = "SELECT e.bench, exe_time, c.* FROM JOB_details c $join";
-    		} else if ($type == "TASKS") {
-    			$query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
+            } else if ($type == 'DETAIL') {
+                $query = "SELECT e.bench, exe_time, c.* FROM JOB_details c $join";
+            } else if ($type == "TASKS") {
+                $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
-    			$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-    			$typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-    
-    			$discreteOptions['TASK_STATUS'][] = 'All';
-    			$discreteOptions['TASK_TYPE'][] = 'All';
-    			foreach($taskStatusOptions as $option) {
-    				$discreteOptions['TASK_STATUS'][] = array_shift($option);
-    			}
-    			foreach($typeOptions as $option) {
-    				$discreteOptions['TASK_TYPE'][] = array_shift($option);
-    			}
-    		} else {
-    			throw new \Exception('Unknown type!');
-    		}
-    
-    		$exec_rows = $dbUtil->get_rows($query);
+                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
 
-    		if (count($exec_rows) > 0) {
-    
-    			$show_in_result_counters = array(
-    					'id_exec'   => 'ID',
-    					'JOB_ID'     => 'JOBID',
-    					'bench'     => 'Bench',
-    					'job_name'   => 'JOBNAME',
-    			);
-    
-    			$show_in_result_counters = Utils::generate_show($show_in_result_counters, $exec_rows, 4);
-    		}
-    	} catch (\Exception $e) {
-    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-    	}
+                $discreteOptions['TASK_STATUS'][] = 'All';
+                $discreteOptions['TASK_TYPE'][] = 'All';
+                foreach($taskStatusOptions as $option) {
+                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
+                }
+                foreach($typeOptions as $option) {
+                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
+                }
+            } else {
+                throw new \Exception('Unknown type!');
+            }
 
-    	echo $this->container->getTwig()->render('counters/hdp2counters.html.twig',
-    			array('selected' => 'Hadoop 2 Job Counters',
-    					'theaders' => $show_in_result_counters,
-    					//'table_fields' => $table_fields,
-    					'message' => $message,
-    					'title' => 'Hadoop Jobs and Tasks Execution Counters',
-    					'type' => $type,
-    					'execs' => $execs,
-    					'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
-    					'discreteOptions' => $discreteOptions
-    					//'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
-    			));
+            $exec_rows = $dbUtil->get_rows($query);
+
+            if (count($exec_rows) > 0) {
+
+                $show_in_result_counters = array(
+                    'id_exec'   => 'ID',
+                    'JOB_ID'     => 'JOBID',
+                    'bench'     => 'Bench',
+                    'job_name'   => 'JOBNAME',
+                );
+
+                $show_in_result_counters = Utils::generate_show($show_in_result_counters, $exec_rows, 4);
+            }
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+
+        echo $this->container->getTwig()->render('counters/hdp2counters.html.twig',
+            array('selected' => 'Hadoop 2 Job Counters',
+                'theaders' => $show_in_result_counters,
+                //'table_fields' => $table_fields,
+                'message' => $message,
+                'title' => 'Hadoop Jobs and Tasks Execution Counters',
+                'type' => $type,
+                'execs' => $execs,
+                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
+                'discreteOptions' => $discreteOptions
+                //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
+            ));
     }
-    
+
     public function clusterCostEffectivenessAction()
     {
-    	$db = $this->container->getDBUtils ();
-    	$data = array();
-    	
-    	//$filter_execs = DBUtils::getFilterExecs();
-    	$configurations = array();
-    	$where_configs = '';
-    	$concat_config = "";
-    	
-    	// $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
-    	$benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false ); 	 
-    	$nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
-    	$disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
-    	$blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
-    	$comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
-    	$id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
-    	$mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
-    	$replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
-    	$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
-    	$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-    	$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-    	$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-    	$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-    	$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-    	$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-    	$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-    	$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-    	$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
-    	$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    	
-    	if(isset($_GET['benchs']))
-    		$_GET['benchs'] = $_GET['benchs'][0];
-    	
-   		if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
-          $bench = $_GET['benchs'];
-          $bench_where = " AND bench = '$bench'";
+        $db = $this->container->getDBUtils ();
+        $data = array();
+
+        //$filter_execs = DBUtils::getFilterExecs();
+        $configurations = array();
+        $where_configs = '';
+        $concat_config = "";
+
+        // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
+        $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+        $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+        $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
+        $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
+        $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
+        $blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
+        $comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
+        $id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
+        $mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
+        $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
+        $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
+        $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+        $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+        $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+
+        if(isset($_GET['benchs']))
+            $_GET['benchs'] = $_GET['benchs'][0];
+
+        if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
+            $bench = $_GET['benchs'];
+            $bench_where = " AND bench = '$bench'";
         } else {
-          $bench = 'terasort';
-          $bench_where = " AND bench = '$bench'";
+            $bench = 'terasort';
+            $bench_where = " AND bench = '$bench'";
         }
-    	
-        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes from execs e JOIN clusters c USING (id_cluster) 
+
+        $query = "SELECT e.*,(exe_time/3600)*(cost_hour) cost, c.name as clustername, c.datanodes, c.vm_size,c.vm_RAM,c.vm_OS,c.provider,c.type from execs e JOIN clusters c USING (id_cluster) 
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name) 
         		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name;";
@@ -1829,41 +1854,44 @@ echo "<!-- ".print_r($exec, true)." ($costHour + ($costRemote * $num_remotes) + 
 //     		from execs e
 //     		join clusters c USING (id_cluster)
 //     		WHERE 1 $bench_where $filter_execs $where_configs GROUP BY c.name ORDER BY exe_time,cost ASC;";
-    	
-    	try {
-    		$rows = $db->get_rows($query);
-    		foreach($rows as $row) {
-    			$set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
-    			array_push($data, array('data' => array($set), 'name' => $row['clustername']));
-    		}
-    	} catch (\Exception $e) {
-    		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-    	}
-    	
-    	echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
-    			'selected' => 'Cost-Effectiveness of clusters',
-    			'series' => json_encode($data),
-    			'benchs' => $bench,
-    			'nets' => $nets,
-    			'disks' => $disks,
-    			'blk_sizes' => $blk_sizes,
-    			'comps' => $comps,
-    			'id_clusters' => $id_clusters,
-    			'mapss' => $mapss,
-    			'replications' => $replications,
-    			'iosfs' => $iosfs,
-    			'iofilebufs' => $iofilebufs,
-    			'datanodess' => $datanodes,
-    			'bench_types' => $benchtype,
-    			'vm_sizes' => $vm_sizes,
-    			'vm_coress' => $vm_coress,
-    			'vm_RAMs' => $vm_RAMs,
-    			'hadoop_versions' => $hadoop_versions,
-    			'types' => $types,
-    			'filters' => $filters,
-    			'allunchecked' => $allunchecked,
-    			'select_multiple_benchs' => false,
-    			'options' => Utils::getFilterOptions($db)
-    		));
+
+        try {
+            $rows = $db->get_rows($query);
+            foreach($rows as $row) {
+                $clusterDesc = "${row['datanodes']} ${row['vm_size']} datanodes,  ".round($row['vm_RAM'],0)." GB memory, ${row['vm_OS']}, ${row['provider']} ${row['type']}";
+                $set = array(round($row['exe_time'],0), round($row['cost'],2), round($row['exe_time']*$row['cost'],0));
+                array_push($data, array('data' => array($set), 'name' => $row['clustername'], 'clusterdesc' => $clusterDesc));
+            }
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+
+        echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
+            'selected' => 'Cost-Effectiveness of clusters',
+            'series' => json_encode($data),
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
+            'benchs' => $bench,
+            'nets' => $nets,
+            'disks' => $disks,
+            'blk_sizes' => $blk_sizes,
+            'comps' => $comps,
+            'id_clusters' => $id_clusters,
+            'mapss' => $mapss,
+            'replications' => $replications,
+            'iosfs' => $iosfs,
+            'iofilebufs' => $iofilebufs,
+            'datanodess' => $datanodes,
+            'bench_types' => $benchtype,
+            'vm_sizes' => $vm_sizes,
+            'vm_coress' => $vm_coress,
+            'vm_RAMs' => $vm_RAMs,
+            'hadoop_versions' => $hadoop_versions,
+            'types' => $types,
+            'filters' => $filters,
+            'allunchecked' => $allunchecked,
+            'select_multiple_benchs' => false,
+            'options' => Utils::getFilterOptions($db)
+        ));
     }
 }

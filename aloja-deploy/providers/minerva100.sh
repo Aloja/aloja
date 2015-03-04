@@ -74,7 +74,7 @@ sudo mkfs.ext4 /dev/md0;
 #parted -s /dev/sdf -- mklabel gpt mkpart primary 0% 100% set 1 raid on
 
     logger "INFO: Updating /etc/fstab template"
-    vm_update_template "/etc/fstab" "/dev/md/minerva-101:0	/scratch/attached/1	ext4	defaults	0	0" "secured_file"
+    vm_update_template "/etc/fstab" "/dev/md0	/scratch/attached/1	ext4	defaults	0	0" "secured_file"
 
     logger "INFO: remounting disks according to fstab"
     vm_execute "
@@ -223,22 +223,29 @@ get_IB_hostnames() {
 }
 
 get_extra_fstab() {
-  if [ clusterName="minerva100-10-18-21" ] ; then
-    echo -e "
+
+  local minerva100_tmp="$homePrefixAloja/$userAloja/tmp"
+  vm_execute "mkdir -p $minerva100_tmp"
+  local create_string="$minerva100_tmp       /scratch/local    none bind 0 0"
+
+  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
+    local create_string="$create_string
 /scratch/attached/6       /scratch/ssd/1    none bind 0 0
 /scratch/attached/7       /scratch/ssd/2    none bind 0 0"
   fi
+
+  echo -e "$create_string"
 }
 
 get_extra_mount_disks() {
-  if [ clusterName="minerva100-10-18-21" ] ; then
+  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
     echo -e "sudo mkdir -p /scratch/ssd/{1..2};"
   fi
 }
 
 #for Infiniband on clusters that support it
 get_node_names_IB() {
-  if [ clusterName="minerva100-10-18-21" ] ; then
+  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
     #logger "INFO: generating host name for IB"
     local nodes="$(get_node_names)"
     echo -e "$(convert_regular2IB_hostnames "$nodes")"
@@ -250,7 +257,7 @@ get_node_names_IB() {
 
 #for Infiniband on clusters that support it
 get_master_name_IB() {
-  if [ clusterName="minerva100-10-18-21" ] ; then
+  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
     #logger "INFO: generating host name for IB"
     local nodes="$(get_master_name)"
     echo -e "$(convert_regular2IB_hostnames "$nodes")"
