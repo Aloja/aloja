@@ -7,7 +7,7 @@
             var chart = new Highcharts.Chart({
                 chart: {
                     renderTo: 'chart',
-                    defaultSeriesType: 'bubble',
+                    defaultSeriesType: 'scatter',
                     zoomType: 'x'
                 },
                 colors: ['#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9', 
@@ -20,7 +20,7 @@
                     enabled: false
                 },
                 title: {
-                    text: 'HiBench {{ bench }} execution cost by performance (normalized)',
+                    text: 'Best HW-configuration execution cost by performance (normalized)',
                     x: -20 //center
                 },
                 subtitle: {

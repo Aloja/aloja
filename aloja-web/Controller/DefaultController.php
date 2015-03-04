@@ -364,8 +364,12 @@ class DefaultController extends AbstractController
 
         $seriesData = '';
         foreach ($execs as $exec) {
-            $exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
-            $costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+        	$exeTimeStd = 0;
+        	$costTimeStd = 0;
+        	if(count($execs) > 1) {
+        		$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
+        		$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+        	}
 
             $seriesData .= "{
             name: '" . $exec['exec'] . "',
@@ -1824,7 +1828,7 @@ class DefaultController extends AbstractController
             $bench_where = " AND bench = '$bench'";
         }
 
-        $query = "SELECT e.*, c.* from execs e JOIN clusters c USING (id_cluster) 
+        $query = "SELECT e.*, c.* from execs e JOIN clusters c USING (id_cluster)
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
         		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
@@ -1946,8 +1950,12 @@ class DefaultController extends AbstractController
     		$minExeTime = -1;
     		$maxExeTime = 0;
     
-    		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs ".
-    		  "GROUP BY c.name,e.net,e.disk ORDER BY c.name,e.exe_time ASC;";
+    		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
+    		  FROM execs e JOIN clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
+        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
+    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
     		$execs = $dbUtils->get_rows($execs);
     		if(!$execs)
@@ -1987,8 +1995,12 @@ class DefaultController extends AbstractController
     
     	$seriesData = '';
     	foreach ($execs as $exec) {
-    		$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
-    		$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+    		$exeTimeStd = 0;
+    		$costTimeStd = 0;
+    		if(count($execs) > 1) {
+	    		$exeTimeStd = ($exec['exe_time'] - $minExeTime)/($maxExeTime - $minExeTime);
+	    		$costTimeStd = ($exec['cost_std'] - $minCost)/($maxCost - $minCost);
+    		}
     
     		$seriesData .= "{
             name: '" . $exec['exec'] . "',
@@ -1999,7 +2011,7 @@ class DefaultController extends AbstractController
     	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
     
     	echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
-    			'selected' => 'Cost Evaluation',
+    			'selected' => 'Clusters Cost Evaluation',
     			'highcharts_js' => HighCharts::getHeader(),
     			// 'show_in_result' => count($show_in_result),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,

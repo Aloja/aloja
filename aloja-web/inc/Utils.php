@@ -95,6 +95,8 @@ class Utils
                 $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
             } elseif ($item_name == 'bench_types') {
             	$items = array('HiBench','HDI');
+            } elseif ($item_name == 'id_clusters') {
+            	$items = array('23');
             } else {
                 $items = array();
             }
@@ -561,6 +563,9 @@ class Utils
     	
     	if($exec['disk'] == "SSD")
     		$num_ssds = 1;
+    	
+    	if($exec['disk'] == 'HDD')
+    		$num_remotes = 1;
     	
     	$cost = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
     	return $cost;

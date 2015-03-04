@@ -58,7 +58,7 @@
 				</div>
 				<div class="col-md-6">
 					Clusters: (CL)</br> <select class="form-control"
-						name="id_clusters[]" multiple>
+						name="id_clusters[]" {% if selected != 'Clusters Cost Evaluation' %}multiple{% endif %}>
 						{% for selopt in options['id_cluster'] %}
 						  <option value="{{ selopt['id_cluster'] }}" {% if selopt['id_cluster'] in id_clusters %} SELECTED {% endif %}>{{ selopt['name'] }}</option>
 						{% endfor %}
