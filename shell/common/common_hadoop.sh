@@ -1,3 +1,85 @@
+#HADOOP 1 SPECIFIC FUNCTIONS
+
+#$1 port prefix (optional)
+get_aloja_dir() {
+ if [ "$1" ] ; then
+  echo "${BENCH_FOLDER}_$PORT_PREFIX"
+ else
+  echo "${BENCH_FOLDER}"
+ fi
+}
+
+#$1 disk type
+# TODO move to benchmark common file
+get_initial_disk() {
+
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+    local dir="${BENCH_DISKS["$DISK"]}"
+  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
+    local disks="${1:(-1)}"
+    local disks_type="${1:0:(-1)}"
+
+    #set the first dir
+    local dir="${BENCH_DISKS["${disks_type}1"]}"
+
+    #[ ! "$dir" ] && logger "ERROR: cannot find disk definition"
+
+  else
+    :
+    #logger "ERROR: Incorrect disk specified: $1"
+  fi
+
+  echo -e "$dir"
+}
+
+#$1 disk type
+get_tmp_disk() {
+
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+    local dir="${BENCH_DISKS["$DISK"]}"
+  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
+    local disks="${1:(-1)}"
+    local disks_type="${1:0:(-1)}"
+
+    if [ "$disks_type" == "RL" ] ; then
+      local dir="${BENCH_DISKS["HDD"]}"
+    elif [ "$disks_type" == "HS" ] ; then
+      local dir="${BENCH_DISKS["SSD"]}"
+    else
+      local dir="${BENCH_DISKS["${disks_type}1"]}"
+    fi
+
+    #[ ! "$dir" ] && logger "ERROR: cannot find disk definition"
+
+  else
+    :
+    #logger "ERROR: Incorrect disk specified: $1"
+  fi
+
+  echo -e "$dir"
+}
+
+#1 disk type $2 postfix $3 port prefix
+get_hadoop_conf_dir() {
+
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+    local dir="${BENCH_DISKS["$1"]}/$(get_aloja_dir "$3")/$2"
+  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
+    local disks="${1:(-1)}"
+    local disks_type="${1:0:(-1)}"
+
+    for disk_number in $(seq 1 $disks) ; do
+      local dir="$dir\,${BENCH_DISKS["${disks_type}${disk_number}"]}/$(get_aloja_dir "$3")/$2"
+    done
+
+    local dir="${dir:2}" #remove leading \,
+  else
+    logger "ERROR: Incorrect disk specified: $1"
+  fi
+
+  echo -e "$dir"
+}
+
 prepare_hadoop_config(){
 
   #before running hibench, set exports and vars

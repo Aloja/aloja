@@ -27,19 +27,74 @@ class Utils
     		}
     		return $_GET['money'];
     	}
+    	    	
+    	if($item_name == 'datefrom' && isset($_GET['datefrom'])) {
+    		$datefrom = $_GET['datefrom'];
+    		if($datefrom != '') {
+    			$where_configs .= " AND start_time >= '$datefrom'";
+    		}
+    		return $datefrom;
+    	} else if($item_name == 'datefrom')
+    		return "";
+    	
+    	if($item_name == 'dateto' && isset($_GET['dateto'])) {
+    		$dateto = $_GET['dateto'];
+    		if($dateto != '') {
+    			$where_configs .= " AND end_time <= '$dateto'";
+    		}
+    		return $dateto;
+    	} else if($item_name == 'dateto')
+    		return "";
+    	
+    	if($item_name == "filters") {
+    		$includePrepares = false;
+    		if(isset($_GET['filters'])) {
+    			$filters = $_GET['filters'];
+    			if(in_array("valid",$filters))
+    				$where_configs .= ' AND valid = 1 ';
+    			if(in_array("filters",$filters))
+    				$where_configs .= ' AND filter = 0 ';
+    			if(in_array("prepares",$filters))
+    				$includePrepares = true;
+    			
+    			if(in_array("outliers", $filters)) {
+    				if(in_array("warnings", $filters))
+    					$where_configs .= " AND outlier IN (0,1,2) ";
+    				else
+    					$where_configs .= " AND outlier IN (0,1) ";
+    			}
+    			
+    		} else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
+    			$_GET['filters'][] = 'valid';
+    			$_GET['filters'][] = 'filters';
+    			
+    			$where_configs .= ' AND valid = 1 AND filter = 0 ';
+    		}
+    		
+    		if(!$includePrepares)
+    			$where_configs .= "AND bench not like 'prep_%' AND bench_type not like 'HDI-prep%'";
+    		
+    		if(isset($_GET['filters']))
+    			return $_GET['filters'];
+    		else
+    			return "";
+    	}
     	
         $single_item_name = substr($item_name, 0, -1);
-
+        
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
-            $items = Utils::delete_none($items);
+         	$items = Utils::delete_none($items);
+            
         } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
                 $items = array();
             } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1','HDI');
+                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
+            } elseif ($item_name == 'bench_types') {
+            	$items = array('HiBench','HDI');
             } else {
                 $items = array();
             }
@@ -293,16 +348,16 @@ class Utils
     {
         $filter_execs = DBUtils::getFilterExecs();
 
-        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs");
-    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE 1 $filter_execs");
-    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 $filter_execs");
-    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 $filter_execs");
-    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 $filter_execs");
-    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 $filter_execs");
-    	$clusterOptions = $db->get_rows("SELECT DISTINCT clusters.name FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
-    	$clusterNodes = $db->get_rows("SELECT DISTINCT clusters.datanodes FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster $filter_execs");
-    	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 $filter_execs");
-        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs WHERE 1 $filter_execs");
+        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT clusters.name FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster AND valid = 1 AND filter = 0 $filter_execs");
+    	$clusterNodes = $db->get_rows("SELECT DISTINCT clusters.datanodes FROM execs, clusters WHERE execs.id_cluster = clusters.id_cluster AND valid = 1 AND filter = 0 $filter_execs");
+    	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
@@ -394,17 +449,30 @@ class Utils
     {
     	$disks = '';
     	if($diskShort == 'HDD')
-    		$disks = 'Hard-disk drive';
+    		$disks = 'SATA drive';
     	elseif($diskShort == 'SSD')
-    		$disks = 'SSD';
+    		$disks = 'SSD drive';
     	elseif($diskShort == "HDI")
-    		$disks = 'Azure Storage';
-    	else if(substr($diskShort,2))
-    		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
+    		$disks = 'Azure Storage (remote)';
+    	else if(preg_match("/^RL/",$diskShort))
+    		$disks = substr($diskShort,2).' HDFS remote(s) /tmp  to local SATA disk';
+    	else if(preg_match("/^RR/",$diskShort))
+    		$disks = substr($diskShort,2).' Remote volumes(s)';
+    	else if(preg_match("/^SS([0-9]+)/",$diskShort))
+    		$disks = substr($diskShort,2).' SSD drives';
+    	else if(preg_match("/^HS([0-9]+)/",$diskShort))
+    		$disks = substr($diskShort,2).' HDFS in SATA /tmp to SSD';
+        else if(preg_match("/^RS([0-9]+)/",$diskShort))
+            $disks = substr($diskShort,2).' HDFS in Remote(s) /tmp to SSD';
     	else
-    		$disks = substr($diskShort,1).' HDFS remote(s)';
+    		$disks = substr($diskShort,2).' SATA drives';
     
     	return $disks;
+    }
+    
+    public static function getBeautyRam($ramAmount)
+    {
+    	return round($ramAmount,0)." GB";
     }
     
     public static function makeExecInfoBeauty(&$execInfo)
@@ -440,17 +508,24 @@ class Utils
     }
     
     public static function getFilterOptions($dbUtils) {
-    	$options['benchs'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
-    	$options['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
-    	$options['disk'] = $items = $dbUtils->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
-    	$options['blk_size'] = $items = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
-    	$options['comp'] = $items = $dbUtils->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
-    	$options['id_cluster'] = $items = $dbUtils->get_rows("select distinct id_cluster,c.name from execs join clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
-    	$options['maps'] = $items = $dbUtils->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
-    	$options['replication'] = $items = $dbUtils->get_rows("SELECT DISTINCT replication FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
-    	$options['iosf'] = $items = $dbUtils->get_rows("SELECT DISTINCT iosf FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
-    	$options['iofilebuf'] = $items = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM execs WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
-    	
+    	$options['benchs'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+    	$options['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
+    	$options['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
+    	$options['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
+    	$options['comp'] = $dbUtils->get_rows("SELECT DISTINCT comp FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
+    	$options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,c.name from execs join clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+    	$options['maps'] = $dbUtils->get_rows("SELECT DISTINCT maps FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
+    	$options['replication'] = $dbUtils->get_rows("SELECT DISTINCT replication FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
+    	$options['iosf'] = $dbUtils->get_rows("SELECT DISTINCT iosf FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
+    	$options['iofilebuf'] = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
+    	$options['datanodes'] = $dbUtils->get_rows("SELECT DISTINCT datanodes FROM execs JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
+    	$options['benchtype'] = $dbUtils->get_rows("SELECT DISTINCT bench_type FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench_type ASC");
+    	$options['vm_size'] = $dbUtils->get_rows("SELECT DISTINCT vm_size FROM execs JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
+    	$options['vm_cores'] = $dbUtils->get_rows("SELECT DISTINCT vm_cores FROM execs JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
+    	$options['vm_ram'] = $dbUtils->get_rows("SELECT DISTINCT vm_RAM FROM execs JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
+    	$options['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM execs WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
+    	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
+
     	return $options;
     }
 }
