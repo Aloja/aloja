@@ -340,8 +340,18 @@ class DefaultController extends AbstractController
                 $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
                 $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
 
-                /** calculate remote */
+                /** calculate remote with local disk */
                 if(preg_match("/^RL/", $exec['disk'])) {
+                    $num_remotes = (int)$exec['disk'][2];
+                }
+
+                /** calculate remote */
+                if(preg_match("/^RR/", $exec['disk'])) {
+                    $num_remotes = (int)$exec['disk'][2];
+                }
+
+                /** calculate remote with SSDs */
+                if(preg_match("/^RS/", $exec['disk'])) {
                     $num_remotes = (int)$exec['disk'][2];
                 }
 
