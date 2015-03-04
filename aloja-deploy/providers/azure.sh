@@ -229,6 +229,20 @@ node_start() {
 }
 
 
+get_extra_fstab() {
+
+  local create_string="/mnt       /scratch/local    none bind 0 0"
+
+  if [ "$clusterName" == "al-29" ] ; then
+    vm_execute "mkdir -p /scratch/ssd/1"
+    local create_string="$create_string
+/mnt       /scratch/ssd/1    none bind 0 0"
+  fi
+
+  echo -e "$create_string"
+}
+
+
 vm_final_bootstrap() {
 
   logger "Checking if setting a static host file for cluster"
@@ -238,7 +252,7 @@ vm_final_bootstrap() {
 
 vm_set_statics_hosts() {
 
-  if [ clusterName="al-26" ] || [ clusterName="al-29" ] ; then
+  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] ; then
     logger "WARN: Setting statics hosts file for cluster"
     vm_update_template "/etc/hosts" "$(get_static_hostnames)" "secured_file"
   else
