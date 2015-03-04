@@ -665,8 +665,7 @@ $MYSQL "alter ignore table execs
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
 $MYSQL "alter ignore table execs
-  DROP COLUMN \`valid\`,
-  ADD  \`valid\` int DEFAULT '1',
+  alter column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
   ADD \`outlier\` int DEFAULT '0';"
 
@@ -690,12 +689,9 @@ $MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
 $MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
 
 $MYSQL "alter ignore table clusters
-  drop cost_remote,
-  drop cost_SSD,
-  drop cost_IB,
-  add cost_remote decimal(10,3) default 0,
-  add cost_SSD decimal(10,3) default 0,
-  add cost_IB decimal(10,3) default 0;"
+  alter column cost_remote decimal(10,3) default 0,
+  alter column cost_SSD decimal(10,3) default 0,
+  alter column cost_IB decimal(10,3) default 0;"
 
 
 
@@ -714,24 +710,13 @@ update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
 update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
-update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
+update ignore execs SET net='IB' where id_cluster = 26;
 
+
+update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
 update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
 update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
-#temporary
-update execs set id_cluster = 05 where substring(exec, (locate('/', exec) -3), 3 ) = '-05' and id_cluster =1;
-update execs set id_cluster = 19 where substring(exec, (locate('/', exec) -3), 3 ) = '-19' and id_cluster =1;
-update execs set id_cluster = 03 where substring(exec, (locate('/', exec) -3), 3 ) = '-03' and id_cluster =1;
-update execs set id_cluster = 15 where substring(exec, (locate('/', exec) -3), 3 ) = '-15' and id_cluster =1;
-update execs set id_cluster = 14 where substring(exec, (locate('/', exec) -3), 3 ) = '-14' and id_cluster =1;
-update execs set id_cluster = 22 where substring(exec, (locate('/', exec) -3), 3 ) = '-22' and id_cluster =1;
-update execs set id_cluster = 06 where substring(exec, (locate('/', exec) -3), 3 ) = '-06' and id_cluster =1;
-update execs set id_cluster = 04 where substring(exec, (locate('/', exec) -3), 3 ) = '-04' and id_cluster =1;
-update execs set id_cluster = 08 where substring(exec, (locate('/', exec) -3), 3 ) = '-08' and id_cluster =1;
-update execs set id_cluster = 16 where substring(exec, (locate('/', exec) -3), 3 ) = '-16' and id_cluster =1;
-update execs set id_cluster = 10 where substring(exec, (locate('/', exec) -3), 3 ) = '-10' and id_cluster =1;
-update execs set id_cluster = 12 where substring(exec, (locate('/', exec) -3), 3 ) = '_12' and id_cluster =1;
 
 "
 

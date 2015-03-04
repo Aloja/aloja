@@ -336,7 +336,7 @@ class DefaultController extends AbstractController
 
                 $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
                 $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-                
+
                 $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
                 $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
 

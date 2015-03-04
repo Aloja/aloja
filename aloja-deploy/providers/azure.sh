@@ -227,3 +227,62 @@ node_start() {
   logger "Starting VM $1"
   azure vm start "$1"
 }
+
+
+get_extra_fstab() {
+
+  local create_string="/mnt       /scratch/local    none bind 0 0"
+
+  if [ "$clusterName" == "al-29" ] ; then
+    vm_execute "mkdir -p /scratch/ssd/1"
+    local create_string="$create_string
+/mnt       /scratch/ssd/1    none bind 0 0"
+  fi
+
+  echo -e "$create_string"
+}
+
+
+vm_final_bootstrap() {
+
+  logger "Checking if setting a static host file for cluster"
+  vm_set_statics_hosts
+
+}
+
+vm_set_statics_hosts() {
+
+  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] ; then
+    logger "WARN: Setting statics hosts file for cluster"
+    vm_update_template "/etc/hosts" "$(get_static_hostnames)" "secured_file"
+  else
+    logger "INFO: no need to set static host file for cluster"
+  fi
+}
+
+get_static_hostnames() {
+
+#a 'ip addr |grep inet |grep 10.'|sort
+  echo -e "
+10.32.0.4	al-26-00
+10.32.0.5	al-26-01
+10.32.0.6	al-26-02
+10.32.0.12	al-26-03
+10.32.0.13	al-26-04
+10.32.0.14	al-26-05
+10.32.0.20	al-26-06
+10.32.0.21	al-26-07
+10.32.0.22	al-26-08
+
+10.32.0.4	al-29-00
+10.32.0.5	al-29-01
+10.32.0.6	al-29-02
+10.32.0.12	al-29-03
+10.32.0.13	al-29-04
+10.32.0.14	al-29-05
+10.32.0.20	al-29-06
+10.32.0.21	al-29-07
+10.32.0.22	al-29-08
+"
+
+}
