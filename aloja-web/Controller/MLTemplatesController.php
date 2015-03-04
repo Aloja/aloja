@@ -97,12 +97,8 @@ class MLTemplatesController extends AbstractController
 				}
 
 				// run the R processor
-				$command = 'cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock';
-				exec($command);
-				$command = 'cd '.getcwd().'/cache/query ; /resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1 " > /dev/null 2>&1 &';
-				exec($command);
-				$command = 'cd '.getcwd().'/cache/query ; /resources/queue -c "rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" > /dev/null 2>&1 &';
-				exec($command);
+				exec('cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock');
+				exec('cd '.getcwd().'/cache/query ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" > /dev/null 2>&1 -p 1 &');
 
 				// update cache record (for human reading)
 				$register = md5($config).' :'.$config."\n";
@@ -225,6 +221,9 @@ class MLTemplatesController extends AbstractController
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 				$params['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
+				$params['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
+				$params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
+				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
 				$unseen = FALSE;
 			}
 
@@ -269,27 +268,19 @@ class MLTemplatesController extends AbstractController
 				$tmp_file = getcwd().'/cache/query/'.md5($instance.'-'.$model).'.tmp';
 
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				$finished_process = $in_process && ((int)shell_exec('wc -l '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock | awk \'{print $1}\'') == count($instances));
 				$is_cached = file_exists($cache_filename);
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
-					$command = 'cd '.getcwd().'/cache/query ; ';
-					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
-					$command = $command.'rm -f '.$tmp_file.' ';
-					exec($command);
+					exec('cd '.getcwd().'/cache/query ; touch '.md5($instance.'-'.$model).'.lock ; rm -f '.$tmp_file);
 					foreach ($instances as $inst)
 					{
-						$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null" >> /dev/null 2>&1 &';
-						exec($command);
+						exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null; echo 1 >> '.md5($instance.'-'.$model).'.lock" > /dev/null 2>&1 &');
 					}
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready" >> /dev/null 2>&1 &';
-					exec($command);
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock" >> /dev/null 2>&1 &';
-					exec($command);
 				}
 
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				$finished_process = ((int)shell_exec('wc -l '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock | awk \'{print $1}\'') == count($instances));
 				$is_cached = file_exists($cache_filename);
 
 				if ($finished_process && !$is_cached)
@@ -377,7 +368,7 @@ class MLTemplatesController extends AbstractController
 					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 
 					// remove remaining locks and readies
-					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
 				}
 
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');

@@ -111,20 +111,9 @@ class MLDataCollapseController extends AbstractController
 				}
 
 				// prepare collapse
-				$command = 'cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock ; ';
-				exec($command);
-				if ($learning_model != '')
-				{
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1 " >> /dev/null 2>&1 &';
-					exec($command);
-				}
-				else
-				{
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1 " >> /dev/null 2>&1 &';
-					exec($command);
-				}
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" >> /dev/null 2>&1 &';
-				exec($command);
+				exec('cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock');
+				if ($learning_model != '') exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1, rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" >> /dev/null 2>&1 -p 1 &');
+				else exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" >> /dev/null 2>&1 -p 1 &');
 
 				// update cache record (for human reading)
 				$register = md5($config).' : '.$config."\n";
