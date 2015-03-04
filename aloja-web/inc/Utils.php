@@ -91,12 +91,10 @@ class Utils
                 $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
                 $items = array();
-            } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
             } elseif ($item_name == 'bench_types') {
             	$items = array('HiBench','HDI');
             } elseif ($item_name == 'id_clusters') {
-            	$items = array('23');
+            	$items = array('21');
             } else {
                 $items = array();
             }
