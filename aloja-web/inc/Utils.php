@@ -449,15 +449,23 @@ class Utils
     {
     	$disks = '';
     	if($diskShort == 'HDD')
-    		$disks = 'Hard-disk drive';
+    		$disks = 'SATA drive';
     	elseif($diskShort == 'SSD')
-    		$disks = 'SSD';
+    		$disks = 'SSD drive';
     	elseif($diskShort == "HDI")
-    		$disks = 'Azure Storage';
+    		$disks = 'Azure Storage (remote)';
     	else if(preg_match("/^RL/",$diskShort))
-    		$disks = substr($diskShort,2).' HDFS remote(s)/tmp local';
+    		$disks = substr($diskShort,2).' HDFS remote(s) /tmp  to local SATA disk';
+    	else if(preg_match("/^RR/",$diskShort))
+    		$disks = substr($diskShort,2).' Remote volumes(s)';
+    	else if(preg_match("/^SS([0-9]+)/",$diskShort))
+    		$disks = substr($diskShort,2).' SSD drives';
+    	else if(preg_match("/^HS([0-9]+)/",$diskShort))
+    		$disks = substr($diskShort,2).' HDFS in SATA /tmp to SSD';
+        else if(preg_match("/^RS([0-9]+)/",$diskShort))
+            $disks = substr($diskShort,2).' HDFS in Remote(s) /tmp to SSD';
     	else
-    		$disks = substr($diskShort,2).' HDFS remote(s)';
+    		$disks = substr($diskShort,2).' SATA drives';
     
     	return $disks;
     }
