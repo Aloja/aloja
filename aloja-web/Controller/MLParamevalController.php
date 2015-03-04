@@ -13,6 +13,7 @@ class MLParamevalController extends AbstractController
 	{
 		$db = $this->container->getDBUtils ();
 		$rows = $categories = $series = '';
+		$must_wait = 'NO';
 		try {
 			$configurations = array ();	// Useless here
 			$where_configs = '';
@@ -66,12 +67,15 @@ class MLParamevalController extends AbstractController
 			$rows = $db->get_rows ( $query );
 			if (!$rows) throw new \Exception ( "No results for query!" );
 	
-			$categories = '';
 			$arrayBenchs = array();
 			foreach ( $paramOptions as $param )
 			{
-				$categories .= "'$param ".Utils::getParamevalUnit($paramEval)."',";
-				foreach($benchOptions as $bench) $arrayBenchs[$bench['bench']][$param] = null;
+				foreach($benchOptions as $bench)
+				{
+					$arrayBenchs[$bench['bench']][$param] = null;
+					$arrayBenchs[$bench['bench']][$param]['y'] = 0;
+					$arrayBenchs[$bench['bench']][$param]['count'] = 0;
+				}
 			}
 
 			$series = array();
@@ -127,52 +131,22 @@ class MLParamevalController extends AbstractController
 					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
 					$command = $command.getcwd().'/resources/queue -c "( ';
 					$command = $command.'rm -f '.$tmp_file.' ';
+					exec($command);
 					foreach ($instances as $inst)
 					{
-						$command = $command.'&& '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' ';
+						$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null" >> /run/shm/queue.log 2>&1 &';
+						exec($command);
 					}
-					$command = $command.'&& touch  '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready; ';
-					$command = $command.'rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ) > /dev/null 2>&1 "&';
+					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready" >> /run/shm/queue.log 2>&1 &';
 					exec($command);
-				}
-
-				if (!$is_cached && $finished_process)
-				{
-					// read results
-					$lines = explode("\n", file_get_contents($tmp_file));
-					$jsonData = '[';
-					$i = 1;
-					while($i < count($lines))
-					{
-						if ($lines[$i]=='') break;
-						$parsed = preg_replace('/\s+/', ',', $lines[$i]);
-						if ($jsonData!='[') $jsonData = $jsonData.',';
-						$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
-						$i++;
-					}
-					$jsonData = $jsonData.']';
-
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction'); #FIXME - Header hardcoded for file-tmp
-					$jsonHeader = '[{title:""}';
-					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-					$jsonHeader = $jsonHeader.']';
-
-					// save at cache
-					file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
-
-					// update cache record (for human reading)
-					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
-					shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-
-					// remove remaining locks and readies
-					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock" >> /run/shm/queue.log 2>&1 &';
+					exec($command);
 				}
 
 				usleep(500000);
 				$is_cached = file_exists($cache_filename);
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
-				$must_wait = 'NO';
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
 
 				if ($in_process)
 				{
@@ -181,6 +155,41 @@ class MLParamevalController extends AbstractController
 				}
 				else
 				{
+					$must_wait = 'NO';
+					if ($finished_process)
+					{
+						// read results
+						$lines = explode("\n", file_get_contents($tmp_file));
+						$jsonData = '[';
+						$i = 1;
+						while($i < count($lines))
+						{
+							if ($lines[$i]=='') break;
+							$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+							if ($jsonData!='[') $jsonData = $jsonData.',';
+							$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+							$i++;
+						}
+						$jsonData = $jsonData.']';
+
+						$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction'); #FIXME - Header hardcoded for file-tmp
+						$jsonHeader = '[{title:""}';
+						foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+						$jsonHeader = $jsonHeader.']';
+
+						// save at cache
+						file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+
+						// update cache record (for human reading)
+						$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+						shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
+						file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+
+						// remove remaining locks and readies
+						shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+						$is_cached = true;
+					}
+
 					if ($is_cached)
 					{
 						// get cache
@@ -211,6 +220,8 @@ class MLParamevalController extends AbstractController
 								foreach($benchOptions as $bench)
 								{
 									$arrayBenchs_pred[$bench['bench'].'_pred'][$param] = null;
+									$arrayBenchs_pred[$bench['bench'].'_pred'][$param]['y'] = 0;
+									$arrayBenchs_pred[$bench['bench'].'_pred'][$param]['count'] = 0;
 								}
 							}
 
@@ -218,10 +229,10 @@ class MLParamevalController extends AbstractController
 							{
 								$line = explode("','",substr($slice,1,-1));
 								$line = array_splice($line,1);
-			
+
 								$class = $line[$position];
 								$pred = $line[array_search('Prediction', $header)];
-								$bench = $line[array_search('Benchmark', $header)].'_pred';
+								$bench_n = $line[array_search('Benchmark', $header)].'_pred';
 
 								if($paramEval == 'comp') $value = Utils::getCompressionName($class);
 								else if($paramEval == 'id_cluster') $value = Utils::getClusterName($row[$paramEval],$db);
@@ -230,11 +241,25 @@ class MLParamevalController extends AbstractController
 								else if($paramEval == 'iofilebuf') $value = $class / 1024;
 								else $value = $class;
 
-								$prev_y = (is_null($arrayBenchs_pred[$bench][$value]['y']))?0:$arrayBenchs_pred[$bench][$value]['y'];
-								$prev_count = (is_null($arrayBenchs_pred[$bench][$value]['count']))?0:$arrayBenchs_pred[$bench][$value]['count'];
+								if (!in_array($value,$paramOptions))
+								{
+									$paramOptions[] = $value;
+									foreach($benchOptions as $bench)
+									{
+										$arrayBenchs_pred[$bench['bench'].'_pred'][$value] = null;
+										$arrayBenchs_pred[$bench['bench'].'_pred'][$value]['y'] = 0;
+										$arrayBenchs_pred[$bench['bench'].'_pred'][$value]['count'] = 0;
+										$arrayBenchs[$bench['bench']][$value] = null;
+										$arrayBenchs[$bench['bench']][$value]['y'] = 0;
+										$arrayBenchs[$bench['bench']][$value]['count'] = 0;
+									}
+								}
 
-								$arrayBenchs_pred[$bench][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
-								$arrayBenchs_pred[$bench][$value]['count'] = $prev_count + 1;
+								$prev_y = $arrayBenchs_pred[$bench_n][$value]['y'];
+								$prev_count = $arrayBenchs_pred[$bench_n][$value]['count'];
+
+								$arrayBenchs_pred[$bench_n][$value]['y'] = (($prev_y * $prev_count) + round((int)$pred,2)) / ($prev_count + 1);
+								$arrayBenchs_pred[$bench_n][$value]['count'] = $prev_count + 1;
 							}
 						}
 					}
@@ -244,14 +269,24 @@ class MLParamevalController extends AbstractController
 			// END - Add predictions to the series
 			// ----------------------------------------------------
 
-			foreach($arrayBenchs as $key => $arrayBench)
+			asort($paramOptions);
+
+			foreach ($arrayBenchs as $key => $arrayBench)
 			{
-				$series[] = array('name' => $key, 'data' => array_values($arrayBench));
-				if (!empty($arrayBenchs_pred))
+				$caregories = '';
+				$data_a = null;
+				$data_p = null;
+				foreach ($paramOptions as $param)
 				{
-					$value = $arrayBenchs_pred[$key.'_pred'];
-					$series[] = array('name' => $key.'_pred', 'data' => array_values($value));
+					if (($arrayBenchs[$key][$param]['count'] > 0 && empty($arrayBenchs_pred)) || (!empty($arrayBenchs_pred) && ( $arrayBenchs_pred[$key.'_pred'][$param]['count'] > 0 || $arrayBenchs[$key][$param]['count'] > 0)))
+					{
+						$data_a[] = $arrayBenchs[$key][$param];
+						if (!empty($arrayBenchs_pred)) $data_p[] = $arrayBenchs_pred[$key.'_pred'][$param];
+						$categories = $categories."'$param ".Utils::getParamevalUnit($paramEval)."',"; // FIXME - Redundant n times performed... don't care now
+					}
 				}
+				$series[] = array('name' => $key, 'data' => $data_a);
+				if (!empty($arrayBenchs_pred)) $series[] = array('name' => $key, 'data' => $data_p);
 			}
 			$series = json_encode($series);
 
