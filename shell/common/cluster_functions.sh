@@ -1096,6 +1096,7 @@ vm_put_file_contents() {
     if [ "$3" ] ; then
       local command="
 sudo chmod 777 $1 2> /dev/null;
+sudo touch $1;
 sudo cp $1 ${1}.$(date +%s).bak 2> /dev/null;
 sudo cat << 'EOF' > $1
 $2
@@ -1105,6 +1106,7 @@ sudo chmod 644 $1"
 
     else
       local command="
+touch $1;
 cp $1 ${1}.$(date +%s).bak 2> /dev/null;
 cat << 'EOF' > $1
 $2
@@ -1123,13 +1125,19 @@ EOF
 #$1 filename on remote machine $2 template part content $3 change permissions
 vm_update_template() {
 
+  if [ "$3" ] ; then
+    local use_sudo="sudo"
+  else
+    local use_sudo=""
+  fi
+
   #logger "DEBUG: TEMPLATE getting $1 contents"
   local fileCurrentContent="$(vm_get_file_contents "$1")"
 
   #if file doesn't exists, is possible that the main dir does not exist either
   if [ ! "$fileCurrentContent" ] ; then
     logger "WARNING: atempting to create directory: $(dirname "$1") for $1"
-    vm_execute "mkdir -p $(dirname "$1")"
+    vm_execute "$use_sudo mkdir -p $(dirname "$1")"
   fi
 
   #logger "DEBUG: TEMPLATE $1 GOT contents"
@@ -1137,4 +1145,59 @@ vm_update_template() {
   #logger "DEBUG: TEMPLATE GOT NEW contents"
   vm_put_file_contents "$1" "$fileNewContent" "$3"
   #logger "DEBUG: TEMPLATE UPDATED $1 with template"
+}
+
+vm_install_percona() {
+
+  local bootstrap_file="vm_install_percona"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "Installing Percona server"
+
+    logger "INFO: Removing previous MySQL (if installed)"
+    vm_execute "
+sudo cp /etc/mysql/my.cnf /etc/mysql/my.cnf.bak
+sudo service mysql stop;
+sudo apt-get remove -y mysql-server mysql-client mysql-common;
+sudo apt-get autoremove -y;
+  "
+
+    logger "INFO: Installing Percona"
+
+    local ubuntu_version="trusty"
+    vm_update_template "/etc/apt/sources.list" "deb http://repo.percona.com/apt $ubuntu_version main
+deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
+
+
+    vm_update_template "/etc/apt/preferences.d/00percona.pref" "Package: *
+Pin: release o=Percona Development Team
+Pin-Priority: 1001" "secured_file"
+
+    vm_execute "
+sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
+sudo apt-get update;
+sudo apt-get install -y percona-server-server-5.5"
+
+    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: Upgrading to latest version"
+      vm_execute "sudo apt-get install -y percona-server-server percona-xtrabackup php5-mysql;"
+    fi
+
+    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: Percona installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
 }
