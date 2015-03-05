@@ -377,8 +377,7 @@ class DefaultController extends AbstractController
 
             $seriesData .= "{
             name: '" . $exec['exec'] . "',
-                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]
-        },";
+                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]},";
         }
 
         $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
@@ -1842,10 +1841,13 @@ class DefaultController extends AbstractController
     		$minCost = -1;
     		$minCostKey = 0;
     		$previousCluster = "none";
-    		foreach($rows as $key => $row) {
+    		$bestExecs = array();
+    		foreach($rows as $key => &$row) {
     			$cost = Utils::getExecutionCost($row, $row['cost_hour'], $row['cost_remote'], $row['cost_SSD'], $row['cost_IB']);
+    			$row['cost_std'] = $cost;
     			if($previousCluster != "none" && $previousCluster != $row['name']) {
     				$min = $rows[$minCostKey];
+    				array_push($bestExecs,$min);
     				$clusterDesc = "${min['datanodes']} datanodes,  ".round($min['vm_RAM'],0)." GB memory, ${min['vm_OS']}, ${min['provider']} ${min['type']}";
     				$set = array(round($min['exe_time'],0), round($minCost,2), round($min['exe_time']*$minCost,0));
     				array_push($data, array('data' => array($set), 'name' => $min['name'], 'clusterdesc' => $clusterDesc));
@@ -1868,6 +1870,11 @@ class DefaultController extends AbstractController
     		//This way the labels in the cart are ordered
     		usort($data,function($a, $b) {
     			return $a['data'][0][2] >= $b['data'][0][2];
+    		});
+    		
+    		//Sorting clusters by size
+    		usort($bestExecs, function($a,$b) {
+    			return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
@@ -1897,6 +1904,7 @@ class DefaultController extends AbstractController
     			'types' => $types,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
+    			'bestExecs' => $bestExecs,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));
@@ -2020,6 +2028,10 @@ class DefaultController extends AbstractController
     
     	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
     
+    	//Sorting clusters by size
+    	usort($execs, function($a,$b) {
+    		return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+    	});
     	echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
     			'selected' => 'Clusters Cost Evaluation',
     			'highcharts_js' => HighCharts::getHeader(),
@@ -2051,6 +2063,7 @@ class DefaultController extends AbstractController
     			'types' => $types,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
+    			'execs' => $execs,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
@@ -2207,6 +2220,11 @@ class DefaultController extends AbstractController
     
     	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
     
+    	//Sorting clusters by size
+    	usort($bestExecs, function($a,$b) {
+    		return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+    	});
+    	
     	echo $this->container->getTwig()->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
     			'selected' => 'Best Clusters Cost Evaluation',
     			'highcharts_js' => HighCharts::getHeader(),
@@ -2238,6 +2256,7 @@ class DefaultController extends AbstractController
     			'types' => $types,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
+    			'bestExecs' => $bestExecs,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),

@@ -61,7 +61,39 @@
     {% endblock %}
     {% block content %}
         <div id="navigation">
-            <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
+        	<div style="width: 50%; float: left; margin: 0 auto; margin-left: 10%; ">
+	               <div id="chart"></div>
+	               <h3>Top 10 best clusters</h3>
+	               <table class="table table-striped">
+	                 <thead>
+	                 	<th>Cluster</th>
+	                 	<th>Best execution cost</th>
+	                 	<th>Best execution time</th>
+	                 	<th>VM RAM</th>
+	              		<th>Datanodes</th>
+	              		<th>VM OS</th>
+	                 	<th>Provider</th>
+	              		<th>Type</th>
+	                 </thead>
+	                 <tbody>
+	                  {% for exec in bestExecs %}
+	                    {% if loop.index <= 10 %}
+	                    <tr>
+	                       <td>{{ exec.name }}</td>
+	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
+	                       <td>{{ exec.exe_time | number_format(0, '.', ',') }} s</td>
+	                       <td>{{ exec.vm_RAM | number_format(0, '.', ',') }} GB</td>
+	                       <td>{{ exec.datanodes }}</td>
+	                       <td>{{ exec.vm_OS }}</td>
+	                       <td>{{ exec.provider }}</td>
+	                       <td>{{ exec.type }}</td>
+	                    </tr>
+	                    {% endif %}
+	                  {% endfor %}
+	                 </tbody>
+	               </table>
+	        </div>
+            <div id="chart" style=""></div>
             <div style="width: 30%; float: right;">
                 {% include 'common/config_filters.html.twig' %}
             </div>

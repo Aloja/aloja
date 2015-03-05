@@ -20,7 +20,7 @@
                     enabled: false
                 },
                 title: {
-                    text: 'Best {{ benchs[0] }} hardware configurations executions cost by performance (normalized)',
+                    text: 'Best {{ benchs[0] }} hardware configurations cost by performance (normalized)',
                     x: -20 //center
                 },
                 subtitle: {
@@ -173,7 +173,40 @@
     {% endblock %}
     {% block content %}
            <div id="navigation">
-	            <div id="chart" style="width: 800px; margin: 0 auto; margin-left: 10%; float: left; height: 800px;"></div>
+				<div style="float: left; margin: 0 auto; margin-left: 10%; ">
+	               <div id="chart" style="width: 800px; height: 800px;"></div>
+	               <h3>Top 10 best configurations</h3>
+	               <table class="table table-striped">
+	                 <thead>
+	                 	<th>Cluster</th>
+	                 	<th>Execution cost</th>
+	                 	<th>Execution time</th>
+	                 	<th>Network</th>
+	                 	<th>Disk</th>
+{# 	                 	<th>Provider</th>#}
+{# 	              		<th>Type</th>#}
+{# 	              		<th>VM OS</th>#}
+{# 	              		<th>Datanodes</th>#}
+	                 </thead>
+	                 <tbody>
+	                  {% for exec in execs %}
+	                    {% if loop.index <= 10 %}
+	                    <tr>
+	                       <td>{{ exec.name }}<img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="{{ exec.datanodes }} datanodes, {{ exec.vm_RAM | number_format(0,'.',',') }} GB, {{ exec.type }}, {{ exec.vm_OS }}, {{ exec.provider }}" /></td>
+	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
+	                       <td>{{ exec.exe_time | number_format(0, '.', ',') }} s</td>
+	                       <td>{% if exec.net == 'ETH' %}Ethernet{% else %}InfiniBand{% endif %}</td>
+	                       <td>{{ getDisksName(exec.disk) }}</td>
+{# 	                       <td>{{ exec.provider }}</td>#}
+{# 	                       <td>{{ exec.type }}</td>#}
+{# 	                       <td>{{ exec.vm_OS }}</td>#}
+{# 	                       <td>{{ exec.datanodes }}</td>#}
+	                    </tr>
+	                    {% endif %}
+	                  {% endfor %}
+	                 </tbody>
+	               </table>
+	            </div>           
                 <div style="width: 30%; float: right;">
                     {% include "common/config_filters.html.twig" %}
                 </div>
