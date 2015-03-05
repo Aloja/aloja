@@ -23,7 +23,7 @@
 		<p style="text-align:justify">[WiP] Select the attributes you want to define from the filter, to predict all their combinations, so you can sort them by Predicted time or by attribute.</p>
 		<hr />
 	</div>
-	<div id="benchdiv" style="float: left; width: 70%;">
+	<div id="benchdiv" style="float: left; width: 68%;">
 		<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 	</div>
 	<div style="float: right; width: 30%;">
@@ -46,12 +46,10 @@
 {% endblock %}
 {% block javascript %} {{ parent() }}
 	<script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extras/FixedHeader/js/FixedHeader.nightly.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extras/ColReorder/media/js/ColReorder.nightly.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
-
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables/extensions/ColVis/js/dataTables.colVis.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 	function toggle(divid, textid)
