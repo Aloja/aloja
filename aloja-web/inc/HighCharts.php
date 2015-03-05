@@ -16,8 +16,7 @@ class HighCharts
     protected $maxX;
 
     public static $header =
-        '<script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
-        <script src="//code.highcharts.com/highcharts.js"></script>
+'        <script src="//code.highcharts.com/highcharts.js"></script>
         <script src="//code.highcharts.com/highcharts-more.js"></script>
         <script src="//code.highcharts.com/modules/exporting.js"></script>
         <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>

@@ -59,9 +59,9 @@ vm_size varchar(127) default null,
 vm_OS varchar(127) default null,
 vm_cores int default null,
 vm_RAM decimal(10,3) default null,
-cost_remote int default 0,
-cost_SSD int default 0,
-cost_IB int default 0,
+cost_remote decimal(10,3) default 0,
+cost_SSD decimal(10,3) default 0,
+cost_IB decimal(10,3) default 0,
 description varchar(256) default null,
 link varchar(255),
 primary key (id_cluster)) engine InnoDB;
@@ -665,8 +665,7 @@ $MYSQL "alter ignore table execs
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
 $MYSQL "alter ignore table execs
-  DROP COLUMN \`valid\`,
-  ADD  \`valid\` int DEFAULT '1',
+  alter column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
   ADD \`outlier\` int DEFAULT '0';"
 
@@ -689,6 +688,12 @@ $MYSQL "alter ignore table clusters add column cost_remote int DEFAULT 0"
 $MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
 $MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
 
+$MYSQL "alter ignore table clusters
+  alter column cost_remote decimal(10,3) default 0,
+  alter column cost_SSD decimal(10,3) default 0,
+  alter column cost_IB decimal(10,3) default 0;"
+
+
 
 ############################################33
 logger "INFO: Updating records"
@@ -705,33 +710,29 @@ update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
 update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
-update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
+update ignore execs SET net='IB' where id_cluster = 26;
 
+
+update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
 update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
 update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
-#temporary
-update execs set id_cluster = 05 where substring(exec, (locate('/', exec) -3), 3 ) = '-05' and id_cluster =1;
-update execs set id_cluster = 19 where substring(exec, (locate('/', exec) -3), 3 ) = '-19' and id_cluster =1;
-update execs set id_cluster = 03 where substring(exec, (locate('/', exec) -3), 3 ) = '-03' and id_cluster =1;
-update execs set id_cluster = 15 where substring(exec, (locate('/', exec) -3), 3 ) = '-15' and id_cluster =1;
-update execs set id_cluster = 14 where substring(exec, (locate('/', exec) -3), 3 ) = '-14' and id_cluster =1;
-update execs set id_cluster = 22 where substring(exec, (locate('/', exec) -3), 3 ) = '-22' and id_cluster =1;
-update execs set id_cluster = 06 where substring(exec, (locate('/', exec) -3), 3 ) = '-06' and id_cluster =1;
-update execs set id_cluster = 04 where substring(exec, (locate('/', exec) -3), 3 ) = '-04' and id_cluster =1;
-update execs set id_cluster = 08 where substring(exec, (locate('/', exec) -3), 3 ) = '-08' and id_cluster =1;
-update execs set id_cluster = 16 where substring(exec, (locate('/', exec) -3), 3 ) = '-16' and id_cluster =1;
-update execs set id_cluster = 10 where substring(exec, (locate('/', exec) -3), 3 ) = '-10' and id_cluster =1;
-update execs set id_cluster = 12 where substring(exec, (locate('/', exec) -3), 3 ) = '_12' and id_cluster =1;
 
 "
 
-echo "
-update ignore execs SET valid = 0;
+#Before updating filters values
+
+$MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
+
+$MYSQL "
 update ignore execs SET filter = 0;
 update ignore execs SET filter = 1 where id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
+update ignore execs SET filter = 1 where id_cluster NOT IN(20,23,24,25) AND id_exec NOT IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
 
-update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'terasort' and id_exec IN (
+update ignore execs SET valid = 1;
+update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
     (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
     tmp_table
@@ -743,7 +744,8 @@ update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort
     tmp_table
 );
 
-
+update ignore execs SET valid = 0 WHERE exe_time < 200 OR exe_time > 15000;
+update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
 "
 
 #$MYSQL "
