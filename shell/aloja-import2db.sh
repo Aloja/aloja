@@ -6,13 +6,20 @@ BASE_DIR=$(pwd)
 source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
-[ "$1" ] && ONLY_META_DATA="1"
 
 INSERT_DB="1" #if to dump CSV into the DB
 REDO_ALL="1" #if to redo folders that have source files and IDs in DB
 REDO_UNTARS="" #if to redo the untars for folders that have it
 PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
 MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
+#in case we only want to insert the data for the execs table (much faster)
+if [ "$1" ] ; then
+ ONLY_META_DATA="1"
+ REDO_ALL=""
+ REDO_UNTARS=""
+ MOVE_TO_DONE=""
+fi
 
 #TODO check if these variables are still needed
 first_host=""
@@ -63,15 +70,17 @@ for folder in 201* ; do
 	      logger "Exec params:\n$exec_params"
 	    fi
 	
+
 	    ##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
 	    logger "Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
-	    for bzip_file in prep_*.tar.bz2 ; do
-	      bench_folder="${bzip_file%%.*}"
-	      if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
-	        logger "Untaring $bzip_file"
-	        tar -xjf "$bzip_file"
-	      fi
-	    done
+      for bzip_file in prep_*.tar.bz2 ; do
+        bench_folder="${bzip_file%%.*}"
+        if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
+          logger "Untaring $bzip_file"
+          tar -xjf "$bzip_file"
+        fi
+      done
+
 		
 	    for bzip_file in *.tar.bz2 ; do
 	
@@ -109,7 +118,7 @@ for folder in 201* ; do
             #TODO this check wont work for old folders with numeric values at the end, need another strategy
             #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
             if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
-	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
+	            $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
 	          else
 	            id_cluster="1"
 	          fi
@@ -184,12 +193,17 @@ for folder in 201* ; do
 	    cd ..; logger "Leaving folder $folder\n"
 	
 	    if [ "$MOVE_TO_DONE" ] ; then
+
+        delete_untars "$BASE_DIR/$folder"
+
+	      mkdir -p "$BASE_DIR/DONE"
+	      mkdir -p $BASE_DIR/FAIL/{0..3}
 	      if (( "$folder_OK" >= 3 )) ; then
 	        logger "OK=$folder_OK Moving folder $folder to DONE"
-	        mkdir -p "$BASE_DIR/DONE"
 	        mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
 	      else
-	        logger "OK=$folder_OK Leaving folder $folder out to revise"
+	        logger "OK=$folder_OK Moving $folder to FAIL/$folder_OK for manual check"
+	        #mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/$folder_OK/"
 	      fi
 	    fi
 	
