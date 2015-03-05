@@ -115,6 +115,7 @@ class MLOutliersController extends AbstractController
 				{
 					$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 					$must_wait = 'YES';
+					if (isset($_GET['dump'])) { echo "1"; exit(0); }
 				}
 				else
 				{
