@@ -116,7 +116,6 @@ class MLMinconfigsController extends AbstractController
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock" >/dev/null 2>&1 &';
 				exec($command);
-var_dump(strlen($command));
 
 				// update cache record (for human reading)
 				$register = md5($config).' :'.$config."-model\n";
@@ -186,6 +185,21 @@ var_dump(strlen($command));
 					fclose($handle);
 				}
 
+				// MAGIC TRICK BEGINS
+				$illusion = array('id_cluster' => 'Cluster','name' => 'Cl.Name',
+					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type');
+				$query="SELECT ".implode(",",array_keys($illusion))." FROM clusters";
+				$rows = $db->get_rows($query);
+				$clusters_info = array();
+				foreach ($rows as $row)
+				{
+					$id_cl = $row['id_cluster'];
+					unset($row['id_cluster']);
+					$clusters_info[$id_cl] = $row;
+				}
+				// MAGIC TRICK ENDS
+
 				// read results of the CSV - Configs
 				$configs = '[';
 				$jsonHeader = '[]';
@@ -206,6 +220,7 @@ var_dump(strlen($command));
 						$header = fgetcsv($handle, 1000, ",");
 						if ($jsonHeader == '[]')
 						{
+							//$header = array_slice($header, 0, 12);	// ANTI-MAGIC TRICK
 							$jsonHeader = '[{title:""}';
 							foreach ($header as $title) if ($title != "ID") $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 							$jsonHeader = $jsonHeader.',{title:"Instances"}]';
@@ -215,8 +230,11 @@ var_dump(strlen($command));
 						$jsonConfig = '[';
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
+							$subdata = array_slice($data, 0, 12);
+							$subdata = array_merge($subdata,$clusters_info[(int)substr($data[11],2)]); // MAGIC TRICK
+
 							if ($jsonConfig!='[') $jsonConfig = $jsonConfig.',';
-							$jsonConfig = $jsonConfig.'[\''.implode("','",$data).'\',\''.$sizes[$count++].'\']';
+							$jsonConfig = $jsonConfig.'[\''.implode("','",$subdata).'\',\''.$sizes[$count++].'\']';
 
 						}
 						$jsonConfig = $jsonConfig.']';
