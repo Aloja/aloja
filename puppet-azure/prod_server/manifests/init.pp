@@ -72,10 +72,17 @@ class { '::mysql::client':
   require => Exec['apt-get update'],
 }
 
-#exec { 'changemysqlconfig':
-#  command => 'sudo /usr/sbin/service mysql stop && sed -i "s/var\/lib\/mysql/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf && sudo cp -Rp /var/lib/mysql /scratch/attached/1/ && sudo /usr/sbin/service mysql start',
-#  path => '/usr/bin:/bin:/usr/sbin'
-#}
+exec { 'changemysqlconfig':
+
+  command => 'sudo /usr/sbin/service mysql stop;
+sed -i "s/var\/lib\/mysql/scratch\/attached\/1\/mysql/" /etc/mysql/my.cnf;
+sudo cp -Rp /var/lib/mysql /scratch/attached/1/;
+echo "alias /var/lib/mysql/ -> /scratch/attached/1/mysql/," >> /etc/apparmor.d/tunables/alias
+sudo /etc/init.d/apparmor reload
+sudo mysql_install_db
+sudo /usr/sbin/service mysql start',
+  path => '/usr/bin:/bin:/usr/sbin'
+}
 
 vcsrepo { "/var/presentations/":
         ensure => latest,
@@ -106,5 +113,5 @@ Exec['apt-get update'] -> Vcsrepo['/var/www/']
 Vcsrepo['/var/www/'] -> File['/var/www/aloja-web/logs']
 Vcsrepo['/var/www/'] -> Vcsrepo['/var/presentations/']
 File['/var/www/aloja-web/logs'] -> Class['::mysql::server']
-#Class['::mysql::server'] -> Exec['changemysqlconfig']
+Class['::mysql::server'] -> Exec['changemysqlconfig']
 #Exec['changemysqlconfig'] -> Service['php5-fpm']
