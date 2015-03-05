@@ -2,13 +2,7 @@
 {% block javascript %} 
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts.js"></script>
-	<script type="text/javascript">
-	 $(document).ready(function() {
-		$("input,select").change(function() {
-			$("form").submit();
-		});
-	 });
-	</script>
+
 {% endblock %} 
 {% block content %}
 <div id="chart"></div>
@@ -78,5 +72,4 @@
 <div style="width: 30%; float: right;">
 	{% include 'common/config_filters.html.twig' %}
 </div>
-<div style="clear: both;">&nbsp;</div>
 {% endblock %}
