@@ -122,31 +122,57 @@ class MLParamevalController extends AbstractController
 
 				$is_cached = file_exists($cache_filename);
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				$finished_process = $in_process && ((int)shell_exec('wc -l '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock | awk \'{print $1}\'') == count($instances));
 		
 				if (!$is_cached && !$in_process && !$finished_process)
 				{
 					// drop query
-					$command = 'cd '.getcwd().'/cache/query ; ';
-					$command = $command.'touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock ; ';
-					$command = $command.getcwd().'/resources/queue -c "( ';
-					$command = $command.'rm -f '.$tmp_file.' ';
-					exec($command);
+					exec('cd '.getcwd().'/cache/query ; touch '.md5($instance.'-'.$model).'.lock; rm -f '.$tmp_file);
 					foreach ($instances as $inst)
 					{
-						$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null" >> /run/shm/queue.log 2>&1 &';
-						exec($command);
+						exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null; echo 1 >> '.md5($instance.'-'.$model).'.lock" >> /dev/null 2>&1 &');
 					}
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready" >> /run/shm/queue.log 2>&1 &';
-					exec($command);
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock" >> /run/shm/queue.log 2>&1 &';
-					exec($command);
 				}
 
-				usleep(500000);
 				$is_cached = file_exists($cache_filename);
+				$finished_process = ((int)shell_exec('wc -l '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock | awk \'{print $1}\'') == count($instances));
+
+				if ($finished_process && !$is_cached)
+				{
+					// read results
+					$lines = explode("\n", file_get_contents($tmp_file));
+					$jsonData = '[';
+					$i = 1;
+					while($i < count($lines))
+					{
+						if ($lines[$i]=='') break;
+						$parsed = preg_replace('/\s+/', ',', $lines[$i]);
+						if ($jsonData!='[') $jsonData = $jsonData.',';
+						$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
+						$i++;
+					}
+					$jsonData = $jsonData.']';
+
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction'); #FIXME - Header hardcoded for file-tmp
+					$jsonHeader = '[{title:""}';
+					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+					$jsonHeader = $jsonHeader.']';
+
+					// save at cache
+					file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
+
+					// update cache record (for human reading)
+					$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
+					shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
+					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+
+					// remove remaining locks and readies
+					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+					$is_cached = true;
+				}
+
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
+				$is_cached = file_exists($cache_filename);
 
 				if ($in_process)
 				{
@@ -156,40 +182,6 @@ class MLParamevalController extends AbstractController
 				else
 				{
 					$must_wait = 'NO';
-					if ($finished_process)
-					{
-						// read results
-						$lines = explode("\n", file_get_contents($tmp_file));
-						$jsonData = '[';
-						$i = 1;
-						while($i < count($lines))
-						{
-							if ($lines[$i]=='') break;
-							$parsed = preg_replace('/\s+/', ',', $lines[$i]);
-							if ($jsonData!='[') $jsonData = $jsonData.',';
-							$jsonData = $jsonData.'[\''.implode("','",explode(',',$parsed)).'\']';
-							$i++;
-						}
-						$jsonData = $jsonData.']';
-
-						$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction'); #FIXME - Header hardcoded for file-tmp
-						$jsonHeader = '[{title:""}';
-						foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-						$jsonHeader = $jsonHeader.']';
-
-						// save at cache
-						file_put_contents($cache_filename, $jsonHeader."\n".$jsonData);
-
-						// update cache record (for human reading)
-						$register = md5($instance.'-'.$model).' : '.$instance."-".$model."\n";
-						shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-						file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-
-						// remove remaining locks and readies
-						shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
-						$is_cached = true;
-					}
-
 					if ($is_cached)
 					{
 						// get cache
@@ -286,7 +278,7 @@ class MLParamevalController extends AbstractController
 					}
 				}
 				$series[] = array('name' => $key, 'data' => $data_a);
-				if (!empty($arrayBenchs_pred)) $series[] = array('name' => $key, 'data' => $data_p);
+				if (!empty($arrayBenchs_pred)) $series[] = array('name' => $key.'_pred', 'data' => $data_p);
 			}
 			$series = json_encode($series);
 
