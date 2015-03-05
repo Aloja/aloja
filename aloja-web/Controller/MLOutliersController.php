@@ -101,12 +101,8 @@ class MLOutliersController extends AbstractController
 					}
 
 					// launch query
-					$command = 'cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock ; ';
-					exec($command);
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$model.' -p sigma=3:hdistance=3:saveall='.md5($model_info.'-'.$model).' > /dev/null 2>&1 " > /dev/null 2>&1 &';
-					exec($command);
-					$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock" > /dev/null 2>&1 &';
-					exec($command);
+					exec('cd '.getcwd().'/cache/query ; touch '.md5($model_info.'-'.$model).'.lock');
+					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$model.' -p sigma=3:hdistance=3:saveall='.md5($model_info.'-'.$model).' > /dev/null 2>&1 ; rm -f '.md5($model_info.'-'.$model).'.lock" > /dev/null 2>&1 &');
 
 					// update cache record (for human reading)
 					$register = md5($model_info.'-'.$model).' : '.$model_info.'-'.$model."\n";
