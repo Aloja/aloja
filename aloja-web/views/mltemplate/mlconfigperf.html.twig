@@ -4,6 +4,14 @@
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
 	$(document).ready(function ()
 	{
 		$("#select-model").change(function()
@@ -89,7 +97,7 @@
 		}
 		else
 		{
-			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<br/>{{instance}}</p>";
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
 			$('#footer').hide();
 			setInterval( function() { window.location.reload(); }, 60000 ); 
 		}
@@ -115,13 +123,14 @@
 				</div>
 			</div>
 		</form>
-		<div id="chart" style="float: left; width: 70%; margin: 0 auto;"></div>
-		<div style="float: left; width: 30%;">
+		<div id="chart" style="float: left; width: 68%; margin: 0 auto;"></div>
+		<div style="float: right; width: 30%;">
 		{% include 'common/config_filters.html.twig' %}
 		</div>
 	</div>
 	<div style="clear: both;"></div>
-	<div id="footer" style="float: left; width: 100%;">
+	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+	<div id="footer" style="display: none; float: left; width: 100%;">
 		<hr />
 		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}}</p>
 		<div style="float: left; width: 70%;">
