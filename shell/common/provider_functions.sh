@@ -96,3 +96,14 @@ node_stop() {
 node_start() {
   logger "WARNING: Function node_start not implemented or not necessary for provider"
 }
+
+
+### gets
+
+get_extra_fstab() {
+  : # not needed by default and no warning
+}
+
+get_extra_mount_disks() {
+  : # not needed by default and no warning
+}

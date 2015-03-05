@@ -4,10 +4,6 @@
 		{{ highcharts_js|raw }}
 	    <script>
         $(document).ready(function() {
-            $('select').change(function() {
-                $(this).parents('form').submit();
-            });
-
             var chart = new Highcharts.Chart({
                 chart: {
                     renderTo: 'chart',
@@ -170,7 +166,7 @@
 	    </script>
     {% endblock %}
     {% block content %}
-           <div id="navigation" style="text-align: center;">
+           <div id="navigation">
 	            <div id="chart" style="width: 800px; margin: 0 auto; margin-left: 10%; float: left; height: 800px;"></div>
                 <div style="width: 30%; float: right;">
                     {% include "common/config_filters.html.twig" %}
@@ -207,9 +203,8 @@
 	              	  {% endfor %}
 	              	</tbody>
 	              </table>
-	              <button id="submit" type="submit" value="Change" class="btn btn-warning">Change</button>
+	              <button id="submit" type="submit" value="Update prices" class="btn btn-warning">Update prices</button>
 	              </form>
 	            </div>
 	    </div>
-	    </br></br>
     {% endblock %}

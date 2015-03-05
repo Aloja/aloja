@@ -3,22 +3,12 @@
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
-	<script type="text/javascript">
-	 $(document).ready(function() {
-		$("input,select").change(function() {
-			$("form").submit();
-		});
-	 });
-	</script>
 	<script>
         $(document).ready(function() {
-                    $('select').change(function() {
-                        $(this).parents('form').submit();
-                    });
-
                    $("#chart").highcharts({
                         chart: {
                             type: 'bubble',
+                            zoomType: 'xy'
                         },
                         credits: {
                             enabled: false
@@ -32,6 +22,7 @@
                         	title: {
                                 text: 'Total execution cost (US $)'
                             },
+                            min: 0
                         },
                         plotOptions: {
                           series: {
@@ -39,12 +30,18 @@
                             point: {
                                events: {
                                    click: function () {
-				       console.log(this.series.points);
-                                       var id = this.series.name;
-				       top.location.href="{{ path('clusters') }}?cluster_name="+id;
+                                     var id = this.series.name;
+				      				 top.location.href="{{ path('clusters') }}?cluster_name="+id;
                                    }
                                }
                             }
+                          },
+                          bubble: {
+                              tooltip: {
+                                  headerFormat: '<b>{series.name}</b><br>',
+                                  pointFormat: '{point.x} s, {point.y} US$, {point.z}  rating<br />{series.options.clusterdesc}'
+
+                              }
                           }
                         },
                         title: {
@@ -57,11 +54,10 @@
     </script>
     {% endblock %}
     {% block content %}
-        <div id="navigation" style="text-align: center;">
+        <div id="navigation">
             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
             <div style="width: 30%; float: right;">
                 {% include 'common/config_filters.html.twig' %}
             </div>
-            </br>
         </div>
     {% endblock %}
