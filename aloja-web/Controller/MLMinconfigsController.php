@@ -112,14 +112,11 @@ class MLMinconfigsController extends AbstractController
 				}
 
 				// run the R processor
-				$command = 'cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock';
+				exec('cd '.getcwd().'/cache/query; touch '.md5($config).'.lock');
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock" >/dev/null 2>&1 &';
 				exec($command);
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' > /dev/null 2>&1 " > /dev/null 2>&1 &';
-				exec($command);
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 > /dev/null 2>&1 " > /dev/null 2>&1 &';
-				exec($command);
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" > /dev/null 2>&1 &';
-				exec($command);
+var_dump(strlen($command));
 
 				// update cache record (for human reading)
 				$register = md5($config).' :'.$config."-model\n";
