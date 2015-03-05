@@ -212,7 +212,10 @@ class MLTemplatesController extends AbstractController
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
-			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET))
+			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
+			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("current_model",$_GET)))
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
@@ -378,9 +381,18 @@ class MLTemplatesController extends AbstractController
 				{
 					$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 					$must_wait = 'YES';
+					if (isset($_GET['dump'])) { echo "1"; exit(0); }
 				}
 				else
 				{
+					if (isset($_GET['dump']))
+					{
+						$data = explode("\n",file_get_contents($cache_filename));
+						echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$data[0])."\n";
+						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$data[1]);
+						exit(0);
+					}
+
 					// get cache
 					$data = explode("\n",file_get_contents($cache_filename));
 					$jsonHeader = $data[0];
