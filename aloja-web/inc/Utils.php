@@ -91,8 +91,6 @@ class Utils
                 $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
                 $items = array();
-            } elseif ($item_name == 'disks') {
-                $items = array('SSD', 'HDD', 'RR3', 'RR2', 'RR1', 'RL3', 'RL2', 'RL1');
             } elseif ($item_name == 'bench_types') {
             	$items = array('HiBench','HDI');
             } else {
@@ -527,5 +525,58 @@ class Utils
     	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
 
     	return $options;
+    }
+    
+    public static function getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB) { 
+
+    	$num_remotes = 0;
+    	/** calculate remote */
+    	if(preg_match("/^RL/", $exec['disk']) || preg_match("/^RR/", $exec['disk'])) {
+    		$num_remotes = (int)$exec['disk'][2];
+    	}
+    	
+    	/** calculate HDD */
+    	if(preg_match("/^HD[0-9]/", $exec['disk'])) {
+    		$num_remotes = (int)$exec['disk'][2];
+    	}
+    	
+    	$num_ssds=0;
+    	
+    	
+    	/** calculate Multiple SSDs */
+    	if(preg_match("/^SS[0-9]/", $exec['disk'])) {
+    		$num_ssds= (int)$exec['disk'][2];
+    	}
+    	
+    	/** if local SSD, numSSDs + 1, remotes = num HDD */
+    	if(preg_match("/^HS[0-9]/", $exec['disk'])) {
+    		$num_ssds=1;
+    		$num_remotes = (int)$exec['disk'][2];
+    	}
+
+    	$num_IB=0;
+    	 
+    	if($exec['net'] == "IB")
+    		$num_IB = 1;
+    	
+    	if($exec['disk'] == "SSD")
+    		$num_ssds = 1;
+    	
+    	if($exec['disk'] == 'HDD')
+    		$num_remotes = 1;
+    	
+    	$cost = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+    	return $cost;
+    }
+    
+    public static function getClustersInfo($dbUtils) {
+    	$rows = $dbUtils->get_rows("SELECT * FROM clusters");
+
+    	$clusters = array();
+    	foreach($rows as $row) {
+    		$clusters[$row['name']] = $row;
+    	}
+    	
+    	return json_encode($clusters);
     }
 }
