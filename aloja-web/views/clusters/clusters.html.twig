@@ -1,9 +1,35 @@
-{% extends "layout.html.twig" %}
-{% block content %}
-   <h3>Coming Soon</h3>
-    <table>
-        <tr>
-            <td height="500"></td>
-        </tr>
-    </table>
+{% extends "layout.html.twig" %} {% block content %}
+<h3>Clusters description</h3>
+<table class="table table-striped">
+	<thead>
+		<th>Cluster</th>
+		<th>Provider</th>
+		<th>Type</th>
+		<th># Headnodes</th>
+		<th># Datanodes</th>
+		<th>VM size</th>
+		<th>VM OS</th>
+		<th>VM cores</th>
+		<th>VM RAM</th>
+		<th>Cost/hour</th>
+		<th>Description</th>
+	</thead>
+	<tbody>
+		{% for cluster in clusters %}
+		<tr {% if clusterNameSelected == cluster.name %}class="info"{% endif %}>
+			<td>{{ cluster.name }}</td>
+			<td>{{ cluster.provider | capitalize}}</td>
+			<td>{{ cluster.type }}</td>
+			<td>{{ cluster.headnodes }}</td>
+			<td>{{ cluster.datanodes }}</td>
+			<td>{{ cluster.vm_size }}</td>
+			<td>{{ cluster.vm_OS }}</td>
+			<td>{{ cluster.vm_cores }}</td>
+			<td>{{ cluster.vm_RAM | number_format }} GB</td>
+			<td>{{ cluster.cost_hour }} $</td>
+			<td>{{ cluster.description }}</td>
+		</tr>
+		{% endfor %}
+	</tbody>
+</table>
 {% endblock %}

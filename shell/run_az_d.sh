@@ -63,15 +63,15 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:S" opt; do
       ;;
     n)
       NET=$OPTARG
-      [ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
+      #[ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
       ;;
     d)
       DISK=$OPTARG
-      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || usage
+      #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]  || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]  || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "-10" ] || [ "$BENCH" == "-min" ] || usage
+      [ "$BENCH" == "-10" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "-1TB" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -147,25 +147,36 @@ source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
 #####
 
+#some validations
+if ! inList "$CLUSTER_DISKS" "$DISK" ; then
+  logger "ERROR: Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
+  usage
+fi
+
+if ! inList "$CLUSTER_NETS" "$NET" ; then
+  logger "ERROR: Disk type $NET not supported for $clusterName\nSupported: $NET"
+  usage
+fi
+
+
 NUMBER_OF_DATA_NODES="$numberOfNodes"
-userAloja="pristine"
+#userAloja="pristine"
 
 DSH="dsh -M -c -m "
 
-#DEPRECATED for infiniband tests
-#if [ "${NET}" == "IB" ] ; then
-#  host1="al-1001-ib0"
-#  host2="al-1002-ib0"
-#  host3="al-1003-ib0"
-#  host4="al-1004-ib0"
-#  IFACE="ib0"
+#For infiniband tests
+if [ "${NET}" == "IB" ] ; then
+  IFACE="ib0"
+  master_name="$(get_master_name_IB)"
+  node_names="$(get_node_names_IB)"
+else
+  IFACE="eth0"
+  master_name="$(get_master_name)"
+  node_names="$(get_node_names)"
+fi
 
-IFACE="eth0"
-
-master_name="$(get_master_name)"
 DSH_MASTER="ssh $master_name"
 
-node_names="$(get_node_names)"
 
 if [ ! -z "$LIMIT_DATA_NODES" ] ; then
 
@@ -189,16 +200,15 @@ DSH="$DSH $(nl2char "$node_names" ",")"
 DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 
-if [ "$DISK" == "SSD" ] ; then
-  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ]; then
-  HDD="/scratch/local/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
-  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
-else
-  echo "Incorrect disk specified: $DISK"
+#check that we got the dynamic disk location correctly
+if [ -z "$(get_initial_disk "$DISK")" ] ; then
+  loggerb "ERROR: cannot determint $DISK path"
   exit 1
 fi
+
+#set the main path for the benchmark
+HDD="$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+HDD_TMP="$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")" #for hadoop tmp dir
 
 BASE_DIR="$homePrefixAloja/$userAloja/share"
 SOURCE_DIR="/scratch/local/aplic"
@@ -228,48 +238,48 @@ export JAVA_HOME="$SOURCE_DIR/jdk1.7.0_25"
 bwm_source="$SOURCE_DIR/bin/bwm-ng"
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
-
-#temporary OS config
-$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
-
-  #temporary to avoid read-only file system errors
-  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
-
-  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
-    echo "Checking if to remount $mount_point"
-    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
-  done
-
-correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
-
-if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-  echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
-
-  #temporary to avoid read-only file system errors
-  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
-
-  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
-    echo "Checking if to remount $mount_point"
-    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
-  done
-
-  correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
-
-  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
-    exit 1
-    #$DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
-    #sleep 90 2>&1 |tee -a $LOG_PATH
-  fi
-
-  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-    echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_DATA_NODES $NUMBER_OF_DATA_NODES + 1"
-    exit 1
-  fi
-fi
+#
+##temporary OS config
+#$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
+#
+#  #temporary to avoid read-only file system errors
+#  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+#  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
+#
+#  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+#    echo "Checking if to remount $mount_point"
+#    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
+#  done
+#
+#correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+#
+#if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
+#  echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
+#
+#  #temporary to avoid read-only file system errors
+#  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+#  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share; sudo pkill -9 -f 'sshfs $userAloja@'; sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
+#
+#  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
+#    echo "Checking if to remount $mount_point"
+#    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
+#  done
+#
+#  correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
+#
+#  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
+#    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
+#    exit 1
+#    #$DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
+#    #sleep 90 2>&1 |tee -a $LOG_PATH
+#  fi
+#
+#  if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
+#    echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
+#    echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_DATA_NODES $NUMBER_OF_DATA_NODES + 1"
+#    exit 1
+#  fi
+#fi
 
 #create dir to save files in one host
 $DSH_MASTER "mkdir -p $JOB_PATH"
@@ -277,7 +287,7 @@ $DSH_MASTER "touch $LOG_PATH"
 
 logger(){
   stamp=$(date '+%s')
-  echo "${stamp} : $1" 2>&1 |tee -a $LOG_PATH
+  echo -e "${stamp} : $1" 2>&1 |tee -a $LOG_PATH
   #log to zabbix
   #zabbix_sender "hadoop.status $stamp $1"
 }
@@ -318,6 +328,7 @@ logger "Job name: $JOB_NAME"
 logger "Job path: $JOB_PATH"
 logger "Log path: $LOG_PATH"
 logger "Disk location: $HDD"
+logger "TMP Disk location: $HDD_TMP"
 logger "Conf: $CONF"
 logger "HiBench: $HIB_DIR"
 logger "Benchs to execute: $LIST_BENCHS"
@@ -348,18 +359,18 @@ prepare_config(){
 
   if [ "$DELETE_HDFS" == "1" ] ; then
      logger "Deleting previous PORT files"
-     $DSH "rm -rf $HDD/*" 2>&1 |tee -a $LOG_PATH
-$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
+     $DSH "rm -rf $HDD/* $HDD_TMP/* " 2>&1 |tee -a $LOG_PATH
+$DSH "rm -rf /scratch/attached/{1..8}/$(get_aloja_dir "$PORT_PREFIX")" 2>&1 |tee -a $LOG_PATH
   else
-     $DSH "rm -rf $HDD/{aplic,logs}" 2>&1 |tee -a $LOG_PATH
+     $DSH "rm -rf $HDD/{aplic,logs} $HDD_TMP/{aplic,logs}" 2>&1 |tee -a $LOG_PATH
   fi
 
   logger "Creating source dir and Copying Hadoop"
-$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
-  $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
+#$DSH "mkdir -p /scratch/attached/{1,2,3}/$(get_aloja_dir "$PORT_PREFIX")/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
+  $DSH "mkdir -p $HDD/{aplic,hadoop,logs} $HDD_TMP/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $H_DIR" 2>&1 |tee -a $LOG_PATH
 
-echo -e "HDD=$HDD \nHDIR=${H_DIR}"
+echo -e "HDD=$HDD\nHDD_TMP $HDD_TMP\nHDIR=${H_DIR}"
 
   $DSH "cp -ru $SOURCE_DIR/${HADOOP_VERSION}/* $H_DIR/" 2>&1 |tee -a $LOG_PATH
 
@@ -379,33 +390,12 @@ echo -e "HDD=$HDD \nHDIR=${H_DIR}"
 
   IO_MB="$((IO_FACTOR * 10))"
 
-if [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] ; then
-  HDFS_NDIR="$HDD/dfs/name"
-  HDFS_DDIR="$HDD/dfs/data"
-elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "HD1" ] ; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "HD2" ] ; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "HD3" ] ; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "HD4" ] ; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "HD5" ] ; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "HD6" ] ; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/4/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/5/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/6/hadoop-hibench_$PORT_PREFIX/dfs/data"
-else
-  echo "Incorrect disk specified2: $DISK"
-  exit 1
-fi
+  #generate the path for the hadoop config files, including support for multiple volumes
+  HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
+  HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
-logger "DEBUG: HDFS_NDIR: $HDFS_NDIR \nHDFS_DDIR: $HDFS_DDIR"
+logger "DEBUG: HDFS_NDIR: $HDFS_NDIR\nHDFS_DDIR: $HDFS_DDIR"
+
 
 MAX_REDS="$MAX_MAPS"
 
@@ -417,7 +407,7 @@ s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
 s,##NAMENODE##,$MASTER,g;
-s,##TMP_DIR##,$HDD,g;
+s,##TMP_DIR##,$HDD_TMP,g;
 s,##HDFS_NDIR##,$HDFS_NDIR,g;
 s,##HDFS_DDIR##,$HDFS_DDIR,g;
 s,##MAX_MAPS##,$MAX_MAPS,g;
@@ -506,11 +496,11 @@ restart_hadoop(){
   if [ "$DELETE_HDFS" == "1" ] ; then
     logger "Deleting previous Hadoop HDFS"
 
-    $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs} $HDD_TMP/{dfs,mapred,logs}; mkdir -p $HDD/logs $HDD_TMP/;" 2>&1 |tee -a $LOG_PATH
 #TODO fix for variable paths
-$DSH "rm -rf /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{dfs,mapred,logs}" 2>&1 |tee -a $LOG_PATH
-$DSH "mkdir -p /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/dfs/data;" 2>&1 |tee -a $LOG_PATH
-$DSH "mkdir -p /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data" 2>&1 |tee -a $LOG_PATH
+$DSH "rm -rf /scratch/attached/{1..$BENCH_MAX_DISKS}/$(get_aloja_dir "$PORT_PREFIX")/{dfs,mapred,logs}" 2>&1 |tee -a $LOG_PATH
+$DSH "mkdir -p /scratch/attached/{1..$BENCH_MAX_DISKS}/$(get_aloja_dir "$PORT_PREFIX")/dfs/data; chmod 755 /scratch/attached/{1..$BENCH_MAX_DISKS}/$(get_aloja_dir "$PORT_PREFIX")/dfs/data;" 2>&1 |tee -a $LOG_PATH
+$DSH "mkdir -p /scratch/local/$(get_aloja_dir "$PORT_PREFIX")/dfs/data; chmod 755 /scratch/local/$(get_aloja_dir "$PORT_PREFIX")/dfs/data" 2>&1 |tee -a $LOG_PATH
 
     #yes Y | send multiple yes to format
     logger "Formating datanodes"
@@ -523,7 +513,7 @@ $DSH "mkdir -p /scratch/local/hadoop-hibench_$PORT_PREFIX/dfs/data; chmod 755 /s
 
   $DSH_MASTER $H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
 
-  for i in {0..300} #3mins
+  for i in {0..300}
   do
     local report=$($DSH_MASTER $H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
     local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')
@@ -591,12 +581,12 @@ stop_monit(){
 save_bench() {
   logger "Saving benchmark $1"
   $DSH "mkdir -p $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $HDD_TMP/{bwm,vmstat}*.log $HDD_TMP/sar*.sar $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   #we cannot move hadoop files
   #take into account naming *.date when changing dates
   #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -r $HDD/logs/* $HDD_TMP/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp $HDD/logs/job*.xml $HDD_TMP/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
   cp "$HIB_DIR/$bench/hibench.report" "$JOB_PATH/$1/"
 
@@ -613,6 +603,7 @@ save_bench() {
 
   #empy the contents from original disk  TODO check if still necessary
   $DSH "for i in $HDD/hadoop-*.{log,out}; do echo "" > $i; done;" 2>&1 |tee -a $LOG_PATH
+  $DSH "for i in $HDD_TMP/hadoop-*.{log,out}; do echo "" > $i; done;" 2>&1 |tee -a $LOG_PATH
 
   logger "Done saving benchmark $1"
 }
@@ -773,7 +764,7 @@ stop_monit
 
 
 #copy
-$DSH "cp $HDD/* $JOB_PATH/"
+$DSH "cp $HDD/* $HDD_TMP/* $JOB_PATH/"
 
 
 #report

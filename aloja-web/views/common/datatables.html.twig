@@ -282,10 +282,26 @@
                 }
             } );
 
-            $("thead select").change(function() {
+            $("thead select").change(function() {  
             	oTable.fnFilter( $(this).val(), oTable.oApi._fnVisibleToColumnIndex(
                         oTable.fnSettings(), $(this).parent().index() ) );
             });
+
+
+
+            {% if selected == 'Benchmark Executions' %}
+	            var queryDict = {}
+			    var newQuery = {}
+		            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+			   
+			    for(key in queryDict) {
+					newKey = key.replace("%5B","[").replace("%5D","]");
+					newQuery[newKey] = queryDict[key];
+			    }
+		 	    queryDict = {}	
+
+		 	    var clustersInfo = {{ clustersInfo | raw }};
+		    {% endif %}
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
@@ -301,6 +317,8 @@
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
+                      {% elseif selected == 'Benchmark Executions' %}
+                      "data": newQuery,
                       {% endif %}
                       "success": fnCallback
                     } );
@@ -385,24 +403,35 @@
         					else if(aData[6] == 'IB')
         						tooltip = 'Infiniband';
         					else
-            					tooltip = 'No apply';
+            					tooltip = 'Does not apply';
         					$(this).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
                        	} else if(headTitle == 'Disk') {
+						number = aData[7].substring(2);
         					if(aData[7] == 'HDD')
         						tooltip = 'Hard disk';
         					else if(aData[7] == 'SSD')
         						tooltip = 'Solid-state disk';
-        					else if(aData[7] == 'N/A')
-            					tooltip = 'No apply';
+        					else if((new RegExp("^RR")).test(aData[7]))
+            						tooltip = aData[7].substring(2) + ' remote(s)';
+							else if((new RegExp("^RL")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' remote(s) / tmp local';
+							else if((new RegExp("^SS")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' SSD drives';
+							else if((new RegExp("^HD")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' HDD drives';
         					else
-        						tooltip = aData[7].substring(2) + ' remote(s)';
+        						tooltip = aData[7].substring(2) + ' HDD drives / tmp to SSD';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
 //                         } else if(headTitle == 'Files') {
 //         					var string = aData[15];
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
+                       	} else if(headTitle == 'Cluster') {
+                           	var cluster = clustersInfo[aData[14]];
+                           	var tooltip = Math.floor(cluster.vm_RAM)+' GB RAM,'+cluster.vm_OS+','+cluster.provider+','+cluster.type;
+							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14] + '"  target="_blank">'+aData[14]+' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');         
 						} else if(headTitle == 'Histogram') {
-							if(aData[14] == 'HDInsight') {
+							if(aData[14].indexOf("hdi") > -1) {
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
 							} else
 								$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');

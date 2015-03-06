@@ -38,7 +38,39 @@ class RestController extends AbstractController
 
         try {
             $dbUtils = $this->container->getDBUtils();
-            $exec_rows = $dbUtils->get_execs();
+            $configurations = array();
+            $where_configs = '';
+            $concat_config = "";
+            
+//             $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+//             $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+//             $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+//             $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+//             $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+//             $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+//             $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+//             $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+//             $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+//             $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+//             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+//             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+//             $money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+//             $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+//             $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+//             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+//             $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+//             $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+//             $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+//             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+            $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+//             $outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+//             $warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+            
+             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
+       	 		join clusters USING (id_cluster)
+      		 	 WHERE 1 $where_configs;";
+             $exec_rows = $dbUtils->get_rows($query);
 
             if (count($exec_rows) > 0) {
                 $jsonData = Utils::generateJSONTable($exec_rows, $show_in_result);

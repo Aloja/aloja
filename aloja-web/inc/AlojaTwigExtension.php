@@ -33,6 +33,7 @@ class AlojaTwigExtension extends Twig_Extension
                 'path' => new Twig_Function_Method($this, 'path'),
         		'getArrayIndex' => new Twig_Function_Method($this, 'getArrayIndex'),
         		'getParamevalTitleName' => new Twig_Function_Method($this, 'getParamevalTitleName'),
+        		'getDisksName' => new Twig_Function_Method($this, 'getDisksName'),
         );
     }
 
@@ -172,9 +173,28 @@ class AlojaTwigExtension extends Twig_Extension
 			$title = 'HDFS block size';
 		else if($paramEval == 'iosf')
 			$title = 'I/O Sort Factor';
-		else
+		else if($paramEval == 'vm_ram')
+			$title = 'RAM GB';
+		else if($paramEval == 'vm_cores')
+			$title = 'Number of cores';
+		else if($paramEval == 'datanodes')
+			$title = 'Number of datanodes';
+		else if($paramEval == 'vm_size')
+			$title = 'VM size';
+		else if($paramEval == 'hadoop_version')
+			$title = 'Hadoop version';
+		else if($paramEval == 'type')
+			$title = 'Cluster type';
+		else if($paramEval == 'id_cluster')
 			$title = 'Cluster';
+		else
+			$title = $paramEval;
 		
 		return $title;
+    }
+    
+    public function getDisksName($diskName)
+    {
+    	return Utils::getDisksName($diskName);
     }
 }

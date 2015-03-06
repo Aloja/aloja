@@ -90,14 +90,15 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-        return "
-AND (bench_type = 'HiBench' OR bench_type = 'HDI')
-AND bench not like 'prep_%'
-AND bench_type not like 'HDI-prep%'
-AND exe_time between 200 and 15000
-AND id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null)
-AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null))
-";
+    	return "";
+//         return "
+// #AND (bench_type = 'HiBench' OR bench_type = 'HDI')
+// #AND bench not like 'prep_%'
+// #AND bench_type not like 'HDI-prep%'
+// #AND exe_time between 200 and 15000
+// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null))
+// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null))
+// ";
 //AND valid = 1
     }
 
@@ -108,7 +109,7 @@ AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu wh
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
         join clusters USING (id_cluster)
-        WHERE 1 $filter_execs  ;";
+        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0;";
 
         return $this->get_rows($query);
     }
