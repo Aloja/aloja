@@ -2,11 +2,11 @@
 {% block stylesheet %}
 	{{ parent() }}
 	<style type="text/css">
-        @import "js/datatables/media/css/demo_table.css";
-        @import "js/datatables/media/css/jquery.dataTables.css";
-        @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
-        @import "js/datatables/extras/TableTools/media/css/TableTools.css";
-        @import "js/datatables/extras/ColVis/media/css/ColVis.css";
+        @import "js/datatables.new/media/css/demo_table.css";
+        @import "js/datatables.new/media/css/jquery.dataTables.css";
+        @import "js/datatables.new/extensions/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables.new/extensions/TableTools/media/css/TableTools.css";
+        @import "js/datatables.new/extensions/ColVis/media/css/ColVis.css";
         .scrollStyle
         {
 		overflow-x:auto;
@@ -60,11 +60,11 @@
 	<div style="clear: both;"></div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
-	<script type="text/javascript" language="javascript" src="js/datatables/media/js/jquery.dataTables.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
-	<script type="text/javascript" language="javascript" src="js/datatables/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
