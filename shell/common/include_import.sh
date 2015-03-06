@@ -44,8 +44,8 @@ if [[ ! -z $(uname -a|grep "\-ARCH") ]] ; then
 elif [ "$(hostname)" == "acall" ] || [ "$(hostname)" == "belkar" ] ; then
    DEV_PC="true"
 #vagrant
-elif [ "$(hostname)" == "vagrant" ] ; then
-  DEV_PC="true"
+#elif [ "$(hostname)" == "vagrant" ] ; then
+#  DEV_PC="true"
 #default
 else
   sadf="/usr/bin/sadf"

@@ -2257,7 +2257,6 @@ class DefaultController extends AbstractController
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
     			'bestExecs' => $bestExecs,
-    			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,

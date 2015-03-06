@@ -6,7 +6,7 @@ exec { 'third_party_libs':
 }
 
 exec { 'db_migrations':
-  command => 'bash -c "cd /vagrant/workspace/aloja-web && php vendor/bin/phinx -cconfig/phinx.yml -evagrant migrate"',
+  command => 'bash /vagrant/workspace/shell/create-update_DB.sh',
   path => '/usr/bin:/bin',
 
 }

@@ -41,9 +41,9 @@ create table if not exists hosts (
   host_name varchar(127) NOT NULL,
   id_cluster int(11) NOT NULL,
   role varchar(45) DEFAULT NULL,
- cost_remote int(11) DEFAULT NULL,
- cost_SSD int(11) DEFAULT NULL,
- cost_IB int(11) DEFAULT NULL,
+ cost_remote decimal(10,3) default 0,
+ cost_SSD decimal(10,3) default 0,
+ cost_IB decimal(10,3) default 0,
   PRIMARY KEY (id_host)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
 
@@ -665,10 +665,9 @@ $MYSQL "alter ignore table execs
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
 $MYSQL "alter ignore table execs
-  alter column  \`valid\` int DEFAULT '1',
+ modify column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
   ADD \`outlier\` int DEFAULT '0';"
-
 
 $MYSQL "alter ignore table execs add hadoop_version varchar(127) default NULL;"
 
@@ -689,10 +688,14 @@ $MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
 $MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
 
 $MYSQL "alter ignore table clusters
-  alter column cost_remote decimal(10,3) default 0,
-  alter column cost_SSD decimal(10,3) default 0,
-  alter column cost_IB decimal(10,3) default 0;"
+ modify column cost_remote decimal(10,3) default 0,
+  modify column cost_SSD decimal(10,3) default 0,
+  modify column cost_IB decimal(10,3) default 0;"
 
+$MYSQL "alter ignore table hosts
+	add column cost_remote decimal(10,3) default 0,
+	add column cost_SSD decimal(10,3) default 0,
+	add column cost_IB decimal(10,3) default 0;"
 
 
 ############################################33
