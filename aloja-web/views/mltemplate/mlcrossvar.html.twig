@@ -1,0 +1,159 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify">[WiP] Set stuff here...</p>
+		<hr />
+	</div>
+	<div id="container" style="float: left; width: 70%; margin: 0 auto;">
+		<div id="navigation" style="text-align: center; width: 100%; margin: 0 auto;">
+			<div style="width: 50%; margin: 0 auto;">
+			Select variables:
+			<table width="100%"><tr><td width="49%">
+						<select class="form-control" name="variable1" id="variable1" size="5">
+						<option value="maps" {% if variable1 == 'maps' or variable1 =='' %}selected="selected"{% endif %}>Maps</option>
+						<option value="comp" {% if variable1 == 'comp' %}selected="selected"{% endif %}>Compression</option>
+						<option value="id_cluster" {% if variable1 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+						<option value="net" {% if variable1 == 'net' %}selected="selected"{% endif %}>Network</option>
+						<option value="disk" {% if variable1 == 'disk' %}selected="selected"{% endif %}>Disk</option>
+						<option value="replication" {% if variable1 == 'replication' %}selected="selected"{% endif %}>Replication</option>
+						<option value="iofilebuf" {% if variable1 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+						<option value="blk_size" {% if variable1 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
+						<option value="iosf" {% if variable1 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
+						<option value="datanodes" {% if variable1 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
+						<option value="headnodes" {% if variable1 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
+						<option value="vm_OS" {% if variable1 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
+						<option value="vm_cores" {% if variable1 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
+						<option value="vm_RAM" {% if variable1 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
+						<option value="provider" {% if variable1 == 'provider' %}selected="selected"{% endif %}>Provider</option>
+						<option value="vm_size" {% if variable1 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
+						<option value="type" {% if variable1 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
+						<option value="exe_time" {% if variable1 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
+						</select>
+			</td><td width="2%">&nbsp;</td><td width="49%">
+						<select class="form-control" name="variable2" id="variable2" size="5">
+						<option value="maps" {% if variable2 == 'maps' %}selected="selected"{% endif %}>Maps</option>
+						<option value="comp" {% if variable2 == 'comp' %}selected="selected"{% endif %}>Compression</option>
+						<option value="id_cluster" {% if variable2 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+						<option value="net" {% if variable2 == 'net' or variable1 =='' %}selected="selected"{% endif %}>Network</option>
+						<option value="disk" {% if variable2 == 'disk' %}selected="selected"{% endif %}>Disk</option>
+						<option value="replication" {% if variable2 == 'replication' %}selected="selected"{% endif %}>Replication</option>
+						<option value="iofilebuf" {% if variable2 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+						<option value="blk_size" {% if variable2 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
+						<option value="iosf" {% if variable2 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
+						<option value="datanodes" {% if variable2 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
+						<option value="headnodes" {% if variable2 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
+						<option value="vm_OS" {% if variable2 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
+						<option value="vm_cores" {% if variable2 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
+						<option value="vm_RAM" {% if variable2 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
+						<option value="provider" {% if variable2 == 'provider' %}selected="selected"{% endif %}>Provider</option>
+						<option value="vm_size" {% if variable2 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
+						<option value="type" {% if variable2 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
+						<option value="exe_time" {% if variable2 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
+						</select>
+			</td></tr></table>
+			</div>
+		</div>
+		<br />
+		<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
+	</div>
+	<div style="float: right; width: 30%;">
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$("select.form-control option[value='None']").text("ALL");
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		$("#variable1").change(function()
+		{
+			var configForm = document.getElementsByName('configFilters')[0];
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>";
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>";
+			$('#submit').click();
+		});
+		$("#variable2").change(function()
+		{
+			var configForm = document.getElementsByName('configFilters')[0];
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable1' value='" + $("#variable1").val() + "'></input>";
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable2' value='" + $("#variable2").val() + "'></input>";
+			$('#submit').click();
+		});
+
+		$('#chart').highcharts( {
+    		        chart: {
+    		            type: 'scatter',
+    		            zoomType: 'xy'
+    		        },
+    		        title: {
+    		            text: 'Variable comparission'
+    		        },
+    		        subtitle: {
+    		            text: '{{variable1}} vs {{variable2}}'
+    		        },
+			xAxis: {
+				title: {
+					enabled: true,
+					text: '{{variable2}}'
+				},
+				startOnTick: true,
+				endOnTick: false,
+				categories: {{categories2 | raw}}
+    		        },
+    		        yAxis: {
+				title: {
+					enabled: true,
+					text: '{{variable1}}'
+				},
+				startOnTick: true,
+				endOnTick: false,
+				categories: {{categories1 | raw}}
+    		        },
+		        credits: {
+				enabled: false
+			    },
+    		        plotOptions: {
+			    series: {
+				turboThreshold: 5000
+			    },
+    		            scatter: {
+    		                marker: {
+    		                    radius: 5,
+    		                    states: {
+    		                        hover: {
+    		                            enabled: true,
+    		                            lineColor: 'rgb(100,100,100)'
+    		                        }
+    		                    }
+    		                },
+    		                states: {
+    		                    hover: {
+    		                        marker: {
+    		                            enabled: false
+    		                        }
+    		                    }
+    		                },
+    		                tooltip: {
+    		                    headerFormat: '',
+    		                    pointFormat: '{point.name}'
+    		                }
+    		            }
+    		        },
+    		        series: [
+				{name: 'Observations (Run Experiments)', data: {{ jsonData | raw }}},
+			]
+		});
+	});
+    </script>
+{% endblock %}

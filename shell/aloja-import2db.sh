@@ -203,7 +203,7 @@ for folder in 201* ; do
 	        mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
 	      else
 	        logger "OK=$folder_OK Moving $folder to FAIL/$folder_OK for manual check"
-	        #mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/$folder_OK/"
+	        mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/$folder_OK/"
 	      fi
 	    fi
 	

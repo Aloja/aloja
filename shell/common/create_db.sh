@@ -665,6 +665,9 @@ $MYSQL "alter ignore table execs
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
 $MYSQL "alter ignore table execs
+ add column  \`valid\` int DEFAULT '1';"
+
+$MYSQL "alter ignore table execs
  modify column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
   ADD \`outlier\` int DEFAULT '0';"
