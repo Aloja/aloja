@@ -249,6 +249,33 @@
 				});
 			});
 
+			$("form[name='configFilters'] input").change(function() {
+				if($(this).attr('name') != 'filters[]') {
+					if($(this).val() == "None") {
+						if($(this).attr('checked')) {
+							$(this).parent().find('input').each(function() {
+								if($(this).val() != "None")
+									$(this).removeAttr('checked');
+							});
+						} else if($(this).parent().find('input:checked').length == 0)
+							$(this).attr('checked');
+						else {
+							$(this).parent().find('input').each(function() {
+								if($(this).val() != "None")
+									$(this).removeAttr('checked');
+							});
+						}
+					}
+					
+					if($(this).parent().hasClass('panel-body')) {
+						var length = $(this).parent().find('input:checked').length;
+						if(length > 1) {
+							$(this).parent().find("input[value='None']").removeAttr('checked');
+						}
+					}
+				}
+			});
+
 			$("input[name='filters[]']").change(function() {
 				var ids = $("input[name='filters[]']:checked");
 				if(ids.length == 0) {
