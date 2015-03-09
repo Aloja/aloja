@@ -73,7 +73,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "-10" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -234,8 +234,10 @@ fi
 
 BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 
-if [ -z "$BENCH" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "-10" ]; then
-  BENCH="HiBench$BENCH"
+if [ -z "$BENCH" ]; then
+  BENCH="HiBench"
+fi
+if [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-10" ]; then
   EXECUTE_HIBENCH="true"
 fi
 
@@ -337,11 +339,9 @@ loggerb  ""
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
-else
-  prepare_config
-fi
+prepare_config
+
+benchmark_config
 
 start_time=$(date '+%s')
 
@@ -352,19 +352,13 @@ loggerb  "Starting execution of $BENCH"
 #"wordcount" "sort" "terasort" "kmeans" "pagerank" "bayes" "nutchindexing" "hivebench" "dfsioe"
 #  "nutchindexing"
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  execute_HiBench
-elif [ "$BENCH" == "sleep" ] ; then
-  execute_sleep
-else
-  loggerb "ERROR: $BENCH is not definied.  Exiting..."
-  exit 1
-fi
+benchmark_run
 
-if [ ! "$EXECUTE_HIBENCH" ] ; then
-  stop_monit
-  save_bench "$BENCH"
-fi
+stop_monit
+
+benchmark_teardown
+
+benchmark_save
 
 
 loggerb  "$(date +"%H:%M:%S") DONE $bench"
@@ -373,12 +367,7 @@ loggerb  "$(date +"%H:%M:%S") DONE $bench"
 ########################################################
 end_time=$(date '+%s')
 
-#clean up
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  stop_hadoop
-fi
-
-stop_monit
+benchmark_cleanup
 
 
 #copy

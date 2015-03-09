@@ -85,13 +85,17 @@ prepare_hadoop_config(){
   #before running hibench, set exports and vars
   EXP="export JAVA_HOME=$JAVA_HOME && \
 export HADOOP_HOME=$BENCH_H_DIR && \
+export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
+export HADOOP_CONF_DIR=$BENCH_H_DIR/conf && \
+export HADOOP_EXAMPLES_JAR=$BENCH_H_DIR/hadoop-examples-*.jar && \
+export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
+export HADOOP_VERSION=hadoop1 && \
 export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
 export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
+export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
 export NUM_MAPS=$MAX_MAPS && \
 export NUM_REDS=$MAX_MAPS && \
 "
-
-  loggerb "Preparing exe dir"
 
 
   loggerb "Creating source dir and Copying Hadoop"
@@ -99,10 +103,6 @@ export NUM_REDS=$MAX_MAPS && \
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
 
   $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
-
-  $DSH "cp /usr/bin/vmstat $vmstat" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp $bwm_source $bwm" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp /usr/bin/sar $sar" 2>&1 |tee -a $LOG_PATH
 
   loggerb "Preparing config"
 
@@ -399,10 +399,10 @@ execute_hadoop(){
     $DSH_MASTER $BENCH_H_DIR/bin/hadoop fs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
   fi
 
-loggerb "# Checking disk space with df AFTER"
-$DSH "df -h" 2>&1 |tee -a $LOG_PATH
-loggerb "# Checking hadoop folder space AFTER"
-$DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+  loggerb "# Checking disk space with df AFTER"
+  $DSH "df -h" 2>&1 |tee -a $LOG_PATH
+  loggerb "# Checking hadoop folder space AFTER"
+  $DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
 
   #clean output data
   loggerb "INFO: Cleaning Output data for $bench"

@@ -10,7 +10,7 @@ chown vagrant:vagrant /home/vagrant/.ssh/{id_rsa,id_rsa.pub}
 cat /home/vagrant/.ssh/id_rsa.pub >> /home/vagrant/.ssh/authorized_keys
 
 # packages
-packages=("dsh" "sysstat")
+packages=("bc" "dsh" "sysstat")
 apt-get update
 for package in "${packages[@]}"; do
 	if ! which $package > /dev/null; then
