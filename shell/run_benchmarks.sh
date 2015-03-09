@@ -241,7 +241,7 @@ if [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-10" ]; then
   EXECUTE_HIBENCH="true"
 fi
 
-BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
+BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT

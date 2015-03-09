@@ -82,22 +82,6 @@ get_hadoop_conf_dir() {
 
 prepare_hadoop_config(){
 
-  #before running hibench, set exports and vars
-  EXP="export JAVA_HOME=$JAVA_HOME && \
-export HADOOP_HOME=$BENCH_H_DIR && \
-export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
-export HADOOP_CONF_DIR=$BENCH_H_DIR/conf && \
-export HADOOP_EXAMPLES_JAR=$BENCH_H_DIR/hadoop-examples-*.jar && \
-export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
-export HADOOP_VERSION=hadoop1 && \
-export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
-export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
-export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
-export NUM_MAPS=$MAX_MAPS && \
-export NUM_REDS=$MAX_MAPS && \
-"
-
-
   loggerb "Creating source dir and Copying Hadoop"
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
@@ -293,6 +277,12 @@ execute_HiBench(){
     #$DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
     echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
 
+    # Check if there is a custom config for this bench, and call it
+    if type "benchmark_hibench_config_${bench}" &>/dev/null
+    then
+      eval "benchmark_hibench_config_${bench}"
+    fi
+
     #just in case check if the input file exists in hadoop
     if [ "$DELETE_HDFS" == "0" ] ; then
       get_bench_name $bench
@@ -377,6 +367,35 @@ execute_hadoop(){
   local start_exec=$(date '+%s')  && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S') && echo "end $start_date" 2>&1 |tee -a $LOG_PATH
   loggerb "# EXECUTING ${3}${1}"
+
+  #need to send all the environment variables over SSH
+  EXP="export JAVA_HOME=$JAVA_HOME && \
+export HADOOP_HOME=$BENCH_H_DIR && \
+export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
+export HADOOP_CONF_DIR=$BENCH_H_DIR/conf && \
+export HADOOP_EXAMPLES_JAR=$BENCH_H_DIR/hadoop-examples-*.jar && \
+export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
+export HADOOP_VERSION=hadoop1 && \
+export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
+export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
+export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
+export NUM_MAPS=$NUM_MAPS && \
+export NUM_REDS=$NUM_REDS && \
+export DATASIZE=$DATASIZE && \
+export PAGES=$PAGES && \
+export CLASSES=$CLASSES && \
+export NGRAMS=$NGRAMS && \
+export RD_NUM_OF_FILES=$RD_NUM_OF_FILES && \
+export RD_FILE_SIZE=$RD_FILE_SIZE && \
+export WT_NUM_OF_FILES=$WT_NUM_OF_FILES && \
+export WT_FILE_SIZE=$WT_FILE_SIZE && \
+export NUM_OF_CLUSTERS=$NUM_OF_CLUSTERS && \
+export NUM_OF_SAMPLES=$NUM_OF_SAMPLES && \
+export SAMPLES_PER_INPUTFILE=$SAMPLES_PER_INPUTFILE && \
+export DIMENSIONS=$DIMENSIONS && \
+export MAX_ITERATION=$MAX_ITERATION && \
+export NUM_ITERATIONS=$NUM_ITERATIONS && \
+"
 
   $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
 
