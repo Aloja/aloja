@@ -4,6 +4,7 @@
 		{{ highcharts_js|raw }}
 	    <script>
         $(document).ready(function() {
+        	$("#results").dataTable();
             var chart = new Highcharts.Chart({
                 chart: {
                     renderTo: 'chart',
@@ -177,7 +178,6 @@
 	            
 	              <table class="table stripped">
 	              	<thead>
-	              	    <th>Rank</th>
 	              		<th>Cluster</th>
 	              		<th>Provider</th>
 	              		<th>Type</th>
@@ -191,7 +191,7 @@
 	              	<tbody>
 	              	 {% for cluster in clusters %}
 	              	   <tr>
-	              	     <td>#{{ loop.index }}</td>
+	              	     <td>{{ loop.index }}</td>
 	              	     <td>{{ cluster.name }}</td>
 	              	     <td>{{ cluster.provider }}</td>
 	              	     <td>{{ cluster.type }}</td>
