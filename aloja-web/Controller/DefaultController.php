@@ -1792,7 +1792,7 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils ();
         $data = array();
 
-        //$filter_execs = DBUtils::getFilterExecs();
+        $filter_execs = DBUtils::getFilterExecs();
         $configurations = array();
         $where_configs = '';
         $concat_config = "";
@@ -1834,7 +1834,7 @@ class DefaultController extends AbstractController
         $query = "SELECT e.*, c.* from execs e JOIN clusters c USING (id_cluster)
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
-        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
 
     	try {
     		$rows = $db->get_rows($query);
