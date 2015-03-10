@@ -107,19 +107,72 @@ dbscanexecs:
 dbscanexecsdata:
     pattern: "/dbscanexecsdata"
     controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+
+hdp2counters:
+    pattern: "/hdp2counters"
+    controller: "alojaweb\\Controller\\DefaultController::hdp2CountersAction"
     
+hdp2countersdata:
+    pattern: "/hdpcountersdata"
+    controller: "alojaweb\\Controller\\RestController::hdp2countersDataAction"
+   
+histogramhdi:
+    pattern: "/histogramhdi"
+    controller: "alojaweb\\Controller\\DefaultController::histogramHDIAction"
+     
+histogramhdidata:
+    pattern: "/histogramhdidata"
+    controller: "alojaweb\\Controller\\RestController::histogramHDIDataAction"
+    
+histogramhditasksdata:
+    pattern: "/histogramhditasksdata"
+    controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"
+    
+clustercosteffectiveness:
+    pattern: "/clustercosteffectiveness"
+    controller: "alojaweb\\Controller\\DefaultController::clusterCostEffectivenessAction"
+
+costperfclustereval:
+    pattern: "/costperfclustereval"
+    controller: "alojaweb\\Controller\\DefaultController::costPerfClusterEvaluationAction"
+    
+bestcostperfclustereval:
+    pattern: "/bestcostperfclustereval"
+    controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"
+
 mlprediction:
     pattern: "/mlprediction"
-    controller: "alojaweb\\Controller\\DefaultController::mlpredictionAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
 
 mldatacollapse:
     pattern: "/mldatacollapse"
-    controller: "alojaweb\\Controller\\DefaultController::mldatacollapseAction"
+    controller: "alojaweb\\Controller\\MLDataCollapseController::mldatacollapseAction"
 
 mlfindattributes:
     pattern: "/mlfindattributes"
-    controller: "alojaweb\\Controller\\DefaultController::mlfindattributesAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlfindattributesAction"
 
 mlclearcache:
     pattern: "/mlclearcache"
-    controller: "alojaweb\\Controller\\DefaultController::mlclearcacheAction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlclearcacheAction"
+
+mlparameval:
+    pattern: "/mlparameval"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
+
+mloutliers:
+    pattern: "/mloutliers"
+    controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
+
+mlcrossvar:
+    pattern: "/mlcrossvar"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+
+mlsummaries:
+    pattern: "/mlsummaries"
+    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
+
+mlminconfigs:
+    pattern: "/mlminconfigs"
+    controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"
+

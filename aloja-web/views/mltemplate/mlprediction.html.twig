@@ -10,7 +10,10 @@
 		<p style="text-align:justify">[WiP] Having all the possible executions of a benchmark is a current problem, as Hadoop offers several configurations to be run. Here we built a mechanism, using Machine Learning techniques, to predict the result of a benchmark execution given a specific configuration, all of this from a few observed executions. Select in the right menu the set of executions you want to train a model, also the method to train it. Then observe in the chart below how good the prediction can be, training with 50% of the seen executions and validating and testing with the other (25%-25%).</p>
 		<hr />
 	</div>
-	<div id="chart" style="float: left; width: 70%;"></div>
+	<div id="stuff" style="float: left; width: 68%;">
+		<div id="chart" style="float: left; width: 100%;"></div>
+		<div id="information" style="float: left; width: 100%;"><p>{{error_stats | raw}}</p></div>
+	</div>
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}
 	</div>
@@ -24,64 +27,75 @@
 	$(document).ready(function() {
 		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
-		$('#chart').highcharts( {
-    		        chart: {
-    		            type: 'scatter',
-    		            zoomType: 'xy'
-    		        },
-    		        title: {
-    		            text: 'Predicted Exec.Time vs Real Exec.Time'
-    		        },
-    		        subtitle: {
-    		            text: 'Predictions'
-    		        },
-    		        xAxis: {
-    		            title: {
-    		                enabled: true,
-    		                text: 'Predicted Execution Time (s)'
-    		            },
-    		            startOnTick: true,
-    		            endOnTick: true,
-    		            showLastLabel: true
-    		        },
-    		        yAxis: {
-    		            title: {
-    		                text: 'Real Execution Time (s)'
-    		            }
-    		        },
-	                credits: {
-				enabled: false
-		            },
-    		        plotOptions: {
-    		            scatter: {
-    		                marker: {
-    		                    radius: 5,
-    		                    states: {
-    		                        hover: {
-    		                            enabled: true,
-    		                            lineColor: 'rgb(100,100,100)'
-    		                        }
-    		                    }
-    		                },
-    		                states: {
-    		                    hover: {
-    		                        marker: {
-    		                            enabled: false
-    		                        }
-    		                    }
-    		                },
-    		                tooltip: {
-    		                    headerFormat: '',
-    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
-    		                }
-    		            }
-    		        },
-    		        series: [{
-    		            name: 'Exe time',
-    		            color: 'rgba(223, 83, 83, .5)',
-    		            data: {{ jsonExecs | raw }}
-			}]
-		});
+
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#chart').highcharts( {
+	    		        chart: {
+	    		            type: 'scatter',
+	    		            zoomType: 'xy'
+	    		        },
+	    		        title: {
+	    		            text: 'Predicted Exec.Time vs Real Exec.Time'
+	    		        },
+	    		        subtitle: {
+	    		            text: 'Predictions'
+	    		        },
+	    		        xAxis: {
+	    		            title: {
+	    		                enabled: true,
+	    		                text: 'Predicted Execution Time (s)'
+	    		            },
+	    		            startOnTick: true,
+	    		            endOnTick: true,
+	    		            showLastLabel: true
+	    		        },
+	    		        yAxis: {
+	    		            title: {
+	    		                text: 'Real Execution Time (s)'
+	    		            }
+	    		        },
+			        credits: {
+					enabled: false
+				    },
+	    		        plotOptions: {
+				    series: {
+					turboThreshold: 5000
+				    },
+	    		            scatter: {
+	    		                marker: {
+	    		                    radius: 5,
+	    		                    states: {
+	    		                        hover: {
+	    		                            enabled: true,
+	    		                            lineColor: 'rgb(100,100,100)'
+	    		                        }
+	    		                    }
+	    		                },
+	    		                states: {
+	    		                    hover: {
+	    		                        marker: {
+	    		                            enabled: false
+	    		                        }
+	    		                    }
+	    		                },
+	    		                tooltip: {
+	    		                    headerFormat: '',
+	    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
+	    		                }
+	    		            }
+	    		        },
+	    		        series: [
+					{name: 'Exe time', color: 'rgba(223, 83, 83, .5)', data: {{ jsonExecs | raw }}	},
+					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[50, 50], [{{max_p|raw}}, {{max_p|raw}}]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
+				]
+			});
+		}
+		else
+		{
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}	
 	});
     </script>
 {% endblock %}

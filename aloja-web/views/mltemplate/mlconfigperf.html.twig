@@ -1,0 +1,145 @@
+{% extends "layout.html.twig" %}
+{% block javascript %}
+	{{ parent() }}
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
+	$(document).ready(function ()
+	{
+		$("#select-model").change(function()
+		{
+			var url = window.location.href;    
+			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val();
+			else url = url + '?current_model=' + $("#select-model").val();
+			window.location.href = url;
+		});
+
+		$("select.form-control option[value='None']").text("ALL");
+
+		var series_raw = '{{series | raw}}';
+		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
+
+		var target = document.getElementById('select-model');
+		var mid = {{ models_id | raw }};
+		for (i = 0; i < mid.length; i++)
+		{
+			var newhtml = "<option value='" + mid[i] + "'";
+			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
+			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
+		}
+
+		$('select[name="parameval"]').change(function()
+		{
+			var name = $(this).val()+'s[]';
+			$('select[name="'+name+'"]').val('None');
+			var configForm = document.getElementsByName('configFilters');
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
+			$(this).parents('form').submit();
+		});
+	    	$('input').change(function()
+		{
+			var configForm = document.getElementsByName('configFilters');
+			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>";
+			$(this).parents('form').submit();
+		});
+
+		if ("{{must_wait}}" == "NO")
+		{
+			$('#chart').highcharts({
+				chart: {
+					type: 'column'
+				},
+				title: {
+					text: '{{ getParamevalTitleName(paramEval) }} evaluation'
+				},
+				credits: {
+					enabled: false
+				},
+				xAxis: {
+					categories: [{{ categories | raw}}],
+					title: {
+						text: '{{ getParamevalTitleName(paramEval) }}'
+					}
+				},
+				yAxis: {
+					min: 0,
+					title: {
+						text: 'Execution time'
+					}
+				},
+				tooltip: {
+					headerFormat: '<table>',
+					pointFormat:	'<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
+							'<td style="padding:0"><b>{point.y:.1f} s</b></td></tr>'+
+							'<tr><td>Average of {point.count} executions</tr>',
+					footerFormat: '</table>',
+					shared: true,
+					useHTML: true
+				},
+				plotOptions: {
+					column: {
+						pointPadding: 0.2,
+						borderWidth: 0
+					}
+				},
+				series: {{ series | raw }},
+				colors: {{ gammacolors | raw }}
+			});
+
+		}
+		else
+		{
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+			$('#footer').hide();
+			setInterval( function() { window.location.reload(); }, 60000 ); 
+		}
+	});
+	</script>
+{% endblock %}
+{% block content %}
+	<div id="navigation" style="text-align: center;">
+		<form>
+			<div style="width: 50%; margin-left: 10%;">
+				<div style="width: 40%; margin: 0 auto;">
+				Parameter to evaluate:	<select class="form-control" name="parameval">
+							<option value="maps" {% if paramEval == 'maps' %}selected="selected"{% endif %}>Maps</option>
+							<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
+							<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+							<option value="net" {% if paramEval == 'net' %}selected="selected"{% endif %}>Network</option>
+							<option value="disk" {% if paramEval == 'disk' %}selected="selected"{% endif %}>Disk</option>
+							<option value="replication" {% if paramEval == 'replication' %}selected="selected"{% endif %}>Replication</option>
+							<option value="iofilebuf" {% if paramEval == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+							<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
+							<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
+							</select>
+				</div>
+			</div>
+		</form>
+		<div id="chart" style="float: left; width: 68%; margin: 0 auto;"></div>
+		<div style="float: right; width: 30%;">
+		{% include 'common/config_filters.html.twig' %}
+		</div>
+	</div>
+	<div style="clear: both;"></div>
+	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+	<div id="footer" style="display: none; float: left; width: 100%;">
+		<hr />
+		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}}</p>
+		<div style="float: left; width: 70%;">
+			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+		</div>
+		<div style="float: left; width: 30%;">
+			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+		</div>
+	</div>
+{% endblock %}
+
+

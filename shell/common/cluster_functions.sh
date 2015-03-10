@@ -10,6 +10,7 @@ source "$CONF_DIR/provider_functions.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #global variables
+declare -A requireRootFirst
 
 #####################################################################################
 # Start functions
@@ -30,7 +31,7 @@ vm_create_node() {
 
   if [ "$vmType" != 'windows' ] ; then
 
-    requireRootFirst="true" #for some providers that need root user first it is dissabled further on
+    requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
@@ -79,7 +80,7 @@ vm_create_connect() {
 #requires $vm_name and $type to be set
 vm_provision() {
   vm_initial_bootstrap
-  requireRootFirst="" #disable root/admin user from this part on
+  requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
 
   vm_set_ssh
   vm_install_base_packages
@@ -131,6 +132,12 @@ get_node_names() {
   fi
 
   echo -e "$node_names"
+}
+
+#for Infiniband on clusters that support it
+get_node_names_IB() {
+  #logger "WARN: Special hosts for InfiniBand not defined, using regular hostsnames"
+  echo -e "$(get_node_names)"
 }
 
 get_slaves_names() {
@@ -254,7 +261,7 @@ vm_connect() {
 
   set_shh_proxy
 
-  local sshOptions="-o StrictHostKeyChecking=no -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+  local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
 
   #Use SSH keys
   if [ -z "$1" ] ; then
@@ -299,7 +306,7 @@ vm_rsync() {
     set_shh_proxy
 
     logger "RSynching: $1 To: $2"
-    #eval is for parameter expansion  --progress
+    #eval is for parameter expansion  --progress --copy-links
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
@@ -318,6 +325,12 @@ get_master_name() {
     done
   fi
   echo "$master_name"
+}
+
+#for Infiniband on clusters that support it
+get_master_name_IB() {
+  #logger "WARN: Special master name for InfiniBand not defined, using regular"
+  echo "$(get_master_name)"
 }
 
 #vm_name must be set
@@ -420,7 +433,7 @@ get_share_location() {
 #    local fs_mount="$userAloja@al-1001.cloudapp.net:$homePrefixAloja/$userAloja/share/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
 #  fi
 
-  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
+  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
 
   echo -e "$fs_mount"
 }
@@ -448,10 +461,9 @@ make_fstab(){
     num_drives="$((num_drives+1))"
   done
 
-  if [ "$cloud_provider" == "azure" ] ; then
-    local create_string="$create_string
-/mnt       /scratch/local    none bind 0 0"
-  fi
+  local create_string="$create_string
+$(get_extra_fstab)"
+
 
 #sudo chmod 777 /etc/fstab; sudo echo -e '# <file system> <mount point>   <type>  <options>       <dump>  <pass>
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
@@ -467,9 +479,9 @@ get_mount_disks() {
   local create_string="
     mkdir -p ~/{share,minerva};
     sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
+    $(get_extra_mount_disks)
     sudo chown -R $userAloja: /scratch;
     sudo mount -a;
-    sudo chown -R $userAloja /scratch
   "
   echo -e "$create_string"
 }
@@ -632,8 +644,9 @@ vm_install_base_packages() {
 #  sudo apt-get update -m;
 #fi
 
+export DEBIAN_FRONTEND=noninteractive
 sudo apt-get update -m;
-sudo apt-get install -y -f '
+sudo apt-get -o Dpkg::Options::="--force-confold" install -y -f '
 
       local install_packages_command="$install_packages_command ssh $base_packages;"
 
@@ -711,9 +724,14 @@ vm_set_dot_files() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
-    vm_update_template "~/.bashrc" "export HISTSIZE=50000
+    vm_update_template "~/.bashrc" "
+export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'" ""
+
+    vm_update_template "~/.screenrc" "
+defscrollback 99999
+startup_message off" ""
 
     test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' ~/.bashrc\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
@@ -850,7 +868,7 @@ function cluster_parallel_config() {
 function cluster_queue_jobs() {
   if [ "$vmType" != 'windows' ] ; then
     vm_set_master_crontab
-    vm_set_master_forer &
+    vm_set_master_forer
   fi
 }
 
@@ -914,9 +932,6 @@ vm_set_master_crontab() {
 
     vm_execute_master "echo '$crontab' |crontab"
 
-    #start the queue so dirs are created
-    vm_execute_master "export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName"
-
   else
     logger "Crontab already installed in master"
   fi
@@ -933,12 +948,26 @@ vm_set_master_forer() {
 
   if check_bootstraped "vm_set_master_forer" "set" "master"; then
 
+  #logger "INFO: starting queues in background in case dirs are not yet created"
+  #vm_execute_master "bash -c \"(nohup export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName; touch nohup-exit) > /dev/null &\""
+
+  logger "Checking if queues dirs already setup"
+  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/queue.log && echo '$testKey'")"
+  #in case we get a welcome banner we need to grep
+  test_action="$(echo -e "$test_action"|grep "$testKey")"
+
+  if [ -z "$test_action" ] ; then
+    logger "WARN: queues not ready sleeping for 61s."
+    sleep 61
+  fi
+
   logger "Checking if queues already setup"
   test_action="$(vm_execute "ls ~/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
   if [ -z "$test_action" ] ; then
+
     #TODO shouldn't be necessary but...
     logger "DEBUG: Re-mounting disks"
     local verify_share="$(verify_share_cmd "$homePrefixAloja/$userAloja/share")"
@@ -974,9 +1003,9 @@ vm_puppet_apply() {
   vm_rsync "$puppet" "~/" ""
   logger "Puppet install modules and apply"
 
-	vm_execute "cd $(basename $puppet) && sudo ./$puppetBootFile"
+	vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetBootFile'"
 	if [ ! -z "$puppetPostScript" ]; then
-	 vm_execute "cd $(basename $puppet) && sudo ./$puppetPostScript"
+	 vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetPostScript'"
 	fi
 }
 
@@ -1000,7 +1029,9 @@ vm_make_fs() {
 
     if [ -z "$test_action" ] ; then
       logger " Linking $homePrefixAloja/$userAloja/share"
-      vm_execute "sudo chown -R ${userAloja} /scratch;
+
+      vm_execute "
+sudo chown -R ${userAloja}: /scratch;
 [ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;
 touch $homePrefixAloja/$userAloja/share/safe_store;
@@ -1014,8 +1045,8 @@ touch $homePrefixAloja/$userAloja/share/safe_store;
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell" "$homePrefixAloja/$userAloja/share"
-  vm_rsync "../aloja-deploy" "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools" "$homePrefixAloja/$userAloja/share"
+  #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
@@ -1053,6 +1084,7 @@ vm_put_file_contents() {
     if [ "$3" ] ; then
       local command="
 sudo chmod 777 $1 2> /dev/null;
+sudo touch $1;
 sudo cp $1 ${1}.$(date +%s).bak 2> /dev/null;
 sudo cat << 'EOF' > $1
 $2
@@ -1062,6 +1094,7 @@ sudo chmod 644 $1"
 
     else
       local command="
+touch $1;
 cp $1 ${1}.$(date +%s).bak 2> /dev/null;
 cat << 'EOF' > $1
 $2
@@ -1080,13 +1113,19 @@ EOF
 #$1 filename on remote machine $2 template part content $3 change permissions
 vm_update_template() {
 
+  if [ "$3" ] ; then
+    local use_sudo="sudo"
+  else
+    local use_sudo=""
+  fi
+
   #logger "DEBUG: TEMPLATE getting $1 contents"
   local fileCurrentContent="$(vm_get_file_contents "$1")"
 
   #if file doesn't exists, is possible that the main dir does not exist either
   if [ ! "$fileCurrentContent" ] ; then
     logger "WARNING: atempting to create directory: $(dirname "$1") for $1"
-    vm_execute "mkdir -p $(dirname "$1")"
+    vm_execute "$use_sudo mkdir -p $(dirname "$1")"
   fi
 
   #logger "DEBUG: TEMPLATE $1 GOT contents"
@@ -1094,4 +1133,89 @@ vm_update_template() {
   #logger "DEBUG: TEMPLATE GOT NEW contents"
   vm_put_file_contents "$1" "$fileNewContent" "$3"
   #logger "DEBUG: TEMPLATE UPDATED $1 with template"
+}
+
+vm_install_percona() {
+
+  local bootstrap_file="vm_install_percona"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "Installing Percona server"
+
+    logger "INFO: Removing previous MySQL (if installed)"
+    vm_execute "
+sudo cp /etc/mysql/my.cnf /etc/mysql/my.cnf.bak
+sudo service mysql stop;
+sudo apt-get remove -y mysql-server mysql-client mysql-common;
+sudo apt-get autoremove -y;
+  "
+
+    logger "INFO: Installing Percona"
+
+    local ubuntu_version="trusty"
+    vm_update_template "/etc/apt/sources.list" "deb http://repo.percona.com/apt $ubuntu_version main
+deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
+
+
+    vm_update_template "/etc/apt/preferences.d/00percona.pref" "Package: *
+Pin: release o=Percona Development Team
+Pin-Priority: 1001" "secured_file"
+
+    vm_execute "
+sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
+sudo apt-get update;
+sudo apt-get install -y percona-server-server-5.5"
+
+    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: Upgrading to latest version"
+      vm_execute "sudo apt-get install -y percona-server-server percona-xtrabackup php5-mysql;"
+    fi
+
+    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+vm_install_pyxtrabackup() {
+
+  local bootstrap_file="vm_install_pyxtrabackup"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing pip and pyxtrabackup"
+    vm_execute "
+sudo apt-get install -y curl python;
+sudo curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python2.7;
+sudo pip install pyxtrabackup;
+"
+
+    test_action="$(vm_execute " [ \"\$(which pyxtrabackup |grep 'pyxtrabackup')\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
 }

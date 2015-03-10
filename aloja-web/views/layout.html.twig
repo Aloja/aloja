@@ -25,6 +25,7 @@
 		  }
 		}
 	</style>
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker3.min.css" />
 	{% endblock %}
 	<script>
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -113,21 +114,33 @@
 		          <ul class="dropdown-menu" role="menu">
 		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Benchmark Executions</a></li>
 		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
-		          </ul>		        
+		             <li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
+		          </ul>
+		        </li>
+{# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
+{# 		          <a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
+{# 		        </li>#}
 				<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Config Evaluations <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
 		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
 		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a></li>
-		            <li {% if selected is defined and selected == 'Metric vs metric' %}class="active"{% endif %}><a class="navlink" href="{{ path('metricvsmetric') }}">Metric vs metric</a></li>
+{# 		            <li {% if selected is defined and selected == 'Metric vs metric' %}class="active"{% endif %}><a class="navlink" href="{{ path('metricvsmetric') }}">Metric vs metric</a></li>#}
 		          </ul>
 		        </li>
 				<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
+			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a>
+			        </li>
+			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}>
+			          <a class="navlink" href="{{ path('bestcostperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of clusters</a>
+			        </li>
+			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
+		            <li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}>
+			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort', 'id_clusters[]': '21'}) }}">Cost/Perf Evaluation of HW configs</a>
 			        </li>
 		          </ul>
 		        </li>		        
@@ -138,18 +151,24 @@
 		          <ul class="dropdown-menu" role="menu">
 		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
 		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
-		    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
-                    <li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>
-		          </ul>
-		        </li>
 
-				<li class="dropdown">
+                    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
+                    {% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
+
+		          </ul>
+
+			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">ML Prediction</a></li>
-		            <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">ML Data Collapse</a></li>
-		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">ML Find Attributes</a></li>
-		            <li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">ML Clear Cache</a></li>
+		            <li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">Modeling Data</a></li>
+		            <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">Collapse Data</a></li>
+		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">Predict Configurations</a></li>
+ 		            <li {% if selected is defined and selected == 'mlparameval' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">Parameter Evaluation (ML)</a></li>
+		            <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
+		            <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
+		            <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
+		            <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
+		            <li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>
                           </ul>
 		        </li>
 		      </ul>
@@ -157,8 +176,8 @@
                 <li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">ALOJA Reference<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>
-		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications</a></li>
+		            {#<li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>#}
+		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications and Slides</a></li>
 		            <li {% if selected is defined and selected == 'Team' %}class="active"{% endif %}><a class="navlink" href="{{ path('team') }}">Team & Collaborators</a></li>
 		            <li class="divider"></li>
 		            <li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clusters') }}">Clusters Reference</a></li>
@@ -211,11 +230,35 @@
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap-datepicker.min.js"></script>
 	<script type="text/javascript" src="js/URI.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
+			$("#advancedFilters").on('shown.bs.collapse hidden.bs.collapse', function() {
+				var element = $(this).parent().find(".indicator").first();
+				if(element.hasClass("glyphicon-chevron-down"))
+					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+				else if(element.hasClass("glyphicon-chevron-up"))
+					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+            });
+             
+			$(".datepicker").each(function() {
+				$(this).datepicker({
+					autoclose: true,
+					format: 'yyyy/mm/dd' 
+				});
+			});
 
+			$("input[name='filters[]']").change(function() {
+				var ids = $("input[name='filters[]']:checked");
+				if(ids.length == 0) {
+				   $("#allunchecked").val("allunchecked");
+				}
+				else
+				   $("#allunchecked").val("");
+			});
+			
             function getCookie(cname) {
            		var name = cname + "=";
           		var ca = document.cookie.split(';');
@@ -233,7 +276,6 @@
         		  	backdrop: 'static'
         		});
         	}
-
 
         	$(".tooltip2").each(function() {
 				$(this).tooltip();

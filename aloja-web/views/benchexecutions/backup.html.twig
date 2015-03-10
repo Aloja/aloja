@@ -38,27 +38,27 @@
 			    {% if column_name == 'IO SFac' %}
 			      {% set column_name = column_name ~ makeTooltip('The number of streams to merge at once while sorting files. This determines the number of open file handles.') %}
 			    {% elseif column_name == 'IO FBuf' %}
-			      {% set column_name = column_name ~ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') %}
+			      {% set column_name = column_name ~ makeTooltip('The total amount of buffer memory to use while sorting files, in MB. By default, gives each merge stream 1MB, which should minimize seeks.') %}
 			    {% elseif column_name == 'Exe Time' %}
-			      {% set column_name = column_name ~ makeTooltip('Execution time.') %}
+			      {% set column_name = column_name ~ makeTooltip('Execution time for benchmark in seconds.') %}
 			    {% elseif column_name == 'Running Cost $' %}
-			      {% set column_name = column_name ~ makeTooltip('Cost on USD dependant of running time and hardware configuration.') %}
+			      {% set column_name = column_name ~ makeTooltip('Cost in USD/hour.') %}
 			    {% elseif column_name == 'Replicas' %}
 			      {% set column_name = column_name ~ makeTooltip('Number of replicas.') %}
 			    {% elseif column_name == 'Maps' %}
 			      {% set column_name = column_name ~ makeTooltip('Number of hadoop mappers used.') %}
 			    {% elseif column_name == 'Disk' %}
-			      {% set column_name = column_name ~ makeTooltip('Kind of disks used.') %}
+			      {% set column_name = column_name ~ makeTooltip('Type of disks used.') %}
 			    {% elseif column_name == 'Net' %}
-			      {% set column_name = column_name ~ makeTooltip('Network.') %}
+			      {% set column_name = column_name ~ makeTooltip('Network type.') %}
 			    {% elseif column_name == 'Rep' %}
 			      {% set column_name = column_name ~ makeTooltip('Number of replicas.') %}
 			    {% elseif column_name == 'Comp' %}
-			      {% set column_name = column_name ~ makeTooltip('Compression algorithm.') %}
+			      {% set column_name = column_name ~ makeTooltip('Compression algorithm for data.') %}
 			    {% elseif column_name == 'Blk size' %}
 			      {% set column_name = column_name ~ makeTooltip('Hadoop HDFS block size.') %}
 			    {% elseif column_name == 'Cluster' %}
-			      {% set column_name = column_name ~ makeTooltip('Kind of cluster.') %}
+			      {% set column_name = column_name ~ makeTooltip('Cluster type for benchmark.') %}
 			    {% elseif column_name == 'Files' %}
 			      {% set column_name = column_name ~ makeTooltip('Download execution files and logs.') %}
 			    {% elseif column_name == 'PARAVER' %}
