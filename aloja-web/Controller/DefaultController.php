@@ -1620,10 +1620,10 @@ class DefaultController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.`JOBID`)
                 FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
+                ORDER BY t.`JOBID` DESC
+                LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
         }
 
         echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
@@ -1647,10 +1647,10 @@ class DefaultController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.`JOBID`)
                 FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
+                ORDER BY t.`JOBID` DESC
+                LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
         }
 
         list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
