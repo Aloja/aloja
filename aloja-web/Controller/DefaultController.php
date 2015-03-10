@@ -100,7 +100,7 @@ class DefaultController extends AbstractController
             }
 
             //get the result rows
-            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
+            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
             $query = "SELECT #count(*),
             		  e.id_exec,
                       concat($concat_config) conf, bench,
@@ -1072,7 +1072,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1326,7 +1326,7 @@ class DefaultController extends AbstractController
             $order_conf = 'LENGTH(conf), conf';
 
             // get the result rows
-            $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
+            $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
     		from execs e
     		join clusters c USING (id_cluster)
     		WHERE 1 $filter_execs $where_configs
@@ -1487,7 +1487,7 @@ class DefaultController extends AbstractController
 // 			else if($paramEval == 'iosf')
 // 				$paramOptions = array(5,10,20,50);
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN clusters USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 
             // get the result rows
             $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
@@ -1672,7 +1672,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1968,8 +1968,8 @@ class DefaultController extends AbstractController
     
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+        					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
@@ -2130,8 +2130,8 @@ class DefaultController extends AbstractController
     
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+        					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
