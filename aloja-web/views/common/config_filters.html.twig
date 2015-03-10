@@ -71,9 +71,7 @@
 						{% for selopt in options['id_cluster'] %}
 						<input type="checkbox" name="id_clusters[]" value="{{ selopt['id_cluster'] }}" {% if selopt['id_cluster'] in id_clusters %}checked{% endif %}>&nbsp;{{ selopt['name'] }}<br />
 						{% endfor %}
-						{% if select_multiple_benchs is not defined or select_multiple_benchs %}
 						<input type="checkbox" name="id_clusters[]" value="None" {% if not id_clusters %}checked{% endif %}>All<br />
-						{% endif %}
 					  </div>
 					 </div>
 				</div>
