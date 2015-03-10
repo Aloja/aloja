@@ -38,7 +38,7 @@ try {
     $controller->$controllerMethod['method']();
 } catch (\Exception $e) {
     if($container->get('config')['enable_debug'])
-      exit('Unexpected error: '.$e->getMessage(). "\n".$e->getPrevious());
+      exit('Unexpected error: '.$e->getMessage(). "\n".$e->getPrevious().print_r($e, 1));
     else {
       $container->getLog()->addError('Internal server error: '.$e->getMessage(). "\n".$e->getPrevious());
       $container->displayServerError();
