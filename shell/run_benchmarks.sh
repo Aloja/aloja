@@ -237,7 +237,7 @@ BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 if [ -z "$BENCH" ]; then
   BENCH="HiBench"
 fi
-if [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-10" ]; then
+if [[ "$BENCH" == HiBench* ]]; then
   EXECUTE_HIBENCH="true"
 fi
 

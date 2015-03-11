@@ -356,16 +356,13 @@ execute_hadoop(){
 #    $DSH "sudo /usr/local/sbin/drop_caches" 2>&1 |tee -a $LOG_PATH
 #  fi
 
-  loggerb "# Checking disk space with df BEFORE"
-  $DSH "df -h" 2>&1 |tee -a $LOG_PATH
-  loggerb "# Checking hadoop folder space BEFORE"
-  $DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+  save_disk_usage "BEFORE"
 
   restart_monit
 
   #TODO fix empty variable problem when not echoing
-  local start_exec=$(date '+%s')  && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
-  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S') && echo "end $start_date" 2>&1 |tee -a $LOG_PATH
+  local start_exec=`timestamp`
+  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
   loggerb "# EXECUTING ${3}${1}"
 
   #need to send all the environment variables over SSH
@@ -399,11 +396,12 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
 
   $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
 
-  local end_exec=$(date '+%s') && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
+  local end_exec=`timestamp`
 
   loggerb "# DONE EXECUTING $1"
 
-  local total_secs=$(expr $end_exec - $start_exec) &&  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
+  local total_secs=`calc_exec_time $start_exec $end_exec`
+  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
   url="http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=${start_date}&period=${total_secs}"
   echo "SENDING: hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s." 2>&1 |tee -a $LOG_PATH
@@ -418,10 +416,7 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
     $DSH_MASTER $BENCH_H_DIR/bin/hadoop fs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
   fi
 
-  loggerb "# Checking disk space with df AFTER"
-  $DSH "df -h" 2>&1 |tee -a $LOG_PATH
-  loggerb "# Checking hadoop folder space AFTER"
-  $DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+  save_disk_usage "AFTER"
 
   #clean output data
   loggerb "INFO: Cleaning Output data for $bench"
