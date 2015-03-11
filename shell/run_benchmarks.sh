@@ -73,7 +73,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "-10" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -148,7 +148,6 @@ loggerb  "INFO: includes loaded"
 
 
 NUMBER_OF_DATA_NODES="$numberOfNodes"
-userAloja="pristine"
 
 DSH="dsh -M -c -m "
 
@@ -235,12 +234,20 @@ fi
 
 BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 
-if [ -z "$BENCH" ] || [ "$BENCH" == "-min" ] || [ "$BENCH" == "-10" ]; then
-  BENCH="HiBench$BENCH"
+if [ -z "$BENCH" ]; then
+  BENCH="HiBench"
+fi
+if [[ "$BENCH" == HiBench* ]]; then
   EXECUTE_HIBENCH="true"
 fi
 
 BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
+if [[ "$BENCH" == HiBench* ]]; then
+  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench"
+fi
+if [[ "$BENCH" == HiBench3* ]]; then
+  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
+fi
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
@@ -251,17 +258,17 @@ else
 fi
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_D${NUMBER_OF_DATA_NODES}_${clusterName}"
-else
-  CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
-fi
-
+# Output directory name
+CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
 LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
 LOG="2>&1 |tee -a $LOG_PATH"
+
+#create dir to save files in one host
+$DSH_MASTER "mkdir -p $JOB_PATH"
+$DSH_MASTER "touch $LOG_PATH"
 
 
 #export HADOOP_HOME="$HADOOP_DIR"
@@ -284,61 +291,9 @@ sudo sysctl vm.panic_on_oom=1 > /dev/null;
 sudo sysctl -w fs.file-max=65536 > /dev/null;
 sudo service ufw stop 2>&1 > /dev/null;
 "
-
-      #temporary to avoid read-only file system errors
-      echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-      $DSH "[ ! \"\$\(ls $homePrefixAloja/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force $homePrefixAloja/$userAloja/share; }"
-
-      for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
-        echo "Checking if to remount $mount_point"
-        $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
-      done
-
-      #$DSH "sudo mount -o force $homePrefixAloja/$userAloja/share; mkdir -p /scratch/attached/{1..3}; sudo mount -o force /scratch/attached/1; sudo mount -o force /scratch/attached/2; sudo mount -o force /scratch/attached/3; sudo mount -a"
-
-    correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
-
-    if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-      echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Remounting..."
-
-      #temporary to avoid read-only file system errors
-      echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-      $DSH "[ ! \"\$\(ls $homePrefixAloja/$userAloja/share/safe_store \)\" ] && { echo 'ERROR: share not mounted correctly'; sudo mount -o force $homePrefixAloja/$userAloja/share; }"
-
-      for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
-        echo "Checking if to remount $mount_point"
-        $DSH "[[ ! \"\$\(mount |grep '$mount_point'| grep 'rw,' \)\" || ! \"\$\(touch $mount_point/touch \)\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo mount -o force $mount_point; }"
-      done
-
-      correctly_mounted_nodes=$($DSH "ls ~/share/safe_store 2> /dev/null" |wc -l)
-
-      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-        echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Rebooting servers and sleeping 90s ..."
-        $DSH_SLAVES "sudo reboot" 2>&1 |tee -a $LOG_PATH
-        sleep 90 2>&1 |tee -a $LOG_PATH
-      fi
-
-      if [ "$correctly_mounted_nodes" != "$(( NUMBER_OF_DATA_NODES + 1 ))" ] ; then
-        echo "ERROR, share directory is not mounted correctly.  Only $correctly_mounted_nodes OK. Exiting..."
-        echo "DEBUG: Correct $correctly_mounted_nodes NUMBER_OF_DATA_NODES $NUMBER_OF_DATA_NODES + 1"
-        exit 1
-      fi
-    fi
-
   fi
 fi
 
-#create dir to save files in one host
-$DSH_MASTER "mkdir -p $JOB_PATH"
-$DSH_MASTER "touch $LOG_PATH"
-
-
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  if [ -z "$noSudo" ] ; then
-    loggerb  "Setting scratch permissions"
-    $DSH "sudo chown -R $userAloja: /scratch"
-  fi
-fi
 
 #only copy files if version has changed (to save time in azure)
 loggerb  "Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
@@ -390,11 +345,9 @@ loggerb  ""
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
-else
-  prepare_config
-fi
+prepare_config
+
+benchmark_config
 
 start_time=$(date '+%s')
 
@@ -405,19 +358,13 @@ loggerb  "Starting execution of $BENCH"
 #"wordcount" "sort" "terasort" "kmeans" "pagerank" "bayes" "nutchindexing" "hivebench" "dfsioe"
 #  "nutchindexing"
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  execute_HiBench
-elif [ "$BENCH" == "sleep" ] ; then
-  execute_sleep
-else
-  loggerb "ERROR: $BENCH is not definied.  Exiting..."
-  exit 1
-fi
+benchmark_run
 
-if [ ! "$EXECUTE_HIBENCH" ] ; then
-  stop_monit
-  save_bench "$BENCH"
-fi
+stop_monit
+
+benchmark_teardown
+
+benchmark_save
 
 
 loggerb  "$(date +"%H:%M:%S") DONE $bench"
@@ -426,17 +373,15 @@ loggerb  "$(date +"%H:%M:%S") DONE $bench"
 ########################################################
 end_time=$(date '+%s')
 
-#clean up
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  stop_hadoop
-fi
-
-stop_monit
+benchmark_cleanup
 
 
 #copy
 loggerb "INFO: Copying resulting files From: $HDD/* To: $JOB_PATH/"
 $DSH "cp $HDD/* $JOB_PATH/"
+
+# Save current config (all environment variables)
+( set -o posix ; set ) > $JOB_PATH/config.sh
 
 
 #report

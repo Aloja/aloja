@@ -69,8 +69,8 @@ save_bench() {
 prepare_config(){
 
   loggerb "Preparing exe dir"
-     loggerb "Deleting previous PORT files"
-     $DSH "rm -rf $HDD/*" 2>&1 |tee -a $LOG_PATH
+  loggerb "Deleting previous PORT files"
+  $DSH "rm -rf $HDD/*" 2>&1 |tee -a $LOG_PATH
 
 
   loggerb "Creating source dir"
@@ -82,22 +82,27 @@ prepare_config(){
   $DSH "cp /usr/bin/sar $sar" 2>&1 |tee -a $LOG_PATH
 }
 
-execute_sleep() {
-  loggerb "Executing sleep in all nodes"
-
-  restart_monit
-
-  for sleep_iterator in {1..5} ; do
-    loggerb "Sleeping zzZZZzzz $sleep_iterator"
-    $DSH "sleep 1"
-  done
-  loggerb "DONE executing sleep"
-
-  stop_monit
-}
-
 set_omm_killer() {
   loggerb "WARNING: OOM killer not set for benchmark"
   #Example: echo 15 > proc/<pid>/oom_adj significantly increase the likelihood that process <pid> will be OOM killed.
   #pgrep apache2 |sudo xargs -I %PID sh -c 'echo 10 > /proc/%PID/oom_adj'
+}
+
+function timestamp() {
+  sec=`date +%s`
+  nanosec=`date +%N`
+  tmp=`expr $sec \* 1000 `
+  msec=`expr $nanosec / 1000000 `
+  echo `expr $tmp + $msec`
+}
+
+function calc_exec_time() {
+  awk "BEGIN {printf \"%.3f\n\", ($2-$1)/1000}"
+}
+
+save_disk_usage() {
+  echo "# Checking disk space with df $1" >> $JOB_PATH/disk.log
+  $DSH "df -h" 2>&1 >> $JOB_PATH/disk.log
+  echo "# Checking hadoop folder space $1" >> $JOB_PATH/disk.log
+  $DSH "du -sh $HDD/*" 2>&1 >> $JOB_PATH/disk.log
 }
