@@ -241,7 +241,13 @@ if [[ "$BENCH" == HiBench* ]]; then
   EXECUTE_HIBENCH="true"
 fi
 
-BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
+BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
+if [[ "$BENCH" == HiBench* ]]; then
+  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench"
+fi
+if [[ "$BENCH" == HiBench3* ]]; then
+  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
+fi
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
