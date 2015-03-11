@@ -291,7 +291,7 @@ class MLTemplatesController extends AbstractController
 					// read results
 					$lines = explode("\n", file_get_contents($tmp_file));
 					$jsonData = '[';
-					$i = 1;
+					$i = 0;
 					while($i < count($lines))
 					{
 						if ($lines[$i]=='') break;

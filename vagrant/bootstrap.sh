@@ -91,7 +91,7 @@ if ! which R > /dev/null; then
 
 	# For all Ubuntu releases until 14.04
 	install.packages(c("devtools","DiscriMiner","emoa","httr","jsonlite","optparse","pracma","rgp","rstudioapi","session","whisker",
-	"RWeka","RWekajars"),repos="http://cran.es.r-project.org",dependencies=TRUE,quiet=TRUE);
+	"RWeka","RWekajars","ggplot2","rms","snowfall","genalg","FSelector"),repos="http://cran.es.r-project.org",dependencies=TRUE,quiet=TRUE);
 	EOF
 
 	chmod a+x /tmp/packages.r
