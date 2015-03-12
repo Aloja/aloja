@@ -35,6 +35,7 @@
 	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 	<div id="footer" style="display:none; float: left; width: 100%;">
 		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
+		<p>Tree Descriptor: {{ tree_descriptor | raw}}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
 		</div>

@@ -196,7 +196,7 @@ class MLTemplatesController extends AbstractController
 
 	public function mlfindattributesAction()
 	{
-		$instance = $message = '';
+		$instance = $message = $tree_descriptor = '';
 		$must_wait = 'NO';
 		try
 		{
@@ -401,6 +401,9 @@ class MLTemplatesController extends AbstractController
 					$data = explode("\n",file_get_contents(str_replace('.csv','.data',$cache_filename)));
 					$mae = $data[0];
 					$rae = $data[1];
+
+					$tree_descriptor = shell_exec(''.getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.$tmp_file.'":output="string" -v 2> /dev/null');
+					$tree_descriptor = substr($tree_descriptor, 4);
 				}				
 			}
 			else
@@ -441,6 +444,7 @@ class MLTemplatesController extends AbstractController
 				'mae' => $mae,
 				'rae' => $rae,
 				'must_wait' => $must_wait,
+				'tree_descriptor' => $tree_descriptor,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);
