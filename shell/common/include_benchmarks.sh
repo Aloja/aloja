@@ -86,5 +86,5 @@ source "$providerFunctionsFile"
 logger "INFO: loading $CONF_DIR/common_benchmarks.sh"
 source "$CONF_DIR/common_benchmarks.sh"
 
-logger "INFO: loading $CONF_DIR/common_hadoop.sh"
-source "$CONF_DIR/common_hadoop.sh"
+logger "INFO: loading $CONF_DIR/benchmark_${BENCH}.sh"
+source "$CONF_DIR/benchmark_${BENCH}.sh"
