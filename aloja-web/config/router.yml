@@ -126,7 +126,7 @@ histogramhditasksdata:
 clustercosteffectiveness:
     pattern: "/clustercosteffectiveness"
     controller: "alojaweb\\Controller\\DefaultController::clusterCostEffectivenessAction"
-    
+
 costperfclustereval:
     pattern: "/costperfclustereval"
     controller: "alojaweb\\Controller\\DefaultController::costPerfClusterEvaluationAction"
@@ -135,6 +135,7 @@ bestcostperfclustereval:
     pattern: "/bestcostperfclustereval"
     controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"
 
+<<<<<<< HEAD
 mlprediction:
     pattern: "/mlprediction"
     controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
@@ -158,4 +159,12 @@ mlclearcache:
 mloutliers:
     pattern: "/mloutliers"
     controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
+
+mlsummaries:
+    pattern: "/mlsummaries"
+    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
+
+mlcrossvar:
+    pattern: "/mlcrossvar"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
 
