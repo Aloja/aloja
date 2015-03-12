@@ -381,7 +381,7 @@ loggerb "INFO: Copying resulting files From: $HDD/* To: $JOB_PATH/"
 $DSH "cp $HDD/* $JOB_PATH/"
 
 # Save current config (all environment variables)
-( set -o posix ; set ) > $JOB_PATH/config.sh
+( set -o posix ; set ) | grep -i -v "password" > $JOB_PATH/config.sh
 
 
 #report
