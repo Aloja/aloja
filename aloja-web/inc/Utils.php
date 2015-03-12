@@ -84,8 +84,7 @@ class Utils
         
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
-         	$items = Utils::delete_none($items);
-            
+         	$items = Utils::delete_none($items);            
         } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');

@@ -1430,7 +1430,7 @@ class DefaultController extends AbstractController
             $benchs = array (
                 'terasort'
             );
-
+		
         echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
             'selected' => 'Best configuration',
             'title' => 'Best Run Configuration',
