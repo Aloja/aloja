@@ -13,7 +13,7 @@
 #	 ./aloja_cli.r -m aloja_predict_dataset -l m5p1 -d m5p1-tt.csv -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8,10,1,65536,None,32,Azure L" -v
 #	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":sorted=asc -v
-#	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":sorted=asc -v
+#	 ./aloja_cli.r -m aloja_predict_instance -l m5p1 -p inst_predict="sort,ETH,RR3,8|10,10,1,65536,*,32,Azure L":vin="Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster":sorted=asc:saveall="m5p1-instances" -v
 #
 #	 ./aloja_cli.r -m aloja_outlier_dataset -d m5p1-tt.csv -l m5p1 -p sigma=3:hdistance=3:saveall=m5p1test
 #	 ./aloja_cli.r -m aloja_outlier_instance -l m5p1 -p instance="sort,ETH,RR3,8,10,1,65536,None,32,Azure L":observed=100000:display=1 -v
@@ -32,6 +32,8 @@
 #
 #	 ./aloja_cli.r -m aloja_minimal_instances -l m5p1 -p saveall=mi1
 #	 ./aloja_cli.r -m aloja_minimal_instances -l m5p1 -p kmax=200:step=10:saveall=mi1
+#
+#	 ./aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file="m5p1-instances":output="string" -v
 
 library(devtools);
 source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r");
@@ -83,7 +85,7 @@ options(width=as.integer(1000));
 	params <- list();
 	params[["ds"]] <- dataset;
 
-	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand","aloja_outlier_dataset","aloja_outlier_instance","aloja_binarize_instance"))
+	if (opt$method %in% c("aloja_regtree","aloja_nneighbors","aloja_linreg","aloja_nnet","aloja_pca","aloja_dataset_collapse","aloja_dataset_collapse_expand","aloja_outlier_dataset","aloja_outlier_instance","aloja_binarize_instance","aloja_representative_tree"))
 	{
 		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
 
