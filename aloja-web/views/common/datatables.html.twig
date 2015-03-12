@@ -438,7 +438,6 @@
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
                        	} else if(headTitle == 'Cluster') {
-				console.log(aData);
                            	var cluster = clustersInfo[aData[14 + offset]];
                            	var tooltip = Math.floor(cluster.vm_RAM)+' GB RAM,'+cluster.vm_OS+','+cluster.provider+','+cluster.type;
 							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14 + offset] + '"  target="_blank">'+aData[14 + offset]+' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');         
