@@ -5,13 +5,16 @@
 	{% block stylesheetdatatables %}{{ parent() }}{% endblock %}
 {% endblock %}
     {% block content %}
-     
-{#      <div style="width: 70%; margin: 0 auto; float: left;">#}
+     <div id="navigation" style="text-align: center;">
+	        <h2 class="compare body">
+	            <strong>Advanced information:</strong>
+	            <a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
+	            <a href="{{ modifyUrl({'type': 'HWCONFIG'}) }}"><span {% if type == 'HWCONFIG' %}style="font-weight: bold;"{% endif %}>HARDWARE CONFIGURATIONS</span></a>
+	            <a href="{{ modifyUrl({'type': 'SWCONFIG'}) }}"><span {% if type == 'SWCONFIG' %}style="font-weight: bold;"{% endif %}>SOFTWARE CONFIGURATIONS</span></a>
+	            <a href="{{ modifyUrl({'type': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAILS</span></a>
+	        </h2>
+	    </div>
      {% block datatablescontent %}{{ parent() }}{% endblock %}
-{#      </div>#}
-{#      <div style="width: 30%; float: right;">#}
-{#        {% include 'common/config_filters.html.twig' %}#}
-{#      </div>#}
     <div id="chart"></div>
 </div>
 {% endblock %}

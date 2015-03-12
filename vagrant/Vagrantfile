@@ -40,19 +40,36 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #bash scripts
   config.vm.provision :shell, :path => "bootstrap.sh"
 
-  #puppet config
-  config.vm.provision "puppet" do |puppet|
-    puppet.module_path = "puppet/modules"
-    puppet.manifests_path = "puppet/manifests"
-    puppet.manifest_file = "init.pp"
-    puppet.options = "--environment dev" 
-    #puppet.options = "--verbose --debug"
+  # default box (aloja-web)
+  config.vm.define "default", primary: true do |default|
+
+    #puppet config
+    default.vm.provision "puppet" do |puppet|
+      puppet.module_path = "puppet/modules"
+      puppet.manifests_path = "puppet/manifests"
+      puppet.manifest_file = "init.pp"
+      puppet.options = "--environment dev" 
+      #puppet.options = "--verbose --debug"
+    end
+
+    #net ports
+    default.vm.network :forwarded_port, host: 8080, guest: 80 #web
+    default.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
+    default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
+
   end
 
-  #net ports
-  config.vm.network :forwarded_port, host: 8080, guest: 80 #web
-  config.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
-  config.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
+  # cluster nodes (aloja-deploy)
+  config.vm.define "vagrant1", autostart: false do |node|
+    node.vm.hostname = "vagrant1"
+    node.vm.network "private_network", ip: "10.42.42.101"
+    node.vm.provision "shell", path: "files/vagrant_cluster/provision.sh"
+  end
+  config.vm.define "vagrant2", autostart: false do |node|
+    node.vm.hostname = "vagrant2"
+    node.vm.network "private_network", ip: "10.42.42.102"
+    node.vm.provision "shell", path: "files/vagrant_cluster/provision.sh"
+  end
 
   config.vm.provider "virtualbox" do |v|
     v.memory = 2048

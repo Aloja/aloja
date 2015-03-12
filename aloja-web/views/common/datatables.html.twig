@@ -298,10 +298,19 @@
 					newKey = key.replace("%5B","[").replace("%5D","]");
 					newQuery[newKey] = queryDict[key];
 			    }
+			    newQuery['type'] = '{{ type }}';
 		 	    queryDict = {}	
 
 		 	    var clustersInfo = {{ clustersInfo | raw }};
 		    {% endif %}
+
+		    var type = '{{ type }}';
+		    var offset = 0;
+		    if(type == 'SUMMARY')
+			    offset = -8;
+		    else if(type == 'HWCONFIG') {
+				offset = -6;
+			}
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
@@ -339,7 +348,7 @@
                 //"bStateSave": true,
                 "aoColumnDefs": [
                     {% if selected == 'Benchmark Executions' %}
-                      {"bVisible": false, "aTargets": [ 4,18 ] }
+                      {"bVisible": false, "aTargets": [ 4, 18 + offset - 1] }
                     {% elseif selected == 'Performance Metrics' %}
                       {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
                     {% endif %}
@@ -419,6 +428,8 @@
 								tooltip = aData[7].substring(2) + ' SSD drives';
 							else if((new RegExp("^HD")).test(aData[7]))
 								tooltip = aData[7].substring(2) + ' HDD drives';
+							else if((new RegExp("^RS")).test(aData[7]))
+                                                                tooltip = aData[7].substring(2) + ' HDFS in remote(s) / tmp to SSD'
         					else
         						tooltip = aData[7].substring(2) + ' HDD drives / tmp to SSD';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
@@ -427,11 +438,11 @@
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
                        	} else if(headTitle == 'Cluster') {
-                           	var cluster = clustersInfo[aData[14]];
+                           	var cluster = clustersInfo[aData[14 + offset]];
                            	var tooltip = Math.floor(cluster.vm_RAM)+' GB RAM,'+cluster.vm_OS+','+cluster.provider+','+cluster.type;
-							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14] + '"  target="_blank">'+aData[14]+' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');         
+							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14 + offset] + '"  target="_blank">'+aData[14 + offset]+' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');         
 						} else if(headTitle == 'Histogram') {
-							if(aData[14].indexOf("hdi") > -1) {
+							if(aData[14 + offset].indexOf("hdi") > -1) {
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
 							} else
 								$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');

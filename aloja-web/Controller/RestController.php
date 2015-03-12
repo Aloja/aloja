@@ -28,7 +28,6 @@ class RestController extends AbstractController
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
         	'datanodes' => 'Datanodes',
-            'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
@@ -66,6 +65,67 @@ class RestController extends AbstractController
             $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
 //             $outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
 //             $warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+            
+            $type = Utils::get_GET_string('type');
+            if(!$type)
+            	$type = 'SUMMARY';
+            
+            if($type == 'SUMMARY') {
+            	$show_in_result = array(
+            			'id_exec' => 'ID',
+            			'bench' => 'Benchmark',
+            			'exe_time' => 'Exe Time',
+            			'exec' => 'Exec Conf',
+            			'cost' => 'Running Cost $',
+            			'id_cluster' => 'Cluster',
+            			'datanodes' => 'Datanodes',
+            			'prv' => 'PARAVER',
+            			//'version' => 'Hadoop v.',
+            			'init_time' => 'End time',
+            			'hadoop_version' => 'H Version',
+            			'bench_type' => 'Bench',
+            	);
+            } else if($type == 'HWCONFIG') {
+            	$show_in_result = array(
+            			'id_exec' => 'ID',
+            			'bench' => 'Benchmark',
+            			'exe_time' => 'Exe Time',
+            			'exec' => 'Exec Conf',
+            			'cost' => 'Running Cost $',
+            			'net' => 'Net',
+            			'disk' => 'Disk',
+            			'id_cluster' => 'Cluster',
+            			'datanodes' => 'Datanodes',
+            			'prv' => 'PARAVER',
+            			//'version' => 'Hadoop v.',
+            			'init_time' => 'End time',
+            			'hadoop_version' => 'H Version',
+            			'bench_type' => 'Bench',
+            	);
+            } else if($type == 'SWCONFIG') {
+            	$show_in_result = array(
+					'id_exec' => 'ID',
+					'bench' => 'Benchmark',
+					'exe_time' => 'Exe Time',
+					'exec' => 'Exec Conf',
+					'cost' => 'Running Cost $',
+					'net' => 'Net',
+					'disk' => 'Disk',
+					'maps' => 'Maps',
+					'iosf' => 'IO SFac',
+					'replication' => 'Rep',
+					'iofilebuf' => 'IO FBuf',
+					'comp' => 'Comp',
+					'blk_size' => 'Blk size',
+					'id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes',
+					'prv' => 'PARAVER',
+					//'version' => 'Hadoop v.',
+					'init_time' => 'End time',
+					'hadoop_version' => 'H Version',
+					'bench_type' => 'Bench',
+				);
+            }
             
              $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
        	 		join clusters c USING (id_cluster)
