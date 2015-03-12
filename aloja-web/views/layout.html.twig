@@ -159,6 +159,7 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 		            <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
+		            <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Cross Variables</a></li>
                           </ul>
 		        </li>
 		      </ul>
