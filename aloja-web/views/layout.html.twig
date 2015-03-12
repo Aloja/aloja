@@ -164,6 +164,7 @@
 		            <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">Collapse Data</a></li>
 		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">Predict Configurations</a></li>
 		            <li {% if selected is defined and selected == 'mlattributestree' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlattributestree') }}">Predicted Config. Tree</a></li>
+		            <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
  		            <li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>
                           </ul>
 		        </li>

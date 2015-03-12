@@ -154,3 +154,8 @@ mlattributestree:
 mlclearcache:
     pattern: "/mlclearcache"
     controller: "alojaweb\\Controller\\MLTemplatesController::mlclearcacheAction"
+
+mloutliers:
+    pattern: "/mloutliers"
+    controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
+
