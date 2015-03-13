@@ -135,7 +135,6 @@ bestcostperfclustereval:
     pattern: "/bestcostperfclustereval"
     controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"
 
-<<<<<<< HEAD
 mlprediction:
     pattern: "/mlprediction"
     controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
@@ -167,4 +166,8 @@ mlsummaries:
 mlcrossvar:
     pattern: "/mlcrossvar"
     controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+
+mlparameval:
+    pattern: "/mlparameval"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
 
