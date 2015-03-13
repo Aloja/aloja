@@ -243,7 +243,7 @@ fi
 
 BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
 if [[ "$BENCH" == HiBench* ]]; then
-  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench"
+  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench2"
 fi
 if [[ "$BENCH" == HiBench3* ]]; then
   BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
