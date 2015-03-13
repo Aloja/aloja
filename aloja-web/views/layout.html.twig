@@ -158,6 +158,7 @@
 			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
 		            <li {% if selected is defined and selected == 'mlnewconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlnewconfigs') }}">New Minimal Configs.</a></li>
                           </ul>
 		        </li>
