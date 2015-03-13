@@ -47,10 +47,12 @@ class MLNewconfigsController extends AbstractController
 				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 			}
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator in the WEB
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+			unset($params['id_clusters']); // Exclude the param from now on
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator in the WEB
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options = 'prange=0,20000'; }
 			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options ='kparam=3';}

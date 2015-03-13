@@ -57,14 +57,12 @@
 					{% endif %}
 				</div>
 				<div class="col-md-6">
-					{% if selected != 'mlnewconfigs' %}
 					Clusters: (CL)</br> <select class="form-control" name="id_clusters[]" multiple>
 						{% for selopt in options['id_cluster'] %}
 						  <option value="{{ selopt['id_cluster'] }}" {% if selopt['id_cluster'] in id_clusters %} SELECTED {% endif %}>{{ selopt['name'] }}</option>
 						{% endfor %}
 						<option value="None" {% if not id_clusters %} SELECTED  {% endif %}>Disabled</option>
 					</select>
-					{% endif %}
 				</div>
 			</div>
 			<div class="row">
