@@ -23,8 +23,12 @@
 		<p style="text-align:justify">[WiP] Select the attributes you want to define from the filter, to predict all their combinations, so you can sort them by Predicted time or by attribute.</p>
 		<hr />
 	</div>
-	<div id="benchdiv" style="float: left; width: 68%;">
-		<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+	<div id="contentdiv" style="float: left; width: 68%;">	
+		<div id="benchdiv" style="float: left; width: 100%;">
+			<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+		</div>
+		<br />
+		<div id="treedescriptor" style="display:none; float: left; width: 100%;"><hr/>Tree Descriptor: {{ tree_descriptor | raw}}<hr/></div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
@@ -35,7 +39,6 @@
 	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 	<div id="footer" style="display:none; float: left; width: 100%;">
 		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
-		<p>Tree Descriptor: {{ tree_descriptor | raw}}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
 		</div>
@@ -90,12 +93,18 @@
 				"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
 				"aaData": {{ jsonData | raw }},
 				"columns": {{ jsonHeader | raw }},
-				"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }}]
+				"columnDefs" : [
+					{"targets" : -1, "render" : function (data) { return Math.round(data); }},
+					{"targets" : [11,12,13,14,15,16,17,18,19], "visible": false}
+				]
 			});
 			$(window).bind('resize', function () {
 				oTable.fnAdjustColumnSizing();
 			});           
 			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
+
+			$('#treedescriptor').show();
+			if ({{ tree }})	$('#benchdiv').hide();
 		}
 		else
 		{
