@@ -175,3 +175,7 @@ mlminconfigs:
     pattern: "/mlminconfigs"
     controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"
 
+mlnewconfigs:
+    pattern: "/mlnewconfigs"
+    controller: "alojaweb\\Controller\\MLNewconfigsController::mlnewconfigsAction"
+
