@@ -7,9 +7,9 @@ use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
 use alojaweb\inc\MLUtils;
 
-class MLMinconfigsController extends AbstractController
+class MLNewconfigsController extends AbstractController
 {
-	public function mlminconfigsAction()
+	public function mlnewconfigsAction()
 	{
 		$jsonData = array();
 		$message = $instance = '';
@@ -20,9 +20,10 @@ class MLMinconfigsController extends AbstractController
 		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
 		    	$concat_config = "";		// Useless here
-		    	
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes',
+						'datanodess','bench_types','vm_OS','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			if (count($_GET) <= 1
@@ -36,22 +37,27 @@ class MLMinconfigsController extends AbstractController
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$unrestricted = TRUE; 
+				$params['datanodess'] = array('3');// $where_configs .= ' AND datanodes = 3';
+				$params['bench_types'] = array('HiBench');// $where_configs .= ' AND bench_type = "HiBench"';
+				$params['vm_OSs'] = array('linux');// $where_configs .= ' AND vm_OS = "linux"';				
+				$params['vm_sizes'] = array('SYS-6027R-72RF');// $where_configs .= ' AND vm_size = "SYS-6027R-72RF"';
+				$params['vm_coress'] = array('12');// $where_configs .= ' AND vm_cores = 12';
+				$params['vm_RAMs'] = array('128');// $where_configs .= ' AND vm_RAM = 128';
+				$params['hadoop_versions'] = array('1');// $where_configs .= ' AND hadoop_version = 1';
+				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 			}
-
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted, $db); // Used only as indicator in the WEB
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted, $db);
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator in the WEB
+			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options = 'prange=0,20000'; }
 			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options ='kparam=3';}
 			else if ($learn_param == 'nnet') { $learn_method = 'aloja_nnet'; $learn_options = 'prange=0,20000'; }
 			else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options = 'ppoly=3:prange=0,20000'; }
 
-			$config = $model_info.' '.$learn_param.' minconfs';
+			$config = $model_info.' '.$learn_param.' newminconfs';
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
@@ -62,9 +68,9 @@ class MLMinconfigsController extends AbstractController
 			if ($is_cached && !$in_process)
 			{
 				$keep_cache = TRUE;
-				foreach (array("tt", "tv", "tr") as &$value)
+				foreach (array("tt.csv", "tv.csv", "tr.csv") as &$value)
 				{
-					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
+					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config."M").'-'.$value);
 				}
 				foreach (array("sizes.csv", "object.rds") as &$value)
 				{
@@ -78,8 +84,10 @@ class MLMinconfigsController extends AbstractController
 				if (!($keep_cache && $error_cache))
 				{
 					unlink($cache_ds);
-					shell_exec("sed -i '/".md5($config)." : ".$config."-model/d' ".getcwd()."/cache/query/record.data");
-					shell_exec("sed -i '/".md5($config."R")." : ".$config."-result/d' ".getcwd()."/cache/query/record.data");
+					shell_exec("sed -i '/".md5($config."F")." : ".$config." FA-model/d' ".getcwd()."/cache/query/record.data");
+					shell_exec("sed -i '/".md5($config."D")." : ".$config." FA-dataset/d' ".getcwd()."/cache/query/record.data");
+					shell_exec("sed -i '/".md5($config."M")." : ".$config." MC-model/d' ".getcwd()."/cache/query/record.data");
+					shell_exec("sed -i '/".md5($config."R")." : ".$config." MC-result/d' ".getcwd()."/cache/query/record.data");
 				}
 			}
 
@@ -89,42 +97,46 @@ class MLMinconfigsController extends AbstractController
 				// get headers for csv
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','datanodes' => 'Datanodes','bench_type' => 'Bench.Type','vm_OS' => 'VM.OS',
+					'vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version','type' => 'Type'
 				);
+
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench_type = 'HiBench' AND bench NOT LIKE 'prep_%' AND e.exe_time > 100".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench NOT LIKE 'prep_%' AND e.exe_time > 100 AND hadoop_version IN ('1','2')".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
-
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
 				fputcsv($fp, $names,',','"');
 			    	foreach($rows as $row)
 				{
-					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+					//$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
 					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
 					fputcsv($fp, array_values($row),',','"');
 				}
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query; touch '.md5($config).'.lock');
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config).' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock" >/dev/null 2>&1 &';
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock" >/dev/null 2>&1 &';
 				exec($command);
 
 				// update cache record (for human reading)
-				$register = md5($config).' :'.$config."-model\n";
-				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-
-				$register = md5($config."R").' :'.$config."-result\n";
-				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+				$register = array();
+				$register[] = md5($config."F").' :'.$config." FA-model\n";
+				$register[] = md5($config."D").' :'.$config." FA-dataset\n";
+				$register[] = md5($config."M").' :'.$config." MC-model\n";
+				$register[] = md5($config."R").' :'.$config." MC-result\n";
+				foreach ($register as $reg)
+				{
+					shell_exec("sed -i '/".$reg."/d' ".getcwd()."/cache/query/record.data");
+					file_put_contents(getcwd().'/cache/query/record.data', $reg, FILE_APPEND | LOCK_EX);
+				}
 			}
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
@@ -186,7 +198,7 @@ class MLMinconfigsController extends AbstractController
 				}
 
 				// MAGIC TRICK BEGINS
-				$illusion = array('id_cluster' => 'Cluster','name' => 'Cl.Name',
+/*				$illusion = array('id_cluster' => 'Cluster','name' => 'Cl.Name',
 					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
 					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type');
 				$query="SELECT ".implode(",",array_keys($illusion))." FROM clusters";
@@ -199,7 +211,7 @@ class MLMinconfigsController extends AbstractController
 					$clusters_info[$id_cl] = $row;
 				}
 				// MAGIC TRICK ENDS
-
+*/
 				// read results of the CSV - Configs
 				$configs = '[';
 				$jsonHeader = '[]';
@@ -220,7 +232,7 @@ class MLMinconfigsController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 						if ($jsonHeader == '[]')
 						{
-							//$header = array_slice($header, 0, 12);	// ANTI-MAGIC TRICK
+							$header = array_slice($header, 0, 11);	// ANTI-MAGIC TRICK
 							$jsonHeader = '[{title:""}';
 							foreach ($header as $title) if ($title != "ID") $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 							$jsonHeader = $jsonHeader.',{title:"Instances"}]';
@@ -230,8 +242,8 @@ class MLMinconfigsController extends AbstractController
 						$jsonConfig = '[';
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
-							$subdata = array_slice($data, 0, 12);
-							$subdata = array_merge($subdata,$clusters_info[(int)substr($data[11],2)]); // MAGIC TRICK
+							$subdata = array_slice($data, 0, 11);
+							//$subdata = array_merge($subdata,$clusters_info[(int)substr($data[11],2)]); // MAGIC TRICK
 
 							if ($jsonConfig!='[') $jsonConfig = $jsonConfig.',';
 							$jsonConfig = $jsonConfig.'[\''.implode("','",$subdata).'\',\''.$sizes[$count++].'\']';
@@ -254,9 +266,9 @@ class MLMinconfigsController extends AbstractController
 			$max_x = $max_y = 0;
 			$must_wait = 'NO';
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlminconfigs.html.twig',
+		echo $this->container->getTwig()->render('mltemplate/mlnewconfigs.html.twig',
 			array(
-				'selected' => 'mlminconfigs',
+				'selected' => 'mlnewconfigs',
 				'jsonData' => json_encode($jsonData),
 				'jsonHeader' => $jsonHeader,
 				'configs' => $configs,
@@ -266,14 +278,19 @@ class MLMinconfigsController extends AbstractController
 				'disks' => $params['disks'],
 				'blk_sizes' => $params['blk_sizes'],
 				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
 				'mapss' => $params['mapss'],
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'hadoop_versions' => $params['hadoop_versions'],
+				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
-				'unrestricted' => $unrestricted,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)
