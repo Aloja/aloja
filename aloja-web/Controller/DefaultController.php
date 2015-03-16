@@ -9,29 +9,27 @@ use alojaweb\inc\DBUtils;
 class DefaultController extends AbstractController
 {
     public static $show_in_result = array(
-        'id_exec' => 'ID',
-        'bench' => 'Benchmark',
-        'exe_time' => 'Exe Time',
-        'exec' => 'Exec Conf',
-        'cost' => 'Running Cost $',
-        'net' => 'Net',
-        'disk' => 'Disk',
-        'maps' => 'Maps',
-        'iosf' => 'IO SFac',
-        'replication' => 'Rep',
-        'iofilebuf' => 'IO FBuf',
-        'comp' => 'Comp',
-        'blk_size' => 'Blk size',
-        'id_cluster' => 'Cluster',
-        'datanodes' => 'Datanodes',
-        'histogram' => 'Histogram',
-        // 'files' => 'Files',
-        'prv' => 'PARAVER',
-        //'version' => 'Hadoop v.',
-        'init_time' => 'End time',
-        'hadoop_version' => 'H Version',
-        'bench_type' => 'Bench',
-    );
+			'id_exec' => 'ID',
+			'bench' => 'Benchmark',
+			'exe_time' => 'Exe Time',
+			'exec' => 'Exec Conf',
+			'cost' => 'Running Cost $',
+			'net' => 'Net',
+			'disk' => 'Disk',
+			'maps' => 'Maps',
+			'iosf' => 'IO SFac',
+			'replication' => 'Rep',
+			'iofilebuf' => 'IO FBuf',
+			'comp' => 'Comp',
+			'blk_size' => 'Blk size',
+			'id_cluster' => 'Cluster',
+			'datanodes' => 'Datanodes',
+			'prv' => 'PARAVER',
+			//'version' => 'Hadoop v.',
+			'init_time' => 'End time',
+			'hadoop_version' => 'H Version',
+			'bench_type' => 'Bench',
+	);
 
     public function indexAction()
     {
@@ -236,11 +234,72 @@ class DefaultController extends AbstractController
         $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
         $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+		$type = Utils::get_GET_string("type");
+		if(!$type)
+			$type = 'SUMMARY';
+		
+		if($type == 'SUMMARY') {
+			$show_in_result = array(
+					'id_exec' => 'ID',
+					'bench' => 'Benchmark',
+					'exe_time' => 'Exe Time',
+					'exec' => 'Exec Conf',
+					'cost' => 'Running Cost $',
+					'id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes',
+					'prv' => 'PARAVER',
+					//'version' => 'Hadoop v.',
+					'init_time' => 'End time',
+					'hadoop_version' => 'H Version',
+					'bench_type' => 'Bench',
+			);
+		} else if($type == 'HWCONFIG') {
+			$show_in_result = array(
+            			'id_exec' => 'ID',
+            			'bench' => 'Benchmark',
+            			'exe_time' => 'Exe Time',
+            			'exec' => 'Exec Conf',
+            			'cost' => 'Running Cost $',
+            			'net' => 'Net',
+            			'disk' => 'Disk',
+            			'id_cluster' => 'Cluster',
+            			'datanodes' => 'Datanodes',
+            			'prv' => 'PARAVER',
+            			//'version' => 'Hadoop v.',
+            			'init_time' => 'End time',
+            			'hadoop_version' => 'H Version',
+            			'bench_type' => 'Bench',
+            	);
+		} else if($type == 'SWCONFIG') {
+			$show_in_result = array(
+					'id_exec' => 'ID',
+					'bench' => 'Benchmark',
+					'exe_time' => 'Exe Time',
+					'exec' => 'Exec Conf',
+					'cost' => 'Running Cost $',
+					'net' => 'Net',
+					'disk' => 'Disk',
+					'maps' => 'Maps',
+					'iosf' => 'IO SFac',
+					'replication' => 'Rep',
+					'iofilebuf' => 'IO FBuf',
+					'comp' => 'Comp',
+					'blk_size' => 'Blk size',
+					'id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes',
+					'prv' => 'PARAVER',
+					//'version' => 'Hadoop v.',
+					'init_time' => 'End time',
+					'hadoop_version' => 'H Version',
+					'bench_type' => 'Bench',
+			);
+		} else
+			$show_in_result = self::$show_in_result;
+		
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
-                'theaders' => self::$show_in_result,
+                'theaders' => $show_in_result,
                 'discreteOptions' => $discreteOptions,
                 'datefrom' => $datefrom,
                 'dateto' => $dateto,
@@ -265,7 +324,8 @@ class DefaultController extends AbstractController
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
-                'options' => Utils::getFilterOptions($dbUtils)
+                'options' => Utils::getFilterOptions($dbUtils),
+            	'type' => $type
             ));
     }
 
@@ -1370,7 +1430,7 @@ class DefaultController extends AbstractController
             $benchs = array (
                 'terasort'
             );
-
+		
         echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
             'selected' => 'Best configuration',
             'title' => 'Best Run Configuration',
