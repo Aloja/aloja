@@ -35,7 +35,7 @@ while true ; do
   sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
   sudo /etc/init.d/varnish restart;
   sudo service php5-fpm restart;
-  sudo /etc/init.d/nginx restart;
+  #sudo /etc/init.d/nginx restart;
   sudo nginx;
   cd -
 
