@@ -29,7 +29,7 @@ OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in th
 VERBOSE=0
 NET="ETH"
 DISK="HDD"
-BENCH=""
+BENCH="HiBench"
 REPLICATION=1
 MAX_MAPS=8
 IO_FACTOR=10
@@ -234,9 +234,6 @@ fi
 
 BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 
-if [ -z "$BENCH" ]; then
-  BENCH="HiBench"
-fi
 if [[ "$BENCH" == HiBench* ]]; then
   EXECUTE_HIBENCH="true"
 fi
