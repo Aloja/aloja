@@ -56,6 +56,8 @@ class Utils
     				$where_configs .= ' AND filter = 0 ';
     			if(in_array("prepares",$filters))
     				$includePrepares = true;
+    			if(in_array("perfdetails",$filters))
+    				$where_configs .= ' AND perf_details = 1 ';
     			
     			if(in_array("outliers", $filters)) {
     				if(in_array("warnings", $filters))

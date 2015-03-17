@@ -235,7 +235,7 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
-			$("#advancedFilters").on('shown.bs.collapse hidden.bs.collapse', function() {
+			$(".filtersTab").on('shown.bs.collapse hidden.bs.collapse', function() {
 				var element = $(this).parent().find(".indicator").first();
 				if(element.hasClass("glyphicon-chevron-down"))
 					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
