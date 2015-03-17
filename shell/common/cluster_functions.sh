@@ -1062,8 +1062,7 @@ touch $homePrefixAloja/$userAloja/share/safe_store;
   fi
 
   logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share"
-
+  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
 }
 
 #$1 filename
