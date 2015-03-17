@@ -355,7 +355,7 @@
     <div id="advancedFilters" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingAdvancedFilters">
       <div class="panel-body">
         <input type="checkbox" name="filters[]" value="valid" {% if filters is defined and 'valid' in filters %}checked{% endif %}> Only valid execs<br />
-        <input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter execs<br />
+        <input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Only execs with perf details<br />
         <input type="checkbox" name="filters[]" value="prepares" {% if filters is defined and 'prepares' in filters %}checked{% endif %}> Include prepares<br />
 {#         <input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
 {#         <input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
