@@ -81,15 +81,12 @@ class Utils
     	}
     	
     	if($item_name == "minexetime") {
-    		if(isset($_GET["minexetime"])) {
-	    		$minexetime = $_GET["minexetime"];
+    		$minexetime = (isset($_GET["minexetime"])) ? $_GET["minexetime"] : 50;
 	    		
-	    		if($minexetime != null)
-	    			$where_configs .= " AND exe_time >= $minexetime ";
+	    	if($minexetime != null)
+	    		$where_configs .= " AND exe_time >= $minexetime ";
 	    		
-	    		return $minexetime;
-    		} else
-    			return "";
+	    	return $minexetime;
     	}
     	
     	if($item_name == "maxexetime") {
