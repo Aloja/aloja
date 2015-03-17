@@ -1,8 +1,8 @@
 mysql_user: root
-mysql_pwd: 
+mysql_pwd:
 db_conn_chain: "mysql:host=localhost;dbname=aloja2"
 #Prod MySQL, need to SSH first in Vagrant VM with: ssh -L localhost:3307:gallactica:3306 user@minerva.bsc.es
-#db_conn_chain: "mysql:host=104.40.140.48;dbname=aloja2;port=3307"
+#db_conn_chain: "mysql:host=127.0.0.1;dbname=aloja2;port=3307"
 db_cache_path: "cache/query"
 in_cache: false
 enable_debug: true

@@ -235,6 +235,60 @@
 			</div>
 			{% endif %}
 
+			{% if selected == 'mlprediction' or selected == 'mlminconfigs' %}
+			<div class="row">
+				<div class="col-md-6">
+					Learning method:</br> <select class="form-control" name="learn" >
+						<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
+						<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
+						<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
+						<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
+					</select>
+				</div>
+				<div class="col-md-6">
+					<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
+					<!--Parameters:<input type="string" name="params"/>-->
+				</div>
+			</div>
+			{% endif %}
+
+			{% if selected == 'mlfindattributes' %}
+			<div class="row">
+				<div class="col-md-6"></div>
+				<div class="col-md-6">
+					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
+				</div>
+			</div>
+			{% endif %}
+			{% if selected == 'mldatacollapse' %}
+			<div class="row">
+				<div class="col-md-6"></div>
+				<div class="col-md-6">
+					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
+				</div>
+			</div>
+			{% endif %}
+			
+			{% if selected == 'mlsummaries' %}
+			<div class="row">
+				<div class='col-md-6'>
+					Separate by: <select class="form-control" class="control-form" name="feature">
+							<option value="joined"  {% if 'joined' == feature %} SELECTED {% endif %}>None</option>
+							<option value="Benchmark"  {% if 'Benchmark' == feature %} SELECTED  {% endif %}>Benchmarks</option>
+							<option value="Net"  {% if 'Net' == feature %} SELECTED  {% endif %}>Networks</option>
+							<option value="Disk"  {% if 'Disk' == feature %} SELECTED  {% endif %}>Disks</option>
+							<option value="Maps"  {% if 'Maps' == feature %} SELECTED  {% endif %}>Maps</option>
+							<option value="IO.SFac"  {% if 'IO.SFac' == feature %} SELECTED  {% endif %}>IO.SFactors</option>
+							<option value="Rep"  {% if 'Rep' == feature %} SELECTED  {% endif %}>Replicas</option>
+							<option value="IO.FBuf"  {% if 'IO.FBuf' == feature %} SELECTED  {% endif %}>IO.File.Buffer</option>
+							<option value="Comp"  {% if 'Comp' == feature %} SELECTED  {% endif %}>Compression</option>
+							<option value="Blk.size"  {% if 'Blk.size' == feature %} SELECTED  {% endif %}>Block.Sizes</option>
+							<option value="Cluster"  {% if 'Cluster' == feature %} SELECTED  {% endif %}>Clusters</option>
+					</select>
+				</div>
+			</div>
+			{% endif %}
+
 			<br />
 			<div class"=row">
 			   <div class="col-md-6" style="padding: 0;">
