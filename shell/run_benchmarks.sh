@@ -29,7 +29,7 @@ OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in th
 VERBOSE=0
 NET="ETH"
 DISK="HDD"
-BENCH=""
+BENCH="HiBench"
 REPLICATION=1
 MAX_MAPS=8
 IO_FACTOR=10
@@ -73,7 +73,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -231,16 +231,13 @@ fi
 
 BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 
-if [ -z "$BENCH" ]; then
-  BENCH="HiBench"
-fi
 if [[ "$BENCH" == HiBench* ]]; then
   EXECUTE_HIBENCH="true"
 fi
 
 BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
 if [[ "$BENCH" == HiBench* ]]; then
-  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench"
+  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench2"
 fi
 if [[ "$BENCH" == HiBench3* ]]; then
   BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
