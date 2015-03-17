@@ -74,7 +74,7 @@
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['net'] %}
-						<input type="checkbox" name="nets[]" value="{{ selopt['net'] }}" {% if selopt['net'] in id_clusters %}checked{% endif %}>&nbsp;{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}Unknown{% endif %}<br />
+						<input type="checkbox" name="nets[]" value="{{ selopt['net'] }}" {% if selopt['net'] in nets %}checked{% endif %}>&nbsp;{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}Unknown{% endif %}<br />
 						{% endfor %}
 						<input type="checkbox" name="nets[]" value="None" {% if not nets %}checked{% endif %}>All<br />
 					  </div>
