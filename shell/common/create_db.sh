@@ -750,8 +750,8 @@ update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort
     tmp_table
 );
 
-update ignore execs SET valid = 0 WHERE exe_time < 200 OR exe_time > 15000;
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
+#update ignore execs SET valid = 0 WHERE exe_time < 200 OR exe_time > 15000;
+update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET filter = 1 WHERE suma = 0;
 "
 
 #$MYSQL "

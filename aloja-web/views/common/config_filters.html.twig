@@ -18,14 +18,6 @@
 				</div>
 			</div>
 			{% endif %}
-			<div class="row">
-				<div class="col-md-6">
-				  From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
-				</div>
-				<div class="col-md-6">
-				  To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ dateto }}" />
-				</div>
-			</div>
 			{% if selected == 'Best configuration' %}
 			<div class="row">
 				<div class="col-md-6">
@@ -368,6 +360,22 @@
 {#         <input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
 {#         <input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
         <input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
+        <div class="row">
+			<div class="col-md-6">
+			  From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
+			</div>
+			<div class="col-md-6">
+			  To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ dateto }}" />
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+			  Min exe time: <input type="text" name="minexetime" class="form-control" value="{{ minexetime }}" />
+			</div>
+			<div class="col-md-6">
+			  Max exe time: <input type="text" name="maxexetime" class="form-control" value="{{ maxexetime }}" />
+			</div>
+		</div>
       </div>
     </div>
   </div>

@@ -267,7 +267,7 @@
 						}
 					}
 					
-					if($(this).parent().hasClass('panel-body')) {
+					if($(this).parent().parent().attr('id') == "advancedFilters") {
 						var length = $(this).parent().find('input:checked').length;
 						if(length > 1) {
 							$(this).parent().find("input[value='None']").removeAttr('checked');

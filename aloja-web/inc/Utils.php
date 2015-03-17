@@ -80,6 +80,30 @@ class Utils
     			return "";
     	}
     	
+    	if($item_name == "minexetime") {
+    		if(isset($_GET["minexetime"])) {
+	    		$minexetime = $_GET["minexetime"];
+	    		
+	    		if($minexetime != null)
+	    			$where_configs .= " AND exe_time >= $minexetime ";
+	    		
+	    		return $minexetime;
+    		} else
+    			return "";
+    	}
+    	
+    	if($item_name == "maxexetime") {
+    		if(isset($_GET["maxexetime"])) {
+	    		$maxexetime = $_GET["maxexetime"];
+	    		
+	    		if($maxexetime != null)
+	    			$where_configs .= " AND exe_time <= $maxexetime ";
+	    		
+	    		return $maxexetime;
+    		} else
+    			return "";
+    	}
+    	
         $single_item_name = substr($item_name, 0, -1);
         
         if (isset($_GET[$item_name])) {

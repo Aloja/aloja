@@ -69,7 +69,9 @@ class DefaultController extends AbstractController
             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
             $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            
             //$concat_config = join(',\'_\',', $configurations);
             //$concat_config = substr($concat_config, 1);
 
@@ -203,6 +205,8 @@ class DefaultController extends AbstractController
                 'types' => $types,
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
+            	'minexetime' => $minexetime,
+            	'maxexetime' => $maxexetime,
                 'options' => Utils::getFilterOptions($db)
             )
         );
@@ -235,6 +239,9 @@ class DefaultController extends AbstractController
         $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 		$type = Utils::get_GET_string("type");
+		$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+		
 		if(!$type)
 			$type = 'SUMMARY';
 		
@@ -323,6 +330,8 @@ class DefaultController extends AbstractController
                 'types' => $types,
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
+            	'minexetime' => $minexetime,
+            	'maxexetime' => $maxexetime,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
                 'options' => Utils::getFilterOptions($dbUtils),
             	'type' => $type
@@ -370,7 +379,9 @@ class DefaultController extends AbstractController
             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
             $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            
             /*
              * 1. Get execs and cluster associated costs
              * 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -473,6 +484,8 @@ class DefaultController extends AbstractController
             'types' => $types,
             'filters' => $filters,
             'allunchecked' => $allunchecked,
+        	'minexetime' => $minexetime,
+        	'maxexetime' => $maxexetime,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
             'options' => Utils::getFilterOptions($dbUtils),
@@ -1373,7 +1386,9 @@ class DefaultController extends AbstractController
             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
             $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+			$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
             $order_type = Utils::get_GET_string ( 'ordertype' );
@@ -1460,6 +1475,8 @@ class DefaultController extends AbstractController
             'filters' => $filters,
             'allunchecked' => $allunchecked,
             'select_multiple_benchs' => false,
+        	'minexetime' => $minexetime,
+        	'maxexetime' => $maxexetime,
             'options' => Utils::getFilterOptions($db)
         ) );
     }
@@ -1500,7 +1517,9 @@ class DefaultController extends AbstractController
             $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
             $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            
             // $concat_config = join(',\'_\',', $configurations);
             // $concat_config = substr($concat_config, 1);
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
@@ -1624,6 +1643,8 @@ class DefaultController extends AbstractController
             'types' => $types,
             'filters' => $filters,
             'allunchecked' => $allunchecked,
+        	'minexetime' => $minexetime,
+        	'maxexetime' => $maxexetime,
             'paramEval' => $paramEval,
             'options' => $options
         ) );
@@ -1879,7 +1900,9 @@ class DefaultController extends AbstractController
         $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
         $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+        $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+        
         if(isset($_GET['benchs']))
             $_GET['benchs'] = $_GET['benchs'][0];
 
@@ -1965,6 +1988,8 @@ class DefaultController extends AbstractController
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
     			'bestExecs' => $bestExecs,
+    			'minexetime' => $minexetime,
+    			'maxexetime' => $maxexetime,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));
@@ -2011,7 +2036,9 @@ class DefaultController extends AbstractController
     		$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
     		$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
     		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    
+    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+    		
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -2123,6 +2150,8 @@ class DefaultController extends AbstractController
     			'types' => $types,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
+    			'minexetime' => $minexetime,
+    			'maxexetime' => $maxexetime,
     			'execs' => $execs,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			//        	'money' => $money,
@@ -2173,7 +2202,9 @@ class DefaultController extends AbstractController
     		$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
     		$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
     		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    
+    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
+    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+    		
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -2316,6 +2347,8 @@ class DefaultController extends AbstractController
     			'types' => $types,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
+    			'minexetime' => $minexetime,
+    			'maxexetime' => $maxexetime,
     			'bestExecs' => $bestExecs,
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
