@@ -130,7 +130,7 @@ class MLParamevalController extends AbstractController
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($instance.'-'.$model).'.lock; rm -f '.$tmp_file);
 					foreach ($instances as $inst)
 					{
-						exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'WARNING\' | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null; echo 1 >> '.md5($instance.'-'.$model).'.lock" >> /dev/null 2>&1 &');
+						exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'Prediction\' >>'.$tmp_file.' 2>/dev/null; echo 1 >>'.md5($instance.'-'.$model).'.lock" >/dev/null 2>&1 &');
 					}
 				}
 
@@ -167,8 +167,7 @@ class MLParamevalController extends AbstractController
 					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 
 					// remove remaining locks and readies
-					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.ready');
-					$is_cached = true;
+					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
 				}
 
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($instance.'-'.$model).'.lock');
