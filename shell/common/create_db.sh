@@ -728,11 +728,11 @@ update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 
 
 #Before updating filters values
 
-$MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+echo "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
 
-$MYSQL "
+echo  "
 update ignore execs SET filter = 0;
 update ignore execs SET filter = 1 where id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
 update ignore execs SET filter = 1 where id_cluster NOT IN(20,23,24,25) AND id_exec NOT IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
