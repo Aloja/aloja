@@ -10,9 +10,6 @@ source "$CONF_DIR/common.sh"
 
 ###################
 
-logger "INFO: loading benchmarks_defaults.conf"
-source "$CONF_DIR/../conf/benchmarks_defaults.conf"
-
 #test and load cluster config
 clusterConfigFile="cluster_${clusterName}.conf"
 
@@ -23,6 +20,9 @@ configFolderPath="$CONF_DIR/../conf"
 #load cluster or node config
 logger "INFO: loading $configFolderPath/$clusterConfigFile"
 source "$configFolderPath/$clusterConfigFile"
+
+logger "INFO: loading benchmarks_defaults.conf"
+source "$CONF_DIR/../conf/benchmarks_defaults.conf"
 
 ## load defaultProvider
 #if [ -z $2 ]; then
@@ -45,7 +45,7 @@ source "$configFolderPath/$clusterConfigFile"
 #  source "$securedProviderFile"
 #fi
 
-source "$configFolderPath/$clusterConfigFile"
+#source "$configFolderPath/$clusterConfigFile"
 
 logger "Starting ALOJA deploy tools for Provider: $default_provider"
 
