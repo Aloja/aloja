@@ -253,7 +253,7 @@ fi
 
 
 # Output directory name
-CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+CONF="${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
