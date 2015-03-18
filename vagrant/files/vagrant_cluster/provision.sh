@@ -19,11 +19,11 @@ for package in "${packages[@]}"; do
 done
 
 # folders
+mkdir -p /scratch/local
+chmod 777 /scratch/local
 su vagrant <<EOF
 mkdir -p /vagrant/workspace/blobs/share
-mkdir -p /vagrant/workspace/blobs/share/jobs_vagrant
 ln -s -f -n /vagrant/workspace/blobs/share /home/vagrant/share
-mkdir -p /home/vagrant/scratch
 ln -s -f -n /vagrant/workspace /home/vagrant/workspace
 EOF
 
