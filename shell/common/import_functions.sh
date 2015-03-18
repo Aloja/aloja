@@ -1,5 +1,7 @@
 #common functions fro aloja-import2db.sh
 
+CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 #CREATE TABLE AND LOAD VALUES FROM CSV FILE
 # $1 TABLE NAME $2 PATH TO CSV FILE $3 DROP THE DB FIRST $4 DELIMITER $5 DB
 insert_DB(){
@@ -30,7 +32,6 @@ head -n3 "$2"
 
 #$1 id_cluster
 get_clusterConfigFile() {
-  CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
   local clusterConfigFile="$(find $CUR_DIR_TMP/../conf/ -type f -name cluster_*-$1.conf)"
   echo "$clusterConfigFile";
 }
@@ -47,6 +48,11 @@ get_insert_cluster_sql() {
   if [ -f "$clusterConfigFile" ] ; then
 
     source "$clusterConfigFile"
+
+    #load the providers specific functions and overrrides
+    providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/${defaultProvider}.sh"
+
+    source "$providerFunctionsFile"
 
     local sql="
 INSERT into clusters set
