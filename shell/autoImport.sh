@@ -5,6 +5,12 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 source "$CUR_DIR/common/include_process_jobs.sh"
 
+#$1 url
+hit_page() {
+  wget -O /dev/null "$1"
+  #-o /dev/null
+}
+
 while true ; do
 
   logger "\nChecking for new files to copy...\n\n"
@@ -33,41 +39,38 @@ while true ; do
   cd -
 
   logger "\nGenerating basic caches...\n\n"
-  cd /tmp
-  wget 'http://localhost/?NO_CACHE=1'
-  wget 'http://localhost/benchdata?NO_CACHE=1'
-  wget 'http://localhost/counters?NO_CACHE=1'
-  wget 'http://localhost/benchexecs?NO_CACHE=1'
-  wget 'http://localhost/bestconfig?NO_CACHE=1'
-  wget 'http://localhost/configimprovement?NO_CACHE=1'
-  wget 'http://localhost/parameval?NO_CACHE=1'
-  wget 'http://localhost/costperfeval?NO_CACHE=1'
-  wget 'http://localhost/perfcharts?random=1?NO_CACHE=1'
-  wget 'http://localhost/metrics?NO_CACHE=1'
-  wget 'http://localhost/metrics?type=MEMORY&NO_CACHE=1'
-  wget 'http://localhost/metrics?type=DISK&NO_CACHE=1'
-  wget 'http://localhost/metrics?type=NETWORK&NO_CACHE=1'
-  wget 'http://localhost/dbscan?NO_CACHE=1'
-  wget 'http://localhost/dbscanexecs?NO_CACHE=1'
+  hit_page 'http://localhost/?NO_CACHE=1'
+  hit_page 'http://localhost/benchdata?NO_CACHE=1'
+  hit_page 'http://localhost/counters?NO_CACHE=1'
+  hit_page 'http://localhost/benchexecs?NO_CACHE=1'
+  hit_page 'http://localhost/bestconfig?NO_CACHE=1'
+  hit_page 'http://localhost/configimprovement?NO_CACHE=1'
+  hit_page 'http://localhost/parameval?NO_CACHE=1'
+  hit_page 'http://localhost/costperfeval?NO_CACHE=1'
+  hit_page 'http://localhost/perfcharts?random=1?NO_CACHE=1'
+  hit_page 'http://localhost/metrics?NO_CACHE=1'
+  hit_page 'http://localhost/metrics?type=MEMORY&NO_CACHE=1'
+  hit_page 'http://localhost/metrics?type=DISK&NO_CACHE=1'
+  hit_page 'http://localhost/metrics?type=NETWORK&NO_CACHE=1'
+  hit_page 'http://localhost/dbscan?NO_CACHE=1'
+  hit_page 'http://localhost/dbscanexecs?NO_CACHE=1'
 
-  wget 'http://localhost/'
-  wget 'http://localhost/benchdata'
-  wget 'http://localhost/counters'
-  wget 'http://localhost/benchexecs'
-  wget 'http://localhost/bestconfig'
-  wget 'http://localhost/configimprovement'
-  wget 'http://localhost/parameval'
-  wget 'http://localhost/costperfeval'
-  wget 'http://localhost/perfcharts?random=1'
-  wget 'http://localhost/metrics'
-  wget 'http://localhost/metrics?type=MEMORY'
-  wget 'http://localhost/metrics?type=DISK'
-  wget 'http://localhost/metrics?type=NETWORK'
-  wget 'http://localhost/dbscan'
-  wget 'http://localhost/dbscanexecs'
-  #wget 'http://localhost/'
-
-  cd -
+  hit_page 'http://localhost/'
+  hit_page 'http://localhost/benchdata'
+  hit_page 'http://localhost/counters'
+  hit_page 'http://localhost/benchexecs'
+  hit_page 'http://localhost/bestconfig'
+  hit_page 'http://localhost/configimprovement'
+  hit_page 'http://localhost/parameval'
+  hit_page 'http://localhost/costperfeval'
+  hit_page 'http://localhost/perfcharts?random=1'
+  hit_page 'http://localhost/metrics'
+  hit_page 'http://localhost/metrics?type=MEMORY'
+  hit_page 'http://localhost/metrics?type=DISK'
+  hit_page 'http://localhost/metrics?type=NETWORK'
+  hit_page 'http://localhost/dbscan'
+  hit_page 'http://localhost/dbscanexecs'
+  #hit_page 'http://localhost/'
 
   logger "\nSleeping for 15 mins\n\n"
   sleep 900

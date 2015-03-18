@@ -9,29 +9,27 @@ use alojaweb\inc\DBUtils;
 class DefaultController extends AbstractController
 {
     public static $show_in_result = array(
-        'id_exec' => 'ID',
-        'bench' => 'Benchmark',
-        'exe_time' => 'Exe Time',
-        'exec' => 'Exec Conf',
-        'cost' => 'Running Cost $',
-        'net' => 'Net',
-        'disk' => 'Disk',
-        'maps' => 'Maps',
-        'iosf' => 'IO SFac',
-        'replication' => 'Rep',
-        'iofilebuf' => 'IO FBuf',
-        'comp' => 'Comp',
-        'blk_size' => 'Blk size',
-        'id_cluster' => 'Cluster',
-        'datanodes' => 'Datanodes',
-        'histogram' => 'Histogram',
-        // 'files' => 'Files',
-        'prv' => 'PARAVER',
-        //'version' => 'Hadoop v.',
-        'init_time' => 'End time',
-        'hadoop_version' => 'H Version',
-        'bench_type' => 'Bench',
-    );
+			'id_exec' => 'ID',
+			'bench' => 'Benchmark',
+			'exe_time' => 'Exe Time',
+			'exec' => 'Exec Conf',
+			'cost' => 'Running Cost $',
+			'net' => 'Net',
+			'disk' => 'Disk',
+			'maps' => 'Maps',
+			'iosf' => 'IO SFac',
+			'replication' => 'Rep',
+			'iofilebuf' => 'IO FBuf',
+			'comp' => 'Comp',
+			'blk_size' => 'Blk size',
+			'id_cluster' => 'Cluster',
+			'datanodes' => 'Datanodes',
+			'prv' => 'PARAVER',
+			//'version' => 'Hadoop v.',
+			'init_time' => 'End time',
+			'hadoop_version' => 'H Version',
+			'bench_type' => 'Bench',
+	);
 
     public function indexAction()
     {
@@ -100,7 +98,7 @@ class DefaultController extends AbstractController
             }
 
             //get the result rows
-            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
+            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
             $query = "SELECT #count(*),
             		  e.id_exec,
                       concat($concat_config) conf, bench,
@@ -236,11 +234,72 @@ class DefaultController extends AbstractController
         $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
         $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-
+		$type = Utils::get_GET_string("type");
+		if(!$type)
+			$type = 'SUMMARY';
+		
+		if($type == 'SUMMARY') {
+			$show_in_result = array(
+					'id_exec' => 'ID',
+					'bench' => 'Benchmark',
+					'exe_time' => 'Exe Time',
+					'exec' => 'Exec Conf',
+					'cost' => 'Running Cost $',
+					'id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes',
+					'prv' => 'PARAVER',
+					//'version' => 'Hadoop v.',
+					'init_time' => 'End time',
+					'hadoop_version' => 'H Version',
+					'bench_type' => 'Bench',
+			);
+		} else if($type == 'HWCONFIG') {
+			$show_in_result = array(
+            			'id_exec' => 'ID',
+            			'bench' => 'Benchmark',
+            			'exe_time' => 'Exe Time',
+            			'exec' => 'Exec Conf',
+            			'cost' => 'Running Cost $',
+            			'net' => 'Net',
+            			'disk' => 'Disk',
+            			'id_cluster' => 'Cluster',
+            			'datanodes' => 'Datanodes',
+            			'prv' => 'PARAVER',
+            			//'version' => 'Hadoop v.',
+            			'init_time' => 'End time',
+            			'hadoop_version' => 'H Version',
+            			'bench_type' => 'Bench',
+            	);
+		} else if($type == 'SWCONFIG') {
+			$show_in_result = array(
+					'id_exec' => 'ID',
+					'bench' => 'Benchmark',
+					'exe_time' => 'Exe Time',
+					'exec' => 'Exec Conf',
+					'cost' => 'Running Cost $',
+					'net' => 'Net',
+					'disk' => 'Disk',
+					'maps' => 'Maps',
+					'iosf' => 'IO SFac',
+					'replication' => 'Rep',
+					'iofilebuf' => 'IO FBuf',
+					'comp' => 'Comp',
+					'blk_size' => 'Blk size',
+					'id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes',
+					'prv' => 'PARAVER',
+					//'version' => 'Hadoop v.',
+					'init_time' => 'End time',
+					'hadoop_version' => 'H Version',
+					'bench_type' => 'Bench',
+			);
+		} else
+			$show_in_result = self::$show_in_result;
+		
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
-                'theaders' => self::$show_in_result,
+                'theaders' => $show_in_result,
                 'discreteOptions' => $discreteOptions,
                 'datefrom' => $datefrom,
                 'dateto' => $dateto,
@@ -265,7 +324,8 @@ class DefaultController extends AbstractController
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
-                'options' => Utils::getFilterOptions($dbUtils)
+                'options' => Utils::getFilterOptions($dbUtils),
+            	'type' => $type
             ));
     }
 
@@ -1072,7 +1132,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1326,7 +1386,7 @@ class DefaultController extends AbstractController
             $order_conf = 'LENGTH(conf), conf';
 
             // get the result rows
-            $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
+            $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
     		from execs e
     		join clusters c USING (id_cluster)
     		WHERE 1 $filter_execs $where_configs
@@ -1370,7 +1430,7 @@ class DefaultController extends AbstractController
             $benchs = array (
                 'terasort'
             );
-
+		
         echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
             'selected' => 'Best configuration',
             'title' => 'Best Run Configuration',
@@ -1487,7 +1547,7 @@ class DefaultController extends AbstractController
 // 			else if($paramEval == 'iosf')
 // 				$paramOptions = array(5,10,20,50);
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN clusters USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 
             // get the result rows
             $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
@@ -1620,10 +1680,10 @@ class DefaultController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.`JOBID`)
                 FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
+                ORDER BY t.`JOBID` DESC
+                LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
         }
 
         echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
@@ -1647,10 +1707,10 @@ class DefaultController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.`JOBID`)
                 FROM `JOB_tasks` t
-                ORDER BY RAND()
-                LIMIT 1
+                ORDER BY t.`JOBID` DESC
+                LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[0]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
         }
 
         list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
@@ -1672,7 +1732,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1792,7 +1852,7 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils ();
         $data = array();
 
-        //$filter_execs = DBUtils::getFilterExecs();
+        $filter_execs = DBUtils::getFilterExecs();
         $configurations = array();
         $where_configs = '';
         $concat_config = "";
@@ -1834,7 +1894,7 @@ class DefaultController extends AbstractController
         $query = "SELECT e.*, c.* from execs e JOIN clusters c USING (id_cluster)
         		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
-        		t ON e.exe_time = t.minexe WHERE 1 $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
 
     	try {
     		$rows = $db->get_rows($query);
@@ -1968,8 +2028,8 @@ class DefaultController extends AbstractController
     
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+        					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
@@ -2130,8 +2190,8 @@ class DefaultController extends AbstractController
     
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+        					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     

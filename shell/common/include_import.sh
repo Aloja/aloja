@@ -11,7 +11,7 @@ source "$CONF_DIR/common.sh"
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
 #trap 'echo "RUNNING TRAP "; [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM #EXIT
 
-#2) load cluter/node config to get the default provider
+#2) load cluster/node config to get the default provider
 
 #test and load cluster config
 clusterConfigFile="cluster_defaults.conf"
