@@ -55,6 +55,11 @@ sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc
   fi
 }
 
+#$1 vm_name
+get_vm_id() {
+  echo "${1:(-3)}" #echo the last 3 digits for minerva100
+}
+
 vm_create_RAID0() {
 
   local bootstrap_file="vm_create_RAID0"
