@@ -56,6 +56,8 @@ class Utils
     				$where_configs .= ' AND filter = 0 ';
     			if(in_array("prepares",$filters))
     				$includePrepares = true;
+    			if(in_array("perfdetails",$filters))
+    				$where_configs .= ' AND perf_details = 1 ';
     			
     			if(in_array("outliers", $filters)) {
     				if(in_array("warnings", $filters))
@@ -77,6 +79,27 @@ class Utils
     		if(isset($_GET['filters']))
     			return $_GET['filters'];
     		else
+    			return "";
+    	}
+    	
+    	if($item_name == "minexetime") {
+    		$minexetime = (isset($_GET["minexetime"])) ? $_GET["minexetime"] : 50;
+	    		
+	    	if($minexetime != null)
+	    		$where_configs .= " AND exe_time >= $minexetime ";
+	    		
+	    	return $minexetime;
+    	}
+    	
+    	if($item_name == "maxexetime") {
+    		if(isset($_GET["maxexetime"])) {
+	    		$maxexetime = $_GET["maxexetime"];
+	    		
+	    		if($maxexetime != null)
+	    			$where_configs .= " AND exe_time <= $maxexetime ";
+	    		
+	    		return $maxexetime;
+    		} else
     			return "";
     	}
     	

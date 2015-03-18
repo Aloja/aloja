@@ -28,6 +28,7 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`valid\` int DEFAULT 1,
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
+ \`perf_details\` int DEFAULT 1,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
@@ -670,7 +671,10 @@ $MYSQL "alter ignore table execs
 $MYSQL "alter ignore table execs
  modify column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
-  ADD \`outlier\` int DEFAULT '0';"
+  ADD \`outlier\` int DEFAULT '0',
+;"
+
+$MYSQL "alter ignore table execs ADD COLUMN  \`perf_details\` int DEFAULT '1';"
 
 $MYSQL "alter ignore table execs add hadoop_version varchar(127) default NULL;"
 
@@ -700,7 +704,6 @@ $MYSQL "alter ignore table hosts
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
 
-
 ############################################33
 logger "INFO: Updating records"
 
@@ -726,33 +729,8 @@ update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 
 
 "
 
-#Before updating filters values
 
-echo "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
-update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
-update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
 
-echo  "
-update ignore execs SET filter = 0;
-update ignore execs SET valid = 0 where id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
-#update ignore execs SET filter = 1 where id_cluster NOT IN(20,23,24,25) AND id_exec NOT IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
-
-update ignore execs SET valid = 1;
-update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
-  select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
-    tmp_table
-);
-
-update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
-  select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
-    tmp_table
-);
-
-#update ignore execs SET valid = 0 WHERE exe_time < 200 OR exe_time > 15000;
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
-"
 
 #$MYSQL "
 #

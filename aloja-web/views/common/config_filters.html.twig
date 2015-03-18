@@ -11,21 +11,27 @@
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
 			   </div>
 			</div>
-			{% if selected == 'Parameter Evaluation' %}
+	</div>
+  </div>
+  <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+    <div class="panel-heading" role="tab" id="headingBasicFilters">
+      <i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="hadoopFilters">
+          Basic options
+        </a>
+      </h4>
+    </div>
+    <div id="basicFilters" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBasicFilters">
+      <div class="panel-body">
+      {% if selected == 'Parameter Evaluation' %}
 			<div class="row">
 				<div class="col-md-6">
 					Minimum executions:<input type="number" step="1" class="form-control" name="minexecs" {% if minexecs is defined and minexecs != null %}value="{{ minexecs }}"{% endif %}/>
 				</div>
 			</div>
 			{% endif %}
-			<div class="row">
-				<div class="col-md-6">
-				  From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
-				</div>
-				<div class="col-md-6">
-				  To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ dateto }}" />
-				</div>
-			</div>
 			{% if selected == 'Best configuration' %}
 			<div class="row">
 				<div class="col-md-6">
@@ -76,7 +82,21 @@
 					 </div>
 				</div>
 			</div>
-			<div class="row">
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+    <div class="panel-heading" role="tab" id="headingHardwareFilters">
+      <i id="hardwareFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hardwareFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#hardwareFilters" aria-expanded="true" aria-controls="hardwareFilters">
+          Hardware
+        </a>
+      </h4>
+    </div>
+    <div id="hardwareFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingHardwareFilters">
+      <div class="panel-body">
+      			<div class="row">
 				<div class="col-md-6">
 					Networks:</br>
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
@@ -96,87 +116,6 @@
 						<input type="checkbox" name="disks[]" value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}checked{% endif %}>&nbsp;{{ selopt['disk'] }}<br />
 						{% endfor %}
 						<input type="checkbox" name="disks[]" value="None" {% if not disks %}checked{% endif %}>All<br />
-					  </div>
-				    </div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
-					Maps:</br>
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['maps'] %}
-						<input type="checkbox" name="mapss[]" value="{{ selopt['maps'] }}" {% if selopt['maps'] in mapss %}checked{% endif %}>&nbsp;{{ selopt['maps'] }}<br />
-						{% endfor %}
-						<input type="checkbox" name="mapss[]" value="None" {% if not mapss %}checked{% endif %}>All<br />
-					  </div>
-				    </div>
-				</div>
-				<div class="col-md-6">
-					Compression: (c)</br>
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['comp'] %}
-						<input type="checkbox" name="comps[]" value="{{ selopt['comp'] }}" {% if selopt['comp'] in comps %}checked{% endif %}>&nbsp;
-						{% if selopt['comp'] == 0 %}
-					       None
-					     {% elseif selopt['comp'] == 1 %}
-					       ZLIB
-					     {% elseif selopt['comp'] == 2 %}
-					       BZIP2
-					     {% else %}
-					       Snappy
-					     {% endif %}<br />
-						{% endfor %}
-						<input type="checkbox" name="comps[]" value="None" {% if not comps %}checked{% endif %}>All<br />
-					  </div>
-				    </div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
-					Replication: (r)</br>
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['replication'] %}
-						<input type="checkbox" name="replications[]" value="{{ selopt['replication'] }}" {% if selopt['replication'] in replications %}checked{% endif %}>&nbsp;{{ selopt['replication'] }}<br />
-						{% endfor %}
-						<input type="checkbox" name="replications[]" value="None" {% if not replications %}checked{% endif %}>All<br />
-					  </div>
-				    </div>
-				</div>
-				<div class="col-md-6">
-					Block size: (b)</br>
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['blk_size'] %}
-						<input type="checkbox" name="blk_sizes[]" value="{{ selopt['blk_size'] }}" {% if selopt['blk_size'] in blk_sizes %}checked{% endif %}>&nbsp;{{ selopt['blk_size'] }} MB<br />
-						{% endfor %}
-						<input type="checkbox" name="blk_sizes[]" value="None" {% if not blk_sizes %}checked{% endif %}>All<br />
-					  </div>
-				    </div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
-					I/O Sort Factor: (I)</br>
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['iosf'] %}
-						<input type="checkbox" name="iosfs[]" value="{{ selopt['iosf'] }}" {% if selopt['iosf'] in iosfs %}checked{% endif %}>&nbsp;{{ selopt['iosf'] }}<br />
-						{% endfor %}
-						<input type="checkbox" name="iosfs[]" value="None" {% if not iosfs %}checked{% endif %}>All<br />
-					  </div>
-				    </div>
-				</div>
-				<div class="col-md-6">
-					I/O File Buffer: </br> 
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['iofilebuf'] %}
-						<input type="checkbox" name="iofilebufs[]" value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}checked{% endif %}>&nbsp;{{ selopt['iofilebuf'] }} KB<br />
-						{% endfor %}
-						<input type="checkbox" name="iofilebufs[]" value="None" {% if not iofilebufs %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
@@ -268,8 +207,117 @@
 				    </div>
 				</div>
 			</div>
-
-			{% if selected == 'mlprediction' %}
+      </div>
+    </div>
+  </div>
+  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+    <div class="panel-heading" role="tab" id="headingHadoopFilters">
+      <i id="hadoopFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" aria-expanded="true" aria-controls="hadoopFilters">
+          Hadoop configurations
+        </a>
+      </h4>
+    </div>
+    <div id="hadoopFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingHadoopFilters">
+      <div class="panel-body">
+        <div class="row">
+				<div class="col-md-6">
+					Maps:</br>
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['maps'] %}
+						<input type="checkbox" name="mapss[]" value="{{ selopt['maps'] }}" {% if selopt['maps'] in mapss %}checked{% endif %}>&nbsp;{{ selopt['maps'] }}<br />
+						{% endfor %}
+						<input type="checkbox" name="mapss[]" value="None" {% if not mapss %}checked{% endif %}>All<br />
+					  </div>
+				    </div>
+				</div>
+				<div class="col-md-6">
+					Compression: (c)</br>
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['comp'] %}
+						<input type="checkbox" name="comps[]" value="{{ selopt['comp'] }}" {% if selopt['comp'] in comps %}checked{% endif %}>&nbsp;
+						{% if selopt['comp'] == 0 %}
+					       None
+					     {% elseif selopt['comp'] == 1 %}
+					       ZLIB
+					     {% elseif selopt['comp'] == 2 %}
+					       BZIP2
+					     {% else %}
+					       Snappy
+					     {% endif %}<br />
+						{% endfor %}
+						<input type="checkbox" name="comps[]" value="None" {% if not comps %}checked{% endif %}>All<br />
+					  </div>
+				    </div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					Replication: (r)</br>
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['replication'] %}
+						<input type="checkbox" name="replications[]" value="{{ selopt['replication'] }}" {% if selopt['replication'] in replications %}checked{% endif %}>&nbsp;{{ selopt['replication'] }}<br />
+						{% endfor %}
+						<input type="checkbox" name="replications[]" value="None" {% if not replications %}checked{% endif %}>All<br />
+					  </div>
+				    </div>
+				</div>
+				<div class="col-md-6">
+					Block size: (b)</br>
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['blk_size'] %}
+						<input type="checkbox" name="blk_sizes[]" value="{{ selopt['blk_size'] }}" {% if selopt['blk_size'] in blk_sizes %}checked{% endif %}>&nbsp;{{ selopt['blk_size'] }} MB<br />
+						{% endfor %}
+						<input type="checkbox" name="blk_sizes[]" value="None" {% if not blk_sizes %}checked{% endif %}>All<br />
+					  </div>
+				    </div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					I/O Sort Factor: (I)</br>
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['iosf'] %}
+						<input type="checkbox" name="iosfs[]" value="{{ selopt['iosf'] }}" {% if selopt['iosf'] in iosfs %}checked{% endif %}>&nbsp;{{ selopt['iosf'] }}<br />
+						{% endfor %}
+						<input type="checkbox" name="iosfs[]" value="None" {% if not iosfs %}checked{% endif %}>All<br />
+					  </div>
+				    </div>
+				</div>
+				<div class="col-md-6">
+					I/O File Buffer: </br> 
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['iofilebuf'] %}
+						<input type="checkbox" name="iofilebufs[]" value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}checked{% endif %}>&nbsp;{{ selopt['iofilebuf'] }} KB<br />
+						{% endfor %}
+						<input type="checkbox" name="iofilebufs[]" value="None" {% if not iofilebufs %}checked{% endif %}>All<br />
+					  </div>
+				    </div>
+				</div>
+			</div>
+      </div>
+    </div>
+  </div>
+  {% if selected in ['mlprediction','mlfindattributes','mldatacollapse','mlsummaries','mlminconfigs'] %}
+  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+    <div class="panel-heading" role="tab" id="headingMachineLearningFilter">
+      <i id="machineLearningFilterGlyphon" data-toggle="collapse" data-parent="#accordion" href="#machineLearningFilter" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <h4 class="panel-title">
+        <a data-toggle="collapse" data-parent="#accordion" href="#machineLearningFilter" aria-expanded="true" aria-controls="machineLearningFilter">
+          Machine learning
+        </a>
+      </h4>
+    </div>
+    <div id="machineLearningFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingMachineLearningFilter">
+      <div class="panel-body">
+      	{% if selected == 'mlprediction' %}
 			<div class="row">
 				<div class="col-md-6">
 					Learning method:</br> <select class="form-control" name="learn" >
@@ -338,19 +386,10 @@
 				</div>
 			</div>
 			{% endif %}
-
-			<br />
-			<div class"=row">
-			   <div class="col-md-6" style="padding: 0;">
-				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
-			   </div>
-			   <div class="col-md-6">
-				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
-			   </div>
-			</div>
-	</div>
+      </div>
+    </div>
   </div>
-  <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+  {% endif %}
   <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
     <div class="panel-heading" role="tab" id="headingAdvancedFilters">
       <i id="advancedFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
@@ -360,14 +399,31 @@
         </a>
       </h4>
     </div>
-    <div id="advancedFilters" class="panel-collapse collapse" role="tabpanel" aria-labelledby="headingAdvancedFilters">
+    <div id="advancedFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingAdvancedFilters">
       <div class="panel-body">
         <input type="checkbox" name="filters[]" value="valid" {% if filters is defined and 'valid' in filters %}checked{% endif %}> Only valid execs<br />
-        <input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter execs<br />
+        <input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter<br />
         <input type="checkbox" name="filters[]" value="prepares" {% if filters is defined and 'prepares' in filters %}checked{% endif %}> Include prepares<br />
+        <input type="checkbox" name="filters[]" value="perfdetails" {% if filters is defined and 'perfdetails' in filters %}checked{% endif %}>Only execs with perf details<br />
 {#         <input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
 {#         <input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
         <input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
+        <div class="row">
+			<div class="col-md-6">
+			  From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
+			</div>
+			<div class="col-md-6">
+			  To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ dateto }}" />
+			</div>
+		</div>
+		<div class="row">
+			<div class="col-md-6">
+			  Min exe time: <input type="text" name="minexetime" class="form-control" value="{{ minexetime }}" />
+			</div>
+			<div class="col-md-6">
+			  Max exe time: <input type="text" name="maxexetime" class="form-control" value="{{ maxexetime }}" />
+			</div>
+		</div>
       </div>
     </div>
   </div>
