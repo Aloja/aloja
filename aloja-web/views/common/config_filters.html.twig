@@ -50,7 +50,7 @@
 					{% if show_filter_benchs is not defined or show_filter_benchs == true %}
 						{% if select_multiple_benchs is not defined or
 						select_multiple_benchs %}
-						  Benchmark:</br>
+						  Benchmark:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 						  <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 							  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 								{% for selopt in options['benchs'] %}
@@ -71,13 +71,12 @@
 					{% endif %}
 				</div>
 				<div class="col-md-6">
-					 Clusters: (CL)</br>
+					 Clusters: (CL)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					 <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['id_cluster'] %}
 						<input type="checkbox" name="id_clusters[]" value="{{ selopt['id_cluster'] }}" {% if selopt['id_cluster'] in id_clusters %}checked{% endif %}>&nbsp;{{ selopt['name'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="id_clusters[]" value="None" {% if not id_clusters %}checked{% endif %}>All<br />
 					  </div>
 					 </div>
 				</div>
@@ -98,55 +97,51 @@
       <div class="panel-body">
       			<div class="row">
 				<div class="col-md-6">
-					Networks:</br>
+					Networks:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['net'] %}
 						<input type="checkbox" name="nets[]" value="{{ selopt['net'] }}" {% if selopt['net'] in nets %}checked{% endif %}>&nbsp;{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}Unknown{% endif %}<br />
 						{% endfor %}
-						<input type="checkbox" name="nets[]" value="None" {% if not nets %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Disks:</br>
+					Disks:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['disk'] %}
 						<input type="checkbox" name="disks[]" value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}checked{% endif %}>&nbsp;{{ selopt['disk'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="disks[]" value="None" {% if not disks %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Cluster datanodes: </br>
+					Cluster datanodes:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['datanodes'] %}
 						<input type="checkbox" name="datanodess[]" value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodess %}checked{% endif %}>&nbsp;{{ selopt['datanodes'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="datanodess[]" value="None" {% if not datanodess %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Benchmark type: </br>
+					Benchmark type:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['benchtype'] %}
 						<input type="checkbox" name="bench_types[]" value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}checked{% endif %}>&nbsp;{{ selopt['bench_type'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="bench_types[]" value="None" {% if not bench_types %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					VM size: </br>
+					VM size:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_size'] %}
@@ -157,31 +152,29 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					VM #cores: </br>
+					VM #cores:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_cores'] %}
 						<input type="checkbox" name="vm_coress[]" value="{{ selopt['vm_cores'] }}" {% if selopt['vm_cores'] in vm_coress %}checked{% endif %}>&nbsp;{{ selopt['vm_cores'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="vm_coress[]" value="None" {% if not vm_coress %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					VM RAM: </br>
+					VM RAM:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_ram'] %}
 						<input type="checkbox" name="vm_RAMs[]" value="{{ selopt['vm_RAM'] }}" {% if selopt['vm_RAM'] in vm_RAMs %}checked{% endif %}>&nbsp;{{ selopt['vm_RAM'] | number_format(0,'.',',') }} GB<br />
 						{% endfor %}
-						<input type="checkbox" name="vm_RAMs[]" value="None" {% if not vm_RAMs %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Hadoop version: </br>
+					Hadoop version:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['hadoop_version'] %}
@@ -189,20 +182,18 @@
 						  <input type="checkbox" name="hadoop_versions[]" value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}checked{% endif %}>&nbsp;{{ selopt['hadoop_version'] }}<br />
 						  {% endif %}
 						{% endfor %}
-						<input type="checkbox" name="hadoop_versions[]" value="None" {% if not hadoop_versions %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Cluster type: </br>
+					Cluster type:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['type'] %}
 						<input type="checkbox" name="types[]" value="{{ selopt['type'] }}" {% if selopt['type'] in types %}checked{% endif %}>&nbsp;{{ selopt['type'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="types[]" value="None" {% if not types %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
@@ -223,18 +214,17 @@
       <div class="panel-body">
         <div class="row">
 				<div class="col-md-6">
-					Maps:</br>
+					Maps:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['maps'] %}
 						<input type="checkbox" name="mapss[]" value="{{ selopt['maps'] }}" {% if selopt['maps'] in mapss %}checked{% endif %}>&nbsp;{{ selopt['maps'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="mapss[]" value="None" {% if not mapss %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Compression: (c)</br>
+					Compression: (c)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['comp'] %}
@@ -249,55 +239,50 @@
 					       Snappy
 					     {% endif %}<br />
 						{% endfor %}
-						<input type="checkbox" name="comps[]" value="None" {% if not comps %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Replication: (r)</br>
+					Replication: (r)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['replication'] %}
 						<input type="checkbox" name="replications[]" value="{{ selopt['replication'] }}" {% if selopt['replication'] in replications %}checked{% endif %}>&nbsp;{{ selopt['replication'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="replications[]" value="None" {% if not replications %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Block size: (b)</br>
+					Block size: (b)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['blk_size'] %}
 						<input type="checkbox" name="blk_sizes[]" value="{{ selopt['blk_size'] }}" {% if selopt['blk_size'] in blk_sizes %}checked{% endif %}>&nbsp;{{ selopt['blk_size'] }} MB<br />
 						{% endfor %}
-						<input type="checkbox" name="blk_sizes[]" value="None" {% if not blk_sizes %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					I/O Sort Factor: (I)</br>
+					I/O Sort Factor: (I)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iosf'] %}
 						<input type="checkbox" name="iosfs[]" value="{{ selopt['iosf'] }}" {% if selopt['iosf'] in iosfs %}checked{% endif %}>&nbsp;{{ selopt['iosf'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="iosfs[]" value="None" {% if not iosfs %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					I/O File Buffer: </br> 
+					I/O File Buffer:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iofilebuf'] %}
 						<input type="checkbox" name="iofilebufs[]" value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}checked{% endif %}>&nbsp;{{ selopt['iofilebuf'] }} KB<br />
 						{% endfor %}
-						<input type="checkbox" name="iofilebufs[]" value="None" {% if not iofilebufs %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
