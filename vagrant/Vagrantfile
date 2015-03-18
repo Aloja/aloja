@@ -14,6 +14,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #config.vm.box = "hashicorp/precise64"
     #Prebuilt box for ALOJA
     config.vm.box = "npoggi/aloja-precise64"
+
+    v.memory = 2048 #change as needed
+    v.cpus = 1
   end
 
   #for Docker (optional, but faster on Linux)
@@ -59,7 +62,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   end
 
-  # cluster nodes (aloja-deploy)
+  # cluster nodes for benchmarking (aloja-deploy)
   config.vm.define "vagrant1", autostart: false do |node|
     node.vm.hostname = "vagrant1"
     node.vm.network "private_network", ip: "10.42.42.101"
@@ -71,8 +74,4 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.provision "shell", path: "files/vagrant_cluster/provision.sh"
   end
 
-  config.vm.provider "virtualbox" do |v|
-    v.memory = 2048
-    v.cpus = 1
-  end
 end
