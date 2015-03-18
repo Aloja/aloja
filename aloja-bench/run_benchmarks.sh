@@ -140,7 +140,7 @@ shift $((OPTIND-1))
 #clusterConfigFile="cluster_${clusterName}.conf"
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$CUR_DIR_TMP/common/include_benchmarks.sh"
+source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
 loggerb  "INFO: includes loaded"
 
