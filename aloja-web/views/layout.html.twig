@@ -286,11 +286,11 @@
 				   $("#allunchecked").val("");
 			});
 
-			$("img.selectAll").click(function() { 
+			$("span.selectAll").click(function() { 
 				$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
 			});
 
-			$("img.deselectAll").click(function() { 
+			$("span.deselectAll").click(function() { 
 				$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
 			});
 

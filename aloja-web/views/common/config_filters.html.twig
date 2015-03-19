@@ -14,9 +14,9 @@
   <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
   <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
     <div class="panel-heading" role="tab" id="headingBasicFilters">
-      <i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#basicFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
       <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="hadoopFilters">
+        <a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="basicFilters">
           Basic filters
         </a>
       </h4>
@@ -48,7 +48,7 @@
 					{% if show_filter_benchs is not defined or show_filter_benchs == true %}
 						{% if select_multiple_benchs is not defined or
 						select_multiple_benchs %}
-						  Benchmark:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+						  Benchmark:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 						  <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 							  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 								{% for selopt in options['benchs'] %}
@@ -69,7 +69,7 @@
 					{% endif %}
 				</div>
 				<div class="col-md-6">
-					 Clusters: (CL)&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					 Clusters: (CL)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					 <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['id_cluster'] %}
@@ -81,7 +81,7 @@
 			</div>
 			      			<div class="row">
 				<div class="col-md-6">
-					Networks:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Networks:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['net'] %}
@@ -91,7 +91,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Disks:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Disks:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['disk'] %}
@@ -117,7 +117,7 @@
       <div class="panel-body">
 			<div class="row">
 				<div class="col-md-6">
-					Cluster datanodes:&nbsp;&nbsp; <img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Cluster datanodes:&nbsp;&nbsp; <span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['datanodes'] %}
@@ -127,7 +127,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Benchmark type:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Benchmark type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['benchtype'] %}
@@ -139,7 +139,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					VM size:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					VM size:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_size'] %}
@@ -149,7 +149,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					VM #cores:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					VM #cores:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_cores'] %}
@@ -161,7 +161,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					VM RAM:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					VM RAM:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_ram'] %}
@@ -171,7 +171,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Hadoop version:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Hadoop version:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['hadoop_version'] %}
@@ -185,7 +185,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Cluster type:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Cluster type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['type'] %}
@@ -211,7 +211,7 @@
       <div class="panel-body">
         <div class="row">
 				<div class="col-md-6">
-					Maps:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Maps:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['maps'] %}
@@ -221,7 +221,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Compression: (c)&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Compression: (c)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['comp'] %}
@@ -242,7 +242,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Replication: (r)&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Replication: (r)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['replication'] %}
@@ -252,7 +252,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Block size: (b)&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					Block size: (b)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['blk_size'] %}
@@ -264,7 +264,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					I/O Sort Factor: (I)&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					I/O Sort Factor: (I)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iosf'] %}
@@ -274,7 +274,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					I/O File Buffer:&nbsp;&nbsp;<img class="selectAll" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;" />&nbsp;&nbsp;<img class="deselectAll" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /><br />
+					I/O File Buffer:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iofilebuf'] %}
