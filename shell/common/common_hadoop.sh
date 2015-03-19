@@ -403,6 +403,14 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
   local total_secs=`calc_exec_time $start_exec $end_exec`
   echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
+  # Save execution information in an array to allow import later
+  declare -gA EXEC_TIME
+  declare -gA EXEC_START
+  declare -gA EXEC_END
+  EXEC_TIME[${3}${1}]="$total_secs"
+  EXEC_START[${3}${1}]="$start_exec"
+  EXEC_END[${3}${1}]="$end_exec"
+
   url="http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=${start_date}&period=${total_secs}"
   echo "SENDING: hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s." 2>&1 |tee -a $LOG_PATH
   zabbix_sender "hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s."
