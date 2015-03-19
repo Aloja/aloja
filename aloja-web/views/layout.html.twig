@@ -319,6 +319,18 @@
         	if($('.dropdown li.active').length > 0) {
         		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
         	}
+
+        	$(".addgroup").click(function() {
+            	if($(this).hasClass("active"))
+                	$(this).removeClass("active");
+            	else
+					$(this).addClass("active");
+
+				var selected = new Array();
+				$(".addgroup.active").each(function() { selected[selected.length] = $(this).attr('value'); });
+
+				$("input[name='selected-groups']").attr('value',selected.join());
+		   });
 		  });
 	</script>
 	{% endblock %}

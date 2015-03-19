@@ -1,0 +1,25 @@
+<div class="panel panel-default">
+{# 			  <div class="panel-heading">#}
+{# 			    <h3 style="font-size: 1.3em; text-align: center;" class="panel-title"><b>Group by</b></h3>#}
+{# 			  </div>#}
+	<div class="panel-body" style="padding: .5em; text-align: center;">
+		Group results by: &nbsp;
+{# 		<span class="addgroup btn btn-default btn-sm active" value="bench">Benchmark</span>#}
+		<span class="addgroup btn btn-default btn-sm {% if 'id_cluster' in selectedGroups %}active{% endif %}" value="id_cluster">Cluster</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'net' in selectedGroups %}active{% endif %}" value="net">Network</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'disk' in selectedGroups %}active{% endif %}" value="disk">Disk</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'datanodes' in selectedGroups %}active{% endif %}" value="datanodes">Datanodes</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'bench_type' in selectedGroups %}active{% endif %}" value="bench_type">Benchmark type</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'vm_size' in selectedGroups %}active{% endif %}" value="vm_size">VM size</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'vm_cores' in selectedGroups %}active{% endif %}" value="vm_cores">VM #cores</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'vm_RAM' in selectedGroups %}active{% endif %}" value="vm_RAM">VM RAM</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'hadoop_version' in selectedGroups %}active{% endif %}" value="hadoop_version">Hadoop version</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'type' in selectedGroups %}active{% endif %}" value="type">Cluster type</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'maps' in selectedGroups %}active{% endif %}" value="maps">Maps</span>  
+	    <span class="addgroup btn btn-default btn-sm {% if 'comp' in selectedGroups %}active{% endif %}" value="comp">Compression</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'rep' in selectedGroups %}active{% endif %}" value="rep">Replication</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'blk_size' in selectedGroups %}active{% endif %}" value="blk_size">Block size</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'iosf' in selectedGroups %}active{% endif %}" value="iosf">I/O sort factor</span>
+	    <span class="addgroup btn btn-default btn-sm {% if 'iofilebuf' in selectedGroups %}active{% endif %}" value="iofilebuf">I/O buffer size</span>
+    </div>
+</div>

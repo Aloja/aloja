@@ -18,7 +18,33 @@ class Utils
         return $array;
     }
 
-    public static function read_params($item_name, &$where_configs, &$configurations, &$concat_config, $setDefaultValues = true, $table_name = null)
+    public static function getConfig($items) {
+    	$concatConfig = "";
+    	foreach($items as $item) {
+	    	if ($item != 'bench') {
+	    		if ($concatConfig) $concatConfig .= ",'_',";
+	    	
+	    		if ($item == 'id_cluster') {
+	    			$confPrefix = 'CL';
+	    		} elseif ($item == 'iofilebuf') {
+	    			$confPrefix = 'I';
+	    		} else {
+	    			$confPrefix = $item;
+	    		}
+	    	
+	    		//avoid alphanumeric fields
+	    		if (!in_array($item, array('net', 'disk'))) {
+	    			$concatConfig .= "'".$confPrefix."', $item";
+	    		} else {
+	    			$concatConfig .= " $item";
+	    		}
+	    	}
+    	}
+    	
+    	return $concatConfig;
+    }
+    
+    public static function read_params($item_name, &$where_configs, $setDefaultValues = true, $table_name = null)
     {
     	if($item_name == 'money' && isset($_GET['money'])) {
     		$money = $_GET['money'];
@@ -122,26 +148,6 @@ class Utils
         	$items = array();
 
         if ($items) {
-            if ($item_name != 'benchs') {
-                $configurations[] = $single_item_name;
-                if ($concat_config) $concat_config .= ",'_',";
-
-                if ($item_name == 'id_clusters') {
-                    $conf_prefix = 'CL';
-                } elseif ($item_name == 'iofilebufs') {
-                    $conf_prefix = 'I';
-                } else {
-                    $conf_prefix = substr($single_item_name, 0, 1);
-                }
-
-                //avoid alphanumeric fields
-                if (!in_array($item_name, array('nets', 'disks'))) {
-                    $concat_config .= "'".$conf_prefix."', $single_item_name";
-                } else {
-                    $concat_config .= " $single_item_name";
-                }
-            }
-
             if ($table_name !== null) {
                 $single_item_name = $table_name.'.`'.$single_item_name.'`';
             }
