@@ -145,6 +145,10 @@ CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONF_DIR="$CUR_DIR_TMP/common/"
 source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
+#bencmark sources
+logger "INFO: loading $CONF_DIR/common_hadoop.sh"
+source "$CONF_DIR/common_hadoop.sh"
+
 #####
 
 #some validations
@@ -202,7 +206,7 @@ DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 #check that we got the dynamic disk location correctly
 if [ -z "$(get_initial_disk "$DISK")" ] ; then
-  loggerb "ERROR: cannot determint $DISK path"
+  loggerb "ERROR: cannot determine $DISK path"
   exit 1
 fi
 
