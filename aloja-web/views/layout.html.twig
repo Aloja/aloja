@@ -140,7 +140,7 @@
 			        </li>
 			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
 		            <li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort', 'id_clusters[]': '21'}) }}">Cost/Perf Evaluation of HW configs</a>
+			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of HW configs</a>
 			        </li>
 		          </ul>
 		        </li>
