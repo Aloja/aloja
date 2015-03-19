@@ -286,12 +286,12 @@
 				   $("#allunchecked").val("");
 			});
 
-			$("input[name='select_all']").change(function() {
-				if($(this).prop('checked')) {
-					$(this).parent().find('.panel-body').first().find('input').each(function() { $(this).prop('checked','checked'); });
-				} else {
-					$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
-				}
+			$("img.selectAll").click(function() { 
+				$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
+			});
+
+			$("img.deselectAll").click(function() { 
+				$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
 			});
 
             function getCookie(cname) {
