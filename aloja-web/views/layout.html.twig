@@ -143,7 +143,7 @@
 			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort', 'id_clusters[]': '21'}) }}">Cost/Perf Evaluation of HW configs</a>
 			        </li>
 		          </ul>
-		        </li>		        
+		        </li>
 
 
 				<li class="dropdown">
@@ -233,18 +233,18 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
-			$("#advancedFilters").on('shown.bs.collapse hidden.bs.collapse', function() {
+			$(".filtersTab").on('shown.bs.collapse hidden.bs.collapse', function() {
 				var element = $(this).parent().find(".indicator").first();
 				if(element.hasClass("glyphicon-chevron-down"))
 					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
 				else if(element.hasClass("glyphicon-chevron-up"))
 					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
             });
-             
+
 			$(".datepicker").each(function() {
 				$(this).datepicker({
 					autoclose: true,
-					format: 'yyyy/mm/dd' 
+					format: 'yyyy/mm/dd'
 				});
 			});
 
@@ -265,8 +265,8 @@
 							});
 						}
 					}
-					
-					if($(this).parent().hasClass('panel-body')) {
+
+					if($(this).parent().parent().attr('id') == "advancedFilters") {
 						var length = $(this).parent().find('input:checked').length;
 						if(length > 1) {
 							$(this).parent().find("input[value='None']").removeAttr('checked');
@@ -283,7 +283,15 @@
 				else
 				   $("#allunchecked").val("");
 			});
-			
+
+			$("input[name='select_all']").change(function() {
+				if($(this).prop('checked')) {
+					$(this).parent().find('.panel-body').first().find('input').each(function() { $(this).prop('checked','checked'); });
+				} else {
+					$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
+				}
+			});
+
             function getCookie(cname) {
            		var name = cname + "=";
           		var ca = document.cookie.split(';');
