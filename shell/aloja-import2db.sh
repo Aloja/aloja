@@ -158,11 +158,9 @@ for folder in 201* ; do
 	        #get Job XML configuration if needed
 	        #get_job_confs
 	
-			    id_exec=""
-	        get_id_exec "$exec"
+			    id_exec="$(get_id_exec "$exec")"
 	
-	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
-
+	        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 
 	        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 	
@@ -185,7 +183,10 @@ for folder in 201* ; do
 	          fi
 	        fi
 	        cd ..; logger "Leaving folder $bench_folder\n"
-	
+
+	        #update DB filters
+          $MYSQL "$(get_filter_sql_exec "$id_exec")"
+
 	      else
 	        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
 	      fi

@@ -25,15 +25,19 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`blk_size\` int(11) DEFAULT NULL,
   hadoop_version varchar(127) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
-  \`valid\` int DEFAULT 1,
+  \`valid\` int DEFAULT 0,
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
- \`perf_details\` int DEFAULT 1,
+ \`perf_details\` int DEFAULT 0,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
   KEY \`idx_exe_time\` (\`exe_time\`),
-  KEY \`idx_bench_type\` (\`bench_type\`)
+  KEY \`idx_bench_type\` (\`bench_type\`),
+  KEY \`idx_id_cluster\` (\`id_cluster\`),
+  KEY \`idx_valid\` (\`valid\`),
+  KEY \`idx_filter\` (\`filter\`),
+  KEY \`idx_perf_details\` (\`perf_details\`)
 ) ENGINE=InnoDB;
 
 
@@ -666,6 +670,12 @@ $MYSQL "alter ignore table execs
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
 $MYSQL "alter ignore table execs
+  add KEY \`idx_id_cluster\` (\`id_cluster\`),
+  add KEY \`idx_valid\` (\`valid\`),
+  add KEY \`idx_filter\` (\`filter\`),
+  add KEY \`idx_perf_details\` (\`perf_details\`));"
+
+$MYSQL "alter ignore table execs
  add column  \`valid\` int DEFAULT '1';"
 
 $MYSQL "alter ignore table execs
@@ -674,7 +684,7 @@ $MYSQL "alter ignore table execs
   ADD \`outlier\` int DEFAULT '0',
 ;"
 
-$MYSQL "alter ignore table execs ADD COLUMN  \`perf_details\` int DEFAULT '1';"
+$MYSQL "alter ignore table execs ADD COLUMN  \`perf_details\` int DEFAULT '0';"
 
 $MYSQL "alter ignore table execs add hadoop_version varchar(127) default NULL;"
 
@@ -726,8 +736,10 @@ update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdi
 update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
 update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
-
 "
+MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
 
 
 
