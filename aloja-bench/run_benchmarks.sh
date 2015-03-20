@@ -73,7 +73,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -140,7 +140,7 @@ shift $((OPTIND-1))
 #clusterConfigFile="cluster_${clusterName}.conf"
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$CUR_DIR_TMP/common/include_benchmarks.sh"
+source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
 loggerb  "INFO: includes loaded"
 
@@ -253,7 +253,7 @@ fi
 
 
 # Output directory name
-CONF="conf_${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+CONF="${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"

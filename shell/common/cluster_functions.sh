@@ -575,7 +575,7 @@ vm_set_ssh() {
     fi
 
     vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
+                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\nPrintMotd no\" > ~/.ssh/config;
                 echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "$use_password"
 
     vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "$use_password"
@@ -723,6 +723,8 @@ vm_set_dot_files() {
   local bootstrap_file="vm_set_dot_files"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
+
+    vm_execute "touch ~/.hushlogin;" #avoid welcome banners
 
     vm_update_template "~/.bashrc" "
 export HISTSIZE=50000
@@ -890,7 +892,7 @@ check_bootstraped() {
 
   if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
     logger " Avoiding subsequent welcome banners"
-    vm_execute "touch ~/.hushlogin; #avoid subsequent banners"
+    vm_execute "touch ~/.hushlogin; " #avoid subsequent banners
     fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
   fi
 #TODO fix return codes should be the opposite

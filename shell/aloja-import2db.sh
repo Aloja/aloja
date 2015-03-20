@@ -10,7 +10,7 @@ source "$CUR_DIR/common/import_functions.sh"
 INSERT_DB="1" #if to dump CSV into the DB
 REDO_ALL="1" #if to redo folders that have source files and IDs in DB
 REDO_UNTARS="" #if to redo the untars for folders that have it
-PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
 MOVE_TO_DONE="1" #if set moves completed folders to DONE
 
 #in case we only want to insert the data for the execs table (much faster)
@@ -158,11 +158,9 @@ for folder in 201* ; do
 	        #get Job XML configuration if needed
 	        #get_job_confs
 	
-			    id_exec=""
-	        get_id_exec "$exec"
+			    id_exec="$(get_id_exec "$exec")"
 	
-	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
-
+	        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 
 	        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 	
@@ -185,7 +183,10 @@ for folder in 201* ; do
 	          fi
 	        fi
 	        cd ..; logger "Leaving folder $bench_folder\n"
-	
+
+	        #update DB filters
+          $MYSQL "$(get_filter_sql_exec "$id_exec")"
+
 	      else
 	        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
 	      fi
@@ -200,10 +201,12 @@ for folder in 201* ; do
 	      mkdir -p $BASE_DIR/FAIL/{0..3}
 	      if (( "$folder_OK" >= 3 )) ; then
 	        logger "OK=$folder_OK Moving folder $folder to DONE"
-	        mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
+	        cp -ru "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
+	        rm -rf "$BASE_DIR/$folder"
 	      else
 	        logger "OK=$folder_OK Moving $folder to FAIL/$folder_OK for manual check"
-	        mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/$folder_OK/"
+	        cp -ru mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/$folder_OK/"
+	        rm -rf "$BASE_DIR/$folder"
 	      fi
 	    fi
 	

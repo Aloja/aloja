@@ -28,3 +28,6 @@ for clusterConfigFile in $configFolderPath/cluster_* ; do
   fi
 
 done
+
+#update filters in the whole DB (slow)
+$MYSQL "$(get_filter_sql)"
