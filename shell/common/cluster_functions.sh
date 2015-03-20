@@ -575,7 +575,7 @@ vm_set_ssh() {
     fi
 
     vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\nPrintMotd no\" > ~/.ssh/config;
+                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
                 echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "$use_password"
 
     vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "$use_password"
