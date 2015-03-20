@@ -662,36 +662,35 @@ CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
 
 
 ####################################################
-logger "INFO: Executing alter tables"
+logger "INFO: Executing alter tables, you can IGNORE warnings"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
   add KEY \`idx_bench\` (\`bench\`),
   add KEY \`idx_exe_time\` (\`exe_time\`),
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
   add KEY \`idx_id_cluster\` (\`id_cluster\`),
   add KEY \`idx_valid\` (\`valid\`),
   add KEY \`idx_filter\` (\`filter\`),
-  add KEY \`idx_perf_details\` (\`perf_details\`));"
+  add KEY \`idx_perf_details\` (\`perf_details\`);"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
  add column  \`valid\` int DEFAULT '1';"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
  modify column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
-  ADD \`outlier\` int DEFAULT '0',
-;"
+  ADD \`outlier\` int DEFAULT '0';"
 
-$MYSQL "alter ignore table execs ADD COLUMN  \`perf_details\` int DEFAULT '0';"
+$MYSQL "alter table execs ADD COLUMN  \`perf_details\` int DEFAULT '0';"
 
-$MYSQL "alter ignore table execs add hadoop_version varchar(127) default NULL;"
+$MYSQL "alter table execs add hadoop_version varchar(127) default NULL;"
 
-$MYSQL "alter ignore table clusters add datanodes int DEFAULT NULL;"
-$MYSQL "alter ignore table clusters add provider varchar(127);"
+$MYSQL "alter table clusters add datanodes int DEFAULT NULL;"
+$MYSQL "alter table clusters add provider varchar(127);"
 
-$MYSQL "alter ignore table clusters
+$MYSQL "alter table clusters
   add headnodes int DEFAULT NULL,
   add vm_size varchar(127) default null,
   add vm_OS varchar(127) default null,
@@ -699,17 +698,17 @@ $MYSQL "alter ignore table clusters
   add vm_RAM decimal(10,3) default null,
   add description varchar(256) default null;"
 
-$MYSQL "alter ignore table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
-$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT 0"
-$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
-$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter table clusters add column cost_remote int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_SSD int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_IB int DEFAULT 0"
 
-$MYSQL "alter ignore table clusters
+$MYSQL "alter table clusters
  modify column cost_remote decimal(10,3) default 0,
   modify column cost_SSD decimal(10,3) default 0,
   modify column cost_IB decimal(10,3) default 0;"
 
-$MYSQL "alter ignore table hosts
+$MYSQL "alter table hosts
 	add column cost_remote decimal(10,3) default 0,
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
@@ -737,7 +736,7 @@ update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdi
 update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
 "
-MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+$MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
 
