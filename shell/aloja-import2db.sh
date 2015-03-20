@@ -7,11 +7,11 @@ source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
 
-INSERT_DB="1" #if to dump CSV into the DB
-REDO_ALL="1" #if to redo folders that have source files and IDs in DB
-REDO_UNTARS="" #if to redo the untars for folders that have it
-PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
-MOVE_TO_DONE="1" #if set moves completed folders to DONE
+[ -z "$INSERT_DB" ]         && INSERT_DB="1" #if to dump CSV into the DB
+[ -z "$REDO_ALL" ]          && REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+[ -z "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
+[ -z "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
+[ -z "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
 
 #in case we only want to insert the data for the execs table (much faster)
 if [ "$1" ] ; then
@@ -65,6 +65,13 @@ for folder in 201* ; do
 	    if [[ -z $exec_params ]] ; then
 	      logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
 	      cd ..
+
+	      #move folder to failed dir
+	      if [ "$MOVE_TO_DONE" ] ; then
+          delete_untars "$BASE_DIR/$folder"
+          move2done "$folder" "$folder_OK"
+	      fi
+
 	      continue
 	    else
 	      logger "Exec params:\n$exec_params"
@@ -194,20 +201,8 @@ for folder in 201* ; do
 	    cd ..; logger "Leaving folder $folder\n"
 	
 	    if [ "$MOVE_TO_DONE" ] ; then
-
         delete_untars "$BASE_DIR/$folder"
-
-	      mkdir -p "$BASE_DIR/DONE"
-	      mkdir -p $BASE_DIR/FAIL/{0..3}
-	      if (( "$folder_OK" >= 3 )) ; then
-	        logger "OK=$folder_OK Moving folder $folder to DONE"
-	        cp -ru "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
-	        rm -rf "$BASE_DIR/$folder"
-	      else
-	        logger "OK=$folder_OK Moving $folder to FAIL/$folder_OK for manual check"
-	        cp -ru mv "$BASE_DIR/$folder" "$BASE_DIR/FAIL/$folder_OK/"
-	        rm -rf "$BASE_DIR/$folder"
-	      fi
+        move2done "$folder" "$folder_OK"
 	    fi
 	
 	  else

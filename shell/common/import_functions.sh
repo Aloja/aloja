@@ -96,10 +96,10 @@ update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(sel
 update ignore execs SET valid = 1 where id_exec = '$1' ;
 update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
     tmp_table
 );
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE  e2.id_exec = '$1' and e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE id_exec = '$1' AND suma = 0;
+update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE  e2.id_exec = '$1' and e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE e.id_exec = '$1' AND suma = 0;
 
 "
 
@@ -112,6 +112,23 @@ update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM e
 
 }
 
+#$1 folder $2 $folder_OK
+move2done() {
+
+  if [ "$1" ] && [ "$2" ] ; then
+    mkdir -p "$BASE_DIR/DONE"
+    mkdir -p $BASE_DIR/FAIL/{0..3}
+    if (( "$2" >= 3 )) ; then
+      logger "OK=$2 Moving folder $1 to DONE"
+      cp -ru "$BASE_DIR/$1" "$BASE_DIR/DONE/"
+      rm -rf "$BASE_DIR/$1"
+    else
+      logger "OK=$2 Moving $1 to FAIL/$2 for manual check"
+      cp -ru "$BASE_DIR/$1" "$BASE_DIR/FAIL/$2/"
+      rm -rf "$BASE_DIR/$1"
+    fi
+  fi
+}
 
 get_filter_sql() {
   echo "
