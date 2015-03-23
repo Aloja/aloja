@@ -15,6 +15,10 @@ class MLTemplatesController extends AbstractController
 		$instance = $error_stats = '';
 		try
 		{
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
 		    	$db = $this->container->getDBUtils();
 		    	
 		    	$configurations = array ();	// Useless here
@@ -52,22 +56,10 @@ class MLTemplatesController extends AbstractController
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached = file_exists($cache_ds);
-			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+			$is_cached_mysql = $dbml->query("SELECT id_learner FROM learners WHERE id_learner = '".md5($config)."'");
+			$is_cached = ($is_cached_mysql->fetchColumn() == 0);
 
-			if ($is_cached && !$in_process)
-			{
-				$keep_cache = TRUE;
-				foreach (array("tt", "tv", "tr") as &$value)
-				{
-					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv');
-				}
-				if (!$keep_cache)
-				{
-					unlink($cache_ds);
-					shell_exec("sed -i '/".md5($config)." :".$config."/d' ".getcwd()."/cache/query/record.data");
-				}
-			}
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
 			if (!$is_cached && !$in_process)
 			{
@@ -82,9 +74,8 @@ class MLTemplatesController extends AbstractController
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
+			    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
-
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
@@ -99,11 +90,6 @@ class MLTemplatesController extends AbstractController
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock');
 				exec('cd '.getcwd().'/cache/query ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" > /dev/null 2>&1 -p 1 &');
-
-				// update cache record (for human reading)
-				$register = md5($config).' :'.$config."\n";
-				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
 			}
 
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
@@ -116,49 +102,60 @@ class MLTemplatesController extends AbstractController
 			}
 			else
 			{
-				// read results of the CSV
+				$is_cached_mysql = $dbml->query("SELECT id_learner FROM learners WHERE id_learner = '".md5($config)."'");
+				if ($is_cached_mysql->fetchColumn() == 0) 
+				{
+					// register model to DB
+					$query = "INSERT INTO learners (id_learner,instance,model,algorithm)";
+					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
+
+					// read results of the CSV and dump to DB
+					foreach (array("tt", "tv", "tr") as $value)
+					{
+						if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
+						{
+							$header = fgetcsv($handle, 1000, ",");
+
+							$token = 0;
+							$query = "INSERT INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+							{
+								$specific_instance = implode(",",array_slice($data, 2, 19));
+								if ($token != 0) { $query = $query.","; } $token = 1;
+								$query = $query."('".implode("','",$data)."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
+							}
+
+							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+							fclose($handle);
+						}
+					}
+					// TODO - Here residual files (cache, tr, tv, tt) can be removed
+				}
+
 				$must_wait = "NO";
 				$count = 0;
 				$max_x = $max_y = 0;
 				$error_stats = '';
-				foreach (array("tt", "tv", "tr") as $value)
+
+				$query = "SELECT exe_time, pred_time, instance FROM predictions WHERE id_learner='".md5($config)."' LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
+				$result = $dbml->query($query);
+				foreach ($result as $row)
 				{
-					$mae = 0;
-					$rae = 0;
-					$count_dataset = 0;
+					$jsonExecs[$count]['y'] = (int)$row['exe_time'];
+					$jsonExecs[$count]['x'] = (int)$row['pred_time'];
+					$jsonExecs[$count]['mydata'] = $row['instance'];
 
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
-					{
-						$header = fgetcsv($handle, 1000, ",");
+					if ((int)$row['exe_time'] > $max_y) $max_y = (int)$row['exe_time'];
+					if ((int)$row['pred_time'] > $max_x) $max_x = (int)$row['pred_time'];
+					$count++;
+				}
 
-						$key_exec = array_search('Exe.Time', array_values($header));
-						$key_pexec = array_search('Pred.Exe.Time', array_values($header));
-
-						$info_keys = array("ID","Cluster","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
-						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
-						{
-							$jsonExecs[$count]['y'] = (int)$data[$key_exec];
-							$jsonExecs[$count]['x'] = (int)$data[$key_pexec];
-
-							$mae += abs($jsonExecs[$count]['y'] - $jsonExecs[$count]['x']);
-							$rae += (float)abs($jsonExecs[$count]['y'] - $jsonExecs[$count]['x']) / $jsonExecs[$count]['y'];
-							$count_dataset = $count_dataset + 1;
-
-							$extra_data = "";
-							foreach(array_values($header) as &$value2)
-							{
-								$aux = array_search($value2, array_values($header));
-								if (array_search($value2, array_values($info_keys)) > 0) $extra_data = $extra_data.$value2.":".$data[$aux]." ";
-								else if (!array_search($value2, array('Exe.Time','Pred.Exe.Time')) > 0 && $data[$aux] == 1) $extra_data = $extra_data.$value2." "; // Binarized Data
-							}
-							$jsonExecs[$count++]['mydata'] = $extra_data;
-
-							if ((int)$data[$key_exec] > $max_y) $max_y = (int)$data[$key_exec];
-							if ((int)$data[$key_pexec] > $max_x) $max_x = (int)$data[$key_pexec];
-						}
-						fclose($handle);
-					}
-					$error_stats = $error_stats.'Dataset: '.$value.' => MAE: '.($mae / $count_dataset).' RAE: '.($rae / $count_dataset).'<br/>';
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 GROUP BY predict_code";
+				$result = $dbml->query($query);
+				foreach ($result as $row)
+				{
+					$error_stats = $error_stats.'Dataset: '.(($row['predict_code']==1)?'tr':(($row['predict_code']==2)?'tv':'tt')).' => MAE: '.$row['MAE'].' RAE: '.$row['RAE'].'<br/>';
 				}
 			}
 		}
