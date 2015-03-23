@@ -278,14 +278,14 @@ node_delete() {
   vm_set_details
 
   if [ "$type" == "cluster" ] ; then
-    logger "Paralellizing node deletions"
+    #logger "Paralellizing node deletions"
     node_delete_helper &
   else
     node_delete_helper
   fi
 }
 
-#to alow parallel deletion above
+#to allow parallel deletion from previous function above
 node_delete_helper() {
   logger "Getting attached disks"
   local attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
