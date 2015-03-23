@@ -286,6 +286,25 @@
 				   $("#allunchecked").val("");
 			});
 
+			$("select[name='presets']").change(function() { 
+				var url = $(this).find("option:selected").first().attr('url');
+				var filters = url.split("?")[1];
+				filters = filters.split("&");
+				$("form[name='configFilters']").trigger('reset');
+				for(i = 0; i<filters.length; ++i) {
+					var split = filters[i].split("=");
+					var filterName = split[0]
+					var filterValue = split[1];
+					if(filterValue != "" && filterValue != null) {
+						if(filterName[filterName.length-1]==']')
+							$("input[name='"+filterName+"'][value='"+filterValue+"']").prop('checked',true);
+						else
+							$("input[name='"+filterName+"']").val(filterValue);
+						$("select[name='"+filterName+"']").val(filterValue);
+					}
+				}
+			});
+
 			$("span.selectAll").click(function() { 
 				$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
 			});

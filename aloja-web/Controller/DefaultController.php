@@ -41,6 +41,9 @@ class DefaultController extends AbstractController
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Config Improvement');
+        
         $rows_config = '';
         try {
             
@@ -344,6 +347,9 @@ class DefaultController extends AbstractController
     {
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Cost Evaluation');
+        
         try {
             if(isset($_GET['benchs']))
                 $_GET['benchs'] = $_GET['benchs'][0];
@@ -501,6 +507,9 @@ class DefaultController extends AbstractController
         $exec_rows = null;
         $id_exec_rows = null;
         $dbUtil = $this->container->getDBUtils();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Performance charts');
+        
         try {
             //TODO fix, initialize variables
             $dbUtil->get_exec_details('1', 'id_exec',$exec_rows,$id_exec_rows);
@@ -1148,7 +1157,9 @@ class DefaultController extends AbstractController
         try {
             $db = $this->container->getDBUtils();
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
-
+            if(sizeof($_GET) <= 1)
+            	Utils::setDefaultPreset($db, 'Best configuration');
+            
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
             foreach($benchOptions as $option) {
@@ -1356,6 +1367,9 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
+		if(sizeof($_GET) <= 1)
+			Utils::setDefaultPreset($db, 'Best configuration');
+		
         $rows_config = '';
         $bestexec = '';
         $cluster = '';
@@ -1481,6 +1495,9 @@ class DefaultController extends AbstractController
     }
     public function paramEvaluationAction() {
         $db = $this->container->getDBUtils ();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Parameter Evaluation');
+        
         $rows = '';
         $categories = '';
         $series = '';
@@ -1867,6 +1884,9 @@ class DefaultController extends AbstractController
     public function clusterCostEffectivenessAction()
     {
         $db = $this->container->getDBUtils ();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Cost-Effectiveness of clusters');
+        
         $data = array();
 
         $filter_execs = DBUtils::getFilterExecs();
@@ -1995,6 +2015,9 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
+    	if(sizeof($_GET) <= 1)
+    		Utils::setDefaultPreset($db, 'Clusters Cost Evaluation');
+    	
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
@@ -2161,6 +2184,9 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
+    	if(sizeof($_GET) <= 1)
+    		Utils::setDefaultPreset($db, 'Best Clusters Cost Evaluation');
+    	
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
