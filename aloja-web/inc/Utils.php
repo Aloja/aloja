@@ -25,7 +25,7 @@ class Utils
 	    		if ($concatConfig) $concatConfig .= ",'_',";
 	    	
 	    		if ($item == 'id_cluster') {
-	    			$confPrefix = 'CL';
+	    			$concatConfig .= "CONCAT_WS(',',provider,vm_size,CONCAT(datanodes,' datanodes'))";
 	    		} elseif ($item == 'iofilebuf') {
 	    			$confPrefix = 'I';
 	    		} else {
@@ -33,9 +33,9 @@ class Utils
 	    		}
 	    	
 	    		//avoid alphanumeric fields
-	    		if (!in_array($item, array('net', 'disk'))) {
+	    		if ($item != 'id_cluster' && !in_array($item, array('net', 'disk'))) {
 	    			$concatConfig .= "'".$confPrefix."', $item";
-	    		} else {
+	    		} else if($item != 'id_cluster') {
 	    			$concatConfig .= " $item";
 	    		}
 	    	}
@@ -539,7 +539,7 @@ class Utils
     	$options['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
     	$options['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
     	$options['comp'] = $dbUtils->get_rows("SELECT DISTINCT comp FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
-    	$options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,c.name from execs e join clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+    	$options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,' datanodes')) as name from execs e join clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
     	$options['maps'] = $dbUtils->get_rows("SELECT DISTINCT maps FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
     	$options['replication'] = $dbUtils->get_rows("SELECT DISTINCT replication FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
     	$options['iosf'] = $dbUtils->get_rows("SELECT DISTINCT iosf FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
