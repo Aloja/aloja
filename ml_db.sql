@@ -78,3 +78,24 @@ CREATE TABLE `trees` (
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
+DROP TABLE IF EXISTS `resolutions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `resolutions` (
+  `sid_resolution` int(11) NOT NULL AUTO_INCREMENT,
+  `id_resolution` varchar(255) NOT NULL,
+  `id_learner` varchar(255) NOT NULL,
+  `id_exec` int(11) NOT NULL,
+  `instance` varchar(255) NOT NULL,
+  `model` varchar(255) NOT NULL,
+  `outlier_code` int(8) DEFAULT 0,  
+  `predicted` int(11) DEFAULT 0,  
+  `observed` int(11) DEFAULT 0, 
+  `creation_time` datetime NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (`sid_resolution`),
+  KEY `idx_instance` (`instance`),
+  KEY `idx_model` (`model`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+
+
+

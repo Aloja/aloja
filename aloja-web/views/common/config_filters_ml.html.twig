@@ -154,6 +154,7 @@
 					</select>
 				</div>
 			</div>
+			{% if selected  != 'mlprediction' and selected  != 'mloutliers' and selected  != 'mlfindattributes' %}
 			<div class="row">
 				<div class="col-md-6">
 					Cluster datanodes: </br> <select class="form-control" name="datanodess[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
@@ -218,6 +219,7 @@
 					</select>
 				</div>
 			</div>
+			{% endif %}
 
 			{% if selected == 'mlnewconfigs' %}
 			<div class="row">

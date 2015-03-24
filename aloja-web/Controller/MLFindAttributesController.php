@@ -140,7 +140,7 @@ class MLFindAttributesController extends AbstractController
 					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.lock');
 
 					// Remove temporal files
-					if (isset($_GET['debug'])) $output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
 
 					$is_cached = true;
 				}
