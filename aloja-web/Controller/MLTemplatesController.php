@@ -56,8 +56,9 @@ class MLTemplatesController extends AbstractController
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached_mysql = $dbml->query("SELECT id_learner FROM learners WHERE id_learner = '".md5($config)."'");
-			$is_cached = ($is_cached_mysql->fetchColumn() == 0);
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = ($tmp_result['num'] > 0);
 
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
@@ -122,15 +123,29 @@ class MLTemplatesController extends AbstractController
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
 								$specific_instance = implode(",",array_slice($data, 2, 19));
-								if ($token != 0) { $query = $query.","; } $token = 1;
-								$query = $query."('".implode("','",$data)."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
+								$specific_data = implode("','",$data);
+								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
+								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
+
+								$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
+								$result = $dbml->query($query_var);
+								$row = $result->fetch();
+						
+								// Insert instance values
+								if ($row['num'] == 0)
+								{
+									if ($token != 0) { $query = $query.","; } $token = 1;
+									$query = $query."('".$specific_data."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
+								}
 							}
 
 							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
 							fclose($handle);
 						}
 					}
-					// TODO - Here residual files (cache, tr, tv, tt) can be removed
+
+					// Remove temporal files
+					if (isset($_GET['debug'])) $output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
 				}
 
 				$must_wait = "NO";
@@ -158,6 +173,7 @@ class MLTemplatesController extends AbstractController
 					$error_stats = $error_stats.'Dataset: '.(($row['predict_code']==1)?'tr':(($row['predict_code']==2)?'tv':'tt')).' => MAE: '.$row['MAE'].' RAE: '.$row['RAE'].'<br/>';
 				}
 			}
+			$dbml = null;
 		}
 		catch(\Exception $e)
 		{
@@ -165,6 +181,7 @@ class MLTemplatesController extends AbstractController
 			$jsonExecs = '[]';
 			$max_x = $max_y = 0;
 			$must_wait = 'NO';
+			$dbml = null;
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig',
 			array(
