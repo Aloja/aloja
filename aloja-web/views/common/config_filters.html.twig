@@ -9,10 +9,10 @@
 	<div class="col-md-12">
 	   Predefined filters:</br>
 		<select class="form-control" class="control-form" name="presets" style="width: 100%;">
-		 <option value="none" url="" title="None">None</option>
+		 <option value="none" url="" title="None" {% if preset is null or preset == "" %}selected{% endif %}>None</option>
 		{% for selopt in options['presets'] %}
 		 {% if selopt['screen'] == selected %}
-		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}">{{ selopt['name'] }}</option>
+		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}" {% if preset == selopt['URL'] %}selected="true"{% endif %}>{{ selopt['name'] }}</option>
 		 {% endif %} 
 		{% endfor %}
 		</select>
