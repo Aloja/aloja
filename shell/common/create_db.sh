@@ -661,7 +661,7 @@ CREATE TABLE IF NOT EXISTS \`filters_presets\` (
  \`name\` varchar(255) NOT NULL,
  \`screen\` varchar(255) NOT NULL,
  \`URL\` varchar(65536) NOT NULL,
- \`default\` int NOT NULL DEFAULT 0,
+ \`preset\` int NOT NULL DEFAULT 0,
  \`description\` varchar(255),
  PRIMARY KEY (\`id\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
