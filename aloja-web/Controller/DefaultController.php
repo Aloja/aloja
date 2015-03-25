@@ -41,44 +41,48 @@ class DefaultController extends AbstractController
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Config Improvement');
+        
         $rows_config = '';
         try {
-            $configurations = array();
+            
             $where_configs = '';
             $concat_config = "";
 
-            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-            $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
-            $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
-            $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
-            $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
-            $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
-            $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
-            $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
-            $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
-            $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-            $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-            $money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $dateto	= Utils::read_params('dateto',$where_configs);
+            $benchs         = Utils::read_params('benchs',$where_configs);
+            $nets           = Utils::read_params('nets',$where_configs);
+            $disks          = Utils::read_params('disks',$where_configs);
+            $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
+            $comps          = Utils::read_params('comps',$where_configs);
+            $id_clusters    = Utils::read_params('id_clusters',$where_configs);
+            $mapss          = Utils::read_params('mapss',$where_configs);
+            $replications   = Utils::read_params('replications',$where_configs);
+            $iosfs          = Utils::read_params('iosfs',$where_configs);
+            $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
+            $money 			= Utils::read_params('money',$where_configs);
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+            $types = Utils::read_params ( 'types', $where_configs, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             
-            //$concat_config = join(',\'_\',', $configurations);
-            //$concat_config = substr($concat_config, 1);
-
-            //make sure there are some defaults
-            if (!$concat_config) {
-                $concat_config = 'disk';
-                $disks = array('HDD');
+            $selectedGroups = array();
+            if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
+               $selectedGroups = explode(",",$_GET['selected-groups']);
+           	   $concat_config = Utils::getConfig($selectedGroups);
+            }
+            else {
+            	$concat_config = 'disk';
+            	$selectedGroups = array('disk');
             }
 
             $filter_execs = DBUtils::getFilterExecs();
@@ -207,6 +211,7 @@ class DefaultController extends AbstractController
                 'allunchecked' => $allunchecked,
             	'minexetime' => $minexetime,
             	'maxexetime' => $maxexetime,
+            	'selectedGroups' => $selectedGroups,
                 'options' => Utils::getFilterOptions($db)
             )
         );
@@ -216,31 +221,31 @@ class DefaultController extends AbstractController
     {
         $dbUtils = $this->container->getDBUtils();
 
-        $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-        $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-        $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
-        $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
-        $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
-        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
-        $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
-        $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
-        $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
-        $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
-        $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
-        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
-        $money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
-        $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-        $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-        $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-        $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+        $datefrom = Utils::read_params('datefrom',$where_configs);;
+        $dateto	= Utils::read_params('dateto',$where_configs);
+        $benchs         = Utils::read_params('benchs',$where_configs);
+        $nets           = Utils::read_params('nets',$where_configs);
+        $disks          = Utils::read_params('disks',$where_configs);
+        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
+        $comps          = Utils::read_params('comps',$where_configs);
+        $id_clusters    = Utils::read_params('id_clusters',$where_configs);
+        $mapss          = Utils::read_params('mapss',$where_configs);
+        $replications   = Utils::read_params('replications',$where_configs);
+        $iosfs          = Utils::read_params('iosfs',$where_configs);
+        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
+        $money 			= Utils::read_params('money',$where_configs);
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+        $types = Utils::read_params ( 'types', $where_configs, false );
+        $filters = Utils::read_params ( 'filters', $where_configs, false );
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 		$type = Utils::get_GET_string("type");
-		$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
 		
 		if(!$type)
 			$type = 'SUMMARY';
@@ -342,6 +347,9 @@ class DefaultController extends AbstractController
     {
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Cost Evaluation');
+        
         try {
             if(isset($_GET['benchs']))
                 $_GET['benchs'] = $_GET['benchs'][0];
@@ -354,33 +362,33 @@ class DefaultController extends AbstractController
                 $bench_where = " AND bench = '$bench'";
             }
 
-            $configurations = array();
+            
             $where_configs = '';
             $concat_config = "";
 
-            // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
-            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-            $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
-            $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
-            $blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
-            $comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
-            $id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
-            $mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
-            $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
-            $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
-            $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            // $benchs = $dbUtils->read_params('benchs',$where_configs);
+            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $dateto	= Utils::read_params('dateto',$where_configs);
+            $nets = Utils::read_params('nets', $where_configs);
+            $disks = Utils::read_params('disks', $where_configs);
+            $blk_sizes = Utils::read_params('blk_sizes', $where_configs);
+            $comps = Utils::read_params('comps', $where_configs);
+            $id_clusters = Utils::read_params('id_clusters', $where_configs);
+            $mapss = Utils::read_params('mapss', $where_configs);
+            $replications = Utils::read_params('replications', $where_configs);
+            $iosfs = Utils::read_params('iosfs', $where_configs);
+            $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+            $types = Utils::read_params ( 'types', $where_configs, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             
             /*
              * 1. Get execs and cluster associated costs
@@ -499,6 +507,9 @@ class DefaultController extends AbstractController
         $exec_rows = null;
         $id_exec_rows = null;
         $dbUtil = $this->container->getDBUtils();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Performance charts');
+        
         try {
             //TODO fix, initialize variables
             $dbUtil->get_exec_details('1', 'id_exec',$exec_rows,$id_exec_rows);
@@ -1146,7 +1157,9 @@ class DefaultController extends AbstractController
         try {
             $db = $this->container->getDBUtils();
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
-
+            if(sizeof($_GET) <= 1)
+            	Utils::setDefaultPreset($db, 'Best configuration');
+            
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
             foreach($benchOptions as $option) {
@@ -1354,48 +1367,48 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
+		if(sizeof($_GET) <= 1)
+			Utils::setDefaultPreset($db, 'Best configuration');
+		
         $rows_config = '';
         $bestexec = '';
         $cluster = '';
         $comp = '';
         $execsDetails = array ();
         try {
-            $configurations = array ();
             $where_configs = '';
             $concat_config = "";
 
-            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-            $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
-            $nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config, false );
-            $disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config, false );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config, false );
-            $comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config, false );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config, false );
-            $mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config, false );
-            $replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config, false );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config, false );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config, false );
-            $money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config, false );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $dateto	= Utils::read_params('dateto',$where_configs);
+            $benchs = Utils::read_params ( 'benchs', $where_configs, false );
+            $nets = Utils::read_params ( 'nets', $where_configs, false );
+            $disks = Utils::read_params ( 'disks', $where_configs, false );
+            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false );
+            $comps = Utils::read_params ( 'comps', $where_configs, false );
+            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false );
+            $mapss = Utils::read_params ( 'mapss', $where_configs, false );
+            $replications = Utils::read_params ( 'replications', $where_configs, false );
+            $iosfs = Utils::read_params ( 'iosfs', $where_configs, false );
+            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false );
+            $money = Utils::read_params ( 'money', $where_configs, false );
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+            $types = Utils::read_params ( 'types', $where_configs, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-			$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+			$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
             $order_type = Utils::get_GET_string ( 'ordertype' );
             if (! $order_type)
                 $order_type = 'exe_time';
-            // $concat_config = join(',\'_\',', $configurations);
-            // $concat_config = substr($concat_config, 1);
 
             $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
@@ -1482,11 +1495,13 @@ class DefaultController extends AbstractController
     }
     public function paramEvaluationAction() {
         $db = $this->container->getDBUtils ();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Parameter Evaluation');
+        
         $rows = '';
         $categories = '';
         $series = '';
         try {
-            $configurations = array ();
             $where_configs = '';
             $concat_config = "";
 
@@ -1494,34 +1509,32 @@ class DefaultController extends AbstractController
                 $_GET['benchs'] = array('wordcount', 'terasort', 'sort');
             }
 
-            $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-            $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-            $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config );
-            $nets = Utils::read_params ( 'nets', $where_configs, $configurations, $concat_config );
-            $disks = Utils::read_params ( 'disks', $where_configs, $configurations, $concat_config );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, $configurations, $concat_config );
-            $comps = Utils::read_params ( 'comps', $where_configs, $configurations, $concat_config );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, $configurations, $concat_config );
-            $mapss = Utils::read_params ( 'mapss', $where_configs, $configurations, $concat_config );
-            $replications = Utils::read_params ( 'replications', $where_configs, $configurations, $concat_config );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs, $configurations, $concat_config );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, $configurations, $concat_config );
-            $money = Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-            $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
-            $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $dateto	= Utils::read_params('dateto',$where_configs);
+            $benchs = Utils::read_params ( 'benchs', $where_configs );
+            $nets = Utils::read_params ( 'nets', $where_configs );
+            $disks = Utils::read_params ( 'disks', $where_configs );
+            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs );
+            $comps = Utils::read_params ( 'comps', $where_configs );
+            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs );
+            $mapss = Utils::read_params ( 'mapss', $where_configs );
+            $replications = Utils::read_params ( 'replications', $where_configs );
+            $iosfs = Utils::read_params ( 'iosfs', $where_configs );
+            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs );
+            $money = Utils::read_params ( 'money', $where_configs );
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+            $types = Utils::read_params ( 'types', $where_configs, false );
+            $valid = Utils::read_params ( 'valids', $where_configs );
+            $filters = Utils::read_params ( 'filters', $where_configs, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             
-            // $concat_config = join(',\'_\',', $configurations);
-            // $concat_config = substr($concat_config, 1);
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
             $minExecsFilter = "";
@@ -1871,37 +1884,40 @@ class DefaultController extends AbstractController
     public function clusterCostEffectivenessAction()
     {
         $db = $this->container->getDBUtils ();
+        if(sizeof($_GET) <= 1)
+        	Utils::setDefaultPreset($db, 'Cost-Effectiveness of clusters');
+        
         $data = array();
 
         $filter_execs = DBUtils::getFilterExecs();
-        $configurations = array();
+        
         $where_configs = '';
         $concat_config = "";
 
-        // $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
-        $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-        $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-        $benchs = Utils::read_params ( 'benchs', $where_configs, $configurations, $concat_config, false );
-        $nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
-        $disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
-        $blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
-        $comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
-        $id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
-        $mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
-        $replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
-        $iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
-        $iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-        $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-        $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-        $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-        $filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+        // $benchs = $dbUtils->read_params('benchs',$where_configs);
+        $datefrom = Utils::read_params('datefrom',$where_configs);;
+        $dateto	= Utils::read_params('dateto',$where_configs);
+        $benchs = Utils::read_params ( 'benchs', $where_configs, false );
+        $nets = Utils::read_params('nets', $where_configs);
+        $disks = Utils::read_params('disks', $where_configs);
+        $blk_sizes = Utils::read_params('blk_sizes', $where_configs);
+        $comps = Utils::read_params('comps', $where_configs);
+        $id_clusters = Utils::read_params('id_clusters', $where_configs);
+        $mapss = Utils::read_params('mapss', $where_configs);
+        $replications = Utils::read_params('replications', $where_configs);
+        $iosfs = Utils::read_params('iosfs', $where_configs);
+        $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+        $types = Utils::read_params ( 'types', $where_configs, false );
+        $filters = Utils::read_params ( 'filters', $where_configs, false );
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-        $minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+        $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
         
         if(isset($_GET['benchs']))
             $_GET['benchs'] = $_GET['benchs'][0];
@@ -2005,6 +2021,9 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
+    	if(sizeof($_GET) <= 1)
+    		Utils::setDefaultPreset($db, 'Clusters Cost Evaluation');
+    	
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
@@ -2017,33 +2036,33 @@ class DefaultController extends AbstractController
     			$bench_where = " AND bench = '$bench'";
     		}
     
-    		$configurations = array();
+    		
     		$where_configs = '';
     		$concat_config = "";
     
-    		// $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
-    		$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-    		$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-    		$nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
-    		$disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
-    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
-    		$comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
-    		$id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
-    		$mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
-    		$replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
-    		$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
-    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-    		$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-    		$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-    		$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+    		// $benchs = $dbUtils->read_params('benchs',$where_configs);
+    		$datefrom = Utils::read_params('datefrom',$where_configs);;
+    		$dateto	= Utils::read_params('dateto',$where_configs);
+    		$nets = Utils::read_params('nets', $where_configs);
+    		$disks = Utils::read_params('disks', $where_configs);
+    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs);
+    		$comps = Utils::read_params('comps', $where_configs);
+    		$id_clusters = Utils::read_params('id_clusters', $where_configs);
+    		$mapss = Utils::read_params('mapss', $where_configs);
+    		$replications = Utils::read_params('replications', $where_configs);
+    		$iosfs = Utils::read_params('iosfs', $where_configs);
+    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+    		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
+    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+    		$types = Utils::read_params ( 'types', $where_configs, false );
+    		$filters = Utils::read_params ( 'filters', $where_configs, false );
     		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
     		
     		/*
     		 * 1. Get execs and cluster associated costs
@@ -2172,6 +2191,9 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
+    	if(sizeof($_GET) <= 1)
+    		Utils::setDefaultPreset($db, 'Best Clusters Cost Evaluation');
+    	
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
@@ -2183,34 +2205,33 @@ class DefaultController extends AbstractController
     			$bench = 'terasort';
     			$bench_where = " AND bench = '$bench'";
     		}
-    
-    		$configurations = array();
+
     		$where_configs = '';
     		$concat_config = "";
     
-    		// $benchs = $dbUtils->read_params('benchs',$where_configs,$configurations,$concat_config);
-    		$datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
-    		$dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
-    		$nets = Utils::read_params('nets', $where_configs, $configurations, $concat_config);
-    		$disks = Utils::read_params('disks', $where_configs, $configurations, $concat_config);
-    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs, $configurations, $concat_config);
-    		$comps = Utils::read_params('comps', $where_configs, $configurations, $concat_config);
-    		$id_clusters = Utils::read_params('id_clusters', $where_configs, $configurations, $concat_config);
-    		$mapss = Utils::read_params('mapss', $where_configs, $configurations, $concat_config);
-    		$replications = Utils::read_params('replications', $where_configs, $configurations, $concat_config);
-    		$iosfs = Utils::read_params('iosfs', $where_configs, $configurations, $concat_config);
-    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs, $configurations, $concat_config);
-    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
-    		$benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
-    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
-    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
-    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
-    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
-    		$types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
-    		$filters = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config, false );
+    		// $benchs = $dbUtils->read_params('benchs',$where_configs);
+    		$datefrom = Utils::read_params('datefrom',$where_configs);;
+    		$dateto	= Utils::read_params('dateto',$where_configs);
+    		$nets = Utils::read_params('nets', $where_configs);
+    		$disks = Utils::read_params('disks', $where_configs);
+    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs);
+    		$comps = Utils::read_params('comps', $where_configs);
+    		$id_clusters = Utils::read_params('id_clusters', $where_configs);
+    		$mapss = Utils::read_params('mapss', $where_configs);
+    		$replications = Utils::read_params('replications', $where_configs);
+    		$iosfs = Utils::read_params('iosfs', $where_configs);
+    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+    		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
+    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+    		$types = Utils::read_params ( 'types', $where_configs, false );
+    		$filters = Utils::read_params ( 'filters', $where_configs, false );
     		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, $configurations, $concat_config, false);
-    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, $configurations, $concat_config, false);
+    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
     		
     		/*
     		 * 1. Get execs and cluster associated costs

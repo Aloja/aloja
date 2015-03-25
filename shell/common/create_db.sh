@@ -656,6 +656,15 @@ CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
   PRIMARY KEY (\`id\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS \`filters_presets\` (
+ \`id\` int(11) NOT NULL AUTO_INCREMENT,
+ \`name\` varchar(255) NOT NULL,
+ \`screen\` varchar(255) NOT NULL,
+ \`URL\` varchar(65536) NOT NULL,
+ \`preset\` int NOT NULL DEFAULT 0,
+ \`description\` varchar(255),
+ PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
 
@@ -739,6 +748,12 @@ update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 
 $MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
+
+$MYSQL "insert into filters_presets(name,URL,preset,description,screen) VALUES('HDD vs SSD','http://hadoop.bsc.es/configimprovement?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HD2&disks[]=HD3&disks[]=HD4&disks[]=HD5&disks[]=HDD&disks[]=SS2&disks[]=SSD&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'HDD vs SSD comparison', 'Config Improvement');
+insert into filters_presets(name,URL,preset,description,screen) VALUES('VM Size','http://hadoop.bsc.es/parameval?parameval=vm_size&minexecs=&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&bench_types[]=HDI&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'Evaluation by size', 'Parameter Evaluation');
+
+
+"
 
 
 
