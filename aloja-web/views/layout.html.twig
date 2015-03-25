@@ -287,7 +287,8 @@
 			});
 
 			$("select[name='presets']").change(function() { 
-				var url = $(this).find("option:selected").first().attr('url');
+			    var url = $(this).find("option:selected").first().attr('url');
+			    if(url!= "") {
 				var filters = url.split("?")[1];
 				filters = filters.split("&");
 				$("form[name='configFilters']").trigger('reset');
@@ -303,6 +304,7 @@
 						$("select[name='"+filterName+"']").val(filterValue);
 					}
 				}
+			    }
 			});
 
 			$("span.selectAll").click(function() { 
