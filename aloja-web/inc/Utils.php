@@ -611,8 +611,10 @@ class Utils
     
     public static function setDefaultPreset($db, $screen) {
     	$presets = $db->get_rows("SELECT * FROM filters_presets WHERE preset = 1 AND screen = '$screen'");
+    	$return = null;
     	if(count($presets)>=1) {
 	    	$url = $presets[0]['URL'];
+	    	$return = $url;
 	    	$filters = explode('?',$url)[1];
 	    	$filters = explode('&',$filters);
 	    	foreach($filters as $filter) {
@@ -632,5 +634,7 @@ class Utils
 	    			$_GET[$filterName] = $filterValue;
 	    	}
     	}
+    	 
+    	return $return;
     }
 }

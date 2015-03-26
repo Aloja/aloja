@@ -41,9 +41,10 @@ class DefaultController extends AbstractController
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
+        $preset = null;
         if(sizeof($_GET) <= 1)
-        	Utils::setDefaultPreset($db, 'Config Improvement');
-        
+        	$preset = Utils::setDefaultPreset($db, 'Config Improvement');
+                
         $rows_config = '';
         try {
             
@@ -212,6 +213,7 @@ class DefaultController extends AbstractController
             	'minexetime' => $minexetime,
             	'maxexetime' => $maxexetime,
             	'selectedGroups' => $selectedGroups,
+            	'preset' => $preset,
                 'options' => Utils::getFilterOptions($db)
             )
         );
