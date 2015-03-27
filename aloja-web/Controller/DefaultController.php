@@ -41,9 +41,10 @@ class DefaultController extends AbstractController
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
+        $preset = null;
         if(sizeof($_GET) <= 1)
-        	Utils::setDefaultPreset($db, 'Config Improvement');
-        
+        	$preset = Utils::setDefaultPreset($db, 'Config Improvement');
+                
         $rows_config = '';
         try {
             
@@ -212,6 +213,7 @@ class DefaultController extends AbstractController
             	'minexetime' => $minexetime,
             	'maxexetime' => $maxexetime,
             	'selectedGroups' => $selectedGroups,
+            	'preset' => $preset,
                 'options' => Utils::getFilterOptions($db)
             )
         );
@@ -220,7 +222,10 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-
+        $preset = null;
+        if(sizeof($_GET) <= 1)
+        	$preset = Utils::setDefaultPreset($dbUtils, 'Benchmark Executions');
+        
         $datefrom = Utils::read_params('datefrom',$where_configs);;
         $dateto	= Utils::read_params('dateto',$where_configs);
         $benchs         = Utils::read_params('benchs',$where_configs);
@@ -337,6 +342,7 @@ class DefaultController extends AbstractController
                 'allunchecked' => $allunchecked,
             	'minexetime' => $minexetime,
             	'maxexetime' => $maxexetime,
+            	'preset' => $preset,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
                 'options' => Utils::getFilterOptions($dbUtils),
             	'type' => $type
@@ -347,8 +353,9 @@ class DefaultController extends AbstractController
     {
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
+        $preset = null;
         if(sizeof($_GET) <= 1)
-        	Utils::setDefaultPreset($db, 'Cost Evaluation');
+        	$preset = Utils::setDefaultPreset($db, 'Cost Evaluation');
         
         try {
             if(isset($_GET['benchs']))
@@ -404,7 +411,7 @@ class DefaultController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs LIMIT 3000";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs ORDER BY rand() LIMIT 500";
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -494,6 +501,7 @@ class DefaultController extends AbstractController
             'allunchecked' => $allunchecked,
         	'minexetime' => $minexetime,
         	'maxexetime' => $maxexetime,
+        	'preset' => $preset,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
             'options' => Utils::getFilterOptions($dbUtils),
@@ -507,8 +515,9 @@ class DefaultController extends AbstractController
         $exec_rows = null;
         $id_exec_rows = null;
         $dbUtil = $this->container->getDBUtils();
+        $preset = null;
         if(sizeof($_GET) <= 1)
-        	Utils::setDefaultPreset($db, 'Performance charts');
+        	$preset = Utils::setDefaultPreset($db, 'Performance charts');
         
         try {
             //TODO fix, initialize variables
@@ -1157,8 +1166,9 @@ class DefaultController extends AbstractController
         try {
             $db = $this->container->getDBUtils();
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
+            $preset = null;
             if(sizeof($_GET) <= 1)
-            	Utils::setDefaultPreset($db, 'Best configuration');
+            	$preset = Utils::setDefaultPreset($db, 'Best configuration');
             
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1367,8 +1377,9 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
+        $preset = null;
 		if(sizeof($_GET) <= 1)
-			Utils::setDefaultPreset($db, 'Best configuration');
+			$preset = Utils::setDefaultPreset($db, 'Best configuration');
 		
         $rows_config = '';
         $bestexec = '';
@@ -1490,13 +1501,15 @@ class DefaultController extends AbstractController
             'select_multiple_benchs' => false,
         	'minexetime' => $minexetime,
         	'maxexetime' => $maxexetime,
+        	'preset' => $preset,
             'options' => Utils::getFilterOptions($db)
         ) );
     }
     public function paramEvaluationAction() {
         $db = $this->container->getDBUtils ();
+        $preset = null;
         if(sizeof($_GET) <= 1)
-        	Utils::setDefaultPreset($db, 'Parameter Evaluation');
+        	$preset = Utils::setDefaultPreset($db, 'Parameter Evaluation');
         
         $rows = '';
         $categories = '';
@@ -1658,6 +1671,7 @@ class DefaultController extends AbstractController
             'allunchecked' => $allunchecked,
         	'minexetime' => $minexetime,
         	'maxexetime' => $maxexetime,
+        	'preset' => $preset,
             'paramEval' => $paramEval,
             'options' => $options
         ) );
@@ -1884,8 +1898,9 @@ class DefaultController extends AbstractController
     public function clusterCostEffectivenessAction()
     {
         $db = $this->container->getDBUtils ();
+        $preset = null;
         if(sizeof($_GET) <= 1)
-        	Utils::setDefaultPreset($db, 'Cost-Effectiveness of clusters');
+        	$preset = Utils::setDefaultPreset($db, 'Cost-Effectiveness of clusters');
         
         $data = array();
 
@@ -2012,6 +2027,7 @@ class DefaultController extends AbstractController
     			'bestExecs' => $bestExecs,
     			'minexetime' => $minexetime,
     			'maxexetime' => $maxexetime,
+    			'preset' => $preset,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));
@@ -2021,8 +2037,9 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
+    	$preset = null;
     	if(sizeof($_GET) <= 1)
-    		Utils::setDefaultPreset($db, 'Clusters Cost Evaluation');
+    		$preset = Utils::setDefaultPreset($db, 'Clusters Cost Evaluation');
     	
     	try {
     		if(isset($_GET['benchs']))
@@ -2179,6 +2196,7 @@ class DefaultController extends AbstractController
     			'minexetime' => $minexetime,
     			'maxexetime' => $maxexetime,
     			'execs' => $execs,
+    			'preset' => $preset,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
@@ -2191,8 +2209,9 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
+    	$preset = null;
     	if(sizeof($_GET) <= 1)
-    		Utils::setDefaultPreset($db, 'Best Clusters Cost Evaluation');
+    		$preset = Utils::setDefaultPreset($db, 'Best Clusters Cost Evaluation');
     	
     	try {
     		if(isset($_GET['benchs']))
@@ -2389,6 +2408,7 @@ class DefaultController extends AbstractController
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
+    			'preset' => $preset,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     	));
     }

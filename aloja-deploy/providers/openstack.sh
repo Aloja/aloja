@@ -42,19 +42,29 @@ vm_reboot() {
 vm_set_details() {
 
   if [ -z "${nodeIP[$vm_name]}" ] || [ -z "${serverId[$vm_name]}"  ]  ; then
-    #get machine details
-    local cacheFileName="rackspace_vm_details_${vm_name}"
-    local vm_details="$(cache_get "$cacheFileName" "60")"
 
-    if [ ! "$vm_details" ] ; then
-      local vm_details="$(nova show --minimal "$vm_name")"
-      cache_put "$cacheFileName" "$vm_details"
+    #check if the vm_name is an IP address
+    if [[ "$vm_name" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+     local vm_IP="$vm_name"
+     local vm_ID="$vm_name"
+    else
+      #get machine details
+      local cacheFileName="rackspace_vm_details_${vm_name}"
+      local vm_details="$(cache_get "$cacheFileName" "60")"
+
+      if [ ! "$vm_details" ] ; then
+        local vm_details="$(nova show --minimal "$vm_name")"
+        cache_put "$cacheFileName" "$vm_details"
+      fi
+
+     local vm_IP="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
+     local vm_ID="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
     fi
 
     #set IP
-    nodeIP["$vm_name"]="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
+    nodeIP["$vm_name"]="$vm_IP"
     #set serverId
-    serverId["$vm_name"]="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
+    serverId["$vm_name"]="vm_ID"
 
   fi
 

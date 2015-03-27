@@ -6,23 +6,27 @@
 {% endfor %}
 {% if show  %}
 <div class="row" style="margin-bottom: .5em;">
-	<div class="col-md-12">
-	   Predefined filters:</br>
+	<div class="col-md-8">
+	   Predefined views:</br>
 		<select class="form-control" class="control-form" name="presets" style="width: 100%;">
-		 <option value="none" url="" title="None">None</option>
+		 <option value="none" url="" title="None" {% if preset is null or preset == "" %}selected{% endif %}>None</option>
 		{% for selopt in options['presets'] %}
 		 {% if selopt['screen'] == selected %}
-		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}">{{ selopt['name'] }}</option>
+		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}" {% if preset == selopt['URL'] %}selected="true"{% endif %}>{{ selopt['name'] }}</option>
 		 {% endif %} 
 		{% endfor %}
 		</select>
-	  </div>
+	</div>
+	<div class="col-md-4">
+		<br />
+		<button form="configFilters" style="width: 100%;" type="submit" value="Apply" class="btn btn-success">Apply</button>
+	</div>
 </div>
 {% endif %}
 <div class="row panel panel-default" style="width: 100%; margin: 0 auto; margin-bottom: 1em;">
 	<div class="panel-heading"><h3 class="panel-title" style="font-size: 1.5em; text-align: center;">Filters</h3></div>
 	<div class="panel-body col-md-10 col-md-offset-1">
-		<form name="configFilters" method="GET" role="form">
+		<form id="configFilters" name="configFilters" method="GET" role="form">
 			<div class="row">
 				<div class="col-md-6">
 				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
@@ -192,20 +196,6 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Hadoop version:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['hadoop_version'] %}
-					  	  {% if selopt['hadoop_version'] is not null %}
-						  <input type="checkbox" name="hadoop_versions[]" value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}checked{% endif %}>&nbsp;{{ selopt['hadoop_version'] }}<br />
-						  {% endif %}
-						{% endfor %}
-					  </div>
-				    </div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
 					Cluster type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
@@ -300,6 +290,20 @@
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iofilebuf'] %}
 						<input type="checkbox" name="iofilebufs[]" value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}checked{% endif %}>&nbsp;{{ selopt['iofilebuf'] }} KB<br />
+						{% endfor %}
+					  </div>
+				    </div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					Hadoop version:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['hadoop_version'] %}
+					  	  {% if selopt['hadoop_version'] is not null %}
+						  <input type="checkbox" name="hadoop_versions[]" value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}checked{% endif %}>&nbsp;{{ selopt['hadoop_version'] }}<br />
+						  {% endif %}
 						{% endfor %}
 					  </div>
 				    </div>
