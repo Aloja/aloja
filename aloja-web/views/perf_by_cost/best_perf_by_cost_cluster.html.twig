@@ -191,6 +191,12 @@
                 chart.xAxis[0].setExtremes(-3000, 3000);
                 chart.yAxis[0].setExtremes(-20, 20);
             });
+
+            $('form').submit(function() {
+                var href = location.protocol + '//' + location.host + location.pathname + '?' + $("form[name='clusterFilters'],form[name='configFilters']").serialize();
+                top.location.href = href;
+                return false;
+            });
         });
 	    </script>
     {% endblock %}
@@ -218,7 +224,7 @@
 	                       <td>{{ loop.index }}</td>
 	                       <td>{{ exec.name }}<img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="{{ exec.datanodes }} datanodes, {{ exec.vm_RAM | number_format(0,'.',',') }} GB, {{ exec.type }}, {{ exec.vm_OS }}, {{ exec.provider }}" /></td>
 	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
-	                       <td>{{ exec.exe_time | number_format(0, '.', ',') }} s</td>
+	                       <td>{{ exec.exe_time | number_format(0, '.', '') }} s</td>
 	                       <td>{% if exec.net == 'ETH' %}Ethernet{% else %}InfiniBand{% endif %}</td>
 	                       <td>{{ getDisksName(exec.disk) }}</td>
 {# 	                       <td>{{ exec.provider }}</td>#}

@@ -244,12 +244,13 @@ bwm_source="$SOURCE_DIR/bin/bwm-ng"
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 #
 ##temporary OS config
-#$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
-#
-#  #temporary to avoid read-only file system errors
-#  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-#  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
-#
+$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
+
+
+  #temporary to avoid read-only file system errors
+  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
+
 #  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
 #    echo "Checking if to remount $mount_point"
 #    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
@@ -306,6 +307,18 @@ for node in $node_names ; do
   logger " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     logger "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
+
+    if [ ! "$(ssh "$node" "[ -d \"$BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+      #logger "Downloading initial aplic dir from dropbox"
+      #$DSH "wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2?dl=1 -O $BASE_DIR/aplic.tar.bz2"
+
+      $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic.tar.bz2 $BASE_DIR/"
+
+      logger "Uncompressing aplic"
+      $DSH  "cd $BASE_DIR; tar -jxf aplic.tar.bz2; rm aplic.tar.bz2;"
+    fi
+
+    logger "Rsynching files in case of updates"
     $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic/* $SOURCE_DIR/"
     break #dont need to check after one is missing
   else

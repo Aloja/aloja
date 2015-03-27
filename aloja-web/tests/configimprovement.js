@@ -2,7 +2,7 @@ casper.options.logLevel = "debug";
 casper.test.begin("Config improvement tests", function(test) {
    casper.start('http://localhost:8080/configimprovement', function() {
 	test.assertExists("#chart", 'Chart created');
-	test.assertExists("form[name=configFilters] input", 'Filters rendered');
+	test.assertExists("form[name='configFilters']", 'Filters rendered');
 	this.evaluate(function() {
 	   $("input[name$='benchs[]']").each(function() {
 			   $(this).removeAttr('checked');

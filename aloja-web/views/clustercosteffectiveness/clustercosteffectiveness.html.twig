@@ -101,7 +101,7 @@
 	                       <td>{{ loop.index }}</td>
 	                       <td>{{ exec.name }}</td>
 	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
-	                       <td>{{ exec.exe_time | number_format(0, '.', ',') }} s</td>
+	                       <td>{{ exec.exe_time | number_format(0, '.', '') }} s</td>
 	                       <td>{{ exec.vm_RAM | number_format(0, '.', ',') }} GB</td>
 	                       <td>{{ exec.datanodes }}</td>
 	                       <td>{{ exec.vm_OS }}</td>

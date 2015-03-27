@@ -140,7 +140,7 @@
 			        </li>
 			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
 		            <li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort', 'id_clusters[]': '21'}) }}">Cost/Perf Evaluation of HW configs</a>
+			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of HW configs</a>
 			        </li>
 		          </ul>
 		        </li>
@@ -286,12 +286,33 @@
 				   $("#allunchecked").val("");
 			});
 
-			$("input[name='select_all']").change(function() {
-				if($(this).prop('checked')) {
-					$(this).parent().find('.panel-body').first().find('input').each(function() { $(this).prop('checked','checked'); });
-				} else {
-					$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
+			$("select[name='presets']").change(function() { 
+			    var url = $(this).find("option:selected").first().attr('url');
+			    if(url!= "") {
+				var filters = url.split("?")[1];
+				filters = filters.split("&");
+				$("form[name='configFilters']").trigger('reset');
+				for(i = 0; i<filters.length; ++i) {
+					var split = filters[i].split("=");
+					var filterName = split[0]
+					var filterValue = split[1];
+					if(filterValue != "" && filterValue != null) {
+						if(filterName[filterName.length-1]==']')
+							$("input[name='"+filterName+"'][value='"+filterValue+"']").prop('checked',true);
+						else
+							$("input[name='"+filterName+"']").val(filterValue);
+						$("select[name='"+filterName+"']").val(filterValue);
+					}
 				}
+			    }
+			});
+
+			$("span.selectAll").click(function() { 
+				$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
+			});
+
+			$("span.deselectAll").click(function() { 
+				$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
 			});
 
             function getCookie(cname) {
@@ -319,6 +340,18 @@
         	if($('.dropdown li.active').length > 0) {
         		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
         	}
+
+        	$(".addgroup").click(function() {
+            	if($(this).hasClass("active"))
+                	$(this).removeClass("active");
+            	else
+					$(this).addClass("active");
+
+				var selected = new Array();
+				$(".addgroup.active").each(function() { selected[selected.length] = $(this).attr('value'); });
+
+				$("input[name='selected-groups']").attr('value',selected.join());
+		   });
 		  });
 	</script>
 	{% endblock %}

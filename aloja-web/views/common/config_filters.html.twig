@@ -1,8 +1,32 @@
+{% set show = false %}
+{% for selopt in options['presets'] if not show %}
+  {% if selopt['screen'] == selected %}
+    {% set show = true %}
+  {% endif %}
+{% endfor %}
+{% if show  %}
+<div class="row" style="margin-bottom: .5em;">
+	<div class="col-md-8">
+	   Predefined views:</br>
+		<select class="form-control" class="control-form" name="presets" style="width: 100%;">
+		 <option value="none" url="" title="None" {% if preset is null or preset == "" %}selected{% endif %}>None</option>
+		{% for selopt in options['presets'] %}
+		 {% if selopt['screen'] == selected %}
+		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}" {% if preset == selopt['URL'] %}selected="true"{% endif %}>{{ selopt['name'] }}</option>
+		 {% endif %} 
+		{% endfor %}
+		</select>
+	</div>
+	<div class="col-md-4">
+		<br />
+		<button form="configFilters" style="width: 100%;" type="submit" value="Apply" class="btn btn-success">Apply</button>
+	</div>
+</div>
+{% endif %}
 <div class="row panel panel-default" style="width: 100%; margin: 0 auto; margin-bottom: 1em;">
 	<div class="panel-heading"><h3 class="panel-title" style="font-size: 1.5em; text-align: center;">Filters</h3></div>
 	<div class="panel-body col-md-10 col-md-offset-1">
-	  <div>
-		<form name="configFilters" method="GET" role="form">
+		<form id="configFilters" name="configFilters" method="GET" role="form">
 			<div class="row">
 				<div class="col-md-6">
 				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
@@ -11,15 +35,14 @@
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
 			   </div>
 			</div>
-	</div>
-  </div>
+    </div>
   <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
   <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
     <div class="panel-heading" role="tab" id="headingBasicFilters">
-      <i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+      <i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#basicFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
       <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="hadoopFilters">
-          Basic options
+        <a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="basicFilters">
+          Basic filters
         </a>
       </h4>
     </div>
@@ -50,7 +73,7 @@
 					{% if show_filter_benchs is not defined or show_filter_benchs == true %}
 						{% if select_multiple_benchs is not defined or
 						select_multiple_benchs %}
-						  Benchmark:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+						  Benchmark:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 						  <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 							  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 								{% for selopt in options['benchs'] %}
@@ -71,7 +94,7 @@
 					{% endif %}
 				</div>
 				<div class="col-md-6">
-					 Clusters: (CL)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					 Clusters: (CL)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					 <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['id_cluster'] %}
@@ -79,6 +102,28 @@
 						{% endfor %}
 					  </div>
 					 </div>
+				</div>
+			</div>
+			      			<div class="row">
+				<div class="col-md-6">
+					Networks:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['net'] %}
+						<input type="checkbox" name="nets[]" value="{{ selopt['net'] }}" {% if selopt['net'] in nets %}checked{% endif %}>&nbsp;{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}Unknown{% endif %}<br />
+						{% endfor %}
+					  </div>
+				    </div>
+				</div>
+				<div class="col-md-6">
+					Disks:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['disk'] %}
+						<input type="checkbox" name="disks[]" value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}checked{% endif %}>&nbsp;{{ selopt['disk'] }}<br />
+						{% endfor %}
+					  </div>
+				    </div>
 				</div>
 			</div>
       </div>
@@ -95,31 +140,9 @@
     </div>
     <div id="hardwareFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingHardwareFilters">
       <div class="panel-body">
-      			<div class="row">
-				<div class="col-md-6">
-					Networks:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['net'] %}
-						<input type="checkbox" name="nets[]" value="{{ selopt['net'] }}" {% if selopt['net'] in nets %}checked{% endif %}>&nbsp;{% if selopt['net'] == 'IB' %}InfiniBand{% elseif selopt['net'] == 'ETH' %}Ethernet{% else %}Unknown{% endif %}<br />
-						{% endfor %}
-					  </div>
-				    </div>
-				</div>
-				<div class="col-md-6">
-					Disks:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['disk'] %}
-						<input type="checkbox" name="disks[]" value="{{ selopt['disk'] }}" {% if selopt['disk'] in disks %}checked{% endif %}>&nbsp;{{ selopt['disk'] }}<br />
-						{% endfor %}
-					  </div>
-				    </div>
-				</div>
-			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Cluster datanodes:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Cluster datanodes:&nbsp;&nbsp; <span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['datanodes'] %}
@@ -129,7 +152,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Benchmark type:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Benchmark type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['benchtype'] %}
@@ -141,18 +164,17 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					VM size:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					VM size:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_size'] %}
 						<input type="checkbox" name="vm_sizes[]" value="{{ selopt['vm_size'] }}" {% if selopt['vm_size'] in vm_sizes %}checked{% endif %}>&nbsp;{{ selopt['vm_size'] }}<br />
 						{% endfor %}
-						<input type="checkbox" name="vm_sizes[]" value="None" {% if not vm_sizes %}checked{% endif %}>All<br />
 					  </div>
 				    </div>
 				</div>
 				<div class="col-md-6">
-					VM #cores:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					VM #cores:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_cores'] %}
@@ -164,7 +186,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					VM RAM:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					VM RAM:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_ram'] %}
@@ -174,21 +196,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Hadoop version:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
-					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-						{% for selopt in options['hadoop_version'] %}
-					  	  {% if selopt['hadoop_version'] is not null %}
-						  <input type="checkbox" name="hadoop_versions[]" value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}checked{% endif %}>&nbsp;{{ selopt['hadoop_version'] }}<br />
-						  {% endif %}
-						{% endfor %}
-					  </div>
-				    </div>
-				</div>
-			</div>
-			<div class="row">
-				<div class="col-md-6">
-					Cluster type:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Cluster type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['type'] %}
@@ -214,7 +222,7 @@
       <div class="panel-body">
         <div class="row">
 				<div class="col-md-6">
-					Maps:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Maps:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['maps'] %}
@@ -224,7 +232,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Compression: (c)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Compression: (c)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['comp'] %}
@@ -245,7 +253,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					Replication: (r)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Replication: (r)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['replication'] %}
@@ -255,7 +263,7 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					Block size: (b)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					Block size: (b)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['blk_size'] %}
@@ -267,7 +275,7 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					I/O Sort Factor: (I)&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					I/O Sort Factor: (I)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iosf'] %}
@@ -277,11 +285,25 @@
 				    </div>
 				</div>
 				<div class="col-md-6">
-					I/O File Buffer:&nbsp;&nbsp;<input type="checkbox" name="select_all" value="filterSelectAll"> Select all<br />
+					I/O File Buffer:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['iofilebuf'] %}
 						<input type="checkbox" name="iofilebufs[]" value="{{ selopt['iofilebuf'] }}" {% if selopt['iofilebuf'] in iofilebufs %}checked{% endif %}>&nbsp;{{ selopt['iofilebuf'] }} KB<br />
+						{% endfor %}
+					  </div>
+				    </div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-md-6">
+					Hadoop version:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						{% for selopt in options['hadoop_version'] %}
+					  	  {% if selopt['hadoop_version'] is not null %}
+						  <input type="checkbox" name="hadoop_versions[]" value="{{ selopt['hadoop_version'] }}" {% if selopt['hadoop_version'] in hadoop_versions %}checked{% endif %}>&nbsp;{{ selopt['hadoop_version'] }}<br />
+						  {% endif %}
 						{% endfor %}
 					  </div>
 				    </div>
@@ -393,6 +415,7 @@
 {#         <input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
 {#         <input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
         <input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
+        <input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
         <div class="row">
 			<div class="col-md-6">
 			  From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
