@@ -755,6 +755,10 @@ insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES
 
 "
 
+$MYSQL "
+insert ignore into clusters(id_cluster,name,cost_hour,type,datanodes,provider,headnodes,vm_size,vm_OS,vm_cores,vm_RAM,description,cost_remote,cost_SSD,cost_IB) values(38,'rb-38',5.44,'PaaS',8,'rackspace',1,'hadoop1-15','linux',4,15,'Cloud Big Data (HDP 1.3)',0,0,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'rb38-terasort','terasort',1273,'ETH','RR1','HiBench',32,1,1,0);
+"
 
 
 
