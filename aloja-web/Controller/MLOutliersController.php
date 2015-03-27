@@ -154,7 +154,7 @@ class MLOutliersController extends AbstractController
 					}
 
 					// Remove temporary files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
 
 					$is_cached = true;
 				}

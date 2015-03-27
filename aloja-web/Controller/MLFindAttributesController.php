@@ -35,8 +35,11 @@ class MLFindAttributesController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET))
 			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
 			|| (count($_GET) == 2 && array_key_exists("tree",$_GET))
+			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("current_model",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET)))
+			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
+			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
+			|| (count($_GET) == 3 && array_key_exists("pass",$_GET) && array_key_exists("current_model",$_GET)))
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
@@ -80,79 +83,102 @@ class MLFindAttributesController extends AbstractController
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['total'] > 0);
 
-				$tmp_file = getcwd().'/cache/query/'.md5($config).'.tmp';
+				$tmp_file = md5($config).'.tmp';
 
 				$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-				$finished_process = $in_process && ((int)shell_exec('wc -l '.getcwd().'/cache/query/'.md5($config).'.lock | awk \'{print $1}\'') == count($instances));
+				$finished_process = $in_process && ((int)shell_exec('ls '.getcwd().'/cache/query/'.md5($config).'-*.lock | wc -w ') == count($instances));
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
+					$count = 1;
 					foreach ($instances as $inst)
 					{
-						exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_predict_instance -l '.$current_model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'Prediction\' >> '.$tmp_file.' 2> /dev/null; echo 1 >> '.md5($config).'.lock" > /dev/null 2>&1 &');
+						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$current_model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'Prediction\' >>'.$tmp_file.' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					}
 				}
-				$finished_process = ((int)shell_exec('wc -l '.getcwd().'/cache/query/'.md5($config).'.lock | awk \'{print $1}\'') == count($instances));
+				$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/query/'.md5($config).'-*.lock | wc -w ') == count($instances));
 
 				if ($finished_process && !$is_cached)
 				{
 					// Read results and dump to DB
-					$lines = explode("\n", file_get_contents($tmp_file));
 					$i = 0;
-					$query = "INSERT INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
-					while($i < count($lines))
+					$token = 0;
+					$token_i = 0;
+					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
-						if ($lines[$i]=='') break;
-
-						// Fetch Real Value
-						$inst_aux = preg_split("/\s+/", $lines[$i]);
-						$query_var = "SELECT AVG(exe_time) as AVG, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
-						$result = $dbml->query($query_var);
-						$row = $result->fetch();
-
-						$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
-
-						$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
-						$result = $dbml->query($query_var);
-						$row = $result->fetch();
-						
-						// Insert instance values
-						if ($row['num'] == 0)
+						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
 						{
-							$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
-							$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
-							if ($i > 0) $query = $query.",";
-							$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";								
+							if ($line=='') break;
+
+							// Fetch Real Value
+							$inst_aux = preg_split("/\s+/", $line);
+							$query_var = "SELECT AVG(exe_time) as AVG, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
+							$result = $dbml->query($query_var);
+							$row = $result->fetch();
+
+							$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
+/*
+							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
+							$result = $dbml->query($query_var);
+							$row = $result->fetch();
+
+							// Insert instance values
+							if ($row['num'] == 0)
+							{
+*/
+								$token_i = 1;
+								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
+								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
+								if ($token > 0) { $query = $query.","; } $token = 1;
+								$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";								
+//							}
+
+							$i++;
+
+							if ($i % 100 == 0 && $token_i > 0)
+							{
+								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$token = 0;
+								$token_i = 0;
+							}
+						}
+						if ($token_i > 0)
+						{
+							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
 						}
 
-						$i++;
+						// Descriptive Tree
+						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output="html" -v 2> /dev/null');
+						$tree_descriptor = substr($tree_descriptor, 5, -2);
+						$query = "INSERT INTO trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
+
+						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
+
+						// remove remaining locks
+						shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.lock'); 
+
+						// Remove temporal files
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
+
+						$is_cached = true;
 					}
-					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-
-					// Descriptive Tree
-					$tree_descriptor = shell_exec(''.getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.$tmp_file.'":output="html" -v 2> /dev/null');
-					$tree_descriptor = substr($tree_descriptor, 5, -2);
-					$query = "INSERT INTO trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
-					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
-
-					// remove remaining locks
-					shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.lock');
-
-					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
-
-					$is_cached = true;
+					fclose($handle);
 				}
 
 				if (!$is_cached)
 				{
 					$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 					$must_wait = 'YES';
-					if (isset($_GET['dump'])) { echo "1"; exit(0); }
+					if (isset($_GET['dump'])) { $dbml = null; echo "1"; exit(0); }
+					if (isset($_GET['pass'])) { $dbml = null; return "1"; }
 				}
 				else
 				{
+					if (isset($_GET['pass']) && $_GET['pass'] == 2) { $dbml = null; return "2"; }
+
 					// Fetch results and compose JSON
 					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
@@ -169,8 +195,7 @@ class MLFindAttributesController extends AbstractController
 					}
 					$jsonData = $jsonData.']';
 
-
-					foreach (array(0,1,2,3) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
+					foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
 					// Fetch MAE & RAE values
 					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
@@ -186,6 +211,12 @@ class MLFindAttributesController extends AbstractController
 						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
 						exit(0);
 					}
+					if (isset($_GET['pass']) && $_GET['pass'] == 1)
+					{
+						$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
+						$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
+						return $retval;
+					}
 
 					// Display Descriptive Tree
 					$query = "SELECT tree_code FROM trees WHERE id_findattrs = '".md5($config)."'";
@@ -197,6 +228,8 @@ class MLFindAttributesController extends AbstractController
 			else
 			{
 				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.".$instance;
+				if (isset($_GET['dump'])) { echo "-1"; exit(0); }
+				if (isset($_GET['pass'])) { return "-1"; }
 			}
 			$dbml = null;
 		}
@@ -206,7 +239,7 @@ class MLFindAttributesController extends AbstractController
 
 			$jsonData = $jsonHeader = "[]";
 			$instance = $instances = $possible_models_id = "";
-			$possible_models = array();
+			$possible_models = $possible_models_id = array();
 			$must_wait = 'NO';
 			$mae = $rae = 0;
 
