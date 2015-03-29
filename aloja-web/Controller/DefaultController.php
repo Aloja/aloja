@@ -1945,11 +1945,11 @@ class DefaultController extends AbstractController
             $bench_where = " AND bench = '$bench'";
         }
 
-        $query = "SELECT count(*) as count, e.*, c.* from execs e JOIN clusters c USING (id_cluster)
-        		INNER JOIN (SELECT MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
+        $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN clusters c USING (id_cluster)
+        		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
         		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
-
+        
     	try {
     		$rows = $db->get_rows($query);
     		$minCost = -1;
@@ -2268,9 +2268,9 @@ class DefaultController extends AbstractController
     		$maxExeTime = 0;
     		$sumCount = 0;
     		
-    		$execs = "SELECT count(*) as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
+    		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+      		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
         					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
