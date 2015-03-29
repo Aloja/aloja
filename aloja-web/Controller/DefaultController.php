@@ -1980,6 +1980,7 @@ class DefaultController extends AbstractController
     			$sumCount += $row['count'];
     		}
     		$min = $rows[$minCostKey];
+    		array_push($bestExecs,$min);
     		$clusterDesc = "${min['datanodes']} datanodes,  ".round($min['vm_RAM'],0)." GB memory, ${min['vm_OS']}, ${min['provider']} ${min['type']}";
     		$set = array(round($min['exe_time'],0), round($minCost,2), $sumCount);
     		array_push($data, array('data' => array($set), 'name' => $min['name'], 'clusterdesc' => $clusterDesc, 'counts' => $sumCount));
