@@ -654,7 +654,7 @@ class DefaultController extends AbstractController
                         WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, time;",
                         'fields'    => array('map', 'shuffle', 'reduce', 'waste', 'merge'),
                         'title'     => "Job execution history $exec_title ",
-                        'group_title' => 'Job execution history',
+                        'group_title' => 'Job execution history (number of running Hadoop processes)',
                         'percentage'=> false,
                         'stacked'   => false,
                         'negative'  => false,
