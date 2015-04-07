@@ -302,6 +302,9 @@ logger "Setting scratch permissions"
 $DSH "sudo chown -R $userAloja: /scratch"
 
 #only copy files if version has changed (to save time in azure)
+
+
+
 logger "Checking if to generate source dirs"
 for node in $node_names ; do
   logger " for host $node"
@@ -312,13 +315,13 @@ for node in $node_names ; do
       #logger "Downloading initial aplic dir from dropbox"
       #$DSH "wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2?dl=1 -O $BASE_DIR/aplic.tar.bz2"
 
-      $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic.tar.bz2 $BASE_DIR/"
+      $DSH "rsync -aur --force $BASE_DIR/aplic.tar.bz2 /tmp/"
 
       logger "Uncompressing aplic"
-      $DSH  "cd $BASE_DIR; tar -jxf aplic.tar.bz2; rm aplic.tar.bz2;"
+      $DSH  "mkdir -p $SOURCE_DIR/; cd $SOURCE_DIR/../; tar -C $SOURCE_DIR/../ -jxf /tmp/aplic.tar.bz2; "  #rm aplic.tar.bz2;
     fi
 
-    logger "Rsynching files in case of updates"
+    logger "Rsynching files"
     $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic/* $SOURCE_DIR/"
     break #dont need to check after one is missing
   else
