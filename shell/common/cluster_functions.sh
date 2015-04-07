@@ -28,9 +28,11 @@ vm_check_create() {
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-
-  if [ "$vmType" != 'windows' ] ; then
-
+	if [ "$defaultProvider" = "hdinsight" ]; then
+		hdi_cluster_check_create "$vm_name"
+		create_hdi_cluster "$vm_name"
+		vm_final_bootstrap "$vm_name"
+	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it

@@ -1,41 +1,66 @@
-#AZURE specific functions
+#HDI specific functions
 
 #### start $cloud_provider customizations
 
-# $1 vm name $2 ssh port
-vm_create() {
+#$1 storage account name $2 redundancy type (LRS/ZRS/GRS/RAGRS/PLRS)
+vm_create_storage_account() {
+	if [ -z "$(azure storage account list "$1" | grep "$1")" ]; then
+		logger "Creating storage account $1"
+		azure storage account create "$1" -s "$subscriptionID" -l "South Central US" --type "$2"	
+	else
+		logger "WARNING: Storage account $1 already exists, skipping.."
+	fi
+	storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
+}
 
+#$1 storage account name $2 container name $3 storage account key
+vm_create_storage_container() {
+	if [ -z "$(azure storage container list -a "$1" -k "$3" | grep "$2")" ]; then
+		logger "Creating container $2 on storage $1"
+		azure storage container create -a "$1" -k "$3" "$2"
+	else
+		logger "WARNING: Container $2 already exists on $1, skipping.."
+	fi
+}
+
+#$1 cluster name
+hdi_cluster_check_create() {
+	if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+    	return 0
+	 else
+    	logger "ERROR: cluster name already exists!"
+		exit
+	 fi
+}
+
+#$1 cluster name
+hdi_cluster_check_delete() {
+	if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+    	return 0
+	 else
+    	logger "ERROR: cluster name doesn't exists!"
+		exit
+	 fi
+}
+
+#$1 cluster name
+create_hdi_cluster() {
+ vm_create_storage_account "$storageAccount" "GRS"
+echo "$storageAccountKey"
+exit
+ vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
   #check if the port was specified, for Windows this will be the RDP port
   if [ "$vmType" != "windows" ] ; then
 
-    logger "Creating Linux VM $1 with SSH port $ssh_port..."
-      azure vm create \
-            -s "$subscriptionID" \
-            --connect "$dnsName" `#Deployment name` \
-            --vm-name "$1" \
-            --vm-size "$vmSize" \
-            --location "$azureLocation" \
-            --ssh "$ssh_port" \
-            --ssh-cert "$sshCert" \
-            "$vmImage" \
-            "$userAloja" "$passwordAloja"
+    logger "Creating Linux HDI cluster $1"
+    azure hdinsight cluster create "$1" "linux" "$storageAccount" "$storageAccountKey" "$storageAccount" "$numberOfNodes" "$vmSize" "$vmSize" "South Central US" "$userAloja" "$passwordAloja" "$userAloja" "$passwordAloja"
+        -s "$subscriptionID" \
+        --ssh-cert "$sshCert" 
   else
-    logger "Creating Windows VM $1 with RDP port $ssh_port..."
-
-    azure vm create \
-          -s "$subscriptionID" \
-          --connect "$dnsName" `#Deployment name` \
-          --vm-name "$1" \
-          --vm-size "$vmSize" \
-          `#--location 'West Europe'` \
-          --affinity-group "$affinityGroup" \
-          --virtual-network-name "$virtualNetworkName" \
-          --subnet-names "$subnetNames" \
-          --rdp "$ssh_port" \
-          `#-v` \
-          `#'test-11'` `#DNS name` \
-          "$vmImage" \
-          "$userAloja" "$passwordAloja"
+    logger "Creating Windows HDI cluster $1"
+    azure hdinsight cluster create "$1" "windows" "$storageAccount" "$storageAccountKey" "$storageAccount" "$numberOfNodes" "$vmSize" "$vmSize" "South Central US" "$userAloja" "$passwordAloja" "$userAloja" "$passwordAloja"
+        -s "$subscriptionID" \
+	    --ssh-cert "$sshCert"
   fi
 }
 
@@ -72,19 +97,14 @@ node_connect() {
   fi
 }
 
+#$1 cluster name
 vm_final_bootstrap() {
 
   logger "Checking if setting a static host file for cluster"
-  vm_set_statics_hosts
-
 }
 
-vm_set_statics_hosts() {
-
-  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] ; then
-    logger "WARN: Setting statics hosts file for cluster"
-    vm_update_template "/etc/hosts" "$(get_static_hostnames)" "secured_file"
-  else
-    logger "INFO: no need to set static host file for cluster"
-  fi
+#$1 cluster name
+node_delete() {
+	hdi_cluster_check_delete $1
+	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
 }
