@@ -1030,14 +1030,24 @@ vm_make_fs() {
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
     if [ -z "$test_action" ] ; then
-      logger " Linking $homePrefixAloja/$userAloja/share"
 
-      vm_execute "
-sudo chown -R ${userAloja}: /scratch;
-[ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;
-touch $homePrefixAloja/$userAloja/share/safe_store;
-    "
+      #if the folder is different to ~/share, then link it to ~/share
+      if [ "$share_disk_path" != "$homePrefixAloja/$userAloja/share" ] ; then
+        logger " Linking $homePrefixAloja/$userAloja/share to $share_disk_path"
+
+        vm_execute "
+sudo chown -R ${userAloja}: $share_disk_path;
+[ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share $homePrefixAloja/$userAloja/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
+      else
+        #make sure the dir is created
+        vm_execute "mkdir -p $share_disk_path"
+
+      fi
+
+      #make it officially a shared disk
+      vm_execute "touch $homePrefixAloja/$userAloja/share/safe_store;"
+
     else
       logger " $homePrefixAloja/$userAloja/share is correctly mounted"
     fi
