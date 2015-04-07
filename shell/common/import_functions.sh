@@ -75,43 +75,6 @@ ON DUPLICATE KEY UPDATE
     fi
 }
 
-
-#$1 id_exec
-get_filter_sql_exec() {
-  if [ "$1" ] ; then
-    echo "
-#Updates filters for an id_exec
-
-#filter, execs that don't have any Hadoop details
-
-update ignore execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
-update ignore execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec = '$1' AND id_exec is not null);
-
-#perf_detail, execs without perf counters
-
-update ignore execs SET perf_details = 0 where id_exec = '$1';
-update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec = '$1' AND id_exec is not null);
-
-#valid, set everything as valid, exept the ones that do not match the following rules
-update ignore execs SET valid = 1 where id_exec = '$1' ;
-update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
-  select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
-    tmp_table
-);
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE  e2.id_exec = '$1' and e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE e.id_exec = '$1' AND suma = 0;
-
-"
-
-#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
-#  select distinct(id_exec) from
-#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
-#    tmp_table
-#);
-  fi
-
-}
-
 #$1 folder $2 $folder_OK
 move2done() {
 
@@ -151,7 +114,15 @@ update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'tera
     (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
     tmp_table
 );
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
+
+update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM execs e2 left JOIN JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
+
+
+#azure VMs
+update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
+update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
+update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
+update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
 "
 
@@ -160,6 +131,43 @@ update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM e
 #    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
 #    tmp_table
 #);
+
+}
+
+
+#$1 id_exec
+get_filter_sql_exec() {
+  if [ "$1" ] ; then
+    echo "
+#Updates filters for an id_exec
+
+#filter, execs that don't have any Hadoop details
+
+update ignore execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
+update ignore execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec = '$1' AND id_exec is not null);
+
+#perf_detail, execs without perf counters
+
+update ignore execs SET perf_details = 0 where id_exec = '$1';
+update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec = '$1' AND id_exec is not null);
+
+#valid, set everything as valid, exept the ones that do not match the following rules
+update ignore execs SET valid = 1 where id_exec = '$1' ;
+update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
+  select distinct(id_exec) from
+    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    tmp_table
+);
+
+update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM execs e2 left JOIN JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
+"
+
+#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
+#  select distinct(id_exec) from
+#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
+#    tmp_table
+#);
+  fi
 
 }
 
