@@ -592,7 +592,7 @@ for jobs_folder in $failed_jobs ; do
 
   if [ "$found" ] ; then
     logger "INFO: found folder, copying to import dir $IMPORT_DIR"
-     mkdir "$IMPORT_DIR/RETRY"
+     mkdir -p "$IMPORT_DIR/RETRY"
      cp -ru "$found" "$IMPORT_DIR/RETRY"
   else
     logger "ERROR: could not find $jobs_folder"
