@@ -25,7 +25,7 @@ vm_create_storage_container() {
 
 #$1 cluster name
 hdi_cluster_check_create() {
-	if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+	if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
     	return 0
 	 else
     	logger "ERROR: cluster name already exists!"
@@ -35,7 +35,7 @@ hdi_cluster_check_create() {
 
 #$1 cluster name
 hdi_cluster_check_delete() {
-	if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+	if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
     	return 0
 	 else
     	logger "ERROR: cluster name doesn't exists!"
@@ -46,22 +46,12 @@ hdi_cluster_check_delete() {
 #$1 cluster name
 create_hdi_cluster() {
  vm_create_storage_account "$storageAccount" "GRS"
-echo "$storageAccountKey"
-exit
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
-  #check if the port was specified, for Windows this will be the RDP port
-  if [ "$vmType" != "windows" ] ; then
-
-    logger "Creating Linux HDI cluster $1"
-    azure hdinsight cluster create "$1" "linux" "$storageAccount" "$storageAccountKey" "$storageAccount" "$numberOfNodes" "$vmSize" "$vmSize" "South Central US" "$userAloja" "$passwordAloja" "$userAloja" "$passwordAloja"
-        -s "$subscriptionID" \
-        --ssh-cert "$sshCert" 
-  else
-    logger "Creating Windows HDI cluster $1"
-    azure hdinsight cluster create "$1" "windows" "$storageAccount" "$storageAccountKey" "$storageAccount" "$numberOfNodes" "$vmSize" "$vmSize" "South Central US" "$userAloja" "$passwordAloja" "$userAloja" "$passwordAloja"
-        -s "$subscriptionID" \
-	    --ssh-cert "$sshCert"
-  fi
+ logger "Creating Linux HDI cluster $1"
+ azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
+	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
+	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+	--sshPassword "$passwordAloja" -s "$subscriptionID"
 }
 
 #$1 vm_name
@@ -79,7 +69,8 @@ get_ssh_key() {
 }
 
 get_ssh_host() {
-    echo "${vmName}-ssh.azurehdinsight.net"
+	vm_name="`echo ${clusterName} | cut -d- -f1`"
+    echo "${vm_name}-ssh.azurehdinsight.net"
 }
 
 #construct the port number from vm_name
@@ -99,12 +90,21 @@ node_connect() {
 
 #$1 cluster name
 vm_final_bootstrap() {
-
-  logger "Checking if setting a static host file for cluster"
+ logger "Configuring nodes..."
+ vm_set_ssh
+ vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo headnode0 >> machines"
+ vm_execute "sudo DEBIAN_FRONTEND=noninteractive apt-get install dsh pssh git -y -qqq"
+ vm_provision 
+ vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
+ vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
+ vm_execute "mkdir -p share; dsh -f slaves -Mc -- 'mkdir -p share'"
+ vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@$(hostname -i):/home/pristine/share' '/home/pristine/share'\""
+ vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
 }
 
 #$1 cluster name
 node_delete() {
-	hdi_cluster_check_delete $1
-	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
+	vm_name="`echo $1 | cut -d- -f1`"
+	hdi_cluster_check_delete $vm_name
+	azure hdinsight cluster delete "$vm_name" "South Central US" "$vmType"
 }
