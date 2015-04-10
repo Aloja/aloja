@@ -100,6 +100,7 @@ vm_final_bootstrap() {
  vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@$(hostname -i):/home/pristine/share' '/home/pristine/share'\""
  vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
  vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
+ vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
 }
 
 #$1 cluster name
