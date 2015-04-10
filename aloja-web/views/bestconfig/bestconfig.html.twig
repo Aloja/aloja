@@ -2,13 +2,7 @@
 {% block javascript %} 
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts.js"></script>
-	<script type="text/javascript">
-	 $(document).ready(function() {
-		$("input,select").change(function() {
-			$("form").submit();
-		});
-	 });
-	</script>
+
 {% endblock %} 
 {% block content %}
 <div id="chart"></div>
@@ -54,7 +48,7 @@
 			</tr>
 			<tr>
 				<th>IO File Buffer {{ makeTooltip('The total amount of buffer memory to use while sorting files, in megabytes. By default, gives each merge stream 1MB, which should minimize seeks.') | raw }}</th>
-				<td>{{ bestexec['iofilebuf'] }}</td>
+				<td>{{ bestexec['iofilebuf'] }}KB</td>
 			</tr>
 			<tr>
 				<th>Compression algorithm</th>
@@ -62,7 +56,7 @@
 			</tr>
 			<tr>
 				<th>Block size</th>
-				<td>{{ bestexec['blk_size'] }}</td>
+				<td>{{ bestexec['blk_size'] }}MB</td>
 			</tr>
 			<tr>
 				<th>Cluster</th>
@@ -78,5 +72,4 @@
 <div style="width: 30%; float: right;">
 	{% include 'common/config_filters.html.twig' %}
 </div>
-<div style="clear: both;">&nbsp;</div>
 {% endblock %}

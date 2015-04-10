@@ -1,3 +1,6 @@
+#on previous versions it does not download the image automatically
+Vagrant.require_version ">= 1.6"
+
 VAGRANTFILE_API_VERSION = "2"
 
 #avoids having to $ vagrant up --provider docker
@@ -11,6 +14,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #config.vm.box = "hashicorp/precise64"
     #Prebuilt box for ALOJA
     config.vm.box = "npoggi/aloja-precise64"
+
+    v.memory = 2048 #change as needed
+    v.cpus = 1
   end
 
   #for Docker (optional, but faster on Linux)
@@ -37,21 +43,35 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #bash scripts
   config.vm.provision :shell, :path => "bootstrap.sh"
 
-  #puppet config
-  config.vm.provision "puppet" do |puppet|
-    puppet.module_path = "puppet/modules"
-    puppet.manifests_path = "puppet/manifests"
-    puppet.manifest_file = "init.pp"
-    puppet.options = "--environment dev" 
-    #puppet.options = "--verbose --debug"
+  # default box (aloja-web)
+  config.vm.define "default", primary: true do |default|
+
+    #puppet config
+    default.vm.provision "puppet" do |puppet|
+      puppet.module_path = "puppet/modules"
+      puppet.manifests_path = "puppet/manifests"
+      puppet.manifest_file = "init.pp"
+      puppet.options = "--environment dev" 
+      #puppet.options = "--verbose --debug"
+    end
+
+    #net ports
+    default.vm.network :forwarded_port, host: 8080, guest: 80 #web
+    default.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
+    default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
+
   end
 
-  #net ports
-  config.vm.network :forwarded_port, host: 8080, guest: 80 #web
-  config.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
-
-  config.vm.provider "virtualbox" do |v|
-    v.memory = 2048
-    v.cpus = 1
+  # cluster nodes for benchmarking (aloja-deploy)
+  config.vm.define "vagrant1", autostart: false do |node|
+    node.vm.hostname = "vagrant1"
+    node.vm.network "private_network", ip: "10.42.42.101"
+    node.vm.provision "shell", path: "files/vagrant_cluster/provision.sh"
   end
+  config.vm.define "vagrant2", autostart: false do |node|
+    node.vm.hostname = "vagrant2"
+    node.vm.network "private_network", ip: "10.42.42.102"
+    node.vm.provision "shell", path: "files/vagrant_cluster/provision.sh"
+  end
+
 end

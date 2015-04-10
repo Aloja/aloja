@@ -1,8 +1,11 @@
 #file must be sourced
 
-echo "Checking if to create tables"
+logger "INFO: Creating DB and tables for $DB (if necessary)"
 
 $MYSQL "
+
+CREATE DATABASE IF NOT EXISTS \`$DB\`;
+
 CREATE TABLE IF NOT EXISTS \`execs\` (
   \`id_exec\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_cluster\` int(11) DEFAULT NULL,
@@ -20,52 +23,60 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`iofilebuf\` int(11) DEFAULT NULL,
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
+  hadoop_version varchar(127) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
-  \`valid\` BOOLEAN DEFAULT TRUE,
- \`hadoop_version\` int(11) NOT NULL DEFAULT \'1\'
+  \`valid\` int DEFAULT 0,
+  \`filter\` int DEFAULT 0,
+  \`outlier\` int DEFAULT 0,
+ \`perf_details\` int DEFAULT 0,
   PRIMARY KEY (\`id_exec\`),
-  UNIQUE KEY \`exec_UNIQUE\` (\`exec\`)
+  UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
+  KEY \`idx_bench\` (\`bench\`),
+  KEY \`idx_exe_time\` (\`exe_time\`),
+  KEY \`idx_bench_type\` (\`bench_type\`),
+  KEY \`idx_id_cluster\` (\`id_cluster\`),
+  KEY \`idx_valid\` (\`valid\`),
+  KEY \`idx_filter\` (\`filter\`),
+  KEY \`idx_perf_details\` (\`perf_details\`)
 ) ENGINE=InnoDB;
+
 
 create table if not exists hosts (
   id_host int(11) NOT NULL AUTO_INCREMENT,
-  host_name varchar(128) NOT NULL,
+  host_name varchar(127) NOT NULL,
   id_cluster int(11) NOT NULL,
   role varchar(45) DEFAULT NULL,
+ cost_remote decimal(10,3) default 0,
+ cost_SSD decimal(10,3) default 0,
+ cost_IB decimal(10,3) default 0,
   PRIMARY KEY (id_host)
 ) ENGINE=InnoDB AUTO_INCREMENT=9 DEFAULT CHARSET=utf8;
-ALTER TABLE execs ADD COLUMN hadoop_version INT NOT NULL DEFAULT 1;
 
-insert ignore into hosts set id_host=1, id_cluster=1, host_name='minerva-1001', role='master';
-insert ignore into hosts set id_host=2, id_cluster=1, host_name='minerva-1002', role='slave';
-insert ignore into hosts set id_host=3, id_cluster=1, host_name='minerva-1003', role='slave';
-insert ignore into hosts set id_host=4, id_cluster=1, host_name='minerva-1004', role='slave';
-insert ignore into hosts set id_host=5, id_cluster=2, host_name='al-1001', role='master';
-insert ignore into hosts set id_host=6, id_cluster=2, host_name='al-1002', role='slave';
-insert ignore into hosts set id_host=7, id_cluster=2, host_name='al-1003', role='slave';
-insert ignore into hosts set id_host=8, id_cluster=2, host_name='al-1004', role='slave';
-
-create table if not exists clusters (id_cluster int, name varchar(127), cost_hour decimal(10,3), \`type\` varchar(127), link varchar(255), primary key (id_cluster)) engine InnoDB;
-insert ignore into clusters set name='Local 1',     id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
-insert ignore into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, type='IaaS Cloud', link='http://www.windowsazure.com/en-us/pricing/calculator/';
-
-#TODO move this to end of execution
-update execs SET disk='RR1' where disk='R1';
-update execs SET disk='RR2' where disk='R2';
-update execs SET disk='RR3' where disk='R3';
-update execs SET bench_type='HiBench' where bench_type='b';
-update execs SET bench_type='HiBench' where bench_type='';
-update execs SET bench_type='HiBench-min' where bench_type='-min';
-update execs SET bench_type='HiBench-10' where bench_type='-10';
-update execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
-INSERT INTO clusters(id_cluster,name,cost_hour,type,link,nodes_number) values(20,'HDInsight','0.32','PaaS','http://azure.microsoft.com/en-gb/pricing/details/hdinsight/',4);
+create table if not exists clusters (
+id_cluster int,
+name varchar(127),
+cost_hour decimal(10,3),
+\`type\` varchar(127),
+provider varchar(127),
+datanodes int DEFAULT NULL,
+headnodes int DEFAULT NULL,
+vm_size varchar(127) default null,
+vm_OS varchar(127) default null,
+vm_cores int default null,
+vm_RAM decimal(10,3) default null,
+cost_remote decimal(10,3) default 0,
+cost_SSD decimal(10,3) default 0,
+cost_IB decimal(10,3) default 0,
+description varchar(256) default null,
+link varchar(255),
+primary key (id_cluster)) engine InnoDB;
 "
 
 $MYSQL "
 CREATE TABLE IF NOT EXISTS \`SAR_cpu\` (
   \`id_SAR_cpu\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_exec\` int(11) DEFAULT NULL,
-  \`host\` varchar(128) DEFAULT NULL,
+  \`host\` varchar(127) DEFAULT NULL,
   \`interval\` decimal(20,3) DEFAULT NULL,
   \`date\` datetime DEFAULT NULL,
   \`CPU\` varchar(255) DEFAULT NULL,
@@ -85,7 +96,7 @@ CREATE TABLE IF NOT EXISTS \`SAR_cpu\` (
 CREATE TABLE IF NOT EXISTS \`SAR_block_devices\` (
   \`id_SAR_block_devices\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_exec\` int(11) DEFAULT NULL,
-  \`host\` varchar(128) DEFAULT NULL,
+  \`host\` varchar(127) DEFAULT NULL,
   \`interval\` decimal(20,3) DEFAULT NULL,
   \`date\` datetime DEFAULT NULL,
   \`DEV\` varchar(255) DEFAULT NULL,
@@ -135,7 +146,7 @@ CREATE TABLE IF NOT EXISTS \`SAR_io_paging\` (
 CREATE TABLE IF NOT EXISTS \`SAR_io_rate\` (
   \`id_SAR_io_rate\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_exec\` int(11) DEFAULT NULL,
-  \`host\` varchar(128) DEFAULT NULL,
+  \`host\` varchar(127) DEFAULT NULL,
   \`interval\` decimal(20,3) DEFAULT NULL,
   \`date\` datetime DEFAULT NULL,
   \`tps\` decimal(20,3) DEFAULT NULL,
@@ -199,7 +210,7 @@ CREATE TABLE IF NOT EXISTS \`SAR_memory_util\` (
 CREATE TABLE IF NOT EXISTS \`SAR_net_devices\` (
   \`id_SAR_net_devices\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_exec\` int(11) DEFAULT NULL,
-  \`host\` varchar(128) DEFAULT NULL,
+  \`host\` varchar(127) DEFAULT NULL,
   \`interval\` decimal(20,3) DEFAULT NULL,
   \`date\` datetime DEFAULT NULL,
   \`IFACE\` varchar(255) DEFAULT NULL,
@@ -393,12 +404,12 @@ CREATE TABLE IF NOT EXISTS \`JOB_details\` (
   \`id_exec\` int(11) NOT NULL,
   \`job_name\` varchar(255) DEFAULT NULL,
   \`JOBID\` varchar(255) NOT NULL,
-  \`JOBNAME\` varchar(128) DEFAULT NULL,
+  \`JOBNAME\` varchar(127) DEFAULT NULL,
   \`SUBMIT_TIME\` datetime DEFAULT NULL,
   \`LAUNCH_TIME\` datetime DEFAULT NULL,
   \`FINISH_TIME\` datetime DEFAULT NULL,
   \`JOB_PRIORITY\` varchar(255) DEFAULT NULL,
-  \`USER\` varchar(128) DEFAULT NULL,
+  \`USER\` varchar(127) DEFAULT NULL,
   \`TOTAL_MAPS\` int(11) DEFAULT NULL,
   \`FAILED_MAPS\` int(11) DEFAULT NULL,
   \`FINISHED_MAPS\` int(11) DEFAULT NULL,
@@ -458,9 +469,9 @@ CREATE TABLE IF NOT EXISTS \`JOB_tasks\` (
   \`id_exec\` int(11) NOT NULL,
   \`job_name\` varchar(255) NOT NULL,
   \`JOBID\` varchar(255) NOT NULL,
-  \`TASKID\` varchar(128) DEFAULT NULL,
-  \`TASK_TYPE\` varchar(128) DEFAULT NULL,
-  \`TASK_STATUS\` varchar(128) DEFAULT NULL,
+  \`TASKID\` varchar(127) DEFAULT NULL,
+  \`TASK_TYPE\` varchar(127) DEFAULT NULL,
+  \`TASK_STATUS\` varchar(127) DEFAULT NULL,
   \`START_TIME\` datetime DEFAULT NULL,
   \`FINISH_TIME\` datetime DEFAULT NULL,
   \`SHUFFLE_TIME\` datetime DEFAULT NULL,
@@ -547,6 +558,29 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_details\` (
   \`WASB_WRITE_OPS\` bigint(20) NOT NULL,
   \`job_name\` varchar(255) DEFAULT NULL,
   \`RECORDS_WRITTEN\` bigint(20) DEFAULT NULL,
+  \`BAD_ID\` varchar(255) DEFAULT NULL,
+  \`COMBINE_INPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`COMBINE_OUTPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`CONNECTION\` bigint(20) DEFAULT NULL,
+  \`IO_ERROR\` varchar(255) DEFAULT NULL,
+  \`MAP_OUTPUT_BYTES\` bigint(20) DEFAULT NULL,
+  \`MAP_OUTPUT_MATERIALIZED_BYTES\` bigint(20) DEFAULT NULL,
+  \`MB_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+  \`MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+  \`RACK_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_INPUT_GROUPS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_INPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_OUTPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_SHUFFLE_BYTES\` bigint(20) DEFAULT NULL,
+  \`WRONG_LENGTH\` bigint(20) DEFAULT NULL,
+  \`WRONG_MAP\` bigint(20) DEFAULT NULL,
+  \`WRONG_REDUCE\` bigint(20) DEFAULT NULL,
+  \`TOTAL_LAUNCHED_REDUCES\` bigint(20) DEFAULT NULL,
+  \`SHUFFLED_MAPS\` bigint(20) DEFAULT NULL,
+  \`SLOTS_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+  \`VCORES_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+  \`CHECKSUM\` varchar(255) DEFAULT NULL,
+  \`NUM_FAILED_MAPS\` varchar(255) DEFAULT NULL,
   PRIMARY KEY (\`hdi_job_details_id\`),
   UNIQUE KEY \`job_id_uq\` (\`JOB_ID\`),
   KEY \`id_exec\` (\`id_exec\`),
@@ -554,38 +588,197 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_details\` (
 ) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
-  \`hdi_job_task_id\` int(11) NOT NULL AUTO_INCREMENT,
+\`hdi_job_task_id\` int(11) NOT NULL AUTO_INCREMENT,
   \`JOB_ID\` varchar(255) NOT NULL,
   \`TASK_ID\` varchar(255) NOT NULL,
-  \`BYTES_READ\` bigint(20) NOT NULL,
-  \`BYTES_WRITTEN\` bigint(20) NOT NULL,
-  \`COMMITTED_HEAP_BYTES\` bigint(20) NOT NULL,
-  \`CPU_MILLISECONDS\` bigint(20) NOT NULL,
-  \`FAILED_SHUFFLE\` bigint(20) NOT NULL,
-  \`FILE_BYTES_READ\` bigint(20) NOT NULL,
-  \`FILE_BYTES_WRITTEN\` bigint(20) NOT NULL,
-  \`FILE_READ_OPS\` bigint(20) NOT NULL,
-  \`FILE_WRITE_OPS\` bigint(20) NOT NULL,
-  \`GC_TIME_MILLIS\` bigint(20) NOT NULL,
-  \`MAP_INPUT_RECORDS\` bigint(20) NOT NULL,
-  \`MAP_OUTPUT_RECORDS\` bigint(20) NOT NULL,
-  \`MERGED_MAP_OUTPUTS\` bigint(20) NOT NULL,
-  \`PHYSICAL_MEMORY_BYTES\` bigint(20) NOT NULL,
-  \`SPILLED_RECORDS\` bigint(20) NOT NULL,
-  \`SPLIT_RAW_BYTES\` bigint(20) NOT NULL,
-  \`TASK_ERROR\` bigint(20) NOT NULL,
-  \`TASK_FINISH_TIME\` bigint(20) NOT NULL,
-  \`TASK_START_TIME\` bigint(20) NOT NULL,
-  \`TASK_STATUS\` bigint(20) NOT NULL,
-  \`TASK_TYPE\` bigint(20) NOT NULL,
-  \`VIRTUAL_MEMORY_BYTES\` bigint(20) NOT NULL,
-  \`WASB_BYTES_READ\` bigint(20) NOT NULL,
-  \`WASB_BYTES_WRITTEN\` bigint(20) NOT NULL,
-  \`WASB_LARGE_READ_OPS\` bigint(20) NOT NULL,
-  \`WASB_READ_OPS\` bigint(20) NOT NULL,
-  \`WASB_WRITE_OPS\` bigint(20) NOT NULL,
-  PRIMARY KEY (\`hdi_job_task_id\`)
+  \`BYTES_READ\` bigint(20) DEFAULT '0',
+  \`BYTES_WRITTEN\` bigint(20) DEFAULT '0',
+  \`COMMITTED_HEAP_BYTES\` bigint(20) DEFAULT '0',
+  \`CPU_MILLISECONDS\` bigint(20) DEFAULT '0',
+  \`FAILED_SHUFFLE\` bigint(20) DEFAULT '0',
+  \`FILE_BYTES_READ\` bigint(20) DEFAULT '0',
+  \`FILE_BYTES_WRITTEN\` bigint(20) DEFAULT '0',
+  \`FILE_READ_OPS\` bigint(20) DEFAULT '0',
+  \`FILE_WRITE_OPS\` bigint(20) DEFAULT '0',
+  \`GC_TIME_MILLIS\` bigint(20) DEFAULT '0',
+  \`MAP_INPUT_RECORDS\` bigint(20) DEFAULT '0',
+  \`MAP_OUTPUT_RECORDS\` bigint(20) DEFAULT '0',
+  \`MERGED_MAP_OUTPUTS\` bigint(20) DEFAULT '0',
+  \`PHYSICAL_MEMORY_BYTES\` bigint(20) DEFAULT '0',
+  \`SPILLED_RECORDS\` bigint(20) DEFAULT '0',
+  \`SPLIT_RAW_BYTES\` bigint(20) DEFAULT '0',
+  \`TASK_ERROR\` varchar(255) NOT NULL,
+  \`TASK_FINISH_TIME\` bigint(20) DEFAULT '0',
+  \`TASK_START_TIME\` bigint(20) DEFAULT '0',
+  \`TASK_STATUS\` varchar(255) NOT NULL,
+  \`TASK_TYPE\` varchar(255) NOT NULL,
+  \`VIRTUAL_MEMORY_BYTES\` bigint(20) DEFAULT '0',
+  \`WASB_BYTES_READ\` bigint(20) DEFAULT '0',
+  \`WASB_BYTES_WRITTEN\` bigint(20) DEFAULT '0',
+  \`WASB_LARGE_READ_OPS\` bigint(20) DEFAULT '0',
+  \`WASB_READ_OPS\` bigint(20) DEFAULT '0',
+  \`WASB_WRITE_OPS\` bigint(20) DEFAULT '0',
+  \`FILE_LARGE_READ_OPS\` bigint(20) DEFAULT NULL,
+  \`RECORDS_WRITTEN\` bigint(20) DEFAULT NULL,
+  \`MAP_OUTPUT_BYTES\` bigint(20) DEFAULT NULL,
+  \`MAP_OUTPUT_MATERIALIZED_BYTES\` bigint(20) DEFAULT NULL,
+  \`COMBINE_INPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`COMBINE_OUTPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`id_exec\` int(11) DEFAULT NULL,
+  \`REDUCE_INPUT_GROUPS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_OUTPUT_GROUPS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_SHUFFLE_BYTES\` bigint(20) DEFAULT NULL,
+  \`REDUCE_INPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`REDUCE_OUTPUT_RECORDS\` bigint(20) DEFAULT NULL,
+  \`SHUFFLED_MAPS\` bigint(20) DEFAULT NULL,
+  \`BAD_ID\` bigint(20) DEFAULT NULL,
+  \`IO_ERROR\` bigint(20) DEFAULT NULL,
+  \`WRONG_LENGTH\` bigint(20) DEFAULT NULL,
+  \`CONNECTION\` bigint(20) DEFAULT NULL,
+  \`WRONG_MAP\` bigint(20) DEFAULT NULL,
+  \`WRONG_REDUCE\` bigint(20) DEFAULT NULL,
+  \`CHECKSUM\` varchar(255) DEFAULT NULL,
+  \`NUM_FAILED_MAPS\` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (\`hdi_job_task_id\`),
+  UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
+  \`id\` int(11) NOT NULL AUTO_INCREMENT,
+  \`bench\` varchar(255) NOT NULL,
+  \`job_offset\` varchar(255) NOT NULL,
+  \`metric_x\` int(11) NOT NULL,
+  \`metric_y\` int(11) NOT NULL,
+  \`TASK_TYPE\` varchar(127) DEFAULT NULL,
+  \`id_exec\` int(11) NOT NULL,
+  \`centroid_x\` decimal(20,3) NOT NULL,
+  \`centroid_y\` decimal(20,3) NOT NULL,
+  PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS \`filters_presets\` (
+ \`id\` int(11) NOT NULL AUTO_INCREMENT,
+ \`name\` varchar(255) NOT NULL,
+ \`screen\` varchar(255) NOT NULL,
+ \`URL\` varchar(65536) NOT NULL,
+ \`preset\` int NOT NULL DEFAULT 0,
+ \`description\` varchar(255),
+ PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+"
+
+
+
+
+####################################################
+logger "INFO: Executing alter tables, you can IGNORE warnings"
+
+$MYSQL "alter table execs
+  add KEY \`idx_bench\` (\`bench\`),
+  add KEY \`idx_exe_time\` (\`exe_time\`),
+  add KEY \`idx_bench_type\` (\`bench_type\`);"
+
+$MYSQL "alter table execs
+  add KEY \`idx_id_cluster\` (\`id_cluster\`),
+  add KEY \`idx_valid\` (\`valid\`),
+  add KEY \`idx_filter\` (\`filter\`),
+  add KEY \`idx_perf_details\` (\`perf_details\`);"
+
+$MYSQL "alter table execs
+ add column  \`valid\` int DEFAULT '1';"
+
+$MYSQL "alter table execs
+ modify column  \`valid\` int DEFAULT '1',
+  ADD \`filter\` int DEFAULT '0',
+  ADD \`outlier\` int DEFAULT '0';"
+
+$MYSQL "alter table execs ADD COLUMN  \`perf_details\` int DEFAULT '0';"
+
+$MYSQL "alter table execs add hadoop_version varchar(127) default NULL;"
+
+$MYSQL "alter table clusters add datanodes int DEFAULT NULL;"
+$MYSQL "alter table clusters add provider varchar(127);"
+
+$MYSQL "alter table clusters
+  add headnodes int DEFAULT NULL,
+  add vm_size varchar(127) default null,
+  add vm_OS varchar(127) default null,
+  add vm_cores int default null,
+  add vm_RAM decimal(10,3) default null,
+  add description varchar(256) default null;"
+
+$MYSQL "alter table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter table clusters add column cost_remote int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_SSD int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_IB int DEFAULT 0"
+
+$MYSQL "alter table clusters
+ modify column cost_remote decimal(10,3) default 0,
+  modify column cost_SSD decimal(10,3) default 0,
+  modify column cost_IB decimal(10,3) default 0;"
+
+$MYSQL "alter table hosts
+	add column cost_remote decimal(10,3) default 0,
+	add column cost_SSD decimal(10,3) default 0,
+	add column cost_IB decimal(10,3) default 0;"
+
+############################################33
+logger "INFO: Updating records"
+
+$MYSQL "
+update ignore execs SET disk='RR1' where disk='R1';
+update ignore execs SET disk='RR2' where disk='R2';
+update ignore execs SET disk='RR3' where disk='R3';
+update ignore execs SET bench_type='HiBench' where bench_type='b';
+update ignore execs SET bench_type='HiBench' where bench_type='';
+update ignore execs SET bench_type='HiBench-min' where bench_type='-min';
+update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
+
+update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
+update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
+update ignore execs SET hadoop_version='1.03' where hadoop_version='';
+update ignore execs SET net='IB' where id_cluster = 26;
+
+
+update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
+update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
+update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
+
+"
+$MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
+
+$MYSQL "insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(1,'HDD vs SSD','http://hadoop.bsc.es/configimprovement?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HD2&disks[]=HD3&disks[]=HD4&disks[]=HD5&disks[]=HDD&disks[]=SS2&disks[]=SSD&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'HDD vs SSD comparison', 'Config Improvement');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(2,'VM Size','http://hadoop.bsc.es/parameval?parameval=vm_size&minexecs=&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&bench_types[]=HDI&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'Evaluation by size', 'Parameter Evaluation');
+
+
+"
+
+$MYSQL "
+insert ignore into clusters(id_cluster,name,cost_hour,type,datanodes,provider,headnodes,vm_size,vm_OS,vm_cores,vm_RAM,description,cost_remote,cost_SSD,cost_IB) values(38,'rb-38',5.44,'PaaS',8,'rackspace',1,'hadoop1-15','linux',4,15,'Cloud Big Data (HDP 1.3)',0,0,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'rb38-terasort','terasort',1273,'ETH','RR1','HiBench',32,1,1,0);
+"
+
+
+
+#$MYSQL "
+#
+##insert ignore into clusters set name='m1000-01',     id_cluster=1, cost_hour=12, type='on-premise', link='http://hadoop.bsc.es/?page_id=51';
+##insert ignore into clusters set name='al-02', id_cluster=2, cost_hour=7, type='IaaS', link='http://www.windowsazure.com/en-us/pricing/calculator/';
+##INSERT ignore INTO clusters(id_cluster,name,cost_hour,type,link,datanodes) values(20,'HDInsight','0.32','PaaS','http://azure.microsoft.com/en-gb/pricing/details/hdinsight/',4);
+#
+##insert ignore into hosts set id_host=1, id_cluster=1, host_name='minerva-1001', role='master';
+##insert ignore into hosts set id_host=2, id_cluster=1, host_name='minerva-1002', role='slave';
+##insert ignore into hosts set id_host=3, id_cluster=1, host_name='minerva-1003', role='slave';
+##insert ignore into hosts set id_host=4, id_cluster=1, host_name='minerva-1004', role='slave';
+##insert ignore into hosts set id_host=5, id_cluster=2, host_name='al-1001', role='master';
+##insert ignore into hosts set id_host=6, id_cluster=2, host_name='al-1002', role='slave';
+##insert ignore into hosts set id_host=7, id_cluster=2, host_name='al-1003', role='slave';
+##insert ignore into hosts set id_host=8, id_cluster=2, host_name='al-1004', role='slave';
+#"
+
+
 
 #CREATE TABLE IF NOT EXISTS \`JOB_job_history\` (
 #  \`id_JOB_job_history\` int(11) NOT NULL AUTO_INCREMENT,
@@ -678,5 +871,3 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
 #  PRIMARY KEY (\`id_JOB_task_history\`),
 #  UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`, \`job_name\`,\`task_name\`)
 #) ENGINE=InnoDB;
-
-"

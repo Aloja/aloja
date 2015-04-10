@@ -5,13 +5,39 @@
 	{% block stylesheetdatatables %}{{ parent() }}{% endblock %}
 {% endblock %}
     {% block content %}
+     <div id="navigation" style="text-align: center;">
+	        <h2 class="compare body">
+	            <strong>Advanced information:</strong>
+	            <a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
+	            <a href="{{ modifyUrl({'type': 'HWCONFIG'}) }}"><span {% if type == 'HWCONFIG' %}style="font-weight: bold;"{% endif %}>HARDWARE CONFIGURATIONS</span></a>
+	            <a href="{{ modifyUrl({'type': 'SWCONFIG'}) }}"><span {% if type == 'SWCONFIG' %}style="font-weight: bold;"{% endif %}>SOFTWARE CONFIGURATIONS</span></a>
+	            <a href="{{ modifyUrl({'type': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAILS</span></a>
+	        </h2>
+	 </div>
+	 <div style="text-align: center; margin-bottom: .5em;">
+	    <button id="showFilters" class="btn btn-info">Show filters</button>
+	 </div>
+	 <div id="filtersTab" style="display: none;">
+	   {% include "common/config_filters.html.twig" %}
+	 </div>
      {% block datatablescontent %}{{ parent() }}{% endblock %}
     <div id="chart"></div>
-
 </div>
 {% endblock %}
 {% block javascript %}
     {{ parent() }}
      <script type="text/javascript" language="javascript" src="js/utils.js"></script>
       {% block javascriptdatatables %}{{ parent() }}{% endblock %}
+     <script type="text/javascript">
+ 		$(document).ready(function() {
+			$("#showFilters").click(function() {
+				$("#filtersTab").slideToggle(400, function() {
+				  if($("#filtersTab").is(':visible')) {
+				    $("#showFilters").text('Hide filters');
+				  } else
+				    $("#showFilters").text('Show filters');
+				});
+			});
+ 	 	});
+     </script>
     {% endblock %}

@@ -1,10 +1,5 @@
 #!/usr/bin/env bash
 
-#rm -rf /var/www
-#ln -fs /vagrant/workspace /var/www
-#
-
-#passwordless login to localhost
 if ! which puppet > /dev/null; then
   sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list
   wget http://apt.puppetlabs.com/puppetlabs-release-stable.deb -O /tmp/puppetlabs-release-stable.deb && \
@@ -36,34 +31,32 @@ if ! which git > /dev/null; then
 fi
 
 #install puppet modules
-[ -d /etc/puppet/modules ] || mkdir -p /etc/puppet/modules
+[ -d "/etc/puppet/modules" ] || mkdir -p /etc/puppet/modules
 for module in "puppetlabs-apt" "puppetlabs-mysql" "puppetlabs-vcsrepo" "maxchk-varnish" "rodjek-logrotate"; do
-  puppet module install "$module"
+  (puppet module list | grep "$module") || puppet module install "$module"
 done
+
+#MySQL prep to move data to attached disk
+#if [ ! -d "/scratch/attached/1/mysql" ]; then
+#	sudo cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
+#	sudo service apparmor restart
+#
+#	if [ "$?" -ne "0" ]; then
+#		echo "Moving MySQL data to attached disk failed!"
+#	fi
+#fi
 
 puppet apply --modulepath=/etc/puppet/modules manifests/init.pp --environment=prod
 
-##MySQL data to attached disk
-if [ ! -d "/scratch/attached/1/mysql" ]; then
-	cp /var/lib/mysql /scratch/attached/1/ -R
-	cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
-	chown mysql.mysql /scratch/attached/1/mysql -R
-	chmod 775 /scratch/attached/1/mysql -R
-	service apparmor restart
-	service mysql restart
-		
-	if [ "$?" -ne "0" ]; then
-		echo "Moving MySQL data to attached disk failed!"
-	fi
-fi
+#mysqlshow -uroot aloja2
+#retcode=$?
+#if [ "$retcode" -ne "0" ]; then
+#	mysql -uroot -e "create database aloja2;"
+#fi
+#mysql -uroot aloja2 < db_schema.sql
 
 add_execs() {
 	tar -xvf execs.sql.tar.gz
-	mysqlshow -uroot aloja2
-	retcode=$?
-	if [ "$retcode" -ne "0" ]; then
-		mysql -uroot -e "create database aloja2;"
-	fi
 	mysql -uroot aloja2 < execs.sql	
 }
 
@@ -83,6 +76,6 @@ if [ ! -z $1 ]; then
 	fi
 fi
 
-echo "Chaning /var/www permissions"
+echo "Changing /var/www permissions"
 chown -R www-data.www-data /var/www
 chmod -R 755 /var/www

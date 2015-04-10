@@ -5,9 +5,7 @@
 #associative arrays (one key per node)
 declare -A nodeIP
 declare -A serverId
-declare -A vmBootStrapped
 
-lockedBootstrapCheck=""
 
 #### start $cloud_provider customizations
 
@@ -44,19 +42,29 @@ vm_reboot() {
 vm_set_details() {
 
   if [ -z "${nodeIP[$vm_name]}" ] || [ -z "${serverId[$vm_name]}"  ]  ; then
-    #get machine details
-    local cacheFileName="rackspace_vm_details_${vm_name}"
-    local vm_details="$(cache_get "$cacheFileName" "60")"
 
-    if [ ! "$vm_details" ] ; then
-      local vm_details="$(nova show --minimal "$vm_name")"
-      cache_put "$cacheFileName" "$vm_details"
+    #check if the vm_name is an IP address
+    if [[ "$vm_name" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+     local vm_IP="$vm_name"
+     local vm_ID="$vm_name"
+    else
+      #get machine details
+      local cacheFileName="rackspace_vm_details_${vm_name}"
+      local vm_details="$(cache_get "$cacheFileName" "60")"
+
+      if [ ! "$vm_details" ] ; then
+        local vm_details="$(nova show --minimal "$vm_name")"
+        cache_put "$cacheFileName" "$vm_details"
+      fi
+
+     local vm_IP="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
+     local vm_ID="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
     fi
 
     #set IP
-    nodeIP["$vm_name"]="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
+    nodeIP["$vm_name"]="$vm_IP"
     #set serverId
-    serverId["$vm_name"]="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
+    serverId["$vm_name"]="vm_ID"
 
   fi
 
@@ -113,7 +121,7 @@ get_ssh_port() {
 get_ssh_user() {
 
   #check if we can change from root user
-  if [ "$requireRootFirst" ] && [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
     echo "root"
   else
@@ -121,49 +129,16 @@ get_ssh_user() {
   fi
 }
 
-vm_already_bootstraped() {
-
-  #check if we can change to regular user
-  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
-    vm_already_bootstraped
-  fi
-
-  if [ ! "$lockedBootstrapCheck" ] ; then
-    #lock to prevent loops
-    lockedBootstrapCheck="true"
-
-    logger "DEBUG: Checking if vm already bootstrapped: ${vmBootStrapped[@]} " "" "log to file"
-
-    #TODO improve dynamic filename and bootstrap functionality
-    local test_action="$(vm_execute " [ -f /root/bootstrap_Initial_Bootstrap_${vm_name} ] && echo '$testKey'")"
-    #in case we get a welcome banner we need to grep
-    local test_action="$(echo -e "$test_action"|grep "$testKey")"
-
-    #change to boot strapped in case file present
-    if [ "$test_action" ] ; then
-      vmBootStrapped["$vm_name"]="true"
-      logger "DEBUG: vm already bootstrapped: ${vmBootStrapped[@]} " "" "log to file"
-    else
-      logger "DEBUG: vm NOT bootstrapped: ${vmBootStrapped[@]} " "" "log to file"
-    fi
-
-    #unlock
-    lockedBootstrapCheck=""
-  fi
-}
-
 vm_initial_bootstrap() {
 
-  if [ -z "${vmBootStrapped[$vm_name]}" ] ; then
+  local bootstrap_file="Initial_Bootstrap"
 
-    local bootstrap_file="Initial_Bootstrap"
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Bootstraping $vm_name "
 
-    if check_bootstraped "$bootstrap_file" ""; then
-      logger "Bootstraping $vm_name "
+#bash -c 'BASH_ENV=/etc/profile exec bash' &&
 
-  #bash -c 'BASH_ENV=/etc/profile exec bash' &&
-
-      vm_execute "
+    vm_execute "
 useradd --create-home -s /bin/bash $userAloja &&
 adduser $userAloja sudo &&
 echo -n '$userAloja:$passwordAloja' | chpasswd &&
@@ -188,24 +163,18 @@ ufw disable;
 #echo 'session required  pam_limits.so' >> /etc/pam.d/common-session;
 #chmod 644 /etc/pam.d/common-session;
 
-      test_action="$(vm_execute " [ -d $homePrefixAloja/$userAloja/.ssh ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ -d $homePrefixAloja/$userAloja/.ssh ] && echo '$testKey'")"
 
-      if [ "$test_action" == "$testKey" ] ; then
-        #set the lock
-        check_bootstraped "$bootstrap_file" "set"
-        #change the user
-        vmBootStrapped["$vm_name"]="true"
-      else
-        logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
-      fi
-
+    if [ "$test_action" == "$testKey" ] ; then
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
     else
-      vmBootStrapped["$vm_name"]="true"
-      logger "$bootstrap_file already configured"
+      logger "ERROR at $bootstrap_file for $vm_name. Test output: $test_action"
     fi
   else
-    logger "INFO: $vm_name already bootstraped"
+    logger "$bootstrap_file already configured"
   fi
+
 }
 
 #make_hosts_file_command() {
@@ -308,7 +277,6 @@ vm_final_bootstrap() {
 
 node_connect() {
 
-  vmBootStrapped["$vm_name"]="true" #try to connect as a regular user
   vm_set_details
 
   logger "Connecting to Rackspace"
@@ -320,14 +288,14 @@ node_delete() {
   vm_set_details
 
   if [ "$type" == "cluster" ] ; then
-    logger "Paralellizing node deletions"
+    #logger "Paralellizing node deletions"
     node_delete_helper &
   else
     node_delete_helper
   fi
 }
 
-#to alow parallel deletion above
+#to allow parallel deletion from previous function above
 node_delete_helper() {
   logger "Getting attached disks"
   local attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"

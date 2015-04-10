@@ -1,5 +1,7 @@
 #common functions fro aloja-import2db.sh
 
+CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
 #CREATE TABLE AND LOAD VALUES FROM CSV FILE
 # $1 TABLE NAME $2 PATH TO CSV FILE $3 DROP THE DB FIRST $4 DELIMITER $5 DB
 insert_DB(){
@@ -27,59 +29,232 @@ head -n3 "$2"
   rm $2
 }
 
-#$1 cluster
+
+#$1 id_cluster
+get_clusterConfigFile() {
+  local clusterConfigFile="$(find $CUR_DIR_TMP/../conf/ -type f -name cluster_*-$1.conf)"
+  echo "$clusterConfigFile";
+}
+
+#$1 id_cluster $2 clusterConfigFile (optional)
 get_insert_cluster_sql() {
-  local clusterConfigFile="$(find $CUR_DIR/conf/ -type f -name cluster_*-$1.conf)"
-  source "$clusterConfigFile"
 
-  local sql="
+  if [ "$2" ] ; then
+    local clusterConfigFile="$2"
+  else
+    local clusterConfigFile="$(get_clusterConfigFile)"
+  fi
+
+  if [ -f "$clusterConfigFile" ] ; then
+
+    source "$clusterConfigFile"
+
+    #load the providers specific functions and overrrides
+    providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/${defaultProvider}.sh"
+
+    source "$providerFunctionsFile"
+
+    local sql="
 INSERT into clusters set
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link=''
-   ON DUPLICATE KEY UPDATE
-      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', type='$clusterType', link='';\n"
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', cost_remote='$clusterCostDisk', cost_SSD='$clusterCostSSD', cost_IB='$clusterCostIB', type='$clusterType', link='',
+      provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription'
+ON DUPLICATE KEY UPDATE
+      name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', cost_remote='$clusterCostDisk', cost_SSD='$clusterCostSSD', cost_IB='$clusterCostIB', type='$clusterType', link='',
+      provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
-  local nodeName="$(get_master_name)"
-  sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+    local nodeName="$(get_master_name)"
+    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
 
-  for nodeName in $(get_slaves_names) ; do
-    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
-  done
+    for nodeName in $(get_slaves_names) ; do
+      sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+    done
 
-  echo -e "$sql\n"
+    echo -e "$sql\n"
+    else
+       logger "ERROR: cannot find cluster file: $clusterConfigFile"
+    fi
+}
+
+
+#$1 id_exec
+get_filter_sql_exec() {
+  if [ "$1" ] ; then
+    echo "
+#Updates filters for an id_exec
+
+#filter, execs that don't have any Hadoop details
+
+update ignore execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
+update ignore execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec = '$1' AND id_exec is not null);
+
+#perf_detail, execs without perf counters
+
+update ignore execs SET perf_details = 0 where id_exec = '$1';
+update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec = '$1' AND id_exec is not null);
+
+#valid, set everything as valid, exept the ones that do not match the following rules
+update ignore execs SET valid = 1 where id_exec = '$1' ;
+update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
+  select distinct(id_exec) from
+    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    tmp_table
+);
+update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE  e2.id_exec = '$1' and e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE e.id_exec = '$1' AND suma = 0;
+
+"
+
+#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
+#  select distinct(id_exec) from
+#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
+#    tmp_table
+#);
+  fi
+
+}
+
+#$1 folder $2 $folder_OK
+move2done() {
+
+  if [ "$1" ] && [ "$2" ] ; then
+    mkdir -p "$BASE_DIR/DONE"
+    mkdir -p $BASE_DIR/FAIL/{0..3}
+    if (( "$2" >= 3 )) ; then
+      logger "OK=$2 Moving folder $1 to DONE"
+      cp -ru "$BASE_DIR/$1" "$BASE_DIR/DONE/"
+      rm -rf "$BASE_DIR/$1"
+    else
+      logger "OK=$2 Moving $1 to FAIL/$2 for manual check"
+      cp -ru "$BASE_DIR/$1" "$BASE_DIR/FAIL/$2/"
+      rm -rf "$BASE_DIR/$1"
+    fi
+  fi
+}
+
+get_filter_sql() {
+  echo "
+#Re-updates filters for the whole DB, normally it is done after each insert
+
+#filter, execs that don't have any Hadoop details
+
+update ignore execs SET filter = 0;
+update ignore execs SET filter = 1 where bench like 'HiBench%' AND id_exec  NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
+
+#perf_detail, execs without perf counters
+
+update ignore execs SET perf_details = 0;
+update ignore execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
+
+#valid, set everything as valid, exept the ones that do not match the following rules
+update ignore execs SET valid = 1;
+update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
+  select distinct(id_exec) from
+    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    tmp_table
+);
+update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
+
+"
+
+#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
+#  select distinct(id_exec) from
+#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
+#    tmp_table
+#);
+
 }
 
 
 get_exec_params(){
-  #here get the zabbix URL to parse filtering prepares and other benchmarks
-  #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
-  exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
-  awk -v exec=$2 ' \
-  { pri_bar = (index($1,"/")+1); \
-  conf = substr($1, 0, (pri_bar-2));\
-  pri_mas = (index($5,">")-7);\
-  time_pos = (index($5,"&stime=")+7);\
-  split(exec, parts,"_"); \
-  bench = substr($5,(pri_mas+8));\
-  zt = substr($5,(time_pos),14);\
-  \
-  if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
-  print \
-  "\"" bench "\",\"" \
-  $(NF-1) "\",\"" \
-  strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
-  strftime("%F %H:%M:%S", $3, 1) "\",\""\
-  parts[4]"\",\"" \
-  parts[5]"\",\"" \
-  substr(parts[6],2)"\",\"" \
-  substr(parts[7],2)"\",\"" \
-  substr(parts[8],2)"\",\"" \
-  substr(parts[9],2)"\",\"" \
-  substr(parts[10],2)"\",\"" \
-  substr(parts[11],2)"\",\"" \
-  substr(parts[12],2) "\",\"" \
-  substr($5,7,(pri_mas-1)) "\"" \
-  } \
-  ' )"
+
+  local log_file="$1"
+  local name="$2"
+
+  # output format:
+  # "wordcount","2286","2015-03-17 20:47:41","2015-03-17 21:25:47","ETH","RL3","","4","10","1","65536","0","64","http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20150317214741&period=2286"
+  # "job","exe_time","start_time","end_time","net","disk","bench","maps","iosf","replication","iofilebuf","comp","blk_size","zabbix_link"
+
+  # different parsers for legacy-style and new-style configs
+  if [ "${name:15:6}" == "_conf_" ]; then
+    #here get the zabbix URL to parse filtering prepares and other benchmarks
+    #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
+    exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
+    awk -v exec=$2 ' \
+    { pri_bar = (index($1,"/")+1); \
+    conf = substr($1, 0, (pri_bar-2));\
+    pri_mas = (index($5,">")-7);\
+    time_pos = (index($5,"&stime=")+7);\
+    split(exec, parts,"_"); \
+    bench = substr($5,(pri_mas+8));\
+    zt = substr($5,(time_pos),14);\
+    \
+    if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
+    print \
+    "\"" bench "\",\"" \
+    $(NF-1) "\",\"" \
+    strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
+    strftime("%F %H:%M:%S", $3, 1) "\",\""\
+    parts[4]"\",\"" \
+    parts[5]"\",\"" \
+    substr(parts[6],2)"\",\"" \
+    substr(parts[7],2)"\",\"" \
+    substr(parts[8],2)"\",\"" \
+    substr(parts[9],2)"\",\"" \
+    substr(parts[10],2)"\",\"" \
+    substr(parts[11],2)"\",\"" \
+    substr(parts[12],2) "\",\"" \
+    substr($5,7,(pri_mas-1)) "\"" \
+    } \
+    ' )"
+  else
+
+    local job=""
+    local exe_time=""
+    local start_time=""
+    local end_time=""
+    local net=$(extract_config_var "NET")
+    local disk=$(extract_config_var "DISK")
+    local bench=$(extract_config_var "BENCH")
+    local maps=$(extract_config_var "MAX_MAPS")
+    local iosf=$(extract_config_var "IO_FACTOR")
+    local replication=$(extract_config_var "REPLICATION")
+    local iofilebuf=$(extract_config_var "IO_FILE")
+    local comp=$(extract_config_var "COMPRESS_TYPE")
+    local blk_size=$(extract_config_var "BLOCK_SIZE")
+    blk_size=$((blk_size / 1048576 ))
+    local zabbix_link=""
+
+    # load arrays
+    local temp_array
+    temp_array=$(extract_config_var "EXEC_TIME")
+    temp_array="exec_time=$temp_array"
+    declare -A exec_time
+    eval $temp_array
+    temp_array=$(extract_config_var "EXEC_START")
+    temp_array="exec_start=$temp_array"
+    declare -A exec_start
+    eval $temp_array
+    temp_array=$(extract_config_var "EXEC_END")
+    temp_array="exec_end=$temp_array"
+    declare -A exec_end
+    eval $temp_array
+
+    for index in "${!exec_time[@]}"; do
+      # Add a new line if there is something before
+      if [ "$exec_params" != "" ]; then
+        exec_params="${exec_params}"$'\n'
+      fi
+
+      job="$index"
+      exe_time="${exec_time[$index]}"
+      start_time="${exec_start[$index]}"
+      start_time=$(date -d @$((start_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      end_time="${exec_end[$index]}"
+      end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\""
+    done
+
+  fi
 
 #echo -e "$1\n$exec_params"
 
@@ -88,20 +263,26 @@ get_exec_params(){
 
 }
 
+extract_config_var() {
+  local value=$(cat config.sh | grep -E "^$1=" | cut -d= -f2-)
+  echo "$value"
+}
+
 get_id_exec(){
 
-    if [ "$REDO_ALL" ] ; then
-      local filter=""
-    else
-      local filter="AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'"
-    fi
+  if [ "$REDO_ALL" ] ; then
+    local filter=""
+  else
+    local filter="AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'"
+  fi
 
-    local query="SELECT id_exec FROM execs WHERE exec = '$1' $filter LIMIT 1;"
+  local query="SELECT id_exec FROM execs WHERE exec = '$1' $filter LIMIT 1;"
 
-    #logger "GET ID EXEC query: $query"
+  #logger "GET ID EXEC query: $query"
 
-    id_exec=$($MYSQL "$query"| tail -n 1)
+  echo "$($MYSQL "$query"| tail -n 1)"
 }
+
 
 get_id_exec_conf_params(){
     id_exec_conf_params=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
@@ -329,4 +510,23 @@ import_bwm_files() {
       logger "File $bwm_file is INVALID"
     fi
   done
+}
+
+#$1 folder
+delete_untars() {
+  logger "INFO: Deleting untared folders to save space"
+  if [ -d "$1" ] ; then
+    #echo "Entering $folder"
+    cd $1
+    for tarball in *.tar.bz2 ; do
+      folder_name="${tarball:0:(-8)}"
+      #echo "Found $tarball Folder $folder_name"
+      if [ -d "$folder_name" ] ; then
+        logger "Deleting $folder_name"
+        rm -rf $folder_name
+      fi
+    done
+    cd ..
+  fi
+
 }
