@@ -1,4 +1,6 @@
 #!/bin/bash
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$CONF_DIR/common/common.sh"
 
 if [ "$#" -ne 1 ]; then
 	echo "Usage: run_rshdi.sh clustername"
@@ -57,11 +59,15 @@ restart_monit(){
   logger "Restart Monit"
 
   stop_monit
- $DSH "rm $1/vmstat.log $1/bwm.log $1/sar-output.sar"
+ $DSH "rm $1/vmstat*.log $1/bwm*.log $1/sar-output-*.sar"
+ 
+ vmstatcommand="vmstat -n 1 >> $1/vmstat-"'$(hostname)'".log &"
+ bwmngcommand="bwm-ng -o csv -I eth1 -u bytes -t 1000 >> $1/bwm-"'$(hostname)'".log &"
+ sarcommand="sar -o $1/sar-output-"'$(hostname)'".sar 1 > /dev/null 2>&1 &"
 
-  $DSH "vmstat -n 1 >> $1/vmstat-`hostname`.log &" 2>&1
-  $DSH "bwm-ng -o csv -I eth1 -u bytes -t 1000 >> $1/bwm-`hostname`.log &" 2>&1
-  $DSH "sar -o $1/sar-output-`hostname`.sar 1 > /dev/null 2>&1 &" 2>&1
+ $DSH "$vmstatcommand" 2>&1
+ $DSH "$bwmngcommand" 2>&1
+ $DSH "$sarcommand" 2>&1
 
   logger "Monit ready"
 }
@@ -85,19 +91,27 @@ collect_logs(){
 #installIfNotInstalled "bwm-ng"
 #installDsh
 
-exec_dir="2014_$clusterName-terasort-`date %s`"
+exec_dir="2014_$clusterName-teragen-`date +%s`"
 if [ ! -d $HDD/logs/$exec_dir ]; then
 	mkdir $HDD/logs/$exec_dir
 fi
 
-restart_monit "${HDD}/logs/${exec_dir}"
 logger "Starting run of teragen"
+restart_monit "${HDD}/logs/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-input
-hadoop jar $JAR_LOCATION teragen 1000 100GB-terasort-input | tee -a "${HDD}/logs/${exec_dir}"
+hadoop jar $JAR_LOCATION teragen 1000 100GB-terasort-input | tee -a "${HDD}/logs/${exec_dir}/output.log"
+stop_monit
+collect_logs "${HDD}/logs/${exec_dir}"
+
+exec_dir="2014_$clusterName-terasort-`date +%s`"
+if [ ! -d $HDD/logs/$exec_dir ]; then
+	mkdir $HDD/logs/$exec_dir
+fi
+
 logger "Starting run of terasort"
+restart_monit "${HDD}/logs/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-output
-hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output | tee -a "${HDD}/logs/${exec_dir}"
+hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output | tee -a "${HDD}/logs/${exec_dir}/output.log"
 logger "Terasort ended"
 stop_monit
-
 collect_logs "${HDD}/logs/${exec_dir}"
