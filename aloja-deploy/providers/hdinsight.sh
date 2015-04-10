@@ -45,13 +45,13 @@ hdi_cluster_check_delete() {
 
 #$1 cluster name
 create_hdi_cluster() {
- vm_create_storage_account "$storageAccount" "GRS"
- vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
+# vm_create_storage_account "$storageAccount" "GRS"
+# vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
- azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
-	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
-	--sshPassword "$passwordAloja" -s "$subscriptionID"
+# azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
+#	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
+#	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+#	--sshPassword "$passwordAloja" -s "$subscriptionID"
 }
 
 #$1 vm_name
@@ -94,12 +94,12 @@ vm_final_bootstrap() {
  vm_set_ssh
  vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo headnode0 >> machines"
  vm_execute "sudo DEBIAN_FRONTEND=noninteractive apt-get install dsh pssh git -y -qqq"
- vm_provision 
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
  vm_execute "mkdir -p share; dsh -f slaves -Mc -- 'mkdir -p share'"
  vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@$(hostname -i):/home/pristine/share' '/home/pristine/share'\""
  vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
+ vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
 }
 
 #$1 cluster name
@@ -107,4 +107,12 @@ node_delete() {
 	vm_name="`echo $1 | cut -d- -f1`"
 	hdi_cluster_check_delete $vm_name
 	azure hdinsight cluster delete "$vm_name" "South Central US" "$vmType"
+}
+
+get_master_name() {
+	echo "headnode0"	
+}
+
+get_node_names() {
+	cat slaves	
 }
