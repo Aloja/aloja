@@ -28,7 +28,8 @@ class MLCrossvarController extends AbstractController
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 
-			if (count($_GET) <= 1 || (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
 				$where_configs = '';
 				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
@@ -41,70 +42,55 @@ class MLCrossvarController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+		
+			// Get stuff from the DB
+			$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2
+				FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster
+				WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
+				ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+		    	$rows = $db->get_rows ( $query );
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
-			$cache_ds = getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cross.csv';
-			$is_cached = file_exists($cache_ds);
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
 
-			if (!$is_cached)
+			$map_var1 = $map_var2 = array();
+			$count_var1 = $count_var2 = 0;
+			$categories1 = $categories2 = '';
+
+			foreach ($rows as $row)
 			{
-				// dump the result to csv
-			    	$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2 FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
-			    	$rows = $db->get_rows ( $query );
+				$entry = array();
 
-				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
-
-				$fp = fopen($cache_ds, 'w');
-			    	foreach($rows as $row) fputcsv($fp, array_values($row),',','"');
-
-/*				// launch query
-				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$model.' -p sigma=3:hdistance=3:saveall='.md5($model_info.'-'.$model).' > /dev/null &';
-				exec($command);
-*/
-				// update cache record (for human reading)
-				$register = md5($model_info.$cross_var1.$cross_var2).' : '.$model_info.'-'.$cross_var1."-".$cross_var2."\n";
-				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
-			}
-
-			// read results of the CSV
-			if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.$cross_var1.$cross_var2).'-cross.csv', 'r')) !== FALSE)
-			{
-				$map_var1 = $map_var2 = array();
-				$count_var1 = $count_var2 = 0;
-				$categories1 = $categories2 = '';
-				$count = 0;
-				while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+				if ($var1_categorical)
 				{
-					if (in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type")))
+					if (!array_key_exists($row['V1'],$map_var1))
 					{
-						if (!array_key_exists($data[0],$map_var1))
-						{
-							$map_var1[$data[0]] = $count_var1++;
-							$categories1 = $categories1.(($categories1!='')?",":"")."\"".$data[0]."\"";
-						}
-						$jsonData[$count]['y'] = $map_var1[$data[0]]*(rand(990,1010)/1000);
+						$map_var1[$row['V1']] = $count_var1++;
+						$categories1 = $categories1.(($categories1!='')?",":"")."\"".$row['V1']."\"";
 					}
-					else $jsonData[$count]['y'] = (int)$data[0]*(rand(990,1010)/1000);
-
-					if (in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type")))
-					{
-						if (!array_key_exists($data[1],$map_var2))
-						{
-							$map_var2[$data[1]] = $count_var2++;
-							$categories2 = $categories2.(($categories2!='')?",":"")."\"".$data[1]."\"";
-						}
-						$jsonData[$count]['x'] = $map_var2[$data[1]]*(rand(990,1010)/1000);
-					}
-					else $jsonData[$count]['x'] = (int)$data[1]*(rand(990,1010)/1000);
-
-					$jsonData[$count++]['name'] = $data[0]." - ".$data[1];
+					$entry['y'] = $map_var1[$row['V1']]*(rand(990,1010)/1000);
 				}
-				fclose($handle);
+				else $entry['y'] = (int)$row['V1']*(rand(990,1010)/1000);
 
-				$jsonData = json_encode($jsonData);
-				if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
-				if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
+				if ($var2_categorical)
+				{
+					if (!array_key_exists($row['V2'],$map_var2))
+					{
+						$map_var2[$row['V2']] = $count_var2++;
+						$categories2 = $categories2.(($categories2!='')?",":"")."\"".$row['V2']."\"";
+					}
+					$entry['x'] = $map_var2[$row['V2']]*(rand(990,1010)/1000);
+				}
+				else $entry['x'] = (int)$row['V2']*(rand(990,1010)/1000);
+
+				$entry['name'] = $row['V1']." - ".$row['V2'];
+				$jsonData[] = $entry;
 			}
+
+			$jsonData = json_encode($jsonData);
+			if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
+			if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
 		}
 		catch(\Exception $e)
 		{
