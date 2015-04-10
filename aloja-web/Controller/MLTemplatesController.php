@@ -123,9 +123,10 @@ class MLTemplatesController extends AbstractController
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
 								$specific_instance = implode(",",array_slice($data, 2, 19));
-								$specific_data = implode("','",$data);
+								$specific_data = implode(",",$data);
 								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
+								$specific_data = str_replace(",","','",$specific_data);
 
 								$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
 								$result = $dbml->query($query_var);

@@ -99,4 +99,57 @@ CREATE TABLE `resolutions` (
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
+DROP TABLE IF EXISTS `minconfigs`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `minconfigs` (
+  `id_minconfigs` varchar(255) NOT NULL,
+  `id_learner` varchar(255) NOT NULL,
+  `instance` varchar(255) NOT NULL,
+  `model` varchar(1024) NOT NULL,
+  `is_new` int(1) NOT NULL DEFAULT 0,
+  `creation_time` datetime NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (`id_minconfigs`),
+  KEY `idx_instance` (`instance`),
+  KEY `idx_model` (`model`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+
+
+DROP TABLE IF EXISTS `minconfigs_props`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `minconfigs_props` (
+  `sid_minconfigs_props` int(11) NOT NULL AUTO_INCREMENT,
+  `id_minconfigs` varchar(255) NOT NULL,
+  `cluster` int(11) NOT NULL,
+  `MAE` decimal(20,3) DEFAULT NULL,
+  `RAE` decimal(20,3) DEFAULT NULL,
+  `creation_time` datetime NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (`sid_minconfigs_props`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+
+
+DROP TABLE IF EXISTS `minconfigs_centers`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `minconfigs_centers` (
+  `sid_minconfigs_centers` int(11) NOT NULL AUTO_INCREMENT,
+  `id_minconfigs` varchar(255) NOT NULL,
+  `cluster` int(11) NOT NULL,
+  `id_exec` int(11) NOT NULL,
+  `exe_time` decimal(20,3) DEFAULT '0',
+  `bench` varchar(255) DEFAULT NULL,
+  `net` varchar(255) DEFAULT NULL,
+  `disk` varchar(255) DEFAULT NULL,
+  `maps` int(11) DEFAULT NULL,
+  `iosf` int(11) DEFAULT NULL,
+  `replication` int(11) DEFAULT NULL,
+  `iofilebuf` int(11) DEFAULT NULL,
+  `comp` int(11) DEFAULT NULL,
+  `blk_size` int(11) DEFAULT NULL,
+  `id_cluster` int(11) DEFAULT NULL,
+  `support` varchar(4096) DEFAULT NULL,
+  `creation_time` datetime NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (`sid_minconfigs_centers`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
