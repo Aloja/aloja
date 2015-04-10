@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 1 ]; then
 	echo "Usage: run_rshdi.sh clustername"
 	exit	
 fi
