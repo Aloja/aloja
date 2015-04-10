@@ -1,0 +1,27 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %}
+    {{ parent() }}
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="outputMsg" style="text-align:justify; float: left; width: 100%;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify">[WiP] Do you REALLY want to clear the cache?</p>
+		<form name="clearButton" method="GET" role="form">
+			<center><input type="submit" name="ccache" value="Clear"></input></center>
+		</form>
+	</div>
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript">
+	$(document).ready(function() {
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+		$('outputMsg').innerHTML = "<p><ul>{{output}}</ul></p>";
+	});
+    </script>
+{% endblock %}

@@ -36,7 +36,7 @@ for module in "puppetlabs-apt" "puppetlabs-mysql" "puppetlabs-vcsrepo" "maxchk-v
   (puppet module list | grep "$module") || puppet module install "$module"
 done
 
-##MySQL prep to move data to attached disk
+#MySQL prep to move data to attached disk
 #if [ ! -d "/scratch/attached/1/mysql" ]; then
 #	sudo cp usr.sbin.mysqld /etc/apparmor.d/usr.sbin.mysqld
 #	sudo service apparmor restart
@@ -48,12 +48,12 @@ done
 
 puppet apply --modulepath=/etc/puppet/modules manifests/init.pp --environment=prod
 
-#mysqlshow -uroot aloja2
-#retcode=$?
-#if [ "$retcode" -ne "0" ]; then
-#	mysql -uroot -e "create database aloja2;"
-#fi
-#mysql -uroot aloja2 < db_schema.sql
+mysqlshow -uroot aloja2
+retcode=$?
+if [ "$retcode" -ne "0" ]; then
+	mysql -uroot -e "create database aloja2;"
+fi
+mysql -uroot aloja2 < db_schema.sql
 
 add_execs() {
 	tar -xvf execs.sql.tar.gz

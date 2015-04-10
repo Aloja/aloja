@@ -6,11 +6,20 @@ BASE_DIR=$(pwd)
 source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
-INSERT_DB="1" #if to dump CSV into the DB
-REDO_ALL="" #if to redo folders that have source files and IDs in DB
-REDO_UNTARS="" #if to redo the untars for folders that have it
-PARALLEL_INSERTS="1" #if to fork subprocecess when inserting data
-MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
+[ -z "$INSERT_DB" ]         && INSERT_DB="1" #if to dump CSV into the DB
+[ -z "$REDO_ALL" ]          && REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+[ -z "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
+[ -z "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+[ -z "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
+#in case we only want to insert the data for the execs table (much faster)
+if [ "$1" ] ; then
+ ONLY_META_DATA="1"
+ REDO_ALL=""
+ REDO_UNTARS=""
+ MOVE_TO_DONE=""
+fi
 
 #TODO check if these variables are still needed
 first_host=""
@@ -36,7 +45,7 @@ for folder in 201* ; do
 	if [[ $folder == *"_alojahdi"* ]]; then
 		#HDINSIGHT log
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
-		importHDIJobs
+		importHDIJobs "$ONLY_META_DATA" 
 	else
 	
 	  folder_OK="0"
@@ -56,20 +65,29 @@ for folder in 201* ; do
 	    if [[ -z $exec_params ]] ; then
 	      logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
 	      cd ..
+
+	      #move folder to failed dir
+	      if [ "$MOVE_TO_DONE" ] ; then
+          delete_untars "$BASE_DIR/$folder"
+          move2done "$folder" "$folder_OK"
+	      fi
+
 	      continue
 	    else
 	      logger "Exec params:\n$exec_params"
 	    fi
 	
+
 	    ##First untar prep folders (needed to fill conf parameters table, excluding prep jobs)
 	    logger "Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
-	    for bzip_file in prep_*.tar.bz2 ; do
-	      bench_folder="${bzip_file%%.*}"
-	      if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
-	        logger "Untaring $bzip_file"
-	        tar -xjf "$bzip_file"
-	      fi
-	    done
+      for bzip_file in prep_*.tar.bz2 ; do
+        bench_folder="${bzip_file%%.*}"
+        if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
+          logger "Untaring $bzip_file"
+          tar -xjf "$bzip_file"
+        fi
+      done
+
 		
 	    for bzip_file in *.tar.bz2 ; do
 	
@@ -100,12 +118,14 @@ for folder in 201* ; do
 
 	          id_cluster="${folder:(-2):2}"
 
-	          clusterConfigFile="$(get_clusterConfigFile)"
+	          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+
+            echo "ID cluster $id_cluster CFF $clusterConfigFile"
 
             #TODO this check wont work for old folders with numeric values at the end, need another strategy
             #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
             if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
-	            $MYSQL "$(get_insert_cluster_sql "$id_cluster")"
+	            $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
 	          else
 	            id_cluster="1"
 	          fi
@@ -145,12 +165,11 @@ for folder in 201* ; do
 	        #get Job XML configuration if needed
 	        #get_job_confs
 	
-			    id_exec=""
-	        get_id_exec "$exec"
+			    id_exec="$(get_id_exec "$exec")"
 	
-	        logger "EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
-				
-	        if [[ ! -z "$id_exec" ]] ; then
+	        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
+
+	        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 	
 	          #if dir does not exists or need to insert in DB
 	          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
@@ -171,7 +190,10 @@ for folder in 201* ; do
 	          fi
 	        fi
 	        cd ..; logger "Leaving folder $bench_folder\n"
-	
+
+	        #update DB filters
+          $MYSQL "$(get_filter_sql_exec "$id_exec")"
+
 	      else
 	        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
 	      fi
@@ -179,13 +201,8 @@ for folder in 201* ; do
 	    cd ..; logger "Leaving folder $folder\n"
 	
 	    if [ "$MOVE_TO_DONE" ] ; then
-	      if (( "$folder_OK" >= 3 )) ; then
-	        logger "OK=$folder_OK Moving folder $folder to DONE"
-	        mkdir -p "$BASE_DIR/DONE"
-	        mv "$BASE_DIR/$folder" "$BASE_DIR/DONE/"
-	      else
-	        logger "OK=$folder_OK Leaving folder $folder out to revise"
-	      fi
+        delete_untars "$BASE_DIR/$folder"
+        move2done "$folder" "$folder_OK"
 	    fi
 	
 	  else

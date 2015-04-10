@@ -28,7 +28,6 @@ class RestController extends AbstractController
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
         	'datanodes' => 'Datanodes',
-            'files' => 'Files',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
@@ -38,7 +37,101 @@ class RestController extends AbstractController
 
         try {
             $dbUtils = $this->container->getDBUtils();
-            $exec_rows = $dbUtils->get_execs();
+            $configurations = array();
+            $where_configs = '';
+            $concat_config = "";
+            
+//             $datefrom = Utils::read_params('datefrom',$where_configs,$configurations,$concat_config);;
+//             $dateto	= Utils::read_params('dateto',$where_configs,$configurations,$concat_config);
+//             $benchs         = Utils::read_params('benchs',$where_configs,$configurations,$concat_config);
+//             $nets           = Utils::read_params('nets',$where_configs,$configurations,$concat_config);
+//             $disks          = Utils::read_params('disks',$where_configs,$configurations,$concat_config);
+//             $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,$configurations,$concat_config);
+//             $comps          = Utils::read_params('comps',$where_configs,$configurations,$concat_config);
+//             $id_clusters    = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config);
+//             $mapss          = Utils::read_params('mapss',$where_configs,$configurations,$concat_config);
+//             $replications   = Utils::read_params('replications',$where_configs,$configurations,$concat_config);
+//             $iosfs          = Utils::read_params('iosfs',$where_configs,$configurations,$concat_config);
+//             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,$configurations,$concat_config);
+//             $money 			= Utils::read_params('money',$where_configs,$configurations,$concat_config);
+//             $datanodes = Utils::read_params ( 'datanodess', $where_configs, $configurations, $concat_config, false );
+//             $benchtype = Utils::read_params ( 'bench_types', $where_configs, $configurations, $concat_config );
+//             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, $configurations, $concat_config, false );
+//             $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, $configurations, $concat_config, false );
+//             $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, $configurations, $concat_config, false );
+//             $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, $configurations, $concat_config, false );
+//             $types = Utils::read_params ( 'types', $where_configs, $configurations, $concat_config, false );
+            $valid = Utils::read_params ( 'valids', $where_configs, $configurations, $concat_config );
+            $filter = Utils::read_params ( 'filters', $where_configs, $configurations, $concat_config );
+//             $outliers = Utils::read_params ( 'outliers', $where_configs, $configurations, $concat_config, false );
+//             $warnings = Utils::read_params ( 'warnings', $where_configs, $configurations, $concat_config, false );
+            
+            $type = Utils::get_GET_string('type');
+            if(!$type)
+            	$type = 'SUMMARY';
+            
+            if($type == 'SUMMARY') {
+            	$show_in_result = array(
+            			'id_exec' => 'ID',
+            			'bench' => 'Benchmark',
+            			'exe_time' => 'Exe Time',
+            			'exec' => 'Exec Conf',
+            			'cost' => 'Running Cost $',
+            			'id_cluster' => 'Cluster',
+            			'datanodes' => 'Datanodes',
+            			'prv' => 'PARAVER',
+            			//'version' => 'Hadoop v.',
+            			'init_time' => 'End time',
+            			'hadoop_version' => 'H Version',
+            			'bench_type' => 'Bench',
+            	);
+            } else if($type == 'HWCONFIG') {
+            	$show_in_result = array(
+            			'id_exec' => 'ID',
+            			'bench' => 'Benchmark',
+            			'exe_time' => 'Exe Time',
+            			'exec' => 'Exec Conf',
+            			'cost' => 'Running Cost $',
+            			'net' => 'Net',
+            			'disk' => 'Disk',
+            			'id_cluster' => 'Cluster',
+            			'datanodes' => 'Datanodes',
+            			'prv' => 'PARAVER',
+            			//'version' => 'Hadoop v.',
+            			'init_time' => 'End time',
+            			'hadoop_version' => 'H Version',
+            			'bench_type' => 'Bench',
+            	);
+            } else if($type == 'SWCONFIG') {
+            	$show_in_result = array(
+					'id_exec' => 'ID',
+					'bench' => 'Benchmark',
+					'exe_time' => 'Exe Time',
+					'exec' => 'Exec Conf',
+					'cost' => 'Running Cost $',
+					'net' => 'Net',
+					'disk' => 'Disk',
+					'maps' => 'Maps',
+					'iosf' => 'IO SFac',
+					'replication' => 'Rep',
+					'iofilebuf' => 'IO FBuf',
+					'comp' => 'Comp',
+					'blk_size' => 'Blk size',
+					'id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes',
+					'prv' => 'PARAVER',
+					//'version' => 'Hadoop v.',
+					'init_time' => 'End time',
+					'hadoop_version' => 'H Version',
+					'bench_type' => 'Bench',
+				);
+            }
+            
+             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
+       	 		join clusters c USING (id_cluster)
+      		 	 WHERE 1 $where_configs ".DBUtils::getFilterExecs().";";
+
+             $exec_rows = $dbUtils->get_rows($query);
 
             if (count($exec_rows) > 0) {
                 $jsonData = Utils::generateJSONTable($exec_rows, $show_in_result);
@@ -450,6 +543,7 @@ VALUES
         
         try {
             $type = Utils::get_GET_string('type');
+            $filter_execs = DBUtils::getFilterExecs();
             if(!$type || $type == 'CPU') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                 'AVG(s.`%user`), MAX(s.`%user`), MIN(s.`%user`), STDDEV_POP(s.`%user`), VAR_POP(s.`%user`), 
@@ -459,7 +553,7 @@ VALUES
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
                  AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time,
                  c.name cluster_name '.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
+                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)';
         
             } else if($type == 'DISK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
@@ -472,7 +566,7 @@ VALUES
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
                     AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time,
                     c.name cluster_name '.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
+                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)';
             } else if($type == 'MEMORY') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     'AVG(su.kbmemfree), MAX(su.kbmemfree), MIN(su.kbmemfree), STDDEV_POP(su.kbmemfree), VAR_POP(su.kbmemfree),  
@@ -486,7 +580,7 @@ VALUES
                      AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time,
                      c.name cluster_name '.
                     ' FROM SAR_memory_util su '.
-                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
+                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)';
             } else if($type == 'NETWORK') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
                     's.IFACE,AVG(s.`rxpck/s`),MAX(s.`rxpck/s`),MIN(s.`rxpck/s`),STDDEV_POP(s.`rxpck/s`),VAR_POP(s.`rxpck/s`),SUM(s.`rxpck/s`),
@@ -499,7 +593,7 @@ VALUES
                     'e.id_cluster,e.end_time,
                     c.name cluster_name
                     FROM SAR_net_devices s
-                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 GROUP BY (e.id_exec)';
+                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)';
             }
         
             $exec_rows = $dbUtil->get_rows($query);
@@ -845,8 +939,8 @@ VALUES
     		$order_conf = 'LENGTH(conf), conf';
     		 
     		//get best config
-    		$query = "SELECT e.* from execs e WHERE e.id_exec IN ".
-    				"(SELECT MIN(e2.exe_time) FROM execs e2 WHERE 1 $filter_execs $where_configs LIMIT 1);";
+    		$query = "SELECT e2.* from execs e2 WHERE e.id_exec IN ".
+    				"(SELECT MIN(e2.exe_time) FROM execs e WHERE 1 $filter_execs $where_configs LIMIT 1);";
     		 
     		$rows = $db->get_rows($query);
     		if(!$rows)

@@ -1,6 +1,12 @@
 #common bash variables and functions across ALOJA
 #must be sourced
 
+# Check bash version >= 4
+if ((BASH_VERSINFO[0] < 4)) ; then
+  echo -e "ERROR: bash 4 or newer is required"
+  exit 1
+fi
+
 #common variables
 startTime="$(date +%s)"
 
@@ -30,6 +36,20 @@ logger() {
 nl2char() {
   tmp="$(echo -e "$1"|tr "\n" "$2")"
   echo "${tmp::-1}" #remove trailing $2
+}
+
+#$1 list $2 element
+inList() {
+  local found="1" #error code in shell
+
+  for element in $1 ; do
+    if [ "$2" == "$element" ] ; then
+      local found="0" #success
+      break
+    fi
+  done
+
+  return "$found"
 }
 
 #$1 startTime

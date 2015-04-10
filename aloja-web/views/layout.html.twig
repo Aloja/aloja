@@ -4,6 +4,7 @@
 	{% block meta %}
 	<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="shortcut icon" href="img/favicon.ico" type="image/vnd.microsoft.icon" />
 	{% endblock %}
 	<title>{{ title|default('ALOJA, BSC\'s Hadoop Benchmark Repository and Online Performance Analysis Tools') }}</title>
 	{% block stylesheet %}
@@ -25,6 +26,7 @@
 		  }
 		}
 	</style>
+	<link rel="stylesheet" type="text/css" href="css/bootstrap-datepicker3.min.css" />
 	{% endblock %}
 	<script>
         (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -111,7 +113,7 @@
 			   <li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Benchmark Executions</a></li>
+		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions') }}">Browse Executions</a></li>
 		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
 		             <li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
 		          </ul>
@@ -131,10 +133,17 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation</a>
+			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a>
+			        </li>
+			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}>
+			          <a class="navlink" href="{{ path('bestcostperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of clusters</a>
+			        </li>
+			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
+		            <li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}>
+			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of HW configs</a>
 			        </li>
 		          </ul>
-		        </li>		        
+		        </li>
 
 
 				<li class="dropdown">
@@ -142,9 +151,25 @@
 		          <ul class="dropdown-menu" role="menu">
 		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
 		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
+
                     <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
                     {% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
+
 		          </ul>
+
+			<li class="dropdown">
+		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
+		          <ul class="dropdown-menu" role="menu">
+		            <li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">Modeling Data</a></li>
+		            <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">Collapse Data</a></li>
+		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">Predict Configurations</a></li>
+ 		            <li {% if selected is defined and selected == 'mlparameval' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">Parameter Evaluation (ML)</a></li>
+		            <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
+		            <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
+		            <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
+		            <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
+		            <li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>
+                          </ul>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
@@ -205,10 +230,90 @@
 	<!-- Placed at the end of the document so the pages load faster -->
 	<script type="text/javascript" src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
 	<script type="text/javascript" src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="js/bootstrap-datepicker.min.js"></script>
 	<script type="text/javascript" src="js/URI.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 		  $(document).ready(function() {
+			$(".filtersTab").on('shown.bs.collapse hidden.bs.collapse', function() {
+				var element = $(this).parent().find(".indicator").first();
+				if(element.hasClass("glyphicon-chevron-down"))
+					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+				else if(element.hasClass("glyphicon-chevron-up"))
+					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+            });
+
+			$(".datepicker").each(function() {
+				$(this).datepicker({
+					autoclose: true,
+					format: 'yyyy/mm/dd'
+				});
+			});
+
+			$("form[name='configFilters'] input").change(function() {
+				if($(this).attr('name') != 'filters[]') {
+					if($(this).val() == "None") {
+						if($(this).attr('checked')) {
+							$(this).parent().find('input').each(function() {
+								if($(this).val() != "None")
+									$(this).removeAttr('checked');
+							});
+						} else if($(this).parent().find('input:checked').length == 0)
+							$(this).attr('checked');
+						else {
+							$(this).parent().find('input').each(function() {
+								if($(this).val() != "None")
+									$(this).removeAttr('checked');
+							});
+						}
+					}
+
+					if($(this).parent().parent().attr('id') == "advancedFilters") {
+						var length = $(this).parent().find('input:checked').length;
+						if(length > 1) {
+							$(this).parent().find("input[value='None']").removeAttr('checked');
+						}
+					}
+				}
+			});
+
+			$("input[name='filters[]']").change(function() {
+				var ids = $("input[name='filters[]']:checked");
+				if(ids.length == 0) {
+				   $("#allunchecked").val("allunchecked");
+				}
+				else
+				   $("#allunchecked").val("");
+			});
+
+			$("select[name='presets']").change(function() { 
+			    var url = $(this).find("option:selected").first().attr('url');
+			    if(url!= "") {
+				var filters = url.split("?")[1];
+				filters = filters.split("&");
+				$("form[name='configFilters']").trigger('reset');
+				for(i = 0; i<filters.length; ++i) {
+					var split = filters[i].split("=");
+					var filterName = split[0]
+					var filterValue = split[1];
+					if(filterValue != "" && filterValue != null) {
+						if(filterName[filterName.length-1]==']')
+							$("input[name='"+filterName+"'][value='"+filterValue+"']").prop('checked',true);
+						else
+							$("input[name='"+filterName+"']").val(filterValue);
+						$("select[name='"+filterName+"']").val(filterValue);
+					}
+				}
+			    }
+			});
+
+			$("span.selectAll").click(function() { 
+				$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
+			});
+
+			$("span.deselectAll").click(function() { 
+				$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
+			});
 
             function getCookie(cname) {
            		var name = cname + "=";
@@ -228,7 +333,6 @@
         		});
         	}
 
-
         	$(".tooltip2").each(function() {
 				$(this).tooltip();
             });
@@ -236,6 +340,18 @@
         	if($('.dropdown li.active').length > 0) {
         		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
         	}
+
+        	$(".addgroup").click(function() {
+            	if($(this).hasClass("active"))
+                	$(this).removeClass("active");
+            	else
+					$(this).addClass("active");
+
+				var selected = new Array();
+				$(".addgroup.active").each(function() { selected[selected.length] = $(this).attr('value'); });
+
+				$("input[name='selected-groups']").attr('value',selected.join());
+		   });
 		  });
 	</script>
 	{% endblock %}
