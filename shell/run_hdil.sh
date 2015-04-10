@@ -1,12 +1,11 @@
 #!/bin/bash
 
 if [ "$#" -ne 2 ]; then
-	echo "Usage: run_rshdi.sh clustername numberOfNodes"
+	echo "Usage: run_rshdi.sh clustername"
 	exit	
 fi
 
 clusterName=$1
-numberOfNodes=$2
 
 HDD="/home/pristine/share"
 DSH="dsh -f machines -cM"
@@ -86,7 +85,7 @@ collect_logs(){
 #installIfNotInstalled "bwm-ng"
 #installDsh
 
-exec_dir="2014_alojahdil$numberOfNodes-terasort-`date %s`"
+exec_dir="2014_$clusterName-terasort-`date %s`"
 if [ ! -d $HDD/logs/$exec_dir ]; then
 	mkdir $HDD/logs/$exec_dir
 fi
