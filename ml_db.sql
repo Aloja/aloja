@@ -153,3 +153,18 @@ CREATE TABLE `minconfigs_centers` (
   PRIMARY KEY (`sid_minconfigs_centers`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
+
+DROP TABLE IF EXISTS `summaries`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `summaries` (
+  `id_summaries` varchar(255) NOT NULL,
+  `instance` varchar(255) NOT NULL,
+  `model` varchar(1024) NOT NULL,
+  `summary` varchar(65536) NOT NULL,
+  `creation_time` datetime NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (`id_summaries`),
+  KEY `idx_instance` (`instance`),
+  KEY `idx_model` (`model`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+
