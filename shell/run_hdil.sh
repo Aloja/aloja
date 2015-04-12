@@ -84,7 +84,9 @@ stop_monit(){
 
 collect_logs(){
 	logger "Retrieving haddop logs"
-	sudo su hdfs -c "hdfs dfs -copyToLocal /mr-history $1"
+	hdfs dfs -copyToLocal /mr-history $1
+	hdfs dfs -rm -r /mr-history
+	hdfs dfs -expunge
 }
 
 #installIfNotInstalled "sysstat"
@@ -99,7 +101,7 @@ fi
 logger "Starting run of teragen"
 restart_monit "${HDD}/logs/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-input
-hadoop jar $JAR_LOCATION teragen 1000 100GB-terasort-input | tee -a "${HDD}/logs/${exec_dir}/output.log"
+(hadoop jar $JAR_LOCATION teragen 1000 100GB-terasort-input) 2>&1 | tee -a "${HDD}/logs/${exec_dir}/output.log"
 stop_monit
 collect_logs "${HDD}/logs/${exec_dir}"
 
@@ -111,7 +113,7 @@ fi
 logger "Starting run of terasort"
 restart_monit "${HDD}/logs/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-output
-hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output | tee -a "${HDD}/logs/${exec_dir}/output.log"
+(hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output) 2>&1 | tee -a "${HDD}/logs/${exec_dir}/output.log"
 logger "Terasort ended"
 stop_monit
 collect_logs "${HDD}/logs/${exec_dir}"
