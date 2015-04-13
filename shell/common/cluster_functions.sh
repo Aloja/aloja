@@ -29,7 +29,7 @@ vm_check_create() {
 #requires $vm_name and $type to be set
 vm_create_node() {
 	if [ "$defaultProvider" = "hdinsight" ]; then
-		vm_name="`echo $clusterName | cut -d- -f1`"
+		vm_name="$clusterName"
 		#hdi_cluster_check_create "$vm_name"
 		create_hdi_cluster "$vm_name"
 		vm_provision
@@ -89,14 +89,12 @@ vm_provision() {
   vm_set_ssh
   vm_install_base_packages
 
-  [ "$defaultProvider" != "hdinsight" ] && {
-    if [ -z "$noSudo" ] ; then
-      vm_initialize_disks #cluster is in parallel later
-      vm_mount_disks
-    else
-      logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
-    fi
-  }
+  if [ -z "$noSudo" ] ; then
+    vm_initialize_disks #cluster is in parallel later
+    vm_mount_disks
+  else
+    logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
+  fi
 
   vm_set_dot_files &
 
