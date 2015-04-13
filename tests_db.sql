@@ -1073,6 +1073,12 @@ INSERT INTO `execs_conf_parameters` VALUES (1,7,'job_201406181732_0011','fs.s3n.
 UNLOCK TABLES;
 
 --
+-- Table structure for table `filters_presets`
+--
+CREATE TABLE filters_presets(id INT(11) NOT NULL AUTO_INCREMENT, name VARCHAR(255) NOT NULL, screen varchar(255) NOT NULL, URL varchar(65536) NOT NULL, preset int NOT NULL DEFAULT 0, description varchar(255), PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+
+--
 -- Table structure for table `hosts`
 --
 

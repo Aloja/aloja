@@ -162,6 +162,12 @@
                 chart.xAxis[0].setExtremes(-3000, 3000);
                 chart.yAxis[0].setExtremes(-20, 20);
             });
+
+            $('form').submit(function() {
+                var href = location.protocol + '//' + location.host + location.pathname + '?' + $("form[name='clusterFilters'],form[name='configFilters']").serialize();
+                top.location.href = href;
+                return false;
+            });
         });
 	    </script>
     {% endblock %}
@@ -190,7 +196,6 @@
 	              	<tbody>
 	              	 {% for cluster in clusters %}
 	              	   <tr>
-	              	     <td>{{ loop.index }}</td>
 	              	     <td>{{ cluster.name }}</td>
 	              	     <td>{{ cluster.provider }}</td>
 	              	     <td>{{ cluster.type }}</td>

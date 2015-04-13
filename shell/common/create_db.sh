@@ -25,15 +25,19 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`blk_size\` int(11) DEFAULT NULL,
   hadoop_version varchar(127) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
-  \`valid\` int DEFAULT 1,
+  \`valid\` int DEFAULT 0,
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
- \`perf_details\` int DEFAULT 1,
+ \`perf_details\` int DEFAULT 0,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
   KEY \`idx_exe_time\` (\`exe_time\`),
-  KEY \`idx_bench_type\` (\`bench_type\`)
+  KEY \`idx_bench_type\` (\`bench_type\`),
+  KEY \`idx_id_cluster\` (\`id_cluster\`),
+  KEY \`idx_valid\` (\`valid\`),
+  KEY \`idx_filter\` (\`filter\`),
+  KEY \`idx_perf_details\` (\`perf_details\`)
 ) ENGINE=InnoDB;
 
 
@@ -652,36 +656,50 @@ CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
   PRIMARY KEY (\`id\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS \`filters_presets\` (
+ \`id\` int(11) NOT NULL AUTO_INCREMENT,
+ \`name\` varchar(255) NOT NULL,
+ \`screen\` varchar(255) NOT NULL,
+ \`URL\` varchar(65536) NOT NULL,
+ \`preset\` int NOT NULL DEFAULT 0,
+ \`description\` varchar(255),
+ PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
 
 
 
 ####################################################
-logger "INFO: Executing alter tables"
+logger "INFO: Executing alter tables, you can IGNORE warnings"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
   add KEY \`idx_bench\` (\`bench\`),
   add KEY \`idx_exe_time\` (\`exe_time\`),
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
+  add KEY \`idx_id_cluster\` (\`id_cluster\`),
+  add KEY \`idx_valid\` (\`valid\`),
+  add KEY \`idx_filter\` (\`filter\`),
+  add KEY \`idx_perf_details\` (\`perf_details\`);"
+
+$MYSQL "alter table execs
  add column  \`valid\` int DEFAULT '1';"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
  modify column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
-  ADD \`outlier\` int DEFAULT '0',
-;"
+  ADD \`outlier\` int DEFAULT '0';"
 
-$MYSQL "alter ignore table execs ADD COLUMN  \`perf_details\` int DEFAULT '1';"
+$MYSQL "alter table execs ADD COLUMN  \`perf_details\` int DEFAULT '0';"
 
-$MYSQL "alter ignore table execs add hadoop_version varchar(127) default NULL;"
+$MYSQL "alter table execs add hadoop_version varchar(127) default NULL;"
 
-$MYSQL "alter ignore table clusters add datanodes int DEFAULT NULL;"
-$MYSQL "alter ignore table clusters add provider varchar(127);"
+$MYSQL "alter table clusters add datanodes int DEFAULT NULL;"
+$MYSQL "alter table clusters add provider varchar(127);"
 
-$MYSQL "alter ignore table clusters
+$MYSQL "alter table clusters
   add headnodes int DEFAULT NULL,
   add vm_size varchar(127) default null,
   add vm_OS varchar(127) default null,
@@ -689,17 +707,17 @@ $MYSQL "alter ignore table clusters
   add vm_RAM decimal(10,3) default null,
   add description varchar(256) default null;"
 
-$MYSQL "alter ignore table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
-$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT 0"
-$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
-$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter table clusters add column cost_remote int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_SSD int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_IB int DEFAULT 0"
 
-$MYSQL "alter ignore table clusters
+$MYSQL "alter table clusters
  modify column cost_remote decimal(10,3) default 0,
   modify column cost_SSD decimal(10,3) default 0,
   modify column cost_IB decimal(10,3) default 0;"
 
-$MYSQL "alter ignore table hosts
+$MYSQL "alter table hosts
 	add column cost_remote decimal(10,3) default 0,
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
@@ -726,9 +744,21 @@ update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdi
 update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
 update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
 
+"
+$MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
+update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
+
+$MYSQL "insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(1,'HDD vs SSD','http://hadoop.bsc.es/configimprovement?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HD2&disks[]=HD3&disks[]=HD4&disks[]=HD5&disks[]=HDD&disks[]=SS2&disks[]=SSD&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'HDD vs SSD comparison', 'Config Improvement');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(2,'VM Size','http://hadoop.bsc.es/parameval?parameval=vm_size&minexecs=&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&bench_types[]=HDI&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'Evaluation by size', 'Parameter Evaluation');
+
 
 "
 
+$MYSQL "
+insert ignore into clusters(id_cluster,name,cost_hour,type,datanodes,provider,headnodes,vm_size,vm_OS,vm_cores,vm_RAM,description,cost_remote,cost_SSD,cost_IB) values(38,'rb-38',5.44,'PaaS',8,'rackspace',1,'hadoop1-15','linux',4,15,'Cloud Big Data (HDP 1.3)',0,0,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'rb38-terasort','terasort',1273,'ETH','RR1','HiBench',32,1,1,0);
+"
 
 
 

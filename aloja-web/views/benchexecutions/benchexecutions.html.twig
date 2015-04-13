@@ -13,7 +13,13 @@
 	            <a href="{{ modifyUrl({'type': 'SWCONFIG'}) }}"><span {% if type == 'SWCONFIG' %}style="font-weight: bold;"{% endif %}>SOFTWARE CONFIGURATIONS</span></a>
 	            <a href="{{ modifyUrl({'type': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAILS</span></a>
 	        </h2>
-	    </div>
+	 </div>
+	 <div style="text-align: center; margin-bottom: .5em;">
+	    <button id="showFilters" class="btn btn-info">Show filters</button>
+	 </div>
+	 <div id="filtersTab" style="display: none;">
+	   {% include "common/config_filters.html.twig" %}
+	 </div>
      {% block datatablescontent %}{{ parent() }}{% endblock %}
     <div id="chart"></div>
 </div>
@@ -22,4 +28,16 @@
     {{ parent() }}
      <script type="text/javascript" language="javascript" src="js/utils.js"></script>
       {% block javascriptdatatables %}{{ parent() }}{% endblock %}
+     <script type="text/javascript">
+ 		$(document).ready(function() {
+			$("#showFilters").click(function() {
+				$("#filtersTab").slideToggle(400, function() {
+				  if($("#filtersTab").is(':visible')) {
+				    $("#showFilters").text('Hide filters');
+				  } else
+				    $("#showFilters").text('Show filters');
+				});
+			});
+ 	 	});
+     </script>
     {% endblock %}

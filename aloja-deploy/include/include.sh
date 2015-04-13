@@ -3,7 +3,7 @@ self_name="$(basename $0)"
 
 [ -z "$type" ] && type="cluster"
 
-[ -z $1 ] && { echo "Usage: $self_name ${type}_name [If no default provider then: <provider:azure|openstack|rackspace|on-premise|pedraforca>]  [Optional non-default conf_file]"; exit 1;}
+[ -z $1 ] && { echo "Usage: $self_name ${type}_name [If no default provider then: <provider:azure|openstack|rackspace|on-premise|carma|vagrant>]  [Optional non-default conf_file]"; exit 1;}
 
 #1) load common functions and global variables
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../../shell/common"
