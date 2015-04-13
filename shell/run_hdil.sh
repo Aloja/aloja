@@ -2,8 +2,8 @@
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CONF_DIR/common/common.sh"
 
-if [ "$#" -ne 1 ]; then
-	echo "Usage: run_rshdi.sh clustername"
+if [ "$#" -lt 1 ]; then
+	echo "Usage: run_rshdi.sh clustername [jar_location]"
 	exit	
 fi
 
@@ -12,12 +12,14 @@ clusterName=$1
 HDD="/home/pristine/share"
 DSH="dsh -f machines -cM"
 JAR_LOCATION="/home/pristine/hadoop-mapreduce-examples.jar"
+if [ "$#" -ge 2 ]; then
+	JAR_LOCATION=$2
+fi
 
 
 if [ ! -d $HDD/logs ]; then
-	sudo mkdir $HDD/logs
-	sudo chown -R pristine.pristine $HDD/logs
-	chmod 777 $HDD/logs -R
+	sudo mkdir -p $HDD/jobs_${clusterName}
+	#sudo chown -R pristine.pristine $HDD/jobs_${clusterName}
 fi
 
 installIfNotInstalled() {
@@ -94,26 +96,26 @@ collect_logs(){
 #installDsh
 
 exec_dir="2014_$clusterName-teragen-`date +%s`"
-if [ ! -d $HDD/logs/$exec_dir ]; then
-	mkdir $HDD/logs/$exec_dir
+if [ ! -d $HDD/jobs_${clusterName}/$exec_dir ]; then
+	mkdir -p $HDD/jobs_${clusterName}/$exec_dir
 fi
 
 logger "Starting run of teragen"
-restart_monit "${HDD}/logs/${exec_dir}"
+restart_monit "${HDD}/jobs_${clusterName}/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-input
-(hadoop jar $JAR_LOCATION teragen 1000 100GB-terasort-input) 2>&1 | tee -a "${HDD}/logs/${exec_dir}/output.log"
+(time hadoop jar $JAR_LOCATION teragen 1000000000 100GB-terasort-input) 2>&1 | tee -a "${HDD}/jobs_${clusterName}/${exec_dir}/output.log"
 stop_monit
-collect_logs "${HDD}/logs/${exec_dir}"
+collect_logs "${HDD}/jobs_${clusterName}/${exec_dir}"
 
 exec_dir="2014_$clusterName-terasort-`date +%s`"
-if [ ! -d $HDD/logs/$exec_dir ]; then
-	mkdir $HDD/logs/$exec_dir
+if [ ! -d $HDD/jobs_${clusterName}/$exec_dir ]; then
+	mkdir $HDD/jobs_${clusterName}/$exec_dir
 fi
 
 logger "Starting run of terasort"
-restart_monit "${HDD}/logs/${exec_dir}"
+restart_monit "${HDD}/jobs_${clusterName}/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-output
-(hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output) 2>&1 | tee -a "${HDD}/logs/${exec_dir}/output.log"
+(time hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output) 2>&1 | tee -a "${HDD}/jobs_${clusterName}/${exec_dir}/output.log"
 logger "Terasort ended"
 stop_monit
-collect_logs "${HDD}/logs/${exec_dir}"
+collect_logs "${HDD}/jobs_${clusterName}/${exec_dir}"
