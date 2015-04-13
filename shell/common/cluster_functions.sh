@@ -32,6 +32,7 @@ vm_create_node() {
 		vm_name="`echo $clusterName | cut -d- -f1`"
 		#hdi_cluster_check_create "$vm_name"
 		create_hdi_cluster "$vm_name"
+		vm_provision
 		vm_final_bootstrap "$vm_name"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
@@ -88,14 +89,14 @@ vm_provision() {
   vm_set_ssh
   vm_install_base_packages
 
-  #[ "$type" != "cluster" ] && {
+  [ "$defaultProvider" != "hdinsight" ] && {
     if [ -z "$noSudo" ] ; then
       vm_initialize_disks #cluster is in parallel later
       vm_mount_disks
     else
       logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
     fi
-  #}
+  }
 
   vm_set_dot_files &
 
@@ -455,6 +456,7 @@ make_fstab(){
     local create_string="$fs_mount"
   fi
 
+ if [ "$defaultProvider" != "hdinsight" ]; then
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
@@ -463,6 +465,7 @@ make_fstab(){
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
+ fi
 
   local create_string="$create_string
 $(get_extra_fstab)"
