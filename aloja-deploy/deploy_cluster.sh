@@ -25,7 +25,7 @@ if [ "$defaultProvider" != "hdinsight" ]; then
 	
 else #If HDI only run create node once
 	vm_create_node
-
+fi
 
 
 #master config to execute benchmarks
