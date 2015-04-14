@@ -120,5 +120,5 @@ get_master_name() {
 }
 
 get_node_names() {
-	cat slaves	
+	cat /home/pristine/slaves	
 }
