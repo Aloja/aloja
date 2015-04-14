@@ -1,3 +1,19 @@
+DROP TABLE IF EXISTS `learners`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `learners` (
+  `sid_learner` int(11) NOT NULL AUTO_INCREMENT,
+  `id_learner` varchar(255) NOT NULL,
+  `instance` varchar(255) NOT NULL,
+  `model` varchar(1024) NOT NULL,
+  `algorithm` varchar(255) NOT NULL,
+  `creation_time` datetime NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (`sid_learner`),
+  UNIQUE KEY `id_learner_UNIQUE` (`id_learner`),
+  KEY `idx_instance` (`instance`),
+  KEY `idx_model` (`model`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
+
 DROP TABLE IF EXISTS `predictions`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
@@ -41,26 +57,10 @@ CREATE TABLE `predictions` (
   PRIMARY KEY (`id_prediction`),
   KEY `idx_bench` (`bench`),
   KEY `idx_exe_time` (`exe_time`),
-  KEY `idx_bench_type` (`bench_type`)
+  KEY `idx_bench_type` (`bench_type`),
+  FOREIGN KEY (`id_learner`) REFERENCES learners(`id_learner`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
-
-
-DROP TABLE IF EXISTS `learners`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!40101 SET character_set_client = utf8 */;
-CREATE TABLE `learners` (
-  `sid_learner` int(11) NOT NULL AUTO_INCREMENT,
-  `id_learner` varchar(255) NOT NULL,
-  `instance` varchar(255) NOT NULL,
-  `model` varchar(1024) NOT NULL,
-  `algorithm` varchar(255) NOT NULL,
-  `creation_time` datetime NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (`sid_learner`),
-  UNIQUE KEY `id_learner_UNIQUE` (`id_learner`),
-  KEY `idx_instance` (`instance`),
-  KEY `idx_model` (`model`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
 DROP TABLE IF EXISTS `trees`;
@@ -75,7 +75,8 @@ CREATE TABLE `trees` (
   `creation_time` datetime NOT NULL DEFAULT NOW(),
   PRIMARY KEY (`id_findattrs`),
   KEY `idx_instance` (`instance`),
-  KEY `idx_model` (`model`)
+  KEY `idx_model` (`model`),
+  FOREIGN KEY (`id_learner`) REFERENCES learners(`id_learner`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
@@ -95,7 +96,8 @@ CREATE TABLE `resolutions` (
   `creation_time` datetime NOT NULL DEFAULT NOW(),
   PRIMARY KEY (`sid_resolution`),
   KEY `idx_instance` (`instance`),
-  KEY `idx_model` (`model`)
+  KEY `idx_model` (`model`),
+  FOREIGN KEY (`id_learner`) REFERENCES learners(`id_learner`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
@@ -111,7 +113,8 @@ CREATE TABLE `minconfigs` (
   `creation_time` datetime NOT NULL DEFAULT NOW(),
   PRIMARY KEY (`id_minconfigs`),
   KEY `idx_instance` (`instance`),
-  KEY `idx_model` (`model`)
+  KEY `idx_model` (`model`),
+  FOREIGN KEY (`id_learner`) REFERENCES learners(`id_learner`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
@@ -125,7 +128,8 @@ CREATE TABLE `minconfigs_props` (
   `MAE` decimal(20,3) DEFAULT NULL,
   `RAE` decimal(20,3) DEFAULT NULL,
   `creation_time` datetime NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (`sid_minconfigs_props`)
+  PRIMARY KEY (`sid_minconfigs_props`),
+  FOREIGN KEY (`id_minconfigs`) REFERENCES minconfigs(`id_minconfigs`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 
@@ -150,7 +154,8 @@ CREATE TABLE `minconfigs_centers` (
   `id_cluster` int(11) DEFAULT NULL,
   `support` varchar(4096) DEFAULT NULL,
   `creation_time` datetime NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (`sid_minconfigs_centers`)
+  PRIMARY KEY (`sid_minconfigs_centers`),
+  FOREIGN KEY (`id_minconfigs`) REFERENCES minconfigs(`id_minconfigs`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=latin1;
 
 

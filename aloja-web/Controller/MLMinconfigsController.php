@@ -156,6 +156,7 @@ class MLMinconfigsController extends AbstractController
 
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
 				}
 
 				// Save minconfigs to DB, with props and centers

@@ -170,6 +170,7 @@ class MLNewconfigsController extends AbstractController
 
 						// Remove temporal files
 						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'-*.csv');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.dat');
 					}
 				}
 

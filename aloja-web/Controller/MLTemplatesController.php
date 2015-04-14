@@ -41,6 +41,7 @@ class MLTemplatesController extends AbstractController
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 				$unrestricted = TRUE;			
  			}
+			$where_configs = str_replace("id_cluster","'e.id_cluster'",$where_configs);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
@@ -61,8 +62,9 @@ class MLTemplatesController extends AbstractController
 			$is_cached = ($tmp_result['num'] > 0);
 
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
 
-			if (!$is_cached && !$in_process)
+			if (!$is_cached && !$in_process && !$finished_process)
 			{
 				// get headers for csv
 				$header_names = array(
@@ -90,10 +92,11 @@ class MLTemplatesController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock');
-				exec('cd '.getcwd().'/cache/query ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" > /dev/null 2>&1 -p 1 &');
+				exec('cd '.getcwd().'/cache/query ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock; touch '.md5($config).'.fin" > /dev/null 2>&1 -p 1 &');
 			}
 
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
 
 			if ($in_process)
 			{
@@ -107,7 +110,7 @@ class MLTemplatesController extends AbstractController
 				if ($is_cached_mysql->fetchColumn() == 0) 
 				{
 					// register model to DB
-					$query = "INSERT INTO learners (id_learner,instance,model,algorithm)";
+					$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm)";
 					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
 
@@ -119,7 +122,7 @@ class MLTemplatesController extends AbstractController
 							$header = fgetcsv($handle, 1000, ",");
 
 							$token = 0;
-							$query = "INSERT INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
 								$specific_instance = implode(",",array_slice($data, 2, 19));
@@ -147,6 +150,8 @@ class MLTemplatesController extends AbstractController
 
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
 				}
 
 				$must_wait = "NO";
@@ -205,48 +210,6 @@ class MLTemplatesController extends AbstractController
 				'instance' => $instance,
 				'error_stats' => $error_stats,
 				'options' => Utils::getFilterOptions($db)
-			)
-		);
-	}
-
-	public function mlclearcacheAction()
-	{
-		try
-		{
-			if (file_exists(getcwd().'/cache/query/record.data'))
-			{
-				$output = array();
-
-				if (array_key_exists("ccache",$_GET))
-				{
-					if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
-					{
-						while (!feof($fh))
-						{
-							$line = fgets($fh, 4096);
-							$fts = explode(" : ",$line);
-
-							$command = 'rm '.getcwd().'/cache/query/'.$fts[0].'-*';
-							$output[] = shell_exec($command);
-						}
-						fclose($fh);
-
-						$command = 'rm '.getcwd().'/cache/query/record.data';
-						$output[] = shell_exec($command);
-					}
-				}
-			}
-			else $this->container->getTwig ()->addGlobal ( 'message', "ML cache cleared.\n" );
-		}
-		catch(Exception $e)
-		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-			$output = array();
-		}
-		echo $this->container->getTwig()->render('mltemplate/mlclearcache.html.twig',
-			array(
-				'selected' => 'mlclearcache',
-				'output' => '<li>'.implode("</li><li>",$output).'</li>'
 			)
 		);
 	}
