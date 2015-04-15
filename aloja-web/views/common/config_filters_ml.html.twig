@@ -154,6 +154,7 @@
 					</select>
 				</div>
 			</div>
+			{% if selected  != 'mlprediction' and selected  != 'mloutliers' and selected  != 'mlfindattributes' and selected  != 'mlparameval' %}
 			<div class="row">
 				<div class="col-md-6">
 					Cluster datanodes: </br> <select class="form-control" name="datanodess[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
@@ -218,6 +219,7 @@
 					</select>
 				</div>
 			</div>
+			{% endif %}
 
 			{% if selected == 'mlnewconfigs' %}
 			<div class="row">
@@ -260,15 +262,7 @@
 				</div>
 			</div>
 			{% endif %}
-			{% if selected == 'mldatacollapse' %}
-			<div class="row">
-				<div class="col-md-6"></div>
-				<div class="col-md-6">
-					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
-				</div>
-			</div>
-			{% endif %}
-			
+		
 			{% if selected == 'mlsummaries' %}
 			<div class="row">
 				<div class='col-md-6'>
