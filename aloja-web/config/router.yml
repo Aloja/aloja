@@ -167,6 +167,10 @@ mlcrossvar:
     pattern: "/mlcrossvar"
     controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
 
+mlcrossvar3d:
+    pattern: "/mlcrossvar3d"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dAction"
+
 mlparameval:
     pattern: "/mlparameval"
     controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
