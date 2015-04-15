@@ -32,7 +32,10 @@ class MLTemplatesController extends AbstractController
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
-			if (count($_GET) <= 1)
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
+			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
+			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
 				$where_configs = '';
 				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
@@ -103,11 +106,16 @@ class MLTemplatesController extends AbstractController
 				$jsonExecs = "[]";
 				$must_wait = "YES";
 				$max_x = $max_y = 0;
+				if (isset($_GET['dump'])) { echo "1"; exit(0); }
+				if (isset($_GET['pass'])) { return 1; }
 			}
 			else
 			{
-				$is_cached_mysql = $dbml->query("SELECT id_learner FROM learners WHERE id_learner = '".md5($config)."'");
-				if ($is_cached_mysql->fetchColumn() == 0) 
+				$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+				$tmp_result = $is_cached_mysql->fetch();
+				$is_cached = ($tmp_result['num'] > 0);
+
+				if (!$is_cached) 
 				{
 					// register model to DB
 					$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm)";
@@ -177,6 +185,21 @@ class MLTemplatesController extends AbstractController
 				foreach ($result as $row)
 				{
 					$error_stats = $error_stats.'Dataset: '.(($row['predict_code']==1)?'tr':(($row['predict_code']==2)?'tv':'tt')).' => MAE: '.$row['MAE'].' RAE: '.$row['RAE'].'<br/>';
+				}
+
+				if (isset($_GET['dump']))
+				{
+					$data = json_encode($jsonExecs);
+					echo "Observed, Predicted, Execution\n";
+					echo str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
+					exit(0);
+				}
+				if (isset($_GET['pass']))
+				{
+					$data = json_encode($jsonExecs);
+					$retval = "Observed, Predicted, Execution\n";
+					$retval = $retval.str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
+					return $retval;
 				}
 			}
 			$dbml = null;
