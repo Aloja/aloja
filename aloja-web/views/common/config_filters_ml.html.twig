@@ -221,7 +221,7 @@
 			</div>
 			{% endif %}
 
-			{% if selected == 'mlnewconfigs' %}
+			{% if selected == 'mlprediction' or selected == 'mlminconfigs' or selected == 'mlnewconfigs' %}
 			<div class="row">
 				<div class="col-md-6">
 					Learning method:</br> <select class="form-control" name="learn" >
@@ -232,24 +232,21 @@
 					</select>
 				</div>
 				<div class="col-md-6">
-					<!--AAA-->
+					{% if selected != 'mlnewconfigs' %}
+					<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
+					{% endif %}
 				</div>
 			</div>
 			{% endif %}
 
-			{% if selected == 'mlprediction' or selected == 'mlminconfigs' %}
+			{% if selected == 'mloutliers' %}
 			<div class="row">
 				<div class="col-md-6">
-					Learning method:</br> <select class="form-control" name="learn" >
-						<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
-						<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
-						<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
-						<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
+					Sigmas:</br> <select class="form-control" name="sigma" >
+						<option value="1" {% if '1' in sigma %} SELECTED {% endif %}>1</option>
+						<option value="2" {% if '2' in sigma %} SELECTED {% endif %}>2</option>
+						<option value="3" {% if '3' in sigma %} SELECTED {% endif %}>3</option>
 					</select>
-				</div>
-				<div class="col-md-6">
-					<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
-					<!--Parameters:<input type="string" name="params"/>-->
 				</div>
 			</div>
 			{% endif %}

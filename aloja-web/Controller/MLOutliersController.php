@@ -30,7 +30,7 @@ class MLOutliersController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
@@ -68,7 +68,7 @@ class MLOutliersController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model.'-outliers';
+				$config = $instance.'-'.$current_model.'-'.$sigma_param.'-outliers';
 
 				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM resolutions WHERE id_resolution = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
@@ -93,7 +93,9 @@ class MLOutliersController extends AbstractController
 					// Get IDs already in Cache
 					$query_var = "SELECT id_exec FROM resolutions WHERE id_learner = '".$current_model."' AND model = '".$model_info."'";
 					$result = $dbml->query($query_var);
-					$ids_in_cache = implode("','",$result->fetchAll());
+					$aux_array = array();
+					foreach ($result as $row) $aux_array[] = $row['id_exec'];
+					$ids_in_cache = implode("','",$aux_array);
 
 					// dump the result to csv
 				    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." AND id_exec NOT IN ('".$ids_in_cache."');";
@@ -111,7 +113,7 @@ class MLOutliersController extends AbstractController
 
 					// launch query
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock');
-					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma=3:hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
+					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
 				}
 				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
 
@@ -123,7 +125,7 @@ class MLOutliersController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 
 						$token = 0;
-						$query = "INSERT INTO resolutions (id_resolution,id_learner,id_exec,instance,model,outlier_code,predicted,observed) VALUES ";
+						$query = "INSERT INTO resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
@@ -141,7 +143,7 @@ class MLOutliersController extends AbstractController
 							if ($row['num'] == 0)
 							{
 								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$resolution."','".$pred_value."','".$exec_value."') ";
+								$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
 							}
 
 							// Update the predictions table
