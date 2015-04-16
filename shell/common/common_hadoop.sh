@@ -82,37 +82,11 @@ get_hadoop_conf_dir() {
 
 prepare_hadoop_config(){
 
-  #before running hibench, set exports and vars
-  EXP="export JAVA_HOME=$JAVA_HOME && \
-export HADOOP_HOME=$BENCH_H_DIR && \
-export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
-export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
-export NUM_MAPS=$MAX_MAPS && \
-export NUM_REDS=$MAX_MAPS && \
-"
-
-  loggerb "Preparing exe dir"
-
-
-
-  if [ "$DELETE_HDFS" == "1" ] ; then
-     loggerb "Deleting previous PORT files"
-     $DSH "rm -rf $HDD/*" 2>&1 |tee -a $LOG_PATH
-$DSH "rm -rf $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
-  else
-     $DSH "rm -rf $HDD/{aplic,logs}" 2>&1 |tee -a $LOG_PATH
-  fi
-
   loggerb "Creating source dir and Copying Hadoop"
-$DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
 
   $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
-
-  $DSH "cp /usr/bin/vmstat $vmstat" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp $bwm_source $bwm" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp /usr/bin/sar $sar" 2>&1 |tee -a $LOG_PATH
 
   loggerb "Preparing config"
 
@@ -256,7 +230,7 @@ restart_hadoop(){
     local safe_mode=$(echo "$report" | grep "Safe mode is ON")
     echo $report 2>&1 |tee -a $LOG_PATH
 
-    if [ "$num" == "$NUMBER_OF_SLAVES" ] ; then
+    if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
       if [[ -z $safe_mode ]] ; then
         #everything fine continue
         break
@@ -276,10 +250,10 @@ restart_hadoop(){
       DELETE_HDFS="1"
       restart_hadoop no_retry
     elif [ "$i" == "120" ] ; then
-      loggerb "$num/$NUMBER_OF_SLAVES Datanodes available, EXIT"
+      loggerb "$num/$NUMBER_OF_DATA_NODES Datanodes available, EXIT"
       exit 1
     else
-      loggerb "$num/$NUMBER_OF_SLAVES Datanodes available, wating for $i seconds"
+      loggerb "$num/$NUMBER_OF_DATA_NODES Datanodes available, wating for $i seconds"
       sleep 1
     fi
   done
@@ -302,6 +276,12 @@ execute_HiBench(){
     #Delete previous data
     #$DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench" 2>&1 |tee -a $LOG_PATH
     echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
+
+    # Check if there is a custom config for this bench, and call it
+    if type "benchmark_hibench_config_${bench}" &>/dev/null
+    then
+      eval "benchmark_hibench_config_${bench}"
+    fi
 
     #just in case check if the input file exists in hadoop
     if [ "$DELETE_HDFS" == "0" ] ; then
@@ -330,9 +310,9 @@ execute_HiBench(){
 
       if [ "$DELETE_HDFS" == "1" ] ; then
         if [ "$bench" != "dfsioe" ] ; then
-          execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/prepare.sh "prep_"
+          execute_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare.sh "prep_"
         elif [ "$bench" == "dfsioe" ] ; then
-          execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/prepare-read.sh "prep_"
+          execute_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare-read.sh "prep_"
         fi
       else
         loggerb  "Reusing previous RUN prepared $bench"
@@ -356,13 +336,13 @@ execute_HiBench(){
     loggerb  "$(date +"%H:%M:%S") RUNNING $bench"
 
     if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
-      execute_hadoop $bench ${BENCH_HIB_DIR}$bench/bin/run.sh
+      execute_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/run.sh
     elif [ "$bench" == "hivebench" ] ; then
-      execute_hadoop hivebench_agregation ${BENCH_HIB_DIR}hivebench/bin/run-aggregation.sh
-      execute_hadoop hivebench_join ${BENCH_HIB_DIR}hivebench/bin/run-join.sh
+      execute_hadoop hivebench_agregation ${BENCH_HIB_DIR}/hivebench/bin/run-aggregation.sh
+      execute_hadoop hivebench_join ${BENCH_HIB_DIR}/hivebench/bin/run-join.sh
     elif [ "$bench" == "dfsioe" ] ; then
-      execute_hadoop dfsioe_read ${BENCH_HIB_DIR}dfsioe/bin/run-read.sh
-      execute_hadoop dfsioe_write ${BENCH_HIB_DIR}dfsioe/bin/run-write.sh
+      execute_hadoop dfsioe_read ${BENCH_HIB_DIR}/dfsioe/bin/run-read.sh
+      execute_hadoop dfsioe_write ${BENCH_HIB_DIR}/dfsioe/bin/run-write.sh
     fi
 
   done
@@ -376,25 +356,60 @@ execute_hadoop(){
 #    $DSH "sudo /usr/local/sbin/drop_caches" 2>&1 |tee -a $LOG_PATH
 #  fi
 
-  loggerb "# Checking disk space with df BEFORE"
-  $DSH "df -h" 2>&1 |tee -a $LOG_PATH
-  loggerb "# Checking hadoop folder space BEFORE"
-  $DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+  save_disk_usage "BEFORE"
 
   restart_monit
 
   #TODO fix empty variable problem when not echoing
-  local start_exec=$(date '+%s')  && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
-  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S') && echo "end $start_date" 2>&1 |tee -a $LOG_PATH
+  local start_exec=`timestamp`
+  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
   loggerb "# EXECUTING ${3}${1}"
 
-  $DSH_SLAVE "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
+  #need to send all the environment variables over SSH
+  EXP="export JAVA_HOME=$JAVA_HOME && \
+export HADOOP_HOME=$BENCH_H_DIR && \
+export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
+export HADOOP_CONF_DIR=$BENCH_H_DIR/conf && \
+export HADOOP_EXAMPLES_JAR=$BENCH_H_DIR/hadoop-examples-*.jar && \
+export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
+export HADOOP_VERSION=hadoop1 && \
+export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
+export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
+export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
+export NUM_MAPS=$NUM_MAPS && \
+export NUM_REDS=$NUM_REDS && \
+export DATASIZE=$DATASIZE && \
+export PAGES=$PAGES && \
+export CLASSES=$CLASSES && \
+export NGRAMS=$NGRAMS && \
+export RD_NUM_OF_FILES=$RD_NUM_OF_FILES && \
+export RD_FILE_SIZE=$RD_FILE_SIZE && \
+export WT_NUM_OF_FILES=$WT_NUM_OF_FILES && \
+export WT_FILE_SIZE=$WT_FILE_SIZE && \
+export NUM_OF_CLUSTERS=$NUM_OF_CLUSTERS && \
+export NUM_OF_SAMPLES=$NUM_OF_SAMPLES && \
+export SAMPLES_PER_INPUTFILE=$SAMPLES_PER_INPUTFILE && \
+export DIMENSIONS=$DIMENSIONS && \
+export MAX_ITERATION=$MAX_ITERATION && \
+export NUM_ITERATIONS=$NUM_ITERATIONS && \
+"
 
-  local end_exec=$(date '+%s') && echo "start $start_exec end $end_exec" 2>&1 |tee -a $LOG_PATH
+  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
+
+  local end_exec=`timestamp`
 
   loggerb "# DONE EXECUTING $1"
 
-  local total_secs=$(expr $end_exec - $start_exec) &&  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
+  local total_secs=`calc_exec_time $start_exec $end_exec`
+  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
+
+  # Save execution information in an array to allow import later
+  declare -gA EXEC_TIME
+  declare -gA EXEC_START
+  declare -gA EXEC_END
+  EXEC_TIME[${3}${1}]="$total_secs"
+  EXEC_START[${3}${1}]="$start_exec"
+  EXEC_END[${3}${1}]="$end_exec"
 
   url="http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=${start_date}&period=${total_secs}"
   echo "SENDING: hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s." 2>&1 |tee -a $LOG_PATH
@@ -409,10 +424,7 @@ execute_hadoop(){
     $DSH_MASTER $BENCH_H_DIR/bin/hadoop fs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
   fi
 
-loggerb "# Checking disk space with df AFTER"
-$DSH "df -h" 2>&1 |tee -a $LOG_PATH
-loggerb "# Checking hadoop folder space AFTER"
-$DSH "du -sh $HDD/*" 2>&1 |tee -a $LOG_PATH
+  save_disk_usage "AFTER"
 
   #clean output data
   loggerb "INFO: Cleaning Output data for $bench"
@@ -432,7 +444,7 @@ save_hadoop() {
   $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  cp "${BENCH_HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
+  cp "${BENCH_HIB_DIR}/$bench/hibench.report" "$JOB_PATH/$1/"
 
   #loggerb "Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
   #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH" 2>&1 |tee -a $LOG_PATH

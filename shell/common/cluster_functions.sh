@@ -28,9 +28,13 @@ vm_check_create() {
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-
-  if [ "$vmType" != 'windows' ] ; then
-
+	if [ "$defaultProvider" = "hdinsight" ]; then
+		vm_name="$clusterName"
+		#hdi_cluster_check_create "$vm_name"
+		create_hdi_cluster "$vm_name"
+		vm_provision
+		vm_final_bootstrap "$vm_name"
+	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it
@@ -85,14 +89,12 @@ vm_provision() {
   vm_set_ssh
   vm_install_base_packages
 
-  #[ "$type" != "cluster" ] && {
-    if [ -z "$noSudo" ] ; then
-      vm_initialize_disks #cluster is in parallel later
-      vm_mount_disks
-    else
-      logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
-    fi
-  #}
+  if [ -z "$noSudo" ] ; then
+    vm_initialize_disks #cluster is in parallel later
+    vm_mount_disks
+  else
+    logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
+  fi
 
   vm_set_dot_files &
 
@@ -452,6 +454,7 @@ make_fstab(){
     local create_string="$fs_mount"
   fi
 
+ if [ "$defaultProvider" != "hdinsight" ]; then
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
@@ -460,6 +463,7 @@ make_fstab(){
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
+ fi
 
   local create_string="$create_string
 $(get_extra_fstab)"
@@ -724,6 +728,8 @@ vm_set_dot_files() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
+    vm_execute "touch ~/.hushlogin;" #avoid welcome banners
+
     vm_update_template "~/.bashrc" "
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
@@ -890,7 +896,7 @@ check_bootstraped() {
 
   if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
     logger " Avoiding subsequent welcome banners"
-    vm_execute "touch ~/.hushlogin; #avoid subsequent banners"
+    vm_execute "touch ~/.hushlogin; " #avoid subsequent banners
     fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
   fi
 #TODO fix return codes should be the opposite
@@ -1028,14 +1034,24 @@ vm_make_fs() {
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
     if [ -z "$test_action" ] ; then
-      logger " Linking $homePrefixAloja/$userAloja/share"
 
-      vm_execute "
-sudo chown -R ${userAloja}: /scratch;
-[ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share ~/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
-ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;
-touch $homePrefixAloja/$userAloja/share/safe_store;
-    "
+      #if the folder is different to ~/share, then link it to ~/share
+      if [ "$share_disk_path" != "$homePrefixAloja/$userAloja/share" ] ; then
+        logger " Linking $homePrefixAloja/$userAloja/share to $share_disk_path"
+
+        vm_execute "
+sudo chown -R ${userAloja}: $share_disk_path;
+[ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share $homePrefixAloja/$userAloja/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
+ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
+      else
+        #make sure the dir is created
+        vm_execute "mkdir -p $share_disk_path"
+
+      fi
+
+      #make it officially a shared disk
+      vm_execute "touch $homePrefixAloja/$userAloja/share/safe_store;"
+
     else
       logger " $homePrefixAloja/$userAloja/share is correctly mounted"
     fi
@@ -1062,8 +1078,7 @@ touch $homePrefixAloja/$userAloja/share/safe_store;
   fi
 
   logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share"
-
+  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
 }
 
 #$1 filename
