@@ -90,7 +90,15 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-    	return "";
+        return " " ;
+
+        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
+            return " " ;
+        } else {
+            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33) ";
+            //return " AND c.provider != 'rackspace' ";
+        }
+
 //         return "
 // #AND (bench_type = 'HiBench' OR bench_type = 'HDI')
 // #AND bench not like 'prep_%'
@@ -108,8 +116,8 @@ class DBUtils
             $filter_execs = DBUtils::getFilterExecs();
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
-        join clusters USING (id_cluster)
-        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0;";
+        join clusters c USING (id_cluster)
+        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0 $filter_execs;";
 
         return $this->get_rows($query);
     }

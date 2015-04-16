@@ -26,7 +26,8 @@ importHDIJobs() {
 			exec="$folder/$jobName_$tmp"
 
 			id_exec=""
-		    get_id_exec "$exec"
+		    
+		    id_exec=$(get_id_exec "$exec")
 		    if [ -z $id_exec ]; then
 		       	id_exec="NULL"
 		   	fi
@@ -77,7 +78,7 @@ importHDIJobs() {
 		     $MYSQL "$insert"
 		    
 		     if [ "$id_exec" == "NULL" ]; then
-		    	get_id_exec "$exec"
+		    	id_exec=$(get_id_exec "$exec")
 			 fi
 		        
 		     values=`../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`

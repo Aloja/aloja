@@ -25,14 +25,19 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`blk_size\` int(11) DEFAULT NULL,
   hadoop_version varchar(127) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
-  \`valid\` int DEFAULT 1,
+  \`valid\` int DEFAULT 0,
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
+ \`perf_details\` int DEFAULT 0,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
   KEY \`idx_exe_time\` (\`exe_time\`),
-  KEY \`idx_bench_type\` (\`bench_type\`)
+  KEY \`idx_bench_type\` (\`bench_type\`),
+  KEY \`idx_id_cluster\` (\`id_cluster\`),
+  KEY \`idx_valid\` (\`valid\`),
+  KEY \`idx_filter\` (\`filter\`),
+  KEY \`idx_perf_details\` (\`perf_details\`)
 ) ENGINE=InnoDB;
 
 
@@ -651,30 +656,50 @@ CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
   PRIMARY KEY (\`id\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS \`filters_presets\` (
+ \`id\` int(11) NOT NULL AUTO_INCREMENT,
+ \`name\` varchar(255) NOT NULL,
+ \`screen\` varchar(255) NOT NULL,
+ \`URL\` varchar(65536) NOT NULL,
+ \`preset\` int NOT NULL DEFAULT 0,
+ \`description\` varchar(255),
+ PRIMARY KEY (\`id\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
 
 
 
 ####################################################
-logger "INFO: Executing alter tables"
+logger "INFO: Executing alter tables, you can IGNORE warnings"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
   add KEY \`idx_bench\` (\`bench\`),
   add KEY \`idx_exe_time\` (\`exe_time\`),
   add KEY \`idx_bench_type\` (\`bench_type\`);"
 
-$MYSQL "alter ignore table execs
+$MYSQL "alter table execs
+  add KEY \`idx_id_cluster\` (\`id_cluster\`),
+  add KEY \`idx_valid\` (\`valid\`),
+  add KEY \`idx_filter\` (\`filter\`),
+  add KEY \`idx_perf_details\` (\`perf_details\`);"
+
+$MYSQL "alter table execs
+ add column  \`valid\` int DEFAULT '1';"
+
+$MYSQL "alter table execs
  modify column  \`valid\` int DEFAULT '1',
   ADD \`filter\` int DEFAULT '0',
   ADD \`outlier\` int DEFAULT '0';"
 
-$MYSQL "alter ignore table execs add hadoop_version varchar(127) default NULL;"
+$MYSQL "alter table execs ADD COLUMN  \`perf_details\` int DEFAULT '0';"
 
-$MYSQL "alter ignore table clusters add datanodes int DEFAULT NULL;"
-$MYSQL "alter ignore table clusters add provider varchar(127);"
+$MYSQL "alter table execs add hadoop_version varchar(127) default NULL;"
 
-$MYSQL "alter ignore table clusters
+$MYSQL "alter table clusters add datanodes int DEFAULT NULL;"
+$MYSQL "alter table clusters add provider varchar(127);"
+
+$MYSQL "alter table clusters
   add headnodes int DEFAULT NULL,
   add vm_size varchar(127) default null,
   add vm_OS varchar(127) default null,
@@ -682,21 +707,20 @@ $MYSQL "alter ignore table clusters
   add vm_RAM decimal(10,3) default null,
   add description varchar(256) default null;"
 
-$MYSQL "alter ignore table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
-$MYSQL "alter ignore table clusters add column cost_remote int DEFAULT 0"
-$MYSQL "alter ignore table clusters add column cost_SSD int DEFAULT 0"
-$MYSQL "alter ignore table clusters add column cost_IB int DEFAULT 0"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter table clusters add column cost_remote int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_SSD int DEFAULT 0"
+$MYSQL "alter table clusters add column cost_IB int DEFAULT 0"
 
-$MYSQL "alter ignore table clusters
+$MYSQL "alter table clusters
  modify column cost_remote decimal(10,3) default 0,
   modify column cost_SSD decimal(10,3) default 0,
   modify column cost_IB decimal(10,3) default 0;"
 
-$MYSQL "alter ignore table hosts
+$MYSQL "alter table hosts
 	add column cost_remote decimal(10,3) default 0,
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
-
 
 ############################################33
 logger "INFO: Updating records"
@@ -708,48 +732,55 @@ update ignore execs SET disk='RR3' where disk='R3';
 update ignore execs SET bench_type='HiBench' where bench_type='b';
 update ignore execs SET bench_type='HiBench' where bench_type='';
 update ignore execs SET bench_type='HiBench-min' where bench_type='-min';
-update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
+
+#update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
 
 update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
+update ignore execs SET bench_type='HiBench-1TB' where bench_type='-1TB';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore execs SET net='IB' where id_cluster = 26;
+update ignore execs SET disk='HDD' where disk = 'SSD' id_cluster = 26;
 
 
-update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';
-update ignore clusters SET headnodes='2' where headnodes='1' and provider = 'hdinsight';
-update ignore clusters SET vm_OS='windows' where vm_OS = 'linux' and provider = 'hdinsight';
+#azure VMs (this should also be in get_filter_sql)
+update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
+update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
+update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
+update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25;
+update execs set id_cluster=25 where exec like '%alojahdi32%';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000;
+update execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000;
+update execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI';
 
 "
-
-#Before updating filters values
-
 $MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
 update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
 
-$MYSQL "
-update ignore execs SET filter = 0;
-update ignore execs SET filter = 1 where id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
-update ignore execs SET filter = 1 where id_cluster NOT IN(20,23,24,25) AND id_exec NOT IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
+$MYSQL "insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(1,'HDD vs SSD','http://hadoop.bsc.es/configimprovement?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HD2&disks[]=HD3&disks[]=HD4&disks[]=HD5&disks[]=HDD&disks[]=SS2&disks[]=SSD&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'HDD vs SSD comparison', 'Config Improvement');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(2,'VM Size','http://hadoop.bsc.es/parameval?parameval=vm_size&minexecs=&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&bench_types[]=HDI&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'Evaluation by size', 'Parameter Evaluation');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(3, 'HDI vs IaaS Remotes', 'http://hadoop.bsc.es/costperfclustereval?benchs[]=terasort&disks[]=RL1&disks[]=RL2&disks[]=RL3&disks[]=RL4&disks[]=RL5&disks[]=RL6&disks[]=RR1&disks[]=RR2&disks[]=RR3&disks[]=RR4&disks[]=RR5&disks[]=RR6&disks[]=RS3&bench_types[]=HDI&bench_types[]=HiBench&types[]=IaaS&types[]=PaaS&filters[]=valid&filters[]=filters&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=50&maxexetime=&cost_hour[1]=1.500&cost_remote[1]=0.000&cost_SSD[1]=0.350&cost_IB[1]=0.390&cost_hour[2]=3.520&cost_remote[2]=0.042&cost_SSD[2]=0.000&cost_IB[2]=0.000&cost_hour[3]=7.920&cost_remote[3]=0.042&cost_SSD[3]=0.000&cost_IB[3]=0.000&cost_hour[4]=7.920&cost_remote[4]=0.042&cost_SSD[4]=0.000&cost_IB[4]=0.000&cost_hour[5]=3.520&cost_remote[5]=0.042&cost_SSD[5]=0.000&cost_IB[5]=0.000&cost_hour[6]=2.664&cost_remote[6]=0.042&cost_SSD[6]=0.000&cost_IB[6]=0.000&cost_hour[8]=1.584&cost_remote[8]=0.042&cost_SSD[8]=0.000&cost_IB[8]=0.000&cost_hour[10]=7.500&cost_remote[10]=0.000&cost_SSD[10]=0.000&cost_IB[10]=0.000&cost_hour[12]=7.500&cost_remote[12]=0.000&cost_SSD[12]=0.000&cost_IB[12]=0.000&cost_hour[14]=3.168&cost_remote[14]=0.042&cost_SSD[14]=0.000&cost_IB[14]=0.000&cost_hour[15]=3.960&cost_remote[15]=0.042&cost_SSD[15]=0.000&cost_IB[15]=0.000&cost_hour[16]=2.664&cost_remote[16]=0.042&cost_SSD[16]=0.000&cost_IB[16]=0.000&cost_hour[19]=4.995&cost_remote[19]=0.042&cost_SSD[19]=0.000&cost_IB[19]=0.000&cost_hour[20]=1.920&cost_remote[20]=0.000&cost_SSD[20]=0.000&cost_IB[20]=0.000&cost_hour[21]=3.500&cost_remote[21]=0.200&cost_SSD[21]=0.700&cost_IB[21]=0.800&cost_hour[22]=9.500&cost_remote[22]=0.000&cost_SSD[22]=0.000&cost_IB[22]=0.000&cost_hour[23]=4.120&cost_remote[23]=0.000&cost_SSD[23]=0.000&cost_IB[23]=0.000&cost_hour[24]=5.760&cost_remote[24]=0.000&cost_SSD[24]=0.000&cost_IB[24]=0.000&cost_hour[25]=10.880&cost_remote[25]=0.000&cost_SSD[25]=0.000&cost_IB[25]=0.000&cost_hour[26]=17.730&cost_remote[26]=0.042&cost_SSD[26]=0.000&cost_IB[26]=0.000&cost_hour[28]=0.792&cost_remote[28]=0.042&cost_SSD[28]=0.000&cost_IB[28]=0.000&cost_hour[29]=6.768&cost_remote[29]=0.042&cost_SSD[29]=0.000&cost_IB[29]=0.000&cost_hour[30]=9.990&cost_remote[30]=0.042&cost_SSD[30]=0.000&cost_IB[30]=0.000&cost_hour[33]=9.990&cost_remote[33]=0.042&cost_SSD[33]=0.000&cost_IB[33]=0.000&cost_hour[34]=1.584&cost_remote[34]=0.042&cost_SSD[34]=0.000&cost_IB[34]=0.000&cost_hour[35]=1.584&cost_remote[35]=0.042&cost_SSD[35]=0.000&cost_IB[35]=0.000&cost_hour[36]=7.920&cost_remote[36]=0.042&cost_SSD[36]=0.000&cost_IB[36]=0.000&cost_hour[38]=5.440&cost_remote[38]=0.000&cost_SSD[38]=0.000&cost_IB[38]=0.000', 0, 'HDI versus IaaS remotes configurations', 'Clusters Cost Evaluation');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(4, 'HDI vs IaaS Remotes', 'http://hadoop.bsc.es/clustercosteffectiveness?benchs[]=terasort&disks[]=RL1&disks[]=RL2&disks[]=RL3&disks[]=RL4&disks[]=RL5&disks[]=RL6&disks[]=RR1&disks[]=RR2&disks[]=RR3&disks[]=RR4&disks[]=RR5&disks[]=RR6&disks[]=RS3&bench_types[]=HDI&bench_types[]=HiBench&types[]=IaaS&types[]=PaaS&filters[]=valid&filters[]=filters&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=50&maxexetime=&cost_hour[1]=1.500&cost_remote[1]=0.000&cost_SSD[1]=0.350&cost_IB[1]=0.390&cost_hour[2]=3.520&cost_remote[2]=0.042&cost_SSD[2]=0.000&cost_IB[2]=0.000&cost_hour[3]=7.920&cost_remote[3]=0.042&cost_SSD[3]=0.000&cost_IB[3]=0.000&cost_hour[4]=7.920&cost_remote[4]=0.042&cost_SSD[4]=0.000&cost_IB[4]=0.000&cost_hour[5]=3.520&cost_remote[5]=0.042&cost_SSD[5]=0.000&cost_IB[5]=0.000&cost_hour[6]=2.664&cost_remote[6]=0.042&cost_SSD[6]=0.000&cost_IB[6]=0.000&cost_hour[8]=1.584&cost_remote[8]=0.042&cost_SSD[8]=0.000&cost_IB[8]=0.000&cost_hour[10]=7.500&cost_remote[10]=0.000&cost_SSD[10]=0.000&cost_IB[10]=0.000&cost_hour[12]=7.500&cost_remote[12]=0.000&cost_SSD[12]=0.000&cost_IB[12]=0.000&cost_hour[14]=3.168&cost_remote[14]=0.042&cost_SSD[14]=0.000&cost_IB[14]=0.000&cost_hour[15]=3.960&cost_remote[15]=0.042&cost_SSD[15]=0.000&cost_IB[15]=0.000&cost_hour[16]=2.664&cost_remote[16]=0.042&cost_SSD[16]=0.000&cost_IB[16]=0.000&cost_hour[19]=4.995&cost_remote[19]=0.042&cost_SSD[19]=0.000&cost_IB[19]=0.000&cost_hour[20]=1.920&cost_remote[20]=0.000&cost_SSD[20]=0.000&cost_IB[20]=0.000&cost_hour[21]=3.500&cost_remote[21]=0.200&cost_SSD[21]=0.700&cost_IB[21]=0.800&cost_hour[22]=9.500&cost_remote[22]=0.000&cost_SSD[22]=0.000&cost_IB[22]=0.000&cost_hour[23]=4.120&cost_remote[23]=0.000&cost_SSD[23]=0.000&cost_IB[23]=0.000&cost_hour[24]=5.760&cost_remote[24]=0.000&cost_SSD[24]=0.000&cost_IB[24]=0.000&cost_hour[25]=10.880&cost_remote[25]=0.000&cost_SSD[25]=0.000&cost_IB[25]=0.000&cost_hour[26]=17.730&cost_remote[26]=0.042&cost_SSD[26]=0.000&cost_IB[26]=0.000&cost_hour[28]=0.792&cost_remote[28]=0.042&cost_SSD[28]=0.000&cost_IB[28]=0.000&cost_hour[29]=6.768&cost_remote[29]=0.042&cost_SSD[29]=0.000&cost_IB[29]=0.000&cost_hour[30]=9.990&cost_remote[30]=0.042&cost_SSD[30]=0.000&cost_IB[30]=0.000&cost_hour[33]=9.990&cost_remote[33]=0.042&cost_SSD[33]=0.000&cost_IB[33]=0.000&cost_hour[34]=1.584&cost_remote[34]=0.042&cost_SSD[34]=0.000&cost_IB[34]=0.000&cost_hour[35]=1.584&cost_remote[35]=0.042&cost_SSD[35]=0.000&cost_IB[35]=0.000&cost_hour[36]=7.920&cost_remote[36]=0.042&cost_SSD[36]=0.000&cost_IB[36]=0.000&cost_hour[38]=5.440&cost_remote[38]=0.000&cost_SSD[38]=0.000&cost_IB[38]=0.000', 0, 'HDI versus IaaS remotes configurations', 'Cost-Effectiveness of clusters');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(5, 'HDI vs IaaS Remotes', 'http://hadoop.bsc.es/bestcostperfclustereval?benchs[]=terasort&disks[]=RL1&disks[]=RL2&disks[]=RL3&disks[]=RL4&disks[]=RL5&disks[]=RL6&disks[]=RR1&disks[]=RR2&disks[]=RR3&disks[]=RR4&disks[]=RR5&disks[]=RR6&disks[]=RS3&bench_types[]=HDI&bench_types[]=HiBench&types[]=IaaS&types[]=PaaS&filters[]=valid&filters[]=filters&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=50&maxexetime=&cost_hour[1]=1.500&cost_remote[1]=0.000&cost_SSD[1]=0.350&cost_IB[1]=0.390&cost_hour[2]=3.520&cost_remote[2]=0.042&cost_SSD[2]=0.000&cost_IB[2]=0.000&cost_hour[3]=7.920&cost_remote[3]=0.042&cost_SSD[3]=0.000&cost_IB[3]=0.000&cost_hour[4]=7.920&cost_remote[4]=0.042&cost_SSD[4]=0.000&cost_IB[4]=0.000&cost_hour[5]=3.520&cost_remote[5]=0.042&cost_SSD[5]=0.000&cost_IB[5]=0.000&cost_hour[6]=2.664&cost_remote[6]=0.042&cost_SSD[6]=0.000&cost_IB[6]=0.000&cost_hour[8]=1.584&cost_remote[8]=0.042&cost_SSD[8]=0.000&cost_IB[8]=0.000&cost_hour[10]=7.500&cost_remote[10]=0.000&cost_SSD[10]=0.000&cost_IB[10]=0.000&cost_hour[12]=7.500&cost_remote[12]=0.000&cost_SSD[12]=0.000&cost_IB[12]=0.000&cost_hour[14]=3.168&cost_remote[14]=0.042&cost_SSD[14]=0.000&cost_IB[14]=0.000&cost_hour[15]=3.960&cost_remote[15]=0.042&cost_SSD[15]=0.000&cost_IB[15]=0.000&cost_hour[16]=2.664&cost_remote[16]=0.042&cost_SSD[16]=0.000&cost_IB[16]=0.000&cost_hour[19]=4.995&cost_remote[19]=0.042&cost_SSD[19]=0.000&cost_IB[19]=0.000&cost_hour[20]=1.920&cost_remote[20]=0.000&cost_SSD[20]=0.000&cost_IB[20]=0.000&cost_hour[21]=3.500&cost_remote[21]=0.200&cost_SSD[21]=0.700&cost_IB[21]=0.800&cost_hour[22]=9.500&cost_remote[22]=0.000&cost_SSD[22]=0.000&cost_IB[22]=0.000&cost_hour[23]=4.120&cost_remote[23]=0.000&cost_SSD[23]=0.000&cost_IB[23]=0.000&cost_hour[24]=5.760&cost_remote[24]=0.000&cost_SSD[24]=0.000&cost_IB[24]=0.000&cost_hour[25]=10.880&cost_remote[25]=0.000&cost_SSD[25]=0.000&cost_IB[25]=0.000&cost_hour[26]=17.730&cost_remote[26]=0.042&cost_SSD[26]=0.000&cost_IB[26]=0.000&cost_hour[28]=0.792&cost_remote[28]=0.042&cost_SSD[28]=0.000&cost_IB[28]=0.000&cost_hour[29]=6.768&cost_remote[29]=0.042&cost_SSD[29]=0.000&cost_IB[29]=0.000&cost_hour[30]=9.990&cost_remote[30]=0.042&cost_SSD[30]=0.000&cost_IB[30]=0.000&cost_hour[33]=9.990&cost_remote[33]=0.042&cost_SSD[33]=0.000&cost_IB[33]=0.000&cost_hour[34]=1.584&cost_remote[34]=0.042&cost_SSD[34]=0.000&cost_IB[34]=0.000&cost_hour[35]=1.584&cost_remote[35]=0.042&cost_SSD[35]=0.000&cost_IB[35]=0.000&cost_hour[36]=7.920&cost_remote[36]=0.042&cost_SSD[36]=0.000&cost_IB[36]=0.000&cost_hour[38]=5.440&cost_remote[38]=0.000&cost_SSD[38]=0.000&cost_IB[38]=0.000', 0, 'HDI versus IaaS remotes configurations', 'Best Clusters Cost Evaluation');
 
-update ignore execs SET valid = 1;
-update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
-  select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
-    tmp_table
-);
-
-update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
-  select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
-    tmp_table
-);
-
-update ignore execs SET valid = 0 WHERE exe_time < 200 OR exe_time > 15000;
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
 "
+
+$MYSQL "
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427396874','terasort',25340,'ETH','RR1','HiBench',32,1,1,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428333140','terasort',4134,'ETH','RR1','HiBench',32,1,1,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428327683','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
+
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_r16_1428180121/job_1428144536921_0004','terasort',18628,'ETH','RR1','HiBench',1,2,0);
+insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_r16_1428230002/job_1428144536921_0005','terasort',18820,'ETH','RR1','HiBench',1,2,0);
+"
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_1428309325/job_1428289975913_0002','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
+
 
 #$MYSQL "
 #

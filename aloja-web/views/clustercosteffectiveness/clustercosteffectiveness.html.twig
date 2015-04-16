@@ -1,10 +1,29 @@
 {% extends "layout.html.twig" %}
+{% block stylesheet %}
+    {{ parent() }}
+	<style type="text/css">
+        .scrollStyle
+	{
+		overflow-x:auto;
+		float: left;
+		width: 100%;
+        }
+/* 	td.highlight { */
+/* 		font-weight: italic; */
+/* 		color: red; */
+/* 	} */
+	</style>
+	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.css" />
+{% endblock %}
 {% block javascript %}
 	{{ parent() }}
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.js"></script>
 	<script>
         $(document).ready(function() {
+            	$("#results").dataTable();
                    $("#chart").highcharts({
                         chart: {
                             type: 'bubble',
@@ -45,7 +64,7 @@
                           bubble: {
                               tooltip: {
                                   headerFormat: '<b>{series.name}</b><br>',
-                                  pointFormat: '{point.x} s, {point.y} US$, {point.z}  rating<br />{series.options.clusterdesc}'
+                                  pointFormat: '{point.x} s, {point.y} US$, {point.z}  rating<br />{series.options.counts} total cluster executions<br />{series.options.clusterdesc}'
 
                               }
                           }
@@ -63,9 +82,10 @@
         <div id="navigation">
         	<div style="width: 50%; float: left; margin: 0 auto; margin-left: 10%; ">
 	               <div id="chart"></div>
-	               <h3>Top 10 best clusters</h3>
-	               <table class="table table-striped">
+	               <h3>{{ bestExecs | length }} clusters ordered by cost-effectiveness</h3>
+	               <table id="results" class="table table-striped">
 	                 <thead>
+	                 	<th>Rank</th>
 	                 	<th>Cluster</th>
 	                 	<th>Best execution cost</th>
 	                 	<th>Best execution time</th>
@@ -77,18 +97,17 @@
 	                 </thead>
 	                 <tbody>
 	                  {% for exec in bestExecs %}
-	                    {% if loop.index <= 10 %}
 	                    <tr>
+	                       <td>{{ loop.index }}</td>
 	                       <td>{{ exec.name }}</td>
 	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
-	                       <td>{{ exec.exe_time | number_format(0, '.', ',') }} s</td>
+	                       <td>{{ exec.exe_time | number_format(0, '.', '') }} s</td>
 	                       <td>{{ exec.vm_RAM | number_format(0, '.', ',') }} GB</td>
 	                       <td>{{ exec.datanodes }}</td>
 	                       <td>{{ exec.vm_OS }}</td>
 	                       <td>{{ exec.provider }}</td>
 	                       <td>{{ exec.type }}</td>
 	                    </tr>
-	                    {% endif %}
 	                  {% endfor %}
 	                 </tbody>
 	               </table>

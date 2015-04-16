@@ -1,9 +1,29 @@
 {% extends "layout.html.twig" %}
+{% block stylesheet %}
+    {{ parent() }}
+	<style type="text/css">
+        .scrollStyle
+	{
+		overflow-x:auto;
+		float: left;
+		width: 100%;
+        }
+/* 	td.highlight { */
+/* 		font-weight: italic; */
+/* 		color: red; */
+/* 	} */
+	</style>
+	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.css" />
+{% endblock %}
+
 {% block javascript %}
 		{{ parent() }}
+		<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+		<script type="text/javascript" language="javascript" src="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.js"></script>
 		{{ highcharts_js|raw }}
 	    <script>
         $(document).ready(function() {
+            $("#results").dataTable();
             var chart = new Highcharts.Chart({
                 chart: {
                     renderTo: 'chart',
@@ -168,6 +188,12 @@
                 chart.xAxis[0].setExtremes(-3000, 3000);
                 chart.yAxis[0].setExtremes(-20, 20);
             });
+
+            $('form').submit(function() {
+                var href = location.protocol + '//' + location.host + location.pathname + '?' + $("form[name='clusterFilters'],form[name='configFilters']").serialize();
+                top.location.href = href;
+                return false;
+            });
         });
 	    </script>
     {% endblock %}
@@ -175,34 +201,36 @@
            <div id="navigation">
 				<div style="float: left; margin: 0 auto; margin-left: 10%; ">
 	               <div id="chart" style="width: 800px; height: 800px;"></div>
-	               <h3>Top 10 best configurations</h3>
-	               <table class="table table-striped">
+	               <h3>{{ execs | length }} configurations ordered by cost-effectiveness</h3>
+	               <table id="results" class="table table-striped" style="max-width: 10%;">
 	                 <thead>
+	                    <th>Rank</th>
 	                 	<th>Cluster</th>
 	                 	<th>Execution cost</th>
 	                 	<th>Execution time</th>
 	                 	<th>Network</th>
 	                 	<th>Disk</th>
+{# 						<th>VM RAM</th>#}
+{# 	              		<th>Datanodes</th>#}
+{# 	              		<th>VM OS</th>#}
 {# 	                 	<th>Provider</th>#}
 {# 	              		<th>Type</th>#}
-{# 	              		<th>VM OS</th>#}
-{# 	              		<th>Datanodes</th>#}
 	                 </thead>
 	                 <tbody>
 	                  {% for exec in execs %}
-	                    {% if loop.index <= 10 %}
 	                    <tr>
+	                       <td>{{ loop.index }}</td>
 	                       <td>{{ exec.name }}<img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="{{ exec.datanodes }} datanodes, {{ exec.vm_RAM | number_format(0,'.',',') }} GB, {{ exec.type }}, {{ exec.vm_OS }}, {{ exec.provider }}" /></td>
 	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
-	                       <td>{{ exec.exe_time | number_format(0, '.', ',') }} s</td>
+	                       <td>{{ exec.exe_time | number_format(0, '.', '') }} s</td>
 	                       <td>{% if exec.net == 'ETH' %}Ethernet{% else %}InfiniBand{% endif %}</td>
 	                       <td>{{ getDisksName(exec.disk) }}</td>
+{# 	                       <td>{{ exec.vm_RAM | number_format(0, '.', ',') }} GB</td>#}
+{# 	                       <td>{{ exec.datanodes }}</td>#}
+{# 	                       <td>{{ exec.vm_OS }}</td>#}
 {# 	                       <td>{{ exec.provider }}</td>#}
 {# 	                       <td>{{ exec.type }}</td>#}
-{# 	                       <td>{{ exec.vm_OS }}</td>#}
-{# 	                       <td>{{ exec.datanodes }}</td>#}
 	                    </tr>
-	                    {% endif %}
 	                  {% endfor %}
 	                 </tbody>
 	               </table>

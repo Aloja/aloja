@@ -145,6 +145,10 @@ CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 CONF_DIR="$CUR_DIR_TMP/common/"
 source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
+#bencmark sources
+logger "INFO: loading $CONF_DIR/common_hadoop.sh"
+source "$CONF_DIR/common_hadoop.sh"
+
 #####
 
 #some validations
@@ -202,7 +206,7 @@ DSH_SLAVES="${DSH/"$master_name,"/}" #remove master name and trailling coma
 
 #check that we got the dynamic disk location correctly
 if [ -z "$(get_initial_disk "$DISK")" ] ; then
-  loggerb "ERROR: cannot determint $DISK path"
+  loggerb "ERROR: cannot determine $DISK path"
   exit 1
 fi
 
@@ -240,12 +244,13 @@ bwm_source="$SOURCE_DIR/bin/bwm-ng"
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 #
 ##temporary OS config
-#$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
-#
-#  #temporary to avoid read-only file system errors
-#  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
-#  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
-#
+$DSH "sudo sysctl -w vm.swappiness=0;sudo sysctl -w fs.file-max=65536; sudo service ufw stop;"
+
+
+  #temporary to avoid read-only file system errors
+  echo "Checking if to remount $homePrefixAloja/$userAloja/share"
+  $DSH_SLAVES "[ ! \"\$(ls $homePrefixAloja/$userAloja/share/safe_store )\" ] && { echo 'ERROR: share not mounted correctly'; sudo umount -f $homePrefixAloja/$userAloja/share; sudo fusermount -uz $homePrefixAloja/$userAloja/share;  sudo mount $homePrefixAloja/$userAloja/share; sudo mount -a; }"
+
 #  for mount_point in "$homePrefixAloja/$userAloja/share" "/scratch/attached/1" "/scratch/attached/2" "/scratch/attached/3" ; do
 #    echo "Checking if to remount $mount_point"
 #    $DSH "[[ ! \"\$(mount |grep '$mount_point'| grep 'rw,' )\" || \"\$(touch $mount_point/touch )\" ]] && { echo 'ERROR: $mount_point not mounted correctly'; sudo umount -f $mount_point; sudo mount $mount_point; }"
@@ -297,11 +302,26 @@ logger "Setting scratch permissions"
 $DSH "sudo chown -R $userAloja: /scratch"
 
 #only copy files if version has changed (to save time in azure)
+
+
+
 logger "Checking if to generate source dirs"
 for node in $node_names ; do
   logger " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BASE_DIR/aplic/aplic_version\)" == "\$\(cat $SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     logger "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
+
+    if [ ! "$(ssh "$node" "[ -d \"$BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+      #logger "Downloading initial aplic dir from dropbox"
+      #$DSH "wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2?dl=1 -O $BASE_DIR/aplic.tar.bz2"
+
+      $DSH "rsync -aur --force $BASE_DIR/aplic.tar.bz2 /tmp/"
+
+      logger "Uncompressing aplic"
+      $DSH  "mkdir -p $SOURCE_DIR/; cd $SOURCE_DIR/../; tar -C $SOURCE_DIR/../ -jxf /tmp/aplic.tar.bz2; "  #rm aplic.tar.bz2;
+    fi
+
+    logger "Rsynching files"
     $DSH "mkdir -p $SOURCE_DIR; rsync -aur --force $BASE_DIR/aplic/* $SOURCE_DIR/"
     break #dont need to check after one is missing
   else

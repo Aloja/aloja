@@ -62,7 +62,7 @@ class MLParamevalController extends AbstractController
 				else $paramOptions[] = $option[$paramEval];
 			}
 
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
 			// get the result rows
 			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
