@@ -10,7 +10,7 @@
 		<p style="text-align:justify">[WiP] Set stuff here...</p>
 		<hr />
 	</div>
-	<div id="container" style="float: left; width: 70%; margin: 0 auto;">
+	<div id="container" style="float: left; width: 68%; margin: 0 auto;">
 		<div id="navigation" style="text-align: center; width: 100%; margin: 0 auto;">
 			<div style="width: 50%; margin: 0 auto;">
 			Select variables:
@@ -34,6 +34,16 @@
 						<option value="vm_size" {% if variable1 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
 						<option value="type" {% if variable1 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
 						<option value="exe_time" {% if variable1 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
+						<option value="pred_time" {% if variable1 == 'pred_time' %}selected="selected"{% endif %}>Predicted Time</option>
+						<option value="TOTAL_MAPS" {% if variable1 == 'TOTAL_MAPS' %}selected="selected"{% endif %}>Total Maps</option>
+						<option value="FAILED_MAPS" {% if variable1 == 'FAILED_MAPS' %}selected="selected"{% endif %}>Failed Maps</option>
+						<option value="FINISHED_MAPS" {% if variable1 == 'FINISHED_MAPS' %}selected="selected"{% endif %}>Finished Maps</option>
+						<option value="TOTAL_REDUCES" {% if variable1 == 'TOTAL_REDUCES' %}selected="selected"{% endif %}>Total Reduces</option>
+						<option value="FAILED_REDUCES" {% if variable1 == 'FAILED_REDUCES' %}selected="selected"{% endif %}>Failed Reduces</option>
+						<option value="FILE_BYTES_WRITTEN" {% if variable1 == 'FILE_BYTES_WRITTEN' %}selected="selected"{% endif %}>File Bytes Written</option>
+						<option value="FILE_BYTES_READ" {% if variable1 == 'FILE_BYTES_READ' %}selected="selected"{% endif %}>File Bytes Read</option>
+						<option value="HDFS_BYTES_WRITTEN" {% if variable1 == 'HDFS_BYTES_WRITTEN' %}selected="selected"{% endif %}>HDFS Bytes Written</option>
+						<option value="HDFS_BYTES_READ" {% if variable1 == 'HDFS_BYTES_READ' %}selected="selected"{% endif %}>HDFS Bytes Read</option>
 						</select>
 			</td><td width="2%">&nbsp;</td><td width="49%">
 						<select class="form-control" name="variable2" id="variable2" size="5">
@@ -55,6 +65,16 @@
 						<option value="vm_size" {% if variable2 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
 						<option value="type" {% if variable2 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
 						<option value="exe_time" {% if variable2 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
+						<option value="pred_time" {% if variable2 == 'pred_time' %}selected="selected"{% endif %}>Predicted Time</option>
+						<option value="TOTAL_MAPS" {% if variable2 == 'TOTAL_MAPS' %}selected="selected"{% endif %}>Total Maps</option>
+						<option value="FAILED_MAPS" {% if variable2 == 'FAILED_MAPS' %}selected="selected"{% endif %}>Failed Maps</option>
+						<option value="FINISHED_MAPS" {% if variable2 == 'FINISHED_MAPS' %}selected="selected"{% endif %}>Finished Maps</option>
+						<option value="TOTAL_REDUCES" {% if variable2 == 'TOTAL_REDUCES' %}selected="selected"{% endif %}>Total Reduces</option>
+						<option value="FAILED_REDUCES" {% if variable2 == 'FAILED_REDUCES' %}selected="selected"{% endif %}>Failed Reduces</option>
+						<option value="FILE_BYTES_WRITTEN" {% if variable2 == 'FILE_BYTES_WRITTEN' %}selected="selected"{% endif %}>File Bytes Written</option>
+						<option value="FILE_BYTES_READ" {% if variable2 == 'FILE_BYTES_READ' %}selected="selected"{% endif %}>File Bytes Read</option>
+						<option value="HDFS_BYTES_WRITTEN" {% if variable2 == 'HDFS_BYTES_WRITTEN' %}selected="selected"{% endif %}>HDFS Bytes Written</option>
+						<option value="HDFS_BYTES_READ" {% if variable2 == 'HDFS_BYTES_READ' %}selected="selected"{% endif %}>HDFS Bytes Read</option>
 						</select>
 			</td></tr></table>
 			</div>
@@ -63,7 +83,7 @@
 		<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'common/config_filters.html.twig' %}
+	{% include 'common/config_filters_ml.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -91,69 +111,75 @@
 			$('#submit').click();
 		});
 
-		$('#chart').highcharts( {
-    		        chart: {
-    		            type: 'scatter',
-    		            zoomType: 'xy'
-    		        },
-    		        title: {
-    		            text: 'Variable comparission'
-    		        },
-    		        subtitle: {
-    		            text: '{{variable1}} vs {{variable2}}'
-    		        },
-			xAxis: {
-				title: {
-					enabled: true,
-					text: '{{variable2}}'
-				},
-				startOnTick: true,
-				endOnTick: false,
-				categories: {{categories2 | raw}}
-    		        },
-    		        yAxis: {
-				title: {
-					enabled: true,
-					text: '{{variable1}}'
-				},
-				startOnTick: true,
-				endOnTick: false,
-				categories: {{categories1 | raw}}
-    		        },
-		        credits: {
-				enabled: false
-			    },
-    		        plotOptions: {
-			    series: {
-				turboThreshold: 5000
-			    },
-    		            scatter: {
-    		                marker: {
-    		                    radius: 5,
-    		                    states: {
-    		                        hover: {
-    		                            enabled: true,
-    		                            lineColor: 'rgb(100,100,100)'
-    		                        }
-    		                    }
-    		                },
-    		                states: {
-    		                    hover: {
-    		                        marker: {
-    		                            enabled: false
-    		                        }
-    		                    }
-    		                },
-    		                tooltip: {
-    		                    headerFormat: '',
-    		                    pointFormat: '{point.name}'
-    		                }
-    		            }
-    		        },
-    		        series: [
-				{name: 'Observations (Run Experiments)', data: {{ jsonData | raw }}},
-			]
-		});
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#chart').highcharts( {
+	    		        chart: {
+	    		            type: 'scatter',
+	    		            zoomType: 'xy'
+	    		        },
+	    		        title: {
+	    		            text: 'Variable comparission'
+	    		        },
+	    		        subtitle: {
+	    		            text: '{{variable1}} vs {{variable2}}'
+	    		        },
+				xAxis: {
+					title: {
+						enabled: true,
+						text: '{{variable2}}'
+					},
+					startOnTick: true,
+					endOnTick: false,
+					categories: {{categories2 | raw}}
+	    		        },
+	    		        yAxis: {
+					title: {
+						enabled: true,
+						text: '{{variable1}}'
+					},
+					startOnTick: true,
+					endOnTick: false,
+					categories: {{categories1 | raw}}
+	    		        },
+				credits: {
+					enabled: false
+				    },
+	    		        plotOptions: {
+				    series: {
+					turboThreshold: 5000
+				    },
+	    		            scatter: {
+	    		                marker: {
+	    		                    radius: 5,
+	    		                    states: {
+	    		                        hover: {
+	    		                            enabled: true,
+	    		                            lineColor: 'rgb(100,100,100)'
+	    		                        }
+	    		                    }
+	    		                },
+	    		                states: {
+	    		                    hover: {
+	    		                        marker: {
+	    		                            enabled: false
+	    		                        }
+	    		                    }
+	    		                },
+	    		                tooltip: {
+	    		                    headerFormat: '',
+	    		                    pointFormat: '{point.name}'
+	    		                }
+	    		            }
+	    		        },
+	    		        series: [
+					{name: 'Observations (Run Experiments)', data: {{ jsonData | raw }}},
+				]
+			});
+		} else {
+			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}
 	});
     </script>
 {% endblock %}

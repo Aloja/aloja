@@ -153,7 +153,7 @@ mlattributestree:
 
 mlclearcache:
     pattern: "/mlclearcache"
-    controller: "alojaweb\\Controller\\MLTemplatesController::mlclearcacheAction"
+    controller: "alojaweb\\Controller\\MLCacheController::mlclearcacheAction"
 
 mloutliers:
     pattern: "/mloutliers"
@@ -166,6 +166,14 @@ mlsummaries:
 mlcrossvar:
     pattern: "/mlcrossvar"
     controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+
+mlcrossvar3d:
+    pattern: "/mlcrossvar3d"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dAction"
+
+mlcrossvar3dfa:
+    pattern: "/mlcrossvar3dfa"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dfaAction"
 
 mlparameval:
     pattern: "/mlparameval"

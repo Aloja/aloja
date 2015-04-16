@@ -14,6 +14,10 @@ class MLDataCollapseController extends AbstractController
 	{
 		try
 		{
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
 		    	$db = $this->container->getDBUtils();
 		    	
 		    	$configurations = array();	// Useless here
@@ -43,143 +47,116 @@ class MLDataCollapseController extends AbstractController
 			if (substr($dims1, -1) == ',') $dims1 = substr($dims1,0,-1);
 
 			$dims2 = "Benchmark";
-			$dname1 = "Configuration";
-			$dname2 = "Benchmark";
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
 			
 			// select model for filling 
-			$current_model = '';
-//			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model']; // FIXME - Needs re-think logic
-
 			$possible_models = $possible_models_id = array();
-			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $db);
-//			if (!empty($possible_models_id) && $current_model == "") $current_model = $possible_models_id[0]; // FIXME - Needs re-think logic
+			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
+
+			$current_model = '';
+/*			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model']; // FIXME - Needs re-think logic
+
+			if ($current_model == '')
+			{
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
+				$result = $dbml->query($query);
+				$row = $result->fetch();	
+				$current_model = $row['id_learner'];
+			}
+*/
+			$config = $instance.'-'.$current_model;
 
 			$learning_model = '';
 			if ($current_model != '' && file_exists(getcwd().'/cache/query/'.$current_model.'-object.rds')) $learning_model = ':model_name='.$current_model.':inst_general="'.$instance.'"';
  
-			$config = $dims1.'-'.$dims2.'-'.$dname1.'-'.$dname2."-".$current_model.'-'.$model_info;
-			$options = 'dimension1="'.$dims1.'":dimension2="'.$dims2.'":dimname1="'.$dname1.'":dimname2="'.$dname2.'":saveall='.md5($config).(($learning_model!='')?$learning_model:'');
+			$config = $dims1.'-'.$dims2.'-'.$current_model.'-'.$model_info;
 
-			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+			// get headers for csv
+			$header_names = array(
+				'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
+				'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+			);
+			$headers = array_keys($header_names);
+			$names = array_values($header_names);
 
-			$is_cached = file_exists($cache_ds);
-			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-
-			if ($is_cached && !$in_process)
+			$dims1_array = explode(",",$dims1);
+			$dims1_query = '';
+			$dims1_title = $dims1_concat = '';
+			foreach ($dims1_array as $d1value)
 			{
-				$keep_cache = TRUE;
-				foreach (array("ids.csv", "matrix.csv", "object.rds") as &$value)
-				{
-					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($config).'-'.$value);
-				}
-				if (!$keep_cache)
-				{
-					unlink($cache_ds);
-					shell_exec("sed -i '/".md5($config)." : ".$config."/d' ".getcwd()."/cache/query/record.data");
-				}
+				$dims1_query = $dims1_query.(($dims1_query=='')?'':',').array_search($d1value, $header_names);
+				$dims1_title = $dims1_title.(($dims1_title=='')?'':':').array_search($d1value, $header_names);
+				$dims1_concat = $dims1_concat.(($dims1_concat=='')?'':',":",').array_search($d1value, $header_names);
 			}
 
-			if (!$is_cached && !$in_process)
+			$query = "SELECT distinct bench FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." ORDER BY bench;";
+			$rows = $db->get_rows($query);
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+			$table = array();
+
+			$jsonHeader = '[{title:"'.$dims1_title.'"}';
+			foreach ($rows as $row)
 			{
-				// get headers for csv
-				$header_names = array(
-					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
-				);
-				$headers = array_keys($header_names);
-				$names = array_values($header_names);
+				$jsonHeader = $jsonHeader.',{title:"'.$row['bench'].'"}';
+				$table[$row['bench']] = array();
+			}
+			$jsonHeader = $jsonHeader.']';
 
-				// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
-			    	$rows = $db->get_rows($query);
 
-				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
+			$rows = $db->get_rows($query);
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
-				$fp = fopen($cache_ds, 'w');
-				fputcsv($fp, $names,',','"');
-			    	foreach($rows as $row)
+			foreach ($rows as $row) $table[$row['bench']][$row['dim1']] = (int)$row['avg_exe_time'];
+
+			$row_ids = array();
+			foreach ($table as $bmk) foreach ($bmk as $key => $value) $row_ids[] = $key;
+			$row_ids = array_unique($row_ids);
+
+			$tableColor = array();
+			foreach ($table as $bmk => $values)
+			{
+				$tableColor[$bmk] = array();
+				foreach ($row_ids as $rid)
+					if (!array_key_exists($rid,$table[$bmk])) { $table[$bmk][$rid] = 0; $tableColor[$bmk][$rid] = 0; }
+					else { $tableColor[$bmk][$rid] = 1; }
+			}
+
+			$jsonData = '[';
+			$jsonColor = '[';
+			foreach ($row_ids as $rid)
+			{
+				$jsonData = $jsonData.(($jsonData=='[')?'':',').'[\''.$rid.'\'';
+				$jsonColor = $jsonColor.(($jsonColor=='[')?'':',').'[1';
+				foreach ($table as $bmk => $values)
 				{
-					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
-					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
-					fputcsv($fp, array_values($row),',','"');
+					$jsonData = $jsonData.','.$table[$bmk][$rid];
+					$jsonColor = $jsonColor.','.$tableColor[$bmk][$rid];
 				}
-
-				// prepare collapse
-				exec('cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock');
-				if ($learning_model != '') exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse_expand -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1, rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" >> /dev/null 2>&1 -p 1 &');
-				else exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_dataset_collapse -d '.$cache_ds.' -p '.$options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/query/'.md5($config).'.lock" >> /dev/null 2>&1 -p 1 &');
-
-				// update cache record (for human reading)
-				$register = md5($config).' : '.$config."\n";
-				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+				$jsonData = $jsonData.']';
+				$jsonColor = $jsonColor.']';
 			}
+			$jsonData = $jsonData.']';
+			$jsonColor = $jsonColor.']';
 
-			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-			$must_wait = 'NO';
-
-			if ($in_process)
+			$jsonColumns = '[';
+			for ($i = 1; $i <= count($table); $i++)
 			{
-				$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
-				$must_wait = 'YES';
+				if ($jsonColumns != '[') $jsonColumns = $jsonColumns.',';
+				$jsonColumns = $jsonColumns.$i;
 			}
-			else
-			{
-				// read results of the CSV
-				if (	($handle = fopen(getcwd().'/cache/query/'.md5($config).'-matrix.csv', 'r')) !== FALSE // cmatrix.csv
-				&&	($handid = fopen(getcwd().'/cache/query/'.md5($config).'-ids.csv', 'r')) !== FALSE )  // cids.csv
-				{
-					$header = fgetcsv($handle, 1000, ",");
-					$headid = fgetcsv($handid, 1000, ",");
-
-					$jsonHeader = '[{title:""}';
-					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-					$jsonHeader = $jsonHeader.']';
-
-					$jsonColumns = '[';
-					for ($i = 1; $i <= count($header); $i++)
-					{
-						if ($jsonColumns != '[') $jsonColumns = $jsonColumns.',';
-						$jsonColumns = $jsonColumns.$i;
-					}
-					$jsonColumns = $jsonColumns.']';
-
-					$jsonData = '[';
-					$jsonColor = '[';
-					while (	($data = fgetcsv($handle, 1000, ",")) !== FALSE
-					&&	($daid = fgetcsv($handid, 1000, ",")) !== FALSE )
-					{
-						$data = str_replace('NA','',$data);
-						if ($jsonData!='[') $jsonData = $jsonData.',';
-						$jsonData = $jsonData.'[\''.implode("','",$data).'\']';
-
-
-						$aux = array();
-						for ($j = 0; $j < count($daid); $j++) $aux[$j] = ($daid[$j] == 'NA')?0:1;
-						if ($jsonColor!='[') $jsonColor = $jsonColor.',';
-						$jsonColor = $jsonColor.'[\''.implode("','",$aux).'\']';
-					}
-					$jsonColor = $jsonColor.']';
-					$jsonData = $jsonData.']';
-					fclose($handle);
-
-					// negative prediction values (errors) are considered by default 100 as the minimal value...
-					$jsonData = preg_replace('/(\-\d+\.\d+)/','100.0',$jsonData);
-				}
-			}
+			$jsonColumns = $jsonColumns.']';
 		}
 		catch(\Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
-			$possible_models = array();
-			$possible_models_id = '';
 		}
 		echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig',
 			array(
@@ -198,12 +175,7 @@ class MLDataCollapseController extends AbstractController
 				'jsonHeader' => $jsonHeader,
 				'jsonColumns' => $jsonColumns,
 				'jsonColor' => $jsonColor,
-				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
-				'unseen' => $unseen,
-				'current_model' => $current_model,
 				'instance' => $instance,
-				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);
