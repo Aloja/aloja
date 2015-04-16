@@ -236,6 +236,10 @@ class MLNewconfigsController extends AbstractController
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'-*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'-dataset.data');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.rds');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.rds');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
 				}
 
