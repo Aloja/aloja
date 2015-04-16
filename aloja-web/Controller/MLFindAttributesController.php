@@ -209,12 +209,16 @@ class MLFindAttributesController extends AbstractController
 					{
 						echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
 						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
+
+						$dbml = null;
 						exit(0);
 					}
 					if (isset($_GET['pass']) && $_GET['pass'] == 1)
 					{
 						$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
 						$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
+
+						$dbml = null;
 						return $retval;
 					}
 
@@ -244,6 +248,7 @@ class MLFindAttributesController extends AbstractController
 			$mae = $rae = 0;
 
 			$dbml = null;
+			if (isset($_GET['pass'])) { return "-2"; }
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
 			array(

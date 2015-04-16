@@ -371,7 +371,7 @@ class MLCrossvarController extends AbstractController
 		$message = $instance = '';
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
-		//try
+		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
@@ -495,7 +495,7 @@ class MLCrossvarController extends AbstractController
 
 			$dbml = null;
 		}
-		/*catch(\Exception $e)
+		catch(\Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = '[]';
@@ -504,7 +504,7 @@ class MLCrossvarController extends AbstractController
 			$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 			$must_wait = "NO";
 			$dbml = null;
-		}*/
+		}
 		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3dfa.html.twig',
 			array(
 				'selected' => 'mlcrossvar3dfa',
