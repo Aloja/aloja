@@ -90,6 +90,7 @@ CREATE TABLE `resolutions` (
   `id_exec` int(11) NOT NULL,
   `instance` varchar(255) NOT NULL,
   `model` varchar(1024) NOT NULL,
+  `sigma` int(8) NOT NULL,
   `outlier_code` int(8) DEFAULT 0,  
   `predicted` int(11) DEFAULT 0,  
   `observed` int(11) DEFAULT 0, 
