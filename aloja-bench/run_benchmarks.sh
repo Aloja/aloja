@@ -204,6 +204,11 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 [ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
 [ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
 
+[ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="1"
+if [ "$defaultProvider" == "hdinsight" ]; then
+	HADOOP_VERSION=2
+fi
+
 
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
@@ -213,7 +218,9 @@ BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
 JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
 Master node: $master_name "
 
-if [ "$DISK" == "HDD" ] ; then
+if [ "$defaultProvider" == "hdinsight" ]; then
+ HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+elif [ "$DISK" == "HDD" ] ; then
   HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
 elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
   HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
@@ -253,7 +260,7 @@ fi
 
 
 # Output directory name
-CONF="${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+CONF="${NET}_${DISK}_b${BENCH}_v${HADOOP_VERSION}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
