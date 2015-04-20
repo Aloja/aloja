@@ -145,29 +145,45 @@ mldatacollapse:
 
 mlfindattributes:
     pattern: "/mlfindattributes"
-    controller: "alojaweb\\Controller\\MLTemplatesController::mlfindattributesAction"
+    controller: "alojaweb\\Controller\\MLFindAttributesController::mlfindattributesAction"
+
+mlattributestree:
+    pattern: "/mlattributestree"
+    controller: "alojaweb\\Controller\\MLFindAttributesController::mlattributestreeAction"
 
 mlclearcache:
     pattern: "/mlclearcache"
-    controller: "alojaweb\\Controller\\MLTemplatesController::mlclearcacheAction"
-
-mlparameval:
-    pattern: "/mlparameval"
-    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
+    controller: "alojaweb\\Controller\\MLCacheController::mlclearcacheAction"
 
 mloutliers:
     pattern: "/mloutliers"
     controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
 
-mlcrossvar:
-    pattern: "/mlcrossvar"
-    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
-
 mlsummaries:
     pattern: "/mlsummaries"
     controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
 
+mlcrossvar:
+    pattern: "/mlcrossvar"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+
+mlcrossvar3d:
+    pattern: "/mlcrossvar3d"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dAction"
+
+mlcrossvar3dfa:
+    pattern: "/mlcrossvar3dfa"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dfaAction"
+
+mlparameval:
+    pattern: "/mlparameval"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
+
 mlminconfigs:
     pattern: "/mlminconfigs"
     controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"
+
+mlnewconfigs:
+    pattern: "/mlnewconfigs"
+    controller: "alojaweb\\Controller\\MLNewconfigsController::mlnewconfigsAction"
 

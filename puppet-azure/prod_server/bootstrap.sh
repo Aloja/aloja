@@ -48,12 +48,12 @@ done
 
 puppet apply --modulepath=/etc/puppet/modules manifests/init.pp --environment=prod
 
-#mysqlshow -uroot aloja2
-#retcode=$?
-#if [ "$retcode" -ne "0" ]; then
-#	mysql -uroot -e "create database aloja2;"
-#fi
-#mysql -uroot aloja2 < db_schema.sql
+mysqlshow -uroot aloja2
+retcode=$?
+if [ "$retcode" -ne "0" ]; then
+	mysql -uroot -e "create database aloja2;"
+fi
+mysql -uroot aloja2 < db_schema.sql
 
 add_execs() {
 	tar -xvf execs.sql.tar.gz

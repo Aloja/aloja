@@ -11,6 +11,7 @@ logger "Starting ALOJA DB create/update script"
 logger "Creating tables, applying alters, updating data..."
 
 source "$CUR_DIR/common/create_db.sh"
+source "$CUR_DIR/common/create_mlschema.sh"
 
 logger "Updating clusters and hosts"
 
@@ -30,4 +31,5 @@ for clusterConfigFile in $configFolderPath/cluster_* ; do
 done
 
 #update filters in the whole DB (slow)
+logger "Updating VALID and FILTER fields (probably will take a while...)"
 $MYSQL "$(get_filter_sql)"
