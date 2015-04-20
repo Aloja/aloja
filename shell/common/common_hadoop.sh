@@ -82,6 +82,12 @@ get_hadoop_conf_dir() {
 
 prepare_hadoop_config(){
 
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    local HADOOP_CONF_PATH="conf"
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    local HADOOP_CONF_PATH="etc/hadoop"
+  fi
+
   loggerb "Creating source dir and Copying Hadoop"
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
@@ -90,7 +96,7 @@ prepare_hadoop_config(){
 
   loggerb "Preparing config"
 
-  $DSH "rm -rf $BENCH_H_DIR/conf/*" 2>&1 |tee -a $LOG_PATH
+  $DSH "rm -rf $BENCH_H_DIR/$HADOOP_CONF_PATH/*" 2>&1 |tee -a $LOG_PATH
 
   MASTER="$master_name"
 
@@ -148,22 +154,22 @@ slaves="$(get_slaves_names)"
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
 
-  $DSH "cp $BENCH_H_DIR/conf_template/* $BENCH_H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp $BENCH_H_DIR/conf_template/* $BENCH_H_DIR/$HADOOP_CONF_PATH/" 2>&1 |tee -a $LOG_PATH
 
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hadoop-env.sh > $BENCH_H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hdfs-site.xml > $BENCH_H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/mapred-site.xml > $BENCH_H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hadoop-env.sh > $BENCH_H_DIR/$HADOOP_CONF_PATH/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/core-site.xml" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH
 
   loggerb "Replacing per host config"
 
   for node in $node_names ; do
-    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/conf/mapred-site.xml > $BENCH_H_DIR/conf/mapred-site.xml.tmp; rm $BENCH_H_DIR/conf/mapred-site.xml; mv $BENCH_H_DIR/conf/mapred-site.xml.tmp $BENCH_H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
-    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/conf/hdfs-site.xml > $BENCH_H_DIR/conf/hdfs-site.xml.tmp; rm $BENCH_H_DIR/conf/hdfs-site.xml; mv $BENCH_H_DIR/conf/hdfs-site.xml.tmp $BENCH_H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
   done
 
-  $DSH "echo -e \"$MASTER\" > $BENCH_H_DIR/conf/masters" 2>&1 |tee -a $LOG_PATH
-  $DSH "echo -e \"$slaves\" > $BENCH_H_DIR/conf/slaves" 2>&1 |tee -a $LOG_PATH
+  $DSH "echo -e \"$MASTER\" > $BENCH_H_DIR/$HADOOP_CONF_PATH/masters" 2>&1 |tee -a $LOG_PATH
+  $DSH "echo -e \"$slaves\" > $BENCH_H_DIR/$HADOOP_CONF_PATH/slaves" 2>&1 |tee -a $LOG_PATH
 
 
   #save config
@@ -176,7 +182,7 @@ slaves="$(get_slaves_names)"
   $DSH "$create_conf_dirs" 2>&1 |tee -a $LOG_PATH
 
   for node in $node_names ; do
-    ssh "$node" "cp $BENCH_H_DIR/conf/* $JOB_PATH/conf_$node" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "cp $BENCH_H_DIR/$HADOOP_CONF_PATH/* $JOB_PATH/conf_$node" 2>&1 |tee -a $LOG_PATH &
   done
 }
 
