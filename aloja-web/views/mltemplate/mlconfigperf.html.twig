@@ -99,7 +99,7 @@
 		{
 			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
 			$('#footer').hide();
-			setInterval( function() { window.location.reload(); }, 60000 ); 
+			setInterval( function() { window.location.reload(); }, 300000 ); 
 		}
 	});
 	</script>
@@ -125,7 +125,7 @@
 		</form>
 		<div id="chart" style="float: left; width: 68%; margin: 0 auto;"></div>
 		<div style="float: right; width: 30%;">
-		{% include 'common/config_filters.html.twig' %}
+		{% include 'common/config_filters_ml.html.twig' %}
 		</div>
 	</div>
 	<div style="clear: both;"></div>

@@ -100,50 +100,43 @@ class MLUtils
 		return $instances;
 	}
 
-	public static function findMatchingModels ($model_info, &$possible_models, &$possible_models_id)
+	public static function findMatchingModels ($model_info, &$possible_models, &$possible_models_id, $dbml)
 	{
-		if (($fh = fopen(getcwd().'/cache/query/record.data', 'r')) !== FALSE)
+		$query = "SELECT id_learner, model FROM learners";
+		$result = $dbml->query($query);
+		foreach ($result as $row)
 		{
-			while (!feof($fh))
+			$parts = explode(" ",$row['model']);
+			$buffer = array();
+			$last_part = "";
+			foreach ($parts as $p)
 			{
-				$line = fgets($fh, 4096);
-				if (preg_match("(((bench|net|disk|blk_size) (\(.+\)))( )?)", $line) && !preg_match('/SUMMARY/',$line))
-				{
-					$fts = explode(" : ",$line);
-					$parts = explode(" ",$fts[1]);
-					$buffer = array();
-					$last_part = "";
-					foreach ($parts as $p)
-					{
-						if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-						else $last_part = $p;
-					}
-
-					if ($model_info[0]==' ') $model_info = substr($model_info, 1);
-					$parts_2 = explode(" ",$model_info);
-					$buffer_2 = array();
-					$last_part = "";
-					foreach ($parts_2 as $p)
-					{
-						if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
-						else $last_part = $p;
-					}
-
-					$match = TRUE;
-					foreach ($buffer_2 as $bk => $ba)
-					{
-						if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
-						if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
-					}
-
-					if ($match)
-					{
-						$possible_models[] = $line;
-						$possible_models_id[] = $fts[0];
-					}
-				}
+				if (preg_match("(\(.+\))", $p)) $buffer[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+				else $last_part = $p;
 			}
-			fclose($fh);
+
+			if ($model_info[0]==' ') $model_info = substr($model_info, 1);
+			$parts_2 = explode(" ",$model_info);
+			$buffer_2 = array();
+			$last_part = "";
+			foreach ($parts_2 as $p)
+			{
+				if (preg_match("(\(.+\))", $p)) $buffer_2[$last_part] = explode(",",str_replace(array('(',')','"'),'',$p));
+				else $last_part = $p;
+			}
+
+			$match = TRUE;
+			foreach ($buffer_2 as $bk => $ba)
+			{
+				if (!array_key_exists($bk,$buffer)) { $match = FALSE; break; }
+				if ($buffer[$bk][0] != "*" && array_intersect($ba, $buffer[$bk]) != $ba) { $match = FALSE; break; }
+			}
+
+			if ($match)
+			{
+				$possible_models[] = $row['model'];
+				$possible_models_id[] = $row['id_learner'];
+			}
 		}
 	}
 }
