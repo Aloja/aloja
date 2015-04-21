@@ -38,6 +38,7 @@ class MLTemplatesController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
 				$where_configs = '';
+				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';				
 				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';

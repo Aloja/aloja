@@ -284,7 +284,7 @@ sar="$HDD/aplic/sar_$PORT_PREFIX"
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
+if [ "$defaultProvider" != "hdinsight" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
     $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
@@ -348,8 +348,9 @@ loggerb  ""
 
 prepare_config
 
-benchmark_config
-
+if [ "$defaultProvider" != "hdinsight" ]; then
+ benchmark_config
+fi
 start_time=$(date '+%s')
 
 ########################################################

@@ -1061,7 +1061,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools" "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench" "$homePrefixAloja/$userAloja/share"
   #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"

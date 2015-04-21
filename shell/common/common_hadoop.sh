@@ -206,8 +206,9 @@ get_bench_name(){
 restart_hadoop(){
   loggerb "Restart Hadoop"
   #just in case stop all first
+ if [ "$defaultProvider" != "hdinsight" ]; then
   $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
-
+ fi
   #delete previous run logs
   $DSH "rm -rf $HDD/logs; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
 
@@ -220,9 +221,12 @@ restart_hadoop(){
     $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
     $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
   fi
-
+ 
+ if [ "$defaultProvider" != "hdinsight" ]; then
   $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+ fi
 
+ if [ "$defaultProvider" != "hdinsight" ]; then
   for i in {0..300} #3mins
   do
     local report=$($DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
@@ -259,14 +263,17 @@ restart_hadoop(){
   done
 
   set_omm_killer
+ fi
 
   loggerb "Hadoop ready"
 }
 
 stop_hadoop(){
+ if [ "$defaultProvider" != "hdinsight" ]; then
   loggerb "Stop Hadoop"
   $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
   loggerb "Stop Hadoop ready"
+ fi
 }
 
 execute_HiBench(){
