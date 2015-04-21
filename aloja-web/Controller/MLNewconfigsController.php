@@ -65,7 +65,7 @@ class MLNewconfigsController extends AbstractController
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config."M")."'");
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
@@ -169,7 +169,7 @@ class MLNewconfigsController extends AbstractController
 						}
 
 						// Remove temporal files
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'-*.csv');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.csv');
 						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.dat');
 					}
 				}
@@ -234,12 +234,12 @@ class MLNewconfigsController extends AbstractController
 					fclose($handle_sizes);
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'-dataset.data');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.rds');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.rds');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.dat');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.dat');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
 				}
 
