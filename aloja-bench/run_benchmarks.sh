@@ -348,8 +348,9 @@ loggerb  ""
 
 prepare_config
 
-benchmark_config
-
+if [ "$defaultProvider" != "hdinsight" ]; then
+ benchmark_config
+fi
 start_time=$(date '+%s')
 
 ########################################################
