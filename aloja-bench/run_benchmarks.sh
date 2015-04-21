@@ -284,7 +284,7 @@ sar="$HDD/aplic/sar_$PORT_PREFIX"
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
+if [ "$defaultProvider" != "hdinsight" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
     $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
@@ -327,6 +327,7 @@ loggerb  "Benchmark: $BENCH_HIB_DIR"
 loggerb  "Benchs to execute: $LIST_BENCHS"
 loggerb  "DSH: $DSH"
 loggerb  ""
+exit
 
 ##For zabbix monitoring make sure IB ports are available
 #ssh_tunnel="ssh -N -L al-1001:30070:al-1001-ib0:30070 -L al-1001:30030:al-1001-ib0:30030 al-1001"
