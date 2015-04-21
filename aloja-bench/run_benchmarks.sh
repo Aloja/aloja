@@ -327,7 +327,6 @@ loggerb  "Benchmark: $BENCH_HIB_DIR"
 loggerb  "Benchs to execute: $LIST_BENCHS"
 loggerb  "DSH: $DSH"
 loggerb  ""
-exit
 
 ##For zabbix monitoring make sure IB ports are available
 #ssh_tunnel="ssh -N -L al-1001:30070:al-1001-ib0:30070 -L al-1001:30030:al-1001-ib0:30030 al-1001"
