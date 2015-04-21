@@ -421,14 +421,22 @@ execute_hadoop(){
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
   loggerb "# EXECUTING ${3}${1}"
 
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    local hadoop_config="$BENCH_H_DIR/conf"
+    local hadoop_examples_jar="$BENCH_H_DIR/hadoop-examples-*.jar"
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    local hadoop_config="$BENCH_H_DIR/etc/hadoop"
+    local hadoop_examples_jar="$BENCH_H_DIR/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar"
+  fi
+
   #need to send all the environment variables over SSH
   EXP="export JAVA_HOME=$JAVA_HOME && \
 export HADOOP_HOME=$BENCH_H_DIR && \
 export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
-export HADOOP_CONF_DIR=$BENCH_H_DIR/conf && \
-export HADOOP_EXAMPLES_JAR=$BENCH_H_DIR/hadoop-examples-*.jar && \
-export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
-export HADOOP_VERSION=hadoop1 && \
+export HADOOP_CONF_DIR=$hadoop_config && \
+export HADOOP_EXAMPLES_JAR=$hadoop_examples_jar && \
+export MAPRED_EXECUTABLE=$BENCH_H_DIR/bin/mapred && \
+export HADOOP_VERSION=$HADOOP_VERSION && \
 export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
 export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
 export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
