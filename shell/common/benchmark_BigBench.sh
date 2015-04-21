@@ -9,8 +9,8 @@ benchmark_config() {
 }
 
 benchmark_run() {
-  : # Empty
-  # execute_HiBench
+  restart_hadoop
+  sleep 120
 }
 
 benchmark_teardown() {
@@ -22,6 +22,5 @@ benchmark_save() {
 }
 
 benchmark_cleanup() {
-  : # Empty
-  # stop_hadoop
+  stop_hadoop
 }

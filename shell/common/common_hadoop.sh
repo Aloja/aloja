@@ -160,6 +160,10 @@ slaves="$(get_slaves_names)"
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/core-site.xml" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH
   $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/yarn-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml" 2>&1 |tee -a $LOG_PATH
+    $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/yarn-env.sh > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-env.sh" 2>&1 |tee -a $LOG_PATH
+  fi
 
   loggerb "Replacing per host config"
 
@@ -213,8 +217,14 @@ restart_hadoop(){
   loggerb "Restart Hadoop"
   #just in case stop all first
  if [ "$defaultProvider" != "hdinsight" ]; then
-  $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 >> $LOG_PATH
+  fi
  fi
+
   #delete previous run logs
   $DSH "rm -rf $HDD/logs; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
 
@@ -222,22 +232,39 @@ restart_hadoop(){
     loggerb "Deleting previous Hadoop HDFS"
 #$DSH "rm -rf $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs,nm-local-dir}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
     #send multiple yes to format
-    $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
-    $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hdfs namenode -format" 2>&1 |tee -a $LOG_PATH
+    fi
   fi
- 
+
  if [ "$defaultProvider" != "hdinsight" ]; then
-  $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+  fi
  fi
+
 
  if [ "$defaultProvider" != "hdinsight" ]; then
   for i in {0..300} #3mins
   do
-    local report=$($DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
-    local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')
-    local safe_mode=$(echo "$report" | grep "Safe mode is ON")
+    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+      local report=$($DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
+      local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')
+      local safe_mode=$(echo "$report" | grep "Safe mode is ON")
+    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+      local report=$($DSH_MASTER $BENCH_H_DIR/bin/hdfs dfsadmin -report 2> /dev/null)
+      local num=$(echo "$report" | grep "Live datanodes" | awk '{print $3}')
+      num="${num:1:${#num}-3}"
+      local safe_mode=$(echo "$report" | grep "Safe mode is ON")
+    fi
     echo $report 2>&1 |tee -a $LOG_PATH
 
     if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
@@ -246,14 +273,25 @@ restart_hadoop(){
         break
       elif [ "$i" == "30" ] ; then
         loggerb "Still in Safe mode, MANUALLY RESETTING SAFE MODE wating for $i seconds"
-        $DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
+        if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+          $DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
+        elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+          $DSH_MASTER $BENCH_H_DIR/bin/hdfs dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
+        fi
       else
         loggerb "Still in Safe mode, wating for $i seconds"
       fi
     elif [ "$i" == "60" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
-      $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
-      $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+      if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+        $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+      elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+        $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+      fi
     elif [ "$i" == "180" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
       loggerb "Reseting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"
@@ -277,7 +315,12 @@ restart_hadoop(){
 stop_hadoop(){
  if [ "$defaultProvider" != "hdinsight" ]; then
   loggerb "Stop Hadoop"
-  $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 |tee -a $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 |tee -a $LOG_PATH
+  fi
   loggerb "Stop Hadoop ready"
  fi
 }
