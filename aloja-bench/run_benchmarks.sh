@@ -16,6 +16,7 @@ $0 -C clusterName
 [-z <block size in bytes>]
 [-s (save prepare)]
 [-N (don't delete files)]
+[-H hadoop version <hadoop1|hadoop2>]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -51,7 +52,7 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -73,7 +74,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "BigBench" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -125,6 +126,10 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
     D)
       LIMIT_DATA_NODES=$OPTARG
       echo "LIMIT_DATA_NODES $LIMIT_DATA_NODES"
+      ;;
+    H)
+      HADOOP_VERSION=$OPTARG
+      [ "$HADOOP_VERSION" == "hadoop1" ] || [ "$HADOOP_VERSION" == "hadoop2" ] || usage
       ;;
     esac
 done
@@ -199,10 +204,22 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 [ ! "$BENCH_SOURCE_DIR" ] && BENCH_SOURCE_DIR="$BENCH_DEFAULT_SCRATCH/aplic"
 [ ! "$BENCH_SAVE_PREPARE_LOCATION" ] && BENCH_SAVE_PREPARE_LOCATION="$BENCH_DEFAULT_SCRATCH/HiBench_prepare"
 
-[ ! "$BENCH_HADOOP_VERSION" ] && BENCH_HADOOP_VERSION="hadoop-1.0.3"
-
 [ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
 [ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
+
+[ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="hadoop1"
+
+if [ "$defaultProvider" == "hdinsight" ]; then
+  HADOOP_VERSION="hadoop2"
+fi
+
+if [ ! "$BENCH_HADOOP_VERSION" ] ; then
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    BENCH_HADOOP_VERSION="hadoop-1.0.3"
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    BENCH_HADOOP_VERSION="hadoop-2.6.0"
+  fi
+fi
 
 
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
@@ -213,7 +230,9 @@ BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
 JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
 Master node: $master_name "
 
-if [ "$DISK" == "HDD" ] ; then
+if [ "$defaultProvider" == "hdinsight" ]; then
+ HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
+elif [ "$DISK" == "HDD" ] ; then
   HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
 elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
   HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
@@ -253,7 +272,7 @@ fi
 
 
 # Output directory name
-CONF="${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+CONF="${NET}_${DISK}_b${BENCH}_version-${HADOOP_VERSION}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
@@ -277,7 +296,7 @@ sar="$HDD/aplic/sar_$PORT_PREFIX"
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
+if [ "$defaultProvider" != "hdinsight" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
     $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
@@ -341,8 +360,9 @@ loggerb  ""
 
 prepare_config
 
-benchmark_config
-
+if [ "$defaultProvider" != "hdinsight" ]; then
+ benchmark_config
+fi
 start_time=$(date '+%s')
 
 ########################################################

@@ -1,42 +1,61 @@
-#AZURE specific functions
+#HDI specific functions
 
 #### start $cloud_provider customizations
 
-# $1 vm name $2 ssh port
-vm_create() {
+#$1 storage account name $2 redundancy type (LRS/ZRS/GRS/RAGRS/PLRS)
+vm_create_storage_account() {
+	if [ -z "$(azure storage account list "$1" | grep "$1")" ]; then
+		logger "Creating storage account $1"
+		azure storage account create "$1" -s "$subscriptionID" -l "South Central US" --type "$2"	
+	else
+		logger "WARNING: Storage account $1 already exists, skipping.."
+	fi
+	storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
+}
 
-  #check if the port was specified, for Windows this will be the RDP port
-  if [ "$vmType" != "windows" ] ; then
+#$1 storage account name $2 container name $3 storage account key
+vm_create_storage_container() {
+	if [ -z "$(azure storage container list -a "$1" -k "$3" | grep "$2")" ]; then
+		logger "Creating container $2 on storage $1"
+		azure storage container create -a "$1" -k "$3" "$2"
+	else
+		logger "WARNING: Container $2 already exists on $1, skipping.."
+	fi
+}
 
-    logger "Creating Linux VM $1 with SSH port $ssh_port..."
-      azure vm create \
-            -s "$subscriptionID" \
-            --connect "$dnsName" `#Deployment name` \
-            --vm-name "$1" \
-            --vm-size "$vmSize" \
-            --location "$azureLocation" \
-            --ssh "$ssh_port" \
-            --ssh-cert "$sshCert" \
-            "$vmImage" \
-            "$userAloja" "$passwordAloja"
-  else
-    logger "Creating Windows VM $1 with RDP port $ssh_port..."
+#$1 cluster name
+hdi_cluster_check_create() {
+	if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+    	return 0
+	 else
+    	logger "ERROR: cluster name already exists!"
+		exit
+	 fi
+}
 
-    azure vm create \
-          -s "$subscriptionID" \
-          --connect "$dnsName" `#Deployment name` \
-          --vm-name "$1" \
-          --vm-size "$vmSize" \
-          `#--location 'West Europe'` \
-          --affinity-group "$affinityGroup" \
-          --virtual-network-name "$virtualNetworkName" \
-          --subnet-names "$subnetNames" \
-          --rdp "$ssh_port" \
-          `#-v` \
-          `#'test-11'` `#DNS name` \
-          "$vmImage" \
-          "$userAloja" "$passwordAloja"
-  fi
+#$1 cluster name
+hdi_cluster_check_delete() {
+	if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+    	return 0
+	 else
+    	logger "ERROR: cluster name doesn't exists!"
+		exit
+	 fi
+}
+
+#$1 cluster name
+create_hdi_cluster() {
+ if [ -z "$storageAccount" ]; then
+	storageAccount="`echo $clusterName | cut -d- -f1`"
+ fi
+
+#vm_create_storage_account "$storageAccount" "GRS"
+#vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
+ logger "Creating Linux HDI cluster $1"
+#azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
+	#	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
+	#--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+	#--sshPassword "$passwordAloja" -s "$subscriptionID"
 }
 
 #$1 vm_name
@@ -54,7 +73,7 @@ get_ssh_key() {
 }
 
 get_ssh_host() {
-    echo "${vmName}-ssh.azurehdinsight.net"
+    echo "${clusterName}-ssh.azurehdinsight.net"
 }
 
 #construct the port number from vm_name
@@ -72,19 +91,34 @@ node_connect() {
   fi
 }
 
+#$1 cluster name
 vm_final_bootstrap() {
-
-  logger "Checking if setting a static host file for cluster"
-  vm_set_statics_hosts
-
+ logger "Configuring nodes..."
+#vm_set_ssh
+ vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo headnode0 >> machines"
+ vm_execute "sudo DEBIAN_FRONTEND=noninteractive apt-get install dsh pssh git -y -qqq"
+ vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
+ vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
+ vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
+ vm_execute "dsh -f slaves -cM -- echo '`cat /etc/fstab | grep aloja.cloudapp`' | sudo tee -a /etc/fstab > /dev/null"
+ vm_execute "dsh -f slaves -cM -- sudo mount -a"
+#vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
+# vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
+# vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
+ vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
 }
 
-vm_set_statics_hosts() {
+#$1 cluster name
+node_delete() {
+	vm_name="`echo $1 | cut -d- -f1`"
+	hdi_cluster_check_delete $vm_name
+	azure hdinsight cluster delete "$vm_name" "South Central US" "$vmType"
+}
 
-  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] ; then
-    logger "WARN: Setting statics hosts file for cluster"
-    vm_update_template "/etc/hosts" "$(get_static_hostnames)" "secured_file"
-  else
-    logger "INFO: no need to set static host file for cluster"
-  fi
+get_master_name() {
+	echo "headnode0"	
+}
+
+get_node_names() {
+	cat /home/pristine/slaves	
 }
