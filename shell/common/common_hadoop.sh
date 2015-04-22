@@ -82,6 +82,12 @@ get_hadoop_conf_dir() {
 
 prepare_hadoop_config(){
 
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    local HADOOP_CONF_PATH="conf"
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    local HADOOP_CONF_PATH="etc/hadoop"
+  fi
+
   loggerb "Creating source dir and Copying Hadoop"
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
@@ -90,7 +96,7 @@ prepare_hadoop_config(){
 
   loggerb "Preparing config"
 
-  $DSH "rm -rf $BENCH_H_DIR/conf/*" 2>&1 |tee -a $LOG_PATH
+  $DSH "rm -rf $BENCH_H_DIR/$HADOOP_CONF_PATH/*" 2>&1 |tee -a $LOG_PATH
 
   MASTER="$master_name"
 
@@ -148,22 +154,26 @@ slaves="$(get_slaves_names)"
   export LC_CTYPE=en_US.UTF-8
   export LC_ALL=en_US.UTF-8
 
-  $DSH "cp $BENCH_H_DIR/conf_template/* $BENCH_H_DIR/conf/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp $BENCH_H_DIR/conf_template/* $BENCH_H_DIR/$HADOOP_CONF_PATH/" 2>&1 |tee -a $LOG_PATH
 
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hadoop-env.sh > $BENCH_H_DIR/conf/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/conf/core-site.xml" 2>&1 |tee -a $LOG_PATH
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hdfs-site.xml > $BENCH_H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH
-  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/mapred-site.xml > $BENCH_H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hadoop-env.sh > $BENCH_H_DIR/$HADOOP_CONF_PATH/hadoop-env.sh" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/core-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/core-site.xml" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH
+  $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/yarn-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml" 2>&1 |tee -a $LOG_PATH
+    $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/yarn-env.sh > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-env.sh" 2>&1 |tee -a $LOG_PATH
+  fi
 
   loggerb "Replacing per host config"
 
   for node in $node_names ; do
-    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/conf/mapred-site.xml > $BENCH_H_DIR/conf/mapred-site.xml.tmp; rm $BENCH_H_DIR/conf/mapred-site.xml; mv $BENCH_H_DIR/conf/mapred-site.xml.tmp $BENCH_H_DIR/conf/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
-    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/conf/hdfs-site.xml > $BENCH_H_DIR/conf/hdfs-site.xml.tmp; rm $BENCH_H_DIR/conf/hdfs-site.xml; mv $BENCH_H_DIR/conf/hdfs-site.xml.tmp $BENCH_H_DIR/conf/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
   done
 
-  $DSH "echo -e \"$MASTER\" > $BENCH_H_DIR/conf/masters" 2>&1 |tee -a $LOG_PATH
-  $DSH "echo -e \"$slaves\" > $BENCH_H_DIR/conf/slaves" 2>&1 |tee -a $LOG_PATH
+  $DSH "echo -e \"$MASTER\" > $BENCH_H_DIR/$HADOOP_CONF_PATH/masters" 2>&1 |tee -a $LOG_PATH
+  $DSH "echo -e \"$slaves\" > $BENCH_H_DIR/$HADOOP_CONF_PATH/slaves" 2>&1 |tee -a $LOG_PATH
 
 
   #save config
@@ -176,7 +186,7 @@ slaves="$(get_slaves_names)"
   $DSH "$create_conf_dirs" 2>&1 |tee -a $LOG_PATH
 
   for node in $node_names ; do
-    ssh "$node" "cp $BENCH_H_DIR/conf/* $JOB_PATH/conf_$node" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "cp $BENCH_H_DIR/$HADOOP_CONF_PATH/* $JOB_PATH/conf_$node" 2>&1 |tee -a $LOG_PATH &
   done
 }
 
@@ -207,8 +217,14 @@ restart_hadoop(){
   loggerb "Restart Hadoop"
   #just in case stop all first
  if [ "$defaultProvider" != "hdinsight" ]; then
-  $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 >> $LOG_PATH
+  fi
  fi
+
   #delete previous run logs
   $DSH "rm -rf $HDD/logs; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
 
@@ -216,22 +232,39 @@ restart_hadoop(){
     loggerb "Deleting previous Hadoop HDFS"
 #$DSH "rm -rf $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/{dfs,mapred,logs}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs,nm-local-dir}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
     #send multiple yes to format
-    $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
-    $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hdfs namenode -format" 2>&1 |tee -a $LOG_PATH
+    fi
   fi
- 
+
  if [ "$defaultProvider" != "hdinsight" ]; then
-  $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+  fi
  fi
+
 
  if [ "$defaultProvider" != "hdinsight" ]; then
   for i in {0..300} #3mins
   do
-    local report=$($DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
-    local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')
-    local safe_mode=$(echo "$report" | grep "Safe mode is ON")
+    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+      local report=$($DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -report 2> /dev/null)
+      local num=$(echo "$report" | grep "Datanodes available" | awk '{print $3}')
+      local safe_mode=$(echo "$report" | grep "Safe mode is ON")
+    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+      local report=$($DSH_MASTER $BENCH_H_DIR/bin/hdfs dfsadmin -report 2> /dev/null)
+      local num=$(echo "$report" | grep "Live datanodes" | awk '{print $3}')
+      num="${num:1:${#num}-3}"
+      local safe_mode=$(echo "$report" | grep "Safe mode is ON")
+    fi
     echo $report 2>&1 |tee -a $LOG_PATH
 
     if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
@@ -240,14 +273,25 @@ restart_hadoop(){
         break
       elif [ "$i" == "30" ] ; then
         loggerb "Still in Safe mode, MANUALLY RESETTING SAFE MODE wating for $i seconds"
-        $DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
+        if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+          $DSH_MASTER $BENCH_H_DIR/bin/hadoop dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
+        elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+          $DSH_MASTER $BENCH_H_DIR/bin/hdfs dfsadmin -safemode leave 2>&1 |tee -a $LOG_PATH
+        fi
       else
         loggerb "Still in Safe mode, wating for $i seconds"
       fi
     elif [ "$i" == "60" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
-      $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
-      $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+      if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+        $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+      elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+        $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+      fi
     elif [ "$i" == "180" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
       loggerb "Reseting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"
@@ -271,7 +315,12 @@ restart_hadoop(){
 stop_hadoop(){
  if [ "$defaultProvider" != "hdinsight" ]; then
   loggerb "Stop Hadoop"
-  $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 |tee -a $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 |tee -a $LOG_PATH
+  fi
   loggerb "Stop Hadoop ready"
  fi
 }
@@ -372,14 +421,22 @@ execute_hadoop(){
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
   loggerb "# EXECUTING ${3}${1}"
 
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    local hadoop_config="$BENCH_H_DIR/conf"
+    local hadoop_examples_jar="$BENCH_H_DIR/hadoop-examples-*.jar"
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    local hadoop_config="$BENCH_H_DIR/etc/hadoop"
+    local hadoop_examples_jar="$BENCH_H_DIR/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar"
+  fi
+
   #need to send all the environment variables over SSH
   EXP="export JAVA_HOME=$JAVA_HOME && \
 export HADOOP_HOME=$BENCH_H_DIR && \
 export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
-export HADOOP_CONF_DIR=$BENCH_H_DIR/conf && \
-export HADOOP_EXAMPLES_JAR=$BENCH_H_DIR/hadoop-examples-*.jar && \
-export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
-export HADOOP_VERSION=hadoop1 && \
+export HADOOP_CONF_DIR=$hadoop_config && \
+export HADOOP_EXAMPLES_JAR=$hadoop_examples_jar && \
+export MAPRED_EXECUTABLE=$BENCH_H_DIR/bin/mapred && \
+export HADOOP_VERSION=$HADOOP_VERSION && \
 export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
 export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
 export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
