@@ -106,6 +106,8 @@ vm_final_bootstrap() {
 # vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
 # vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
  vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt -R'"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt -R'"
 }
 
 #$1 cluster name
@@ -120,5 +122,5 @@ get_master_name() {
 }
 
 get_node_names() {
-	cat /home/pristine/slaves	
+	cat /home/pristine/machines	
 }
