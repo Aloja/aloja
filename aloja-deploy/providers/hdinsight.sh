@@ -100,14 +100,14 @@ vm_final_bootstrap() {
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
- vm_execute "dsh -f slaves -cM -- echo '`cat /etc/fstab | grep aloja.cloudapp`' | sudo tee -a /etc/fstab > /dev/null"
+vm_execute "dsh -f slaves -cM -- echo \"'`cat /etc/fstab | grep aloja.cloudapp`'\" | sudo tee -a /etc/fstab > /dev/null"
  vm_execute "dsh -f slaves -cM -- sudo mount -a"
 #vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
 # vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
 # vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
  vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
- vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt -R'"
- vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt -R'"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
 }
 
 #$1 cluster name

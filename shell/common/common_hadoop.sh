@@ -557,7 +557,7 @@ execute_hdi_hadoop() {
 
   #need to send all the environment variables over SSH
   EXP="export JAVA_HOME=$JAVA_HOME && \
-export HADOOP_HOME=/usr/hdp/2.2.1.0-2340/hadoop && \
+export HADOOP_HOME=/usr/hdp/2.2.1.2-2342/hadoop && \
 export HADOOP_EXECUTABLE=hadoop && \
 export HADOOP_CONF_DIR=/etc/hadoop/conf && \
 export HADOOP_EXAMPLES_JAR=/home/pristine/hadoop-mapreduce-examples.jar && \

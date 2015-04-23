@@ -749,12 +749,12 @@ update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
 update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
-update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25;
-update execs set id_cluster=25 where exec like '%alojahdi32%';
-update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000;
-update execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort';
-update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000;
-update execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
+update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
+update execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
+update execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
 
 "
 $MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
