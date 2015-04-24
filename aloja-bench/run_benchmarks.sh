@@ -74,7 +74,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "BigBench" ] || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -288,10 +288,17 @@ $DSH_MASTER "touch $LOG_PATH"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
 loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
-bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
-vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
-bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
-sar="$HDD/aplic/sar_$PORT_PREFIX"
+if [ "$defaultProvider" != "hdinsight" ]; then
+	bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
+	vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
+	bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
+	sar="$HDD/aplic/sar_$PORT_PREFIX"
+else
+	bwm_source="bwm-ng"
+	vmstat="vmstat"
+	bwm="bwm-ng"
+	sar="sar"
+fi
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
@@ -358,11 +365,12 @@ loggerb  ""
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
 
-prepare_config
-
 if [ "$defaultProvider" != "hdinsight" ]; then
- benchmark_config
+ prepare_config
 fi
+
+benchmark_config
+
 start_time=$(date '+%s')
 
 ########################################################

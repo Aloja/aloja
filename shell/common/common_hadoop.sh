@@ -242,17 +242,13 @@ restart_hadoop(){
     fi
   fi
 
- if [ "$defaultProvider" != "hdinsight" ]; then
   if [ "$HADOOP_VERSION" == "hadoop1" ]; then
     $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
   elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
     $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
     $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
   fi
- fi
 
-
- if [ "$defaultProvider" != "hdinsight" ]; then
   for i in {0..300} #3mins
   do
     if [ "$HADOOP_VERSION" == "hadoop1" ]; then
@@ -307,7 +303,6 @@ restart_hadoop(){
   done
 
   set_omm_killer
- fi
 
   loggerb "Hadoop ready"
 }
@@ -404,6 +399,58 @@ execute_HiBench(){
   done
 }
 
+execute_HDI_HiBench(){
+  for bench in $(echo "$LIST_BENCHS") ; do
+    #Delete previous data
+    echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
+
+    # Check if there is a custom config for this bench, and call it
+    if type "benchmark_hibench_config_${bench}" &>/dev/null
+    then
+      eval "benchmark_hibench_config_${bench}"
+    fi
+
+    #just in case check if the input file exists in hadoop
+    if [ "$DELETE_HDFS" == "0" ] ; then
+      get_bench_name $bench
+      input_exists=$($DSH_MASTER hdfs dfs -ls "/HiBench/$full_name/Input" 2> /dev/null |grep "Found ")
+
+      if [ "$input_exists" != "" ] ; then
+        loggerb  "Input folder seems OK"
+      else
+        loggerb  "Input folder does not exist, RESET and RESTART"
+        $DSH_MASTER hdfs dfs -ls "/HiBench/$full_name/Input" 2>&1 |tee -a $LOG_PATH
+        DELETE_HDFS=1
+        format_nodes
+      fi
+    fi
+
+    echo "# $(date +"%H:%M:%S") STARTING $bench" 2>&1 |tee -a $LOG_PATH
+
+      if [ "$DELETE_HDFS" == "1" ] ; then
+        if [ "$bench" != "dfsioe" ] ; then
+          execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare.sh "prep_"
+        elif [ "$bench" == "dfsioe" ] ; then
+          execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare-read.sh "prep_"
+        fi
+      else
+        loggerb  "Reusing previous RUN prepared $bench"
+      fi
+
+    loggerb  "$(date +"%H:%M:%S") RUNNING $bench"
+
+    if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
+      execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/run.sh
+    elif [ "$bench" == "hivebench" ] ; then
+      execute_hdi_hadoop hivebench_agregation ${BENCH_HIB_DIR}/hivebench/bin/run-aggregation.sh
+      execute_hdi_hadoop hivebench_join ${BENCH_HIB_DIR}/hivebench/bin/run-join.sh
+    elif [ "$bench" == "dfsioe" ] ; then
+      execute_hdi_hadoop dfsioe_read ${BENCH_HIB_DIR}/dfsioe/bin/run-read.sh
+      execute_hdi_hadoop dfsioe_write ${BENCH_HIB_DIR}/dfsioe/bin/run-write.sh
+    fi
+
+  done	
+}
 
 execute_hadoop(){
   #clear buffer cache exept for prepare
@@ -498,6 +545,94 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
   save_hadoop "${3}${1}"
 }
 
+execute_hdi_hadoop() {
+  save_disk_usage "BEFORE"
+
+  restart_monit
+
+  #TODO fix empty variable problem when not echoing
+  local start_exec=`timestamp`
+  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
+  loggerb "# EXECUTING ${3}${1}"
+
+  #need to send all the environment variables over SSH
+  EXP="export JAVA_HOME=$JAVA_HOME && \
+export HADOOP_HOME=/usr/hdp/2.2.1.2-2342/hadoop && \
+export HADOOP_EXECUTABLE=hadoop && \
+export HADOOP_CONF_DIR=/etc/hadoop/conf && \
+export HADOOP_EXAMPLES_JAR=/home/pristine/hadoop-mapreduce-examples.jar && \
+export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
+export HADOOP_VERSION=$HADOOP_VERSION && \
+export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
+export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
+export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
+export NUM_MAPS=$NUM_MAPS && \
+export NUM_REDS=$NUM_REDS && \
+export DATASIZE=$DATASIZE && \
+export PAGES=$PAGES && \
+export CLASSES=$CLASSES && \
+export NGRAMS=$NGRAMS && \
+export RD_NUM_OF_FILES=$RD_NUM_OF_FILES && \
+export RD_FILE_SIZE=$RD_FILE_SIZE && \
+export WT_NUM_OF_FILES=$WT_NUM_OF_FILES && \
+export WT_FILE_SIZE=$WT_FILE_SIZE && \
+export NUM_OF_CLUSTERS=$NUM_OF_CLUSTERS && \
+export NUM_OF_SAMPLES=$NUM_OF_SAMPLES && \
+export SAMPLES_PER_INPUTFILE=$SAMPLES_PER_INPUTFILE && \
+export DIMENSIONS=$DIMENSIONS && \
+export MAX_ITERATION=$MAX_ITERATION && \
+export NUM_ITERATIONS=$NUM_ITERATIONS && \
+"
+
+  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
+
+  save_disk_usage "BEFORE"
+
+  restart_monit
+
+  #TODO fix empty variable problem when not echoing
+  local start_exec=`timestamp`
+  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
+  loggerb "# EXECUTING ${3}${1}"
+
+  local end_exec=`timestamp`
+
+  loggerb "# DONE EXECUTING $1"
+
+  local total_secs=`calc_exec_time $start_exec $end_exec`
+  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
+
+  # Save execution information in an array to allow import later
+  declare -gA EXEC_TIME
+  declare -gA EXEC_START
+  declare -gA EXEC_END
+  EXEC_TIME[${3}${1}]="$total_secs"
+  EXEC_START[${3}${1}]="$start_exec"
+  EXEC_END[${3}${1}]="$end_exec"
+
+  url="http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=${start_date}&period=${total_secs}"
+  echo "SENDING: hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s." 2>&1 |tee -a $LOG_PATH
+  zabbix_sender "hibench.runs $end_exec <a href='$url'>${3}${1} $CONF</a> <strong>Time:</strong> $total_secs s."
+
+
+  stop_monit
+
+  #save the prepare
+  if [[ -z $3 ]] && [ "$SAVE_BENCH" == "1" ] ; then
+    loggerb "Saving $3 to disk: $BENCH_SAVE_PREPARE_LOCATION"
+    $DSH_MASTER hdfs dfs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
+  fi
+
+  save_disk_usage "AFTER"
+
+  #clean output data
+  loggerb "INFO: Cleaning Output data for $bench"
+  get_bench_name $bench
+  $DSH_MASTER "hdfs dfs -rm -r /HiBench/$full_name/Output"
+
+  save_hadoop "${3}${1}"
+}
+
 save_hadoop() {
   loggerb "Saving benchmark $1"
   $DSH "mkdir -p $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
@@ -506,7 +641,12 @@ save_hadoop() {
   #take into account naming *.date when changing dates
   #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  if [ "$defaultProvider" == "hdinsight" ]; then
+	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1	
+  else
+    $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  fi
+
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
   cp "${BENCH_HIB_DIR}/$bench/hibench.report" "$JOB_PATH/$1/"
 
