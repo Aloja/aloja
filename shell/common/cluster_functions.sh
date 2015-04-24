@@ -25,7 +25,6 @@ vm_check_create() {
     logger "Starting VM $1 in case needed"
     vm_start "$1"
   fi
-
 }
 
 #requires $vm_name and $type to be set
