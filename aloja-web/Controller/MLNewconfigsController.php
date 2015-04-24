@@ -51,6 +51,9 @@ class MLNewconfigsController extends AbstractController
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 			unset($params['id_clusters']); // Exclude the param from now on

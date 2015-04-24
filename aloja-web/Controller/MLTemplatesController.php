@@ -47,6 +47,9 @@ class MLTemplatesController extends AbstractController
  			}
 			$where_configs = str_replace("id_cluster","'e.id_cluster'",$where_configs);
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted,$db);
@@ -78,7 +81,7 @@ class MLTemplatesController extends AbstractController
 					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
 				);
 				$headers = array_keys($header_names);
-				$names = array_values($header_names);
+				$names = array_values($header_names);			
 
 			    	// dump the result to csv
 			    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";

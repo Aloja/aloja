@@ -54,6 +54,9 @@ class MLFindAttributesController extends AbstractController
 				$unseen = FALSE;
 			}
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			$jsonData = $jsonHeader = "[]";
 			$mae = $rae = 0;
 
