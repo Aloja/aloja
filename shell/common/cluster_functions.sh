@@ -22,6 +22,8 @@ vm_check_create() {
     vm_create "$1" "$2"
   else
     logger "VM $1 already exists. Skipping creation..."
+    logger "Starting VM $1 in case needed"
+    vm_start "$1"
   fi
 
 }
@@ -703,10 +705,10 @@ vm_set_dsh() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
-    node_names="$(get_node_names)"
+    node_names="$(char2char "$(get_node_names)" ' ' '\n')"
     vm_update_template "~/.dsh/group/a" "$node_names" ""
 
-    slave_names="$(get_slaves_names)"
+    slave_names="$(char2char "$(get_slaves_names)" ' ' '\n')"
     vm_update_template "~/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
