@@ -41,6 +41,9 @@ class MLMinconfigsController extends AbstractController
 				$unrestricted = TRUE; 
 			}
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 

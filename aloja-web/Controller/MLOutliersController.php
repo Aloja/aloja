@@ -49,6 +49,9 @@ class MLOutliersController extends AbstractController
 //				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
 			}
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
