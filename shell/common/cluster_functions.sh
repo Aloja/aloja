@@ -30,10 +30,11 @@ vm_check_create() {
 vm_create_node() {
 	if [ "$defaultProvider" = "hdinsight" ]; then
 		vm_name="$clusterName"
-		#hdi_cluster_check_create "$vm_name"
-		create_hdi_cluster "$vm_name"
-		vm_provision
-		vm_final_bootstrap "$vm_name"
+		if [ ! "$(hdi_cluster_check_create "$vm_name")" ]; then
+		  create_hdi_cluster "$vm_name"
+		fi
+		  vm_provision "password"
+		  vm_final_bootstrap "$vm_name" "password"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
@@ -82,11 +83,16 @@ vm_create_connect() {
 }
 
 #requires $vm_name and $type to be set
+#$1 use password
 vm_provision() {
   vm_initial_bootstrap
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
 
-  vm_set_ssh
+  if [ ! -z $1 ]; then
+    vm_set_ssh $1
+  else
+    vm_set_ssh
+  fi
   vm_install_base_packages
 
   if [ -z "$noSudo" ] ; then
@@ -296,6 +302,7 @@ vm_local_scp() {
     scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
+   logger "password"
     check_sshpass
 
     sshpass -p "$passwordAloja" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"

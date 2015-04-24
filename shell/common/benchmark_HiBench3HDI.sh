@@ -53,6 +53,7 @@ benchmark_hibench_config_pagerank() {
 benchmark_hibench_config_sort() {
   export COMPRESS_GLOBAL=1
   export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  export DATASIZE=24000000000
 }
 
 benchmark_hibench_config_terasort() {
@@ -64,4 +65,7 @@ benchmark_hibench_config_terasort() {
 benchmark_hibench_config_wordcount() {
   export COMPRESS_GLOBAL=1
   export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  export DATASIZE=32000000000
+  export NUM_MAPS=16
+  export NUM_REDS=48
 }
