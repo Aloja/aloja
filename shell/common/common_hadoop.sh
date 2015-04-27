@@ -586,15 +586,6 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
 
   $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
 
-  save_disk_usage "BEFORE"
-
-  restart_monit
-
-  #TODO fix empty variable problem when not echoing
-  local start_exec=`timestamp`
-  local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
-  loggerb "# EXECUTING ${3}${1}"
-
   local end_exec=`timestamp`
 
   loggerb "# DONE EXECUTING $1"
@@ -620,7 +611,7 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
   #save the prepare
   if [[ -z $3 ]] && [ "$SAVE_BENCH" == "1" ] ; then
     loggerb "Saving $3 to disk: $BENCH_SAVE_PREPARE_LOCATION"
-    $DSH_MASTER hdfs dfs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
+    $DSH_MASTER hadoop fs -get -ignoreCrc /HiBench $BENCH_SAVE_PREPARE_LOCATION 2>&1 |tee -a $LOG_PATH
   fi
 
   save_disk_usage "AFTER"
@@ -628,7 +619,7 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
   #clean output data
   loggerb "INFO: Cleaning Output data for $bench"
   get_bench_name $bench
-  $DSH_MASTER "hdfs dfs -rm -r /HiBench/$full_name/Output"
+  $DSH_MASTER "$BENCH_H_DIR/bin/hadoop fs -rmr /HiBench/$full_name/Output"
 
   save_hadoop "${3}${1}"
 }
@@ -642,7 +633,9 @@ save_hadoop() {
   #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   if [ "$defaultProvider" == "hdinsight" ]; then
-	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1	
+	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
+	hdfs dfs -rm -r /mr-history
+	hdfs dfs -expunge
   else
     $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   fi

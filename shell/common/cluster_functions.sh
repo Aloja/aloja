@@ -29,9 +29,10 @@ vm_check_create() {
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-	if [ "$defaultProvider" = "hdinsight" ]; then
+	if [ "$defaultProvider" == "hdinsight" ]; then
 		vm_name="$clusterName"
-		if [ ! "$(hdi_cluster_check_create "$vm_name")" ]; then
+		status=$(hdi_cluster_check_create "$vm_name")
+		if [ $status -eq 0 ]; then
 		  create_hdi_cluster "$vm_name"
 		fi
 		  vm_provision "password"
