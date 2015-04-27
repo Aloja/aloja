@@ -744,8 +744,9 @@ update ignore execs SET disk='HDD' where disk = 'SSD' id_cluster = 26;
 
 
 #azure VMs (this should also be in get_filter_sql)
-update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
+update ignore clusters SET vm_size='A1' where vm_size IN ('small', 'Small');
 update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
+update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
 update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
