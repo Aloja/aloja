@@ -54,7 +54,7 @@ get_cluster_status() {
 
 #$1 cluster name
 wait_hdi_cluster() {
-  for tries in {1..300}; do
+  for tries in {1..900}; do
     currentStatus="$(get_cluster_status "$1" "$vmType" )"
     waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
     if [ "$currentStatus" == "Running" ] ; then
