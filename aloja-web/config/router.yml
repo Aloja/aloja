@@ -135,6 +135,10 @@ bestcostperfclustereval:
     pattern: "/bestcostperfclustereval"
     controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"
 
+nodeseval:
+    pattern: "/nodeseval"
+    controller: "alojaweb\\Controller\\DefaultController::NodesEvaluationAction"
+
 mlprediction:
     pattern: "/mlprediction"
     controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"

@@ -127,7 +127,8 @@
 		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
 		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
 		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a>
-		          </ul>
+					  <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Number of Nodes Evaluation</a></li>
+				  </ul>
 		        </li>
 				<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
