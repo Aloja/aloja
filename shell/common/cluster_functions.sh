@@ -22,17 +22,21 @@ vm_check_create() {
     vm_create "$1" "$2"
   else
     logger "VM $1 already exists. Skipping creation..."
+    logger "Starting VM $1 in case needed"
+    vm_start "$1"
   fi
-
 }
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-	if [ "$defaultProvider" = "hdinsight" ]; then
-		vm_name="`echo $clusterName | cut -d- -f1`"
-		#hdi_cluster_check_create "$vm_name"
-		create_hdi_cluster "$vm_name"
-		vm_final_bootstrap "$vm_name"
+	if [ "$defaultProvider" == "hdinsight" ]; then
+		vm_name="$clusterName"
+		status=$(hdi_cluster_check_create "$clusterName")
+		if [ $status -eq 0 ]; then
+		  create_hdi_cluster "$clusterName"
+		fi
+		  vm_provision "password"
+		  vm_final_bootstrap "$clusterName"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
@@ -81,21 +85,24 @@ vm_create_connect() {
 }
 
 #requires $vm_name and $type to be set
+#$1 use password
 vm_provision() {
   vm_initial_bootstrap
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
 
-  vm_set_ssh
+  if [ ! -z $1 ]; then
+    vm_set_ssh $1
+  else
+    vm_set_ssh
+  fi
   vm_install_base_packages
 
-  #[ "$type" != "cluster" ] && {
-    if [ -z "$noSudo" ] ; then
-      vm_initialize_disks #cluster is in parallel later
-      vm_mount_disks
-    else
-      logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
-    fi
-  #}
+  if [ -z "$noSudo" ] ; then
+    vm_initialize_disks #cluster is in parallel later
+    vm_mount_disks
+  else
+    logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
+  fi
 
   vm_set_dot_files &
 
@@ -297,6 +304,7 @@ vm_local_scp() {
     scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
+   logger "password"
     check_sshpass
 
     sshpass -p "$passwordAloja" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
@@ -455,6 +463,7 @@ make_fstab(){
     local create_string="$fs_mount"
   fi
 
+ if [ "$defaultProvider" != "hdinsight" ]; then
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
@@ -463,6 +472,7 @@ make_fstab(){
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
+ fi
 
   local create_string="$create_string
 $(get_extra_fstab)"
@@ -702,10 +712,10 @@ vm_set_dsh() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
-    node_names="$(get_node_names)"
+    node_names="$(char2char "$(get_node_names)" ' ' '\n')"
     vm_update_template "~/.dsh/group/a" "$node_names" ""
 
-    slave_names="$(get_slaves_names)"
+    slave_names="$(char2char "$(get_slaves_names)" ' ' '\n')"
     vm_update_template "~/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
@@ -1060,7 +1070,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools" "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench" "$homePrefixAloja/$userAloja/share"
   #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"

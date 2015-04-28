@@ -1,22 +1,30 @@
 #!/bin/bash
+CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+source "$CONF_DIR/common/common.sh"
 
-if [ "$#" -ne 2 ]; then
-	echo "Usage: run_rshdi.sh clustername numberOfNodes"
+if [ "$#" -lt 1 ]; then
+	echo "Usage: run_rshdi.sh clustername [jar_location]"
 	exit	
 fi
 
 clusterName=$1
-numberOfNodes=$2
 
 HDD="/home/pristine/share"
 DSH="dsh -f machines -cM"
 JAR_LOCATION="/home/pristine/hadoop-mapreduce-examples.jar"
+if [ "$#" -ge 2 ]; then
+	JAR_LOCATION=$2
+fi
 
+NET="ETH"
+DISK="RR1"
+BENCH="HiBench3"
+HADOOP_VERSION=2
+CONF="${NET}_${DISK}_b${BENCH}_v${HADOOP_VERSION}_D${numberOfNodes}_${clusterName}"
 
 if [ ! -d $HDD/logs ]; then
-	sudo mkdir $HDD/logs
-	sudo chown -R pristine.pristine $HDD/logs
-	chmod 777 $HDD/logs -R
+	sudo mkdir -p $HDD/jobs_${clusterName}
+	#sudo chown -R pristine.pristine $HDD/jobs_${clusterName}
 fi
 
 installIfNotInstalled() {
@@ -58,11 +66,15 @@ restart_monit(){
   logger "Restart Monit"
 
   stop_monit
- $DSH "rm $1/vmstat.log $1/bwm.log $1/sar-output.sar"
+ $DSH "rm $1/vmstat*.log $1/bwm*.log $1/sar-output-*.sar"
+ 
+ vmstatcommand="vmstat -n 1 >> $1/vmstat-"'$(hostname)'".log &"
+ bwmngcommand="bwm-ng -o csv -I eth1 -u bytes -t 1000 >> $1/bwm-"'$(hostname)'".log &"
+ sarcommand="sar -o $1/sar-output-"'$(hostname)'".sar 1 > /dev/null 2>&1 &"
 
-  $DSH "vmstat -n 1 >> $1/vmstat-`hostname`.log &" 2>&1
-  $DSH "bwm-ng -o csv -I eth1 -u bytes -t 1000 >> $1/bwm-`hostname`.log &" 2>&1
-  $DSH "sar -o $1/sar-output-`hostname`.sar 1 > /dev/null 2>&1 &" 2>&1
+ $DSH "$vmstatcommand" 2>&1
+ $DSH "$bwmngcommand" 2>&1
+ $DSH "$sarcommand" 2>&1
 
   logger "Monit ready"
 }
@@ -79,26 +91,34 @@ stop_monit(){
 
 collect_logs(){
 	logger "Retrieving haddop logs"
-	sudo su hdfs -c "hdfs dfs -copyToLocal /mr-history $1"
+	hdfs dfs -copyToLocal /mr-history $1
+	hdfs dfs -rm -r /mr-history
+	hdfs dfs -expunge
 }
 
 #installIfNotInstalled "sysstat"
 #installIfNotInstalled "bwm-ng"
 #installDsh
 
-exec_dir="2014_alojahdil$numberOfNodes-terasort-`date %s`"
-if [ ! -d $HDD/logs/$exec_dir ]; then
-	mkdir $HDD/logs/$exec_dir
+exec_dir=$CONF
+mkdir -p $HDD/jobs_${clusterName}/$exec_dir
+
+logger "Starting run of teragen"
+restart_monit "${HDD}/jobs_${clusterName}/${exec_dir}"
+hdfs dfs -rm -r 100GB-terasort-input
+(time hadoop jar $JAR_LOCATION teragen 1000000000 100GB-terasort-input) 2>&1 | tee -a "${HDD}/jobs_${clusterName}/${exec_dir}/output.log"
+stop_monit
+collect_logs "${HDD}/jobs_${clusterName}/${exec_dir}"
+
+exec_dir="2014_$clusterName-terasort-`date +%s`"
+if [ ! -d $HDD/jobs_${clusterName}/$exec_dir ]; then
+	mkdir $HDD/jobs_${clusterName}/$exec_dir
 fi
 
-restart_monit "${HDD}/logs/${exec_dir}"
-logger "Starting run of teragen"
-hdfs dfs -rm -r 100GB-terasort-input
-hadoop jar $JAR_LOCATION teragen 1000 100GB-terasort-input | tee -a "${HDD}/logs/${exec_dir}"
 logger "Starting run of terasort"
+restart_monit "${HDD}/jobs_${clusterName}/${exec_dir}"
 hdfs dfs -rm -r 100GB-terasort-output
-hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output | tee -a "${HDD}/logs/${exec_dir}"
+(time hadoop jar $JAR_LOCATION terasort 100GB-terasort-input 100GB-terasort-output) 2>&1 | tee -a "${HDD}/jobs_${clusterName}/${exec_dir}/output.log"
 logger "Terasort ended"
 stop_monit
-
-collect_logs "${HDD}/logs/${exec_dir}"
+collect_logs "${HDD}/jobs_${clusterName}/${exec_dir}"

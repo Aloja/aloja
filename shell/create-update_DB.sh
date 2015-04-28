@@ -11,6 +11,7 @@ logger "Starting ALOJA DB create/update script"
 logger "Creating tables, applying alters, updating data..."
 
 source "$CUR_DIR/common/create_db.sh"
+source "$CUR_DIR/common/create_mlschema.sh"
 
 logger "Updating clusters and hosts"
 

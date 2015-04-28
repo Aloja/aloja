@@ -26,10 +26,10 @@ vm_create_storage_container() {
 #$1 cluster name
 hdi_cluster_check_create() {
 	if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
-    	return 0
+    	echo 0
 	 else
-    	logger "ERROR: cluster name already exists!"
-		exit
+    	logger "WARNING: cluster name already exists!"
+		echo 1
 	 fi
 }
 
@@ -43,15 +43,44 @@ hdi_cluster_check_delete() {
 	 fi
 }
 
+#$1 cluster name  $2 vm OS
+get_cluster_status() {
+   if [ ! -z "$(azure hdinsight cluster show "$1" "$2" | grep Running)" ]; then
+     echo "Running"
+   else
+     echo "Deploying"
+   fi
+}
+
+#$1 cluster name
+wait_hdi_cluster() {
+  for tries in {1..900}; do
+    currentStatus="$(get_cluster_status "$1" "$vmType" )"
+    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
+    if [ "$currentStatus" == "Running" ] ; then
+      logger " Cluster $1 is ready!"
+      break
+    else
+      logger " Cluster $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempt(s)."
+    fi
+  done
+}
+
 #$1 cluster name
 create_hdi_cluster() {
-# vm_create_storage_account "$storageAccount" "GRS"
-# vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
+ if [ -z "$storageAccount" ]; then
+	storageAccount="`echo $clusterName | cut -d- -f1`"
+ fi
+
+ vm_create_storage_account "$storageAccount" "GRS"
+ vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
-# azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
-#	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-#	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
-#	--sshPassword "$passwordAloja" -s "$subscriptionID"
+     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
+	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
+	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+	--sshPassword "$passwordAloja" -s "$subscriptionID"
+
+  wait_hdi_cluster $1
 }
 
 #$1 vm_name
@@ -69,8 +98,7 @@ get_ssh_key() {
 }
 
 get_ssh_host() {
-	vm_name="`echo ${clusterName} | cut -d- -f1`"
-    echo "${vm_name}-ssh.azurehdinsight.net"
+    echo "${clusterName}-ssh.azurehdinsight.net"
 }
 
 #construct the port number from vm_name
@@ -88,25 +116,33 @@ node_connect() {
   fi
 }
 
-#$1 cluster name
+#$1 cluster name $2 use password
 vm_final_bootstrap() {
  logger "Configuring nodes..."
- vm_set_ssh
+#vm_set_ssh
  vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo headnode0 >> machines"
- vm_execute "sudo DEBIAN_FRONTEND=noninteractive apt-get install dsh pssh git -y -qqq"
+ vm_execute "sudo DEBIAN_FRONTEND=noninteractive apt-get install sshpass dsh pssh git -y -qqq"
+ if [ ! -z $2 ]; then
+  vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
+ else
+  vm_execute "while read i; do echo \$i; sshpass -p '$passwordAloja' scp -o StrictHostKeyChecking=no .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key,authorized_keys} $userAloja@\$i:/home/pristine/.ssh; done</home/pristine/slaves"
+ fi
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
- vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
- vm_execute "mkdir -p share; dsh -f slaves -Mc -- 'mkdir -p share'"
- vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@$(hostname -i):/home/pristine/share' '/home/pristine/share'\""
- vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
- vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
+ vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
+ vm_execute "dsh -f slaves -cM -- echo \"'`cat /etc/fstab | grep aloja.cloudapp`' | sudo tee -a /etc/fstab > /dev/null\""
+ vm_execute "dsh -f slaves -cM -- sudo mount -a"
+#vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
+# vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
+# vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
+ vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
 }
 
 #$1 cluster name
 node_delete() {
-	vm_name="`echo $1 | cut -d- -f1`"
-	hdi_cluster_check_delete $vm_name
-	azure hdinsight cluster delete "$vm_name" "South Central US" "$vmType"
+	hdi_cluster_check_delete $1
+	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
 }
 
 get_master_name() {
@@ -114,5 +150,5 @@ get_master_name() {
 }
 
 get_node_names() {
-	cat slaves	
+	cat /home/pristine/machines	
 }
