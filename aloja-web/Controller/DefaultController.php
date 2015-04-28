@@ -2452,31 +2452,16 @@ class DefaultController extends AbstractController
                 $where_configs .= 'AND bench IN (\'terasort\')';
 
             $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT id_exec,MIN(exe_time) from execs JOIN clusters USING (id_cluster) WHERE 1 $where_configs GROUP BY datanodes,vm_size ) t ON t.id_exec = e.id_exec WHERE 1 $where_configs " . DBUtils::getFilterExecs() . " GROUP BY c.datanodes,c.vm_size ORDER BY c.datanodes ASC,c.vm_size DESC;");
-            $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs WHERE 1 " . DBUtils::getFilterExecs() . ");");
 
             $vmSizes = array();
             $categories = array();
             $dataNodes = array();
             foreach ($execs as &$exec) {
-                $costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
-                $_GET['cost_hour'][$exec['id_cluster']] = $costHour;
-
-                $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
-                $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-
-                $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
-                $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
-
-                $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
-                $_GET['cost_IB'][$exec['id_cluster']] = $costIB;
-
-                $exec['cost_std'] = Utils::getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB);
-
                 if (!isset($dataNodes[$exec['datanodes']])) {
                     $dataNodes[$exec['datanodes']] = 1;
                     $categories[] = $exec['datanodes'];
                 }
-                $vmSizes[$exec['vm_size']][$exec['datanodes']] = array($exec['exe_time'], $exec['cost_std']);
+                $vmSizes[$exec['vm_size']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
             }
 
             $series = array();
@@ -2506,11 +2491,6 @@ class DefaultController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => json_encode($series),
             'options' => Utils::getFilterOptions($dbUtils),
-            'clusters' => $clusters,
-            'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
-            'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
-            'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
-            'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
             'datefrom' => $datefrom,
             'dateto' => $dateto,
             'benchs' => $benchs,
