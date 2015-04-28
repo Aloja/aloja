@@ -129,7 +129,7 @@ vm_final_bootstrap() {
  fi
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
-vm_execute "dsh -f slaves -cM -- echo \"'`cat /etc/fstab | grep aloja.cloudapp`'\" | sudo tee -a /etc/fstab > /dev/null"
+ vm_execute "dsh -f slaves -cM -- echo \"'`cat /etc/fstab | grep aloja.cloudapp`' | sudo tee -a /etc/fstab > /dev/null\""
  vm_execute "dsh -f slaves -cM -- sudo mount -a"
 #vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
 # vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
@@ -141,9 +141,8 @@ vm_execute "dsh -f slaves -cM -- echo \"'`cat /etc/fstab | grep aloja.cloudapp`'
 
 #$1 cluster name
 node_delete() {
-	hdi_cluster_check_delete $vm_name
-       echo "$subscriptionID"
-	azure hdinsight cluster delete "$vm_name" "South Central US" "$vmType" -s "$subscriptionID"
+	hdi_cluster_check_delete $1
+	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
 }
 
 get_master_name() {
