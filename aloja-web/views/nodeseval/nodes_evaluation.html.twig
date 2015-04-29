@@ -30,40 +30,41 @@
                 title: {
                     text: 'Number of nodes evaluation'
                 },
+                subtitle: {
+                    text: 'Benchmark: {{ benchs[0] }}'
+                },
                 xAxis: [{
                     categories: {{ categories | raw }},
                     title: {
                         text: 'Number of datanodes'
                     }
                 }],
-                yAxis: [{ // Secondary yAxis
-                        labels: {
-                            format: '{value} s',
-                            style: {
-                                color: Highcharts.getOptions().colors[0]
-                            }
-                        },
-                        title: {
-                            text: 'Execution time',
-                            style: {
-                                color: Highcharts.getOptions().colors[0]
-                            }
-                        },
-                        opposite: true
-                    },{ // Primary yAxis
-                    gridLineWidth: 0,
+                yAxis: [{ // Primary yAxis
                     title: {
                         text: 'Run cost',
-                        style: {
-                            color: Highcharts.getOptions().colors[2]
-                        }
+
                     },
                     labels: {
                         format: '{value} $',
+                    },
+                    min: 0,
+                    opposite: true
+                    },{ // Secondary yAxis
+                    gridLineWidth: 0,
+                    labels: {
+                        format: '{value} s',
                         style: {
-                            color: Highcharts.getOptions().colors[2]
+                            color: Highcharts.getOptions().colors[0]
                         }
-                    }}],
+                    },
+                    title: {
+                        text: 'Execution time',
+                        style: {
+                            color: Highcharts.getOptions().colors[0]
+                        }
+                    },
+                    min: 0
+                }],
                 tooltip: {
                     shared: false,
                     formatter: function() {
@@ -74,20 +75,7 @@
                     enabled: false
                 },
                 legend: {
-                    layout: 'vertical',
-                    backgroundColor: 'white',
-                    align: 'right',
-                    verticalAlign: 'top',
-                    y: 60,
-                    x: -40,
-                    borderWidth: 1,
-                    borderRadius: 0,
-                    title: {
-                        text: ':: Drag me'
-                    },
-                    floating: true,
-                    draggable: true,
-                    zIndex: 20
+                    layout: 'horizontal'
                 },
                 series: {{ seriesData | raw }}
             });

@@ -2425,28 +2425,28 @@ class DefaultController extends AbstractController
 
             $datefrom = Utils::read_params('datefrom',$where_configs);;
             $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs = Utils::read_params ( 'benchs', $where_configs, false );
-            $nets = Utils::read_params ( 'nets', $where_configs, false );
-            $disks = Utils::read_params ( 'disks', $where_configs, false );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false );
-            $comps = Utils::read_params ( 'comps', $where_configs, false );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false );
-            $mapss = Utils::read_params ( 'mapss', $where_configs, false );
-            $replications = Utils::read_params ( 'replications', $where_configs, false );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs, false );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false );
-            $money = Utils::read_params ( 'money', $where_configs, false );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-            $types = Utils::read_params ( 'types', $where_configs, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, false );
+            $benchs = Utils::read_params ( 'benchs', $where_configs, true );
+            $nets = Utils::read_params ( 'nets', $where_configs, true );
+            $disks = Utils::read_params ( 'disks', $where_configs, true );
+            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, true );
+            $comps = Utils::read_params ( 'comps', $where_configs, true );
+            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, true );
+            $mapss = Utils::read_params ( 'mapss', $where_configs, true );
+            $replications = Utils::read_params ( 'replications', $where_configs, true );
+            $iosfs = Utils::read_params ( 'iosfs', $where_configs, true );
+            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, true );
+            $money = Utils::read_params ( 'money', $where_configs, true );
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, true );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs, true );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, true );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, true );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, true );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, true );
+            $types = Utils::read_params ( 'types', $where_configs, true );
+            $filters = Utils::read_params ( 'filters', $where_configs, true );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
 
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
@@ -2464,10 +2464,15 @@ class DefaultController extends AbstractController
                 $vmSizes[$exec['vm_size']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
             }
 
+            $i = 0;
+            $seriesColors = array('#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
+                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
             $series = array();
             foreach($vmSizes as $vmSize => $value) {
-                $costSeries = array('name' => "$vmSize Run cost", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'));
-                $timeSeries = array('name' => "$vmSize Run execution time", 'type' => 'spline', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'));
+                if($i == sizeof($seriesColors))
+                    $i = 0;
+                $costSeries = array('name' => "$vmSize Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+                $timeSeries = array('name' => "$vmSize Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
                 foreach($dataNodes as $datanodes => $dvalue) {
                     if(!isset($value[$datanodes])) {
                         $costSeries['data'][] = "null";
@@ -2478,8 +2483,8 @@ class DefaultController extends AbstractController
                         $timeSeries['data'][] = $value[$datanodes][0];
                     }
                 }
-                $series[] = $costSeries;
                 $series[] = $timeSeries;
+                $series[] = $costSeries;
             }
         } catch(\Exception $e) {
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
@@ -2489,7 +2494,7 @@ class DefaultController extends AbstractController
             'selected' => 'Number of Nodes Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
             'categories' => json_encode($categories),
-            'seriesData' => json_encode($series),
+            'seriesData' => str_replace('"null"','null',json_encode($series)),
             'options' => Utils::getFilterOptions($dbUtils),
             'datefrom' => $datefrom,
             'dateto' => $dateto,
@@ -2517,6 +2522,7 @@ class DefaultController extends AbstractController
             'minexetime' => $minexetime,
             'maxexetime' => $maxexetime,
             'preset' => $preset,
+            'select_multiple_benchs' => false,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));
     }

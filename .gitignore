@@ -43,7 +43,7 @@ aloja-web/config/config.yml
 #
 ### File-based project format
 #*.ipr
-#*.iml
+*.iml
 #*.iws
 #
 ### Additional for IntelliJ
@@ -128,4 +128,5 @@ aloja-web/vendor/
 
 #logs
 aloja-web/logs/*.log
+aloja-deploy/*.log
 /files
