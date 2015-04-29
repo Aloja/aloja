@@ -40,7 +40,7 @@ stop_monit(){
 save_bench() {
   loggerb "Saving benchmark $1"
   $DSH "mkdir -p $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $HDD_TMP/{bwm,vmstat}*.log $HDD_TMP/sar*.sar $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
  if [ "$defaultProvider" == "hdinsight" ]; then
 	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
  fi

@@ -102,26 +102,11 @@ prepare_hadoop_config(){
 
   IO_MB="$((IO_FACTOR * 10))"
 
+  #generate the path for the hadoop config files, including support for multiple volumes
+  HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
+  HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
-
-if [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] ; then
-  HDFS_NDIR="$HDD/dfs/name"
-  HDFS_DDIR="$HDD/dfs/data"
-elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RR1" ]; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL2" ] || [ "$DISK" == "RR2" ]; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data"
-elif [ "$DISK" == "RL3" ] || [ "$DISK" == "RR3" ]; then
-  HDFS_NDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/name\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/name"
-  HDFS_DDIR="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/2/hadoop-hibench_$PORT_PREFIX/dfs/data\,/scratch/attached/3/hadoop-hibench_$PORT_PREFIX/dfs/data"
-else
-  echo "Incorrect disk specified2: $DISK"
-  exit 1
-fi
-
-logger "DEBUG: HDFS_NDIR: $HDFS_NDIR \nHDFS_DDIR: $HDFS_DDIR"
+  logger "DEBUG: HDFS_NDIR: $HDFS_NDIR\nHDFS_DDIR: $HDFS_DDIR"
 
 MAX_REDS="$MAX_MAPS"
 
@@ -133,7 +118,7 @@ s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
 s,##NAMENODE##,$MASTER,g;
-s,##TMP_DIR##,$HDD,g;
+s,##TMP_DIR##,$HDD_TMP,g;
 s,##HDFS_NDIR##,$HDFS_NDIR,g;
 s,##HDFS_DDIR##,$HDFS_DDIR,g;
 s,##MAX_MAPS##,$MAX_MAPS,g;
@@ -232,7 +217,7 @@ restart_hadoop(){
     loggerb "Deleting previous Hadoop HDFS"
 #$DSH "rm -rf $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/{dfs,mapred,logs,nm-local-dir}; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
+    $DSH "rm -rf $HDD/{dfs,mapred,logs,nm-local-dir} $HDD_TMP/{dfs,mapred,logs,nm-local-dir}; mkdir -p $HDD/logs $HDD_TMP/;" 2>&1 |tee -a $LOG_PATH
     #send multiple yes to format
     if [ "$HADOOP_VERSION" == "hadoop1" ]; then
       $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
