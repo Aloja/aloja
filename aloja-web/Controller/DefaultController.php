@@ -44,7 +44,8 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
         	$preset = Utils::setDefaultPreset($db, 'Config Improvement');
-                
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+        
         $rows_config = '';
         try {
             
@@ -214,6 +215,7 @@ class DefaultController extends AbstractController
             	'maxexetime' => $maxexetime,
             	'selectedGroups' => $selectedGroups,
             	'preset' => $preset,
+                'selPreset' => $selPreset,
                 'options' => Utils::getFilterOptions($db)
             )
         );
@@ -225,7 +227,8 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
         	$preset = Utils::setDefaultPreset($dbUtils, 'Benchmark Executions');
-        
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
         $datefrom = Utils::read_params('datefrom',$where_configs);;
         $dateto	= Utils::read_params('dateto',$where_configs);
         $benchs         = Utils::read_params('benchs',$where_configs);
@@ -343,6 +346,7 @@ class DefaultController extends AbstractController
             	'minexetime' => $minexetime,
             	'maxexetime' => $maxexetime,
             	'preset' => $preset,
+                'selPreset' => $selPreset,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
                 'options' => Utils::getFilterOptions($dbUtils),
             	'type' => $type
@@ -356,6 +360,7 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
         	$preset = Utils::setDefaultPreset($db, 'Cost Evaluation');
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         
         try {
             if(isset($_GET['benchs']))
@@ -502,6 +507,7 @@ class DefaultController extends AbstractController
         	'minexetime' => $minexetime,
         	'maxexetime' => $maxexetime,
         	'preset' => $preset,
+            'selPreset' => $selPreset,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
 //        	'money' => $money,
             'options' => Utils::getFilterOptions($dbUtils),
@@ -518,6 +524,7 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
         	$preset = Utils::setDefaultPreset($db, 'Performance charts');
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         
         try {
             //TODO fix, initialize variables
@@ -1157,6 +1164,7 @@ class DefaultController extends AbstractController
                 'hosts' => $hosts,
                 'host_rows' => $dbUtil->get_hosts($clusters),
                 'detail' => $detail,
+                'selPreset' => $selPreset,
             ));
 
     }
@@ -1169,6 +1177,7 @@ class DefaultController extends AbstractController
             $preset = null;
             if(sizeof($_GET) <= 1)
             	$preset = Utils::setDefaultPreset($db, 'Best configuration');
+            $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
             
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1281,7 +1290,8 @@ class DefaultController extends AbstractController
                 'type' => $type,
                 'execs' => $execs,
                 'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
-                'discreteOptions' => $discreteOptions
+                'discreteOptions' => $discreteOptions,
+                'selPreset' => $selPreset,
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
@@ -1380,6 +1390,7 @@ class DefaultController extends AbstractController
         $preset = null;
 		if(sizeof($_GET) <= 1)
 			$preset = Utils::setDefaultPreset($db, 'Best configuration');
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		
         $rows_config = '';
         $bestexec = '';
@@ -1501,6 +1512,7 @@ class DefaultController extends AbstractController
         	'minexetime' => $minexetime,
         	'maxexetime' => $maxexetime,
         	'preset' => $preset,
+            'selPreset' => $selPreset,
             'options' => Utils::getFilterOptions($db)
         ) );
     }
@@ -1509,7 +1521,8 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
         	$preset = Utils::setDefaultPreset($db, 'Parameter Evaluation');
-        
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
         $rows = '';
         $categories = '';
         $series = '';
@@ -1671,6 +1684,7 @@ class DefaultController extends AbstractController
         	'minexetime' => $minexetime,
         	'maxexetime' => $maxexetime,
         	'preset' => $preset,
+            'selPreset' => $selPreset,
             'paramEval' => $paramEval,
             'options' => $options
         ) );
@@ -1900,7 +1914,8 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
         	$preset = Utils::setDefaultPreset($db, 'Cost-Effectiveness of clusters');
-        
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
         $data = array();
 
         $filter_execs = DBUtils::getFilterExecs();
@@ -2028,6 +2043,7 @@ class DefaultController extends AbstractController
     			'minexetime' => $minexetime,
     			'maxexetime' => $maxexetime,
     			'preset' => $preset,
+                'selPreset' => $preset,
     			'select_multiple_benchs' => false,
     			'options' => Utils::getFilterOptions($db)
     		));
@@ -2040,7 +2056,8 @@ class DefaultController extends AbstractController
     	$preset = null;
     	if(sizeof($_GET) <= 1)
     		$preset = Utils::setDefaultPreset($dbUtils, 'Clusters Cost Evaluation');
-    	
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
@@ -2197,6 +2214,7 @@ class DefaultController extends AbstractController
     			'maxexetime' => $maxexetime,
     			'execs' => $execs,
     			'preset' => $preset,
+                'selPreset' => $selPreset,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			//        	'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
@@ -2212,7 +2230,8 @@ class DefaultController extends AbstractController
     	$preset = null;
     	if(sizeof($_GET) <= 1)
     		$preset = Utils::setDefaultPreset($dbUtils, 'Best Clusters Cost Evaluation');
-    	
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
@@ -2409,6 +2428,7 @@ class DefaultController extends AbstractController
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
     			'preset' => $preset,
+                'selPreset' => $selPreset,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     	));
     }
@@ -2419,6 +2439,8 @@ class DefaultController extends AbstractController
         $preset = null;
         if(sizeof($_GET) <= 1)
             $preset = Utils::setDefaultPreset($dbUtils, 'Number of Nodes Evaluation');
+
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
         try {
             $where_configs = '';
@@ -2522,6 +2544,7 @@ class DefaultController extends AbstractController
             'minexetime' => $minexetime,
             'maxexetime' => $maxexetime,
             'preset' => $preset,
+            'selPreset' => $selPreset,
             'select_multiple_benchs' => false,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));
