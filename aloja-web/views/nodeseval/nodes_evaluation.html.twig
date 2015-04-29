@@ -30,49 +30,52 @@
                 title: {
                     text: 'Number of nodes evaluation'
                 },
+                subtitle: {
+                    text: 'Benchmark: {{ benchs[0] }}'
+                },
                 xAxis: [{
-                    categories: [{{ categories | raw }}],
-                    crosshair: true
+                    categories: {{ categories | raw }},
+                    title: {
+                        text: 'Number of datanodes'
+                    }
                 }],
-                yAxis: [{ // Secondary yAxis
-                    gridLineWidth: 0,
+                yAxis: [{ // Primary yAxis
                     title: {
                         text: 'Run cost',
-                        style: {
-                            color: Highcharts.getOptions().colors[0]
-                        }
+
                     },
                     labels: {
-                        format: '{value} s',
-                        style: {
-                            color: Highcharts.getOptions().colors[0]
-                        }
-                    }}, { // Primary yAxis
+                        format: '{value} $',
+                    },
+                    min: 0,
+                    opposite: true
+                    },{ // Secondary yAxis
+                    gridLineWidth: 0,
                     labels: {
                         format: '{value} s',
                         style: {
-                            color: Highcharts.getOptions().colors[2]
+                            color: Highcharts.getOptions().colors[0]
                         }
                     },
                     title: {
                         text: 'Execution time',
                         style: {
-                            color: Highcharts.getOptions().colors[2]
+                            color: Highcharts.getOptions().colors[0]
                         }
                     },
-                    opposite: true
+                    min: 0
                 }],
                 tooltip: {
-                    shared: true
+                    shared: false,
+                    formatter: function() {
+                        return '<b>'+this.x + '</b> datanodes<br /><span style="color: '+this.series.color+';">'+this.series.name+'</span>: <b>'+this.y+' '+this.series.options.tooltip.valueSuffix+'</b>';
+                    }
+                },
+                credits: {
+                    enabled: false
                 },
                 legend: {
-                    layout: 'vertical',
-                    align: 'left',
-                    x: 80,
-                    verticalAlign: 'top',
-                    y: 55,
-                    floating: true,
-                    backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor) || '#FFFFFF'
+                    layout: 'horizontal'
                 },
                 series: {{ seriesData | raw }}
             });
@@ -93,40 +96,5 @@
                 <div style="width: 30%; float: right;">
                     {% include "common/config_filters.html.twig" %}
                 </div>
-	            <h1 class="compare title">Edit cluster configuration costs:</h1>
-	            <div style="margin: 0 auto; width: 90%; text-align: left;">
-	            <form name="clusterFilters" method="GET" role="form">
-	            
-	              <table class="table stripped">
-	              	<thead>
-	              		<th>Cluster</th>
-	              		<th>Provider</th>
-	              		<th>Type</th>
-	              		<th>VM OS</th>
-	              		<th>Datanodes</th>
-	              		<th>Cost/hour</th>
-	              		<th>Cost remote disk</th>
-	              		<th>Cost SSD</th>
-	              		<th>Cost InfiniBand</th>
-	              	</thead>
-	              	<tbody>
-	              	 {% for cluster in clusters %}
-	              	   <tr>
-	              	     <td>{{ cluster.name }}</td>
-	              	     <td>{{ cluster.provider }}</td>
-	              	     <td>{{ cluster.type }}</td>
-	              	     <td>{{ cluster.vm_OS }}</td>
-	              	     <td>{{ cluster.datanodes }}</td>
-	              	     <td><input type="text" class="form-control" name="cost_hour[{{ cluster.id_cluster }}]" value="{% if cost_hour[cluster.id_cluster] is defined %}{{ cost_hour[cluster.id_cluster] }}{% else %}{{ cluster.cost_hour }}{% endif %}" size="4"></td>
-	              	     <td><input type="text" class="form-control" name="cost_remote[{{ cluster.id_cluster }}]" value="{% if cost_remote[cluster.id_cluster] is defined %}{{ cost_remote[cluster.id_cluster] }}{% else %}{{ cluster.cost_remote }}{% endif %}" size="4"></td>
-	              	     <td><input type="text" class="form-control" name="cost_SSD[{{ cluster.id_cluster }}]" value="{% if cost_SSD[cluster.id_cluster] is defined %}{{ cost_SSD[cluster.id_cluster] }}{% else %}{{ cluster.cost_SSD }}{% endif %}" size="4"></td>
-	              	     <td><input type="text" class="form-control" name="cost_IB[{{ cluster.id_cluster }}]" value="{% if cost_IB[cluster.id_cluster] is defined %}{{ cost_IB[cluster.id_cluster] }}{% else %}{{ cluster.cost_IB }}{% endif %}" size="4"></td>
-	              	   </tr>
-	              	  {% endfor %}
-	              	</tbody>
-	              </table>
-	              <button id="submit" type="submit" value="Update prices" class="btn btn-warning">Update prices</button>
-	              </form>
-	            </div>
 	    </div>
     {% endblock %}
