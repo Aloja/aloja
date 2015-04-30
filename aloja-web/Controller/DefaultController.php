@@ -359,7 +359,7 @@ class DefaultController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($db, 'Cost Evaluation');
+        	$preset = Utils::setDefaultPreset($dbUtils, 'Cost Evaluation');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         
         try {
