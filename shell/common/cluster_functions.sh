@@ -36,7 +36,7 @@ vm_create_node() {
 		  create_hdi_cluster "$clusterName"
 		fi
 		  vm_provision "password"
-		  vm_final_bootstrap "$clusterName"
+		  vm_final_bootstrap "$clusterName" "password"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 

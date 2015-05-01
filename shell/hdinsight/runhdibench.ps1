@@ -1,4 +1,4 @@
-param($clusterName, [String]$credentialsFile, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32[]]$reducersNumber=(12,12), [Int32]$nodesNumber=16, [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String]$minervaLogin, [String[]]$benchmarks = ("wordcount","terasort"))
+param($clusterName, [String]$credentialsFile, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32[]]$reducersNumber=(12,12), [Int32]$nodesNumber=16, [String]$vmSize="A3", [String]$region="South Central US", [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String]$minervaLogin, [String[]]$benchmarks = ("wordcount","terasort"))
 
 . ./common.ps1
 
@@ -11,7 +11,7 @@ Write-Verbose "Logged into Azure"
 $secPassword = ConvertTo-SecureString -string $password -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PsCredential($fullUsername, $secPassword)
 
-createCluster $clusterName $nodesNumber $storageAccount $storageKey $createContainer $containerName $subscriptionName $cred
+createCluster $clusterName $nodesNumber $storageAccount $storageKey $createContainer $containerName $subscriptionName $cred $region $vmSize
 Write-Verbose "Waiting 1 minute"
 Start-Sleep -s 60
 
@@ -42,7 +42,7 @@ foreach($benchmark in $benchmarks) {
 	Write-Verbose "Execution of $benchmark completed successfully"
 }
 
-RetrieveData $storageAccount $containerName $logsDir $storageKey $minervaLogin
+RetrieveData $storageAccount $containerName $logsDir $storageKey
 
 if($destroyCluster -eq $True) {
    destroyCluster $clusterName $storageName $storageKey $destroyContainer $containerName $subscriptionName

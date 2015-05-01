@@ -82,7 +82,7 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
    Write-Verbose "Completed"
 }
 
-function RetrieveData([String]$storageAccount, [String]$storageContainer, [String]$logsDir, [String]$storageKey, [String]$minervaLogin) {
+function RetrieveData([String]$storageAccount, [String]$storageContainer, [String]$logsDir, [String]$storageKey) {
    $date = [int][double]::Parse((Get-Date -UFormat %s))
    $year = (Get-Date -f yyyyMMdd)
    $newLogsDirName="${year}_${storageAccount}_$date"
@@ -95,7 +95,7 @@ function RetrieveData([String]$storageAccount, [String]$storageContainer, [Strin
    AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:yarn /Y
    Write-Verbose "Copying job logs to logs dir"
    cp -R $storageContainer $logsDir/
-   Write-Verbose "Copying to minerva account"
+/*   Write-Verbose "Copying to minerva account"
    
    if ( !(Test-Path "pscp.exe") ) {
     	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe','pscp.exe')
@@ -103,7 +103,8 @@ function RetrieveData([String]$storageAccount, [String]$storageContainer, [Strin
    
    mv $logsDir $newLogsDirName
    .\pscp.exe -r "$newLogsDirName" "$minervaLogin@minerva.bsc.es:"
-   Write-Verbose "Retrieval and saving of logs completed"
+   Write-Verbose "Retrieval and saving of logs completed"*/
+
 }
 
 function createAzureStorageContainer([String]$storageName, [String]$storageKey, [String]$containerName) {
@@ -116,7 +117,7 @@ function removeAzureStorageContainer([String]$storageName, [String]$storageKey, 
 	 Remove-AzureStorageContainer -Name $containerName -Context $context -Force
 }
 
-function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$storageName, [String]$storageKey, [bool]$createContainer=$True, [String]$containerName = $null, [String]$subscriptionName, [System.Management.Automation.PsCredential]$cred) {
+function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$storageName, [String]$storageKey, [bool]$createContainer=$True, [String]$containerName = $null, [String]$subscriptionName, [System.Management.Automation.PsCredential]$cred, [String]$region, [String]$vmSize) {
    if($containerName -eq $null) {
      $containerName = $storageName
    }
@@ -128,7 +129,7 @@ function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$st
    Write-Verbose "Storage container assigned to cluster"
    
    Write-Verbose "Creating HDInsight cluster"
-   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location "West Europe" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
+   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location $region -OSType "Windows" -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
    Write-Verbose "HDInsight cluster created successfully"
 }
 

@@ -75,7 +75,7 @@ create_hdi_cluster() {
  vm_create_storage_account "$storageAccount" "GRS"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
-     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
+     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
 	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
 	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
 	--sshPassword "$passwordAloja" -s "$subscriptionID"
