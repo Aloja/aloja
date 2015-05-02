@@ -43,7 +43,7 @@ function CollectPerfMetricsLogs([String]$numberOfNodes,[String]$minervaLogin="ac
 
 function AzureLogin([String]$credentialsFile)
 {
-  Import-AzurePublishSettingsFile $credentialsFile
+  Import-AzurePublishSettingsFile -PublishSettingsFile $credentialsFile
 }
 
 function SelectSubscription([String]$subscriptionName)
@@ -82,19 +82,31 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
    Write-Verbose "Completed"
 }
 
-function RetrieveData([String]$storageAccount, [String]$storageContainer, [String]$logsDir, [String]$storageKey) {
-   $date = [int][double]::Parse((Get-Date -UFormat %s))
+function RetrieveData([String]$clusterName, [String]$storageAccount, [String]$storageContainer, [String]$logsDir, [String]$storageKey) {
+   $date = (Get-Date -f hhmmss)
    $year = (Get-Date -f yyyyMMdd)
-   $newLogsDirName="${year}_${storageAccount}_$date"
+   $newLogsDirName="${year}_$date_${clusterName}"
    
-   rm $logsDir -R
-   mkdir $logsDir
+  # rm $logsDir -R
+   $result = Test-Path $logsDir
+   if(!$result) {
+     mkdir $logsDir
+   }
+
+   $result = Test-Path $logsDir/$newLogsDirName
+   if(!$result) {
+      mkdir $logsDir/$newLogsDirName
+   }
+
+   $curDir=$(pwd).Path
+
    Write-Verbose "Copying from storage blob"
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:mapred /Y
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:app-logs /Y
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:$logsDir /SourceKey:"$storageKey" /S /Pattern:yarn /Y
+   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$curDir" /SourceKey:"$storageKey" /S /Pattern:"mapred" /Y
+  # AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$logsDir" /SourceKey:"$storageKey" /S /Pattern:app-logs /Y
+  # AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$logsDir" /SourceKey:"$storageKey" /S /Pattern:yarn /Y
    Write-Verbose "Copying job logs to logs dir"
-   cp -R $storageContainer $logsDir/
+   cp -R $storageContainer $logsDir/$newLogsDirName/
+   cp -R mapred $logsDir/$newLogsDirName/
 /*   Write-Verbose "Copying to minerva account"
    
    if ( !(Test-Path "pscp.exe") ) {
@@ -129,7 +141,7 @@ function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$st
    Write-Verbose "Storage container assigned to cluster"
    
    Write-Verbose "Creating HDInsight cluster"
-   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location $region -OSType "Windows" -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
+   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location $region -OSType "Windows" -HeadNodeVMSize "Large" -DataNodeVMSize $vmSize -ClusterType "Hadoop" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
    Write-Verbose "HDInsight cluster created successfully"
 }
 

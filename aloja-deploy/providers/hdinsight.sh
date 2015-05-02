@@ -45,11 +45,12 @@ hdi_cluster_check_delete() {
 
 #$1 cluster name  $2 vm OS
 get_cluster_status() {
-   if [ ! -z "$(azure hdinsight cluster show "$1" "$2" | grep Running)" ]; then
-     echo "Running"
-   else
-     echo "Deploying"
-   fi
+   echo $(azure hdinsight cluster show "$1" "$2" | grep State | cut -d: -f3 | sed 's/\ //g')
+  # if [ ! -z "$(azure hdinsight cluster show "$1" "$2" | grep Running)" ]; then
+   #  echo "Running"
+  # else
+  #   echo "Deploying"
+  # fi
 }
 
 #$1 cluster name

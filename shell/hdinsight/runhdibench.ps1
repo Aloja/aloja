@@ -12,8 +12,8 @@ $secPassword = ConvertTo-SecureString -string $password -AsPlainText -Force
 $cred = New-Object System.Management.Automation.PsCredential($fullUsername, $secPassword)
 
 createCluster $clusterName $nodesNumber $storageAccount $storageKey $createContainer $containerName $subscriptionName $cred $region $vmSize
-Write-Verbose "Waiting 1 minute"
-Start-Sleep -s 60
+Write-Verbose "Waiting 5 minutes for storage container deployment"
+Start-Sleep -s 300
 
 #if($runTeragen) {
 #   Write-Verbose "Removing teragen output data"
@@ -25,24 +25,24 @@ foreach($benchmark in $benchmarks) {
    $c = 0
    $runPrepare = $runTeragen
    foreach($reduceNumber in $reducersNumber) {
-	  $outputfile = "/example/data/"+$benchmark+"-output_"+$c
-	  $inputfile = "/example/data/"+$benchmark+"-input"
+	  $outputfile = $benchmark+"-output_"+$c
+	  $inputfile = $benchmark+"-input"
 	  $scriptName = "./run"+$benchmark+".ps1"
 	 # Write-Verbose "Removing output data"
 	  #DeleteStorageFile $outputfile $storageAccount $storageKey $containerName
 	  Write-Verbose "Logging into Azure"
-	  AzureLogin
+	 # AzureLogin
 	  SelectSubscription "$subscriptionName"
 	  Write-Verbose "Logged into Azure"
 	  # & indicates that we are gonna run a script named $scriptName with the given parameters
-	  & $scriptName -runPrepare $runPrepare -reduceTasks $reduceNumber -containerName $containerName -inputData $inputfile -outputData $outputfile
+	  & $scriptName -runTeragen $runPrepare -reduceTasks $reduceNumber -containerName $containerName -inputData $inputfile -outputData $outputfile -nodesNumber $nodesNumber
 	  $runPrepare = $False
 	  $c++
 	}
 	Write-Verbose "Execution of $benchmark completed successfully"
 }
 
-RetrieveData $storageAccount $containerName $logsDir $storageKey
+RetrieveData -clusterName $clusterName -storageAccount $storageAccount -containerName $containerName -logsDir $logsDir -storageKey $storageKey
 
 if($destroyCluster -eq $True) {
    destroyCluster $clusterName $storageName $storageKey $destroyContainer $containerName $subscriptionName
