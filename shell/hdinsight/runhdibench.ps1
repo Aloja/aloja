@@ -42,7 +42,7 @@ foreach($benchmark in $benchmarks) {
 	Write-Verbose "Execution of $benchmark completed successfully"
 }
 
-RetrieveData -clusterName $clusterName -storageAccount $storageAccount -containerName $containerName -logsDir $logsDir -storageKey $storageKey
+RetrieveData -clusterName $clusterName -storageAccount $storageAccount -storageContainer $containerName -logsDir $logsDir -storageKey $storageKey
 
 if($destroyCluster -eq $True) {
    destroyCluster $clusterName $storageName $storageKey $destroyContainer $containerName $subscriptionName
