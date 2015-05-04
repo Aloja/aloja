@@ -42,8 +42,8 @@ min_time="$(date --utc --date "$min_date" +%s)"
 logger "Starting"
 
 for folder in 201* ; do
-	if [[ $folder == *"_alojahdi"* ]]; then
-		#HDINSIGHT log
+	if [[ "$folder" =~ hdi[0-9]+ ]]; then
+		#HDinsight on windows log -- hdi linux are named hdil
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
 		importHDIJobs "$ONLY_META_DATA" 
 	else
