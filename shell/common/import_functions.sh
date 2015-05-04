@@ -230,6 +230,10 @@ get_exec_params(){
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
+    local hadoop_version=$(extract_config_var "HADOOP_VERSION")
+
+    # Remove "hadoop" string from version: "hadoop2" -> "2"
+    hadoop_version="${hadoop_version//hadoop}"
 
     # load arrays
     local temp_array
@@ -259,7 +263,7 @@ get_exec_params(){
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\""
     done
 
   fi
