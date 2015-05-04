@@ -31,12 +31,12 @@ vm_check_create() {
 vm_create_node() {
 	if [ "$defaultProvider" == "hdinsight" ]; then
 		vm_name="$clusterName"
-		status=$(hdi_cluster_check_create "$vm_name")
+		status=$(hdi_cluster_check_create "$clusterName")
 		if [ $status -eq 0 ]; then
-		  create_hdi_cluster "$vm_name"
+		  create_hdi_cluster "$clusterName"
 		fi
 		  vm_provision "password"
-		  vm_final_bootstrap "$vm_name" "password"
+		  vm_final_bootstrap "$clusterName" "password"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
