@@ -629,6 +629,11 @@ save_hadoop() {
     $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   fi
 
+  # Hadoop 2 saves job history to HDFS, get it from there
+  if [ "$HADOOP_VERSION" == "hadoop2" ]; then
+    $BENCH_H_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1 2>&1 |tee -a $LOG_PATH
+  fi
+
   #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
   cp "${BENCH_HIB_DIR}/$bench/hibench.report" "$JOB_PATH/$1/"
 
