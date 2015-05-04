@@ -45,11 +45,12 @@ hdi_cluster_check_delete() {
 
 #$1 cluster name  $2 vm OS
 get_cluster_status() {
-   if [ ! -z "$(azure hdinsight cluster show "$1" "$2" | grep Running)" ]; then
-     echo "Running"
-   else
-     echo "Deploying"
-   fi
+   echo $(azure hdinsight cluster show "$1" "$2" | grep State | cut -d: -f3 | sed 's/\ //g')
+  # if [ ! -z "$(azure hdinsight cluster show "$1" "$2" | grep Running)" ]; then
+   #  echo "Running"
+  # else
+  #   echo "Deploying"
+  # fi
 }
 
 #$1 cluster name
@@ -75,7 +76,7 @@ create_hdi_cluster() {
  vm_create_storage_account "$storageAccount" "GRS"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
-     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "$storageAccount" \
+     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
 	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
 	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
 	--sshPassword "$passwordAloja" -s "$subscriptionID"
