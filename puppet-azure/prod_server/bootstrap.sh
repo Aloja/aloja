@@ -80,7 +80,7 @@ echo "Changing /var/www permissions"
 chown -R www-data.www-data /var/www
 chmod -R 755 /var/www
 
-echo "Installing ALOJA-ML (R) support)"
+echo "Installing ALOJA-ML (R) support"
 if ! which R > /dev/null; then
 	apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
 
