@@ -64,6 +64,17 @@
 	{% include 'common/config_filters_ml.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
+	<hr />
+	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+	<div id="footer" style="display:none; float: left; width: 100%;">
+		<p>Current Instance: {{ instance }} <br/>Current used model: {% if current_model != '' %}{{current_model}}{% else %}Aggregation{% endif %}</p>
+		<div style="float: left; width: 65%;">
+			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+		</div>
+		<div style="float: right; width: 30%;">
+			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
+		</div>
+	</div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
 	<script src="http://code.highcharts.com/highcharts.js"></script>
@@ -71,6 +82,14 @@
 	<script src="http://code.highcharts.com/modules/exporting.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
 	$(document).ready(function() {
 		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
@@ -89,6 +108,25 @@
 			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable2' value='" + $("#variable2").val() + "'></input>";
 			$('#submit').click();
 		});
+		$("#select-model").change(function()
+		{
+			var url = window.location.href;   
+			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val(); 
+			else url = url + '?current_model=' + $("#select-model").val();
+			window.location.href = url;
+		});
+
+		var target = document.getElementById('select-model');
+		var mid = {{ models_id | raw }};
+		for (i = 0; i < mid.length; i++)
+		{
+			var newhtml = "<option value='" + mid[i] + "'";
+			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
+			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
+		}
+		var newhtml = "<option value=''";
+		if ('{{current_model}}' == '') newhtml = newhtml + " SELECTED";
+		target.innerHTML = target.innerHTML + newhtml + ">Aggregation of Models</option>";
 
 		if ("{{must_wait}}"== "NO")
 		{

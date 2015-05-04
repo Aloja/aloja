@@ -370,7 +370,7 @@ class MLCrossvarController extends AbstractController
 	public function mlcrossvar3dfaAction()
 	{
 		$jsonData = array();
-		$message = $instance = '';
+		$message = $instance = $possible_models_id = '';
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
 		try
@@ -411,6 +411,12 @@ class MLCrossvarController extends AbstractController
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, false, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, false, $db);
 
+			// Model for filling
+			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
+
+			$current_model = "";
+			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+
 			// Call to MLFindAttributes, to fetch data
 			$_GET['pass'] = 1;
 			$_GET['unseen'] = FALSE;
@@ -437,7 +443,7 @@ class MLCrossvarController extends AbstractController
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
 					FROM predictions as p
-					WHERE p.id_learner IN (SELECT id_learner FROM trees WHERE model='".$model_info."')".$where_configs."
+					WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM trees WHERE model='".$model_info."')").$where_configs."
 					GROUP BY p.instance
 					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 				$rows = $dbml->query($query);
@@ -507,6 +513,7 @@ class MLCrossvarController extends AbstractController
 			$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 			$must_wait = "NO";
 			$dbml = null;
+			$possible_models = $possible_models_id = array();
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3dfa.html.twig',
 			array(
@@ -531,6 +538,9 @@ class MLCrossvarController extends AbstractController
 				'iofilebufs' => $params['iofilebufs'],
 				'message' => $message,
 				'instance' => $instance,
+				'current_model' => $current_model,
+				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)
 			)
