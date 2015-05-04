@@ -51,14 +51,13 @@ importHDIJobs() {
 			else ##Legacy logs
 				IFS='_' read -ra folderArray <<< "$folder"
 				numberOfNodes=`echo ${folderArray[1]} | grep -oP "[0-9]+"`
-				cluster=20
-				if [ "$numberOfNodes" -eq "4" ]; then
+				if [[ "$numberOfNodes" == "4" ]]; then
 					cluster=20
-				elif [ "$numberOfNodes" -eq "8" ]; then
+				elif [[ "$numberOfNodes" == "8" ]]; then
 					cluster=23
-				elif [ "$numberOfNodes" -eq "16" ]; then
+				elif [[ "$numberOfNodes" == "16" ]]; then
 					cluster=24
-				elif [ "$numberOfNodes" -eq "32" ]; then
+				elif [[ "$numberOfNodes" == "32" ]]; then
 					cluster=25
 				fi
 			fi
