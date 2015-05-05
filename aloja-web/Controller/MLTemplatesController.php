@@ -45,7 +45,10 @@ class MLTemplatesController extends AbstractController
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 				$unrestricted = TRUE;			
  			}
-			$where_configs = str_replace("id_cluster","'e.id_cluster'",$where_configs);
+
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
+			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
