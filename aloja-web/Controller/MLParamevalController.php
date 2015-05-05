@@ -34,12 +34,13 @@ class MLParamevalController extends AbstractController
 			{
 				$params['benchs'] = $_GET['benchs'] = array('terasort'); $where_configs = ' AND bench IN ("terasort")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'net') $params['nets'] = $_GET['nets'] = array('ETH'); $where_configs .= ' AND net IN ("ETH")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = $_GET['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = $_GET['disks'] = array('RR1'); $where_configs .= ' AND disk IN ("RR1")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'maps') $params['mapss'] = $_GET['mapss'] = array('2','4'); $where_configs .= ' AND maps IN ("2","4")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofilebuf') $params['iofilebufs'] = $_GET['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = $_GET['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'comp') $params['comps'] = $_GET['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = $_GET['iosfs'] = array('100'); $where_configs .= ' AND iosf IN ("100")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'blk_size') $params['blk_sizes'] = $_GET['blk_sizes'] = array('134'); $where_configs .= ' AND blk_size IN ("134")';
+				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'comp') $params['comps'] = $_GET['comps'] = array('3'); $where_configs .= ' AND comp IN ("3")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'replication') $params['replications'] = $_GET['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'id_cluster') $params['id_clusters'] = $_GET['id_clusters'] = array('1','2','3'); $where_configs .= ' AND id_cluster IN ("1","2","3")';
 			}
 
 			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );

@@ -33,12 +33,15 @@ class MLMinconfigsController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
 			{
 				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';				
+				$params['disks'] = array('RR1'); $where_configs .= ' AND disk IN ("RR1")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['comps'] = array('3'); $where_configs .= ' AND comp IN ("3")';
+				$params['mapss'] = array('2','4'); $where_configs .= ' AND maps IN ("2","4")';
+				$params['iosfs'] = array('100'); $where_configs .= ' AND iosf IN ("100")';
+				$params['blk_sizes'] = array('134'); $where_configs .= ' AND blk_size IN ("134")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$unrestricted = TRUE; 
+				$unrestricted = TRUE;
 			}
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
@@ -99,7 +102,7 @@ class MLMinconfigsController extends AbstractController
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query; touch '.md5($config).'.lock');
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=10 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
 			}
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');

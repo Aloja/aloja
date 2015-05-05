@@ -35,9 +35,12 @@ class MLNewconfigsController extends AbstractController
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['disks'] = array('RR1'); $where_configs .= ' AND disk IN ("RR1")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['comps'] = array('3'); $where_configs .= ' AND comp IN ("3")';
+				$params['mapss'] = array('2','4'); $where_configs .= ' AND maps IN ("2","4")';
+				$params['blk_sizes'] = array('134'); $where_configs .= ' AND blk_size IN ("134")';
+				$params['iosfs'] = array('100'); $where_configs .= ' AND iosf IN ("100")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 				$params['datanodess'] = array('3');// $where_configs .= ' AND datanodes = 3';
 				$params['bench_types'] = array('HiBench');// $where_configs .= ' AND bench_type = "HiBench"';
@@ -108,7 +111,7 @@ class MLNewconfigsController extends AbstractController
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=10 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
 			}
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
