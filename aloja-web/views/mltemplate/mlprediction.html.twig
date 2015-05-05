@@ -12,7 +12,7 @@
 	</div>
 	<div id="stuff" style="float: left; width: 68%;">
 		<div id="chart" style="float: left; width: 100%;"></div>
-		<div id="controls" style="display: block; float: left; width: 100%;">
+		<div id="controls" style="display: none; float: left; width: 100%;">
 			<form>
 				<table style="float: right; width: 20%;">
 				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
@@ -45,6 +45,8 @@
 
 		if ("{{must_wait}}"== "NO")
 		{
+			$('#controls').show();
+
 			$('#chart').highcharts( {
 	    		        chart: {
 	    		            type: 'scatter',

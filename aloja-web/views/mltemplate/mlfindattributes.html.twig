@@ -67,7 +67,7 @@
 	$(document).ready(function() {
 		$("#select-model").change(function()
 		{
-			var configForm = document.getElementById('predict-button-div');
+			var configForm = document.getElementsByName('configFilters');
 			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>";
 
 			$("form").submit();
