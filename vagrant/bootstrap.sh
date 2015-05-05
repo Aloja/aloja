@@ -87,11 +87,11 @@ if ! which R > /dev/null; then
 	cat <<- EOF > /tmp/packages.r
 	#!/usr/bin/env Rscript
 
-	update.packages(ask = FALSE,repos="http://cran.es.r-project.org",dependencies = c('Suggests'),quiet=TRUE); 
+	update.packages(ask = FALSE,repos="http://cran.r-project.org",dependencies = c('Suggests'),quiet=TRUE);
 
 	# Only for Ubuntu 12.04
-	##install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.es.r-project.org",
-	##dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
+	#install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.es.r-project.org",
+	#dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
 
 	# For all Ubuntu releases until 14.04
 	install.packages(c("devtools","DiscriMiner","emoa","httr","jsonlite","optparse","pracma","rgp","rstudioapi","session","whisker",

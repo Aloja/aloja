@@ -86,6 +86,7 @@
 	               <table id="results" class="table table-striped">
 	                 <thead>
 	                 	<th>Rank</th>
+                        <th>Ratio</th>
 	                 	<th>Cluster</th>
 	                 	<th>Best execution cost</th>
 	                 	<th>Best execution time</th>
@@ -99,6 +100,7 @@
 	                  {% for exec in bestExecs %}
 	                    <tr>
 	                       <td>{{ loop.index }}</td>
+                           <td>{{ (exec.cost_std * exec.exe_time) | number_format(2, '.', '') }}</td>
 	                       <td>{{ exec.name }}</td>
 	                       <td>{{ exec.cost_std  | number_format(2, '.', ',')  }} US$</td>
 	                       <td>{{ exec.exe_time | number_format(0, '.', '') }} s</td>

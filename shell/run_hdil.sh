@@ -16,6 +16,11 @@ if [ "$#" -ge 2 ]; then
 	JAR_LOCATION=$2
 fi
 
+NET="ETH"
+DISK="RR1"
+BENCH="HiBench3"
+HADOOP_VERSION=2
+CONF="${NET}_${DISK}_b${BENCH}_v${HADOOP_VERSION}_D${numberOfNodes}_${clusterName}"
 
 if [ ! -d $HDD/logs ]; then
 	sudo mkdir -p $HDD/jobs_${clusterName}
@@ -95,10 +100,8 @@ collect_logs(){
 #installIfNotInstalled "bwm-ng"
 #installDsh
 
-exec_dir="2014_$clusterName-teragen-`date +%s`"
-if [ ! -d $HDD/jobs_${clusterName}/$exec_dir ]; then
-	mkdir -p $HDD/jobs_${clusterName}/$exec_dir
-fi
+exec_dir=$CONF
+mkdir -p $HDD/jobs_${clusterName}/$exec_dir
 
 logger "Starting run of teragen"
 restart_monit "${HDD}/jobs_${clusterName}/${exec_dir}"
