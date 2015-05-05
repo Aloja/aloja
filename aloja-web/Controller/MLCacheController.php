@@ -51,7 +51,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM learners WHERE id_learner='".$_GET['rml']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a learner from DB');
 
-				$command = 'rm '.getcwd().'/cache/query/'.$_GET['rml'].'-*';
+				$command = 'rm '.getcwd().'/cache/query/'.$_GET['rml'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -60,7 +60,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM minconfigs WHERE id_minconfigs='".$_GET['rmm']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a minconfig from DB');
 
-				$command = 'rm '.getcwd().'/cache/query/'.$_GET['rmm'].'-*';
+				$command = 'rm '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
 				$output[] = shell_exec($command);
  			}
 

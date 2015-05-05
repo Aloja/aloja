@@ -52,6 +52,7 @@ class MLNewconfigsController extends AbstractController
 			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -107,7 +108,7 @@ class MLNewconfigsController extends AbstractController
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=10 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
 			}
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
@@ -239,11 +240,9 @@ class MLNewconfigsController extends AbstractController
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.{fin,csv,dat}');
 				}
 
 				// Retrieve minconfig progression results from DB
