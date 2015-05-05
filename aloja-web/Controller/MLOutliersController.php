@@ -16,6 +16,10 @@ class MLOutliersController extends AbstractController
 		$max_x = $max_y = 0;
 		try
 		{
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
 			$db = $this->container->getDBUtils();
 		    	
 		    	$configurations = array ();	// Useless here
@@ -26,7 +30,7 @@ class MLOutliersController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
@@ -34,46 +38,49 @@ class MLOutliersController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET)))
 			{
 				$where_configs = '';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';				
+				$params['disks'] = array('RR1'); $where_configs .= ' AND disk IN ("RR1")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['comps'] = array('3'); $where_configs .= ' AND comp IN ("3")';
+				$params['mapss'] = array('2','4'); $where_configs .= ' AND maps IN ("2","4")';
+				$params['iosfs'] = array('100'); $where_configs .= ' AND iosf IN ("100")';
+				$params['blk_sizes'] = array('134'); $where_configs .= ' AND blk_size IN ("134")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 			}
+
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 
 			// model for filling
-			$possible_models = $possible_models_id = array();
-			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $db);
+			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
-			$model = '';
+			$current_model = "";
+			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+
 			if (!empty($possible_models_id))
 			{
-				if (array_key_exists('current_model',$_GET)) $model = $_GET['current_model'];
-				else $model = $possible_models_id[0];
-
-				$cache_ds = getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-cache.csv';
-
-				$is_cached = file_exists($cache_ds);
-				$in_process = file_exists(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock');
-
-				if ($is_cached && !$in_process)
+				if ($current_model == "")
 				{
-					$keep_cache = TRUE;
-					foreach (array("cause.csv", "resolutions.csv", "object.rds") as &$value)
-					{
-						$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-'.$value);
-					}
-					if (!$keep_cache)
-					{
-						unlink($cache_ds);
-						shell_exec("sed -i '/".md5($model_info.'-'.$model)." : ".$model_info.'-'.$model."/d' ".getcwd()."/cache/query/record.data");
-					}
+					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
+					$result = $dbml->query($query);
+					$row = $result->fetch();	
+					$current_model = $row['id_learner'];
 				}
+				$config = $instance.'-'.$current_model.'-'.$sigma_param.'-outliers';
 
-				if (!$is_cached && !$in_process)
+				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM resolutions WHERE id_resolution = '".md5($config)."'");
+				$tmp_result = $is_cached_mysql->fetch();
+				$is_cached = ($tmp_result['total'] > 0);
+
+				$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+				$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
+
+				if (!$is_cached && !$in_process && !$finished_process)
 				{
 					// get headers for csv
 					$header_names = array(
@@ -85,10 +92,16 @@ class MLOutliersController extends AbstractController
 					$headers = array_keys($header_names);
 					$names = array_values($header_names);
 
-					// dump the result to csv
-				    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
-				    	$rows = $db->get_rows ( $query );
+					// Get IDs already in Cache
+					$query_var = "SELECT id_exec FROM resolutions WHERE id_learner = '".$current_model."' AND model = '".$model_info."'";
+					$result = $dbml->query($query_var);
+					$aux_array = array();
+					foreach ($result as $row) $aux_array[] = $row['id_exec'];
+					$ids_in_cache = implode("','",$aux_array);
 
+					// dump the result to csv
+				    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." AND id_exec NOT IN ('".$ids_in_cache."');";
+				    	$rows = $db->get_rows($query);
 					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 					$fp = fopen($cache_ds, 'w');
@@ -101,17 +114,56 @@ class MLOutliersController extends AbstractController
 					}
 
 					// launch query
-					exec('cd '.getcwd().'/cache/query ; touch '.md5($model_info.'-'.$model).'.lock');
-					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$model.' -p sigma=3:hdistance=3:saveall='.md5($model_info.'-'.$model).' > /dev/null 2>&1 ; rm -f '.md5($model_info.'-'.$model).'.lock" > /dev/null 2>&1 &');
-
-					// update cache record (for human reading)
-					$register = md5($model_info.'-'.$model).' : '.$model_info.'-'.$model."\n";
-					shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-					file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock');
+					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
 				}
-				$in_process = file_exists(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'.lock');
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
 
-				if ($in_process)
+				if ($finished_process && !$is_cached)
+				{
+					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-resolutions.csv', 'r')) !== FALSE)
+					{
+
+						$header = fgetcsv($handle, 1000, ",");
+
+						$token = 0;
+						$query = "INSERT INTO resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
+						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+						{
+							$resolution = $data[0];
+							$pred_value = ((int)$data[1] >= 100)?(int)$data[1]:100;
+							$exec_value = (int)$data[2];
+							$selected_instance_pre = preg_replace('/\\s+/','',$data[3]);
+							$selected_instance_pre = str_replace(':',',',$selected_instance_pre);
+							$specific_id = $data[4];
+
+							$query_var = "SELECT count(*) as num FROM resolutions WHERE id_exec = '".$specific_id."' AND instance = '".$selected_instance_pre."' AND id_learner = '".$current_model."' AND model = '".$model_info."'";
+							$result = $dbml->query($query_var);
+							$row = $result->fetch();
+						
+							// Insert instance values
+							if ($row['num'] == 0)
+							{
+								if ($token > 0) { $query = $query.","; } $token = 1;
+								$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
+							}
+
+							// Update the predictions table
+							$query_var = "UPDATE predictions SET outlier = '".$resolution."' WHERE id_exec = '".$specific_id."' AND instance = '".$selected_instance_pre."' AND id_learner = '".$current_model."'";
+							if ($dbml->query($query_var) === FALSE) throw new \Exception('Error when updating predictions in DB');
+
+
+						}
+						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
+					}
+
+					// Remove temporary files
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+
+					$is_cached = true;
+				}
+
+				if (!$is_cached)
 				{
 					$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 					$must_wait = 'YES';
@@ -120,70 +172,46 @@ class MLOutliersController extends AbstractController
 				else
 				{
 					$must_wait = 'NO';
-					if (isset($_GET['dump']))
+
+					$query = "SELECT predicted, observed, outlier_code, id_exec, instance FROM resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000"; // FIXME - CLUMSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+					$result = $dbml->query($query);
+
+					foreach ($result as $row)
 					{
-						try
-						{
-							if (($handle = @fopen(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-resolutions.csv', 'r')) !== FALSE)
-							{
-								while (($data = fgets($handle, 1000)) !== FALSE) echo str_replace("\"","",$data)."\n";
-								fclose($handle);
-							}
-						}
-						catch(\Exception $e) { }
-						exit(0);
+						$entry = array('x' => (int)$row['predicted'], 'y' => (int)$row['observed'], 'name' => $row['instance'], 'id' => (int)$row['id_exec']);
+
+						if ($row['outlier_code'] == 0) $jsonData[] = $entry;
+						if ($row['outlier_code'] == 1) $jsonWarns[] = $entry;
+						if ($row['outlier_code'] == 2) $jsonOuts[] = $entry;
+
+						$jsonTable .= (($jsonTable=='')?'':',').'["'.(($row['outlier_code'] == 0)?'Legitimate':(($row['outlier_code'] == 1)?'Warning':'Outlier')).'","'.$row['predicted'].'","'.$row['observed'].'","'.str_replace(",","\",\"",$row['instance']).'","'.$row['id_exec'].'"]';						
 					}
 
-					// read results of the CSV
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.'-'.$model).'-resolutions.csv', 'r')) !== FALSE)
+					$query_var = "SELECT MAX(predicted) as max_x, MAX(observed) as max_y FROM resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000";
+					$result = $dbml->query($query_var);
+					$row = $result->fetch();
+					$max_x = $row['max_x'];
+					$max_y = $row['max_y'];
+
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','ID');
+					$jsonHeader = '[{title:""}';
+					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+					$jsonHeader = $jsonHeader.']';
+
+					$jsonData = json_encode($jsonData);
+					$jsonWarns = json_encode($jsonWarns);
+					$jsonOuts = json_encode($jsonOuts);
+
+					$jsonTable = '['.$jsonTable.']';
+
+					// Dump case
+					if (isset($_GET['dump']))
 					{
-						$header = fgetcsv($handle, 1000, ",");
-						$count = 0;
-						$count_ind = array(0,0,0);
-						$max_x = $max_y = 0;
-						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE && $count < 5000) // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
-						{
-							if ((int)$data[0] == 0)
-							{
-								$jsonData[$count_ind[0]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
-								$jsonData[$count_ind[0]]['y'] = (int)$data[2];
-								$jsonData[$count_ind[0]]['name'] = $data[3];							
-								$jsonData[$count_ind[0]++]['id'] = $data[4];							
-							}
-							else if ((int)$data[0] == 1)
-							{
-								$jsonWarns[$count_ind[1]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
-								$jsonWarns[$count_ind[1]]['y'] = (int)$data[2];
-								$jsonWarns[$count_ind[1]]['name'] = $data[3];
-								$jsonWarns[$count_ind[1]++]['id'] = $data[4];
-							}
-							else
-							{
-								$jsonOuts[$count_ind[2]]['x'] = ((int)$data[1] >= 100)?(int)$data[1]:100;
-								$jsonOuts[$count_ind[2]]['y'] = (int)$data[2];
-								$jsonOuts[$count_ind[2]]['name'] = $data[3];
-								$jsonOuts[$count_ind[2]++]['id'] = $data[4];							
-							}
-							$jsonTable .= (($jsonTable=='')?'':',').'["'.(((int)$data[0] == 0)?'Legitimate':(((int)$data[0] == 1)?'Warning':'Outlier')).'","'.(((int)$data[1] >= 100)?(int)$data[1]:100).'","'.((int)$data[2]).'","'.implode('","',explode(":",$data[3])).'","'.$data[4].'"]';
-							$count++;
-
-							if ((int)$data[1] > $max_y) $max_y = (int)$data[1];
-							if ((int)$data[2] > $max_x) $max_x = (int)$data[2];
-						}
-						fclose($handle);
-
-						$jsonHeader = '[';
-						for ($i = 0; $i < count($header); $i++)
-						{
-							$jsonHeader .= (($jsonHeader=='[')?'':',').'{title:"'.implode('"},{title:"',explode(":",$header[$i])).'"}';
-						}
-						$jsonHeader .= ']';
-
-						$jsonData = json_encode($jsonData);
-						$jsonWarns = json_encode($jsonWarns);
-						$jsonOuts = json_encode($jsonOuts);
-
-						$jsonTable = '['.$jsonTable.']';
+						echo str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
+						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonOuts);
+						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonWarns);
+						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
+						exit(0);
 					}
 				}
 			}
@@ -192,6 +220,7 @@ class MLOutliersController extends AbstractController
 				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 				$must_wait = "NO";
 			}
+			$dbml = null;
 		}
 		catch(\Exception $e)
 		{
@@ -199,6 +228,7 @@ class MLOutliersController extends AbstractController
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$model = '';
 			$possible_models_id = $possible_models = array();
+			$dbml = null;
 		}
 		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig',
 			array(
@@ -222,7 +252,7 @@ class MLOutliersController extends AbstractController
 				'must_wait' => $must_wait,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
-				'current_model' => $model,
+				'current_model' => $current_model,
 				'message' => $message,
 				'instance' => $instance,
 				'options' => Utils::getFilterOptions($db)

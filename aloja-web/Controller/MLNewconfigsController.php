@@ -7,9 +7,9 @@ use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
 use alojaweb\inc\MLUtils;
 
-class MLMinconfigsController extends AbstractController
+class MLNewconfigsController extends AbstractController
 {
-	public function mlminconfigsAction()
+	public function mlnewconfigsAction()
 	{
 		$jsonData = array();
 		$message = $instance = '';
@@ -24,48 +24,55 @@ class MLMinconfigsController extends AbstractController
 		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
 		    	$concat_config = "";		// Useless here
-		    	
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes',
+						'datanodess','bench_types','vm_OSs','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
 			{
 				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';				
+				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
 				$params['disks'] = array('RR1'); $where_configs .= ' AND disk IN ("RR1")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				$params['comps'] = array('3'); $where_configs .= ' AND comp IN ("3")';
 				$params['mapss'] = array('2','4'); $where_configs .= ' AND maps IN ("2","4")';
-				$params['iosfs'] = array('100'); $where_configs .= ' AND iosf IN ("100")';
 				$params['blk_sizes'] = array('134'); $where_configs .= ' AND blk_size IN ("134")';
+				$params['iosfs'] = array('100'); $where_configs .= ' AND iosf IN ("100")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$unrestricted = TRUE;
+				$params['datanodess'] = array('3');// $where_configs .= ' AND datanodes = 3';
+				$params['bench_types'] = array('HiBench');// $where_configs .= ' AND bench_type = "HiBench"';
+				$params['vm_OSs'] = array('linux');// $where_configs .= ' AND vm_OS = "linux"';				
+				$params['vm_sizes'] = array('SYS-6027R-72RF');// $where_configs .= ' AND vm_size = "SYS-6027R-72RF"';
+				$params['vm_coress'] = array('12');// $where_configs .= ' AND vm_cores = 12';
+				$params['vm_RAMs'] = array('128');// $where_configs .= ' AND vm_RAM = 128';
+				$params['hadoop_versions'] = array('1');// $where_configs .= ' AND hadoop_version = 1';
+				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 			}
+			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
-
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted, $db); // Used only as indicator in the WEB
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted, $db);
+			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+			unset($params['id_clusters']); // Exclude the param from now on
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator in the WEB
 
-			$config = $model_info.' '.$learn_param.' minconfs';
-			$learn_options = 'saveall='.md5($config);
+			$config = $model_info.' '.$learn_param.' newminconfs';
 
-			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
-			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
-			else if ($learn_param == 'nnet') { $learn_method = 'aloja_nnet'; $learn_options .= ':prange=0,20000'; }
-			else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3:prange=0,20000'; }
+			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options = 'prange=0,20000'; }
+			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options ='kparam=3';}
+			else if ($learn_param == 'nnet') { $learn_method = 'aloja_nnet'; $learn_options = 'prange=0,20000'; }
+			else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options = 'ppoly=3:prange=0,20000'; }
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config."M")."'");
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
@@ -78,15 +85,15 @@ class MLMinconfigsController extends AbstractController
 				// get headers for csv
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','datanodes' => 'Datanodes','bench_type' => 'Bench.Type','vm_OS' => 'VM.OS',
+					'vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version','type' => 'Type'
 				);
+
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench_type = 'HiBench' AND bench NOT LIKE 'prep_%' AND e.exe_time > 100".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench NOT LIKE 'prep_%' AND e.exe_time > 100 AND hadoop_version IN ('1','2')".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -94,15 +101,17 @@ class MLMinconfigsController extends AbstractController
 				fputcsv($fp, $names,',','"');
 			    	foreach($rows as $row)
 				{
-					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+					//$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
 					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
 					fputcsv($fp, array_values($row),',','"');
 				}
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query; touch '.md5($config).'.lock');
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=10 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=10 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
 			}
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
@@ -117,53 +126,59 @@ class MLMinconfigsController extends AbstractController
 			{
 				$must_wait = "NO";
 
-				// Save learning model to DB, with predictions
-				$is_cached_mysql = $dbml->query("SELECT id_learner FROM learners WHERE id_learner = '".md5($config)."'");
-				$tmp_result = $is_cached_mysql->fetch();
-				if ($tmp_result['id_learner'] != md5($config)) 
+				$learners = array();
+				$learners[] = md5($config."F");
+				$learners[] = md5($config."M");
+				foreach ($learners as $learner_1)
 				{
-					// register model to DB
-					$query = "INSERT INTO learners (id_learner,instance,model,algorithm)";
-					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
-					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
-
-					// read results of the CSV and dump to DB
-					foreach (array("tt", "tv", "tr") as $value)
+					// Save learning model to DB, with predictions
+					$is_cached_mysql = $dbml->query("SELECT id_learner FROM learners WHERE id_learner = '".$learner_1."'");
+					$tmp_result = $is_cached_mysql->fetch();
+					if ($tmp_result['id_learner'] != $learner_1) 
 					{
-						if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
+						// register model to DB
+						$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm)";
+						$query = $query." VALUES ('".$learner_1."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
+						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
+
+						// read results of the CSV and dump to DB
+						foreach (array("tt", "tv", "tr") as $value)
 						{
-							$header = fgetcsv($handle, 1000, ",");
-
-							$token = 0;
-							$query = "INSERT INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
-							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+							if (($handle = fopen(getcwd().'/cache/query/'.$learner_1.'-'.$value.'.csv', 'r')) !== FALSE)
 							{
-								$specific_instance = implode(",",array_slice($data, 2, 19));
-								$specific_data = implode(",",$data);
-								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
-								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
-								$specific_data = str_replace(",","','",$specific_data);
+								$header = fgetcsv($handle, 1000, ",");
 
-								$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
-								$result = $dbml->query($query_var);
-								$row = $result->fetch();
-						
-								// Insert instance values
-								if ($row['num'] == 0)
+								$token = 0;
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+								while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 								{
-									if ($token != 0) { $query = $query.","; } $token = 1;
-									$query = $query."('".$specific_data."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
+									$specific_instance = implode(",",array_slice($data, 2, 19));
+									$specific_data = implode(",",$data);
+									$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
+									$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
+									$specific_data = str_replace(",","','",$specific_data);
+
+									$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$specific_instance."' AND id_learner = '".$learner_1."'";
+									$result = $dbml->query($query_var);
+									$row = $result->fetch();
+						
+									// Insert instance values
+									if ($row['num'] == 0)
+									{
+										if ($token != 0) { $query = $query.","; } $token = 1;
+										$query = $query."('".$specific_data."','".$learner_1."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
+									}
 								}
+
+								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+								fclose($handle);
 							}
-
-							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-							fclose($handle);
 						}
-					}
 
-					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
+						// Remove temporal files
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.csv');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.dat');
+					}
 				}
 
 				// Save minconfigs to DB, with props and centers
@@ -172,8 +187,8 @@ class MLMinconfigsController extends AbstractController
 				if ($tmp_result['id_minconfigs'] != md5($config.'R')) 
 				{
 					// register minconfigs to DB
-					$query = "INSERT INTO minconfigs (id_minconfigs,id_learner,instance,model)";
-					$query = $query." VALUES ('".md5($config.'R')."','".md5($config)."','".$instance."','".substr($model_info,1)."');";
+					$query = "INSERT IGNORE INTO minconfigs (id_minconfigs,id_learner,instance,model,is_new)";
+					$query = $query." VALUES ('".md5($config.'R')."','".md5($config.'M')."','".$instance."','".substr($model_info,1)."','1');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving minconfis into DB');
 
 					$clusters = array();
@@ -227,7 +242,10 @@ class MLMinconfigsController extends AbstractController
 
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.{fin,csv,dat}');
 				}
 
 				// Retrieve minconfig progression results from DB
@@ -284,9 +302,9 @@ class MLMinconfigsController extends AbstractController
 			$max_x = $max_y = 0;
 			$must_wait = 'NO';
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlminconfigs.html.twig',
+		echo $this->container->getTwig()->render('mltemplate/mlnewconfigs.html.twig',
 			array(
-				'selected' => 'mlminconfigs',
+				'selected' => 'mlnewconfigs',
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
 				'configs' => $configs,
@@ -296,14 +314,19 @@ class MLMinconfigsController extends AbstractController
 				'disks' => $params['disks'],
 				'blk_sizes' => $params['blk_sizes'],
 				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
 				'mapss' => $params['mapss'],
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'hadoop_versions' => $params['hadoop_versions'],
+				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
-				'unrestricted' => $unrestricted,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)
