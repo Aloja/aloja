@@ -155,17 +155,21 @@ mlclearcache:
     pattern: "/mlclearcache"
     controller: "alojaweb\\Controller\\MLCacheController::mlclearcacheAction"
 
+mlparameval:
+    pattern: "/mlparameval"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
+
 mloutliers:
     pattern: "/mloutliers"
     controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
 
-mlsummaries:
-    pattern: "/mlsummaries"
-    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
-
 mlcrossvar:
     pattern: "/mlcrossvar"
     controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+
+mlsummaries:
+    pattern: "/mlsummaries"
+    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
 
 mlcrossvar3d:
     pattern: "/mlcrossvar3d"
@@ -174,10 +178,6 @@ mlcrossvar3d:
 mlcrossvar3dfa:
     pattern: "/mlcrossvar3dfa"
     controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dfaAction"
-
-mlparameval:
-    pattern: "/mlparameval"
-    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
 
 mlminconfigs:
     pattern: "/mlminconfigs"
