@@ -34,13 +34,13 @@ importHDIJobs() {
 		   	fi
 		    	
 		    benchType="HiBench"
-		    if [ $jobName == "random-text-writer" ]; then
+		    if [ "$jobName" == "random-text-writer" ]; then
 				jobName="prep_wordcount"
 			fi
-			if [[ $jobName =~ "TeraGen" ]]; then
+			if [[ "$jobName" =~ "TeraGen" ]]; then
 				jobName="prep_terasort"
 			fi
-			if [[ $jobName =~ "TeraSort" ]]; then
+			if [[ "$jobName" =~ "TeraSort" ]]; then
 				jobName="terasort"
 			fi
 			
@@ -84,80 +84,8 @@ importHDIJobs() {
 		    	id_exec=$(get_id_exec "$exec")
 			 fi
 		        
-		     values=`$CUR_DIR/../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
-	    	 insert="INSERT INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
-		               ON DUPLICATE KEY UPDATE
-		             LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
-		             FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
-		     logger "$insert"
-
-		     $MYSQL "$insert"
-
-		    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
-			
-			if [ -z "$1" ]; then # && [ $result -eq 0 ]; then
-				waste=()
-				reduce=()
-				map=()
-				for i in `seq 0 1 $totalTime`; do
-					waste[$i]=0
-					reduce[$i]=0
-					map[$i]=0		
-				done
-				
-			    runnignTime=`expr $finishTimeTS - $startTimeTS`
-			     read -a tasks <<< `$CUR_DIR/../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
-			    for task in "${tasks[@]}" ; do
-			    	taskId=`echo $task | sed 's/"/\ /g'`
-			    	taskStatus=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out`
-					taskType=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out`
-					taskStartTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
-					taskFinishTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
-					taskStartTime=`expr $taskStartTime / 1000`
-					taskFinishTime=`expr $taskFinishTime / 1000`
-			    	values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
-	
-			    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
-							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
-	
-					logger "$insert"
-					$MYSQL "$insert"
-
-					normalStartTime=`expr $taskStartTime - $startTimeTS`
-					normalFinishTime=`expr $taskFinishTime - $startTimeTS`
-					if [ "$taskStatus" == "FAILED" ]; then
-						waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-						waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
-					elif [ "$taskType" == "MAP" ]; then
-						map[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-						map[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
-					elif [ "$taskType" == "REDUCE" ]; then
-						reduce[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-						reduce[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
-					fi
-			    done
-			    for i in `seq 0 1 $totalTime`; do
-			    	if [ $i -gt 0 ]; then
-						previous=$(expr $i - 1)
-						map[$i]=$(expr waste[$i] + waste[$previous])
-						reduce[$i]=$(expr waste[$i] + waste[$previous])
-						waste[$i]=$(expr waste[$i] + waste[$previous])
-			    	fi
-			    	currentTime=`expr $startTimeTS + $i`
-			    	currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
-			    	insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
-							VALUES ($id_exec,'$jobName',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
-							ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
-	
-					logger "$insert"
-					$MYSQL "$insert"
-				done
-			fi
+		     import_hadoop2_jhist "$jhist" "noparse"
 		fi
-
-		#cleaning
-		rm tasks.out
-		rm globals.out
 	done
 }
 

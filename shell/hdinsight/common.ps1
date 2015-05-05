@@ -87,7 +87,6 @@ function RetrieveData([String]$clusterName, [String]$storageAccount, [String]$st
    $year = (Get-Date -f yyyyMMdd)
    $newLogsDirName="${year}_$date_${clusterName}"
    
-  # rm $logsDir -R
    $result = Test-Path $logsDir
    if(!$result) {
      mkdir $logsDir
@@ -101,21 +100,10 @@ function RetrieveData([String]$clusterName, [String]$storageAccount, [String]$st
    $curDir=$(pwd).Path
 
    Write-Verbose "Copying from storage blob"
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$curDir" /SourceKey:"$storageKey" /S /Pattern:"mapred" /Y
-  # AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$logsDir" /SourceKey:"$storageKey" /S /Pattern:app-logs /Y
-  # AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$logsDir" /SourceKey:"$storageKey" /S /Pattern:yarn /Y
+   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$curDir/$storageContainer" /SourceKey:"$storageKey" /S /Pattern:"mapred" /Y
    Write-Verbose "Copying job logs to logs dir"
    cp -R $storageContainer $logsDir/$newLogsDirName/
-   cp -R mapred $logsDir/$newLogsDirName/
-/*   Write-Verbose "Copying to minerva account"
-   
-   if ( !(Test-Path "pscp.exe") ) {
-    	(new-object System.Net.WebClient).DownloadFile('http://the.earth.li/~sgtatham/putty/latest/x86/pscp.exe','pscp.exe')
-   }
-   
-   mv $logsDir $newLogsDirName
-   .\pscp.exe -r "$newLogsDirName" "$minervaLogin@minerva.bsc.es:"
-   Write-Verbose "Retrieval and saving of logs completed"*/
+   mv $logsDir/$newLogsDirName/$storageContainer/mapred $logsDir/$newLogsDirName/
 
 }
 
