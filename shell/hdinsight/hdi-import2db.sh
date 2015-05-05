@@ -95,7 +95,7 @@ importHDIJobs() {
 
 		    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
 			
-			if [ -z "$1" ] && [ $result -eq 0 ]; then	
+			if [ -z "$1" ]; then # && [ $result -eq 0 ]; then
 				waste=()
 				reduce=()
 				map=()
@@ -120,37 +120,36 @@ importHDIJobs() {
 			    		insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 	
-					logger $insert
+					logger "$insert"
 					$MYSQL "$insert"
-	
+
+					normalStartTime=`expr $taskStartTime - $startTimeTS`
+					normalFinishTime=`expr $taskFinishTime - $startTimeTS`
 					if [ "$taskStatus" == "FAILED" ]; then
-						normalStartTime=`expr $taskStartTime - $startTimeTS`
-						normalFinishTime=`expr $taskFinishTime - $startTimeTS`
-						for i in `seq $normalStartTime 1 $normalFinishTime`; do
-							waste[$i]=`expr ${waste[$i]} + 1`
-						done
+						waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+						waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
 					elif [ "$taskType" == "MAP" ]; then
-						normalStartTime=`expr $taskStartTime - $startTimeTS`
-						normalFinishTime=`expr $taskFinishTime - $startTimeTS`
-						for i in `seq $normalStartTime 1 $normalFinishTime`; do
-							map[$i]=`expr ${map[$i]} + 1`
-						done
+						map[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+						map[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
 					elif [ "$taskType" == "REDUCE" ]; then
-						normalStartTime=`expr $taskStartTime - $startTimeTS`
-						normalFinishTime=`expr $taskFinishTime - $startTimeTS`
-						for i in `seq $normalStartTime 1 $normalFinishTime`; do
-							reduce[$i]=`expr ${reduce[$i]} + 1`
-						done
+						reduce[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+						reduce[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
 					fi
 			    done
 			    for i in `seq 0 1 $totalTime`; do
+			    	if [ $i -gt 0 ]; then
+						previous=$(expr $i - 1)
+						map[$i]=$(expr waste[$i] + waste[$previous])
+						reduce[$i]=$(expr waste[$i] + waste[$previous])
+						waste[$i]=$(expr waste[$i] + waste[$previous])
+			    	fi
 			    	currentTime=`expr $startTimeTS + $i`
 			    	currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
 			    	insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
 							VALUES ($id_exec,'$jobName',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 							ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 	
-					logger $insert
+					logger "$insert"
 					$MYSQL "$insert"
 				done
 			fi

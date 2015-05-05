@@ -740,7 +740,7 @@ update ignore execs SET bench_type='HiBench-1TB' where bench_type='-1TB';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore execs SET net='IB' where id_cluster = 26;
-update ignore execs SET disk='HDD' where disk = 'SSD' id_cluster = 26;
+update ignore execs SET disk='HDD' where disk = 'SSD' AND id_cluster = 26;
 
 
 #azure VMs (this should also be in get_filter_sql)
