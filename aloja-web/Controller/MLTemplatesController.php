@@ -133,7 +133,7 @@ class MLTemplatesController extends AbstractController
 						{
 							$header = fgetcsv($handle, 1000, ",");
 
-							$token = 0;
+							$token = 0; $insertions = 0;
 							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
@@ -150,12 +150,15 @@ class MLTemplatesController extends AbstractController
 								// Insert instance values
 								if ($row['num'] == 0)
 								{
-									if ($token != 0) { $query = $query.","; } $token = 1;
+									if ($token != 0) { $query = $query.","; } $token = 1; $insertions = 1;
 									$query = $query."('".$specific_data."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
 								}
 							}
 
-							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+							if ($insertions > 0)
+							{
+								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+							}
 							fclose($handle);
 						}
 					}
