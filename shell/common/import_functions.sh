@@ -441,14 +441,14 @@ import_hadoop2_jhist() {
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
 				previous=$(expr $i - 1)
-				map[$i]=$(expr waste[$i] + waste[$previous])
-				reduce[$i]=$(expr waste[$i] + waste[$previous])
-				waste[$i]=$(expr waste[$i] + waste[$previous])
+				map[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
+				reduce[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
+				waste[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
 			fi
 			currentTime=`expr $startTimeTS + $i`
 			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
 			insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
-					VALUES ($id_exec,'$jobName',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
+					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
 			logger "$insert"

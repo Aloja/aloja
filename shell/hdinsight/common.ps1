@@ -129,7 +129,7 @@ function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$st
    Write-Verbose "Storage container assigned to cluster"
    
    Write-Verbose "Creating HDInsight cluster"
-   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location $region -OSType "Windows" -HeadNodeVMSize "Large" -DataNodeVMSize $vmSize -ClusterType "Hadoop" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
+   New-AzureHDInsightCluster -Name $clusterName -ClusterSizeInNodes $nodesNumber -Location $region -OSType "Windows" -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" -Credential $cred -DefaultStorageAccountKey $storageKey -DefaultStorageAccountName "$storageName.blob.core.windows.net" -DefaultStorageContainerName $containerName
    Write-Verbose "HDInsight cluster created successfully"
 }
 
