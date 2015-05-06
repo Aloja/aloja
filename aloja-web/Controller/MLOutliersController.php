@@ -38,7 +38,7 @@ class MLOutliersController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET)))
 			{
 				$where_configs = '';
-//				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
+				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
 				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
@@ -48,6 +48,9 @@ class MLOutliersController extends AbstractController
 //				$params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
 //				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
 			}
+
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB

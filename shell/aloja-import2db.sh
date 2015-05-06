@@ -172,14 +172,20 @@ for folder in 201* ; do
 	        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 	
 	          #if dir does not exists or need to insert in DB
-	          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
-	            extract_hadoop_jobs
+	          if [ "$hadoop_version" != "2" ]; then
+				  if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
+					extract_hadoop_jobs
+				  fi
 	          fi
 	
 	          #DB inserting scripts
 	          if [ "$INSERT_DB" == "1" ] ; then
 	            #start with Hadoop's
-	            import_hadoop_jobs
+	            if [ "$hadoop_version" != "2" ]; then
+	           	 import_hadoop_jobs
+	            else
+				 extract_import_hadoop2_jobs
+	            fi
 	            wait
 	            import_sar_files
 	            wait
