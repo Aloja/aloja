@@ -1714,8 +1714,8 @@ class DefaultController extends AbstractController
 
 
         $db = $this->container->getDBUtils();
-        $clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs);");
-
+        $clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs e WHERE 1 ".DBUtils::getFilterExecs().");");
+        
         echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
             'selected' => 'Clusters',
             'clusters' => $clusters,
