@@ -732,22 +732,12 @@ update ignore execs SET disk='RR3' where disk='R3';
 update ignore execs SET bench_type='HiBench' where bench_type='b';
 update ignore execs SET bench_type='HiBench' where bench_type='';
 update ignore execs SET bench_type='HiBench-min' where bench_type='-min';
-
-#update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
+update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
 
 update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
-update ignore execs SET bench_type='HiBench-1TB' where bench_type='-1TB';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
 update ignore execs SET hadoop_version='1.03' where hadoop_version='';
 update ignore execs SET net='IB' where id_cluster = 26;
-update ignore execs SET disk='HDD' where disk = 'SSD' id_cluster = 26;
-
-
-#azure VMs (this should also be in get_filter_sql)
-update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
-update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
-update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
-update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
 
 update ignore clusters SET headnodes='1' where headnodes='' and provider != 'hdinsight';

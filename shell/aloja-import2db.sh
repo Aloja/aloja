@@ -42,8 +42,8 @@ min_time="$(date --utc --date "$min_date" +%s)"
 logger "Starting"
 
 for folder in 201* ; do
-	if [[ $folder == *"_alojahdi"* ]]; then
-		#HDINSIGHT log
+	if [[ "$folder" =~ hdi[0-9]+ ]]; then
+		#HDinsight on windows log -- hdi linux are named hdil
 		source "$CUR_DIR/hdinsight/hdi-import2db.sh"
 		importHDIJobs "$ONLY_META_DATA" 
 	else
@@ -136,7 +136,7 @@ for folder in 201* ; do
 	
 	          folder_OK="$(( folder_OK + 1 ))"
 	
-	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version)
 	                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
 	                  ON DUPLICATE KEY UPDATE
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
@@ -172,14 +172,20 @@ for folder in 201* ; do
 	        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 	
 	          #if dir does not exists or need to insert in DB
-	          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
-	            extract_hadoop_jobs
+	          if [ "$hadoop_version" != "2" ]; then
+				  if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
+					extract_hadoop_jobs
+				  fi
 	          fi
 	
 	          #DB inserting scripts
 	          if [ "$INSERT_DB" == "1" ] ; then
 	            #start with Hadoop's
-	            import_hadoop_jobs
+	            if [ "$hadoop_version" != "2" ]; then
+	           	 import_hadoop_jobs
+	            else
+				 extract_import_hadoop2_jobs
+	            fi
 	            wait
 	            import_sar_files
 	            wait
