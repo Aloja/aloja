@@ -47,6 +47,9 @@ class MLParamevalController extends AbstractController
 			$minExecs	= (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
 			$minExecsFilter = "";
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			if($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
 			$filter_execs = DBUtils::getFilterExecs();

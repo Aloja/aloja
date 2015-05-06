@@ -39,6 +39,7 @@ class MLCrossvarController extends AbstractController
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")'; 			
 			}
+			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			// compose instance
@@ -211,6 +212,7 @@ class MLCrossvarController extends AbstractController
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")'; 			
 			}
+			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			// compose instance
@@ -368,7 +370,7 @@ class MLCrossvarController extends AbstractController
 	public function mlcrossvar3dfaAction()
 	{
 		$jsonData = array();
-		$message = $instance = '';
+		$message = $instance = $possible_models_id = '';
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
 		try
@@ -393,20 +395,27 @@ class MLCrossvarController extends AbstractController
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
-				$params['benchs'] = $_GET['benchs'] = array('terasort');
-				$params['disks'] = $_GET['disks'] = array('HDD','SSD');
-				$params['iofilebufs'] = $_GET['iofilebufs'] = array('32768','65536','131072');
-				$params['comps'] = $_GET['comps'] = array('0');
-				$params['replications'] = $_GET['replications'] = array('1');
-				$params['id_clusters'] = $_GET['id_clusters'] = array('1');
-				//$params['mapss'] = $_GET['mapss'] = array('4');
-				//$params['iosfs'] = $_GET['iosfs'] = array('10');
-				$params['blk_sizes'] = $_GET['blk_sizes'] = array('128');		
+				$params['benchs'] = $_GET['benchs'] = array('terasort'); $where_configs = ' AND bench IN ("terasort")';
+				$params['disks'] = $_GET['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$params['iofilebufs'] = $_GET['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
+				$params['comps'] = $_GET['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$params['replications'] = $_GET['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				$params['id_clusters'] = $_GET['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
+				//$params['mapss'] = $_GET['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
+				//$params['iosfs'] = $_GET['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
+				$params['blk_sizes'] = $_GET['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
 			}
+			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, false, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, false, $db);
+
+			// Model for filling
+			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
+
+			$current_model = "";
+			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
 
 			// Call to MLFindAttributes, to fetch data
 			$_GET['pass'] = 1;
@@ -434,7 +443,7 @@ class MLCrossvarController extends AbstractController
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
 					FROM predictions as p
-					WHERE p.id_learner IN (SELECT id_learner FROM trees WHERE model='".$model_info."')
+					WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM trees WHERE model='".$model_info."')").$where_configs."
 					GROUP BY p.instance
 					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 				$rows = $dbml->query($query);
@@ -504,6 +513,7 @@ class MLCrossvarController extends AbstractController
 			$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 			$must_wait = "NO";
 			$dbml = null;
+			$possible_models = $possible_models_id = array();
 		}
 		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3dfa.html.twig',
 			array(
@@ -528,6 +538,9 @@ class MLCrossvarController extends AbstractController
 				'iofilebufs' => $params['iofilebufs'],
 				'message' => $message,
 				'instance' => $instance,
+				'current_model' => $current_model,
+				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)
 			)

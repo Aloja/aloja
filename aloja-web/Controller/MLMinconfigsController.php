@@ -42,6 +42,7 @@ class MLMinconfigsController extends AbstractController
 			}
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
