@@ -89,12 +89,12 @@ if ! which R > /dev/null; then
 	update.packages(ask = FALSE,repos="http://cran.r-project.org",dependencies = c('Suggests'),quiet=TRUE);
 
 	# Only for Ubuntu 12.04
-	#install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.es.r-project.org",
+	#install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.r-project.org",
 	#dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
 
 	# For all Ubuntu releases until 14.04
 	install.packages(c("devtools","DiscriMiner","emoa","httr","jsonlite","optparse","pracma","rgp","rstudioapi","session","whisker",
-	"RWeka","RWekajars","ggplot2","rms","snowfall","genalg","FSelector"),repos="http://cran.es.r-project.org",dependencies=TRUE,quiet=TRUE);
+	"RWeka","RWekajars","ggplot2","rms","snowfall","genalg","FSelector"),repos="http://cran.r-project.org",dependencies=TRUE,quiet=TRUE);
 	EOF
 
 	chmod a+x /tmp/packages.r
