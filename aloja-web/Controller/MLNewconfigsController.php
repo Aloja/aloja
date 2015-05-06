@@ -52,6 +52,7 @@ class MLNewconfigsController extends AbstractController
 			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -239,11 +240,9 @@ class MLNewconfigsController extends AbstractController
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.{fin,csv,dat}');
 				}
 
 				// Retrieve minconfig progression results from DB
