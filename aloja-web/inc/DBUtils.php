@@ -90,7 +90,8 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-    	return "";
+        return " AND 1=1" ;
+
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
             return " " ;
         } else {

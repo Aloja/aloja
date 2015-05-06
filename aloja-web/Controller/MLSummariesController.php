@@ -14,6 +14,10 @@ class MLSummariesController extends AbstractController
 		$displaydata = $message = '';
 		try
 		{
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
 			$db = $this->container->getDBUtils();
 		    	
 		    	$configurations = array ();	// Useless here
@@ -35,25 +39,17 @@ class MLSummariesController extends AbstractController
 				$where_configs = ' AND bench IN ("sort","terasort","wordcount") AND disk IN ("HDD","SSD")';
 			}
 
-			$model_info = '';
-			foreach ($param_names as $p) $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("*")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
+			// compose instance
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, true,$db);
+			$model_info = MLUtils::generateModelInfo($param_names, $params, true,$db);
+
+			$config = $model_info.' '.$separate_feat.' SUMMARY';
 
 			$cache_ds = getcwd().'/cache/query/'.md5($model_info.' '.$separate_feat.' SUMMARY').'-cache.csv';
-			$is_cached = file_exists($cache_ds);
 
-			if ($is_cached)
-			{
-				$keep_cache = TRUE;
-				foreach (array("summary.data") as &$value)
-				{
-					$keep_cache = $keep_cache && file_exists(getcwd().'/cache/query/'.md5($model_info.' '.$separate_feat.' SUMMARY').'-'.$value);
-				}
-				if (!$keep_cache)
-				{
-					unlink($cache_ds);
-					shell_exec("sed -i '/".md5($model_info.' '.$separate_feat.' SUMMARY')." : ".$model_info.' '.$separate_feat." SUMMARY/d' ".getcwd()."/cache/query/record.data");
-				}
-			}
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM summaries WHERE id_summaries = '".md5($config)."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = ($tmp_result['num'] > 0);
 
 			if (!$is_cached)
 			{
@@ -83,25 +79,34 @@ class MLSummariesController extends AbstractController
 				}
 
 				// launch query
-				$command = 'cd '.getcwd().'/cache/query; '.getcwd().'/resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($model_info.' '.$separate_feat.' SUMMARY').':fwidth=1000'; #fwidth=135
+				$command = 'cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000'; #fwidth=135
 				$output = shell_exec($command);
 
-				// update cache record (for human reading)
-				$register = md5($model_info.' '.$separate_feat.' SUMMARY').' : '.$model_info.' '.$separate_feat." SUMMARY\n";
-				shell_exec("sed -i '/".$register."/d' ".getcwd()."/cache/query/record.data");
-				file_put_contents(getcwd().'/cache/query/record.data', $register, FILE_APPEND | LOCK_EX);
+				// Save to DB
+				if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-summary.data', 'r')) !== FALSE)
+				{
+					$displaydata = "";
+					while (($data = fgets($handle)) !== FALSE)
+					{
+						$displaydata = $displaydata.str_replace(' ','&nbsp;',$data)."<br />";
+					}
+					fclose($handle);
+
+					// register model to DB
+					$query = "INSERT INTO summaries (id_summaries,instance,model,summary)";
+					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$displaydata."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
+				}
+
+				// Remove temporal files
+				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-summary.data');
+				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-cache.csv');
 			}
 
-			// read results of the CSV
-			if (($handle = fopen(getcwd().'/cache/query/'.md5($model_info.' '.$separate_feat.' SUMMARY').'-summary.data', 'r')) !== FALSE)
-			{
-				$displaydata = "";
-				while (($data = fgets($handle)) !== FALSE)
-				{
-					$displaydata = $displaydata.str_replace(' ','&nbsp;',$data)."<br />";
-				}
-				fclose($handle);
-			}
+			// Read results of the DB
+			$is_cached_mysql = $dbml->query("SELECT summary FROM summaries WHERE id_summaries = '".md5($config)."' LIMIT 1");
+			$tmp_result = $is_cached_mysql->fetch();
+			$displaydata = $tmp_result['summary'];
 		}
 		catch(\Exception $e)
 		{

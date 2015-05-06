@@ -75,43 +75,6 @@ ON DUPLICATE KEY UPDATE
     fi
 }
 
-
-#$1 id_exec
-get_filter_sql_exec() {
-  if [ "$1" ] ; then
-    echo "
-#Updates filters for an id_exec
-
-#filter, execs that don't have any Hadoop details
-
-update ignore execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
-update ignore execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec = '$1' AND id_exec is not null);
-
-#perf_detail, execs without perf counters
-
-update ignore execs SET perf_details = 0 where id_exec = '$1';
-update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec = '$1' AND id_exec is not null);
-
-#valid, set everything as valid, exept the ones that do not match the following rules
-update ignore execs SET valid = 1 where id_exec = '$1' ;
-update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
-  select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
-    tmp_table
-);
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE  e2.id_exec = '$1' and e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE e.id_exec = '$1' AND suma = 0;
-
-"
-
-#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
-#  select distinct(id_exec) from
-#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
-#    tmp_table
-#);
-  fi
-
-}
-
 #$1 folder $2 $folder_OK
 move2done() {
 
@@ -151,7 +114,15 @@ update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'tera
     (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
     tmp_table
 );
-update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM execs e2 JOIN JOB_status js USING (id_exec) WHERE e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i ON e.id_exec = i.id_exec SET valid = 0 WHERE suma = 0;
+
+update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM execs e2 left JOIN JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
+
+
+#azure VMs
+update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
+update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
+update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
+update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
 "
 
@@ -160,6 +131,43 @@ update ignore execs e INNER JOIN (SELECT id_exec,SUM(js.reduce) as 'suma' FROM e
 #    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
 #    tmp_table
 #);
+
+}
+
+
+#$1 id_exec
+get_filter_sql_exec() {
+  if [ "$1" ] ; then
+    echo "
+#Updates filters for an id_exec
+
+#filter, execs that don't have any Hadoop details
+
+update ignore execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
+update ignore execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec = '$1' AND id_exec is not null);
+
+#perf_detail, execs without perf counters
+
+update ignore execs SET perf_details = 0 where id_exec = '$1';
+update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec = '$1' AND id_exec is not null);
+
+#valid, set everything as valid, exept the ones that do not match the following rules
+update ignore execs SET valid = 1 where id_exec = '$1' ;
+update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
+  select distinct(id_exec) from
+    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    tmp_table
+);
+
+update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM execs e2 left JOIN JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
+"
+
+#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
+#  select distinct(id_exec) from
+#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
+#    tmp_table
+#);
+  fi
 
 }
 
@@ -222,6 +230,9 @@ get_exec_params(){
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
+    hadoop_version=$(extract_config_var "HADOOP_VERSION")
+    # Remove "hadoop" string from version: "hadoop2" -> "2"
+    hadoop_version="${hadoop_version//hadoop}"
 
     # load arrays
     local temp_array
@@ -251,7 +262,7 @@ get_exec_params(){
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\""
     done
 
   fi
@@ -342,6 +353,118 @@ get_job_confs() {
   else
     logger "ERROR: cannot get id_exec for $bench_folder"
   fi
+}
+
+#$1 job jhist $2 do not run aloja-tools.jar (already having tasks.out and globals.out)
+import_hadoop2_jhist() {
+    if [ -z $2 ]; then
+        java -cp "$CUR_DIR/../aloja-tools/lib/aloja-tools.jar" alojatools.JhistToJSON $1 tasks.out globals.out
+    fi
+    jobTimestamp=${array[2]}
+    jobName="`$CUR_DIR/../aloja-tools/jq -r '.job_name' globals.out`"
+    jobId="`$CUR_DIR/../aloja-tools/jq '.JOB_ID' globals.out`"
+    startTime="`$CUR_DIR/../aloja-tools/jq -r '.LAUNCH_TIME' globals.out`"
+    startTimeTS="`expr $startTime / 1000`"
+    finishTime="`$CUR_DIR/../aloja-tools/jq -r '.FINISH_TIME' globals.out`"
+    finishTimeTS="`expr $finishTime / 1000`"
+    totalTime="`expr $finishTime - $startTime`"
+    totalTime="`expr $totalTime / 1000`"
+    startTime=`date -d @$startTimeTS +"%Y-%m-%d %H:%M:%S"`
+    finishTime=`date -d @$finishTimeTS +"%Y-%m-%d %H:%M:%S"`
+
+    ##In hadoop 2 usually some bench names are cut or capitalized
+    if [[ "$jobName" =~ "word" ]]; then
+	    jobName="wordcount"
+	fi
+
+	if [ "$jobName" == "random-text-writer" ]; then
+		jobName="prep_wordcount"
+	fi
+	if [[ "$jobName" =~ "TeraGen" ]]; then
+		jobName="prep_terasort"
+	fi
+	if [[ "$jobName" =~ "TeraSort" ]]; then
+		jobName="terasort"
+	fi
+
+	values=`$CUR_DIR/../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+	insert="INSERT INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
+		        ON DUPLICATE KEY UPDATE
+		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
+		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
+    logger "$insert"
+
+	$MYSQL "$insert"
+
+    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+	if [ -z "$ONLY_META_DATA" ] && [ $result -eq 0 ]; then
+		waste=()
+		reduce=()
+		map=()
+		for i in `seq 0 1 $totalTime`; do
+			waste[$i]=0
+			reduce[$i]=0
+			map[$i]=0
+		done
+
+		runnignTime=`expr $finishTimeTS - $startTimeTS`
+		read -a tasks <<< `$CUR_DIR/../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
+		for task in "${tasks[@]}" ; do
+			taskId=`echo $task | sed 's/"/\ /g'`
+			taskStatus=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out`
+			taskType=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out`
+			taskStartTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
+			taskFinishTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
+			taskStartTime=`expr $taskStartTime / 1000`
+			taskFinishTime=`expr $taskFinishTime / 1000`
+			values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+
+			insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
+							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
+
+			logger "$insert"
+			$MYSQL "$insert"
+
+			normalStartTime=`expr $taskStartTime - $startTimeTS`
+			normalFinishTime=`expr $taskFinishTime - $startTimeTS`
+			if [ "$taskStatus" == "FAILED" ]; then
+				waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+				waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+			elif [ "$taskType" == "MAP" ]; then
+				map[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+				map[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+			elif [ "$taskType" == "REDUCE" ]; then
+				reduce[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+				reduce[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+			fi
+		done
+		for i in `seq 0 1 $totalTime`; do
+			if [ $i -gt 0 ]; then
+				previous=$(expr $i - 1)
+				map[$i]=$(expr waste[$i] + waste[$previous])
+				reduce[$i]=$(expr waste[$i] + waste[$previous])
+				waste[$i]=$(expr waste[$i] + waste[$previous])
+			fi
+			currentTime=`expr $startTimeTS + $i`
+			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
+			insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
+					VALUES ($id_exec,'$jobName',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
+					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
+
+			logger "$insert"
+			$MYSQL "$insert"
+		done
+	fi
+	#cleaning
+	rm tasks.out
+	rm globals.out
+}
+
+#Expects folder to contain jhist (Job History) files
+extract_import_hadoop2_jobs() {
+  for jhist in `find mr-history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
+    import_hadoop2_jhist "$jhist"
+  done
 }
 
 extract_hadoop_jobs() {
