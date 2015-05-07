@@ -1726,7 +1726,7 @@ class DefaultController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.`JOBID`)
                 FROM `JOB_tasks` t
-                ORDER BY t.`JOBID` DESC
+                #ORDER BY t.`JOBID` DESC
                 LIMIT 100
             ;";
             $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
@@ -1753,7 +1753,7 @@ class DefaultController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.`JOBID`)
                 FROM `JOB_tasks` t
-                ORDER BY t.`JOBID` DESC
+                #ORDER BY t.`JOBID` DESC
                 LIMIT 100
             ;";
             $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
