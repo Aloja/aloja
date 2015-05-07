@@ -243,9 +243,9 @@
 			<div class="row">
 				<div class="col-md-6">
 					Sigmas:</br> <select class="form-control" name="sigma" >
-						<option value="1" {% if '1' in sigma %} SELECTED {% endif %}>1</option>
-						<option value="2" {% if '2' in sigma %} SELECTED {% endif %}>2</option>
-						<option value="3" {% if '3' in sigma %} SELECTED {% endif %}>3</option>
+						<option value="1" {% if sigma == '1' %} SELECTED {% endif %}>1</option>
+						<option value="2" {% if sigma == '2' %} SELECTED {% endif %}>2</option>
+						<option value="3" {% if sigma == '3' %} SELECTED {% endif %}>3</option>
 					</select>
 				</div>
 			</div>
