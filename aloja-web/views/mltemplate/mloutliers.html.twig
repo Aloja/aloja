@@ -20,7 +20,9 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify">[WiP] Set stuff here...</p>
+		<p style="text-align:justify"><b>Anomaly Detection</b>: This tool uses the created models from <a href="/mlprediction">Modeling Data</a> to detect outliers on the selected data-set of executions. It performs model-based detection to mark down anomalous executions and outliers.</p>
+		<p style="text-align:justify">To use the tool, select which executions you want to filter and examine through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Also select the tolerance to errors parameter (<i>sigma</i>: the execution will be tested if the prediction error is at least <i>k</i> sigmas from the average error). Then observe how each execution is classified. <i>Warnings</i> are executions with an anomalous prediction error, without any other support as legit or outlier. <i>Outliers</i> are executions with an anomalous prediction error and supports of being outliers.</p>
+		<p style="text-align:justify">After classifying the executions, each classification can be attached to the prediction and execution (in the DataBase) as the accepted resolution for this execution. You can also see the list of executions tested and their resolutions in the box <i>List of outliers</i>, below. Optionally you can re-launch the classification process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
 		<hr />
 	</div>
 	<div id="stuffdiv" style="float: left; width: 68%;">
@@ -31,6 +33,8 @@
 				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
 				<td><input class="form-control" type="number" step="100" id="maxy" value="0" /></td>
 				<td><input class="form-control" type="button" id="maxy-apply" value="Apply" /></td>
+				</tr><tr><td><label>Associate to Predictions: </label></td></tr><tr>
+				<td><input class="form-control" type="button" id="outliers-apply" value="Accept resolutions" /></td>
 				</tr></table>
 			</form>
 		</div>
@@ -105,6 +109,14 @@
 		{
 			if ($("#maxy").val() < 1) $('#chart').highcharts().yAxis[0].setExtremes(null, null);
 			else $('#chart').highcharts().yAxis[0].update({ max: $("#maxy").val() });
+		});
+
+		$("#outliers-apply").click(function()
+		{
+			var url = window.location.href;   
+			if (url.indexOf('?') > -1) url = url + '&register=1'; 
+			else url = url + '?register=1';
+			window.location.href = url;
 		});
 
 		if ("{{must_wait}}"== "NO")
