@@ -7,8 +7,9 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify">[WiP] Having all the possible executions of a benchmark is a current problem, as Hadoop offers several configurations to be run. Here we built a mechanism, using Machine Learning techniques, to predict the result of a benchmark execution given a specific configuration, all of this from a few observed executions. Select in the right menu the set of executions you want to train a model, also the method to train it. Then observe in the chart below how good the prediction can be, training with 50% of the seen executions and validating and testing with the other (25%-25%).</p>
-		<hr />
+		<p style="text-align:justify"><b>Modeling Data</b>: This tool is in charge of creating models and predictors for Hadoop datasets. Using machine learning algorithms, this tool creates a model from the data-set of executions selected through the right panel. Then returns a model (kept in the system), and the result of testing the model against a sample of executions to check its accuracy. Our methodology uses the 50% of the selected executions as training (tr), a 25% for validating the model (tv), and a 25% to test the model (tt).</p>
+		<p style="text-align:justify">To use the tool, select the specific set of executions that you want to model at the right menu, the method to train it, and as option if you want the model to admit future not-seen-yet values. Then observe how the quality of the model in the chart below. [MAE: Mean Absolute Error, RAE: Relative Absolute Error]</p>
+	<hr />
 	</div>
 	<div id="stuff" style="float: left; width: 68%;">
 		<div id="chart" style="float: left; width: 100%;"></div>
