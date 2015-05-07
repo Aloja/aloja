@@ -749,13 +749,21 @@ update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
 update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
 update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
+update ignore clusters set headnodes=2 where provider = 'hdinsight' and vm_OS = 'windows';
 
+update execs set valid=1,filter=0 where id_cluster IN (20,23,24,25) AND YEAR(start_time) = '2014';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
 update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
 update execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
 update execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
+
+update execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
+
+update execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe_time > 1100 AND YEAR(start_time) = '2014';
+
+update execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
 
 "
 $MYSQL "update execs set bench='terasort' where bench='TeraSort' and id_cluster IN (20,23,24,25);
@@ -778,9 +786,6 @@ insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428333140','terasort',4134,'ETH','RR1','HiBench',32,1,1,0);
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428327683','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
-
-insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_r16_1428180121/job_1428144536921_0004','terasort',18628,'ETH','RR1','HiBench',1,2,0);
-insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_r16_1428230002/job_1428144536921_0005','terasort',18820,'ETH','RR1','HiBench',1,2,0);
 "
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_1428309325/job_1428289975913_0002','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
 

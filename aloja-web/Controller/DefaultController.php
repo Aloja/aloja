@@ -575,14 +575,6 @@ class DefaultController extends AbstractController
                 foreach($selectedHosts as $host) {
                     array_push($selected_hosts, $host['host_name']);
                 }
-//                 $selected_hosts = array(
-//                     'minerva-1002', 'minerva-1003', 'minerva-1004',
-//                     'al-1002', 'al-1003', 'al-1004',
-//                     'minerva-2','minerva-3','minerva-4',
-//                     'minerva-6','minerva-7','minerva-8',
-//                     'minerva-7', 'minerva-8','minerva-9','minerva-10','minerva-11','minerva-12','minerva-13','minerva-14','minerva-15','minerva-16','minerva-17','minerva-18','minerva-19','minerva-20',
-//                     'rl-06-01', 'rl-06-02', 'rl-06-03', 'rl-06-04', 'rl-06-05', 'rl-06-06', 'rl-06-07', 'rl-06-08',
-//                 );
             } elseif ($hosts == 'Master') {
                 $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
 
@@ -590,15 +582,6 @@ class DefaultController extends AbstractController
                 foreach($selectedHosts as $host) {
                     array_push($selected_hosts, $host['host_name']);
                 }
-
-//                 $selected_hosts = array(
-//                     'minerva-1001',
-//                     'al-1001',
-//                     'minerva-1',
-//                     'minerva-6',
-//                     'minerva-5',
-//                     'rl-06-00',
-//                 );
             } else {
                 $selected_hosts = array($hosts);
             }
@@ -2473,7 +2456,7 @@ class DefaultController extends AbstractController
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT datanodes,vm_size,MIN(exe_time) as minexe from execs JOIN clusters USING (id_cluster) WHERE 1 $where_configs GROUP BY datanodes,vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vm_size = c.vm_size WHERE 1 $where_configs " . DBUtils::getFilterExecs() . " GROUP BY c.datanodes,c.vm_size ORDER BY c.datanodes ASC,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT datanodes,vm_size as vmsize,MIN(exe_time) as minexe from execs JOIN clusters USING (id_cluster) WHERE 1 $where_configs GROUP BY datanodes,vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $where_configs " . DBUtils::getFilterExecs() . " GROUP BY c.datanodes,c.vm_size ORDER BY c.datanodes ASC,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
