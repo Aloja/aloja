@@ -127,7 +127,7 @@
 		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
 		            {#<li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>#}
 		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a>
-					  <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf Scalability of VMs</a></li>
+
                       <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
                       <li {% if selected is defined and selected == 'mlcrossvar3d' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3d') }}">Variable Crossing (vs Exe.Time)</a></li>
 				  </ul>
@@ -135,6 +135,7 @@
 				<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
+                    <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf Scalability of VMs</a></li>
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
 			          {#<a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a>#}
 			        </li>
@@ -221,14 +222,13 @@
        <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" style="margin-right: 525px;"/></a>
 
         <a target="blank" href="http://research.microsoft.com/"><img height="35" src="img/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
-        &nbsp;&nbsp;
-        <a target="blank" href="http://cordis.europa.eu/fp7/"><img width="80" src="img/FP7genRGB.gif" alt="FP7 logo" class="logo" /></a>
+
        <div class="content">
 		 <p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a>
              &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 
          </p>
-		 <p>Copyright 2014 © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
+		 <p>Copyright {{ "now"|date("Y") }} © bscmsrc.eu All Rights Reserved</p>
        </div>
     </div>
 	{% endblock %}
