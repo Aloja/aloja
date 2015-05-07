@@ -31,6 +31,8 @@
 				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
 				<td><input class="form-control" type="number" step="100" id="maxy" value="0" /></td>
 				<td><input class="form-control" type="button" id="maxy-apply" value="Apply" /></td>
+				<tr><td><label>Associate to Predictions: </label></td></tr><tr>
+				<td><input class="form-control" type="button" id="outliers-apply" value="Register" /></td>
 				</tr></table>
 			</form>
 		</div>
@@ -105,6 +107,14 @@
 		{
 			if ($("#maxy").val() < 1) $('#chart').highcharts().yAxis[0].setExtremes(null, null);
 			else $('#chart').highcharts().yAxis[0].update({ max: $("#maxy").val() });
+		});
+
+		$("#outliers-apply").click(function()
+		{
+			var url = window.location.href;   
+			if (url.indexOf('?') > -1) url = url + '&register=1'; 
+			else url = url + '?register=1';
+			window.location.href = url;
 		});
 
 		if ("{{must_wait}}"== "NO")
