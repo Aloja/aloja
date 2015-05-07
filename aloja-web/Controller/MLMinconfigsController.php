@@ -41,6 +41,10 @@ class MLMinconfigsController extends AbstractController
 				$unrestricted = TRUE; 
 			}
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
@@ -155,7 +159,7 @@ class MLMinconfigsController extends AbstractController
 					}
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
 				}
 
@@ -219,7 +223,7 @@ class MLMinconfigsController extends AbstractController
 					fclose($handle_sizes);
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
 				}
 

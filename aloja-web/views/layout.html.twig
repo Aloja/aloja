@@ -127,7 +127,8 @@
 		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
 		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
 		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a>
-		          </ul>
+					  <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf Scalability of VMs</a></li>
+				  </ul>
 		        </li>
 				<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
@@ -163,16 +164,16 @@
 		            <li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">Modeling Data</a></li>
 			    <!--<li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">Collapse Data</a></li>-->
 		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">Predict Configurations</a></li>
-			    <!--<li {% if selected is defined and selected == 'mlattributestree' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlattributestree') }}">Predicted Config. Tree</a></li>
- 		            <li {% if selected is defined and selected == 'mlparameval' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">Parameter Evaluation (ML)</a></li>-->
-			    <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
-			    <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
-			    <li {% if selected is defined and selected == 'mlnewconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlnewconfigs') }}">New Cluster Configurations</a></li>		            
-			    <!--<li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
-			    <li {% if selected is defined and selected == 'mlcrossvar3d' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3d') }}">Variable Crossing (vs Exe.Time)</a></li>
-			    <li {% if selected is defined and selected == 'mlcrossvar3dfa' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3dfa') }}">Variable Crossing (vs Prediction)</a></li>-->
-			    <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
-			    <!--<li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>-->
+		            <!--<li {% if selected is defined and selected == 'mlattributestree' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlattributestree') }}">Predicted Config. Tree</a></li>-->
+ 		            <li {% if selected is defined and selected == 'mlparameval' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">Parameter Evaluation (ML)</a></li>
+		            <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
+		            <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
+		            <li {% if selected is defined and selected == 'mlnewconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlnewconfigs') }}">New Cluster Configurations</a></li>		            
+		            <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
+		            <li {% if selected is defined and selected == 'mlcrossvar3d' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3d') }}">Variable Crossing (vs Exe.Time)</a></li>
+		            <li {% if selected is defined and selected == 'mlcrossvar3dfa' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3dfa') }}">Variable Crossing (vs Prediction)</a></li>
+		            <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
+ 		            <!--<li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>-->
                           </ul>
 		        </li>
 		      </ul>
@@ -292,23 +293,30 @@
 
 			$("select[name='presets']").change(function() { 
 			    var url = $(this).find("option:selected").first().attr('url');
-			    if(url!= "") {
-				var filters = url.split("?")[1];
-				filters = filters.split("&");
-				$("form[name='configFilters']").trigger('reset');
-				for(i = 0; i<filters.length; ++i) {
-					var split = filters[i].split("=");
-					var filterName = split[0]
-					var filterValue = split[1];
-					if(filterValue != "" && filterValue != null) {
-						if(filterName[filterName.length-1]==']')
-							$("input[name='"+filterName+"'][value='"+filterValue+"']").prop('checked',true);
-						else
-							$("input[name='"+filterName+"']").val(filterValue);
-						$("select[name='"+filterName+"']").val(filterValue);
+			    if (url == "") {
+				} else {
+					var filters = url.split("?")[1];
+					filters = filters.split("&");
+
+					//Clear form
+					$("input[type='checkbox']").each(function () {
+						$(this).prop('checked', false);
+					});
+
+					//$("form[name='configFilters']").trigger('reset');
+					for (i = 0; i < filters.length; ++i) {
+						var split = filters[i].split("=");
+						var filterName = split[0]
+						var filterValue = split[1];
+						if (filterValue != "" && filterValue != null) {
+							if (filterName[filterName.length - 1] == ']')
+								$("input[name='" + filterName + "'][value='" + filterValue + "']").prop('checked', true);
+							else
+								$("input[name='" + filterName + "']").val(filterValue);
+							$("select[name='" + filterName + "']").val(filterValue);
+						}
 					}
 				}
-			    }
 			});
 
 			$("span.selectAll").click(function() { 

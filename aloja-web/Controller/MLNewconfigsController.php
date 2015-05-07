@@ -51,6 +51,10 @@ class MLNewconfigsController extends AbstractController
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
 
+			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 			unset($params['id_clusters']); // Exclude the param from now on
@@ -65,7 +69,7 @@ class MLNewconfigsController extends AbstractController
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config."M")."'");
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
@@ -169,7 +173,7 @@ class MLNewconfigsController extends AbstractController
 						}
 
 						// Remove temporal files
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'-*.csv');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.csv');
 						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.dat');
 					}
 				}
@@ -234,13 +238,11 @@ class MLNewconfigsController extends AbstractController
 					fclose($handle_sizes);
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'-dataset.data');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.rds');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.rds');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.{fin,csv,dat}');
 				}
 
 				// Retrieve minconfig progression results from DB

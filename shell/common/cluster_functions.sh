@@ -3,8 +3,11 @@
   echo "ERROR: CONF_DIR not set correctly. CONF_DIR=$CONF_DIR" ; exit 1;
 }
 
-#load provider functions
+#source includes
+#logger "DEBUG: loading $CONF_DIR/provider_functions.sh"
 source "$CONF_DIR/provider_functions.sh"
+logger "DEBUG: loading $CONF_DIR/install_functions.sh"
+source "$CONF_DIR/install_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -22,18 +25,21 @@ vm_check_create() {
     vm_create "$1" "$2"
   else
     logger "VM $1 already exists. Skipping creation..."
+    logger "Starting VM $1 in case needed"
+    vm_start "$1"
   fi
-
 }
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-	if [ "$defaultProvider" = "hdinsight" ]; then
+	if [ "$defaultProvider" == "hdinsight" ]; then
 		vm_name="$clusterName"
-		#hdi_cluster_check_create "$vm_name"
-		create_hdi_cluster "$vm_name"
-		vm_provision
-		vm_final_bootstrap "$vm_name"
+		status=$(hdi_cluster_check_create "$clusterName")
+		if [ $status -eq 0 ]; then
+		  create_hdi_cluster "$clusterName"
+		fi
+		  vm_provision "password"
+		  vm_final_bootstrap "$clusterName" "password"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
@@ -82,11 +88,16 @@ vm_create_connect() {
 }
 
 #requires $vm_name and $type to be set
+#$1 use password
 vm_provision() {
   vm_initial_bootstrap
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
 
-  vm_set_ssh
+  if [ ! -z $1 ]; then
+    vm_set_ssh $1
+  else
+    vm_set_ssh
+  fi
   vm_install_base_packages
 
   if [ -z "$noSudo" ] ; then
@@ -296,6 +307,7 @@ vm_local_scp() {
     scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
+   logger "password"
     check_sshpass
 
     sshpass -p "$passwordAloja" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
@@ -703,10 +715,10 @@ vm_set_dsh() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
-    node_names="$(get_node_names)"
+    node_names="$(char2char "$(get_node_names)" ' ' '\n')"
     vm_update_template "~/.dsh/group/a" "$node_names" ""
 
-    slave_names="$(get_slaves_names)"
+    slave_names="$(char2char "$(get_slaves_names)" ' ' '\n')"
     vm_update_template "~/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
@@ -1148,89 +1160,4 @@ vm_update_template() {
   #logger "DEBUG: TEMPLATE GOT NEW contents"
   vm_put_file_contents "$1" "$fileNewContent" "$3"
   #logger "DEBUG: TEMPLATE UPDATED $1 with template"
-}
-
-vm_install_percona() {
-
-  local bootstrap_file="vm_install_percona"
-
-  if check_bootstraped "$bootstrap_file" ""; then
-    logger "Executing $bootstrap_file"
-
-    logger "Installing Percona server"
-
-    logger "INFO: Removing previous MySQL (if installed)"
-    vm_execute "
-sudo cp /etc/mysql/my.cnf /etc/mysql/my.cnf.bak
-sudo service mysql stop;
-sudo apt-get remove -y mysql-server mysql-client mysql-common;
-sudo apt-get autoremove -y;
-  "
-
-    logger "INFO: Installing Percona"
-
-    local ubuntu_version="trusty"
-    vm_update_template "/etc/apt/sources.list" "deb http://repo.percona.com/apt $ubuntu_version main
-deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
-
-
-    vm_update_template "/etc/apt/preferences.d/00percona.pref" "Package: *
-Pin: release o=Percona Development Team
-Pin-Priority: 1001" "secured_file"
-
-    vm_execute "
-sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
-sudo apt-get update;
-sudo apt-get install -y percona-server-server-5.5"
-
-    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
-      logger "INFO: Upgrading to latest version"
-      vm_execute "sudo apt-get install -y percona-server-server percona-xtrabackup php5-mysql;"
-    fi
-
-    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
-
-    if [ "$test_action" == "$testKey" ] ; then
-      logger "INFO: $bootstrap_file installed succesfully"
-      #set the lock
-      check_bootstraped "$bootstrap_file" "set"
-    else
-      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
-    fi
-
-  else
-    logger "$bootstrap_file already configured"
-  fi
-
-}
-
-vm_install_pyxtrabackup() {
-
-  local bootstrap_file="vm_install_pyxtrabackup"
-
-  if check_bootstraped "$bootstrap_file" ""; then
-    logger "Executing $bootstrap_file"
-
-    logger "INFO: Installing pip and pyxtrabackup"
-    vm_execute "
-sudo apt-get install -y curl python;
-sudo curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python2.7;
-sudo pip install pyxtrabackup;
-"
-
-    test_action="$(vm_execute " [ \"\$(which pyxtrabackup |grep 'pyxtrabackup')\" ] && echo '$testKey'")"
-
-    if [ "$test_action" == "$testKey" ] ; then
-      logger "INFO: $bootstrap_file installed succesfully"
-      #set the lock
-      check_bootstraped "$bootstrap_file" "set"
-    else
-      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
-    fi
-
-  else
-    logger "$bootstrap_file already configured"
-  fi
-
 }

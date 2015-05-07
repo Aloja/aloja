@@ -16,6 +16,7 @@ $0 -C clusterName
 [-z <block size in bytes>]
 [-s (save prepare)]
 [-N (don't delete files)]
+[-H hadoop version <hadoop1|hadoop2>]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -51,7 +52,7 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -65,15 +66,15 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       ;;
     n)
       NET=$OPTARG
-      [ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
+      #[ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
       ;;
     d)
       DISK=$OPTARG
-      [ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || usage
+      #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ]  || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -126,6 +127,10 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:sN:D" opt; do
       LIMIT_DATA_NODES=$OPTARG
       echo "LIMIT_DATA_NODES $LIMIT_DATA_NODES"
       ;;
+    H)
+      HADOOP_VERSION=$OPTARG
+      [ "$HADOOP_VERSION" == "hadoop1" ] || [ "$HADOOP_VERSION" == "hadoop2" ] || usage
+      ;;
     esac
 done
 
@@ -146,25 +151,35 @@ loggerb  "INFO: includes loaded"
 
 #####
 
+#some validations
+if ! inList "$CLUSTER_DISKS" "$DISK" ; then
+  logger "ERROR: Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
+  usage
+fi
+
+if ! inList "$CLUSTER_NETS" "$NET" ; then
+  logger "ERROR: Disk type $NET not supported for $clusterName\nSupported: $NET"
+  usage
+fi
+
 
 NUMBER_OF_DATA_NODES="$numberOfNodes"
 
 DSH="dsh -M -c -m "
 
-#DEPRECATED for infiniband tests
-#if [ "${NET}" == "IB" ] ; then
-#  host1="al-1001-ib0"
-#  host2="al-1002-ib0"
-#  host3="al-1003-ib0"
-#  host4="al-1004-ib0"
-#  IFACE="ib0"
+#For infiniband tests
+if [ "${NET}" == "IB" ] ; then
+  IFACE="ib0"
+  master_name="$(get_master_name_IB)"
+  node_names="$(get_node_names_IB)"
+else
+  IFACE="eth0"
+  master_name="$(get_master_name)"
+  node_names="$(get_node_names)"
+fi
 
-IFACE="eth0"
-
-master_name="$(get_master_name)"
 DSH_MASTER="ssh $master_name"
 
-node_names="$(get_node_names)"
 
 if [ ! -z "$LIMIT_DATA_NODES" ] ; then
 
@@ -199,14 +214,21 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 [ ! "$BENCH_SOURCE_DIR" ] && BENCH_SOURCE_DIR="$BENCH_DEFAULT_SCRATCH/aplic"
 [ ! "$BENCH_SAVE_PREPARE_LOCATION" ] && BENCH_SAVE_PREPARE_LOCATION="$BENCH_DEFAULT_SCRATCH/HiBench_prepare"
 
-[ ! "$BENCH_HADOOP_VERSION" ] && BENCH_HADOOP_VERSION="hadoop-1.0.3"
-
 [ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
 [ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
 
-[ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="1"
+[ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="hadoop1"
+
 if [ "$defaultProvider" == "hdinsight" ]; then
-	HADOOP_VERSION=2
+  HADOOP_VERSION="hadoop2"
+fi
+
+if [ ! "$BENCH_HADOOP_VERSION" ] ; then
+  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+    BENCH_HADOOP_VERSION="hadoop-1.0.3"
+  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+    BENCH_HADOOP_VERSION="hadoop-2.6.0"
+  fi
 fi
 
 
@@ -218,18 +240,15 @@ BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
 JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
 Master node: $master_name "
 
-if [ "$defaultProvider" == "hdinsight" ]; then
- HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "HDD" ] ; then
-  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] ; then
-  HDD="$BENCH_DEFAULT_SCRATCH/hadoop-hibench_$PORT_PREFIX"
-elif [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ]; then
-  HDD="/scratch/attached/1/hadoop-hibench_$PORT_PREFIX"
-else
-  echo "Incorrect disk specified: $DISK"
+#check that we got the dynamic disk location correctly
+if [ -z "$(get_initial_disk "$DISK")" ] ; then
+  loggerb "ERROR: cannot determine $DISK path"
   exit 1
 fi
+
+#set the main path for the benchmark
+HDD="$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+HDD_TMP="$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")" #for hadoop tmp dir
 
 #BENCH_BASE_DIR="$homePrefixAloja/$userAloja/share"
 #BENCH_SOURCE_DIR="/scratch/local/aplic"
@@ -260,7 +279,7 @@ fi
 
 
 # Output directory name
-CONF="${NET}_${DISK}_b${BENCH}_v${HADOOP_VERSION}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+CONF="${NET}_${DISK}_b${BENCH}_version-${HADOOP_VERSION}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
 JOB_NAME="$(get_date_folder)_$CONF"
 
 JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
@@ -276,10 +295,17 @@ $DSH_MASTER "touch $LOG_PATH"
 export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
 loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
-bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
-vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
-bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
-sar="$HDD/aplic/sar_$PORT_PREFIX"
+if [ "$defaultProvider" != "hdinsight" ]; then
+	bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
+	vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
+	bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
+	sar="$HDD/aplic/sar_$PORT_PREFIX"
+else
+	bwm_source="bwm-ng"
+	vmstat="vmstat"
+	bwm="bwm-ng"
+	sar="sar"
+fi
 
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
@@ -302,7 +328,19 @@ for node in $node_names ; do
   loggerb  " for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BENCH_BASE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
     loggerb  "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
-    $DSH_C "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/" #rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/
+
+    if [ ! "$(ssh "$node" "[ -d \"$BENCH_BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+      #logger "Downloading initial aplic dir from dropbox"
+      #$DSH "wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2?dl=1 -O $BASE_DIR/aplic.tar.bz2"
+
+      $DSH "rsync -aur --force $BENCH_BASE_DIR/aplic.tar.bz2 /tmp/"
+
+      loggerb  "Uncompressing aplic"
+      $DSH  "mkdir -p $BENCH_SOURCE_DIR/; cd $BENCH_SOURCE_DIR/../; tar -C $BENCH_SOURCE_DIR/../ -jxf /tmp/aplic.tar.bz2; "  #rm aplic.tar.bz2;
+    fi
+
+    logger "Rsynching files"
+    $DSH "mkdir -p $BENCH_SOURCE_DIR; rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
     break #dont need to check after one is missing
   else
     loggerb  " Host $node up to date"
@@ -322,6 +360,7 @@ loggerb  "Job name: $JOB_NAME"
 loggerb  "Job path: $JOB_PATH"
 loggerb  "Log path: $LOG_PATH"
 loggerb  "Disk location: $HDD"
+loggerb  "TMP Disk location: $HDD_TMP"
 loggerb  "Conf: $CONF"
 loggerb  "Benchmark: $BENCH_HIB_DIR"
 loggerb  "Benchs to execute: $LIST_BENCHS"
@@ -346,11 +385,12 @@ loggerb  ""
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
 
-prepare_config
-
 if [ "$defaultProvider" != "hdinsight" ]; then
- benchmark_config
+ prepare_config
 fi
+
+benchmark_config
+
 start_time=$(date '+%s')
 
 ########################################################
@@ -380,7 +420,7 @@ benchmark_cleanup
 
 #copy
 loggerb "INFO: Copying resulting files From: $HDD/* To: $JOB_PATH/"
-$DSH "cp $HDD/* $JOB_PATH/"
+$DSH "cp $HDD/* $HDD_TMP/* $JOB_PATH/"
 
 # Save current config (all environment variables)
 ( set -o posix ; set ) | grep -i -v "password" > $JOB_PATH/config.sh

@@ -594,7 +594,7 @@ class Utils
     	if($exec['disk'] == 'HDD')
     		$num_remotes = 1;
     	
-    	$cost = ($exec['exe_time']/3600)*($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+    	$cost = $exec['exe_time']*(($costHour/3600) + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
     	return $cost;
     }
     
