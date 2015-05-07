@@ -154,3 +154,18 @@ get_master_name() {
 get_node_names() {
 	cat /home/pristine/machines	
 }
+
+get_slaves_names() {
+    local nodes=`expr $numberOfNodes - 1`
+    local node_names
+    for i in `seq 0 $nodes` ; do
+        node_names="${node_names}\nworkernode${i}"
+    done
+    echo -e "$node_names"
+}
+
+#$1 node_name, expects workernode{id}
+get_vm_id() {
+    local id=$(echo "$1" | grep -oP "[0-9]+")
+    printf %02d "$id"
+}
