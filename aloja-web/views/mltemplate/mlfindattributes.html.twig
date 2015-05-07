@@ -20,7 +20,9 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify">[WiP] Select the attributes you want to define from the filter, to predict all their combinations, so you can sort them by Predicted time or by attribute.</p>
+		<p style="text-align:justify"><b>Predict Configurations</b>: This tool uses the created models from <a href="/mlprediction">Modeling Data</a> to expand the space of possibilities for the selected attributes in the right filter box. It gets the best compatible model in cache and predicts all the possible software and hardware configurations for the selected filter, and returns a table with the results. It also creates a tree of attributes, indicating which ones separate better the faster from the slower executions.</p>
+		<p style="text-align:justify">
+To use the tool, select which executions you want to filter through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Then observe the predictions for each combination, also the tree of attributes. Optionally you can re-launch the prediction process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
 		<hr />
 	</div>
 	<div id="contentdiv" style="float: left; width: 68%;">	

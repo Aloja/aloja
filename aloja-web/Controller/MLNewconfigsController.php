@@ -176,8 +176,7 @@ class MLNewconfigsController extends AbstractController
 						}
 
 						// Remove temporal files
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.csv');
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.dat');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.{dat,csv}');
 					}
 				}
 
@@ -245,7 +244,7 @@ class MLNewconfigsController extends AbstractController
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.{fin,csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.{fin,csv,dat}');
 				}
 
 				// Retrieve minconfig progression results from DB

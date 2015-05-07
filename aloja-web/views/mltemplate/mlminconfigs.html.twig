@@ -19,7 +19,8 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify">[WiP] Set stuff here...</p>
+		<p style="text-align:justify"><b>Minimal Recommended Configurations</b>: This tool is in charge of finding the minimal number of executions (and which ones) to model a cluster or cloud service. Using machine learning algorithms, this tool creates a model from the data-set of executions selected through the right panel, then using model-based methods it searches which minimal set of executions are required to model the selected clusters.</p>
+		<p style="text-align:justify">To use the tool, select which executions and clusters you want as model through the right filter box (This tool will automatically create a model for this). Then observe the set of executions required, and the estimated error that they produce by only running them. The tool returns different sets of configurations, sets with cardinality 10 to <i>k</i>, each one with a lower error but more executions in it.</p>
 		<hr />
 	</div>
 	<div id="stuffdiv" style="float: left; width: 68%;">
@@ -59,7 +60,7 @@
 	    		            zoomType: 'xy'
 	    		        },
 	    		        title: {
-	    		            text: 'Minimal Configurations'
+	    		            text: 'Recomended Configurations'
 	    		        },
 	    		        subtitle: {
 	    		            text: 'Progression of executions added to reconstruct the model'
