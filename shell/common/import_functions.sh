@@ -396,8 +396,8 @@ import_hadoop2_jhist() {
 
 	$MYSQL "$insert"
 
-    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
-	if [ -z "$ONLY_META_DATA" ] && [ $result -eq 0 ]; then
+    local result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+	if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
 		waste=()
 		reduce=()
 		map=()
@@ -429,20 +429,20 @@ import_hadoop2_jhist() {
 			normalFinishTime=`expr $taskFinishTime - $startTimeTS`
 			if [ "$taskStatus" == "FAILED" ]; then
 				waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+				waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 1)
 			elif [ "$taskType" == "MAP" ]; then
-				map[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				map[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+				map[$normalStartTime]=$(expr ${map[$normalStartTime]} + 1)
+				map[$normalFinishTime]=$(expr ${map[$normalFinishTime]} - 1)
 			elif [ "$taskType" == "REDUCE" ]; then
-				reduce[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				reduce[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+				reduce[$normalStartTime]=$(expr ${reduce[$normalStartTime]} + 1)
+				reduce[$normalFinishTime]=$(expr ${reduce[$normalFinishTime]} - 1)
 			fi
 		done
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
 				previous=$(expr $i - 1)
-				map[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
-				reduce[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
+				map[$i]=$(expr ${map[$i]} + ${map[$previous]})
+				reduce[$i]=$(expr ${reduce[$i]} + ${reduce[$previous]})
 				waste[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
 			fi
 			currentTime=`expr $startTimeTS + $i`
