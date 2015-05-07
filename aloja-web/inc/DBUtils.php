@@ -62,9 +62,9 @@ class DBUtils
 
         //check for cache first
         if ($use_cache &&
-            file_exists($file_path) &&
-            ($rows = file_get_contents($file_path)) &&
-            ($rows = unserialize(gzuncompress($rows)))
+                file_exists($file_path) &&
+                ($rows = file_get_contents($file_path)) &&
+                ($rows = unserialize(gzuncompress($rows)))
         ) {
             $this->container['log']->addDebug('CACHED: '.$sql);
         } else {
@@ -90,10 +90,12 @@ class DBUtils
 
     public static function getFilterExecs()
     {
+        //return " AND 1=1" ;
+
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
             return " " ;
         } else {
-            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
+            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33) ";
             //return " AND c.provider != 'rackspace' ";
         }
 
