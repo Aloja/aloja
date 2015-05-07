@@ -42,7 +42,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM learners";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing learners from DB');
 
-				$command = 'rm '.getcwd().'/cache/query/*.{rds,lock,fin,dat}';
+				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat}';
 				$output[] = shell_exec($command);
 			}
 
@@ -51,7 +51,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM learners WHERE id_learner='".$_GET['rml']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a learner from DB');
 
-				$command = 'rm '.getcwd().'/cache/query/'.$_GET['rml'].'*';
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rml'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -60,7 +60,16 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM minconfigs WHERE id_minconfigs='".$_GET['rmm']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a minconfig from DB');
 
-				$command = 'rm '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
+			if (isset($_GET['rmr']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM resolutions WHERE id_resolution='".$_GET['rmr']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a resolution from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmr'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -108,6 +117,20 @@ class MLCacheController extends AbstractController
 			$jsonMinconfs = $jsonMinconfs.']';
 			$jsonMinconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Creation'},{'title':'Is_New'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
 
+			// Compilation of Resolutions on Cache
+			$query="SELECT DISTINCT id_resolution, id_learner, model, creation_time, sigma, count(*) AS instances
+				FROM resolutions
+				GROUP BY id_resolution
+				";
+			$rows = $dbml->query($query);
+			$jsonResolutions = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$row['model']."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
+			}
+			$jsonResolutions = $jsonResolutions.']';
+			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
+
 			$dbml = null;
 		}
 		catch(Exception $e)
@@ -121,7 +144,9 @@ class MLCacheController extends AbstractController
 				'learners' => $jsonLearners,
 				'header_learners' => $jsonLearningHeader,
 				'minconfs' => $jsonMinconfs,
-				'header_minconfs' => $jsonMinconfsHeader
+				'header_minconfs' => $jsonMinconfsHeader,
+				'resolutions' => $jsonResolutions,
+				'header_resolutions' => $jsonResolutionsHeader
 			)
 		);
 	}
