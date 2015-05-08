@@ -751,7 +751,7 @@ update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extrala
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 update ignore clusters set headnodes=2 where provider = 'hdinsight' and vm_OS = 'windows';
 
-update execs set valid=1,filter=0 where id_cluster IN (20,23,24,25) AND YEAR(start_time) = '2014';
+update execs join clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
 update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
