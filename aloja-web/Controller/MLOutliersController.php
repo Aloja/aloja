@@ -14,6 +14,7 @@ class MLOutliersController extends AbstractController
 		$jsonData = $jsonWarns = $jsonOuts = array();
 		$message = $instance = $jsonHeader = $jsonTable = '';
 		$max_x = $max_y = 0;
+		$must_wait = 'NO';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -35,7 +36,9 @@ class MLOutliersController extends AbstractController
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))
-			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET)))
+			|| (count($_GET) == 2 && array_key_exists('register',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('register',$_GET) && array_key_exists('current_model',$_GET)))
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';				
@@ -92,15 +95,8 @@ class MLOutliersController extends AbstractController
 					$headers = array_keys($header_names);
 					$names = array_values($header_names);
 
-					// Get IDs already in Cache
-					$query_var = "SELECT id_exec FROM resolutions WHERE id_learner = '".$current_model."' AND model = '".$model_info."'";
-					$result = $dbml->query($query_var);
-					$aux_array = array();
-					foreach ($result as $row) $aux_array[] = $row['id_exec'];
-					$ids_in_cache = implode("','",$aux_array);
-
 					// dump the result to csv
-				    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." AND id_exec NOT IN ('".$ids_in_cache."');";
+					$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
 				    	$rows = $db->get_rows($query);
 					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -127,7 +123,7 @@ class MLOutliersController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 
 						$token = 0;
-						$query = "INSERT INTO resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
+						$query = "REPLACE INTO resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
@@ -137,22 +133,8 @@ class MLOutliersController extends AbstractController
 							$selected_instance_pre = str_replace(':',',',$selected_instance_pre);
 							$specific_id = $data[4];
 
-							$query_var = "SELECT count(*) as num FROM resolutions WHERE id_exec = '".$specific_id."' AND instance = '".$selected_instance_pre."' AND id_learner = '".$current_model."' AND model = '".$model_info."'";
-							$result = $dbml->query($query_var);
-							$row = $result->fetch();
-						
-							// Insert instance values
-							if ($row['num'] == 0)
-							{
-								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
-							}
-
-							// Update the predictions table
-							$query_var = "UPDATE predictions SET outlier = '".$resolution."' WHERE id_exec = '".$specific_id."' AND instance = '".$selected_instance_pre."' AND id_learner = '".$current_model."'";
-							if ($dbml->query($query_var) === FALSE) throw new \Exception('Error when updating predictions in DB');
-
-
+							if ($token > 0) { $query = $query.","; } $token = 1;
+							$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
 						}
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 					}
@@ -213,6 +195,18 @@ class MLOutliersController extends AbstractController
 						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
 						exit(0);
 					}
+
+					// Register case
+					if (isset($_GET['register']))
+					{
+						// Update the predictions table
+						$query_var =   "UPDATE predictions as p, resolutions as r
+								SET p.outlier = r.outlier_code
+								WHERE r.id_exec = p.id_exec
+									AND r.id_resolution = '".md5($config)."'
+									AND p.id_learner = '".$current_model."'";
+						if ($dbml->query($query_var) === FALSE) throw new \Exception('Error when updating predictions in DB');
+					}
 				}
 			}
 			else
@@ -253,6 +247,7 @@ class MLOutliersController extends AbstractController
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
 				'current_model' => $current_model,
+				'sigma' => $sigma_param,
 				'message' => $message,
 				'instance' => $instance,
 				'options' => Utils::getFilterOptions($db)
