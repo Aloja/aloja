@@ -99,16 +99,14 @@
 
 		$("#variable1").change(function()
 		{
-			var configForm = document.getElementsByName('configFilters')[0];
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>";
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>";
+			$('#mldiv').append("<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>");
+			$('#mldiv').append("<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>");
 			$('#submit').click();
 		});
 		$("#variable2").change(function()
 		{
-			var configForm = document.getElementsByName('configFilters')[0];
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable1' value='" + $("#variable1").val() + "'></input>";
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='variable2' value='" + $("#variable2").val() + "'></input>";
+			$('#mldiv').append("<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>");
+			$('#mldiv').append("<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>");
 			$('#submit').click();
 		});
 
