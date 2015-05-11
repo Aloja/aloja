@@ -27,6 +27,8 @@ class RestController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
+            'vm_OS' => 'OS',
+            'cdesc' => 'Cluster description',
         	'datanodes' => 'Datanodes',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
@@ -78,6 +80,8 @@ class RestController extends AbstractController
             			'exec' => 'Exec Conf',
             			'cost' => 'Running Cost $',
             			'id_cluster' => 'Cluster',
+                        'vm_OS' => 'OS',
+                        'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
             			//'version' => 'Hadoop v.',
@@ -95,6 +99,8 @@ class RestController extends AbstractController
             			'net' => 'Net',
             			'disk' => 'Disk',
             			'id_cluster' => 'Cluster',
+                        'vm_OS' => 'OS',
+                        'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
             			//'version' => 'Hadoop v.',
@@ -118,6 +124,8 @@ class RestController extends AbstractController
 					'comp' => 'Comp',
 					'blk_size' => 'Blk size',
 					'id_cluster' => 'Cluster',
+                    'vm_OS' => 'OS',
+                    'cdesc' => 'Cluster description',
 					'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
 					//'version' => 'Hadoop v.',
@@ -127,7 +135,7 @@ class RestController extends AbstractController
 				);
             }
             
-             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
+             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
        	 		join clusters c USING (id_cluster)
       		 	 WHERE 1 $where_configs ".DBUtils::getFilterExecs().";";
 
