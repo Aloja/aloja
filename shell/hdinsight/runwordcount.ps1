@@ -2,8 +2,8 @@ param([String]$inputData,[String]$outputData,[bool]$runTeragen=$True,[Int32]$red
 
 if($runPrepare) {
 	$mapsPerHost=16
-	$gbPerHost=128000000000/$nodesNumber
-	$bytesPerMap=[Int]($gbPerHost/$mapsPerHost)
+	$gbPerHost=(128000000000/$nodesNumber)
+	$bytesPerMap=[Int64]($gbPerHost/$mapsPerHost)
 	$randomtextwriter = New-AzureHDInsightMapReduceJobDefinition -JarFile "/example/jars/hadoop-mapreduce-examples.jar" -ClassName "randomtextwriter" -Arguments "-Dmapreduce.randomtextwriter.bytespermap=$bytesPerMap", "-Dmapreduce.randomtextwriter.mapsperhost=$mapsPerHost", $inputData -JobName "randomtextwriter"
 	echo $randomtextwriter
 	Write-Verbose "Generating data"
