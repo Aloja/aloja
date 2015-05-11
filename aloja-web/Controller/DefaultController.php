@@ -23,6 +23,8 @@ class DefaultController extends AbstractController
 			'comp' => 'Comp',
 			'blk_size' => 'Blk size',
 			'id_cluster' => 'Cluster',
+            'vm_OS' => 'OS',
+            'cdesc' => 'Cluster description',
 			'datanodes' => 'Datanodes',
 			'prv' => 'PARAVER',
 			//'version' => 'Hadoop v.',
@@ -266,6 +268,8 @@ class DefaultController extends AbstractController
 					'exec' => 'Exec Conf',
 					'cost' => 'Running Cost $',
 					'id_cluster' => 'Cluster',
+                    'vm_OS' => 'OS',
+                    'cdesc' => 'Cluster description',
 					'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
 					//'version' => 'Hadoop v.',
@@ -283,6 +287,8 @@ class DefaultController extends AbstractController
             			'net' => 'Net',
             			'disk' => 'Disk',
             			'id_cluster' => 'Cluster',
+                        'vm_OS' => 'OS',
+                        'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
             			//'version' => 'Hadoop v.',
@@ -306,7 +312,9 @@ class DefaultController extends AbstractController
 					'comp' => 'Comp',
 					'blk_size' => 'Blk size',
 					'id_cluster' => 'Cluster',
-					'datanodes' => 'Datanodes',
+                    'vm_OS' => 'OS',
+                    'cdesc' => 'Cluster description',
+			  		'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
 					//'version' => 'Hadoop v.',
 					'init_time' => 'End time',
@@ -316,7 +324,7 @@ class DefaultController extends AbstractController
 		} else
 			$show_in_result = self::$show_in_result;
 		
-        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$where_configs);
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => $show_in_result,
