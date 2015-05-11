@@ -140,7 +140,7 @@ class Utils
             } elseif ($item_name == 'nets') {
                 $items = array();
             } elseif ($item_name == 'bench_types') {
-            	$items = array('HiBench','HDI');
+            	$items = array('HiBench','HiBench3','HiBench3HDI');
             } else {
                 $items = array();
             }
