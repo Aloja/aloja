@@ -30,7 +30,9 @@ class MLCrossvarController extends AbstractController
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'exe_time';
 
 			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
+			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
 			{
 				$where_configs = '';
 				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
@@ -41,6 +43,8 @@ class MLCrossvarController extends AbstractController
 			}
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
+			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
@@ -48,7 +52,7 @@ class MLCrossvarController extends AbstractController
 
 			$rows = null;
 			if ($cross_var1 != 'pred_time' && $cross_var2 != 'pred_time')
-			{		
+			{
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2
 					FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster LEFT JOIN JOB_details j ON e.id_exec = j.id_exec
@@ -85,7 +89,6 @@ class MLCrossvarController extends AbstractController
 				{
 					$other_var = $cross_var1;
 					if ($cross_var1 == 'pred_time') $other_var = $cross_var2;
-					$other_var = str_replace("id_cluster","e.id_cluster",$other_var);
 
 					if ($cross_var1 == 'pred_time') { $var1 = 'p.'.$cross_var1; $var2 = 's.'.$cross_var2; }
 					else { $var1 = 's.'.$cross_var1; $var2 = 'p.'.$cross_var2; }
@@ -145,6 +148,8 @@ class MLCrossvarController extends AbstractController
 				if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
 				if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
 			}
+			$cross_var1 = str_replace("e.id_cluster","id_cluster",$cross_var1);
+			$cross_var2 = str_replace("e.id_cluster","id_cluster",$cross_var2);
 		}
 		catch(\Exception $e)
 		{
@@ -203,7 +208,9 @@ class MLCrossvarController extends AbstractController
 			$cross_var3 = 'exe_time';
 
 			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
+			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))		
 			{
 				$where_configs = '';
 				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
@@ -214,6 +221,8 @@ class MLCrossvarController extends AbstractController
 			}
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
+			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
@@ -328,6 +337,8 @@ class MLCrossvarController extends AbstractController
 				if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
 				if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
 			}
+			$cross_var1 = str_replace("e.id_cluster","id_cluster",$cross_var1);
+			$cross_var2 = str_replace("e.id_cluster","id_cluster",$cross_var2);
 		}
 		catch(\Exception $e)
 		{
@@ -393,7 +404,9 @@ class MLCrossvarController extends AbstractController
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 
 			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
+			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
 			{
 				$params['benchs'] = $_GET['benchs'] = array('terasort'); $where_configs = ' AND bench IN ("terasort")';
 				$params['disks'] = $_GET['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
@@ -406,6 +419,8 @@ class MLCrossvarController extends AbstractController
 				$params['blk_sizes'] = $_GET['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
 			}
 			$where_configs = str_replace("AND .","AND ",$where_configs);
+			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
+			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, false, $db);
@@ -503,6 +518,8 @@ class MLCrossvarController extends AbstractController
 			}
 
 			$dbml = null;
+			$cross_var1 = str_replace("e.id_cluster","id_cluster",$cross_var1);
+			$cross_var2 = str_replace("e.id_cluster","id_cluster",$cross_var2);
 		}
 		catch(\Exception $e)
 		{

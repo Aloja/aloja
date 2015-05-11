@@ -167,5 +167,6 @@ get_slaves_names() {
 #$1 node_name, expects workernode{id}
 get_vm_id() {
     local id=$(echo "$1" | grep -oP "[0-9]+")
+    id=`expr ${id} + 1`
     printf %02d "$id"
 }

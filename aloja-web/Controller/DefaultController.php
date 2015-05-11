@@ -23,6 +23,8 @@ class DefaultController extends AbstractController
 			'comp' => 'Comp',
 			'blk_size' => 'Blk size',
 			'id_cluster' => 'Cluster',
+            'vm_OS' => 'OS',
+            'cdesc' => 'Cluster description',
 			'datanodes' => 'Datanodes',
 			'prv' => 'PARAVER',
 			//'version' => 'Hadoop v.',
@@ -266,6 +268,8 @@ class DefaultController extends AbstractController
 					'exec' => 'Exec Conf',
 					'cost' => 'Running Cost $',
 					'id_cluster' => 'Cluster',
+                    'vm_OS' => 'OS',
+                    'cdesc' => 'Cluster description',
 					'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
 					//'version' => 'Hadoop v.',
@@ -283,6 +287,8 @@ class DefaultController extends AbstractController
             			'net' => 'Net',
             			'disk' => 'Disk',
             			'id_cluster' => 'Cluster',
+                        'vm_OS' => 'OS',
+                        'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
             			//'version' => 'Hadoop v.',
@@ -306,7 +312,9 @@ class DefaultController extends AbstractController
 					'comp' => 'Comp',
 					'blk_size' => 'Blk size',
 					'id_cluster' => 'Cluster',
-					'datanodes' => 'Datanodes',
+                    'vm_OS' => 'OS',
+                    'cdesc' => 'Cluster description',
+			  		'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
 					//'version' => 'Hadoop v.',
 					'init_time' => 'End time',
@@ -316,7 +324,7 @@ class DefaultController extends AbstractController
 		} else
 			$show_in_result = self::$show_in_result;
 		
-        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$where_configs);
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
             array('selected' => 'Benchmark Executions',
                 'theaders' => $show_in_result,
@@ -1987,14 +1995,17 @@ class DefaultController extends AbstractController
     		//This is to order the cluster by cost-effectiveness (ascending)
     		//This way the labels in the cart are ordered
     		usort($data,function($a, $b) {
-    			$costA = $a['data'][0][0] * $a['data'][0][1];
-    			$costB = $b['data'][0][0] * $b['data'][0][1];
+                $costA = $a['data'][0][1];
+                $costB = $b['data'][0][1];
+                //$costA = $a['data'][0][0] * $a['data'][0][1];
+    			//$costB = $b['data'][0][0] * $b['data'][0][1];
     			return $costA >= $costB;
     		});
     		
     		//Sorting clusters by size
     		usort($bestExecs, function($a,$b) {
-    			return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+                return $a['cost_std'] > $b['cost_std'];
+    			//return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
@@ -2162,7 +2173,7 @@ class DefaultController extends AbstractController
     
     	//Sorting clusters by size
     	usort($execs, function($a,$b) {
-    		return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+    		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
     			'selected' => 'Clusters Cost Evaluation',
@@ -2372,7 +2383,7 @@ class DefaultController extends AbstractController
     
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
-    		return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+    		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	
     	echo $this->container->getTwig()->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
@@ -2430,7 +2441,7 @@ class DefaultController extends AbstractController
         try {
             $where_configs = '';
 
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $datefrom = Utils::read_params('datefrom',$where_configs);
             $dateto	= Utils::read_params('dateto',$where_configs);
             $benchs = Utils::read_params ( 'benchs', $where_configs, true );
             $nets = Utils::read_params ( 'nets', $where_configs, true );
@@ -2458,7 +2469,7 @@ class DefaultController extends AbstractController
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT datanodes,vm_size as vmsize,MIN(exe_time) as minexe from execs JOIN clusters USING (id_cluster) WHERE 1 $where_configs GROUP BY datanodes,vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $where_configs " . DBUtils::getFilterExecs() . " GROUP BY c.datanodes,c.vm_size ORDER BY c.datanodes ASC,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,c.vm_size ORDER BY c.datanodes ASC,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
