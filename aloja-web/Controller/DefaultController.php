@@ -2430,7 +2430,7 @@ class DefaultController extends AbstractController
         try {
             $where_configs = '';
 
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $datefrom = Utils::read_params('datefrom',$where_configs);
             $dateto	= Utils::read_params('dateto',$where_configs);
             $benchs = Utils::read_params ( 'benchs', $where_configs, true );
             $nets = Utils::read_params ( 'nets', $where_configs, true );
