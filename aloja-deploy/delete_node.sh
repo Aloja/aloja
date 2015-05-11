@@ -4,4 +4,4 @@
 type="node"
 source "include/include.sh"
 
-node_delete "$1"
+node_delete "$vm_name"

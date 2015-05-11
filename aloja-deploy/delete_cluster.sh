@@ -18,4 +18,5 @@ else
   node_delete "$clusterName"
 fi
 
+wait #wait for background processes
 logger "All done, took $(getElapsedTime startTime) seconds."
