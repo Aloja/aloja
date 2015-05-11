@@ -1995,14 +1995,17 @@ class DefaultController extends AbstractController
     		//This is to order the cluster by cost-effectiveness (ascending)
     		//This way the labels in the cart are ordered
     		usort($data,function($a, $b) {
-    			$costA = $a['data'][0][0] * $a['data'][0][1];
-    			$costB = $b['data'][0][0] * $b['data'][0][1];
+                $costA = $a['data'][0][1];
+                $costB = $b['data'][0][1];
+                //$costA = $a['data'][0][0] * $a['data'][0][1];
+    			//$costB = $b['data'][0][0] * $b['data'][0][1];
     			return $costA >= $costB;
     		});
     		
     		//Sorting clusters by size
     		usort($bestExecs, function($a,$b) {
-    			return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+                return $a['cost_std'] > $b['cost_std'];
+    			//return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
@@ -2170,7 +2173,7 @@ class DefaultController extends AbstractController
     
     	//Sorting clusters by size
     	usort($execs, function($a,$b) {
-    		return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+    		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
     			'selected' => 'Clusters Cost Evaluation',
@@ -2380,7 +2383,7 @@ class DefaultController extends AbstractController
     
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
-    		return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
+    		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	
     	echo $this->container->getTwig()->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
