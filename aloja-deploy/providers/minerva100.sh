@@ -164,6 +164,10 @@ get_extra_fstab() {
     local create_string="$create_string
 /scratch/attached/6       /scratch/ssd/1    none bind 0 0
 /scratch/attached/7       /scratch/ssd/2    none bind 0 0"
+
+  elif [ "$clusterName" == "minerva100-02-18-18" ] ; then
+    local create_string="$create_string
+/scratch/attached/7       /scratch/ssd/1    none bind 0 0"
   fi
 
   echo -e "$create_string"
@@ -172,12 +176,14 @@ get_extra_fstab() {
 get_extra_mount_disks() {
   if [ "$clusterName" == "minerva100-10-18-21" ] ; then
     echo -e "sudo mkdir -p /scratch/ssd/{1..2};"
+  elif [ "$clusterName" == "minerva100-02-18-18" ] ; then
+    echo -e "sudo mkdir -p /scratch/ssd/1;"
   fi
 }
 
 #for Infiniband on clusters that support it
 get_node_names_IB() {
-  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
+  if [ "$clusterName" == "minerva100-10-18-21" ] || [ "$clusterName" == "minerva100-02-18-18" ] ; then
     #logger "INFO: generating host name for IB"
     local nodes="$(get_node_names)"
     echo -e "$(convert_regular2IB_hostnames "$nodes")"
@@ -189,7 +195,7 @@ get_node_names_IB() {
 
 #for Infiniband on clusters that support it
 get_master_name_IB() {
-  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
+  if [ "$clusterName" == "minerva100-10-18-21" ] || [ "$clusterName" == "minerva100-02-18-18" ]  ; then
     #logger "INFO: generating host name for IB"
     local nodes="$(get_master_name)"
     echo -e "$(convert_regular2IB_hostnames "$nodes")"
