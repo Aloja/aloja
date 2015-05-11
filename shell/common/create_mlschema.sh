@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS \`learners\` (
   \`sid_learner\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` varchar(1024) NOT NULL,
+  \`model\` mediumtext NOT NULL,
   \`algorithm\` varchar(255) NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_learner\`),
@@ -66,8 +66,8 @@ CREATE TABLE IF NOT EXISTS \`trees\` (
   \`id_findattrs\` varchar(255) NOT NULL,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` varchar(1024) NOT NULL,
-  \`tree_code\` varchar(8192) NOT NULL,
+  \`model\` mediumtext NOT NULL,
+  \`tree_code\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_findattrs\`),
   KEY \`idx_instance\` (\`instance\`),
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS \`resolutions\` (
   \`id_learner\` varchar(255) NOT NULL,
   \`id_exec\` int(11) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` varchar(1024) NOT NULL,
+  \`model\` mediumtext NOT NULL,
   \`sigma\` int(8) NOT NULL,
   \`outlier_code\` int(8) DEFAULT 0,  
   \`predicted\` int(11) DEFAULT 0,  
@@ -99,7 +99,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs\` (
   \`id_minconfigs\` varchar(255) NOT NULL,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` varchar(1024) NOT NULL,
+  \`model\` mediumtext NOT NULL,
   \`is_new\` int(1) NOT NULL DEFAULT 0,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_minconfigs\`),
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
   \`id_cluster\` int(11) DEFAULT NULL,
-  \`support\` varchar(4096) DEFAULT NULL,
+  \`support\` mediumtext DEFAULT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_minconfigs_centers\`),
   FOREIGN KEY (\`id_minconfigs\`) REFERENCES minconfigs(\`id_minconfigs\`) ON DELETE CASCADE
@@ -147,11 +147,20 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
 CREATE TABLE IF NOT EXISTS \`summaries\` (
   \`id_summaries\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` varchar(1024) NOT NULL,
-  \`summary\` varchar(65536) NOT NULL,
+  \`model\` mediumtext NOT NULL,
+  \`summary\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_summaries\`),
   KEY \`idx_instance\` (\`instance\`),
   KEY \`idx_model\` (\`model\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 "
+
+
+$MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE \`trees\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`tree_code\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`support\` mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`summary\` longtext NOT NULL;"
+
