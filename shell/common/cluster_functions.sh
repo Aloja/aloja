@@ -6,8 +6,10 @@
 #source includes
 #logger "DEBUG: loading $CONF_DIR/provider_functions.sh"
 source "$CONF_DIR/provider_functions.sh"
-logger "DEBUG: loading $CONF_DIR/install_functions.sh"
+#logger "DEBUG: loading $CONF_DIR/install_functions.sh"
 source "$CONF_DIR/install_functions.sh"
+#logger "DEBUG: loading $CONF_DIR/config_functions.sh"
+source "$CONF_DIR/config_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -233,7 +235,7 @@ check_sshpass() {
 #$vm_ssh_port must be set before
 vm_execute() {
   #logger "Executing in VM $vm_name command(s): $1"
-  logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
+  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
@@ -1113,7 +1115,7 @@ vm_put_file_contents() {
 sudo chmod 777 $1 2> /dev/null;
 sudo touch $1;
 sudo cp $1 ${1}.$(date +%s).bak 2> /dev/null;
-sudo cat << 'EOF' > $1
+cat << 'EOF' > $1
 $2
 EOF
 
