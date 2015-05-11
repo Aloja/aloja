@@ -69,10 +69,8 @@ To use the tool, select which executions you want to filter through the right fi
 	$(document).ready(function() {
 		$("#select-model").change(function()
 		{
-			var url = window.location.href;   
-			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val(); 
-			else url = url + '?current_model=' + $("#select-model").val();
-			window.location.href = url;
+			$('#mldiv').append("<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>");
+			$('#submitForm').click();
 		});
 
 		$("select.form-control option[value='None']").text("ALL");
