@@ -118,7 +118,7 @@ vm_reboot() {
 
 #$1 vm_name
 vm_get_status(){
- echo "$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|awk '{print substr($3,2,(length($3)-2));}')"
+ echo "$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|head -n +1|awk '{print substr($3,2,(length($3)-2));}')"
 }
 
 get_OK_status() {
