@@ -35,8 +35,8 @@ class MLSummariesController extends AbstractController
 			{
 				$separate_feat = 'Benchmark';
 				$params['benchs'] = array('sort','terasort','wordcount');
-				$params['disks'] = array('HDD','SSD');
-				$where_configs = ' AND bench IN ("sort","terasort","wordcount") AND disk IN ("HDD","SSD")';
+				//$params['disks'] = array('HDD','SSD');
+				$where_configs = ' AND bench IN ("sort","terasort","wordcount")';// AND disk IN ("HDD","SSD")';
 			}
 
 			// compose instance

@@ -35,7 +35,7 @@ class MLNewconfigsController extends AbstractController
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				//$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
@@ -173,8 +173,7 @@ class MLNewconfigsController extends AbstractController
 						}
 
 						// Remove temporal files
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.csv');
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.dat');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.{dat,csv}');
 					}
 				}
 
@@ -242,7 +241,7 @@ class MLNewconfigsController extends AbstractController
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.{fin,csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.{fin,csv,dat}');
 				}
 
 				// Retrieve minconfig progression results from DB
