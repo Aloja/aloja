@@ -31,7 +31,7 @@ class MLOutliersController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
+			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:3;
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
@@ -42,7 +42,7 @@ class MLOutliersController extends AbstractController
 			{
 				$where_configs = '';
 				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				//$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
