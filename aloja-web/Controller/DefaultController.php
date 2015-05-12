@@ -78,6 +78,7 @@ class DefaultController extends AbstractController
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
             
             $selectedGroups = array();
             if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
@@ -211,6 +212,7 @@ class DefaultController extends AbstractController
                 'vm_RAMs' => $vm_RAMs,
                 'hadoop_versions' => $hadoop_versions,
                 'types' => $types,
+                'providers' => $provider,
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
             	'minexetime' => $minexetime,
@@ -256,6 +258,7 @@ class DefaultController extends AbstractController
 		$type = Utils::get_GET_string("type");
 		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
 		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+        $provider = Utils::read_params ( 'providers', $where_configs, false );
 		
 		if(!$type)
 			$type = 'SUMMARY';
@@ -349,6 +352,7 @@ class DefaultController extends AbstractController
                 'vm_RAMs' => $vm_RAMs,
                 'hadoop_versions' => $hadoop_versions,
                 'types' => $types,
+                'providers' => $provider,
                 'filters' => $filters,
                 'allunchecked' => $allunchecked,
             	'minexetime' => $minexetime,
@@ -409,7 +413,8 @@ class DefaultController extends AbstractController
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
+
             /*
              * 1. Get execs and cluster associated costs
              * 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -510,6 +515,7 @@ class DefaultController extends AbstractController
             'vm_RAMs' => $vm_RAMs,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
+            'providers' => $provider,
             'filters' => $filters,
             'allunchecked' => $allunchecked,
         	'minexetime' => $minexetime,
@@ -1417,6 +1423,7 @@ class DefaultController extends AbstractController
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 			$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
 			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
             
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
@@ -1499,6 +1506,7 @@ class DefaultController extends AbstractController
             'vm_RAMs' => $vm_RAMs,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
+            'providers' => $provider,
             'filters' => $filters,
             'allunchecked' => $allunchecked,
             'select_multiple_benchs' => false,
@@ -1552,7 +1560,8 @@ class DefaultController extends AbstractController
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
+
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
             $minExecsFilter = "";
@@ -1672,6 +1681,7 @@ class DefaultController extends AbstractController
             'vm_RAMs' => $vm_RAMs,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
+            'providers' => $provider,
             'filters' => $filters,
             'allunchecked' => $allunchecked,
         	'minexetime' => $minexetime,
@@ -1940,6 +1950,7 @@ class DefaultController extends AbstractController
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
         $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
         $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+        $provider = Utils::read_params ( 'providers', $where_configs, false );
         
         if(isset($_GET['benchs']))
             $_GET['benchs'] = $_GET['benchs'][0];
@@ -2033,6 +2044,7 @@ class DefaultController extends AbstractController
     			'vm_RAMs' => $vm_RAMs,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
+                'providers' => $provider,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
     			'bestExecs' => $bestExecs,
@@ -2093,6 +2105,7 @@ class DefaultController extends AbstractController
     		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
     		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
     		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
     		
     		/*
     		 * 1. Get execs and cluster associated costs
@@ -2204,6 +2217,7 @@ class DefaultController extends AbstractController
     			'vm_RAMs' => $vm_RAMs,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
+                'providers' => $provider,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
     			'minexetime' => $minexetime,
@@ -2266,6 +2280,7 @@ class DefaultController extends AbstractController
     		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
     		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
     		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
     		
     		/*
     		 * 1. Get execs and cluster associated costs
@@ -2415,6 +2430,7 @@ class DefaultController extends AbstractController
     			'vm_RAMs' => $vm_RAMs,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
+                'providers' => $provider,
     			'filters' => $filters,
     			'allunchecked' => $allunchecked,
     			'minexetime' => $minexetime,
@@ -2465,21 +2481,26 @@ class DefaultController extends AbstractController
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
 
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,c.vm_size ORDER BY c.datanodes ASC,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
             $dataNodes = array();
+            $vmOS = array();
             foreach ($execs as &$exec) {
                 if (!isset($dataNodes[$exec['datanodes']])) {
                     $dataNodes[$exec['datanodes']] = 1;
                     $categories[] = $exec['datanodes'];
                 }
-                $vmSizes[$exec['vm_size']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
+                if(!isset($vmOS[$exec['vm_OS']]))
+                    $vmOS[$exec['vm_OS']] = 1;
+
+                $vmSizes[$exec['vm_size']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
             }
 
             $i = 0;
@@ -2487,22 +2508,25 @@ class DefaultController extends AbstractController
                 '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
             $series = array();
             foreach($vmSizes as $vmSize => $value) {
-                if($i == sizeof($seriesColors))
-                    $i = 0;
-                $costSeries = array('name' => "$vmSize Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-                $timeSeries = array('name' => "$vmSize Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
-                foreach($dataNodes as $datanodes => $dvalue) {
-                    if(!isset($value[$datanodes])) {
-                        $costSeries['data'][] = "null";
-                        $timeSeries['data'][] = "null";
-                    }
-                    else {
-                        $costSeries['data'][] = $value[$datanodes][1];
-                        $timeSeries['data'][] = $value[$datanodes][0];
+                foreach($vmOS as $OS => $osvalue) {
+                    if(isset($vmSizes[$vmSize][$OS])) {
+                        if ($i == sizeof($seriesColors))
+                            $i = 0;
+                        $costSeries = array('name' => "$vmSize $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+                        $timeSeries = array('name' => "$vmSize $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+                        foreach ($dataNodes as $datanodes => $dvalue) {
+                            if (!isset($value[$OS][$datanodes])) {
+                                $costSeries['data'][] = "null";
+                                $timeSeries['data'][] = "null";
+                            } else {
+                                $costSeries['data'][] = $value[$OS][$datanodes][1];
+                                $timeSeries['data'][] = $value[$OS][$datanodes][0];
+                            }
+                        }
+                        $series[] = $timeSeries;
+                        $series[] = $costSeries;
                     }
                 }
-                $series[] = $timeSeries;
-                $series[] = $costSeries;
             }
         } catch(\Exception $e) {
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
@@ -2534,6 +2558,7 @@ class DefaultController extends AbstractController
             'vm_RAMs' => $vm_RAMs,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
+            'providers' => $provider,
             'filters' => $filters,
             'allunchecked' => $allunchecked,
             'select_multiple_benchs' => false,
