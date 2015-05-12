@@ -12,7 +12,7 @@ if($runPrepare) {
 }
 
 Write-Verbose "Running wordcount with $reduceNumber reducer tasks"
-$wordcount = New-AzureHDInsightMapReduceJobDefinition -JarFile "/example/jars/hadoop-mapreduce-examples.jar" -JobName "wordcount_$containerName_r_$reduceTasks" -ClassName "wordcount" -Arguments "-Dmapred.reduce.tasks=$reduceTasks",-Dmapreduce.inputformat.class=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat,-Dmapreduce.outputformat.class=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat,-Dmapreduce.job.inputformat.class=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat,-Dmapreduce.job.outputformat.class=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat,$inputData,$outputData
+$wordcount = New-AzureHDInsightMapReduceJobDefinition -JarFile "/example/jars/hadoop-mapreduce-examples.jar" -JobName "wordcount_$containerName_r_$reduceTasks" -ClassName "wordcount" -Arguments "-Dmapred.reduce.tasks=$reduceTasks", "-Dmapreduce.inputformat.class=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat","-Dmapreduce.outputformat.class=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat","-Dmapreduce.job.inputformat.class=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat","-Dmapreduce.job.outputformat.class=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat",$inputData,$outputData
 RunBench $wordcount -containerName $containerName -reduceTasks $reduceTasks -BenchName "wordcount"
 Write-Verbose "Done wordcount"
 
