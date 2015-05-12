@@ -498,8 +498,14 @@ CREATE TABLE IF NOT EXISTS \`JOB_tasks\` (
   PRIMARY KEY (\`id_JOB_job_tasks\`),
   UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`job_name\`, \`TASKID\`),
   KEY \`index2\` (\`id_exec\`),
-  KEY \`index_job_name\` (\`job_name\`)
+  KEY \`index_job_name\` (\`job_name\`),
+  KEY \`JOBID\` (\`JOBID\`),
+  KEY \`TASK_TYPE\` (\`TASK_TYPE\`)
 ) ENGINE=InnoDB;
+
+ALTER TABLE \`JOB_tasks\` ADD INDEX (\`JOBID\`);
+ALTER TABLE \`JOB_tasks\` ADD INDEX (\`TASK_TYPE\`);
+
 
 CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
   \`id_execs_conf_parameters\` int(11) NOT NULL AUTO_INCREMENT,

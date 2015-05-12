@@ -5,7 +5,7 @@ source "$CUR_DIR_TMP/openstack.sh"
 get_extra_fstab() {
 
   #for clusters with SSDs
-  if [ "$clusterName" == "rl-06" ] || [ "$clusterName" == "rl-33" ] ; then
+  if [ "$vmSize" == "io1-15" ] || [ "$vmSize" == "io1-30" ] ; then
 
     local system_ssd="$homePrefixAloja/$userAloja/tmp"
     vm_execute "mkdir -p $system_ssd"
@@ -25,7 +25,8 @@ $system_ssd       /scratch/ssd/2    none bind 0 0
 }
 
 get_extra_mount_disks() {
-  if [ "$clusterName" == "rl-06" ] || [ "$clusterName" == "rl-33" ] ; then
+  #for clusters with SSDs
+  if [ "$vmSize" == "io1-15" ] || [ "$vmSize" == "io1-30" ] ; then
     echo -e "sudo mkdir -p /scratch/ssd/{1..2};"
   fi
 }

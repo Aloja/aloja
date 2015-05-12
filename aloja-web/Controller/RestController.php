@@ -697,25 +697,13 @@ VALUES
                 SELECT
                     t.`TASKID` as TASK_ID,
                     ".$metric_select('t')." as TASK_VALUE,
-                    SUM(".$metric_select('t2').") as TASK_VALUE_ACCUM,
-                    t.TASK_DURATION,
-                    SUM(t2.`TASK_DURATION`) as TASK_DURATION_ACCUM,
-                    1 as TASK_VALUE_STDDEV
-                FROM (
-                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
-                    FROM `JOB_tasks`
-                ) as t
-                JOIN (
-                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
-                    FROM `JOB_tasks`
-                ) as t2
-                ON (t.`TASKID` >= t2.`TASKID` AND t2.`JOBID` = :jobid_repeated)
+                    TIMESTAMPDIFF(SECOND, t.`START_TIME`, t.`FINISH_TIME`) as TASK_DURATION
+                FROM `JOB_tasks` as t
                 WHERE t.`JOBID` = :jobid
                 ".$task_type_select('t')."
-                GROUP BY t.`TASKID`
                 ORDER BY t.`TASKID`
             ;";
-            $query_params = array(":jobid" => $jobid, ":jobid_repeated" => $jobid);
+            $query_params = array(":jobid" => $jobid);
 
         } else {
             $query = "
@@ -723,9 +711,6 @@ VALUES
                     MIN(t.`TASKID`) as TASK_ID,
                     AVG(".$metric_select('t').") as TASK_VALUE,
                     STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
-                    1 as TASK_VALUE_ACCUM,
-                    1 as TASK_DURATION,
-                    1 as TASK_DURATION_ACCUM,
                     t.`TASK_TYPE`,
                     CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
                 FROM `JOB_tasks` t
@@ -741,22 +726,24 @@ VALUES
 
         $seriesData = array();
         $seriesError = array();
+        $task_value_accum = 0;
+        $task_duration_accum = 0;
         foreach ($rows as $row) {
             $task_id = $row['TASK_ID'];
-            $task_value = $row['TASK_VALUE'] ?: 0;
-            $task_value_accum = $row['TASK_VALUE_ACCUM'] ?: 0;
-            $task_value_stddev = $row['TASK_VALUE_STDDEV'] ?: 0;
-            $task_duration = $row['TASK_DURATION'] ?: 0;
-            $task_duration_accum = $row['TASK_DURATION_ACCUM'] ?: 0;
+            $task_value = $row['TASK_VALUE'];
+            $task_value_stddev = array_key_exists('TASK_VALUE_STDDEV', $row) ? $row['TASK_VALUE_STDDEV'] : 0;
+            $task_duration = array_key_exists('TASK_DURATION', $row) ? $row['TASK_DURATION'] : 0;
 
             // Show only task id (not the whole string)
             $task_id = substr($task_id, 23);
 
             if ($accumulated == 1) {
+                $task_value_accum += $task_value;
                 $task_value = $task_value_accum;
             }
 
             if ($divided == 1) {
+                $task_duration_accum += $task_duration;
                 $task_value = $task_value / $task_duration_accum;
             }
 
