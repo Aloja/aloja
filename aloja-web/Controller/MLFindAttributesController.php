@@ -270,7 +270,7 @@ class MLFindAttributesController extends AbstractController
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'models_id' => $possible_models_id,
 				'current_model' => $current_model,
 				'message' => $message,
 				'mae' => $mae,

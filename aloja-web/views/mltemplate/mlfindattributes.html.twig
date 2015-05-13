@@ -34,7 +34,7 @@ To use the tool, select which executions you want to filter through the right fi
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -43,9 +43,6 @@ To use the tool, select which executions you want to filter through the right fi
 		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
-		</div>
-		<div style="float: right; width: 30%;">
-			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
 		</div>
 	</div>
 	{% endblock %}
@@ -66,26 +63,16 @@ To use the tool, select which executions you want to filter through the right fi
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
 	}
 
-	$(document).ready(function() {
-		$("#select-model").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>");
-			$('#submitForm').click();
-		});
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Generate Predictions');
+		$("#submitForm").html('Generate Predictions');
+		$('#hardwareFilters').parent().hide();
 
-		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{jsonData | raw}}" == '[]') $("#footer").hide();
-
-		var target = document.getElementById('select-model');
-		var mid = {{ models_id | raw }};
-		for (i = 0; i < mid.length; i++)
-		{
-			var newhtml = "<option value='" + mid[i] + "'";
-			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
-			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
-		}
 
 		if ("{{must_wait}}" == "NO")
 		{

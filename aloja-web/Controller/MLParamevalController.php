@@ -272,7 +272,7 @@ class MLParamevalController extends AbstractController
 				'paramEval' => $paramEval,
 				'instance' => $instance,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'models_id' => $possible_models_id,
 				'current_model' => $current_model,
 				'gammacolors' => $colors,
 				'must_wait' => $must_wait,

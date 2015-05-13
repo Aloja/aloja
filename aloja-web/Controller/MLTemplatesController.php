@@ -238,6 +238,7 @@ class MLTemplatesController extends AbstractController
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'instance' => $instance,
+				'id_learner' => md5($config),
 				'error_stats' => $error_stats,
 				'options' => Utils::getFilterOptions($db)
 			)

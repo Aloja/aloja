@@ -14,27 +14,11 @@
 
 	$(document).ready(function ()
 	{
-		$("#select-model").change(function()
-		{
-			var url = window.location.href;    
-			if (url.indexOf('?') > -1) url = url + '&current_model=' + $("#select-model").val();
-			else url = url + '?current_model=' + $("#select-model").val();
-			window.location.href = url;
-		});
-
-		$("select.form-control option[value='None']").text("ALL");
+		document.getElementById('submit').id = 'submitForm';
+		$('#hardwareFilters').parent().hide();
 
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
-
-		var target = document.getElementById('select-model');
-		var mid = {{ models_id | raw }};
-		for (i = 0; i < mid.length; i++)
-		{
-			var newhtml = "<option value='" + mid[i] + "'";
-			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
-			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
-		}
 
 		$('select[name="parameval"]').change(function()
 		{
@@ -44,6 +28,7 @@
 			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
 			$(this).parents('form').submit();
 		});
+
 	    	$('input').change(function()
 		{
 			var configForm = document.getElementsByName('configFilters');
@@ -125,7 +110,7 @@
 		</form>
 		<div id="chart" style="float: left; width: 68%; margin: 0 auto;"></div>
 		<div style="float: right; width: 30%;">
-		{% include 'common/config_filters_ml.html.twig' %}
+		{% include 'common/config_filters.html.twig' %}
 		</div>
 	</div>
 	<div style="clear: both;"></div>

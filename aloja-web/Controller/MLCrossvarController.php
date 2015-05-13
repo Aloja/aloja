@@ -557,7 +557,7 @@ class MLCrossvarController extends AbstractController
 				'instance' => $instance,
 				'current_model' => $current_model,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'models_id' => $possible_models_id,
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)
 			)

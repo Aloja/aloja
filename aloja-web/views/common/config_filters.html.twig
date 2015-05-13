@@ -29,13 +29,129 @@
 		<form id="configFilters" name="configFilters" method="GET" role="form">
 		<div class="row">
 				<div class="col-md-6">
-				   <button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
-			   </div>
+				 	<button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
+				</div>
 			   <div class="col-md-6">
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
 			   </div>
 			</div>
     </div>
+    {% if selected in ['mlcrossvar','mlcrossvar3d'] %}
+    <div id="navigation" style="text-align: center; width: 90%; margin: 0 auto;">
+	Select variables:
+	<table width="100%"><tr><td width="49%">
+				<select class="form-control" name="variable1" id="variable1" size="1">
+				<option value="maps" {% if variable1 == 'maps' or variable1 =='' %}selected="selected"{% endif %}>Maps</option>
+				<option value="comp" {% if variable1 == 'comp' %}selected="selected"{% endif %}>Compression</option>
+				<option value="id_cluster" {% if variable1 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+				<option value="net" {% if variable1 == 'net' %}selected="selected"{% endif %}>Network</option>
+				<option value="disk" {% if variable1 == 'disk' %}selected="selected"{% endif %}>Disk</option>
+				<option value="replication" {% if variable1 == 'replication' %}selected="selected"{% endif %}>Replication</option>
+				<option value="iofilebuf" {% if variable1 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+				<option value="blk_size" {% if variable1 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
+				<option value="iosf" {% if variable1 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
+				<option value="datanodes" {% if variable1 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
+				<option value="headnodes" {% if variable1 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
+				<option value="vm_OS" {% if variable1 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
+				<option value="vm_cores" {% if variable1 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
+				<option value="vm_RAM" {% if variable1 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
+				<option value="provider" {% if variable1 == 'provider' %}selected="selected"{% endif %}>Provider</option>
+				<option value="vm_size" {% if variable1 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
+				<option value="type" {% if variable1 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
+				<option value="exe_time" {% if variable1 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
+				<option value="pred_time" {% if variable1 == 'pred_time' %}selected="selected"{% endif %}>Predicted Time</option>
+				<option value="TOTAL_MAPS" {% if variable1 == 'TOTAL_MAPS' %}selected="selected"{% endif %}>Total Maps</option>
+				<option value="FAILED_MAPS" {% if variable1 == 'FAILED_MAPS' %}selected="selected"{% endif %}>Failed Maps</option>
+				<option value="FINISHED_MAPS" {% if variable1 == 'FINISHED_MAPS' %}selected="selected"{% endif %}>Finished Maps</option>
+				<option value="TOTAL_REDUCES" {% if variable1 == 'TOTAL_REDUCES' %}selected="selected"{% endif %}>Total Reduces</option>
+				<option value="FAILED_REDUCES" {% if variable1 == 'FAILED_REDUCES' %}selected="selected"{% endif %}>Failed Reduces</option>
+				<option value="FILE_BYTES_WRITTEN" {% if variable1 == 'FILE_BYTES_WRITTEN' %}selected="selected"{% endif %}>File Bytes Written</option>
+				<option value="FILE_BYTES_READ" {% if variable1 == 'FILE_BYTES_READ' %}selected="selected"{% endif %}>File Bytes Read</option>
+				<option value="HDFS_BYTES_WRITTEN" {% if variable1 == 'HDFS_BYTES_WRITTEN' %}selected="selected"{% endif %}>HDFS Bytes Written</option>
+				<option value="HDFS_BYTES_READ" {% if variable1 == 'HDFS_BYTES_READ' %}selected="selected"{% endif %}>HDFS Bytes Read</option>
+				</select>
+	</td><td width="2%">&nbsp;</td><td width="49%">
+				<select class="form-control" name="variable2" id="variable2" size="1">
+				<option value="maps" {% if variable2 == 'maps' %}selected="selected"{% endif %}>Maps</option>
+				<option value="comp" {% if variable2 == 'comp' %}selected="selected"{% endif %}>Compression</option>
+				<option value="id_cluster" {% if variable2 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+				<option value="net" {% if variable2 == 'net' or variable1 =='' %}selected="selected"{% endif %}>Network</option>
+				<option value="disk" {% if variable2 == 'disk' %}selected="selected"{% endif %}>Disk</option>
+				<option value="replication" {% if variable2 == 'replication' %}selected="selected"{% endif %}>Replication</option>
+				<option value="iofilebuf" {% if variable2 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+				<option value="blk_size" {% if variable2 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
+				<option value="iosf" {% if variable2 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
+				<option value="datanodes" {% if variable2 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
+				<option value="headnodes" {% if variable2 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
+				<option value="vm_OS" {% if variable2 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
+				<option value="vm_cores" {% if variable2 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
+				<option value="vm_RAM" {% if variable2 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
+				<option value="provider" {% if variable2 == 'provider' %}selected="selected"{% endif %}>Provider</option>
+				<option value="vm_size" {% if variable2 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
+				<option value="type" {% if variable2 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
+				<option value="exe_time" {% if variable2 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
+				<option value="pred_time" {% if variable2 == 'pred_time' %}selected="selected"{% endif %}>Predicted Time</option>
+				<option value="TOTAL_MAPS" {% if variable2 == 'TOTAL_MAPS' %}selected="selected"{% endif %}>Total Maps</option>
+				<option value="FAILED_MAPS" {% if variable2 == 'FAILED_MAPS' %}selected="selected"{% endif %}>Failed Maps</option>
+				<option value="FINISHED_MAPS" {% if variable2 == 'FINISHED_MAPS' %}selected="selected"{% endif %}>Finished Maps</option>
+				<option value="TOTAL_REDUCES" {% if variable2 == 'TOTAL_REDUCES' %}selected="selected"{% endif %}>Total Reduces</option>
+				<option value="FAILED_REDUCES" {% if variable2 == 'FAILED_REDUCES' %}selected="selected"{% endif %}>Failed Reduces</option>
+				<option value="FILE_BYTES_WRITTEN" {% if variable2 == 'FILE_BYTES_WRITTEN' %}selected="selected"{% endif %}>File Bytes Written</option>
+				<option value="FILE_BYTES_READ" {% if variable2 == 'FILE_BYTES_READ' %}selected="selected"{% endif %}>File Bytes Read</option>
+				<option value="HDFS_BYTES_WRITTEN" {% if variable2 == 'HDFS_BYTES_WRITTEN' %}selected="selected"{% endif %}>HDFS Bytes Written</option>
+				<option value="HDFS_BYTES_READ" {% if variable2 == 'HDFS_BYTES_READ' %}selected="selected"{% endif %}>HDFS Bytes Read</option>
+				</select>
+	</td></tr></table>
+	<br />
+    </div>
+    {% endif %}
+    {% if selected == 'mlcrossvar3dfa' %}
+    <div id="navigation" style="text-align: center; width: 90%; margin: 0 auto;">
+	Select variables:
+	<table width="100%"><tr><td width="48%">
+		<select class="form-control" name="variable1" id="variable1" size="1">
+		<option value="maps" {% if variable1 == 'maps' or variable1 =='' %}selected="selected"{% endif %}>Maps</option>
+		<option value="comp" {% if variable1 == 'comp' %}selected="selected"{% endif %}>Compression</option>
+		<option value="id_cluster" {% if variable1 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+		<option value="net" {% if variable1 == 'net' %}selected="selected"{% endif %}>Network</option>
+		<option value="disk" {% if variable1 == 'disk' %}selected="selected"{% endif %}>Disk</option>
+		<option value="replication" {% if variable1 == 'replication' %}selected="selected"{% endif %}>Replication</option>
+		<option value="iofilebuf" {% if variable1 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+		<option value="blk_size" {% if variable1 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
+		<option value="iosf" {% if variable1 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
+		<option value="datanodes" {% if variable1 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
+		<option value="headnodes" {% if variable1 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
+		<option value="vm_OS" {% if variable1 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
+		<option value="vm_cores" {% if variable1 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
+		<option value="vm_RAM" {% if variable1 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
+		<option value="provider" {% if variable1 == 'provider' %}selected="selected"{% endif %}>Provider</option>
+		<option value="vm_size" {% if variable1 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
+		<option value="type" {% if variable1 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
+		</select>
+	</td><td width="2%">&nbsp;</td><td width="48%">
+		<select class="form-control" name="variable2" id="variable2" size="1">
+		<option value="maps" {% if variable2 == 'maps' %}selected="selected"{% endif %}>Maps</option>
+		<option value="comp" {% if variable2 == 'comp' %}selected="selected"{% endif %}>Compression</option>
+		<option value="id_cluster" {% if variable2 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
+		<option value="net" {% if variable2 == 'net' or variable1 =='' %}selected="selected"{% endif %}>Network</option>
+		<option value="disk" {% if variable2 == 'disk' %}selected="selected"{% endif %}>Disk</option>
+		<option value="replication" {% if variable2 == 'replication' %}selected="selected"{% endif %}>Replication</option>
+		<option value="iofilebuf" {% if variable2 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
+		<option value="blk_size" {% if variable2 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
+		<option value="iosf" {% if variable2 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
+		<option value="datanodes" {% if variable2 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
+		<option value="headnodes" {% if variable2 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
+		<option value="vm_OS" {% if variable2 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
+		<option value="vm_cores" {% if variable2 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
+		<option value="vm_RAM" {% if variable2 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
+		<option value="provider" {% if variable2 == 'provider' %}selected="selected"{% endif %}>Provider</option>
+		<option value="vm_size" {% if variable2 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
+		<option value="type" {% if variable2 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
+		</select>
+	</td></tr></table>
+	<br />
+    </div>
+    {% endif %}
   <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
   <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
     <div class="panel-heading" role="tab" id="headingBasicFilters">
@@ -142,68 +258,122 @@
       <div class="panel-body">
 			<div class="row">
 				<div class="col-md-6">
+					{% if selected == 'mlnewconfigs' %}
+					Cluster datanodes: </br> <select class="form-control" name="datanodess[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+						{% for selopt in options['datanodes'] %}
+					    <option value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodess %}SELECTED{% endif %}>{{ selopt['datanodes'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not datanodess %} SELECTED {% endif %}>Disabled</option>
+					</select>
+					{% else %}
 					Cluster datanodes:&nbsp;&nbsp; <span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['datanodes'] %}
 						<input type="checkbox" name="datanodess[]" value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodess %}checked{% endif %}>&nbsp;{{ selopt['datanodes'] }}<br />
 						{% endfor %}
-					  </div>
-				    </div>
+						</div>
+					</div>
+					{% endif %}
 				</div>
 				<div class="col-md-6">
+					{% if selected == 'mlnewconfigs' %}
+					Benchmark type: </br> <select class="form-control" name="bench_types[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+						{% for selopt in options['benchtype'] %}
+					    <option value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}SELECTED{% endif %}>{{ selopt['bench_type'] }}</option>
+					   {% endfor %}
+						<option value="None" {% if not bench_types %} SELECTED {% endif %}>Disabled</option>
+					</select>
+					{% else %}
 					Benchmark type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['benchtype'] %}
 						<input type="checkbox" name="bench_types[]" value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}checked{% endif %}>&nbsp;{{ selopt['bench_type'] }}<br />
 						{% endfor %}
-					  </div>
-				    </div>
+						</div>
+					</div>
+					{% endif %}
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
+					{% if selected == 'mlnewconfigs' %}
+					VM size: </br> <select class="form-control" name="vm_sizes[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+						{% for selopt in options['vm_size'] %}
+						<option value="{{ selopt['vm_size'] }}" {% if selopt['vm_size'] in vm_sizes %}SELECTED{% endif %}>{{ selopt['vm_size'] }}</option>
+						{% endfor %}
+						<option value="None" {% if not vm_sizes %} SELECTED {% endif %}>Disabled</option>
+					</select>
+					{% else %}
 					VM size:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_size'] %}
 						<input type="checkbox" name="vm_sizes[]" value="{{ selopt['vm_size'] }}" {% if selopt['vm_size'] in vm_sizes %}checked{% endif %}>&nbsp;{{ selopt['vm_size'] }}<br />
 						{% endfor %}
-					  </div>
-				    </div>
+						</div>
+					</div>
+					{% endif %}
 				</div>
 				<div class="col-md-6">
+					{% if selected == 'mlnewconfigs' %}
+					VM #cores: </br> <select class="form-control"	name="vm_coress[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+						{% for selopt in options['vm_cores'] %}
+						<option value="{{ selopt['vm_cores'] }}" {% if selopt['vm_cores'] in vm_coress %}SELECTED{% endif %}>{{ selopt['vm_cores'] }}</option>
+						{% endfor %}
+						<option value="None" {% if not vm_coress %} SELECTED {% endif %}>Disabled</option>
+					</select>
+					{% else %}
 					VM #cores:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_cores'] %}
 						<input type="checkbox" name="vm_coress[]" value="{{ selopt['vm_cores'] }}" {% if selopt['vm_cores'] in vm_coress %}checked{% endif %}>&nbsp;{{ selopt['vm_cores'] }}<br />
 						{% endfor %}
-					  </div>
-				    </div>
+						</div>
+					</div>
+					{% endif %}
 				</div>
 			</div>
 			<div class="row">
 				<div class="col-md-6">
+					{% if selected == 'mlnewconfigs' %}
+					VM RAM: </br> <select class="form-control" name="vm_RAMs[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+						{% for selopt in options['vm_ram'] %}
+						<option value="{{ selopt['vm_RAM'] }}" {% if selopt['vm_RAM'] in vm_RAMs %}SELECTED{% endif %}>{{ selopt['vm_RAM'] | number_format(0,',','.') }} GB</option>
+						{% endfor %}
+						<option value="None" {% if not vm_RAMs %} SELECTED {% endif %}>Disabled</option>
+					</select>
+					{% else %}
 					VM RAM:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['vm_ram'] %}
 						<input type="checkbox" name="vm_RAMs[]" value="{{ selopt['vm_RAM'] }}" {% if selopt['vm_RAM'] in vm_RAMs %}checked{% endif %}>&nbsp;{{ selopt['vm_RAM'] | number_format(0,'.',',') }} GB<br />
 						{% endfor %}
-					  </div>
-				    </div>
+						</div>
+					</div>
+					{% endif %}
 				</div>
 				<div class="col-md-6">
+					{% if selected == 'mlnewconfigs' %}
+					Cluster type: </br> <select class="form-control" name="types[]"	{% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+						{% for selopt in options['type'] %}
+						<option value="{{ selopt['type'] }}" {% if selopt['type'] in types %}SELECTED{% endif %}>{{ selopt['type'] }}</option>
+						{% endfor %}
+						<option value="None" {% if not types %} SELECTED {% endif %}>Disabled</option>
+					</select>
+					{% else %}
 					Cluster type:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 					<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
-					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 						{% for selopt in options['type'] %}
 						<input type="checkbox" name="types[]" value="{{ selopt['type'] }}" {% if selopt['type'] in types %}checked{% endif %}>&nbsp;{{ selopt['type'] }}<br />
 						{% endfor %}
-					  </div>
-				    </div>
+						</div>
+					</div>
+					{% endif %}
 				</div>
 			</div>
       </div>
@@ -312,7 +482,7 @@
       </div>
     </div>
   </div>
-  {% if selected in ['mlprediction','mlfindattributes','mldatacollapse','mlsummaries','mlminconfigs'] %}
+  {% if selected in ['mlprediction','mlfindattributes','mldatacollapse','mlsummaries','mlminconfigs','mlnewconfigs','mlparameval','mloutliers','mlcrossvar3dfa'] %}
   <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
     <div class="panel-heading" role="tab" id="headingMachineLearningFilter">
       <i id="machineLearningFilterGlyphon" data-toggle="collapse" data-parent="#accordion" href="#machineLearningFilter" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
@@ -324,75 +494,59 @@
     </div>
     <div id="machineLearningFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingMachineLearningFilter">
       <div class="panel-body">
-	<!-- This content is not used yet...
-      			{% if selected == 'mlprediction' %}
-			<div class="row">
-				<div class="col-md-6">
-					Learning method:</br> <select class="form-control" name="learn" >
-						<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
-						<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
-						<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
-						<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
-					</select>
-				</div>
-				<div class="col-md-6">
-					<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
-				</div>
+		<div class="row">
+			<div class="col-md-6" id="mldiv">
+				<!-- Fuck this shit -->
+				{% if selected in ['mlfindattributes','mlparameval','mloutliers','mlcrossvar3dfa'] %}
+				Model to use: <select class='form-control' name='current_model' id='select-model'>
+				{% for ftsh in models_id %}
+				<option value='{{ftsh}}' {% if  ftsh == current_model %}SELECTED{% endif %}>{{ftsh}}</option>
+				{% endfor %}
+				{% if selected == 'mlcrossvar3dfa' %}
+				<option value='' {% if  '' == current_model %}SELECTED{% endif %}>Aggregation of Models</option>
+				{% endif %}
+				</select>
+				{% endif %}
+				{% if selected in ['mlprediction','mlminconfigs','mlnewconfigs'] %}
+				Learning method:</br> <select class="form-control" name="learn" >
+					<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
+					<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
+					<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
+					<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
+				</select>
+				{% endif %}
+				{% if selected == 'mlsummaries' %}
+				Separate by: <select class="form-control" class="control-form" name="feature">
+						<option value="joined"  {% if 'joined' == feature %} SELECTED {% endif %}>None</option>
+						<option value="Benchmark"  {% if 'Benchmark' == feature %} SELECTED  {% endif %}>Benchmarks</option>
+						<option value="Net"  {% if 'Net' == feature %} SELECTED  {% endif %}>Networks</option>
+						<option value="Disk"  {% if 'Disk' == feature %} SELECTED  {% endif %}>Disks</option>
+						<option value="Maps"  {% if 'Maps' == feature %} SELECTED  {% endif %}>Maps</option>
+						<option value="IO.SFac"  {% if 'IO.SFac' == feature %} SELECTED  {% endif %}>IO.SFactors</option>
+						<option value="Rep"  {% if 'Rep' == feature %} SELECTED  {% endif %}>Replicas</option>
+						<option value="IO.FBuf"  {% if 'IO.FBuf' == feature %} SELECTED  {% endif %}>IO.File.Buffer</option>
+						<option value="Comp"  {% if 'Comp' == feature %} SELECTED  {% endif %}>Compression</option>
+						<option value="Blk.size"  {% if 'Blk.size' == feature %} SELECTED  {% endif %}>Block.Sizes</option>
+						<option value="Cluster"  {% if 'Cluster' == feature %} SELECTED  {% endif %}>Clusters</option>
+				</select>
+				{% endif %}
 			</div>
-			{% endif %}
-			{% if selected == 'mlfindattributes' %}
-			<div class="row">
-				<div class="col-md-6"></div>
-				<div class="col-md-6">
-					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
-				</div>
+			<div class="col-md-6">
+				{% if selected in ['mlprediction','mlminconfigs'] %}
+				<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
+				{% endif %}
+				{% if selected == 'mlfindattributes' %}
+				<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
+				{% endif %}
+				{% if selected == 'mloutliers' %}
+				Sigmas:</br> <select class="form-control" name="sigma" >
+					<option value="1" {% if sigma == '1' %} SELECTED {% endif %}>1</option>
+					<option value="2" {% if sigma == '2' %} SELECTED {% endif %}>2</option>
+					<option value="3" {% if sigma == '3' %} SELECTED {% endif %}>3</option>
+				</select>
+				{% endif %}
 			</div>
-			{% endif %}
-			{% if selected == 'mldatacollapse' %}
-			<div class="row">
-				<div class="col-md-6"></div>
-				<div class="col-md-6">
-					<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
-				</div>
-			</div>
-			{% endif %}
-
-			{% if selected == 'mlsummaries' %}
-			<div class="row">
-				<div class='col-md-6'>
-					Separate by: <select class="form-control" class="control-form" name="feature">
-							<option value="joined"  {% if 'joined' == feature %} SELECTED {% endif %}>None</option>
-							<option value="Benchmark"  {% if 'Benchmark' == feature %} SELECTED  {% endif %}>Benchmarks</option>
-							<option value="Net"  {% if 'Net' == feature %} SELECTED  {% endif %}>Networks</option>
-							<option value="Disk"  {% if 'Disk' == feature %} SELECTED  {% endif %}>Disks</option>
-							<option value="Maps"  {% if 'Maps' == feature %} SELECTED  {% endif %}>Maps</option>
-							<option value="IO.SFac"  {% if 'IO.SFac' == feature %} SELECTED  {% endif %}>IO.SFactors</option>
-							<option value="Rep"  {% if 'Rep' == feature %} SELECTED  {% endif %}>Replicas</option>
-							<option value="IO.FBuf"  {% if 'IO.FBuf' == feature %} SELECTED  {% endif %}>IO.File.Buffer</option>
-							<option value="Comp"  {% if 'Comp' == feature %} SELECTED  {% endif %}>Compression</option>
-							<option value="Blk.size"  {% if 'Blk.size' == feature %} SELECTED  {% endif %}>Block.Sizes</option>
-							<option value="Cluster"  {% if 'Cluster' == feature %} SELECTED  {% endif %}>Clusters</option>
-					</select>
-				</div>
-			</div>
-			{% endif %}
-
-			{% if selected == 'mlminconfigs' %}
-			<div class="row">
-				<div class="col-md-6">
-					Learning method:</br> <select class="form-control" name="learn" >
-						<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
-						<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
-						<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
-						<option value="polyreg" {% if 'polyreg' in learn %} SELECTED {% endif %}>PolyReg-3</option>
-					</select>
-				</div>
-				<div class="col-md-6">
-					<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
-				</div>
-			</div>
-			{% endif %}
-	-->
+		</div>
       </div>
     </div>
   </div>

@@ -32,7 +32,7 @@
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -48,8 +48,11 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 
 	<script type="text/javascript">
-	$(document).ready(function() {
-		$("select.form-control option[value='None']").text("ALL");
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#hardwareFilters').parent().hide();
+
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{must_wait}}"== "NO")

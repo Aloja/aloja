@@ -40,7 +40,7 @@
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -55,9 +55,6 @@
 			<div style="float: left; width: 70%;">
 				<p>Current used model: {{current_model}}</p>
 				<p>Usable models found:<ul>{{models | raw}}</ul></p>
-			</div>
-			<div style="float: left; width: 30%;">
-				<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
 			</div>
 		</div>
 	</div>
@@ -82,26 +79,14 @@
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
 	}
 
-	$(document).ready(function() {
-		$("select.form-control option[value='None']").text("ALL");
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#hardwareFilters').parent().hide();
+
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ('{{jsonData | raw}}' == '[]' && '{{jsonWarns | raw}}' == '[]' && '{{jsonOuts | raw}}' == '[]') $("#footer").hide();
-
-		var target = document.getElementById('select-model');
-		var mid = {{ models_id | raw }};
-		for (i = 0; i < mid.length; i++)
-		{
-			var newhtml = "<option value='" + mid[i] + "'";
-			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
-			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
-		}
-
-		$("#select-model").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>");
-			$('#submitForm').click();
-		});
 
 		$("#maxy-apply").click(function()
 		{
