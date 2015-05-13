@@ -37,10 +37,15 @@ try {
     $controller = new $controllerMethod['class']($container);
     $controller->$controllerMethod['method']();
 } catch (\Exception $e) {
-    if($container->get('config')['enable_debug'])
-      exit('Unexpected error: '.$e->getMessage(). "\n".$e->getPrevious());
-    else {
-      $container->getLog()->addError('Internal server error: '.$e->getMessage(). "\n".$e->getPrevious());
-      $container->displayServerError();
+    if($container) {
+        if ($container->get('config')['enable_debug'])
+            exit('Unexpected error: '.$e->getMessage(). "\n".$e->getPrevious());
+        else {
+            $container->getLog()->addError('Internal server error: '.$e->getMessage(). "\n".$e->getPrevious());
+            $container->displayServerError();
+        }
+    } else {
+       echo 'Unexpected error: '.$e->getMessage(). "\n".$e->getPrevious();
     }
+
 }
