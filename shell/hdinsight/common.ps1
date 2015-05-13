@@ -70,7 +70,7 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
       mkdir $containerName
    }
    
-   $directoryName = $benchName + "_r_$reduceTasks"
+   $directoryName = $benchName
    $result = Test-Path $containerName/$directoryName
    if(!$result) {
      mkdir $containerName/$directoryName
@@ -100,10 +100,11 @@ function RetrieveData([String]$clusterName, [String]$storageAccount, [String]$st
    $curDir=$(pwd).Path
 
    Write-Verbose "Copying from storage blob"
-   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$curDir/$storageContainer" /SourceKey:"$storageKey" /S /Pattern:"mapred" /Y
+   AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$curDir\$storageContainer" /SourceKey:"$storageKey" /S /Pattern:"mapred" /Y
+  # AzCopy /Source:"https://$storageAccount.blob.core.windows.net/$storageContainer" /Dest:"$curDir\$storageContainer" /SourceKey:"$storageKey" /S /Pattern:"app-logs" /Y
    Write-Verbose "Copying job logs to logs dir"
-   cp -R $storageContainer $logsDir/$newLogsDirName/
-   mv $logsDir/$newLogsDirName/$storageContainer/mapred $logsDir/$newLogsDirName/
+   cp -R $storageContainer $logsDir\$newLogsDirName\
+   mv $logsDir\$newLogsDirName\$storageContainer\mapred $logsDir\$newLogsDirName\
 
 }
 
@@ -145,4 +146,28 @@ function destroyCluster([String]$clusterName, [String]$storageName, [String]$sto
   Write-Verbose "Removing HDInsight cluster"
   Remove-AzureHDInsightCluster -Name $clusterName
   Write-Verbose "HDinsight cluster removed successfully"
+}
+
+function waitForMapReduceExamples([String]$storageName, [String]$storageKey, [String]$storageContainer) {
+    $Context = New-AzureStorageContext -StorageAccountName $storageName -StorageAccountKey $storageKey
+    for($i=1; $i -le 300; $i++){
+        try
+        {
+            $blob = Get-AzureStorageBlob -Blob "example/jars/hadoop-mapreduce-examples.jar" -Container $storageContainer -Context $Context -ErrorAction Stop
+            Write-Host "MapReduce examples found in storage account"
+            break
+        }
+        catch [Microsoft.WindowsAzure.Commands.Storage.Common.ResourceNotFoundException]
+        {
+            # Add logic here to remember that the blob doesn't exist...
+            Write-Host "MapReduce examples not there, waiting after $i seconds..."
+        }
+        catch
+        {
+            # Report any other error
+            Write-Error $Error[0].Exception;
+            Write-Host "MapReduce examples not there, Waiting after $i seconds..."
+        }
+        Start-Sleep -s 1
+    }
 }

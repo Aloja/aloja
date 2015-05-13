@@ -70,7 +70,7 @@ wait_hdi_cluster() {
 #$1 cluster name
 create_hdi_cluster() {
  if [ -z "$storageAccount" ]; then
-	storageAccount="`echo $clusterName | cut -d- -f1`"
+	storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
 
  vm_create_storage_account "$storageAccount" "GRS"
