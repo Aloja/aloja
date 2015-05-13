@@ -22,7 +22,16 @@
 				</tr></table>
 			</form>
 		</div>
-		<div id="information" style="float: left; width: 100%;"><p>{{error_stats | raw}}</p><p>Model cache ID: {{id_learner|raw}}</p></div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Model cache ID: {{id_learner|raw}}</li>
+				<li>Instance: {{instance|raw}}</li>
+				<li>Model Info: {{model_info|raw}}</li>
+				</ul>
+			</p>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}
@@ -40,7 +49,7 @@
 		document.getElementById('submit').id = 'submitForm';
 		$('#submitForm').attr('value', 'Learn Model');
 		$("#submitForm").html('Learn Model');
-		$('#hardwareFilters').parent().hide();
+		//$('#hardwareFilters').parent().hide();
 
 		$("#maxy-apply").click(function()
 		{

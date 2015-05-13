@@ -26,7 +26,7 @@ class MLTemplatesController extends AbstractController
 		    	$concat_config = "";		// Useless here
 		    	
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
@@ -234,10 +234,17 @@ class MLTemplatesController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'unrestricted' => $unrestricted,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'instance' => $instance,
+				'model_info' => $model_info,
 				'id_learner' => md5($config),
 				'error_stats' => $error_stats,
 				'options' => Utils::getFilterOptions($db)
