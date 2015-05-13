@@ -26,7 +26,7 @@ class MLFindAttributesController extends AbstractController
 		    	$concat_config = "";		// Useless here
 		    	
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
@@ -267,6 +267,12 @@ class MLFindAttributesController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
@@ -276,6 +282,11 @@ class MLFindAttributesController extends AbstractController
 				'mae' => $mae,
 				'rae' => $rae,
 				'must_wait' => $must_wait,
+				'instance' => $instance,
+				'instances' => implode("<br/>",$instances),
+				'model_info' => $model_info,
+				'id_findattr' => md5($config),
+				'unseen' => $unseen,
 				'tree' => (isset($_GET['tree'])?"true":"false"),
 				'tree_descriptor' => $tree_descriptor,
 				'options' => Utils::getFilterOptions($db)
