@@ -1762,7 +1762,36 @@ class DefaultController extends AbstractController
 
     public function dbscanexecsAction()
     {
+        $dbUtils = $this->container->getDBUtils();
+
         $jobid = Utils::get_GET_string("jobid");
+
+        $where_configs = '';
+        $datefrom = Utils::read_params('datefrom',$where_configs);
+        $dateto = Utils::read_params('dateto',$where_configs);
+        $benchs = Utils::read_params ( 'benchs', $where_configs, true );
+        $nets = Utils::read_params ( 'nets', $where_configs, true );
+        $disks = Utils::read_params ( 'disks', $where_configs, true );
+        $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, true );
+        $comps = Utils::read_params ( 'comps', $where_configs, true );
+        $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, true );
+        $mapss = Utils::read_params ( 'mapss', $where_configs, true );
+        $replications = Utils::read_params ( 'replications', $where_configs, true );
+        $iosfs = Utils::read_params ( 'iosfs', $where_configs, true );
+        $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, true );
+        $money = Utils::read_params ( 'money', $where_configs, true );
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, true );
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs, true );
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, true );
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, true );
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, true );
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, true );
+        $types = Utils::read_params ( 'types', $where_configs, true );
+        $filters = Utils::read_params ( 'filters', $where_configs, true );
+        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+        $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
+        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
+        $provider = Utils::read_params ( 'providers', $where_configs, false );
 
         // if no job requested, show a random one
         if (strlen($jobid) == 0 || $jobid === "random") {
@@ -1788,6 +1817,33 @@ class DefaultController extends AbstractController
                 'job_offset' => $job_offset,
                 'METRICS' => DBUtils::$TASK_METRICS,
                 'show_filter_benchs' => false,
+                'options' => Utils::getFilterOptions($dbUtils),
+                'datefrom' => $datefrom,
+                'dateto' => $dateto,
+                'benchs' => $benchs,
+                'nets' => $nets,
+                'disks' => $disks,
+                'blk_sizes' => $blk_sizes,
+                'comps' => $comps,
+                'id_clusters' => $id_clusters,
+                'mapss' => $mapss,
+                'replications' => $replications,
+                'iosfs' => $iosfs,
+                'iofilebufs' => $iofilebufs,
+                'money' => $money,
+                'datanodess' => $datanodes,
+                'bench_types' => $benchtype,
+                'vm_sizes' => $vm_sizes,
+                'vm_coress' => $vm_coress,
+                'vm_RAMs' => $vm_RAMs,
+                'hadoop_versions' => $hadoop_versions,
+                'types' => $types,
+                'providers' => $provider,
+                'filters' => $filters,
+                'allunchecked' => $allunchecked,
+                'select_multiple_benchs' => false,
+                'minexetime' => $minexetime,
+                'maxexetime' => $maxexetime,
             )
         );
     }
