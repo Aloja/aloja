@@ -234,9 +234,15 @@ vm_install_repo() {
 
     logger "INFO: Installing branch $1"
     vm_execute "
+
 sudo mkdir -p /var/www
+
+sudo rm -rf /tmp/aloja;
+mkdir -p /tmp/aloja
+sudo git clone https://github.com/Aloja/aloja.git /tmp/aloja
+sudo cp -ru /tmp/aloja/* /var/www/
+
 cd /var/www
-sudo git clone https://github.com/Aloja/aloja.git .
 sudo git checkout $repo
 
 sudo mkdir -p /var/www/aloja-web/vendor
@@ -244,11 +250,13 @@ sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
 sudo bash -c 'cd /var/www/aloja-web/ && php composer.phar update'
 sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
 
+sudo cp /var/www/aloja-web/config/config.sample.yml /var/www/aloja-web/config/config.yml
+
 sudo service php5-fpm restart
 sudo service nginx restart
 
 "
-    test_action="$(vm_execute " [ -f /var/www/aloja-web/index.php ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(wget -q -O- http://localhost/|grep 'ALOJA')\" ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
       logger "INFO: $bootstrap_file installed succesfully"
