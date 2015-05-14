@@ -80,7 +80,7 @@ class MLFindAttributesController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model;
+				$config = $instance.'-'.$current_model.'-'.(($unseen)?'U':'R');
 
 				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM trees WHERE id_findattrs = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();

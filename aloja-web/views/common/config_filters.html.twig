@@ -507,7 +507,7 @@
 				{% endif %}
 				</select>
 				{% endif %}
-				{% if selected in ['mlprediction','mlminconfigs','mlnewconfigs'] %}
+				{% if selected in ['mlprediction','mlminconfigs','mlnewconfigs','mlcrossvar'] %}
 				Learning method:</br> <select class="form-control" name="learn" >
 					<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
 					<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
@@ -535,7 +535,7 @@
 				{% if selected in ['mlprediction','mlminconfigs'] %}
 				<br/><input type="checkbox" name="umodel" value="1" {% if unrestricted %}checked{% endif %}>Unrestricted to new values<br>
 				{% endif %}
-				{% if selected == 'mlfindattributes' %}
+				{% if selected in ['mlfindattributes','mlcrossvar3dfa'] %}
 				<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
 				{% endif %}
 				{% if selected == 'mloutliers' %}
@@ -544,6 +544,9 @@
 					<option value="2" {% if sigma == '2' %} SELECTED {% endif %}>2</option>
 					<option value="3" {% if sigma == '3' %} SELECTED {% endif %}>3</option>
 				</select>
+				{% endif %}
+				{% if selected in ['mlcrossvar','mlcrossvar3d'] %}
+				<p>In case of selecting "Predicted Exec. Time"</p>
 				{% endif %}
 			</div>
 		</div>

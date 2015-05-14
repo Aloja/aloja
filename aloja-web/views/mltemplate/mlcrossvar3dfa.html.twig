@@ -12,6 +12,16 @@
 	</div>
 	<div id="container" style="float: left; width: 68%; margin: 0 auto;">
 		<div id="chart" style="float: left; width: 100%; margin: 0 auto; height: 600px;"></div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Model cache ID: {% if current_model != '' %}{{current_model|raw}}{% else %}Aggregation{% endif %}</li>
+				<li>Instance: {{instance|raw}}</li>
+				<li>Model Info: {{model_info|raw}}</li>
+				</ul>
+			</p>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}
@@ -20,7 +30,6 @@
 	<hr />
 	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 	<div id="footer" style="display:none; float: left; width: 100%;">
-		<p>Current Instance: {{ instance }} <br/>Current used model: {% if current_model != '' %}{{current_model}}{% else %}Aggregation{% endif %}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
 		</div>
@@ -43,15 +52,9 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#hardwareFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
-		/*
-		var newhtml = "<option value=''";
-		if ('{{current_model}}' == '') newhtml = newhtml + " SELECTED";
-		target.innerHTML = target.innerHTML + newhtml + ">Aggregation of Models</option>";
-*/
 		if ("{{must_wait}}"== "NO")
 		{
 			$(function () {
