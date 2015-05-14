@@ -2,7 +2,7 @@
 #must be sourced
 
 # Check bash version >= 4
-if ((BASH_VERSINFO[0] < 4)) ; then
+if (( BASH_VERSINFO[0] < 4 )) ; then
   echo -e "ERROR: bash 4 or newer is required"
   exit 1
 fi
@@ -34,8 +34,15 @@ logger() {
 #trasposes new lines to selected string
 #$1 string to traspose $2 traspose
 nl2char() {
-  tmp="$(echo -e "$1"|tr "\n" "$2")"
-  echo "${tmp::-1}" #remove trailing $2
+  local tmp="$(echo -e "$1"|tr "\n" "$2")"
+  echo -e "${tmp::-1}" #remove trailing $2
+}
+
+#trasposes old string to new string
+#$1 string to traspose $2 old string $2 new string
+char2char() {
+  local tmp="$(echo -e "$1"|tr "$2" "$3")"
+  echo -e "${tmp}"
 }
 
 #$1 list $2 element

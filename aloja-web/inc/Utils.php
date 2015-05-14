@@ -370,9 +370,9 @@ class Utils
         return $show_in_result;
     }
     
-    public static function getExecsOptions($db)
+    public static function getExecsOptions($db,$where_configs = "")
     {
-        $filter_execs = DBUtils::getFilterExecs();
+        $filter_execs = $where_configs ." ".DBUtils::getFilterExecs();
 
         $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
@@ -384,7 +384,7 @@ class Utils
     	$clusterNodes = $db->get_rows("SELECT DISTINCT c.datanodes FROM execs e JOIN clusters c USING(id_cluster) WHERE valid = 1 AND filter = 0 $filter_execs");
     	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
         $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	
+    	$vmOS = $db->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
     	$discreteOptions['net'][] = 'All';
@@ -396,6 +396,7 @@ class Utils
     	$discreteOptions['datanodes'][] = 'All';
     	$discreteOptions['hadoop_version'][] = 'All';
         $discreteOptions['bench_type'][] = 'All';
+        $discreteOptions['vm_OS'][] = 'All';
     	
     	foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
@@ -431,6 +432,9 @@ class Utils
     	}
         foreach($benchType as $option) {
             $discreteOptions['bench_type'][] = array_shift($option);
+        }
+        foreach($vmOS as $option) {
+            $discreteOptions['vm_OS'][] = array_shift($option);
         }
     	
     	return $discreteOptions;
@@ -552,6 +556,7 @@ class Utils
     	$options['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
     	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
     	$options['presets'] = $dbUtils->get_rows("SELECT * FROM filters_presets ORDER BY name DESC");
+        $options['provider'] = $dbUtils->get_rows("SELECT DISTINCT provider FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
     	
     	return $options;
     }

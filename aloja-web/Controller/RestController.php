@@ -27,6 +27,8 @@ class RestController extends AbstractController
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
             'id_cluster' => 'Cluster',
+            'vm_OS' => 'OS',
+            'cdesc' => 'Cluster description',
         	'datanodes' => 'Datanodes',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
@@ -40,32 +42,34 @@ class RestController extends AbstractController
             $configurations = array();
             $where_configs = '';
             $concat_config = "";
-            
-             $datefrom = Utils::read_params('datefrom',$where_configs);
-             $dateto	= Utils::read_params('dateto',$where_configs);
-             $benchs         = Utils::read_params('benchs',$where_configs);
-             $nets           = Utils::read_params('nets',$where_configs);
-             $disks          = Utils::read_params('disks',$where_configs);
-             $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
-             $comps          = Utils::read_params('comps',$where_configs);
-             $id_clusters    = Utils::read_params('id_clusters',$where_configs);
-             $mapss          = Utils::read_params('mapss',$where_configs);
-             $replications   = Utils::read_params('replications',$where_configs);
-             $iosfs          = Utils::read_params('iosfs',$where_configs);
-             $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
-             $money 			= Utils::read_params('money',$where_configs);
-             $datanodes = Utils::read_params ( 'datanodess', $where_configs);
-             $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs);
-             $vm_coress = Utils::read_params ( 'vm_coress', $where_configs);
-             $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs);
-             $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs);
-             $types = Utils::read_params ( 'types', $where_configs );
-             $valid = Utils::read_params ( 'valids', $where_configs );
-             $filter = Utils::read_params ( 'filters', $where_configs );
-            // $outliers = Utils::read_params ( 'outliers', $where_configs);
-            // $warnings = Utils::read_params ( 'warnings', $where_configs);
-            
+
+            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $dateto	= Utils::read_params('dateto',$where_configs);
+            $benchs         = Utils::read_params('benchs',$where_configs);
+            $nets           = Utils::read_params('nets',$where_configs);
+            $disks          = Utils::read_params('disks',$where_configs);
+            $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
+            $comps          = Utils::read_params('comps',$where_configs);
+            $id_clusters    = Utils::read_params('id_clusters',$where_configs);
+            $mapss          = Utils::read_params('mapss',$where_configs);
+            $replications   = Utils::read_params('replications',$where_configs);
+            $iosfs          = Utils::read_params('iosfs',$where_configs);
+            $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
+            $money 			= Utils::read_params('money',$where_configs);
+            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
+            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
+            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
+            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
+            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
+            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
+            $types = Utils::read_params ( 'types', $where_configs, false );
+            $filters = Utils::read_params ( 'filters', $where_configs, false );
+            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+            $type = Utils::get_GET_string("type");
+            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
+            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
+            $provider = Utils::read_params ( 'providers', $where_configs, false );
+
             $type = Utils::get_GET_string('type');
             if(!$type)
             	$type = 'SUMMARY';
@@ -78,6 +82,8 @@ class RestController extends AbstractController
             			'exec' => 'Exec Conf',
             			'cost' => 'Running Cost $',
             			'id_cluster' => 'Cluster',
+                        'vm_OS' => 'OS',
+                        'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
             			//'version' => 'Hadoop v.',
@@ -95,6 +101,8 @@ class RestController extends AbstractController
             			'net' => 'Net',
             			'disk' => 'Disk',
             			'id_cluster' => 'Cluster',
+                        'vm_OS' => 'OS',
+                        'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
             			//'version' => 'Hadoop v.',
@@ -118,6 +126,8 @@ class RestController extends AbstractController
 					'comp' => 'Comp',
 					'blk_size' => 'Blk size',
 					'id_cluster' => 'Cluster',
+                    'vm_OS' => 'OS',
+                    'cdesc' => 'Cluster description',
 					'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
 					//'version' => 'Hadoop v.',
@@ -127,7 +137,7 @@ class RestController extends AbstractController
 				);
             }
             
-             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
+             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
        	 		join clusters c USING (id_cluster)
       		 	 WHERE 1 $where_configs ".DBUtils::getFilterExecs().";";
 
@@ -689,25 +699,13 @@ VALUES
                 SELECT
                     t.`TASKID` as TASK_ID,
                     ".$metric_select('t')." as TASK_VALUE,
-                    SUM(".$metric_select('t2').") as TASK_VALUE_ACCUM,
-                    t.TASK_DURATION,
-                    SUM(t2.`TASK_DURATION`) as TASK_DURATION_ACCUM,
-                    1 as TASK_VALUE_STDDEV
-                FROM (
-                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
-                    FROM `JOB_tasks`
-                ) as t
-                JOIN (
-                    SELECT *, TIMESTAMPDIFF(SECOND, `START_TIME`, `FINISH_TIME`) as TASK_DURATION
-                    FROM `JOB_tasks`
-                ) as t2
-                ON (t.`TASKID` >= t2.`TASKID` AND t2.`JOBID` = :jobid_repeated)
+                    TIMESTAMPDIFF(SECOND, t.`START_TIME`, t.`FINISH_TIME`) as TASK_DURATION
+                FROM `JOB_tasks` as t
                 WHERE t.`JOBID` = :jobid
                 ".$task_type_select('t')."
-                GROUP BY t.`TASKID`
                 ORDER BY t.`TASKID`
             ;";
-            $query_params = array(":jobid" => $jobid, ":jobid_repeated" => $jobid);
+            $query_params = array(":jobid" => $jobid);
 
         } else {
             $query = "
@@ -715,9 +713,6 @@ VALUES
                     MIN(t.`TASKID`) as TASK_ID,
                     AVG(".$metric_select('t').") as TASK_VALUE,
                     STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
-                    1 as TASK_VALUE_ACCUM,
-                    1 as TASK_DURATION,
-                    1 as TASK_DURATION_ACCUM,
                     t.`TASK_TYPE`,
                     CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
                 FROM `JOB_tasks` t
@@ -733,22 +728,24 @@ VALUES
 
         $seriesData = array();
         $seriesError = array();
+        $task_value_accum = 0;
+        $task_duration_accum = 0;
         foreach ($rows as $row) {
             $task_id = $row['TASK_ID'];
-            $task_value = $row['TASK_VALUE'] ?: 0;
-            $task_value_accum = $row['TASK_VALUE_ACCUM'] ?: 0;
-            $task_value_stddev = $row['TASK_VALUE_STDDEV'] ?: 0;
-            $task_duration = $row['TASK_DURATION'] ?: 0;
-            $task_duration_accum = $row['TASK_DURATION_ACCUM'] ?: 0;
+            $task_value = $row['TASK_VALUE'];
+            $task_value_stddev = array_key_exists('TASK_VALUE_STDDEV', $row) ? $row['TASK_VALUE_STDDEV'] : 0;
+            $task_duration = array_key_exists('TASK_DURATION', $row) ? $row['TASK_DURATION'] : 0;
 
             // Show only task id (not the whole string)
             $task_id = substr($task_id, 23);
 
             if ($accumulated == 1) {
+                $task_value_accum += $task_value;
                 $task_value = $task_value_accum;
             }
 
             if ($divided == 1) {
+                $task_duration_accum += $task_duration;
                 $task_value = $task_value / $task_duration_accum;
             }
 
@@ -1036,20 +1033,33 @@ VALUES
 
         $db = $this->container->getDBUtils();
 
-        $configurations = array();
         $where_configs = '';
-        $concat_config = "";
         $table_name = "e";
-
-        $nets           = Utils::read_params('nets',$where_configs,false,$table_name);
-        $disks          = Utils::read_params('disks',$where_configs,false,$table_name);
-        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,false,$table_name);
-        $comps          = Utils::read_params('comps',$where_configs,false,$table_name);
-        $id_clusters    = Utils::read_params('id_clusters',$where_configs,false,$table_name);
-        $mapss          = Utils::read_params('mapss',$where_configs,false,$table_name);
-        $replications   = Utils::read_params('replications',$where_configs,false,$table_name);
-        $iosfs          = Utils::read_params('iosfs',$where_configs,false,$table_name);
-        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,false,$table_name);
+        $datefrom = Utils::read_params('datefrom',$where_configs, false, $table_name);
+        $dateto = Utils::read_params('dateto',$where_configs, false, $table_name);
+        $benchs = Utils::read_params ( 'benchs', $where_configs, false, $table_name);
+        $nets = Utils::read_params ( 'nets', $where_configs, false, $table_name);
+        $disks = Utils::read_params ( 'disks', $where_configs, false, $table_name);
+        $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false, $table_name);
+        $comps = Utils::read_params ( 'comps', $where_configs, false, $table_name);
+        $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false, $table_name);
+        $mapss = Utils::read_params ( 'mapss', $where_configs, false, $table_name);
+        $replications = Utils::read_params ( 'replications', $where_configs, false, $table_name);
+        $iosfs = Utils::read_params ( 'iosfs', $where_configs, false, $table_name);
+        $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false, $table_name);
+        $money = Utils::read_params ( 'money', $where_configs, false, $table_name);
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false, $table_name);
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs, false, $table_name);
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false, $table_name);
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false, $table_name);
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false, $table_name);
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false, $table_name);
+        $types = Utils::read_params ( 'types', $where_configs, false, $table_name);
+        $filters = Utils::read_params ( 'filters', $where_configs, false, $table_name);
+        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+        $minexetime = Utils::read_params ( 'minexetime', $where_configs, false, $table_name);
+        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false, $table_name);
+        $provider = Utils::read_params ( 'providers', $where_configs, false, $table_name);
 
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
