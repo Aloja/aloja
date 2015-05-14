@@ -1033,20 +1033,33 @@ VALUES
 
         $db = $this->container->getDBUtils();
 
-        $configurations = array();
         $where_configs = '';
-        $concat_config = "";
         $table_name = "e";
-
-        $nets           = Utils::read_params('nets',$where_configs,false,$table_name);
-        $disks          = Utils::read_params('disks',$where_configs,false,$table_name);
-        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs,false,$table_name);
-        $comps          = Utils::read_params('comps',$where_configs,false,$table_name);
-        $id_clusters    = Utils::read_params('id_clusters',$where_configs,false,$table_name);
-        $mapss          = Utils::read_params('mapss',$where_configs,false,$table_name);
-        $replications   = Utils::read_params('replications',$where_configs,false,$table_name);
-        $iosfs          = Utils::read_params('iosfs',$where_configs,false,$table_name);
-        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs,false,$table_name);
+        $datefrom = Utils::read_params('datefrom',$where_configs, false, $table_name);
+        $dateto = Utils::read_params('dateto',$where_configs, false, $table_name);
+        $benchs = Utils::read_params ( 'benchs', $where_configs, false, $table_name);
+        $nets = Utils::read_params ( 'nets', $where_configs, false, $table_name);
+        $disks = Utils::read_params ( 'disks', $where_configs, false, $table_name);
+        $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false, $table_name);
+        $comps = Utils::read_params ( 'comps', $where_configs, false, $table_name);
+        $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false, $table_name);
+        $mapss = Utils::read_params ( 'mapss', $where_configs, false, $table_name);
+        $replications = Utils::read_params ( 'replications', $where_configs, false, $table_name);
+        $iosfs = Utils::read_params ( 'iosfs', $where_configs, false, $table_name);
+        $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false, $table_name);
+        $money = Utils::read_params ( 'money', $where_configs, false, $table_name);
+        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false, $table_name);
+        $benchtype = Utils::read_params ( 'bench_types', $where_configs, false, $table_name);
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false, $table_name);
+        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false, $table_name);
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false, $table_name);
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false, $table_name);
+        $types = Utils::read_params ( 'types', $where_configs, false, $table_name);
+        $filters = Utils::read_params ( 'filters', $where_configs, false, $table_name);
+        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+        $minexetime = Utils::read_params ( 'minexetime', $where_configs, false, $table_name);
+        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false, $table_name);
+        $provider = Utils::read_params ( 'providers', $where_configs, false, $table_name);
 
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
