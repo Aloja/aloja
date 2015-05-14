@@ -25,7 +25,7 @@ class MLParamevalController extends AbstractController
 			$concat_config = ""; 		// Useless here
 			
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			if (count($_GET) <= 1
@@ -33,13 +33,13 @@ class MLParamevalController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
 				$params['benchs'] = $_GET['benchs'] = array('terasort'); $where_configs = ' AND bench IN ("terasort")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'net') $params['nets'] = $_GET['nets'] = array('ETH'); $where_configs .= ' AND net IN ("ETH")';
+				//if (!isset($_GET['parameval']) || $_GET['parameval'] != 'net') $params['nets'] = $_GET['nets'] = array('ETH'); $where_configs .= ' AND net IN ("ETH")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = $_GET['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofilebuf') $params['iofilebufs'] = $_GET['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = $_GET['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
+				//if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = $_GET['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'comp') $params['comps'] = $_GET['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'replication') $params['replications'] = $_GET['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'id_cluster') $params['id_clusters'] = $_GET['id_clusters'] = array('1','2','3'); $where_configs .= ' AND id_cluster IN ("1","2","3")';
+				//if (!isset($_GET['parameval']) || $_GET['parameval'] != 'id_cluster') $params['id_clusters'] = $_GET['id_clusters'] = array('1','2','3'); $where_configs .= ' AND id_cluster IN ("1","2","3")';
 			}
 
 			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
@@ -49,6 +49,7 @@ class MLParamevalController extends AbstractController
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
+			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
 
 			if($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
@@ -65,12 +66,12 @@ class MLParamevalController extends AbstractController
 				else $paramOptions[] = $option[$paramEval];
 			}
 
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
 			// get the result rows
 			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-				"from execs e WHERE 1 $filter_execs $where_configs".
+				"from execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs".
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 			$rows = $db->get_rows ( $query );
 			if (!$rows) throw new \Exception ( "No results for query!" );
@@ -268,6 +269,12 @@ class MLParamevalController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'money' => $money,
 				'paramEval' => $paramEval,
 				'instance' => $instance,

@@ -15,7 +15,6 @@
 	$(document).ready(function ()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#hardwareFilters').parent().hide();
 
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
@@ -26,13 +25,6 @@
 			$('select[name="'+name+'"]').val('None');
 			var configForm = document.getElementsByName('configFilters');
 			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
-			$(this).parents('form').submit();
-		});
-
-	    	$('input').change(function()
-		{
-			var configForm = document.getElementsByName('configFilters');
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>";
 			$(this).parents('form').submit();
 		});
 
@@ -90,10 +82,10 @@
 	</script>
 {% endblock %}
 {% block content %}
-	<div id="navigation" style="text-align: center;">
-		<form>
-			<div style="width: 50%; margin-left: 10%;">
-				<div style="width: 40%; margin: 0 auto;">
+	<div id="navigation">
+		<div id="stuff" style="float: left; width: 68%; margin: 0 auto;">
+			<form>
+				<div style="width: 20%; margin: 0 auto; float: center">
 				Parameter to evaluate:	<select class="form-control" name="parameval">
 							<option value="maps" {% if paramEval == 'maps' %}selected="selected"{% endif %}>Maps</option>
 							<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
@@ -106,23 +98,28 @@
 							<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
 							</select>
 				</div>
+			</form>
+			<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
+			<div id="information" style="float: left; width: 100%; margin: 0 auto;">
+				<p>{{error_stats | raw}}</p>
+				<p>Model information:
+					<ul>
+					<li>Model cache ID: {{current_model|raw}}</li>
+					<li>Instance: {{instance|raw}}</li>
+					</ul>
+				</p>
 			</div>
-		</form>
-		<div id="chart" style="float: left; width: 68%; margin: 0 auto;"></div>
+		</div>
 		<div style="float: right; width: 30%;">
 		{% include 'common/config_filters.html.twig' %}
 		</div>
 	</div>
 	<div style="clear: both;"></div>
-	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+	More information: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 	<div id="footer" style="display: none; float: left; width: 100%;">
 		<hr />
-		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}}</p>
 		<div style="float: left; width: 70%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
-		</div>
-		<div style="float: left; width: 30%;">
-			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
 		</div>
 	</div>
 {% endblock %}

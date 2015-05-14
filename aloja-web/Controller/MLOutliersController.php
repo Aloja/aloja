@@ -28,7 +28,7 @@ class MLOutliersController extends AbstractController
 		    	$concat_config = "";		// Useless here
 		    	
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
 			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
@@ -244,6 +244,7 @@ class MLOutliersController extends AbstractController
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => $possible_models_id,
 				'current_model' => $current_model,
+				'resolution_id' => md5($config),
 				'sigma' => $sigma_param,
 				'message' => $message,
 				'instance' => $instance,

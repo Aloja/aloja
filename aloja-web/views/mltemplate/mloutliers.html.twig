@@ -30,13 +30,20 @@
 		<div id="controls" style="display: none; float: left; width: 100%;">
 			<form>
 				<table style="float: right; width: 20%;">
-				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
-				<td><input class="form-control" type="number" step="100" id="maxy" value="0" /></td>
-				<td><input class="form-control" type="button" id="maxy-apply" value="Apply" /></td>
-				</tr><tr><td><label>Associate to Predictions: </label></td></tr><tr>
+				<tr><td><label>Associate to Predictions DB: </label></td></tr><tr>
 				<td><input class="form-control" type="button" id="outliers-apply" value="Accept resolutions" /></td>
 				</tr></table>
 			</form>
+		</div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Model cache ID: {{current_model|raw}}</li>
+				<li>Resolution cache ID: {{resolution_id|raw}}</li>
+				<li>Instance: {{instance|raw}}</li>
+				</ul>
+			</p>
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
@@ -53,7 +60,6 @@
 		Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 		<div id="footer" style="display: none; float: left; width: 100%;">	
 			<div style="float: left; width: 70%;">
-				<p>Current used model: {{current_model}}</p>
 				<p>Usable models found:<ul>{{models | raw}}</ul></p>
 			</div>
 		</div>
@@ -82,17 +88,9 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#hardwareFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
-
 		if ('{{jsonData | raw}}' == '[]' && '{{jsonWarns | raw}}' == '[]' && '{{jsonOuts | raw}}' == '[]') $("#footer").hide();
-
-		$("#maxy-apply").click(function()
-		{
-			if ($("#maxy").val() < 1) $('#chart').highcharts().yAxis[0].setExtremes(null, null);
-			else $('#chart').highcharts().yAxis[0].update({ max: $("#maxy").val() });
-		});
 
 		$("#outliers-apply").click(function()
 		{
