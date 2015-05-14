@@ -26,8 +26,11 @@ class MLMinconfigsController extends AbstractController
 		    	$concat_config = "";		// Useless here
 		    	
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+
+			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
@@ -45,14 +48,11 @@ class MLMinconfigsController extends AbstractController
 			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
-
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted, $db); // Used only as indicator in the WEB
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted, $db);
 
-			$config = $model_info.' '.$learn_param.' minconfs';
+			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R').' minconfs';
 			$learn_options = 'saveall='.md5($config);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
@@ -298,8 +298,17 @@ class MLMinconfigsController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
+				'id_learner' => md5($config),
+				'id_minconf' => md5($config.'R'),
+				'model_info' => $model_info,
 				'unrestricted' => $unrestricted,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,

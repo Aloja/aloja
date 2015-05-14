@@ -54,7 +54,7 @@ class MLTemplatesController extends AbstractController
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted,$db);
 
-			$config = $model_info.' '.$learn_param;
+			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R');
 			$learn_options = 'saveall='.md5($config);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }

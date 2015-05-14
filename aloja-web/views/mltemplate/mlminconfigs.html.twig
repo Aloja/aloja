@@ -23,12 +23,25 @@
 		<p style="text-align:justify">To use the tool, select which executions and clusters you want as model through the right filter box (This tool will automatically create a model for this). Then observe the set of executions required, and the estimated error that they produce by only running them. The tool returns different sets of configurations, sets with cardinality 10 to <i>k</i>, each one with a lower error but more executions in it.</p>
 		<hr />
 	</div>
-	<div id="stuffdiv" style="float: left; width: 68%;">
-		<div id="chart" style="float: left; width: 100%;"></div>
-		<div style="width: 40%; margin: 0 auto;">
-				Display # Configs:	<select class="form-control" name="select_configs" id="select_configs"></select>
-				</div>
-		<div id="benchdiv" style="float: left; width: 100%;"></div>
+	<div id="content" style="float: left; width: 68%;">
+		<div id="stuffdiv" style="float: left; width: 100%;">
+			<div id="chart" style="float: left; width: 100%;"></div>
+			<div style="width: 40%; margin: 0 auto;">
+					Display # Configs:	<select class="form-control" name="select_configs" id="select_configs"></select>
+					</div>
+			<div id="benchdiv" style="float: left; width: 100%;"></div>
+		</div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Model cache ID: {{id_learner|raw}}</li>
+				<li>MinConf cache ID: {{id_minconf|raw}}</li>
+				<li>Instance: {{instance|raw}}</li>
+				<li>Model Info: {{model_info|raw}}</li>
+				</ul>
+			</p>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
@@ -51,7 +64,6 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#hardwareFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
