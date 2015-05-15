@@ -87,7 +87,7 @@ class MLOutliersController extends AbstractController
 						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
 						'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type'
 					);
 					$headers = array_keys($header_names);
 					$names = array_values($header_names);
@@ -172,7 +172,7 @@ class MLOutliersController extends AbstractController
 					$max_x = $row['max_x'];
 					$max_y = $row['max_y'];
 
-					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','ID');
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','ID');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -240,6 +240,12 @@ class MLOutliersController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'must_wait' => $must_wait,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => $possible_models_id,

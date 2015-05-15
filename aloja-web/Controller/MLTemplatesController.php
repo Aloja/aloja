@@ -78,7 +78,7 @@ class MLTemplatesController extends AbstractController
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
 					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type'
 				);
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
@@ -134,7 +134,7 @@ class MLTemplatesController extends AbstractController
 							$header = fgetcsv($handle, 1000, ",");
 
 							$token = 0; $insertions = 0;
-							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
 								$specific_instance = implode(",",array_slice($data, 2, 19));

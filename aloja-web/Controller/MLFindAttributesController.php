@@ -51,7 +51,7 @@ class MLFindAttributesController extends AbstractController
 				$params['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
 				$params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
 				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
-				$unseen = FALSE;
+				$unseen = TRUE;
 			}
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
@@ -108,7 +108,7 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
@@ -135,7 +135,7 @@ class MLFindAttributesController extends AbstractController
 								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
 								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
 								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";								
+								$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
 //							}
 
 							$i++;
@@ -143,7 +143,7 @@ class MLFindAttributesController extends AbstractController
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 								$token = 0;
 								$token_i = 0;
 							}
@@ -183,7 +183,7 @@ class MLFindAttributesController extends AbstractController
 					if (isset($_GET['pass']) && $_GET['pass'] == 2) { $dbml = null; return "2"; }
 
 					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction','Observed');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';

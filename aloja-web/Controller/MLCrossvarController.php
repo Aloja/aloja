@@ -111,8 +111,8 @@ class MLCrossvarController extends AbstractController
 				$count_var1 = $count_var2 = 0;
 				$categories1 = $categories2 = '';
 
-				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
-				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
 
 				foreach ($rows as $row)
 				{
@@ -298,8 +298,8 @@ class MLCrossvarController extends AbstractController
 				$count_var1 = $count_var2 = 0;
 				$categories1 = $categories2 = '';
 
-				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
-				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
 
 				foreach ($rows as $row)
 				{
@@ -488,8 +488,8 @@ class MLCrossvarController extends AbstractController
 				$count_var1 = $count_var2 = 0;
 				$categories1 = $categories2 = '';
 
-				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
-				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
 
 				foreach ($rows as $row)
 				{

@@ -13,15 +13,6 @@
 	</div>
 	<div id="stuff" style="float: left; width: 68%;">
 		<div id="chart" style="float: left; width: 100%;"></div>
-		<div id="controls" style="display: none; float: left; width: 100%;">
-			<form>
-				<table style="float: right; width: 20%;">
-				<tr><td><label>Set max yAxis value: </label></td></tr><tr>
-				<td><input class="form-control" type="number" step="100" id="maxy" value="0" /></td>
-				<td><input class="form-control" type="button" id="maxy-apply" value="Apply" /></td>
-				</tr></table>
-			</form>
-		</div>
 		<div id="information" style="float: left; width: 100%;">
 			<p>{{error_stats | raw}}</p>
 			<p>Model information:
@@ -49,13 +40,6 @@
 		document.getElementById('submit').id = 'submitForm';
 		$('#submitForm').attr('value', 'Learn Model');
 		$("#submitForm").html('Learn Model');
-		//$('#hardwareFilters').parent().hide();
-
-		$("#maxy-apply").click(function()
-		{
-			if ($("#maxy").val() < 1) $('#chart').highcharts().yAxis[0].setExtremes(null, null);
-			else $('#chart').highcharts().yAxis[0].update({ max: $("#maxy").val() });
-		});
 
 		if ("{{must_wait}}"== "NO")
 		{
