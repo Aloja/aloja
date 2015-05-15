@@ -73,6 +73,10 @@ class MLNewconfigsController extends AbstractController
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM minconfigs WHERE id_minconfigs = '".md5($config.'R')."' AND id_learner = '".md5($config."M")."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = $is_cached && ($tmp_result['num'] > 0);
+
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
 
@@ -237,8 +241,8 @@ class MLNewconfigsController extends AbstractController
 					fclose($handle_sizes);
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.{csv,dat,data}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.{fin,csv,dat}');
@@ -323,6 +327,12 @@ class MLNewconfigsController extends AbstractController
 				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
+				'id_newconf' => md5($config),
+				'id_newconf_first' => md5($config.'F'),
+				'id_newconf_dataset' => md5($config.'D'),
+				'id_newconf_model' => md5($config.'M'),
+				'id_newconf_result' => md5($config.'R'),
+				'model_info' => $model_info,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)

@@ -21,28 +21,22 @@ class MLMinconfigsController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
 		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
-
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
-
+		        $preset = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
 			{
-				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$unrestricted = TRUE; 
+				$preset = Utils::setDefaultPreset($db, 'mlminconfigs');
 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+
+			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
@@ -65,6 +59,10 @@ class MLMinconfigsController extends AbstractController
 			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
+
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM minconfigs WHERE id_minconfigs = '".md5($config.'R')."' AND id_learner = '".md5($config)."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = $is_cached && ($tmp_result['num'] > 0);
 
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
@@ -312,6 +310,8 @@ class MLMinconfigsController extends AbstractController
 				'unrestricted' => $unrestricted,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);	
