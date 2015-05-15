@@ -20,29 +20,23 @@ class MLParamevalController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 
-			$configurations = array ();	// Useless here
 			$where_configs = '';
-			$concat_config = ""; 		// Useless here
-			
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
+		        $preset = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('parameval',$_GET))
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
-				$params['benchs'] = $_GET['benchs'] = array('terasort'); $where_configs = ' AND bench IN ("terasort")';
-				//if (!isset($_GET['parameval']) || $_GET['parameval'] != 'net') $params['nets'] = $_GET['nets'] = array('ETH'); $where_configs .= ' AND net IN ("ETH")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'disk') $params['disks'] = $_GET['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofilebuf') $params['iofilebufs'] = $_GET['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				//if (!isset($_GET['parameval']) || $_GET['parameval'] != 'iofs') $params['iosfs'] = $_GET['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'comp') $params['comps'] = $_GET['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				if (!isset($_GET['parameval']) || $_GET['parameval'] != 'replication') $params['replications'] = $_GET['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				//if (!isset($_GET['parameval']) || $_GET['parameval'] != 'id_cluster') $params['id_clusters'] = $_GET['id_clusters'] = array('1','2','3'); $where_configs .= ' AND id_cluster IN ("1","2","3")';
+				$preset = Utils::setDefaultPreset($db, 'mlparameval');
 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
-			$money		= Utils::read_params ( 'money', $where_configs, $configurations, $concat_config );
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+
+
+			$money		= Utils::read_params ( 'money', $where_configs );
 			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
 			$minExecs	= (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
 			$minExecsFilter = "";
@@ -112,9 +106,6 @@ class MLParamevalController extends AbstractController
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
-			$current_model = "";
-			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
-
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
@@ -125,7 +116,7 @@ class MLParamevalController extends AbstractController
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			if (!empty($possible_models_id))
 			{
@@ -283,6 +274,8 @@ class MLParamevalController extends AbstractController
 				'current_model' => $current_model,
 				'gammacolors' => $colors,
 				'must_wait' => $must_wait,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 		) );
 	}

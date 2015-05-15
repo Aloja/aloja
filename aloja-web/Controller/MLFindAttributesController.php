@@ -20,16 +20,10 @@ class MLFindAttributesController extends AbstractController
 		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
-		    	
-		    	$configurations = array ();	// Useless here
-		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
-		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
+		    	$where_configs = '';
+		    	
+		        $preset = null;
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET))
@@ -41,18 +35,15 @@ class MLFindAttributesController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("pass",$_GET) && array_key_exists("current_model",$_GET)))
 			{
-				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$params['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
-				$params['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
-				$params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
-				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
-				$unseen = TRUE;
+				$preset = Utils::setDefaultPreset($db, 'mlfindattributes');		
 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+		    	
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+
+			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -69,7 +60,7 @@ class MLFindAttributesController extends AbstractController
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			if (!empty($possible_models_id))
 			{
