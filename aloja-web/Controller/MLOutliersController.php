@@ -25,7 +25,7 @@ class MLOutliersController extends AbstractController
 		    	
 		    	$where_configs = '';
 
-		        $preset = null;		    	
+		        $preset = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))

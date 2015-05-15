@@ -20,27 +20,21 @@ class MLDataCollapseController extends AbstractController
 
 		    	$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
 
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
-
-			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
-
+		        $preset = null;	
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
-				$where_configs = '';
-				$params['benchs'] = array('bayes','sort','terasort','wordcount'); $where_configs .= ' AND bench IN ("bayes","sort","terasort","wordcount")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$unseen = TRUE;
+				$preset = Utils::setDefaultPreset($db, 'mldatacollapse');
 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+
+			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -60,7 +54,7 @@ class MLDataCollapseController extends AbstractController
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
 			$current_model = '';
-/*			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model']; // FIXME - Needs re-think logic
+/*			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model']; // FIXME - Needs re-think logic
 
 			if ($current_model == '')
 			{
@@ -187,6 +181,8 @@ class MLDataCollapseController extends AbstractController
 				'instance' => $instance,
 				'instance' => $instance,
 				'model_info' => $model_info,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);
