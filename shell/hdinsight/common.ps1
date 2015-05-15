@@ -121,7 +121,7 @@ function removeAzureStorageContainer([String]$storageName, [String]$storageKey, 
 function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$storageName, [String]$storageKey, [bool]$createContainer=$True, [String]$containerName = $null, [String]$subscriptionName, [System.Management.Automation.PsCredential]$cred, [String]$region, [String]$vmSize) {
    $YarnConfigValues = @{"yarn.scheduler.maximum-allocation-mb"="4608";"yarn.scheduler.minimum-allocation-mb"="768";}
    $MapRedConfigValues = new-object 'Microsoft.WindowsAzure.Management.HDInsight.Cmdlet.DataObjects.AzureHDInsightMapReduceConfiguration'
-   $MapRedConfigValues.Configuration = @{"mapreduce.map.memory.mb"="768";"mapreduce.reduce.memory.mb"="1536";"mapreduce.map.java.opts"="-Xmx512m -Xms512m -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";"mapreduce.reduce.java.opts"="-Xmx1G -Xms1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";}
+   $MapRedConfigValues.Configuration = @{"mapreduce.map.memory.mb"="1536";"mapreduce.reduce.memory.mb"="1536";"mapreduce.map.java.opts"="-Xmx1G -Xms1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";"mapreduce.reduce.java.opts"="-Xmx1G -Xms1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";}
 
 
    if($containerName -eq $null) {
