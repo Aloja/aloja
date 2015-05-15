@@ -20,24 +20,21 @@ class MLSummariesController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
 		    	
+		        $preset = null;
+			if (count($_GET) <= 1)
+			{
+				$preset = Utils::setDefaultPreset($db, 'mlsummaries');
+ 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
 			$separate_feat = 'joined';
 			if (array_key_exists('feature',$_GET)) $separate_feat = $_GET['feature'];
-
-			if (count($_GET) <= 1)
-			{
-				$separate_feat = 'Benchmark';
-				$params['benchs'] = array('sort','terasort','wordcount');
-				$params['disks'] = array('HDD','SSD');
-				$where_configs = ' AND bench IN ("sort","terasort","wordcount") AND disk IN ("HDD","SSD")';
-			}
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true,$db);
@@ -45,7 +42,7 @@ class MLSummariesController extends AbstractController
 
 			$config = $model_info.' '.$separate_feat.' SUMMARY';
 
-			$cache_ds = getcwd().'/cache/query/'.md5($model_info.' '.$separate_feat.' SUMMARY').'-cache.csv';
+			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
 			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM summaries WHERE id_summaries = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
@@ -135,6 +132,8 @@ class MLSummariesController extends AbstractController
 				'types' => $params['types'],
 				'feature' => $separate_feat,
 				'message' => $message,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);	
