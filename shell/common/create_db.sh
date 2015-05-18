@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
  \`perf_details\` int DEFAULT 0,
+ \`type\` varchar(255) DEFAULT 'default',
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
@@ -498,8 +499,14 @@ CREATE TABLE IF NOT EXISTS \`JOB_tasks\` (
   PRIMARY KEY (\`id_JOB_job_tasks\`),
   UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`job_name\`, \`TASKID\`),
   KEY \`index2\` (\`id_exec\`),
-  KEY \`index_job_name\` (\`job_name\`)
+  KEY \`index_job_name\` (\`job_name\`),
+  KEY \`JOBID\` (\`JOBID\`),
+  KEY \`TASK_TYPE\` (\`TASK_TYPE\`)
 ) ENGINE=InnoDB;
+
+ALTER TABLE \`JOB_tasks\` ADD INDEX (\`JOBID\`);
+ALTER TABLE \`JOB_tasks\` ADD INDEX (\`TASK_TYPE\`);
+
 
 CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
   \`id_execs_conf_parameters\` int(11) NOT NULL AUTO_INCREMENT,
@@ -722,6 +729,10 @@ $MYSQL "alter table hosts
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
 
+$MYSQL "alter table execs
+    add column type varchar(255) default 'default';"
+
+
 ############################################33
 logger "INFO: Updating records"
 
@@ -747,7 +758,7 @@ update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extrala
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 update ignore clusters set headnodes=2 where provider = 'hdinsight' and vm_OS = 'windows';
 
-update execs set valid=1,filter=0 where id_cluster IN (20,23,24,25) AND YEAR(start_time) = '2014';
+update execs join clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
 update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';

@@ -342,6 +342,12 @@ class DBUtils
      */
     public function get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs = null)
     {
+
+        // For the join used here, the table name is needed
+        if ($where_configs) {
+            $where_configs = str_replace("AND bench not like", "AND e.bench not like", $where_configs);
+        }
+
         $task_type_select = $this->get_task_type_query($task_type, $filter_null=true);
         $query = "
             SELECT

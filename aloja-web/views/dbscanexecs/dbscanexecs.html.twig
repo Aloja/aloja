@@ -12,6 +12,10 @@
     <script>
         $(document).ready(function() {
 
+            // Activate bootstrap tooltips
+            $('#zoom_ratio_11').tooltip();
+            $('#zoom_reset').tooltip();
+
             // Form with all the chart options
             var form = $('form#options');
             var metric_x = form.find("[name='metric_x']");
@@ -318,9 +322,19 @@
 
 {% block content %}
 
+    <div>
+        <p>
+            This view performs a DBSCAN (clustering algorithm to group together similar points) for every execution available of the selected job.
+            <br/>
+            Both axis are configurable to show any metric, and tasks can be limited to a specific type or all at the same time.
+            <br/>
+            With the form at the right, the executions are filtered to the ones matching these parameters.
+        </p>
+    </div>
+
     <form role="form" class="form-inline pull-left">
-        <button type="button" id="zoom_ratio_11" class="btn btn-default">Zoom 1:1</button>
-        <button type="button" id="zoom_reset" class="btn btn-default">Reset Zoom</button>
+        <button type="button" id="zoom_ratio_11" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Changes zoom to make both axis have the same unit size (aspect ratio 1:1)">Zoom 1:1</button>
+        <button type="button" id="zoom_reset" class="btn btn-default" data-toggle="tooltip" data-placement="top" title="Show all points inside the graph">Reset Zoom</button>
     </form>
 
     <form id="options" role="form" class="form-inline pull-right">

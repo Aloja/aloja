@@ -31,41 +31,46 @@ benchmark_cleanup() {
 
 
 benchmark_hibench_config_bayes() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  :
 }
 
 benchmark_hibench_config_dfsioe() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  :
 }
 
 benchmark_hibench_config_kmeans() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  :
 }
 
 benchmark_hibench_config_pagerank() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  :
 }
 
 benchmark_hibench_config_sort() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
   export DATASIZE=24000000000
 }
 
 benchmark_hibench_config_terasort() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
   export DATASIZE=1000000000
 }
 
 benchmark_hibench_config_wordcount() {
-  export COMPRESS_GLOBAL=1
-  export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
-  export DATASIZE=32000000000
+  local  dataSize=$(expr 128000000000 / $numberOfNodes)
+  #export COMPRESS_GLOBAL=1
+  #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  export DATASIZE="$dataSize"
   export NUM_MAPS=16
   export NUM_REDS=48
 }
