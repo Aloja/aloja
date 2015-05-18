@@ -29,6 +29,7 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
  \`perf_details\` int DEFAULT 0,
+ \`type\` varchar(255) DEFAULT 'default',
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
@@ -727,6 +728,10 @@ $MYSQL "alter table hosts
 	add column cost_remote decimal(10,3) default 0,
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
+
+$MYSQL "alter table execs
+    add column type varchar(255) default 'default';"
+
 
 ############################################33
 logger "INFO: Updating records"
