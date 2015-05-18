@@ -9,6 +9,7 @@ declare -A serverId
 
 #### start $cloud_provider customizations
 
+#$1 $vm_name
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
@@ -64,7 +65,7 @@ vm_set_details() {
     #set IP
     nodeIP["$vm_name"]="$vm_IP"
     #set serverId
-    serverId["$vm_name"]="vm_ID"
+    serverId["$vm_name"]="$vm_ID"
 
   fi
 
@@ -285,44 +286,63 @@ node_connect() {
 
 #1 $vm_name
 node_delete() {
-  vm_set_details
+  #vm_set_details
 
   if [ "$type" == "cluster" ] ; then
-    #logger "Paralellizing node deletions"
-    node_delete_helper &
+    node_delete_helper "$1" &
   else
-    node_delete_helper
+    node_delete_helper "$1"
   fi
 }
 
-#to allow parallel deletion from previous function above
-node_delete_helper() {
-  logger "Getting attached disks"
-  local attached_volumes="$(nova volume-list|grep "${serverId["$vm_name"]}")"
-  logger "$attached_volumes"
+#1 $vm_name
+wait_deletion(){
+  logger "Checking status of VM $1"
+  waitStartTime="$(date +%s)"
+  for tries in {1..300}; do
+    currentStatus="$(vm_get_status "$1")"
+    waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
+    if ! vm_exists "$1" ; then
+      logger " VM $1 is deleted"
+      break
+    else
+      logger " VM $1 is in $currentStatus status. Waiting for: $waitElapsedTime s. $tries attempt(s)."
+    fi
 
-  logger "De-Ataching node volumes"
-  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
-    nova volume-detach "${serverId["$vm_name"]}" "$volumeID"
-  done
-
-  sleep 60 #TODO improve
-
-  logger "Deleting node volumes"
-  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
-    nova volume-delete "$volumeID"
-  done
-
-  logger "Deleting node $1"
-  nova delete "$vm_name"
-  sleep 120 #TODO improve
-
-  logger "Deleting node volumes"
-  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
-    nova volume-delete "$volumeID"
+    sleep 5
   done
 }
 
+#to allow parallel deletion from previous function above
+#$1 vm_name
+node_delete_helper() {
+  logger "Getting attached disks"
+  local attached_volumes="$(nova volume-list|grep "$1")"
+  logger "Attached volumes:\n$attached_volumes"
+
+#  logger "De-Ataching node volumes"
+#  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
+#    nova volume-detach "${serverId["$vm_name"]}" "$volumeID"
+#  done
+#
+#  sleep 60
+#
+#  logger "Deleting node volumes"
+#  for volumeID in $(echo $attached_volumes|awk '{print $2}') ; do
+#    nova volume-delete "$volumeID"
+#  done
+
+  logger "Deleting node $1"
+  nova delete "$1"
+
+  wait_deletion "$1"
+
+  logger "Deleting node volumes"
+  for volumeID in $(echo -e "$attached_volumes"|awk '{print $2}') ; do
+    logger "Deleting volume $volumeID"
+    nova volume-delete "$volumeID"
+  done
+}
 
 #1 $vm_name
 node_stop() {

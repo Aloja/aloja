@@ -206,6 +206,18 @@
 				    </div>
 				</div>
 			</div>
+		  <div class="row">
+			  <div class="col-md-6">
+				  Provider:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+				  <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						  {% for selopt in options['provider'] %}
+							  <input type="checkbox" name="providers[]" value="{{ selopt['provider'] }}" {% if selopt['provider'] in providers %}checked{% endif %}>&nbsp;{{ selopt['provider'] }}<br />
+						  {% endfor %}
+					  </div>
+				  </div>
+			  </div>
+		  </div>
       </div>
     </div>
   </div>

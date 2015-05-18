@@ -38,13 +38,21 @@ class Container
             ini_set('display_errors', 'On');
             error_reporting(E_ALL);
             //ini_set('memory_limit', '512M');
-            $container['config'] = Yaml::parse('config/config.sample.yml');
+            $config_file='config/config.sample.yml';
+            if (! file_get_contents($config_file)) {
+                throw new \Exception("Cannot read configuration file: $config_file, check that it exists!");
+            }
+            $container['config'] = Yaml::parse($config_file);
             $container['env'] = 'dev';
         } else {
-            ini_set('display_errors', 'On');
-            error_reporting(E_ALL);
+            //ini_set('display_errors', 'On');
+            //error_reporting(E_ALL);
             //ini_set('memory_limit', '1024M');
-            $container['config'] = Yaml::parse('config/config.yml');
+            $config_file='config/config.yml';
+            if (! file_get_contents($config_file)) {
+                throw new Exception("Cannot read configuration file: $config_file, check that it exists!");
+            }
+            $container['config'] = Yaml::parse($config_file);
             $container['env'] = 'prod';
         }
 
@@ -80,7 +88,7 @@ class Container
                 $twig->addExtension(new Twig_Extension_Debug());
 
             //Twig globals initialization
-			$twig->addGlobal('request',$c['request']);
+            $twig->addGlobal('request',$c['request']);
             $twig->addGlobal('PROD',$c['env']==='prod');
             $twig->addGlobal('DEV',$c['env']==='dev');
 //             $twig->addGlobal('message',null);
