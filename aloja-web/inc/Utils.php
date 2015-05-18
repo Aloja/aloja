@@ -134,7 +134,7 @@ class Utils
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
          	$items = Utils::delete_none($items);            
-        } else if($setDefaultValues) {
+        } else if(!isset($_GET['allunchecked']) && $setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
