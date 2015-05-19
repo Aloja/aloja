@@ -136,7 +136,7 @@ for folder in 201* ; do
 	
 	          folder_OK="$(( folder_OK + 1 ))"
 	
-	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version)
+	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
 	                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
 	                  ON DUPLICATE KEY UPDATE
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
