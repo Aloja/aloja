@@ -103,12 +103,15 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
         COMPRESS_GLOBAL=0
         COMPRESS_TYPE=0
       elif [ "$OPTARG" == "1" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=1
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
       elif [ "$OPTARG" == "2" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=2
         COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
       elif [ "$OPTARG" == "3" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=3
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
       fi
