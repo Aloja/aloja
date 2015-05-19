@@ -306,11 +306,13 @@
 
 		    var type = '{{ type }}';
 		    var offset = 0;
+			var hideOffset = 0;
 		    if(type == 'SUMMARY')
 			    offset = -8;
 		    else if(type == 'HWCONFIG') {
 				offset = -6;
-			}
+			} else if (type == 'DETAIL')
+				hideOffset = 1;
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
@@ -348,7 +350,7 @@
                 //"bStateSave": true,
                 "aoColumnDefs": [
                     {% if selected == 'Benchmark Executions' %}
-                      {"bVisible": false, "aTargets": [ 4, 20 + offset - 1] }
+                      {"bVisible": false, "aTargets": [ 4, 20 + hideOffset + offset - 1] }
                     {% elseif selected == 'Performance Metrics' %}
                       {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
                     {% endif %}
