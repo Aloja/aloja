@@ -50,8 +50,7 @@ importHDIJobs() {
 			
 			##Select cluster number
 			if [[ "$folder" =~ hdi([0-9]+)-([0-9]+)$ ]]; then
-				IFS='_' read -ra folderArray <<< "$folder"
-				cluster=`echo ${folderArray[1]} | grep -oP "([0-9]+)$"`
+				cluster=`echo $folder | grep -oP "([0-9]+)$"`
 			else ##Legacy logs
 				IFS='_' read -ra folderArray <<< "$folder"
 				numberOfNodes=`echo ${folderArray[1]} | grep -oP "[0-9]+"`
