@@ -85,7 +85,7 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
 function RetrieveData([String]$clusterName, [String]$storageAccount, [String]$storageContainer, [String]$logsDir, [String]$storageKey, [String]$type="default") {
    $date = (Get-Date -f hhmmss)
    $year = (Get-Date -f yyyyMMdd)
-   $newLogsDirName="${year}_$date_exec_type-$type_${clusterName}"
+   $newLogsDirName="${year}_${date}_exec_type-${type}_${clusterName}"
    
    $result = Test-Path $logsDir
    if(!$result) {
