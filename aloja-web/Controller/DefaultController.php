@@ -2542,13 +2542,43 @@ class DefaultController extends AbstractController
 
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
+/*
+            $selectedGroups = array();
+            if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
+                $selectedGroups = explode(",",$_GET['selected-groups']);
+            }
+            else {
+                $selectedGroups[] = 'exec_type';
+                $selectedGroups[] = 'vm_OS';
+            }
+            $selectedString = implode(',',Utils::getStandardGroupBy($selectedGroups));
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $query = "SELECT ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size,(e.exe_time * (c.cost_hour / 3600)) as cost, e.*, c.*".
+                " FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN (
+                    SELECT ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size
+                ) t ON";
+
+            $it = 0;
+            foreach(explode(',',$selectedString) as $group) {
+                if ($it != 0)
+                    $query .= " AND";
+
+                $tableName = str_replace("execTable", "e", $group);
+                $tableName = str_replace("clusterTable", "c", $tableName);
+                $withoutPrefixes = str_replace(array("execTable.", "clusterTable."), '', $group);
+                $query .= " t.$withoutPrefixes = $tableName";
+                $it++;
+            }
+            $query .= " AND t.vmsize = c.vm_size WHERE 1 GROUP BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size ORDER BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size DESC;";
+            $execs = $dbUtils->get_rows($query);
+*/
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
             $dataNodes = array();
             $vmOS = array();
+            $execTypes = array();
             foreach ($execs as &$exec) {
                 if (!isset($dataNodes[$exec['datanodes']])) {
                     $dataNodes[$exec['datanodes']] = 1;
@@ -2556,8 +2586,10 @@ class DefaultController extends AbstractController
                 }
                 if(!isset($vmOS[$exec['vm_OS']]))
                     $vmOS[$exec['vm_OS']] = 1;
+                if(!isset($execTypes[$exec['exec_type']]))
+                    $execTypes[$exec['exec_type']] = 1;
 
-                $vmSizes[$exec['vm_size']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
+                $vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
             }
 
             $i = 0;
@@ -2565,23 +2597,25 @@ class DefaultController extends AbstractController
                 '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
             $series = array();
             foreach($vmSizes as $vmSize => $value) {
-                foreach($vmOS as $OS => $osvalue) {
-                    if(isset($vmSizes[$vmSize][$OS])) {
-                        if ($i == sizeof($seriesColors))
-                            $i = 0;
-                        $costSeries = array('name' => "$vmSize $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-                        $timeSeries = array('name' => "$vmSize $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
-                        foreach ($dataNodes as $datanodes => $dvalue) {
-                            if (!isset($value[$OS][$datanodes])) {
-                                $costSeries['data'][] = "null";
-                                $timeSeries['data'][] = "null";
-                            } else {
-                                $costSeries['data'][] = $value[$OS][$datanodes][1];
-                                $timeSeries['data'][] = $value[$OS][$datanodes][0];
+                foreach($execTypes as $execType => $typevalue) {
+                    foreach ($vmOS as $OS => $osvalue) {
+                        if (isset($vmSizes[$vmSize][$execType][$OS])) {
+                            if ($i == sizeof($seriesColors))
+                                $i = 0;
+                            $costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+                            $timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+                            foreach ($dataNodes as $datanodes => $dvalue) {
+                                if (!isset($value[$execType][$OS][$datanodes])) {
+                                    $costSeries['data'][] = "null";
+                                    $timeSeries['data'][] = "null";
+                                } else {
+                                    $costSeries['data'][] = $value[$execType][$OS][$datanodes][1];
+                                    $timeSeries['data'][] = $value[$execType][$OS][$datanodes][0];
+                                }
                             }
+                            $series[] = $timeSeries;
+                            $series[] = $costSeries;
                         }
-                        $series[] = $timeSeries;
-                        $series[] = $costSeries;
                     }
                 }
             }
@@ -2595,6 +2629,7 @@ class DefaultController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
             'options' => Utils::getFilterOptions($dbUtils),
+          //  'selectedGroups' => $selectedGroups,
             'datefrom' => $datefrom,
             'dateto' => $dateto,
             'benchs' => $benchs,

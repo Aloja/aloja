@@ -1,4 +1,4 @@
-param([String]$clusterName, [String]$credentialsFile, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32]$runsNumber=6, [Int32]$nodesNumber=16, [String]$vmSize="A3", [String]$region="South Central US", [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String]$minervaLogin, [String[]]$benchmarks = ("wordcount","terasort"))
+param([String]$clusterName, [String]$credentialsFile, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32]$runsNumber=6, [Int32]$nodesNumber=16, [String]$vmSize="A3", [String]$region="South Central US", [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String]$minervaLogin, [String[]]$benchmarks = ("wordcount","terasort"), [String]$type="default")
 
 . ./common.ps1
 
@@ -29,13 +29,13 @@ foreach($benchmark in $benchmarks) {
 	  SelectSubscription "$subscriptionName"
 	  Write-Verbose "Logged into Azure"
 	  # & indicates that we are gonna run a script named $scriptName with the given parameters
-	  & $scriptName -runTeragen $runPrepare -reduceTasks $reduceNumber -containerName $containerName -inputData $inputfile -outputData $outputfile -nodesNumber $nodesNumber
+	  & $scriptName -runTeragen $runPrepare -reduceTasks $reduceNumber -containerName $containerName -inputData $inputfile -outputData $outputfile -nodesNumber $nodesNumber -type $type
 	  $runPrepare = $False
 	}
 	Write-Verbose "Execution of $benchmark completed successfully"
 }
 
-RetrieveData -clusterName $clusterName -storageAccount $storageAccount -storageContainer $containerName -logsDir $logsDir -storageKey $storageKey
+RetrieveData -clusterName $clusterName -storageAccount $storageAccount -storageContainer $containerName -logsDir $logsDir -storageKey $storageKey -type $type
 
 if($destroyCluster -eq $True) {
    destroyCluster $clusterName $storageName $storageKey $destroyContainer $containerName $subscriptionName

@@ -28,7 +28,9 @@ class Utils
 	    			$concatConfig .= "CONCAT_WS(',',provider,vm_size,CONCAT(datanodes,' datanodes'))";
 	    		} elseif ($item == 'iofilebuf') {
 	    			$confPrefix = 'I';
-	    		} else {
+	    		} elseif ($item == 'vm_OS') {
+                    $confPrefix = 'OS';
+                } else {
 	    			$confPrefix = $item;
 	    		}
 	    	
@@ -43,7 +45,21 @@ class Utils
     	
     	return $concatConfig;
     }
-    
+
+    public static function getStandardGroupBy($selectedGroups)
+    {
+        $execsGroup = array('id_cluster','net','disk','bench_type','exec_type','hadoop_version','maps','comp','replication','blk_size','iosf','iofilebuf');
+
+        foreach($selectedGroups as &$group) {
+            if(in_array($group,$execsGroup))
+                $group = "execTable.$group";
+            else
+                $group = "clusterTable.$group";
+        }
+
+        return $selectedGroups;
+    }
+
     public static function read_params($item_name, &$where_configs, $setDefaultValues = true, $table_name = null)
     {
     	if($item_name == 'money' && isset($_GET['money'])) {

@@ -187,7 +187,7 @@ update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'su
 }
 
 
-get_exec_params(){
+get_exec_params() {
 
   local log_file="$1"
   local name="$2"
@@ -243,6 +243,12 @@ get_exec_params(){
     local iofilebuf=$(extract_config_var "IO_FILE")
     local comp=$(extract_config_var "COMPRESS_TYPE")
     local blk_size=$(extract_config_var "BLOCK_SIZE")
+    local exec_type=$(extract_config_var "EXEC_TYPE")
+    #legacy, exec type didn't exist until May 18th 2015
+    if [[ exec_type == "" ]]; then
+      exec_type="default"
+    fi
+
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
@@ -277,7 +283,7 @@ get_exec_params(){
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\""
     done
 
   fi

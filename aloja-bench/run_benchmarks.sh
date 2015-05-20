@@ -17,6 +17,7 @@ $0 -C clusterName
 [-s (save prepare)]
 [-N (don't delete files)]
 [-H hadoop version <hadoop1|hadoop2>]
+[-t execution type (e.g: default, experimental)]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -37,6 +38,7 @@ IO_FACTOR=10
 PORT_PREFIX=3
 IO_FILE=65536
 LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
+EXEC_TYPE="default"
 
 COMPRESS_GLOBAL=0
 COMPRESS_TYPE=0
@@ -52,7 +54,7 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -101,12 +103,15 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
         COMPRESS_GLOBAL=0
         COMPRESS_TYPE=0
       elif [ "$OPTARG" == "1" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=1
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
       elif [ "$OPTARG" == "2" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=2
         COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
       elif [ "$OPTARG" == "3" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=3
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
       fi
@@ -119,6 +124,9 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
       ;;
     s)
       SAVE_BENCH=1
+      ;;
+    t)
+      EXEC_TYPE=$OPTARG
       ;;
     N)
       DELETE_HDFS=0
