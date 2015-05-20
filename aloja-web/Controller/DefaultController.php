@@ -80,6 +80,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
             
             $selectedGroups = array();
             if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
@@ -211,6 +212,7 @@ class DefaultController extends AbstractController
                 'vm_sizes' => $vm_sizes,
                 'vm_coress' => $vm_coress,
                 'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
                 'hadoop_versions' => $hadoop_versions,
                 'types' => $types,
                 'providers' => $provider,
@@ -260,6 +262,7 @@ class DefaultController extends AbstractController
 		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
 		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
         $provider = Utils::read_params ( 'providers', $where_configs, false );
+        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 		
 		if(!$type)
 			$type = 'SUMMARY';
@@ -351,6 +354,7 @@ class DefaultController extends AbstractController
                 'vm_sizes' => $vm_sizes,
                 'vm_coress' => $vm_coress,
                 'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
                 'hadoop_versions' => $hadoop_versions,
                 'types' => $types,
                 'providers' => $provider,
@@ -415,6 +419,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             /*
              * 1. Get execs and cluster associated costs
@@ -514,6 +519,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
@@ -1425,7 +1431,8 @@ class DefaultController extends AbstractController
 			$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
 			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
-            
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
             $order_type = Utils::get_GET_string ( 'ordertype' );
@@ -1505,6 +1512,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
@@ -1562,6 +1570,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
@@ -1680,6 +1689,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
@@ -1793,6 +1803,7 @@ class DefaultController extends AbstractController
         $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
         $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
         $provider = Utils::read_params ( 'providers', $where_configs, false );
+        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
         // if no job requested, show a random one
         if (strlen($jobid) == 0 || $jobid === "random") {
@@ -2008,7 +2019,8 @@ class DefaultController extends AbstractController
         $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
         $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
         $provider = Utils::read_params ( 'providers', $where_configs, false );
-        
+        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
         if(isset($_GET['benchs']))
             $_GET['benchs'] = $_GET['benchs'][0];
 
@@ -2099,6 +2111,7 @@ class DefaultController extends AbstractController
     			'vm_sizes' => $vm_sizes,
     			'vm_coress' => $vm_coress,
     			'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
                 'providers' => $provider,
@@ -2163,7 +2176,8 @@ class DefaultController extends AbstractController
     		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
     		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
-    		
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -2272,6 +2286,7 @@ class DefaultController extends AbstractController
     			'vm_sizes' => $vm_sizes,
     			'vm_coress' => $vm_coress,
     			'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
                 'providers' => $provider,
@@ -2338,7 +2353,8 @@ class DefaultController extends AbstractController
     		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
     		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
-    		
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -2485,6 +2501,7 @@ class DefaultController extends AbstractController
     			'vm_sizes' => $vm_sizes,
     			'vm_coress' => $vm_coress,
     			'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
                 'providers' => $provider,
@@ -2539,6 +2556,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
@@ -2648,6 +2666,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
