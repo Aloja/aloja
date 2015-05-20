@@ -94,7 +94,7 @@ importHDIJobs() {
 get_hdi_exec_params() {
 	idJob=$2
 	folder=$1
-	
+
 	xmlFile=$(find $folder/mapred/history/done/ -type f -name *$idJob*.xml | head -n 1)
 	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
 	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
@@ -114,8 +114,8 @@ get_hdi_exec_params() {
 	else
 		compressCodec=0
 	fi
-	
+
 	blocksize=`expr $blocksize / 1000000`
     net="ETH"
-    disk="RR1"	
+    disk="RR1"
 }
