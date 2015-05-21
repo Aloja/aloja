@@ -145,6 +145,7 @@ vm_final_bootstrap() {
 node_delete() {
 	hdi_cluster_check_delete $1
 	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
+	ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
 }
 
 get_master_name() {
