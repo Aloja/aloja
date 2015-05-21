@@ -133,7 +133,6 @@ for folder in 201* ; do
 	        logger "Cluster $id_cluster"
 	
 	        if [[ ! -z $exec_values ]] ; then
-	
 	          folder_OK="$(( folder_OK + 1 ))"
 	
 	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
@@ -142,8 +141,15 @@ for folder in 201* ; do
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
 	                  end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
 	          logger "$insert"
-	
+
 	          $MYSQL "$insert"
+
+	          if [ "$hadoop_version" = "2" ]; then
+				  get_xml_exec_params "mr-history"
+				  update="UPDATE execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
+				  logger "updating exec params from execution conf: $update"
+				  $MYSQL "$update"
+			  fi
 	        elif [ "$bench_folder" == "SCWC" ] ; then
 	          logger "Processing SCWC"
 	

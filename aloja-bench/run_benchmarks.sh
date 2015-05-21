@@ -53,7 +53,7 @@ SAVE_BENCH=""
 BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
-
+local defaultDisk=1
 while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
@@ -72,6 +72,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
       ;;
     d)
       DISK=$OPTARG
+      defaultDisk=0
       #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
@@ -154,6 +155,10 @@ shift $((OPTIND-1))
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
+
+if [[ "$defaultProvider" = "hdinsight" ] && [ "$defaultDisk" -eq 1 ]]; then
+  DISK="RR1"
+fi
 
 loggerb  "INFO: includes loaded"
 
