@@ -156,7 +156,7 @@ shift $((OPTIND-1))
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
-if [[ "$defaultProvider" = "hdinsight" ] && [ "$defaultDisk" -eq 1 ]]; then
+if [[ "$defaultProvider" = "hdinsight" && "$defaultDisk" -eq 1 ]]; then
   DISK="RR1"
 fi
 
