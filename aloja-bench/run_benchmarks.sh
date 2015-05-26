@@ -53,7 +53,7 @@ SAVE_BENCH=""
 BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
-local defaultDisk=1
+defaultDisk=1
 while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
