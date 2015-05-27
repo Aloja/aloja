@@ -31,6 +31,7 @@ class DefaultController extends AbstractController
 			'init_time' => 'End time',
 			'hadoop_version' => 'H Version',
 			'bench_type' => 'Bench',
+            'counters' => 'Counters'
 	);
 
     public function indexAction()
@@ -1202,7 +1203,11 @@ class DefaultController extends AbstractController
 
             $join = "JOIN execs e using (id_exec) WHERE JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
-                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
+                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
+            if(isset($_GET['jobid'])) {
+                $join.= " AND JOBID = '${_GET['jobid']}' ";
+            }
+            $join .= " LIMIT 10000";
 
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -1251,17 +1256,19 @@ class DefaultController extends AbstractController
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
                 #$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
                 #TODO cache this result into a temp table
-                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM JOB_tasks limit 10000) t");
-                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1 LIMIT 5000;");
+//                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM JOB_tasks limit 10000) t");
+//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1 LIMIT 5000;");
 
-                $discreteOptions['TASK_STATUS'][] = 'All';
-                $discreteOptions['TASK_TYPE'][] = 'All';
-                foreach($taskStatusOptions as $option) {
-                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
-                }
-                foreach($typeOptions as $option) {
-                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
-                }
+//                $discreteOptions['TASK_STATUS'][] = 'All';
+//                $discreteOptions['TASK_TYPE'][] = 'All';
+//                foreach($taskStatusOptions as $option) {
+//                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
+//                }
+//                foreach($typeOptions as $option) {
+//                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
+//                }
+                $discreteOptions['TASK_STATUS'] = array('All','SUCCESS');
+                $discreteOptions['TASK_TYPE'] = array('All','MAP','REDUCE','SETUP','CLEANUP');
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1885,7 +1892,11 @@ class DefaultController extends AbstractController
 
             $join = "JOIN execs e using (id_exec) WHERE job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
-                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
+                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
+            if(isset($_GET['jobid'])) {
+                $join.= " AND JOB_ID = '${_GET['jobid']}' ";
+            }
+            $join .= " LIMIT 10000";
 
             $query = "";
             if ($type == 'SUMMARY') {
@@ -1927,22 +1938,24 @@ class DefaultController extends AbstractController
     			`BYTES_WRITTEN`
     			FROM HDI_JOB_details c $join";
             } else if ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.* FROM HDI_JOB_details c $join";
             } else if ($type == "TASKS") {
                 $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
-                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-
-                $discreteOptions['TASK_STATUS'][] = 'All';
-                $discreteOptions['TASK_TYPE'][] = 'All';
-                foreach($taskStatusOptions as $option) {
-                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
-                }
-                foreach($typeOptions as $option) {
-                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
-                }
+//                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+//
+//                $discreteOptions['TASK_STATUS'][] = 'All';
+//                $discreteOptions['TASK_TYPE'][] = 'All';
+//                foreach($taskStatusOptions as $option) {
+//                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
+//                }
+//                foreach($typeOptions as $option) {
+//                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
+//                }
+                $discreteOptions['TASK_STATUS'] = array('All','SUCCEEDED');
+                $discreteOptions['TASK_TYPE'] = array('All','MAP','REDUCE');
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1973,7 +1986,8 @@ class DefaultController extends AbstractController
                 'type' => $type,
                 'execs' => $execs,
                 'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
-                'discreteOptions' => $discreteOptions
+                'discreteOptions' => $discreteOptions,
+                'hdp2' => true,
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }

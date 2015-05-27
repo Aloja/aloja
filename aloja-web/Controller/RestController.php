@@ -35,6 +35,7 @@ class RestController extends AbstractController
             'init_time' => 'End time',
         	'hadoop_version' => 'H Version',
             'bench_type' => 'Bench',
+            'counters' => 'Counters'
         );
 
         try {
