@@ -240,10 +240,10 @@ sudo mkdir -p /var/www
 sudo rm -rf /tmp/aloja;
 mkdir -p /tmp/aloja
 sudo git clone https://github.com/Aloja/aloja.git /tmp/aloja
-sudo cp -ru /tmp/aloja/* /var/www/
+sudo cp -ru /tmp/aloja/. /var/www/
 
 cd /var/www
-sudo git checkout $repo
+sudo git checkout '$repo'
 
 sudo mkdir -p /var/www/aloja-web/vendor
 sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
@@ -327,6 +327,86 @@ sudo /tmp/packages.r
 "
 
     test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+
+
+install_sharelatex() {
+
+  local bootstrap_file="install_sharelatex"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+
+    logger "INFO: Installing ShareLatex"
+    vm_execute "
+
+sudo apt-get install git build-essential curl python-software-properties zlib1g-dev zip unzip
+sudo add-apt-repository ppa:chris-lea/node.js
+sudo apt-get update
+sudo apt-get install -y nodejs
+sudo npm install -g grunt-cli
+sudo npm install -g node-gyp
+
+sudo add-apt-repository ppa:chris-lea/redis-server
+sudo apt-get update
+sudo apt-get install -y redis-server
+
+#We recommend you have the append only option enabled so redis persists to disk. If you do not have this enabled a restart may mean you loose some document updates.
+#appendonly yes
+
+
+sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
+echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
+sudo apt-get update
+sudo apt-get install -y mongodb-org
+
+sudo apt-get install aspell
+
+#There are lots of additional dictionaries available, which can be listed with:
+#apt-cache search aspell | grep aspell
+
+wget http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+tar -xvf install-tl-unx.tar.gz
+cd install-tl-*
+sudo ./install-tl
+
+export PATH=/usr/local/texlive/2014/bin/x86_64-linux:$PATH
+
+#TEXDIR='/usr/local/texlive/2014'
+#export PATH=$TEXDIR/bin/i386-linux:$PATH    # for 32-bit installation
+#export PATH=$TEXDIR/bin/x86_64-linux:$PATH  # for 64-bit installation
+#export INFOPATH=$INFOPATH:$TEXDIR/texmf-dist/doc/info
+#export MANPATH=$MANPATH:$TEXDIR/texmf-dist/doc/man
+
+sudo tlmgr install latexmk
+
+git clone https://github.com/sharelatex/sharelatex.git
+cd sharelatex
+npm install
+grunt install
+
+#grunt check --force
+
+grunt run:all
+
+
+"
+    test_action="$(vm_execute " [ \"\$\(which sharelatex)\" ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
       logger "INFO: $bootstrap_file installed succesfully"
