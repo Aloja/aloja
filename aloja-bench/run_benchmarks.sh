@@ -17,6 +17,7 @@ $0 -C clusterName
 [-s (save prepare)]
 [-N (don't delete files)]
 [-H hadoop version <hadoop1|hadoop2>]
+[-t execution type (e.g: default, experimental)]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -37,6 +38,7 @@ IO_FACTOR=10
 PORT_PREFIX=3
 IO_FILE=65536
 LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
+EXEC_TYPE="default"
 
 COMPRESS_GLOBAL=0
 COMPRESS_TYPE=0
@@ -51,8 +53,8 @@ SAVE_BENCH=""
 BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
-
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
+defaultDisk=1
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -70,6 +72,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
       ;;
     d)
       DISK=$OPTARG
+      defaultDisk=0
       #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
@@ -101,12 +104,15 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
         COMPRESS_GLOBAL=0
         COMPRESS_TYPE=0
       elif [ "$OPTARG" == "1" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=1
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
       elif [ "$OPTARG" == "2" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=2
         COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
       elif [ "$OPTARG" == "3" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=3
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
       fi
@@ -119,6 +125,9 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
       ;;
     s)
       SAVE_BENCH=1
+      ;;
+    t)
+      EXEC_TYPE=$OPTARG
       ;;
     N)
       DELETE_HDFS=0
@@ -146,6 +155,10 @@ shift $((OPTIND-1))
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
+
+if [[ "$defaultProvider" = "hdinsight" && "$defaultDisk" -eq 1 ]]; then
+  DISK="RR1"
+fi
 
 loggerb  "INFO: includes loaded"
 

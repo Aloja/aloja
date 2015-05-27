@@ -139,6 +139,10 @@ update execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe
 
 update execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
 
+update execs join clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update execs join clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update execs join clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
+
 "
 
 #update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
@@ -187,7 +191,7 @@ update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'su
 }
 
 
-get_exec_params(){
+get_exec_params() {
 
   local log_file="$1"
   local name="$2"
@@ -243,6 +247,12 @@ get_exec_params(){
     local iofilebuf=$(extract_config_var "IO_FILE")
     local comp=$(extract_config_var "COMPRESS_TYPE")
     local blk_size=$(extract_config_var "BLOCK_SIZE")
+    local exec_type=$(extract_config_var "EXEC_TYPE")
+    #legacy, exec type didn't exist until May 18th 2015
+    if [[ exec_type == "" ]]; then
+      exec_type="default"
+    fi
+
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
@@ -277,7 +287,7 @@ get_exec_params(){
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\""
     done
 
   fi
@@ -666,5 +676,34 @@ delete_untars() {
     done
     cd ..
   fi
+}
 
+[$1 name history folder]
+get_xml_exec_params() {
+	local histFolder="mapred/history"
+	if [ ! -z $1 ]; then
+	  histFolder=$1
+    fi
+
+	xmlFile=$(find $histFolder/done/ -type f -name *.xml | head -n 1)
+	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
+	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
+	maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
+	blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
+	iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
+	iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
+	compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
+	if [ "$compressionEnabled" = "false" ]; then
+		compressCodec=0
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
+		compressCodec=3
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
+		compressCodec=1
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
+		compressCodec=2
+	else
+		compressCodec=0
+	fi
+
+	blocksize=`expr $blocksize / 1000000`
 }
