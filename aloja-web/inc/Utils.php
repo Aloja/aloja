@@ -401,7 +401,9 @@ class Utils
     	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
         $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$vmOS = $db->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$discreteOptions = array();
+        $execTypes = $db->get_rows("SELECT DISTINCT exec_type FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+
+        $discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
     	$discreteOptions['net'][] = 'All';
     	$discreteOptions['disk'][] = 'All';
@@ -413,8 +415,9 @@ class Utils
     	$discreteOptions['hadoop_version'][] = 'All';
         $discreteOptions['bench_type'][] = 'All';
         $discreteOptions['vm_OS'][] = 'All';
-    	
-    	foreach($benchOptions as $option) {
+        $discreteOptions['exec_type'][] = 'All';
+
+        foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
     	}
     	foreach($netOptions as $option) {
@@ -452,7 +455,10 @@ class Utils
         foreach($vmOS as $option) {
             $discreteOptions['vm_OS'][] = array_shift($option);
         }
-    	
+        foreach($execTypes as $option) {
+            $discreteOptions['exec_type'][] = array_shift($option);
+        }
+
     	return $discreteOptions;
     }
     

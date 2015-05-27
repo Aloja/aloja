@@ -30,6 +30,7 @@ class RestController extends AbstractController
             'vm_OS' => 'OS',
             'cdesc' => 'Cluster description',
         	'datanodes' => 'Datanodes',
+            'exec_type' => 'Type',
             'prv' => 'PARAVER',
             //'version' => 'Hadoop v.',
             'init_time' => 'End time',
