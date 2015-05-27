@@ -192,7 +192,7 @@ class Utils
                 if ($precision !== null && is_numeric($value_row[$key_name])) {
                     $value_row[$key_name] = round($value_row[$key_name], $precision);
                 }
-                
+
                 if (!$type) {
                 	if ($key_name == 'bench') {
                         $jsonRow[] = $value_row[$key_name];
@@ -202,7 +202,7 @@ class Utils
                         $jsonRow[] = round($value_row['exe_time']);
                     } elseif ($key_name == 'files') {
                         $jsonRow[] = $value_row['exec'];
-                    } elseif ($key_name == 'prv') {
+                    } elseif ($key_name == 'prv' || $key_name == 'counters') {
                         $jsonRow[] = $value_row['id_exec'];
                     } elseif ($key_name == 'version') {
                         $jsonRow[] = "1.0.3";
@@ -416,7 +416,6 @@ class Utils
         $discreteOptions['bench_type'][] = 'All';
         $discreteOptions['vm_OS'][] = 'All';
         $discreteOptions['exec_type'][] = 'All';
-    	
     	foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
     	}
@@ -459,7 +458,7 @@ class Utils
             $discreteOptions['exec_type'][] = array_shift($option);
         }
     	
-    	return $discreteOptions;
+	return $discreteOptions;
     }
     
     public static function getCompressionName($compCode)

@@ -53,7 +53,7 @@ SAVE_BENCH=""
 BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
-local defaultDisk=1
+defaultDisk=1
 while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
@@ -156,7 +156,7 @@ shift $((OPTIND-1))
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
-if [[ "$defaultProvider" = "hdinsight" ] && [ "$defaultDisk" -eq 1 ]]; then
+if [[ "$defaultProvider" = "hdinsight" && "$defaultDisk" -eq 1 ]]; then
   DISK="RR1"
 fi
 
