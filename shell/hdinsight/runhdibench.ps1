@@ -1,4 +1,4 @@
-param([String]$clusterName, [String]$credentialsFile, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32]$runsNumber=6, [Int32]$nodesNumber=16, [String]$vmSize="A3", [String]$region="South Central US", [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String]$minervaLogin, [String[]]$benchmarks = ("wordcount","terasort"), [String]$type="default")
+param([String]$clusterName, [String]$credentialsFile, [String]$storageAccount, [String]$storageKey, [String]$containerName, [bool]$runTeragen=$true, [Int32]$runsNumber=6, [Int32]$nodesNumber=16, [String]$vmSize="A3", [String]$region="South Central US", [bool]$createContainer=$True, [String]$subscriptionName, [bool]$destroyCluster=$True, [bool]$destroyContainer=$True, [String]$fullUsername, [String]$password, [String]$logsDir, [String[]]$benchmarks = ("wordcount","terasort"), [String]$type="default")
 
 . ./common.ps1
 

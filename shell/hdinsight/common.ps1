@@ -75,7 +75,7 @@ function RunBench($definition, $containerName, $reduceTasks, $benchName = "teras
    if(!$result) {
      mkdir $containerName/$directoryName
    }
- 
+
    Write-Verbose "Start running benchmark"
    $definition | Start-AzureHDInsightJob -Cluster $clusterName | Wait-AzureHDInsightJob -WaitTimeoutInSeconds 100000 | %{ Get-AzureHDInsightJobOutput -Cluster $clusterName -JobId $_.JobId -StandardError -StandardOutput > $_.JobId }
    mv job_* $containerName/$directoryName/
@@ -121,24 +121,24 @@ function removeAzureStorageContainer([String]$storageName, [String]$storageKey, 
 function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$storageName, [String]$storageKey, [bool]$createContainer=$True, [String]$containerName = $null, [String]$subscriptionName, [System.Management.Automation.PsCredential]$cred, [String]$region, [String]$vmSize) {
    $YarnConfigValues = @{"yarn.scheduler.maximum-allocation-mb"="4608";"yarn.scheduler.minimum-allocation-mb"="768";}
    $MapRedConfigValues = new-object 'Microsoft.WindowsAzure.Management.HDInsight.Cmdlet.DataObjects.AzureHDInsightMapReduceConfiguration'
-   $MapRedConfigValues.Configuration = @{"mapreduce.map.memory.mb"="1536";"mapreduce.reduce.memory.mb"="1536";"mapreduce.map.java.opts"="-Xmx1G -Xms1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";"mapreduce.reduce.java.opts"="-Xmx1G -Xms1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";}
-
+   $MapRedConfigValues.Configuration = @{"yarn.app.mapreduce.am.command-opts"="-Xmx1G";"yarn.app.mapreduce.am.resource.mb"="1536";"mapreduce.map.memory.mb"="1536";"mapreduce.reduce.memory.mb"="1536";"mapreduce.map.java.opts"="-Xmx1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";"mapreduce.reduce.java.opts"="-Xmx1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC -Dhdp.version=\${hdp.version}";}
 
    if($containerName -eq $null) {
      $containerName = $storageName
    }
-   
+
    if($createContainer) {
      Write-Verbose "Creating container $containerName to storage $storageName"
      createAzureStorageContainer -storageName $storageName -storageKey $storageKey -containerName $containerName
    }
    Write-Verbose "Storage container assigned to cluster"
-   
+
    Write-Verbose "Creating HDInsight cluster"
    $Config = New-AzureHDInsightClusterConfig -ClusterSizeInNodes $nodesNumber -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" |
-       Set-AzureHDInsightDefaultStorage -StorageAccountName "$storageName.blob.core.windows.net" -StorageAccountKey $storageKey -StorageContainerName $containerName |
-       Add-AzureHDInsightConfigValues -MapReduce $MapRedConfigValues -Yarn $YarnConfigValues
-   echo $Config
+      Set-AzureHDInsightDefaultStorage -StorageAccountName "$storageName.blob.core.windows.net" -StorageAccountKey $storageKey -StorageContainerName $containerName |
+      Add-AzureHDInsightConfigValues -MapReduce $MapRedConfigValues -Yarn $YarnConfigValues
+   #$Config = New-AzureHDInsightClusterConfig -ClusterSizeInNodes $nodesNumber -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" |
+   #    Set-AzureHDInsightDefaultStorage -StorageAccountName "$storageName.blob.core.windows.net" -StorageAccountKey $storageKey -StorageContainerName $containerName
    New-AzureHDInsightCluster -Config $Config -Name $clusterName -Credential $cred -Location $region -OSType "Windows"
 
    Write-Verbose "HDInsight cluster created successfully"
