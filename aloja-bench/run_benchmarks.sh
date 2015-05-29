@@ -18,7 +18,7 @@ $0 -C clusterName
 [-N (don't delete files)]
 [-H hadoop version <hadoop1|hadoop2>]
 [-t execution type (e.g: default, experimental)]
-[-e extrae (instrument execution) <0 (default)|1>]
+[-e extrae (instrument execution)]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -56,7 +56,7 @@ BLOCK_SIZE=67108864
 
 DELETE_HDFS=1
 defaultDisk=1
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:e:t" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:et" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -143,9 +143,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:e:t" opt; do
       [ "$HADOOP_VERSION" == "hadoop1" ] || [ "$HADOOP_VERSION" == "hadoop2" ] || usage
       ;;
     e)
-      if [ "$OPTARG" == "1" ] ; then
         INSTRUMENTATION=1
-      fi
       ;;
     esac
 done
