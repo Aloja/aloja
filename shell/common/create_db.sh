@@ -504,10 +504,6 @@ CREATE TABLE IF NOT EXISTS \`JOB_tasks\` (
   KEY \`TASK_TYPE\` (\`TASK_TYPE\`)
 ) ENGINE=InnoDB;
 
-ALTER TABLE \`JOB_tasks\` ADD INDEX (\`JOBID\`);
-ALTER TABLE \`JOB_tasks\` ADD INDEX (\`TASK_TYPE\`);
-
-
 CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
   \`id_execs_conf_parameters\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_exec\` int(11) NOT NULL,
@@ -728,12 +724,15 @@ $MYSQL "alter table hosts
 	add column cost_remote decimal(10,3) default 0,
 	add column cost_SSD decimal(10,3) default 0,
 	add column cost_IB decimal(10,3) default 0;"
+	
+$MYSQL "ALTER TABLE \`JOB_tasks\` ADD INDEX (\`JOBID\`);
+ALTER TABLE \`JOB_tasks\` ADD INDEX (\`TASK_TYPE\`);"	
 
 $MYSQL "alter table execs
     add column exec_type varchar(255) default 'default';"
 
 
-############################################33
+############################################
 logger "INFO: Updating records"
 
 $MYSQL "
@@ -743,7 +742,6 @@ update ignore execs SET disk='RR3' where disk='R3';
 update ignore execs SET bench_type='HiBench' where bench_type='b';
 update ignore execs SET bench_type='HiBench' where bench_type='';
 update ignore execs SET bench_type='HiBench-min' where bench_type='-min';
-update ignore execs SET bench_type='HiBench-min' where exec like '%_b_min_%';
 
 update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
@@ -782,6 +780,8 @@ update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (
 $MYSQL "insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(1,'HDD vs SSD','http://hadoop.bsc.es/configimprovement?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HD2&disks[]=HD3&disks[]=HD4&disks[]=HD5&disks[]=HDD&disks[]=SS2&disks[]=SSD&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'HDD vs SSD comparison', 'Config Improvement');
 insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(2,'VM Size','http://hadoop.bsc.es/parameval?parameval=vm_size&minexecs=&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&bench_types[]=HDI&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'Evaluation by size', 'Parameter Evaluation');
 
+insert ignore into filters_presets(id,name,URL,preset,description,screen) values (6,'Azure number of nodes evaluation', 'http://hadoop.bsc.es/nodeseval?benchs[]=wordcount&bench_types[]=HiBench&vm_sizes[]=A2&vm_sizes[]=A3&vm_sizes[]=A4&vm_sizes[]=A6&vm_sizes[]=A7&vm_sizes[]=A8&vm_sizes[]=D4&types[]=IaaS&filters[]=valid&filters[]=filters&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=50&maxexetime=', 1, 'Azure number of nodes evaluation', 'Number of Nodes Evaluation');
+insert ignore into filters_presets(id,name,URL,preset,description,screen) values (7,'HDI number of nodes', 'http://localhost:8080/nodeseval?benchs[]=wordcount&bench_types[]=HiBench&bench_types[]=HiBench3HDI&types[]=PaaS&filters[]=valid&filters[]=filters&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=50&maxexetime=', 0, 'HDI number of nodes evaluation', 'Number of Nodes Evaluation');
 
 "
 

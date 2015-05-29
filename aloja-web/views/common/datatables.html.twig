@@ -306,11 +306,13 @@
 
 		    var type = '{{ type }}';
 		    var offset = 0;
+			var hideOffset = 0;
 		    if(type == 'SUMMARY')
 			    offset = -8;
 		    else if(type == 'HWCONFIG') {
 				offset = -6;
-			}
+			} else if (type == 'DETAIL')
+				hideOffset = 1;
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
@@ -348,7 +350,7 @@
                 //"bStateSave": true,
                 "aoColumnDefs": [
                     {% if selected == 'Benchmark Executions' %}
-                      {"bVisible": false, "aTargets": [ 4, 20 + offset - 1] }
+                      {"bVisible": false, "aTargets": [ 4, 20 + hideOffset + offset - 1] }
                     {% elseif selected == 'Performance Metrics' %}
                       {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
                     {% endif %}
@@ -395,8 +397,12 @@
                     	var headTitle = $("#benchmarks thead tr:first-child th:nth-child("+index+")").text();
                      {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
                        	if(headTitle == 'JOBID')
-        					$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&type=TASKS" target="_blank">' + aData[2] + '</a>');
-                        else if(headTitle == 'CHARTS')
+							{% if hdp2 is defined %}
+								$(this).html('<a href="{{ path('hdp2counters') }}?execs[]=' + aData[0] + '&jobid='+ aData[2] +'&type=TASKS" target="_blank">' + aData[2] + '</a>');
+							{% else %}
+								$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&jobid='+ aData[2] +'&type=TASKS" target="_blank">' + aData[2] + '</a>');
+							{% endif %}
+						else if(headTitle == 'CHARTS')
                             $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> {% if not PROD %}<a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>{% endif %}');
                     	else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
@@ -415,7 +421,7 @@
             					tooltip = 'Does not apply';
         					$(this).html(aData[6] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
                        	} else if(headTitle == 'Disk') {
-						number = aData[7].substring(2);
+							number = aData[7].substring(2);
         					if(aData[7] == 'HDD')
         						tooltip = 'Hard disk';
         					else if(aData[7] == 'SSD')
@@ -429,7 +435,7 @@
 							else if((new RegExp("^HD")).test(aData[7]))
 								tooltip = aData[7].substring(2) + ' HDD drives';
 							else if((new RegExp("^RS")).test(aData[7]))
-                                                                tooltip = aData[7].substring(2) + ' HDFS in remote(s) / tmp to SSD'
+                                tooltip = aData[7].substring(2) + ' HDFS in remote(s) / tmp to SSD'
         					else
         						tooltip = aData[7].substring(2) + ' HDD drives / tmp to SSD';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
@@ -446,7 +452,12 @@
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
 							} else
 								$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
-                        } else if(headTitle == 'PARAVER') {
+                        } else if(headTitle == 'Counters') {
+							if(aData[14 + offset].indexOf("hdi") > -1) {
+								$(this).html('<a href="{{ path('hdp2counters') }}?execs[]=' + aData[0] + '"  target="_blank">Jobs counters</a>');
+							} else
+								$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '"  target="_blank">Jobs counters</a>');
+						} else if(headTitle == 'PARAVER') {
         					$(this).html('<a href="{{ path('export2prv') }}?id_exec=' + aData[0] + '"  target="_blank">PRV .ZIP</a>');
                         }
                      {% else %}

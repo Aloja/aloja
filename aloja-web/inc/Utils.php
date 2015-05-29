@@ -28,7 +28,9 @@ class Utils
 	    			$concatConfig .= "CONCAT_WS(',',provider,vm_size,CONCAT(datanodes,' datanodes'))";
 	    		} elseif ($item == 'iofilebuf') {
 	    			$confPrefix = 'I';
-	    		} else {
+	    		} elseif ($item == 'vm_OS') {
+                    $confPrefix = 'OS';
+                } else {
 	    			$confPrefix = $item;
 	    		}
 	    	
@@ -43,7 +45,21 @@ class Utils
     	
     	return $concatConfig;
     }
-    
+
+    public static function getStandardGroupBy($selectedGroups)
+    {
+        $execsGroup = array('id_cluster','net','disk','bench_type','exec_type','hadoop_version','maps','comp','replication','blk_size','iosf','iofilebuf');
+
+        foreach($selectedGroups as &$group) {
+            if(in_array($group,$execsGroup))
+                $group = "execTable.$group";
+            else
+                $group = "clusterTable.$group";
+        }
+
+        return $selectedGroups;
+    }
+
     public static function read_params($item_name, &$where_configs, $setDefaultValues = true, $table_name = null)
     {
         if($item_name == 'money' && isset($_GET['money'])) {
@@ -134,7 +150,7 @@ class Utils
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
          	$items = Utils::delete_none($items);            
-        } else if($setDefaultValues) {
+        } else if(!isset($_GET['allunchecked']) && $setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
@@ -176,7 +192,7 @@ class Utils
                 if ($precision !== null && is_numeric($value_row[$key_name])) {
                     $value_row[$key_name] = round($value_row[$key_name], $precision);
                 }
-                
+
                 if (!$type) {
                 	if ($key_name == 'bench') {
                         $jsonRow[] = $value_row[$key_name];
@@ -186,7 +202,7 @@ class Utils
                         $jsonRow[] = round($value_row['exe_time']);
                     } elseif ($key_name == 'files') {
                         $jsonRow[] = $value_row['exec'];
-                    } elseif ($key_name == 'prv') {
+                    } elseif ($key_name == 'prv' || $key_name == 'counters') {
                         $jsonRow[] = $value_row['id_exec'];
                     } elseif ($key_name == 'version') {
                         $jsonRow[] = "1.0.3";
@@ -385,7 +401,9 @@ class Utils
     	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
         $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs e WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$vmOS = $db->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$discreteOptions = array();
+        $execTypes = $db->get_rows("SELECT DISTINCT exec_type FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+
+        $discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
     	$discreteOptions['net'][] = 'All';
     	$discreteOptions['disk'][] = 'All';
@@ -397,8 +415,9 @@ class Utils
     	$discreteOptions['hadoop_version'][] = 'All';
         $discreteOptions['bench_type'][] = 'All';
         $discreteOptions['vm_OS'][] = 'All';
-    	
-    	foreach($benchOptions as $option) {
+        $discreteOptions['exec_type'][] = 'All';
+
+        foreach($benchOptions as $option) {
     		$discreteOptions['bench'][] = array_shift($option);
     	}
     	foreach($netOptions as $option) {
@@ -436,7 +455,10 @@ class Utils
         foreach($vmOS as $option) {
             $discreteOptions['vm_OS'][] = array_shift($option);
         }
-    	
+        foreach($execTypes as $option) {
+            $discreteOptions['exec_type'][] = array_shift($option);
+        }
+
     	return $discreteOptions;
     }
     
@@ -557,7 +579,7 @@ class Utils
     	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
     	$options['presets'] = $dbUtils->get_rows("SELECT * FROM filters_presets ORDER BY name DESC");
         $options['provider'] = $dbUtils->get_rows("SELECT DISTINCT provider FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
-    	
+    	$options['vm_OS'] = $dbUtils->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_OS DESC;");
     	return $options;
     }
     

@@ -63,12 +63,18 @@ benchmark_hibench_config_sort() {
 benchmark_hibench_config_terasort() {
   #export COMPRESS_GLOBAL=1
   #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
+  #export COMPRESS_GLOBAL=1
+  export COMPRESS_TYPE="$COMPRESS_TYPE"
+  export COMPRESS_CODEC_GLOBAL="$COMPRESS_CODEC_GLOBAL"
   export DATASIZE=1000000000
 }
 
 benchmark_hibench_config_wordcount() {
   local  dataSize=$(expr 128000000000 / $numberOfNodes)
   #export COMPRESS_GLOBAL=1
+  export COMPRESS_TYPE="$COMPRESS_TYPE"
+  export COMPRESS_CODEC_GLOBAL="$COMPRESS_CODEC_GLOBAL"
+  export COMPRESS_CODEC_MAP="$COMPRESS_CODEC_GLOBAL"
   #export COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
   export DATASIZE="$dataSize"
   export NUM_MAPS=16

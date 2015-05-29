@@ -26,11 +26,13 @@ class DefaultController extends AbstractController
             'vm_OS' => 'OS',
             'cdesc' => 'Cluster description',
 			'datanodes' => 'Datanodes',
+            'exec_type' => 'Type',
 			'prv' => 'PARAVER',
 			//'version' => 'Hadoop v.',
 			'init_time' => 'End time',
 			'hadoop_version' => 'H Version',
 			'bench_type' => 'Bench',
+            'counters' => 'Counters'
 	);
 
     public function indexAction()
@@ -79,6 +81,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
             
             $selectedGroups = array();
             if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
@@ -210,6 +213,7 @@ class DefaultController extends AbstractController
                 'vm_sizes' => $vm_sizes,
                 'vm_coress' => $vm_coress,
                 'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
                 'hadoop_versions' => $hadoop_versions,
                 'types' => $types,
                 'providers' => $provider,
@@ -259,6 +263,7 @@ class DefaultController extends AbstractController
 		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
 		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
         $provider = Utils::read_params ( 'providers', $where_configs, false );
+        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 		
 		if(!$type)
 			$type = 'SUMMARY';
@@ -350,6 +355,7 @@ class DefaultController extends AbstractController
                 'vm_sizes' => $vm_sizes,
                 'vm_coress' => $vm_coress,
                 'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
                 'hadoop_versions' => $hadoop_versions,
                 'types' => $types,
                 'providers' => $provider,
@@ -414,6 +420,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             /*
              * 1. Get execs and cluster associated costs
@@ -513,6 +520,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
@@ -1196,7 +1204,11 @@ class DefaultController extends AbstractController
 
             $join = "JOIN execs e using (id_exec) WHERE JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
-                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
+                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
+            if(isset($_GET['jobid'])) {
+                $join.= " AND JOBID = '${_GET['jobid']}' ";
+            }
+            $join .= " LIMIT 10000";
 
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -1245,17 +1257,19 @@ class DefaultController extends AbstractController
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
                 #$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
                 #TODO cache this result into a temp table
-                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM JOB_tasks limit 10000) t");
-                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1 LIMIT 5000;");
+//                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM JOB_tasks limit 10000) t");
+//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1 LIMIT 5000;");
 
-                $discreteOptions['TASK_STATUS'][] = 'All';
-                $discreteOptions['TASK_TYPE'][] = 'All';
-                foreach($taskStatusOptions as $option) {
-                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
-                }
-                foreach($typeOptions as $option) {
-                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
-                }
+//                $discreteOptions['TASK_STATUS'][] = 'All';
+//                $discreteOptions['TASK_TYPE'][] = 'All';
+//                foreach($taskStatusOptions as $option) {
+//                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
+//                }
+//                foreach($typeOptions as $option) {
+//                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
+//                }
+                $discreteOptions['TASK_STATUS'] = array('All','SUCCESS');
+                $discreteOptions['TASK_TYPE'] = array('All','MAP','REDUCE','SETUP','CLEANUP');
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1424,7 +1438,8 @@ class DefaultController extends AbstractController
 			$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
 			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
-            
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
             $order_type = Utils::get_GET_string ( 'ordertype' );
@@ -1504,6 +1519,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
@@ -1561,6 +1577,7 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
@@ -1679,6 +1696,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
@@ -1792,6 +1810,7 @@ class DefaultController extends AbstractController
         $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
         $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
         $provider = Utils::read_params ( 'providers', $where_configs, false );
+        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
         // if no job requested, show a random one
         if (strlen($jobid) == 0 || $jobid === "random") {
@@ -1874,7 +1893,11 @@ class DefaultController extends AbstractController
 
             $join = "JOIN execs e using (id_exec) WHERE job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
-                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
+                ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
+            if(isset($_GET['jobid'])) {
+                $join.= " AND JOB_ID = '${_GET['jobid']}' ";
+            }
+            $join .= " LIMIT 10000";
 
             $query = "";
             if ($type == 'SUMMARY') {
@@ -1916,22 +1939,24 @@ class DefaultController extends AbstractController
     			`BYTES_WRITTEN`
     			FROM HDI_JOB_details c $join";
             } else if ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.* FROM HDI_JOB_details c $join";
             } else if ($type == "TASKS") {
                 $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
-                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-
-                $discreteOptions['TASK_STATUS'][] = 'All';
-                $discreteOptions['TASK_TYPE'][] = 'All';
-                foreach($taskStatusOptions as $option) {
-                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
-                }
-                foreach($typeOptions as $option) {
-                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
-                }
+//                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+//
+//                $discreteOptions['TASK_STATUS'][] = 'All';
+//                $discreteOptions['TASK_TYPE'][] = 'All';
+//                foreach($taskStatusOptions as $option) {
+//                    $discreteOptions['TASK_STATUS'][] = array_shift($option);
+//                }
+//                foreach($typeOptions as $option) {
+//                    $discreteOptions['TASK_TYPE'][] = array_shift($option);
+//                }
+                $discreteOptions['TASK_STATUS'] = array('All','SUCCEEDED');
+                $discreteOptions['TASK_TYPE'] = array('All','MAP','REDUCE');
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1962,7 +1987,8 @@ class DefaultController extends AbstractController
                 'type' => $type,
                 'execs' => $execs,
                 'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
-                'discreteOptions' => $discreteOptions
+                'discreteOptions' => $discreteOptions,
+                'hdp2' => true,
                 //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
@@ -2007,7 +2033,8 @@ class DefaultController extends AbstractController
         $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
         $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
         $provider = Utils::read_params ( 'providers', $where_configs, false );
-        
+        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
         if(isset($_GET['benchs']))
             $_GET['benchs'] = $_GET['benchs'][0];
 
@@ -2098,6 +2125,7 @@ class DefaultController extends AbstractController
     			'vm_sizes' => $vm_sizes,
     			'vm_coress' => $vm_coress,
     			'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
                 'providers' => $provider,
@@ -2162,7 +2190,8 @@ class DefaultController extends AbstractController
     		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
     		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
-    		
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -2271,6 +2300,7 @@ class DefaultController extends AbstractController
     			'vm_sizes' => $vm_sizes,
     			'vm_coress' => $vm_coress,
     			'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
                 'providers' => $provider,
@@ -2337,7 +2367,8 @@ class DefaultController extends AbstractController
     		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
     		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
-    		
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -2484,6 +2515,7 @@ class DefaultController extends AbstractController
     			'vm_sizes' => $vm_sizes,
     			'vm_coress' => $vm_coress,
     			'vm_RAMs' => $vm_RAMs,
+                'vm_OS' => $vm_OS,
     			'hadoop_versions' => $hadoop_versions,
     			'types' => $types,
                 'providers' => $provider,
@@ -2538,16 +2570,47 @@ class DefaultController extends AbstractController
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             if (! $benchs)
                 $where_configs .= 'AND bench IN (\'terasort\')';
+/*
+            $selectedGroups = array();
+            if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
+                $selectedGroups = explode(",",$_GET['selected-groups']);
+            }
+            else {
+                $selectedGroups[] = 'exec_type';
+                $selectedGroups[] = 'vm_OS';
+            }
+            $selectedString = implode(',',Utils::getStandardGroupBy($selectedGroups));
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $query = "SELECT ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size,(e.exe_time * (c.cost_hour / 3600)) as cost, e.*, c.*".
+                " FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN (
+                    SELECT ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size
+                ) t ON";
+
+            $it = 0;
+            foreach(explode(',',$selectedString) as $group) {
+                if ($it != 0)
+                    $query .= " AND";
+
+                $tableName = str_replace("execTable", "e", $group);
+                $tableName = str_replace("clusterTable", "c", $tableName);
+                $withoutPrefixes = str_replace(array("execTable.", "clusterTable."), '', $group);
+                $query .= " t.$withoutPrefixes = $tableName";
+                $it++;
+            }
+            $query .= " AND t.vmsize = c.vm_size WHERE 1 GROUP BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size ORDER BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size DESC;";
+            $execs = $dbUtils->get_rows($query);
+*/
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
             $dataNodes = array();
             $vmOS = array();
+            $execTypes = array();
             foreach ($execs as &$exec) {
                 if (!isset($dataNodes[$exec['datanodes']])) {
                     $dataNodes[$exec['datanodes']] = 1;
@@ -2555,8 +2618,10 @@ class DefaultController extends AbstractController
                 }
                 if(!isset($vmOS[$exec['vm_OS']]))
                     $vmOS[$exec['vm_OS']] = 1;
+                if(!isset($execTypes[$exec['exec_type']]))
+                    $execTypes[$exec['exec_type']] = 1;
 
-                $vmSizes[$exec['vm_size']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
+                $vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
             }
 
             $i = 0;
@@ -2564,23 +2629,25 @@ class DefaultController extends AbstractController
                 '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
             $series = array();
             foreach($vmSizes as $vmSize => $value) {
-                foreach($vmOS as $OS => $osvalue) {
-                    if(isset($vmSizes[$vmSize][$OS])) {
-                        if ($i == sizeof($seriesColors))
-                            $i = 0;
-                        $costSeries = array('name' => "$vmSize $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-                        $timeSeries = array('name' => "$vmSize $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
-                        foreach ($dataNodes as $datanodes => $dvalue) {
-                            if (!isset($value[$OS][$datanodes])) {
-                                $costSeries['data'][] = "null";
-                                $timeSeries['data'][] = "null";
-                            } else {
-                                $costSeries['data'][] = $value[$OS][$datanodes][1];
-                                $timeSeries['data'][] = $value[$OS][$datanodes][0];
+                foreach($execTypes as $execType => $typevalue) {
+                    foreach ($vmOS as $OS => $osvalue) {
+                        if (isset($vmSizes[$vmSize][$execType][$OS])) {
+                            if ($i == sizeof($seriesColors))
+                                $i = 0;
+                            $costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+                            $timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+                            foreach ($dataNodes as $datanodes => $dvalue) {
+                                if (!isset($value[$execType][$OS][$datanodes])) {
+                                    $costSeries['data'][] = "null";
+                                    $timeSeries['data'][] = "null";
+                                } else {
+                                    $costSeries['data'][] = $value[$execType][$OS][$datanodes][1];
+                                    $timeSeries['data'][] = $value[$execType][$OS][$datanodes][0];
+                                }
                             }
+                            $series[] = $timeSeries;
+                            $series[] = $costSeries;
                         }
-                        $series[] = $timeSeries;
-                        $series[] = $costSeries;
                     }
                 }
             }
@@ -2594,6 +2661,7 @@ class DefaultController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
             'options' => Utils::getFilterOptions($dbUtils),
+          //  'selectedGroups' => $selectedGroups,
             'datefrom' => $datefrom,
             'dateto' => $dateto,
             'benchs' => $benchs,
@@ -2612,6 +2680,7 @@ class DefaultController extends AbstractController
             'vm_sizes' => $vm_sizes,
             'vm_coress' => $vm_coress,
             'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
             'hadoop_versions' => $hadoop_versions,
             'types' => $types,
             'providers' => $provider,
