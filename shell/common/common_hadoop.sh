@@ -179,6 +179,7 @@ slaves="$(get_slaves_names)"
   # Set correct permissions for instrumentation's sniffer
   if [ "$INSTRUMENTATION" == "1" ] ; then
     loggerb "Setting permissions for instrumentation's sniffer"
+    $DSH "sudo apt-get install -y binutils-dev" 2>&1 |tee -a $LOG_PATH
     $DSH "sudo -n setcap cap_net_raw=eip ${BENCH_DEFAULT_SCRATCH}/aplic/instrumentation/bin/sniffer" 2>&1 |tee -a $LOG_PATH
   fi
 }
