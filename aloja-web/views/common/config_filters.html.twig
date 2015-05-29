@@ -387,6 +387,16 @@
 					  </div>
 				  </div>
 			  </div>
+			  <div class="col-md-6">
+				  VM OS:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+				  <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+					  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+						  {% for selopt in options['vm_OS'] %}
+							  <input type="checkbox" name="vm_OSs[]" value="{{ selopt['vm_OS'] }}" {% if selopt['vm_OS'] in vm_OS %}checked{% endif %}>&nbsp;{{ selopt['vm_OS'] }}<br />
+						  {% endfor %}
+					  </div>
+				  </div>
+			  </div>
 		  </div>
       </div>
     </div>
