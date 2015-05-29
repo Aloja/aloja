@@ -88,6 +88,11 @@ prepare_hadoop_config(){
     local HADOOP_CONF_PATH="etc/hadoop"
   fi
 
+  #set hadoop home
+  export HADOOP_HOME="${BENCH_SOURCE_DIR}/${BENCH_HADOOP_VERSION}"
+  export HADOOP_YARN_HOME="$HADOOP_HOME"
+  logger "DEBUG: HADOOP_HOME: $HADOOP_HOME\nHADOOP_YARN_HOME: $HADOOP_YARN_HOME"
+
   loggerb "Creating source dir and Copying Hadoop"
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
@@ -129,6 +134,12 @@ s,##IO_MB##,$IO_MB,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
+s,##PHYS_MEM##,$PHYS_MEM,g;
+s,##NUM_CORES##,$NUM_CORES,g;
+s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
+s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
+s,##MAPS_MB##,$MAPS_MBg;
+s,##REDUCES_MB##,$REDUCES_MB,g;
 EOF
 )
 
@@ -201,14 +212,12 @@ get_bench_name(){
 restart_hadoop(){
   loggerb "Restart Hadoop"
   #just in case stop all first
- if [ "$defaultProvider" != "hdinsight" ]; then
-  if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-    $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
-  elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-    $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
+  if [ "$HADOOP_VERSION" == "hadoop2" ]; then
     $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 >> $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
+  else
+    $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
   fi
- fi
 
   #delete previous run logs
   $DSH "rm -rf $HDD/logs; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
@@ -232,10 +241,10 @@ restart_hadoop(){
   fi
 
   if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-    $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
   elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-    $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
-    $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
   fi
 
   for i in {0..300} #3mins
@@ -268,15 +277,16 @@ restart_hadoop(){
       fi
     elif [ "$i" == "60" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
-      if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-        $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
-        $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
-      elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-        $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 |tee -a $LOG_PATH
-        $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 |tee -a $LOG_PATH
+      if [ "$HADOOP_VERSION" == "hadoop2" ]; then
+        $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 >> $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
         $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
         $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+      else
+        $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
       fi
+
     elif [ "$i" == "180" ] && [[ -z $1 ]] ; then
       #try to restart hadoop deleting files and prepare again files
       loggerb "Reseting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"

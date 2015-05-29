@@ -28,32 +28,31 @@ example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordc
 OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
 # Default values
-VERBOSE=0
-NET="ETH"
-DISK="HDD"
-BENCH="HiBench"
-REPLICATION=1
-MAX_MAPS=8
-IO_FACTOR=10
-PORT_PREFIX=3
-IO_FILE=65536
-LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
-EXEC_TYPE="default"
-
-COMPRESS_GLOBAL=0
-COMPRESS_TYPE=0
+[ ! "$VERBOSE" ] && VERBOSE=0
+[ ! "$NET" ] && NET="ETH"
+[ ! "$DISK" ] && DISK="HDD"
+[ ! "$BENCH" ] && BENCH="HiBench"
+[ ! "$REPLICATION" ] && REPLICATION=1
+[ ! "$MAX_MAPS" ] && MAX_MAPS=8
+[ ! "$IO_FACTOR" ] && IO_FACTOR=10
+[ ! "$PORT_PREFIX" ] && PORT_PREFIX=3
+[ ! "$IO_FILE" ] && IO_FILE=65536
+[ ! "$LIST_BENCHS" ] && LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
+[ ! "$EXEC_TYPE" ] && EXEC_TYPE="default"
+[ ! "$COMPRESS_GLOBAL" ] && COMPRESS_GLOBAL=0
+[ ! "$COMPRESS_TYPE" ] && COMPRESS_TYPE=0
 
 #COMPRESS_GLOBAL=1
 #COMPRESS_TYPE=1
 #COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
 #COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
 #COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
-SAVE_BENCH=""
+[ ! "$SAVE_BENCH" ] && SAVE_BENCH=""
 
-BLOCK_SIZE=67108864
+[ ! "$SAVE_BENCH" ] && BLOCK_SIZE=67108864
 
-DELETE_HDFS=1
-defaultDisk=1
+[ ! "$SAVE_BENCH" ] && DELETE_HDFS=1
+
 while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
@@ -156,10 +155,6 @@ shift $((OPTIND-1))
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
-if [[ "$defaultProvider" = "hdinsight" && "$defaultDisk" -eq 1 ]]; then
-  DISK="RR1"
-fi
-
 loggerb  "INFO: includes loaded"
 
 #####
@@ -174,7 +169,6 @@ if ! inList "$CLUSTER_NETS" "$NET" ; then
   logger "ERROR: Disk type $NET not supported for $clusterName\nSupported: $NET"
   usage
 fi
-
 
 NUMBER_OF_DATA_NODES="$numberOfNodes"
 
@@ -244,6 +238,12 @@ if [ ! "$BENCH_HADOOP_VERSION" ] ; then
   fi
 fi
 
+[ ! "$PHYS_MEM" ] && PHYS_MEM=$(echo "scale=4;($vmRAM*1024)-3072" | bc)
+[ ! "$NUM_CORES" ] && NUM_CORES="$vmCores"
+[ ! "$CONTAINER_MIN_MB" ] && CONTAINER_MIN_MB=768
+[ ! "$CONTAINER_MAX_MB" ] && CONTAINER_MAX_MB=4096
+[ ! "$MAPS_MB" ] && MAPS_MB=768
+[ ! "$REDUCES_MB" ]  && REDUCES_MB=1536
 
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
@@ -251,6 +251,12 @@ BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
 BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
 BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
 JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
+PHYS_MEM=$PHYS_MEM
+NUM_CORES=$NUM_CORES
+CONTAINER_MIN_MB=$CONTAINER_MIN_MB
+CONTAINER_MAX_MB=$CONTAINER_MAX_MB
+MAPS_MB=$MAPS_MB
+REDUCES_MB=$REDUCES_M
 Master node: $master_name "
 
 #check that we got the dynamic disk location correctly
@@ -305,7 +311,8 @@ $DSH_MASTER "touch $LOG_PATH"
 
 
 #export HADOOP_HOME="$HADOOP_DIR"
-export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
+[ ! $JAVA_HOME ] && export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
+
 loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
 if [ "$defaultProvider" != "hdinsight" ]; then
@@ -364,7 +371,7 @@ done
 #  loggerb  "Generating source dirs"
 #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
 #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION};
-#else
+#elsefi
 #  loggerb  "Source dirs up to date"
 #fi
 
