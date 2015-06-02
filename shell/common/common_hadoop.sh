@@ -630,7 +630,9 @@ save_hadoop() {
   #we cannot move hadoop files
   #take into account naming *.date when changing dates
   #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -r ${HADOOP_HOME}/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+
+  # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$defaultProvider" == "hdinsight" ]; then
 	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
 	hdfs dfs -rm -r /mr-history

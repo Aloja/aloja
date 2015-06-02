@@ -256,7 +256,7 @@ NUM_CORES=$NUM_CORES
 CONTAINER_MIN_MB=$CONTAINER_MIN_MB
 CONTAINER_MAX_MB=$CONTAINER_MAX_MB
 MAPS_MB=$MAPS_MB
-REDUCES_MB=$REDUCES_M
+REDUCES_MB=$REDUCES_MB
 Master node: $master_name "
 
 #check that we got the dynamic disk location correctly
