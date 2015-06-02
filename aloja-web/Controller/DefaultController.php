@@ -491,7 +491,7 @@ class DefaultController extends AbstractController
                 data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]},";
         }
 
-        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs WHERE 1 $filter_execs);");
+        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
 
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
@@ -2606,7 +2606,7 @@ class DefaultController extends AbstractController
             $query .= " AND t.vmsize = c.vm_size WHERE 1 GROUP BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size ORDER BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size DESC;";
             $execs = $dbUtils->get_rows($query);
 */
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
