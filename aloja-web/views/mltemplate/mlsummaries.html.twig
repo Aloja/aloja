@@ -12,15 +12,17 @@
 	</div>
 	<div id="dataframe" style="float: left; width: 68%;"><p style="text-align: left; font-family:'Courier New'; overflow-x:scroll;">{{displaydata | raw}}</p></div>
 	<div style="float: right; width: 30%;">
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 
 	<div style="clear: both;"></div>
 {% endblock %}
 {% block javascript %} {{ parent() }}
 	<script type="text/javascript">
-	$(document).ready(function() {
-		$("select.form-control option[value='None']").text("ALL");
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 	});
     </script>

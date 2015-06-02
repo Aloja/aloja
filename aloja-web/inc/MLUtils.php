@@ -10,6 +10,11 @@ class MLUtils
 	{
 		//$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
+
+		// FIXME - FIXING STUFF OF OTHERS...
+		if (array_key_exists("vm_ram",$filter_options))	{ $filter_options['vm_RAM'] = $filter_options['vm_ram']; unset ($filter_options['vm_ram']); }
+		if (array_key_exists("benchtype",$filter_options)) { $filter_options['bench_type'] = $filter_options['benchtype']; unset ($filter_options['benchtype']); }
+
 		$paramAllOptions = $tokens = array();
 		$model_info = '';
 		foreach ($param_names as $p) 
@@ -25,6 +30,11 @@ class MLUtils
 	{
 		//$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
+
+		// FIXME - FIXING STUFF OF OTHERS...
+		if (array_key_exists("vm_ram",$filter_options))	{ $filter_options['vm_RAM'] = $filter_options['vm_ram']; unset ($filter_options['vm_ram']); }
+		if (array_key_exists("benchtype",$filter_options)) { $filter_options['bench_type'] = $filter_options['benchtype']; unset ($filter_options['benchtype']); }
+
 		$paramAllOptions = $tokens = array();
 		$instance = '';
 		foreach ($param_names as $p) 
@@ -44,6 +54,11 @@ class MLUtils
 	{
 		//$db = $this->container->getDBUtils();
 		$filter_options = Utils::getFilterOptions($db);
+
+		// FIXME - FIXING STUFF OF OTHERS...
+		if (array_key_exists("vm_ram",$filter_options))	{ $filter_options['vm_RAM'] = $filter_options['vm_ram']; unset ($filter_options['vm_ram']); }
+		if (array_key_exists("benchtype",$filter_options)) { $filter_options['bench_type'] = $filter_options['benchtype']; unset ($filter_options['benchtype']); }
+
 		$paramAllOptions = $tokens = $instances = array();
 
 		// Get info from clusters (Part of header_names!)
@@ -74,11 +89,30 @@ class MLUtils
 		// For each cluster selected, launch an instance...
 		foreach ($params['id_clusters'] as $cl) 
 		{
+			// Reduce the instance to the HW filter override, or even remove instance if no HW coincides
+			$remove_if_no_props = FALSE;
+			foreach(array_keys($cluster_header_names) as $cname)
+			{
+				if (!empty($params[$cname]))
+				{
+					// FIXME - When clusters have more than 1 characteristic, change this
+					// Get only the current_props in params[cname]
+					$current_props = $cluster_descriptor[$cl][$cname];
+					$current_props = array($current_props);
+					$coincidences = array_intersect($current_props,$params[$cname]);
+					if (empty($coincidences)) $remove_if_no_props = TRUE;
+					else $cluster_descriptor[$cl][$cname] = $coincidences;
+				}
+			}
+			if ($remove_if_no_props) continue;
 			$cl_characteristics = "Cl".implode(",",$cluster_descriptor[$cl]);
-			
+
 			$instance = '';
 			foreach ($param_names as $p) 
 			{
+				// Ignore for now. Will be used at each cluster characteristics
+				if (array_key_exists(substr($p,0,-1),$cluster_header_names) && $p != "id_clusters") continue;
+
 				if ($p != "id_clusters")
 				{
 					if (array_key_exists(substr($p,0,-1),$filter_options)) $paramAllOptions[$p] = array_column($filter_options[substr($p,0,-1)],substr($p,0,-1));

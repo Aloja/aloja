@@ -18,6 +18,7 @@ $0 -C clusterName
 [-N (don't delete files)]
 [-H hadoop version <hadoop1|hadoop2>]
 [-t execution type (e.g: default, experimental)]
+[-e extrae (instrument execution)]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -41,6 +42,7 @@ OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in th
 [ ! "$EXEC_TYPE" ] && EXEC_TYPE="default"
 [ ! "$COMPRESS_GLOBAL" ] && COMPRESS_GLOBAL=0
 [ ! "$COMPRESS_TYPE" ] && COMPRESS_TYPE=0
+[ ! "$INSTRUMENTATION" ] && INSTRUMENTATION==0
 
 #COMPRESS_GLOBAL=1
 #COMPRESS_TYPE=1
@@ -138,6 +140,9 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     H)
       HADOOP_VERSION=$OPTARG
       [ "$HADOOP_VERSION" == "hadoop1" ] || [ "$HADOOP_VERSION" == "hadoop2" ] || usage
+      ;;
+    e)
+        INSTRUMENTATION=1
       ;;
     esac
 done
@@ -245,6 +250,12 @@ fi
 [ ! "$MAPS_MB" ] && MAPS_MB=768
 [ ! "$REDUCES_MB" ]  && REDUCES_MB=1536
 
+# Use instrumented version of Hadoop
+if [ "$INSTRUMENTATION" == "1" ] ; then
+  BENCH_HADOOP_VERSION="${BENCH_HADOOP_VERSION}-instr"
+fi
+
+
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
 BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
@@ -291,7 +302,7 @@ fi
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
 if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
+  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; stop_sniffer; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 else
   trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 fi
@@ -444,6 +455,12 @@ $DSH "cp $HDD/* $HDD_TMP/* $JOB_PATH/"
 
 # Save current config (all environment variables)
 ( set -o posix ; set ) | grep -i -v "password" > $JOB_PATH/config.sh
+
+
+# Execute post-process of traces
+if [ "$INSTRUMENTATION" == "1" ] ; then
+  instrumentation_post_process
+fi
 
 
 #report
