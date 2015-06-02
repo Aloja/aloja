@@ -33,7 +33,7 @@ class MLMinconfigsController extends AbstractController
 
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);

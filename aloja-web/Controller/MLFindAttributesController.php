@@ -41,7 +41,7 @@ class MLFindAttributesController extends AbstractController
 		    	
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
@@ -280,6 +280,8 @@ class MLFindAttributesController extends AbstractController
 				'unseen' => $unseen,
 				'tree' => (isset($_GET['tree'])?"true":"false"),
 				'tree_descriptor' => $tree_descriptor,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);
