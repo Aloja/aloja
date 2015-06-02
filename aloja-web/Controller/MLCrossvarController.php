@@ -18,29 +18,29 @@ class MLCrossvarController extends AbstractController
 		{
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
-		    	
+
+			$preset = null;
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
+			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
+			{
+				$preset = Utils::setDefaultPreset($db, 'mlcrossvar');
+			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'exe_time';
 
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
-			{
-				$where_configs = '';
-				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
-				//$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")'; 			
-			}
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
+			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
@@ -48,7 +48,7 @@ class MLCrossvarController extends AbstractController
 
 			$rows = null;
 			if ($cross_var1 != 'pred_time' && $cross_var2 != 'pred_time')
-			{		
+			{
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2
 					FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster LEFT JOIN JOB_details j ON e.id_exec = j.id_exec
@@ -85,7 +85,6 @@ class MLCrossvarController extends AbstractController
 				{
 					$other_var = $cross_var1;
 					if ($cross_var1 == 'pred_time') $other_var = $cross_var2;
-					$other_var = str_replace("id_cluster","e.id_cluster",$other_var);
 
 					if ($cross_var1 == 'pred_time') { $var1 = 'p.'.$cross_var1; $var2 = 's.'.$cross_var2; }
 					else { $var1 = 's.'.$cross_var1; $var2 = 'p.'.$cross_var2; }
@@ -108,8 +107,8 @@ class MLCrossvarController extends AbstractController
 				$count_var1 = $count_var2 = 0;
 				$categories1 = $categories2 = '';
 
-				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
-				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
 
 				foreach ($rows as $row)
 				{
@@ -145,6 +144,8 @@ class MLCrossvarController extends AbstractController
 				if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
 				if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
 			}
+			$cross_var1 = str_replace("e.id_cluster","id_cluster",$cross_var1);
+			$cross_var2 = str_replace("e.id_cluster","id_cluster",$cross_var2);
 		}
 		catch(\Exception $e)
 		{
@@ -172,9 +173,18 @@ class MLCrossvarController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
+				'model_info' => $model_info,
 				'must_wait' => $must_wait,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);	
@@ -190,30 +200,30 @@ class MLCrossvarController extends AbstractController
 		{
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
 		    	
+		        $preset = null;
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
+			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))		
+			{
+				$preset = Utils::setDefaultPreset($db, 'mlcrossvar3d');		
+			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 			$cross_var3 = 'exe_time';
 
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
-			{
-				$where_configs = '';
-				$params['benchs'] = array('wordcount'); $where_configs .= ' AND bench IN ("wordcount")';
-				//$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")'; 			
-			}
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
+			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
@@ -282,8 +292,8 @@ class MLCrossvarController extends AbstractController
 				$count_var1 = $count_var2 = 0;
 				$categories1 = $categories2 = '';
 
-				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
-				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
 
 				foreach ($rows as $row)
 				{
@@ -328,6 +338,8 @@ class MLCrossvarController extends AbstractController
 				if ($categories1 != '') $categories1 = "[".$categories1."]"; else $categories1 = "''";
 				if ($categories2 != '') $categories2 = "[".$categories2."]"; else $categories2 = "''";
 			}
+			$cross_var1 = str_replace("e.id_cluster","id_cluster",$cross_var1);
+			$cross_var2 = str_replace("e.id_cluster","id_cluster",$cross_var2);
 		}
 		catch(\Exception $e)
 		{
@@ -359,9 +371,18 @@ class MLCrossvarController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
+				'model_info' => $model_info,
 				'must_wait' => $must_wait,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);	
@@ -381,45 +402,44 @@ class MLCrossvarController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
-		    	
+
+		        $preset = null;
+			if (count($_GET) <= 1
+			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
+			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
+			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
+			{
+				$preset = Utils::setDefaultPreset($db, 'mlcrossvar3dfa');
+			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
-			{
-				$params['benchs'] = $_GET['benchs'] = array('terasort'); $where_configs = ' AND bench IN ("terasort")';
-				//$params['disks'] = $_GET['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = $_GET['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = $_GET['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = $_GET['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$params['id_clusters'] = $_GET['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
-				//$params['mapss'] = $_GET['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
-				//$params['iosfs'] = $_GET['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
-				$params['blk_sizes'] = $_GET['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
-			}
+			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
+
 			$where_configs = str_replace("AND .","AND ",$where_configs);
+			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
+			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, false, $db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, false, $db);
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
+			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			// Call to MLFindAttributes, to fetch data
 			$_GET['pass'] = 1;
-			$_GET['unseen'] = FALSE;
+			$_GET['unseen'] = $unseen;
 			$mlfa1 = new MLFindAttributesController();
 			$mlfa1->container = $this->container;
 			$ret_data = $mlfa1->mlfindattributesAction();
@@ -456,8 +476,8 @@ class MLCrossvarController extends AbstractController
 				$count_var1 = $count_var2 = 0;
 				$categories1 = $categories2 = '';
 
-				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type"));
-				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type"));
+				$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+				$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
 
 				foreach ($rows as $row)
 				{
@@ -503,6 +523,8 @@ class MLCrossvarController extends AbstractController
 			}
 
 			$dbml = null;
+			$cross_var1 = str_replace("e.id_cluster","id_cluster",$cross_var1);
+			$cross_var2 = str_replace("e.id_cluster","id_cluster",$cross_var2);
 		}
 		catch(\Exception $e)
 		{
@@ -536,12 +558,22 @@ class MLCrossvarController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
+				'model_info' => $model_info,
 				'current_model' => $current_model,
+				'unseen' => $unseen,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'models_id' => $possible_models_id,
 				'must_wait' => $must_wait,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);	

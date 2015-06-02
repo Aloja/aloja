@@ -70,7 +70,7 @@ wait_hdi_cluster() {
 #$1 cluster name
 create_hdi_cluster() {
  if [ -z "$storageAccount" ]; then
-	storageAccount="`echo $clusterName | cut -d- -f1`"
+	storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
 
  vm_create_storage_account "$storageAccount" "GRS"
@@ -131,7 +131,7 @@ vm_final_bootstrap() {
  fi
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
- vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
+ vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-us.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
  vm_execute "dsh -f slaves -cM -- sudo mount -a"
 #vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
 # vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
@@ -145,6 +145,7 @@ vm_final_bootstrap() {
 node_delete() {
 	hdi_cluster_check_delete $1
 	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
+	ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
 }
 
 get_master_name() {
@@ -153,4 +154,20 @@ get_master_name() {
 
 get_node_names() {
 	cat /home/pristine/machines	
+}
+
+get_slaves_names() {
+    local nodes=`expr $numberOfNodes - 1`
+    local node_names
+    for i in `seq 0 $nodes` ; do
+        node_names="${node_names}\nworkernode${i}"
+    done
+    echo -e "$node_names"
+}
+
+#$1 node_name, expects workernode{id}
+get_vm_id() {
+    local id=$(echo "$1" | grep -oP "[0-9]+")
+    id=`expr ${id} + 1`
+    printf %02d "$id"
 }

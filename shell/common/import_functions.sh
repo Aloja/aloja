@@ -124,6 +124,25 @@ update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
 update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
+##HDInsight filters
+update execs join clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
+update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
+update execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
+update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
+update execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
+
+update execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
+
+update execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe_time > 1100 AND YEAR(start_time) = '2014';
+
+update execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
+
+update execs join clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update execs join clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update execs join clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
+
 "
 
 #update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
@@ -172,7 +191,7 @@ update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'su
 }
 
 
-get_exec_params(){
+get_exec_params() {
 
   local log_file="$1"
   local name="$2"
@@ -228,6 +247,12 @@ get_exec_params(){
     local iofilebuf=$(extract_config_var "IO_FILE")
     local comp=$(extract_config_var "COMPRESS_TYPE")
     local blk_size=$(extract_config_var "BLOCK_SIZE")
+    local exec_type=$(extract_config_var "EXEC_TYPE")
+    #legacy, exec type didn't exist until May 18th 2015
+    if [[ exec_type == "" ]]; then
+      exec_type="default"
+    fi
+
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
@@ -262,7 +287,7 @@ get_exec_params(){
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\""
     done
 
   fi
@@ -396,8 +421,8 @@ import_hadoop2_jhist() {
 
 	$MYSQL "$insert"
 
-    result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
-	if [ -z "$ONLY_META_DATA" ] && [ $result -eq 0 ]; then
+    local result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+	if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
 		waste=()
 		reduce=()
 		map=()
@@ -429,26 +454,26 @@ import_hadoop2_jhist() {
 			normalFinishTime=`expr $taskFinishTime - $startTimeTS`
 			if [ "$taskStatus" == "FAILED" ]; then
 				waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+				waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 1)
 			elif [ "$taskType" == "MAP" ]; then
-				map[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				map[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+				map[$normalStartTime]=$(expr ${map[$normalStartTime]} + 1)
+				map[$normalFinishTime]=$(expr ${map[$normalFinishTime]} - 1)
 			elif [ "$taskType" == "REDUCE" ]; then
-				reduce[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				reduce[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 2)
+				reduce[$normalStartTime]=$(expr ${reduce[$normalStartTime]} + 1)
+				reduce[$normalFinishTime]=$(expr ${reduce[$normalFinishTime]} - 1)
 			fi
 		done
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
 				previous=$(expr $i - 1)
-				map[$i]=$(expr waste[$i] + waste[$previous])
-				reduce[$i]=$(expr waste[$i] + waste[$previous])
-				waste[$i]=$(expr waste[$i] + waste[$previous])
+				map[$i]=$(expr ${map[$i]} + ${map[$previous]})
+				reduce[$i]=$(expr ${reduce[$i]} + ${reduce[$previous]})
+				waste[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
 			fi
 			currentTime=`expr $startTimeTS + $i`
 			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
 			insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
-					VALUES ($id_exec,'$jobName',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
+					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
 			logger "$insert"
@@ -651,5 +676,34 @@ delete_untars() {
     done
     cd ..
   fi
+}
 
+[$1 name history folder]
+get_xml_exec_params() {
+	local histFolder="mapred/history"
+	if [ ! -z $1 ]; then
+	  histFolder=$1
+    fi
+
+	xmlFile=$(find $histFolder/done/ -type f -name *.xml | head -n 1)
+	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
+	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
+	maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
+	blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
+	iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
+	iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
+	compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
+	if [ "$compressionEnabled" = "false" ]; then
+		compressCodec=0
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
+		compressCodec=3
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
+		compressCodec=1
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
+		compressCodec=2
+	else
+		compressCodec=0
+	fi
+
+	blocksize=`expr $blocksize / 1000000`
 }

@@ -17,6 +17,10 @@ importHDIJobs() {
 		totalTime="`expr $totalTime / 1000`"
 		startTime=`date -d @$startTimeTS +"%Y-%m-%d %H:%M:%S"`
 		finishTime=`date -d @$finishTimeTS +"%Y-%m-%d %H:%M:%S"`
+		exec_type="default"
+		if [[ ! -z $(echo $folder | grep -Po 'exec_type-([a-z]+)') ]]; then
+			exec_type=$(echo $folder | grep -Po 'exec_type-([a-z]+)' | cut -d- -f2)
+		fi
 
 		if [[ $jobName =~ "word" ]]; then
 			jobName="wordcount"
@@ -46,8 +50,7 @@ importHDIJobs() {
 			
 			##Select cluster number
 			if [[ "$folder" =~ hdi([0-9]+)-([0-9]+)$ ]]; then
-				IFS='_' read -ra folderArray <<< "$folder"
-				cluster=`echo ${folderArray[1]} | grep -oP "([0-9]+)$"`
+				cluster=`echo $folder | grep -oP "([0-9]+)$"`
 			else ##Legacy logs
 				IFS='_' read -ra folderArray <<< "$folder"
 				numberOfNodes=`echo ${folderArray[1]} | grep -oP "[0-9]+"`
@@ -66,8 +69,8 @@ importHDIJobs() {
 			
 			get_hdi_exec_params "$folder" "`$CUR_DIR/../aloja-tools/jq -r '.JOB_ID' globals.out`"  	        
 			
-			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version)
-		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",\"$net\",\"$disk\",\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2)
+			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version,exec_type)
+		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",\"$net\",\"$disk\",\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2,\"$exec_type\")
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',
 		                  end_time='$finishTime',
@@ -83,7 +86,6 @@ importHDIJobs() {
 		     if [ "$id_exec" == "NULL" ]; then
 		    	id_exec=$(get_id_exec "$exec")
 			 fi
-		        
 		     import_hadoop2_jhist "$jhist" "noparse"
 		fi
 	done
@@ -91,8 +93,8 @@ importHDIJobs() {
 
 get_hdi_exec_params() {
 	idJob=$2
-	folder=$1	
-	
+	folder=$1
+
 	xmlFile=$(find $folder/mapred/history/done/ -type f -name *$idJob*.xml | head -n 1)
 	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
 	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
@@ -100,12 +102,20 @@ get_hdi_exec_params() {
 	blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
 	iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
 	iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
-	
-	if [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
-		compressCodec=3	
+	compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
+	if [ "$compressionEnabled" = "false" ]; then
+		compressCodec=0
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
+		compressCodec=3
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
+		compressCodec=1
+	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
+		compressCodec=2
+	else
+		compressCodec=0
 	fi
-	
+
 	blocksize=`expr $blocksize / 1000000`
     net="ETH"
-    disk="RR1"	
+    disk="RR1"
 }

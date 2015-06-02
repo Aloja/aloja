@@ -23,16 +23,9 @@ class MLOutliersController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
-		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:3;
-
+		        $preset = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))
@@ -40,17 +33,15 @@ class MLOutliersController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 3 && array_key_exists('register',$_GET) && array_key_exists('current_model',$_GET)))
 			{
-				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				//$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-//				$params['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
-//				$params['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
-//				$params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
-//				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
+				$preset = Utils::setDefaultPreset($db, 'mloutliers');
 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+
+			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -63,7 +54,7 @@ class MLOutliersController extends AbstractController
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			if (!empty($possible_models_id))
 			{
@@ -91,7 +82,7 @@ class MLOutliersController extends AbstractController
 						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
 						'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
+						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type'
 					);
 					$headers = array_keys($header_names);
 					$names = array_values($header_names);
@@ -176,7 +167,7 @@ class MLOutliersController extends AbstractController
 					$max_x = $row['max_x'];
 					$max_y = $row['max_y'];
 
-					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','ID');
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','ID');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -244,13 +235,22 @@ class MLOutliersController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'must_wait' => $must_wait,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'models_id' => $possible_models_id,
 				'current_model' => $current_model,
+				'resolution_id' => md5($config),
 				'sigma' => $sigma_param,
 				'message' => $message,
 				'instance' => $instance,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);

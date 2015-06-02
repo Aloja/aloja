@@ -29,6 +29,9 @@ line=0
 
 [ -z "$1" ] && CLUSTER_NAME="" || CLUSTER_NAME="$1"
 
+#TODO make dynamic
+vmCores="4"
+vmCoresStep="2"
 
 Q_PATH="~/local/queue_$CLUSTER_NAME"
 CONF_PATH="$Q_PATH/conf"
@@ -43,7 +46,7 @@ if [[ ! $current_idx =~ ^-?[0-9]+$ ]] ; then
 fi
 
 
-for DISK in "HDD" "RL3" "RL2" "RL1" "RR3" "RR2" "RR1" #"HDD" "SSD"
+for DISK in "HDD" "RL6" "RL5" "RL4" "RL3" "RL2" "RL1" "RR6" "RR5" "RR4" "RR3" "RR2" "RR1" #"HDD" "SSD"
 do
   DELETE=" "
 for NET in  "ETH" # "IB "
@@ -51,7 +54,8 @@ do
 for REPLICATION in {1..3}
 do
   #DELETE=" "
-for MAX_MAPS in "8" "6" "10" #"24" # "4" "8" "16" "32"
+for MAX_MAPS in "$vmCores" "$(( vmCores + vmCoresStep ))" "$(( vmCores - vmCoresStep ))" #"24" # "4" "8" "16" "32"
+
 do
 for IO_FACTOR in "10" #"5" "20" #"50"
 do
