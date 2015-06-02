@@ -66,6 +66,7 @@ benchmark_hibench_config_terasort() {
   #export COMPRESS_GLOBAL=1
   export COMPRESS_TYPE="$COMPRESS_TYPE"
   export COMPRESS_CODEC_GLOBAL="$COMPRESS_CODEC_GLOBAL"
+  export COMPRESS_CODEC_MAP="$COMPRESS_CODEC_GLOBAL"
   export DATASIZE=1000000000
 }
 
