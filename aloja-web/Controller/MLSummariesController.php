@@ -89,6 +89,8 @@ class MLSummariesController extends AbstractController
 					}
 					fclose($handle);
 
+					$displaydata = str_replace('\'','\\\'',$displaydata);
+
 					// register model to DB
 					$query = "INSERT INTO summaries (id_summaries,instance,model,summary)";
 					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$displaydata."');";
