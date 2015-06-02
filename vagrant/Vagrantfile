@@ -15,7 +15,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #Prebuilt box for ALOJA
     config.vm.box = "npoggi/aloja-precise64"
 
-    v.memory = 2048 #change as needed
+    v.memory = 1024 #change as needed
     v.cpus = 1
   end
 
