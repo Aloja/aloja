@@ -791,15 +791,16 @@ insert ignore into filters_presets(id,name,URL,preset,description,screen) values
 insert ignore into filters_presets(id,name,URL,preset,description,screen) values (7,'HDI number of nodes', 'http://localhost:8080/nodeseval?benchs[]=wordcount&bench_types[]=HiBench&bench_types[]=HiBench3HDI&types[]=PaaS&filters[]=valid&filters[]=filters&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=50&maxexetime=', 0, 'HDI number of nodes evaluation', 'Number of Nodes Evaluation');
 "
 
+#Rackspace cloud
 $MYSQL "
-#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427396874','terasort',25340,'ETH','RR1','HiBench',32,1,1,0);
-#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
-#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428333140','terasort',4134,'ETH','RR1','HiBench',32,1,1,0);
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428327683','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
 "
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_1428309325/job_1428289975913_0002','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427396874','terasort',25340,'ETH','RR1','HiBench',32,1,1,0);
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 
 
 #$MYSQL "

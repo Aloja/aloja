@@ -163,7 +163,7 @@ class MLParamevalController extends AbstractController
 					$must_wait = 'NO';
 
 					$query = "SELECT count(*) as count, $paramEval, bench, exe_time, avg(pred_time) avg_pred_time, min(pred_time) min_pred_time ".
-						"FROM predictions p WHERE p.id_learner = '".$current_model."' $filter_execs $where_configs".
+						"FROM predictions e WHERE e.id_learner = '".$current_model."' $filter_execs $where_configs".
 						"GROUP BY $paramEval, bench $minExecsFilter order by bench, $paramEval";
 					$result = $dbml->query($query);
 					

@@ -168,7 +168,7 @@ class MLTemplatesController extends AbstractController
 				$max_x = $max_y = 0;
 				$error_stats = '';
 
-				$query = "SELECT exe_time, pred_time, instance FROM predictions WHERE id_learner='".md5($config)."' LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
+				$query = "SELECT exe_time, pred_time, instance FROM predictions WHERE id_learner='".md5($config)."' AND exe_time > 100 LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{
@@ -181,7 +181,7 @@ class MLTemplatesController extends AbstractController
 					$count++;
 				}
 
-				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 GROUP BY predict_code";
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 AND exe_time > 100 GROUP BY predict_code";
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{
