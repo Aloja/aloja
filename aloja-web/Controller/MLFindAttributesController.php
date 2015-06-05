@@ -108,26 +108,27 @@ class MLFindAttributesController extends AbstractController
 
 							// Fetch Real Value
 							$inst_aux = preg_split("/\s+/", $line);
-							$query_var = "SELECT AVG(exe_time) as AVG, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
+							$query_var = "SELECT AVG(exe_time) as AVG, id_exec, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
 							$result = $dbml->query($query_var);
 							$row = $result->fetch();
 
 							$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
-/*
-							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
-							$result = $dbml->query($query_var);
-							$row = $result->fetch();
+							$realid_exec = (is_null($row['id_exec']) || $row['outlier'] == 2)?0:$row['id_exec'];
 
-							// Insert instance values
-							if ($row['num'] == 0)
-							{
-*/
+							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
+                                                        $result = $dbml->query($query_var);
+                                                        $row = $result->fetch();
+
+                                                        // Insert instance values
+                                                        if ($row['num'] == 0)
+                                                        {
+
 								$token_i = 1;
 								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
 								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
 								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
-//							}
+								$query = $query."('".$realid_exec."','".$realexecval."','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
+							}
 
 							$i++;
 

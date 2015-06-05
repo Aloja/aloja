@@ -131,7 +131,7 @@ class MLTemplatesController extends AbstractController
 							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
-								$specific_instance = implode(",",array_slice($data, 2, 19));
+								$specific_instance = implode(",",array_slice($data, 2, 20));
 								$specific_data = implode(",",$data);
 								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
