@@ -490,7 +490,7 @@ execute_hadoop(){
     local hadoop_examples_jar="$BENCH_H_DIR/hadoop-examples-*.jar"
   elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
     local hadoop_config="$BENCH_H_DIR/etc/hadoop"
-    local hadoop_examples_jar="$BENCH_H_DIR/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar"
+    local hadoop_examples_jar="$BENCH_H_DIR/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.6.0.jar"
   fi
 
   #need to send all the environment variables over SSH
