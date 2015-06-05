@@ -11,79 +11,19 @@
 		<hr />
 	</div>
 	<div id="container" style="float: left; width: 68%; margin: 0 auto;">
-		<div id="navigation" style="text-align: center; width: 100%; margin: 0 auto;">
-			<div style="width: 50%; margin: 0 auto;">
-			Select variables:
-			<table width="100%"><tr><td width="48%">
-				<select class="form-control" name="variable1" id="variable1" size="1">
-				<option value="maps" {% if variable1 == 'maps' or variable1 =='' %}selected="selected"{% endif %}>Maps</option>
-				<option value="comp" {% if variable1 == 'comp' %}selected="selected"{% endif %}>Compression</option>
-				<option value="id_cluster" {% if variable1 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
-				<option value="net" {% if variable1 == 'net' %}selected="selected"{% endif %}>Network</option>
-				<option value="disk" {% if variable1 == 'disk' %}selected="selected"{% endif %}>Disk</option>
-				<option value="replication" {% if variable1 == 'replication' %}selected="selected"{% endif %}>Replication</option>
-				<option value="iofilebuf" {% if variable1 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
-				<option value="blk_size" {% if variable1 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
-				<option value="iosf" {% if variable1 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
-				<option value="datanodes" {% if variable1 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
-				<option value="headnodes" {% if variable1 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
-				<option value="vm_OS" {% if variable1 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
-				<option value="vm_cores" {% if variable1 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
-				<option value="vm_RAM" {% if variable1 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
-				<option value="provider" {% if variable1 == 'provider' %}selected="selected"{% endif %}>Provider</option>
-				<option value="vm_size" {% if variable1 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
-				<option value="type" {% if variable1 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
-				<option value="exe_time" {% if variable1 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
-				<option value="pred_time" {% if variable1 == 'pred_time' %}selected="selected"{% endif %}>Predicted Time</option>
-				<option value="TOTAL_MAPS" {% if variable1 == 'TOTAL_MAPS' %}selected="selected"{% endif %}>Total Maps</option>
-				<option value="FAILED_MAPS" {% if variable1 == 'FAILED_MAPS' %}selected="selected"{% endif %}>Failed Maps</option>
-				<option value="FINISHED_MAPS" {% if variable1 == 'FINISHED_MAPS' %}selected="selected"{% endif %}>Finished Maps</option>
-				<option value="TOTAL_REDUCES" {% if variable1 == 'TOTAL_REDUCES' %}selected="selected"{% endif %}>Total Reduces</option>
-				<option value="FAILED_REDUCES" {% if variable1 == 'FAILED_REDUCES' %}selected="selected"{% endif %}>Failed Reduces</option>
-				<option value="FILE_BYTES_WRITTEN" {% if variable1 == 'FILE_BYTES_WRITTEN' %}selected="selected"{% endif %}>File Bytes Written</option>
-				<option value="FILE_BYTES_READ" {% if variable1 == 'FILE_BYTES_READ' %}selected="selected"{% endif %}>File Bytes Read</option>
-				<option value="HDFS_BYTES_WRITTEN" {% if variable1 == 'HDFS_BYTES_WRITTEN' %}selected="selected"{% endif %}>HDFS Bytes Written</option>
-				<option value="HDFS_BYTES_READ" {% if variable1 == 'HDFS_BYTES_READ' %}selected="selected"{% endif %}>HDFS Bytes Read</option>
-				</select>
-			</td><td width="2%">&nbsp;</td><td width="48%">
-				<select class="form-control" name="variable2" id="variable2" size="1">
-				<option value="maps" {% if variable2 == 'maps' %}selected="selected"{% endif %}>Maps</option>
-				<option value="comp" {% if variable2 == 'comp' %}selected="selected"{% endif %}>Compression</option>
-				<option value="id_cluster" {% if variable2 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
-				<option value="net" {% if variable2 == 'net' or variable1 =='' %}selected="selected"{% endif %}>Network</option>
-				<option value="disk" {% if variable2 == 'disk' %}selected="selected"{% endif %}>Disk</option>
-				<option value="replication" {% if variable2 == 'replication' %}selected="selected"{% endif %}>Replication</option>
-				<option value="iofilebuf" {% if variable2 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
-				<option value="blk_size" {% if variable2 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
-				<option value="iosf" {% if variable2 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
-				<option value="datanodes" {% if variable2 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
-				<option value="headnodes" {% if variable2 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
-				<option value="vm_OS" {% if variable2 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
-				<option value="vm_cores" {% if variable2 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
-				<option value="vm_RAM" {% if variable2 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
-				<option value="provider" {% if variable2 == 'provider' %}selected="selected"{% endif %}>Provider</option>
-				<option value="vm_size" {% if variable2 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
-				<option value="type" {% if variable2 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
-				<option value="exe_time" {% if variable2 == 'exe_time' %}selected="selected"{% endif %}>Execution Time</option>
-				<option value="pred_time" {% if variable2 == 'pred_time' %}selected="selected"{% endif %}>Predicted Time</option>
-				<option value="TOTAL_MAPS" {% if variable2 == 'TOTAL_MAPS' %}selected="selected"{% endif %}>Total Maps</option>
-				<option value="FAILED_MAPS" {% if variable2 == 'FAILED_MAPS' %}selected="selected"{% endif %}>Failed Maps</option>
-				<option value="FINISHED_MAPS" {% if variable2 == 'FINISHED_MAPS' %}selected="selected"{% endif %}>Finished Maps</option>
-				<option value="TOTAL_REDUCES" {% if variable2 == 'TOTAL_REDUCES' %}selected="selected"{% endif %}>Total Reduces</option>
-				<option value="FAILED_REDUCES" {% if variable2 == 'FAILED_REDUCES' %}selected="selected"{% endif %}>Failed Reduces</option>
-				<option value="FILE_BYTES_WRITTEN" {% if variable2 == 'FILE_BYTES_WRITTEN' %}selected="selected"{% endif %}>File Bytes Written</option>
-				<option value="FILE_BYTES_READ" {% if variable2 == 'FILE_BYTES_READ' %}selected="selected"{% endif %}>File Bytes Read</option>
-				<option value="HDFS_BYTES_WRITTEN" {% if variable2 == 'HDFS_BYTES_WRITTEN' %}selected="selected"{% endif %}>HDFS Bytes Written</option>
-				<option value="HDFS_BYTES_READ" {% if variable2 == 'HDFS_BYTES_READ' %}selected="selected"{% endif %}>HDFS Bytes Read</option>
-				</select>
-			</td></tr></table>
-			</div>
-		</div>
-		<br />
 		<div id="chart" style="float: left; width: 100%; margin: 0 auto; height: 600px;"></div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Instance: {{instance|raw}}</li>
+				<li>Model Info: {{model_info|raw}}</li>
+				</ul>
+			</p>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -93,22 +33,11 @@
 	<script src="http://code.highcharts.com/modules/exporting.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
-	$(document).ready(function() {
-		$("select.form-control option[value='None']").text("ALL");
-		$('jsonError').innerHTML = "<p>{{message}}</p>";
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
 
-		$("#variable1").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>");
-			$('#mldiv').append("<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>");
-			$('#submit').click();
-		});
-		$("#variable2").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>");
-			$('#mldiv').append("<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>");
-			$('#submit').click();
-		});
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{must_wait}}"== "NO")
 		{

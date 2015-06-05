@@ -35,9 +35,9 @@ if($argc == 4 && $argv[3] != 'varnish')
 
 $conf = array();
 if($env == 'dev')
-	$conf = Yaml::parse('config/config.sample.yml');
+	$conf = Yaml::parse(file_get_contents('config/config.sample.yml'));
 else
-	$conf = Yaml::parse('config/config.yml');
+	$conf = Yaml::parse(file_get_contents('config/config.yml'));
 
 if(!isset($excludeOptions) || !in_array('db',$excludeOptions))
 	exec("rm ${conf['db_cache_path']}/*.sql");

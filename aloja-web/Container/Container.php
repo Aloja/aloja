@@ -42,7 +42,7 @@ class Container
             if (! file_get_contents($config_file)) {
                 throw new \Exception("Cannot read configuration file: $config_file, check that it exists!");
             }
-            $container['config'] = Yaml::parse($config_file);
+            $container['config'] = Yaml::parse(file_get_contents($config_file));
             $container['env'] = 'dev';
         } else {
             //ini_set('display_errors', 'On');
@@ -52,7 +52,7 @@ class Container
             if (! file_get_contents($config_file)) {
                 throw new Exception("Cannot read configuration file: $config_file, check that it exists!");
             }
-            $container['config'] = Yaml::parse($config_file);
+            $container['config'] = Yaml::parse(file_get_contents($config_file));
             $container['env'] = 'prod';
         }
 

@@ -621,7 +621,10 @@ class Utils
     	if($exec['disk'] == 'HDD')
     		$num_remotes = 1;
     	
-    	$cost = $exec['exe_time']*(($costHour/3600) + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds));
+    	//To get the cost
+        //convert the cluster cost + additions from per hour to per second, then just multiply by number of seconds it took
+        $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
+
     	return $cost;
     }
     

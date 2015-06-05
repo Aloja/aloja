@@ -491,7 +491,7 @@ class DefaultController extends AbstractController
                 data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]},";
         }
 
-        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
+        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
 
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
@@ -1733,10 +1733,11 @@ class DefaultController extends AbstractController
             $clusterNameSelected = $_GET['cluster_name'];
         }
 
+        $filter_execs = DBUtils::getFilterExecs();
 
         $db = $this->container->getDBUtils();
-        $clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs e WHERE 1 ".DBUtils::getFilterExecs().");");
-        
+        $clusters = $db->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT distinct(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+
         echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
             'selected' => 'Clusters',
             'clusters' => $clusters,
@@ -2101,6 +2102,7 @@ class DefaultController extends AbstractController
                 return $a['cost_std'] > $b['cost_std'];
     			//return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
+
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
@@ -2267,7 +2269,7 @@ class DefaultController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
+    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
     
     	//Sorting clusters by size
     	usort($execs, function($a,$b) {
@@ -2481,8 +2483,8 @@ class DefaultController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
-    
+    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
     		return ($a['cost_std']) > ($b['cost_std']);
@@ -2543,6 +2545,8 @@ class DefaultController extends AbstractController
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
         try {
+            $filter_execs = DBUtils::getFilterExecs();
+
             $where_configs = '';
 
             $datefrom = Utils::read_params('datefrom',$where_configs);
@@ -2604,7 +2608,7 @@ class DefaultController extends AbstractController
             $query .= " AND t.vmsize = c.vm_size WHERE 1 GROUP BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size ORDER BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size DESC;";
             $execs = $dbUtils->get_rows($query);
 */
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();

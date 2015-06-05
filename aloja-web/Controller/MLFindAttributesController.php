@@ -20,16 +20,10 @@ class MLFindAttributesController extends AbstractController
 		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
-		    	
-		    	$configurations = array ();	// Useless here
-		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
-		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
 
-			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
+		    	$where_configs = '';
+		    	
+		        $preset = null;
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET))
@@ -41,18 +35,15 @@ class MLFindAttributesController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("pass",$_GET) && array_key_exists("current_model",$_GET)))
 			{
-				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('65536','131072'); $where_configs .= ' AND iofilebuf IN ("65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				$params['id_clusters'] = array('1'); $where_configs .= ' AND id_cluster IN ("1")';
-				$params['mapss'] = array('4'); $where_configs .= ' AND maps IN ("4")';
-				$params['iosfs'] = array('10'); $where_configs .= ' AND iosf IN ("10")';
-				$params['blk_sizes'] = array('128'); $where_configs .= ' AND blk_size IN ("128")';
-				$unseen = FALSE;
+				$preset = Utils::setDefaultPreset($db, 'mlfindattributes');		
 			}
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+		    	
+			$params = array();
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+
+			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -68,8 +59,12 @@ class MLFindAttributesController extends AbstractController
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
+			$other_models = array();
+			$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
+
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			if (!empty($possible_models_id))
 			{
@@ -80,7 +75,7 @@ class MLFindAttributesController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model;
+				$config = $instance.'-'.$current_model.'-'.(($unseen)?'U':'R');
 
 				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM trees WHERE id_findattrs = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
@@ -108,7 +103,7 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
@@ -117,33 +112,34 @@ class MLFindAttributesController extends AbstractController
 
 							// Fetch Real Value
 							$inst_aux = preg_split("/\s+/", $line);
-							$query_var = "SELECT AVG(exe_time) as AVG, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
+							$query_var = "SELECT AVG(exe_time) as AVG, id_exec, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
 							$result = $dbml->query($query_var);
 							$row = $result->fetch();
 
 							$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
-/*
-							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
-							$result = $dbml->query($query_var);
-							$row = $result->fetch();
+							$realid_exec = (is_null($row['id_exec']) || $row['outlier'] == 2)?0:$row['id_exec'];
 
-							// Insert instance values
-							if ($row['num'] == 0)
-							{
-*/
+							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
+                                                        $result = $dbml->query($query_var);
+                                                        $row = $result->fetch();
+
+                                                        // Insert instance values
+                                                        if ($row['num'] == 0)
+                                                        {
+
 								$token_i = 1;
 								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
 								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
 								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";								
-//							}
+								$query = $query."('".$realid_exec."','".$realexecval."','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
+							}
 
 							$i++;
 
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 								$token = 0;
 								$token_i = 0;
 							}
@@ -183,7 +179,7 @@ class MLFindAttributesController extends AbstractController
 					if (isset($_GET['pass']) && $_GET['pass'] == 2) { $dbml = null; return "2"; }
 
 					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Prediction','Observed');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -234,9 +230,11 @@ class MLFindAttributesController extends AbstractController
 			}
 			else
 			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.".$instance;
+				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 				if (isset($_GET['dump'])) { echo "-1"; exit(0); }
 				if (isset($_GET['pass'])) { return "-1"; }
+				$config = "";
+				$possible_models = $possible_models_id = array("None");
 			}
 			$dbml = null;
 		}
@@ -246,7 +244,7 @@ class MLFindAttributesController extends AbstractController
 
 			$jsonData = $jsonHeader = "[]";
 			$instance = $instances = $possible_models_id = "";
-			$possible_models = $possible_models_id = array();
+			$possible_models = $possible_models_id = $other_models = array();
 			$must_wait = 'NO';
 			$mae = $rae = 0;
 
@@ -267,17 +265,31 @@ class MLFindAttributesController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'datanodess' => $params['datanodess'],
+				'bench_types' => $params['bench_types'],
+				'vm_sizes' => $params['vm_sizes'],
+				'vm_coress' => $params['vm_coress'],
+				'vm_RAMs' => $params['vm_RAMs'],
+				'types' => $params['types'],
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => '[\''.implode("','",$possible_models_id).'\']',
+				'models_id' => $possible_models_id,
+				'other_models_id' => $other_models,
 				'current_model' => $current_model,
 				'message' => $message,
 				'mae' => $mae,
 				'rae' => $rae,
 				'must_wait' => $must_wait,
+				'instance' => $instance,
+				'instances' => implode("<br/>",$instances),
+				'model_info' => $model_info,
+				'id_findattr' => md5($config),
+				'unseen' => $unseen,
 				'tree' => (isset($_GET['tree'])?"true":"false"),
 				'tree_descriptor' => $tree_descriptor,
+				'preset' => $preset,
+				'selPreset' => $selPreset,
 				'options' => Utils::getFilterOptions($db)
 			)
 		);

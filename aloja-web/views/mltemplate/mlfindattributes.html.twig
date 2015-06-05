@@ -21,8 +21,7 @@
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
 		<p style="text-align:justify"><b>Predict Configurations</b>: This tool uses the created models from <a href="/mlprediction">Modeling Data</a> to expand the space of possibilities for the selected attributes in the right filter box. It gets the best compatible model in cache and predicts all the possible software and hardware configurations for the selected filter, and returns a table with the results. It also creates a tree of attributes, indicating which ones separate better the faster from the slower executions.</p>
-		<p style="text-align:justify">
-To use the tool, select which executions you want to filter through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Then observe the predictions for each combination, also the tree of attributes. Optionally you can re-launch the prediction process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
+		<p style="text-align:justify">To use the tool, select which executions you want to filter through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Then observe the predictions for each combination, also the tree of attributes. Optionally you can re-launch the prediction process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
 		<hr />
 	</div>
 	<div id="contentdiv" style="float: left; width: 68%;">	
@@ -31,10 +30,22 @@ To use the tool, select which executions you want to filter through the right fi
 		</div>
 		<br />
 		<div id="treedescriptor" style="display:none; float: left; width: 100%;"><hr/>Tree Descriptor: {{ tree_descriptor | raw}}<hr/></div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Model cache ID: {{current_model|raw}}</li>
+				<li>Search cache ID: {{id_findattr|raw}}</li>
+				<li>Instance: {{instance|raw}}</li>
+				<li>Model Info: {{model_info|raw}}</li>
+				<li>Instances: {{instances|raw}}</li>
+				</ul>
+			</p>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -43,9 +54,6 @@ To use the tool, select which executions you want to filter through the right fi
 		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
-		</div>
-		<div style="float: right; width: 30%;">
-			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
 		</div>
 	</div>
 	{% endblock %}
@@ -66,26 +74,15 @@ To use the tool, select which executions you want to filter through the right fi
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
 	}
 
-	$(document).ready(function() {
-		$("#select-model").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>");
-			$('#submitForm').click();
-		});
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Generate Predictions');
+		$("#submitForm").html('Generate Predictions');
 
-		$("select.form-control option[value='None']").text("ALL");
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{jsonData | raw}}" == '[]') $("#footer").hide();
-
-		var target = document.getElementById('select-model');
-		var mid = {{ models_id | raw }};
-		for (i = 0; i < mid.length; i++)
-		{
-			var newhtml = "<option value='" + mid[i] + "'";
-			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
-			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
-		}
 
 		if ("{{must_wait}}" == "NO")
 		{

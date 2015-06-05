@@ -119,9 +119,10 @@ function removeAzureStorageContainer([String]$storageName, [String]$storageKey, 
 }
 
 function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$storageName, [String]$storageKey, [bool]$createContainer=$True, [String]$containerName = $null, [String]$subscriptionName, [System.Management.Automation.PsCredential]$cred, [String]$region, [String]$vmSize) {
-   $YarnConfigValues = @{"yarn.scheduler.maximum-allocation-mb"="4608";"yarn.scheduler.minimum-allocation-mb"="768";}
+ #  $YarnConfigValues = @{"yarn.scheduler.maximum-allocation-mb"="4608";"yarn.scheduler.minimum-allocation-mb"="1024";}
    $MapRedConfigValues = new-object 'Microsoft.WindowsAzure.Management.HDInsight.Cmdlet.DataObjects.AzureHDInsightMapReduceConfiguration'
-   $MapRedConfigValues.Configuration = @{"yarn.app.mapreduce.am.command-opts"="-Xmx1G";"yarn.app.mapreduce.am.resource.mb"="1536";"mapreduce.map.memory.mb"="1536";"mapreduce.reduce.memory.mb"="1536";"mapreduce.map.java.opts"="-Xmx1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC";"mapreduce.reduce.java.opts"="-Xmx1G -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC -Dhdp.version=\${hdp.version}";}
+   $MapRedConfigValues.Configuration = @{"mapreduce.task.io.sort.mb"="756";"mapreduce.job.reduce.slowstart.completedmaps"="0.9";"mapreduce.reduce.shuffle.read.timeout"="12000000";"mapreduce.output.fileoutputformat.compress"="true";"mapreduce.map.output.compress"="true";"mapreduce.map.memory.mb"="2048";"mapreduce.map.java.opts"="-Xmx2048m";}
+   $CoreConfigValues = @{ "fs.azure.selfthrottling.read.factor"="1.0";"fs.azure.selfthrottling.write.factor"="1.0";"fs.azure.block.size"="67108864";"fs.azure.io.retry.min.backoff.interval"="10000";"fs.azure.io.retry.max.backoff.interval"="60000";"fs.azure.io.retry.backoff.interval"="10000";"fs.azure.io.retry.max.retries"="30"; }
 
    if($containerName -eq $null) {
      $containerName = $storageName
@@ -136,7 +137,7 @@ function createCluster([String]$clusterName, [Int32]$nodesNumber=16, [String]$st
    Write-Verbose "Creating HDInsight cluster"
    $Config = New-AzureHDInsightClusterConfig -ClusterSizeInNodes $nodesNumber -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" |
       Set-AzureHDInsightDefaultStorage -StorageAccountName "$storageName.blob.core.windows.net" -StorageAccountKey $storageKey -StorageContainerName $containerName |
-      Add-AzureHDInsightConfigValues -MapReduce $MapRedConfigValues -Yarn $YarnConfigValues
+      Add-AzureHDInsightConfigValues -Core $CoreConfigValues -MapReduce $MapRedConfigValues -Yarn $YarnConfigValues
    #$Config = New-AzureHDInsightClusterConfig -ClusterSizeInNodes $nodesNumber -HeadNodeVMSize $vmSize -DataNodeVMSize $vmSize -ClusterType "Hadoop" |
    #    Set-AzureHDInsightDefaultStorage -StorageAccountName "$storageName.blob.core.windows.net" -StorageAccountKey $storageKey -StorageContainerName $containerName
    New-AzureHDInsightCluster -Config $Config -Name $clusterName -Credential $cred -Location $region -OSType "Windows"
@@ -152,7 +153,7 @@ function destroyCluster([String]$clusterName, [String]$storageName, [String]$sto
 	 Write-Verbose "Removing azure storage container"
 	 removeAzureStorageContainer -StorageName $storageName -StorageKey $storageKey -ContainerName $containerName
   }
-  
+
   Write-Verbose "Removing HDInsight cluster"
   Remove-AzureHDInsightCluster -Name $clusterName
   Write-Verbose "HDinsight cluster removed successfully"

@@ -34,7 +34,7 @@ class Router
             $this->logger->addError('The router YAML isn\'t correct');
             throw new \Exception('The router YAML file isn\'t correct');
         }
-        $this->routesCollection = Yaml::parse($file);
+        $this->routesCollection = Yaml::parse(file_get_contents($file));
     }
 
     /**
@@ -73,7 +73,7 @@ class Router
 
     public function validateRouteFileSyntax($file)
     {
-        $routesCollection = Yaml::parse($file);
+        $routesCollection = Yaml::parse(file_get_contents($file));
         if (!is_array($routesCollection)) {
             $this->logger->addError('The router file doesn\'t have an aproppiate syntax. ');
 
