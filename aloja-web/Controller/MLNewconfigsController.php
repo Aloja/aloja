@@ -28,7 +28,7 @@ class MLNewconfigsController extends AbstractController
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes',
 						'datanodess','bench_types','vm_OSs','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
@@ -49,7 +49,7 @@ class MLNewconfigsController extends AbstractController
 				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 			}
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
+			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,FALSE); // This is excluded from all the process, except the initial DB query
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
