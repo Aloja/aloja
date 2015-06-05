@@ -117,6 +117,7 @@ MAX_REDS="$MAX_MAPS"
 
 subs=$(cat <<EOF
 s,##JAVA_HOME##,$JAVA_HOME,g;
+s,##HADOOP_HOME##,$BENCH_H_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
@@ -138,7 +139,7 @@ s,##PHYS_MEM##,$PHYS_MEM,g;
 s,##NUM_CORES##,$NUM_CORES,g;
 s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
-s,##MAPS_MB##,$MAPS_MBg;
+s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##BENCH_DEFAULT_SCRATCH##,$BENCH_DEFAULT_SCRATCH,g;
 s,##HDD##,$HDD,g;
@@ -161,6 +162,7 @@ slaves="$(get_slaves_names)"
   if [ "$HADOOP_VERSION" == "hadoop2" ] ; then
     $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/yarn-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml" 2>&1 |tee -a $LOG_PATH
     $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/yarn-env.sh > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-env.sh" 2>&1 |tee -a $LOG_PATH
+    $DSH "/usr/bin/perl -pe \"$subs\" $BENCH_H_DIR/conf_template/mapred-env.sh > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-env.sh" 2>&1 |tee -a $LOG_PATH
   fi
 
   loggerb "Replacing per host config"
@@ -168,6 +170,7 @@ slaves="$(get_slaves_names)"
   for node in $node_names ; do
     ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
     ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
+    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml" 2>&1 |tee -a $LOG_PATH &
   done
 
   $DSH "echo -e \"$MASTER\" > $BENCH_H_DIR/$HADOOP_CONF_PATH/masters" 2>&1 |tee -a $LOG_PATH
@@ -224,6 +227,7 @@ restart_hadoop(){
   if [ "$HADOOP_VERSION" == "hadoop2" ]; then
     $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 >> $LOG_PATH
     $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver 2>&1 >> $LOG_PATH
   else
     $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
   fi
@@ -254,6 +258,7 @@ restart_hadoop(){
   elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
       $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
       $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh start historyserver 2>&1 |tee -a $LOG_PATH
   fi
 
   for i in {0..300} #3mins
@@ -289,11 +294,14 @@ restart_hadoop(){
       if [ "$HADOOP_VERSION" == "hadoop2" ]; then
         $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 >> $LOG_PATH
         $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 >> $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver 2>&1 |tee -a $LOG_PATH
         $DSH_MASTER $BENCH_H_DIR/sbin/start-dfs.sh 2>&1 |tee -a $LOG_PATH
         $DSH_MASTER $BENCH_H_DIR/sbin/start-yarn.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh start historyserver 2>&1 |tee -a $LOG_PATH
       else
         $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
         $DSH_MASTER $BENCH_H_DIR/bin/start-all.sh 2>&1 |tee -a $LOG_PATH
+        $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver 2>&1 |tee -a $LOG_PATH
       fi
 
     elif [ "$i" == "180" ] && [[ -z $1 ]] ; then
@@ -323,6 +331,7 @@ stop_hadoop(){
   elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
     $DSH_MASTER $BENCH_H_DIR/sbin/stop-yarn.sh 2>&1 |tee -a $LOG_PATH
     $DSH_MASTER $BENCH_H_DIR/sbin/stop-dfs.sh 2>&1 |tee -a $LOG_PATH
+    $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver 2>&1 |tee -a $LOG_PATH
   fi
   loggerb "Stop Hadoop ready"
  fi
@@ -486,12 +495,17 @@ execute_hadoop(){
 
   #need to send all the environment variables over SSH
   EXP="export JAVA_HOME=$JAVA_HOME && \
+export HADOOP_PREFIX=$BENCH_H_DIR && \
 export HADOOP_HOME=$BENCH_H_DIR && \
 export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
 export HADOOP_CONF_DIR=$hadoop_config && \
 export HADOOP_EXAMPLES_JAR=$hadoop_examples_jar && \
 export MAPRED_EXECUTABLE=$BENCH_H_DIR/bin/mapred && \
 export HADOOP_VERSION=$HADOOP_VERSION && \
+export HADOOP_COMMON_HOME=$HADOOP_HOME && \
+export HADOOP_HDFS_HOME=$HADOOP_HOME && \
+export HADOOP_MAPRED_HOME=$HADOOP_HOME && \
+export HADOOP_YARN_HOME=$HADOOP_HOME && \
 export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
 export COMPRESS_CODEC_GLOBAL=$COMPRESS_CODEC_GLOBAL && \
 export COMPRESS_CODEC_MAP=$COMPRESS_CODEC_MAP && \
@@ -510,9 +524,8 @@ export NUM_OF_SAMPLES=$NUM_OF_SAMPLES && \
 export SAMPLES_PER_INPUTFILE=$SAMPLES_PER_INPUTFILE && \
 export DIMENSIONS=$DIMENSIONS && \
 export MAX_ITERATION=$MAX_ITERATION && \
-export NUM_ITERATIONS=$NUM_ITERATIONS && \
+export NUM_ITERATIONS=$NUM_ITERATIONS
 "
-
   $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2" 2>&1 |tee -a $LOG_PATH
 
   local end_exec=`timestamp`
@@ -639,7 +652,7 @@ save_hadoop() {
   #we cannot move hadoop files
   #take into account naming *.date when changing dates
   #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp -r ${HADOOP_HOME}/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  $DSH "cp -r ${BENCH_H_DIR}/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
 
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$defaultProvider" == "hdinsight" ]; then
@@ -647,7 +660,7 @@ save_hadoop() {
 	hdfs dfs -rm -r /mr-history
 	hdfs dfs -expunge
   else
-    $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+    $DSH "cp $BENCH_H_DIR/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   fi
 
   # Hadoop 2 saves job history to HDFS, get it from there
