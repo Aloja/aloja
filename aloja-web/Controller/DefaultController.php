@@ -2102,6 +2102,7 @@ class DefaultController extends AbstractController
                 return $a['cost_std'] > $b['cost_std'];
     			//return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
+
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
@@ -2483,7 +2484,7 @@ class DefaultController extends AbstractController
     	}
     
     	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
-    
+
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
     		return ($a['cost_std']) > ($b['cost_std']);
