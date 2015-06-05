@@ -131,7 +131,7 @@ class MLTemplatesController extends AbstractController
 							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
-								$specific_instance = implode(",",array_slice($data, 2, 19));
+								$specific_instance = implode(",",array_slice($data, 2, 20));
 								$specific_data = implode(",",$data);
 								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
@@ -168,7 +168,7 @@ class MLTemplatesController extends AbstractController
 				$max_x = $max_y = 0;
 				$error_stats = '';
 
-				$query = "SELECT exe_time, pred_time, instance FROM predictions WHERE id_learner='".md5($config)."' LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
+				$query = "SELECT exe_time, pred_time, instance FROM predictions WHERE id_learner='".md5($config)."' AND exe_time > 100 LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{
@@ -181,7 +181,7 @@ class MLTemplatesController extends AbstractController
 					$count++;
 				}
 
-				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 GROUP BY predict_code";
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 AND exe_time > 100 GROUP BY predict_code";
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{

@@ -59,8 +59,12 @@ class MLFindAttributesController extends AbstractController
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
+			$other_models = array();
+			$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
+
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			if (!empty($possible_models_id))
 			{
@@ -108,26 +112,27 @@ class MLFindAttributesController extends AbstractController
 
 							// Fetch Real Value
 							$inst_aux = preg_split("/\s+/", $line);
-							$query_var = "SELECT AVG(exe_time) as AVG, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
+							$query_var = "SELECT AVG(exe_time) as AVG, id_exec, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
 							$result = $dbml->query($query_var);
 							$row = $result->fetch();
 
 							$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
-/*
-							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
-							$result = $dbml->query($query_var);
-							$row = $result->fetch();
+							$realid_exec = (is_null($row['id_exec']) || $row['outlier'] == 2)?0:$row['id_exec'];
 
-							// Insert instance values
-							if ($row['num'] == 0)
-							{
-*/
+							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
+                                                        $result = $dbml->query($query_var);
+                                                        $row = $result->fetch();
+
+                                                        // Insert instance values
+                                                        if ($row['num'] == 0)
+                                                        {
+
 								$token_i = 1;
 								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
 								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
 								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('0','0','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
-//							}
+								$query = $query."('".$realid_exec."','".$realexecval."','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
+							}
 
 							$i++;
 
@@ -225,9 +230,11 @@ class MLFindAttributesController extends AbstractController
 			}
 			else
 			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.".$instance;
+				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 				if (isset($_GET['dump'])) { echo "-1"; exit(0); }
 				if (isset($_GET['pass'])) { return "-1"; }
+				$config = "";
+				$possible_models = $possible_models_id = array("None");
 			}
 			$dbml = null;
 		}
@@ -237,7 +244,7 @@ class MLFindAttributesController extends AbstractController
 
 			$jsonData = $jsonHeader = "[]";
 			$instance = $instances = $possible_models_id = "";
-			$possible_models = $possible_models_id = array();
+			$possible_models = $possible_models_id = $other_models = array();
 			$must_wait = 'NO';
 			$mae = $rae = 0;
 
@@ -268,6 +275,7 @@ class MLFindAttributesController extends AbstractController
 				'jsonHeader' => $jsonHeader,
 				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 				'models_id' => $possible_models_id,
+				'other_models_id' => $other_models,
 				'current_model' => $current_model,
 				'message' => $message,
 				'mae' => $mae,
