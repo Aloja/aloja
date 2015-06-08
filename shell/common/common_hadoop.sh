@@ -120,6 +120,8 @@ s,##JAVA_HOME##,$JAVA_HOME,g;
 s,##HADOOP_HOME##,$BENCH_H_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
+s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
+s,##JAVA_AM_XMX##,$JAVA_AM_XMX,g;
 s,##LOG_DIR##,$HDD/logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$MASTER,g;
@@ -141,6 +143,7 @@ s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
 s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
+s,##AM_MB##,$REDUCES_MB,g;
 s,##BENCH_DEFAULT_SCRATCH##,$BENCH_DEFAULT_SCRATCH,g;
 s,##HDD##,$HDD,g;
 EOF
@@ -499,6 +502,7 @@ export HADOOP_PREFIX=$BENCH_H_DIR && \
 export HADOOP_HOME=$BENCH_H_DIR && \
 export HADOOP_EXECUTABLE=$BENCH_H_DIR/bin/hadoop && \
 export HADOOP_CONF_DIR=$hadoop_config && \
+export YARN_CONF_DIR=$hadoop_config && \
 export HADOOP_EXAMPLES_JAR=$hadoop_examples_jar && \
 export MAPRED_EXECUTABLE=$BENCH_H_DIR/bin/mapred && \
 export HADOOP_VERSION=$HADOOP_VERSION && \
