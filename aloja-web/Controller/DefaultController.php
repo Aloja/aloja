@@ -1733,9 +1733,10 @@ class DefaultController extends AbstractController
             $clusterNameSelected = $_GET['cluster_name'];
         }
 
+        $filter_execs = DBUtils::getFilterExecs();
 
         $db = $this->container->getDBUtils();
-        $clusters = $db->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT id_cluster FROM execs);");
+        $clusters = $db->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT distinct(id_cluster) FROM execs e WHERE 1 $filter_execs);");
 
         echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
             'selected' => 'Clusters',
@@ -2101,6 +2102,7 @@ class DefaultController extends AbstractController
                 return $a['cost_std'] > $b['cost_std'];
     			//return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
+
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
@@ -2267,7 +2269,7 @@ class DefaultController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
+    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
     
     	//Sorting clusters by size
     	usort($execs, function($a,$b) {
@@ -2481,8 +2483,8 @@ class DefaultController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs);");
-    
+    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
     		return ($a['cost_std']) > ($b['cost_std']);
