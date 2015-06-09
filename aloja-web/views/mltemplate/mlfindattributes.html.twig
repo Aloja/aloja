@@ -24,23 +24,97 @@
 		<p style="text-align:justify">To use the tool, select which executions you want to filter through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Then observe the predictions for each combination, also the tree of attributes. Optionally you can re-launch the prediction process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
 		<hr />
 	</div>
-	<div id="contentdiv" style="float: left; width: 68%;">	
-		<div id="benchdiv" style="float: left; width: 100%;">
-			<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
-		</div>
-		<br />
-		<div id="treedescriptor" style="display:none; float: left; width: 100%;"><hr/>Tree Descriptor: {{ tree_descriptor | raw}}<hr/></div>
-		<div id="information" style="float: left; width: 100%;">
-			<p>{{error_stats | raw}}</p>
-			<p>Model information:
-				<ul>
-				<li>Model cache ID: {{current_model|raw}}</li>
-				<li>Search cache ID: {{id_findattr|raw}}</li>
-				<li>Instance: {{instance|raw}}</li>
-				<li>Model Info: {{model_info|raw}}</li>
-				<li>Instances: {{instances|raw}}</li>
-				</ul>
-			</p>
+	<div id="contentdiv" style="float: left; width: 68%;">
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingBenchDiv">
+				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" aria-expanded="true" aria-controls="benchDivFilter">
+						Predicted Configurations
+					</a>
+				</h4>
+			</div>
+			<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
+				<div class="panel-body">
+					<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="65%"><thead></thead></table>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingChartDiv">
+				<i id="ChartFG" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" aria-expanded="true" aria-controls="chartDivFilter">
+						Plot Executions by Class
+					</a>
+				</h4>
+			</div>
+			<div id="chartDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingChartDiv">
+				<div class="panel-body">
+					<table width="100%"><tr><td>Feature selector:&nbsp;</td><td width="50%">
+					<select class="form-control" class="control-form in " name="feature" style="width:25%" onchange="updatechart(this.value)">
+						<option value="Benchmark">Benchmarks</option>
+						<option value="Net">Networks</option>
+						<option value="Disk">Disks</option>
+						<option value="Maps">Maps</option>
+						<option value="IO.SFS">IO.SFactors</option>
+						<option value="Rep">Replicas</option>
+						<option value="IO.FBuf">IO.File.Buffer</option>
+						<option value="Comp">Compression</option>
+						<option value="Blk.Size">Block.Sizes</option>
+						<option value="Cluster" SELECTED >Clusters</option>
+						<option value="Bench.Type">Benchmark Type</option>
+					</select>
+					</td><td>
+						<div style="float:right;">
+						<input type="checkbox" name="displaypred" value="predicted" onchange="updatepred(this)" checked> Display Predicted &nbsp;
+						<input type="checkbox" name="displayobs" value="observed" onchange="updateobs(this)"> Display Observed
+						</div>
+					</td></tr></table>
+					<div id="chart" style="float: left; width: 65%; margin: 0 auto;"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingTreeDiv">
+				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
+						Descriptor Tree
+					</a>
+				</h4>
+			</div>
+			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">
+				<div class="panel-body">
+					<div id="treedescriptor" style="float: left; width: 65%;">{{ tree_descriptor | raw}}</div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<div id="information" style="float: left; width: 65%;">
+						<p>{{error_stats | raw}}</p>
+						<p>
+							<ul>
+							<li>Model cache ID: {{current_model|raw}}</li>
+							<li>Search cache ID: {{id_findattr|raw}}</li>
+							<li>Instance: {{instance|raw}}</li>
+							<li>Model Info: {{model_info|raw}}</li>
+							<li>Instances: {{instances|raw}}</li>
+							</ul>
+						</p>
+					</div>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
@@ -49,11 +123,10 @@
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
-	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+	Usable models found: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 	<div id="footer" style="display:none; float: left; width: 100%;">
-		<p>Current Instance: {{ instance }} <br/>Current used model: {{current_model}} <br/>Current MAE of data: {{mae}} ; Current RAE of data: {{rae}}</p>
-		<div style="float: left; width: 65%;">
-			<p>Usable models found:<ul>{{models | raw}}</ul></p>
+		<div style="float: left; width: 100%;">
+			<p><ul>{{models | raw}}</ul></p>
 		</div>
 	</div>
 	{% endblock %}
@@ -64,6 +137,8 @@
 	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
 	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
 	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 	function toggle(divid, textid)
@@ -74,6 +149,181 @@
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
 	}
 
+	function datachart (jsonObjData, jsonObjHeader, variable1)
+	{
+		var index = 0;
+		var exetime = 0;
+		var obstime = 0;
+		for (var i = 0; i < jsonObjHeader.length; i++)
+		{
+			if (variable1 == jsonObjHeader[i]["title"]) index = i;
+			if ("Prediction" == jsonObjHeader[i]["title"]) exetime = i;
+			if ("Observed" == jsonObjHeader[i]["title"]) obstime = i;
+		}
+
+		var levelaux = [];
+		for (var i = 0; i < jsonObjData.length; i++) levelaux.push(jsonObjData[i][index]);
+
+		function onlyUnique(value, index, self) { return self.indexOf(value) === index; }
+		var levels = levelaux.filter( onlyUnique );
+
+		var numeric = true;
+		for (var i = 0; i < levels.length; i++) numeric = numeric && !isNaN(parseFloat(levels[i]));
+
+		var jsonChartSeries = "";
+		var jsonChartObsSeries = "";
+		for (var i = 0; i < jsonObjData.length; i++)
+		{
+			var x1 = jsonObjData[i][exetime];
+			var x2 = jsonObjData[i][obstime];
+			var y1 = jsonObjData[i][index];
+
+			if (!numeric) for (var j = 0; j < levels.length; j++) if (levels[j] == y1) y1 = j;
+
+			if (jsonChartSeries != "") jsonChartSeries = jsonChartSeries + ",";
+			jsonChartSeries = jsonChartSeries + "{\"y\":" + y1 + ",\"x\":" + x1 + ",\"name\":\"" + jsonObjData[i].toString() + "\"}";
+
+			if (parseInt(x2) > 0)
+			{
+				if (jsonChartObsSeries != "") jsonChartObsSeries = jsonChartObsSeries + ",";
+				jsonChartObsSeries = jsonChartObsSeries + "{\"y\":" + y1 + ",\"x\":" + x2 + ",\"name\":\"" + jsonObjData[i].toString() + "\"}";
+			}
+		}
+		jsonChartSeries = "[" + jsonChartSeries + "]";
+		jsonChartObsSeries = "[" + jsonChartObsSeries + "]";
+
+		var averages = [];
+		var items = [];
+		var indexes = new Array();
+
+		var averagesobs = [];
+		var itemsobs = [];
+		var indexesobs = new Array();
+		
+		for (var i = 0; i < jsonObjData.length; i++)
+		{
+			var x1 = jsonObjData[i][exetime];
+			var x2 = jsonObjData[i][obstime];
+			var y1 = jsonObjData[i][index];
+
+			if (!numeric) for (var j = 0; j < levels.length; j++) if (levels[j] == y1) y1 = j;
+
+			if (!(y1 in indexes)) { averages[y1] = 0; items[y1] = 0; indexes[y1] = y1; }
+			averages[y1] = averages[y1] + parseInt(x1);
+			items[y1] = items[y1] + 1;
+
+			if (parseInt(x2) > 0)
+			{
+				if (!(y1 in indexesobs)) { averagesobs[y1] = 0; itemsobs[y1] = 0; indexesobs[y1] = y1; }
+				averagesobs[y1] = averagesobs[y1] + parseInt(x2);
+				itemsobs[y1] = itemsobs[y1] + 1;
+			}
+		}
+
+		var jsonAvgSeries = "";
+		for (var i = 0; i < indexes.length; i++)
+		{
+			var indx = indexes[i];
+
+			if (!isNaN(indx))
+			{
+				var name = indx;
+				if (!numeric) name = levels[indx];
+
+				if (jsonAvgSeries != "") jsonAvgSeries = jsonAvgSeries + ",";
+				jsonAvgSeries = jsonAvgSeries + "{\"y\":" + indx + ",\"x\":" + averages[indx]/items[indx] + ",\"name\":\"Average of " + variable1 + " = " + name + " : " + averages[indx]/items[indx] + "\"}";
+			}
+		}
+		jsonAvgSeries = "[" + jsonAvgSeries + "]";
+
+		var jsonAvgObsSeries = "";
+		for (var i = 0; i < indexesobs.length; i++)
+		{
+			var indx = indexesobs[i];
+
+			if (!isNaN(indx))
+			{
+				var name = indx;
+				if (!numeric) name = levels[indx];
+
+				if (jsonAvgObsSeries != "") jsonAvgObsSeries = jsonAvgObsSeries + ",";
+				jsonAvgObsSeries = jsonAvgObsSeries + "{\"y\":" + indx + ",\"x\":" + averagesobs[indx]/itemsobs[indx] + ",\"name\":\"Average of " + variable1 + " = " + name + " : " + averagesobs[indx]/itemsobs[indx] + "\"}";
+			}
+		}
+		jsonAvgObsSeries = "[" + jsonAvgObsSeries + "]";
+
+		return [levels,jsonChartSeries,jsonAvgSeries,jsonChartObsSeries,jsonAvgObsSeries];
+	}
+
+	function drawchart (levels,variable1,jsonChartSeries,jsonAvgSeries,jsonChartObsSeries,jsonAvgObsSeries)
+	{
+		$('#chart').highcharts( {
+    		        chart: { type: 'scatter', zoomType: 'xy' },
+    		        title: { text: 'Configurations by Attribute' },
+    		        //subtitle: { text: 'AAAAAAA'},
+			xAxis: {
+				title: { enabled: true, text: 'Execution Time' },
+				startOnTick: true,
+				endOnTick: false
+    		        },
+    		        yAxis: {
+				title: { enabled: true, text: variable1 },
+				startOnTick: true,
+				endOnTick: false,
+				categories: levels
+    		        },
+			credits: { enabled: false },
+    		        plotOptions: {
+			    series: { turboThreshold: 5000 },
+    		            scatter: {
+    		                marker: { radius: 5, states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } } },
+    		                states: { hover: { marker: { enabled: false } } },
+    		                tooltip: { headerFormat: '', pointFormat: '{point.name}' }
+    		            }
+    		        },
+    		        series: [
+				{name: 'Predicted Configurations', data: JSON.parse(jsonChartSeries), color: 'rgba(124, 181, 236, .4)', marker: {symbol: 'circle'}},
+				{name: 'Observed Configurations', data: JSON.parse(jsonChartObsSeries), color: 'rgba(128, 128, 128, .4)', marker: {symbol: 'diamond'}, visible: false},
+    		        	{name: 'Predicted Average Per Value', data: JSON.parse(jsonAvgSeries), color: 'rgba(255, 0, 0, 1)', marker: {symbol: 'circle'}},
+    		        	{name: 'Observed Average Per Value', data: JSON.parse(jsonAvgObsSeries), color: 'rgba(0, 0, 0, 1)', marker: {symbol: 'diamond'}, visible: false}
+			]
+		});
+	}
+
+	function updatechart (variable1)
+	{
+		var jsondata = "{{ jsonData | raw }}";
+		var jsonheader = '{{ jsonHeader | raw }}';
+
+		var chart = $('#chart').highcharts();
+		while (chart.series.length > 0) chart.series[0].remove(true);
+
+		var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
+		var jsonObjHeader = JSON.parse(jsonheader.replace(/title/g,"\"title\""));
+		var retval = datachart (jsonObjData, jsonObjHeader, variable1);
+
+		chart.yAxis[0].setTitle({ text: variable1 });
+		chart.yAxis[0].setCategories(retval[0], false);
+		chart.addSeries({name: 'Predicted Configurations', data: JSON.parse(retval[1]), color: 'rgba(124, 181, 236, .4)', marker: {symbol: 'circle'}});
+		chart.addSeries({name: 'Observed Configurations', data: JSON.parse(retval[3]), color: 'rgba(128, 128, 128, .4)', marker: {symbol: 'diamond'}, visible: false});
+		chart.addSeries({name: 'Predicted Average Per Value', data: JSON.parse(retval[2]), color: 'rgba(255, 0, 0, 1)', marker: {symbol: 'circle'}});
+		chart.addSeries({name: 'Observed Average Per Value', data: JSON.parse(retval[4]), color: 'rgba(0, 0, 0, 1)', marker: {symbol: 'diamond'}, visible: false});
+	}
+
+	function updatepred (check)
+	{
+		var chart = $('#chart').highcharts();
+		if (check.checked) { chart.series[0].show(); chart.series[2].show(); }
+		else { chart.series[0].hide(); chart.series[2].hide(); }
+	}
+
+	function updateobs (check)
+	{
+		var chart = $('#chart').highcharts();
+		if (check.checked) { chart.series[1].show(); chart.series[3].show(); }
+		else { chart.series[1].hide(); chart.series[3].hide(); }
+	}
+
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
@@ -82,14 +332,24 @@
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
-		if ("{{jsonData | raw}}" == '[]') $("#footer").hide();
+		var jsondata = "{{ jsonData | raw }}";
+		var jsonheader = '{{ jsonHeader | raw }}';
+
+		if (jsondata == '[]') $("#footer").hide();
 
 		if ("{{must_wait}}" == "NO")
 		{
+			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
+			var jsonObjHeader = JSON.parse(jsonheader.replace(/title/g,"\"title\""));
+
+			var variable1 = "Cluster"; // FIXME
+			var retval = datachart (jsonObjData, jsonObjHeader, variable1);
+			drawchart (retval[0],variable1,retval[1],retval[2],retval[3],retval[4]);
+
 			oTable = $('#benchmark').dataTable({
-				"lengthMenu": [[25, 50, 100, -1], [25, 50, 100, "All"]],
-				"aaData": {{ jsonData | raw }},
-				"columns": {{ jsonHeader | raw }},
+				"lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+				"aaData": jsonObjData,
+				"columns": jsonObjHeader,
 				"columnDefs" : [
 					{"targets" : -1, "render" : function (data) { return Math.round(data); }},
 					{"targets" : [11,12,13,14,15,16,17,18,19], "visible": false}
@@ -100,12 +360,21 @@
 			});           
 			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
 
-			$('#treedescriptor').show();
-			if ({{ tree }})	$('#benchdiv').hide();
+			if ({{ tree }})	{
+				$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+				$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			}
+			$('#waitdiv').hide();
 		}
 		else
 		{
-			$('#benchdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').show();
+			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+
 			$('#footer').hide();
 			setInterval( function() { window.location.reload(); }, 300000 );
 		}
