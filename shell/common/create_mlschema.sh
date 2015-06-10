@@ -13,8 +13,7 @@ CREATE TABLE IF NOT EXISTS \`learners\` (
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_learner\`),
   UNIQUE KEY \`id_learner_UNIQUE\` (\`id_learner\`),
-  KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`)
+  KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS \`predictions\` (
