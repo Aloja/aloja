@@ -28,7 +28,7 @@ class MLNewconfigsController extends AbstractController
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes',
 						'datanodess','bench_types','vm_OSs','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,$configurations,$concat_config); sort($params[$p]); }
+			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
@@ -49,7 +49,7 @@ class MLNewconfigsController extends AbstractController
 				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 			}
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,$configurations,$concat_config); // This is excluded from all the process, except the initial DB query
+			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,FALSE); // This is excluded from all the process, except the initial DB query
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
@@ -73,6 +73,10 @@ class MLNewconfigsController extends AbstractController
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM minconfigs WHERE id_minconfigs = '".md5($config.'R')."' AND id_learner = '".md5($config."M")."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = $is_cached && ($tmp_result['num'] > 0);
+
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
 
@@ -83,7 +87,7 @@ class MLNewconfigsController extends AbstractController
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','datanodes' => 'Datanodes','bench_type' => 'Bench.Type','vm_OS' => 'VM.OS',
-					'vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version','type' => 'Type'
+					'vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version','type' => 'Type','bench_type' => 'Bench.Type'
 				);
 
 				$headers = array_keys($header_names);
@@ -146,7 +150,7 @@ class MLNewconfigsController extends AbstractController
 								$header = fgetcsv($handle, 1000, ",");
 
 								$token = 0;
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 								while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 								{
 									$specific_instance = implode(",",array_slice($data, 2, 19));
@@ -237,8 +241,8 @@ class MLNewconfigsController extends AbstractController
 					fclose($handle_sizes);
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.{csv,dat}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.{csv,dat,data}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.{fin,csv,dat}');
@@ -323,6 +327,12 @@ class MLNewconfigsController extends AbstractController
 				'types' => $params['types'],
 				'message' => $message,
 				'instance' => $instance,
+				'id_newconf' => md5($config),
+				'id_newconf_first' => md5($config.'F'),
+				'id_newconf_dataset' => md5($config.'D'),
+				'id_newconf_model' => md5($config.'M'),
+				'id_newconf_result' => md5($config.'R'),
+				'model_info' => $model_info,
 				'learn' => $learn_param,
 				'must_wait' => $must_wait,
 				'options' => Utils::getFilterOptions($db)

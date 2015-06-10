@@ -67,6 +67,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     node.vm.hostname = "vagrant1"
     node.vm.network "private_network", ip: "10.42.42.101"
     node.vm.provision "shell", path: "files/vagrant_cluster/provision.sh"
+    node.vm.network :forwarded_port, host: 19888, guest: 19888 #history server
+    node.vm.network :forwarded_port, host: 8088, guest: 8088 #resource manager
   end
   config.vm.define "vagrant2", autostart: false do |node|
     node.vm.hostname = "vagrant2"

@@ -782,20 +782,19 @@ update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (
 $MYSQL "insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(1,'HDD vs SSD','http://hadoop.bsc.es/configimprovement?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HD2&disks[]=HD3&disks[]=HD4&disks[]=HD5&disks[]=HDD&disks[]=SS2&disks[]=SSD&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'HDD vs SSD comparison', 'Config Improvement');
 insert ignore into filters_presets(id,name,URL,preset,description,screen) VALUES(2,'VM Size','http://hadoop.bsc.es/parameval?parameval=vm_size&minexecs=&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&bench_types[]=HDI&bench_types[]=HiBench&vm_sizes[]=None&filters[]=valid&filters[]=filters&allunchecked=&datefrom=&dateto=&minexetime=50&maxexetime=',1,'Evaluation by size', 'Parameter Evaluation');
 
-
 "
 
+#Rackspace cloud
 $MYSQL "
-insert ignore into clusters(id_cluster,name,cost_hour,type,datanodes,provider,headnodes,vm_size,vm_OS,vm_cores,vm_RAM,description,cost_remote,cost_SSD,cost_IB) values(38,'rb-38',5.44,'PaaS',8,'rackspace',1,'hadoop1-15','linux',4,15,'Cloud Big Data (HDP 1.3)',0,0,0);
-#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427396874','terasort',25340,'ETH','RR1','HiBench',32,1,1,0);
-#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
-#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428333140','terasort',4134,'ETH','RR1','HiBench',32,1,1,0);
 insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_r16_1428327683','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
 
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'rb38-terasort','terasort',1273,'ETH','RR1','HiBench',32,1,1,0);
 "
-
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(42,'2014_alojahdil4_1428309325/job_1428289975913_0002','terasort',4148,'ETH','RR1','HiBench',32,1,1,0);
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427396874','terasort',25340,'ETH','RR1','HiBench',32,1,1,0);
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
+#insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 
 
 #$MYSQL "

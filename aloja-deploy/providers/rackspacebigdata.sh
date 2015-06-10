@@ -16,7 +16,7 @@ sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/xvde1 > /dev/nul
 
     local create_string="
 /dev/xvde1       /scratch/ssd/1  auto    defaults,nobootwait,noatime,nodiratime 0       2
-$system_ssd       /scratch/ssd/2    none bind,nobootwait 0 0
+$system_ssd       /scratch/ssd/2    none bind 0 0
 
 "
   fi

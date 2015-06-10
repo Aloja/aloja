@@ -17,6 +17,8 @@ $0 -C clusterName
 [-s (save prepare)]
 [-N (don't delete files)]
 [-H hadoop version <hadoop1|hadoop2>]
+[-t execution type (e.g: default, experimental)]
+[-e extrae (instrument execution)]
 
 example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
 " 1>&2;
@@ -27,32 +29,33 @@ example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordc
 OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
 # Default values
-VERBOSE=0
-NET="ETH"
-DISK="HDD"
-BENCH="HiBench"
-REPLICATION=1
-MAX_MAPS=8
-IO_FACTOR=10
-PORT_PREFIX=3
-IO_FILE=65536
-LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
-
-COMPRESS_GLOBAL=0
-COMPRESS_TYPE=0
+[ ! "$VERBOSE" ] && VERBOSE=0
+[ ! "$NET" ] && NET="ETH"
+[ ! "$DISK" ] && DISK="HDD"
+[ ! "$BENCH" ] && BENCH="HiBench"
+[ ! "$REPLICATION" ] && REPLICATION=1
+[ ! "$MAX_MAPS" ] && MAX_MAPS=8
+[ ! "$IO_FACTOR" ] && IO_FACTOR=10
+[ ! "$PORT_PREFIX" ] && PORT_PREFIX=3
+[ ! "$IO_FILE" ] && IO_FILE=65536
+[ ! "$LIST_BENCHS" ] && LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
+[ ! "$EXEC_TYPE" ] && EXEC_TYPE="default"
+[ ! "$COMPRESS_GLOBAL" ] && COMPRESS_GLOBAL=0
+[ ! "$COMPRESS_TYPE" ] && COMPRESS_TYPE=0
+[ ! "$INSTRUMENTATION" ] && INSTRUMENTATION==0
 
 #COMPRESS_GLOBAL=1
 #COMPRESS_TYPE=1
 #COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
 #COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
 #COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
-SAVE_BENCH=""
+[ ! "$SAVE_BENCH" ] && SAVE_BENCH=""
 
-BLOCK_SIZE=67108864
+[ ! "$SAVE_BENCH" ] && BLOCK_SIZE=67108864
 
-DELETE_HDFS=1
+[ ! "$SAVE_BENCH" ] && DELETE_HDFS=1
 
-while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
+while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
     h|\?)
       usage
@@ -70,11 +73,12 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
       ;;
     d)
       DISK=$OPTARG
+      defaultDisk=0
       #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -101,12 +105,15 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
         COMPRESS_GLOBAL=0
         COMPRESS_TYPE=0
       elif [ "$OPTARG" == "1" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=1
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
       elif [ "$OPTARG" == "2" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=2
         COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
       elif [ "$OPTARG" == "3" ] ; then
+        COMPRESS_GLOBAL=1
         COMPRESS_TYPE=3
         COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
       fi
@@ -120,6 +127,9 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
     s)
       SAVE_BENCH=1
       ;;
+    t)
+      EXEC_TYPE=$OPTARG
+      ;;
     N)
       DELETE_HDFS=0
       ;;
@@ -130,6 +140,9 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D" opt; do
     H)
       HADOOP_VERSION=$OPTARG
       [ "$HADOOP_VERSION" == "hadoop1" ] || [ "$HADOOP_VERSION" == "hadoop2" ] || usage
+      ;;
+    e)
+        INSTRUMENTATION=1
       ;;
     esac
 done
@@ -161,7 +174,6 @@ if ! inList "$CLUSTER_NETS" "$NET" ; then
   logger "ERROR: Disk type $NET not supported for $clusterName\nSupported: $NET"
   usage
 fi
-
 
 NUMBER_OF_DATA_NODES="$numberOfNodes"
 
@@ -216,6 +228,8 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 
 [ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
 [ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
+[ ! "$JAVA_AM_XMS" ] && JAVA_AM_XMS="-Xms256m"
+[ ! "$JAVA_AM_XMX" ] && JAVA_AM_XMX="-Xmx512m"
 
 [ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="hadoop1"
 
@@ -231,6 +245,22 @@ if [ ! "$BENCH_HADOOP_VERSION" ] ; then
   fi
 fi
 
+[ ! "$PHYS_MEM" ] && PHYS_MEM=$(echo "scale=4;($vmRAM*1024)-3072" | bc)
+[ ! "$NUM_CORES" ] && NUM_CORES="$vmCores"
+[ ! "$CONTAINER_MIN_MB" ] && CONTAINER_MIN_MB=768
+[ ! "$CONTAINER_MAX_MB" ] && CONTAINER_MAX_MB=4096
+[ ! "$MAPS_MB" ] && MAPS_MB=768
+[ ! "$REDUCES_MB" ]  && REDUCES_MB=1536
+[ ! "$AM_MB" ]  && AM_MB=1536
+
+##FOR TPCH ONLY, default 1TB
+[ ! "$TPCH_SCALE_FACTOR" ] && TPCH_SCALE_FACTOR=1000
+
+# Use instrumented version of Hadoop
+if [ "$INSTRUMENTATION" == "1" ] ; then
+  BENCH_HADOOP_VERSION="${BENCH_HADOOP_VERSION}-instr"
+fi
+
 
 loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
@@ -238,6 +268,15 @@ BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
 BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
 BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
 JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
+PHYS_MEM=$PHYS_MEM
+NUM_CORES=$NUM_CORES
+CONTAINER_MIN_MB=$CONTAINER_MIN_MB
+CONTAINER_MAX_MB=$CONTAINER_MAX_MB
+MAPS_MB=$MAPS_MB
+AM_MB=$AM_MB
+JAVA_AM_XMS=$JAVA_AM_XMS
+JAVA_AM_XMX=$JAVA_AM_XMX
+REDUCES_MB=$REDUCES_MB
 Master node: $master_name "
 
 #check that we got the dynamic disk location correctly
@@ -271,8 +310,8 @@ fi
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
-  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
+if [ ! -z "$EXECUTE_HIBENCH" ] || [ "$BENCH" == "TPCH" ]; then
+  trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; stop_sniffer; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 else
   trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 fi
@@ -292,7 +331,8 @@ $DSH_MASTER "touch $LOG_PATH"
 
 
 #export HADOOP_HOME="$HADOOP_DIR"
-export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
+[ ! $JAVA_HOME ] && export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
+
 loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
 if [ "$defaultProvider" != "hdinsight" ]; then
@@ -351,7 +391,7 @@ done
 #  loggerb  "Generating source dirs"
 #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
 #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION};
-#else
+#elsefi
 #  loggerb  "Source dirs up to date"
 #fi
 
@@ -424,6 +464,12 @@ $DSH "cp $HDD/* $HDD_TMP/* $JOB_PATH/"
 
 # Save current config (all environment variables)
 ( set -o posix ; set ) | grep -i -v "password" > $JOB_PATH/config.sh
+
+
+# Execute post-process of traces
+if [ "$INSTRUMENTATION" == "1" ] ; then
+  instrumentation_post_process
+fi
 
 
 #report

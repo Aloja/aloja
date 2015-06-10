@@ -11,68 +11,27 @@
 		<hr />
 	</div>
 	<div id="container" style="float: left; width: 68%; margin: 0 auto;">
-		<div id="navigation" style="text-align: center; width: 100%; margin: 0 auto;">
-			<div style="width: 50%; margin: 0 auto;">
-			Select variables:
-			<table width="100%"><tr><td width="48%">
-				<select class="form-control" name="variable1" id="variable1" size="1">
-				<option value="maps" {% if variable1 == 'maps' or variable1 =='' %}selected="selected"{% endif %}>Maps</option>
-				<option value="comp" {% if variable1 == 'comp' %}selected="selected"{% endif %}>Compression</option>
-				<option value="id_cluster" {% if variable1 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
-				<option value="net" {% if variable1 == 'net' %}selected="selected"{% endif %}>Network</option>
-				<option value="disk" {% if variable1 == 'disk' %}selected="selected"{% endif %}>Disk</option>
-				<option value="replication" {% if variable1 == 'replication' %}selected="selected"{% endif %}>Replication</option>
-				<option value="iofilebuf" {% if variable1 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
-				<option value="blk_size" {% if variable1 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
-				<option value="iosf" {% if variable1 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
-				<option value="datanodes" {% if variable1 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
-				<option value="headnodes" {% if variable1 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
-				<option value="vm_OS" {% if variable1 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
-				<option value="vm_cores" {% if variable1 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
-				<option value="vm_RAM" {% if variable1 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
-				<option value="provider" {% if variable1 == 'provider' %}selected="selected"{% endif %}>Provider</option>
-				<option value="vm_size" {% if variable1 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
-				<option value="type" {% if variable1 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
-				</select>
-			</td><td width="2%">&nbsp;</td><td width="48%">
-				<select class="form-control" name="variable2" id="variable2" size="1">
-				<option value="maps" {% if variable2 == 'maps' %}selected="selected"{% endif %}>Maps</option>
-				<option value="comp" {% if variable2 == 'comp' %}selected="selected"{% endif %}>Compression</option>
-				<option value="id_cluster" {% if variable2 == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
-				<option value="net" {% if variable2 == 'net' or variable1 =='' %}selected="selected"{% endif %}>Network</option>
-				<option value="disk" {% if variable2 == 'disk' %}selected="selected"{% endif %}>Disk</option>
-				<option value="replication" {% if variable2 == 'replication' %}selected="selected"{% endif %}>Replication</option>
-				<option value="iofilebuf" {% if variable2 == 'iofilebuf' %}selected="selected"{% endif %}>I/O File Buffer</option>
-				<option value="blk_size" {% if variable2 == 'blk_size' %}selected="selected"{% endif %}>Block size</option>
-				<option value="iosf" {% if variable2 == 'iosf' %}selected="selected"{% endif %}>I/O Sort Factor</option>
-				<option value="datanodes" {% if variable2 == 'datanodes' %}selected="selected"{% endif %}>Data Nodes</option>
-				<option value="headnodes" {% if variable2 == 'headnodes' %}selected="selected"{% endif %}>Head Nodes</option>
-				<option value="vm_OS" {% if variable2 == 'vm_OS' %}selected="selected"{% endif %}>Operating System</option>
-				<option value="vm_cores" {% if variable2 == 'vm_cores' %}selected="selected"{% endif %}>VM Cores</option>
-				<option value="vm_RAM" {% if variable2 == 'vm_RAM' %}selected="selected"{% endif %}>VM RAM</option>
-				<option value="provider" {% if variable2 == 'provider' %}selected="selected"{% endif %}>Provider</option>
-				<option value="vm_size" {% if variable2 == 'vm_size' %}selected="selected"{% endif %}>VM Size</option>
-				<option value="type" {% if variable2 == 'type' %}selected="selected"{% endif %}>Type of Service</option>
-				</select>
-			</td></tr></table>
-			</div>
-		</div>
-		<br />
 		<div id="chart" style="float: left; width: 100%; margin: 0 auto; height: 600px;"></div>
+		<div id="information" style="float: left; width: 100%;">
+			<p>{{error_stats | raw}}</p>
+			<p>Model information:
+				<ul>
+				<li>Model cache ID: {% if current_model != '' %}{{current_model|raw}}{% else %}Aggregation{% endif %}</li>
+				<li>Instance: {{instance|raw}}</li>
+				<li>Model Info: {{model_info|raw}}</li>
+				</ul>
+			</p>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'common/config_filters_ml.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
 	Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 	<div id="footer" style="display:none; float: left; width: 100%;">
-		<p>Current Instance: {{ instance }} <br/>Current used model: {% if current_model != '' %}{{current_model}}{% else %}Aggregation{% endif %}</p>
 		<div style="float: left; width: 65%;">
 			<p>Usable models found:<ul>{{models | raw}}</ul></p>
-		</div>
-		<div style="float: right; width: 30%;">
-			<p>Retry with this selected model:<br/> <select class="form-control" name="model[]" id="select-model" ></select></p>
 		</div>
 	</div>
 {% endblock %}
@@ -90,39 +49,11 @@
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
 	}
 
-	$(document).ready(function() {
-		$("select.form-control option[value='None']").text("ALL");
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
-
-		$("#variable1").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>");
-			$('#mldiv').append("<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>");
-			$('#submitForm').click();
-		});
-		$("#variable2").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='variable1' value='" + $('#variable1').val() + "'></input>");
-			$('#mldiv').append("<input type='hidden' name='variable2' value='" + $('#variable2').val() + "'></input>");
-			$('#submitForm').click();
-		});
-		$("#select-model").change(function()
-		{
-			$('#mldiv').append("<input type='hidden' name='current_model' value='" + $("#select-model").val() + "'></input>");
-			$('#submitForm').click();
-		});
-
-		var target = document.getElementById('select-model');
-		var mid = {{ models_id | raw }};
-		for (i = 0; i < mid.length; i++)
-		{
-			var newhtml = "<option value='" + mid[i] + "'";
-			if (mid[i] == '{{current_model}}') newhtml = newhtml + " SELECTED";
-			target.innerHTML = target.innerHTML + newhtml + ">" + mid[i] + "</option>";
-		}
-		var newhtml = "<option value=''";
-		if ('{{current_model}}' == '') newhtml = newhtml + " SELECTED";
-		target.innerHTML = target.innerHTML + newhtml + ">Aggregation of Models</option>";
 
 		if ("{{must_wait}}"== "NO")
 		{

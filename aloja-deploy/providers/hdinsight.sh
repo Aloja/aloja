@@ -73,7 +73,7 @@ create_hdi_cluster() {
 	storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
 
- vm_create_storage_account "$storageAccount" "GRS"
+ vm_create_storage_account "$storageAccount" "LRS"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
      azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
@@ -145,6 +145,7 @@ vm_final_bootstrap() {
 node_delete() {
 	hdi_cluster_check_delete $1
 	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
+	ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
 }
 
 get_master_name() {
