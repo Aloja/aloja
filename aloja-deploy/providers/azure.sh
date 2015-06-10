@@ -236,7 +236,7 @@ get_extra_fstab() {
   if [ "$clusterName" == "al-29" ] ; then
     vm_execute "mkdir -p /scratch/ssd/1"
     local create_string="$create_string
-/mnt       /scratch/ssd/1    none bind 0 0"
+/mnt       /scratch/ssd/1    none bind,nobootwait 0 0"
   fi
 
   echo -e "$create_string"
