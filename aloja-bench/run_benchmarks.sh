@@ -78,7 +78,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -253,6 +253,9 @@ fi
 [ ! "$REDUCES_MB" ]  && REDUCES_MB=1536
 [ ! "$AM_MB" ]  && AM_MB=1536
 
+##FOR TPCH ONLY, default 1TB
+[ ! "$TPCH_SCALE_FACTOR" ] && TPCH_SCALE_FACTOR=1000
+
 # Use instrumented version of Hadoop
 if [ "$INSTRUMENTATION" == "1" ] ; then
   BENCH_HADOOP_VERSION="${BENCH_HADOOP_VERSION}-instr"
@@ -307,7 +310,7 @@ fi
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
+if [ ! -z "$EXECUTE_HIBENCH" ] || [ "$BENCH" == "TPCH" ]; then
   trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; stop_sniffer; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 else
   trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
