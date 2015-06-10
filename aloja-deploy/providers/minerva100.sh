@@ -158,16 +158,16 @@ get_extra_fstab() {
 
   local minerva100_tmp="$homePrefixAloja/$userAloja/tmp"
   vm_execute "mkdir -p $minerva100_tmp"
-  local create_string="$minerva100_tmp       /scratch/local    none bind 0 0"
+  local create_string="$minerva100_tmp       /scratch/local    none bind,nobootwait 0 0"
 
   if [ "$clusterName" == "minerva100-10-18-21" ] ; then
     local create_string="$create_string
-/scratch/attached/6       /scratch/ssd/1    none bind 0 0
-/scratch/attached/7       /scratch/ssd/2    none bind 0 0"
+/scratch/attached/6       /scratch/ssd/1    none bind,nobootwait 0 0
+/scratch/attached/7       /scratch/ssd/2    none bind,nobootwait 0 0"
 
   elif [ "$clusterName" == "minerva100-02-18-18" ] ; then
     local create_string="$create_string
-/scratch/attached/7       /scratch/ssd/1    none bind 0 0"
+/scratch/attached/7       /scratch/ssd/1    none bind,nobootwait 0 0"
   fi
 
   echo -e "$create_string"
