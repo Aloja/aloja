@@ -228,6 +228,8 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 
 [ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
 [ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
+[ ! "$JAVA_AM_XMS" ] && JAVA_AM_XMS="-Xms256m"
+[ ! "$JAVA_AM_XMX" ] && JAVA_AM_XMX="-Xmx512m"
 
 [ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="hadoop1"
 
@@ -249,6 +251,7 @@ fi
 [ ! "$CONTAINER_MAX_MB" ] && CONTAINER_MAX_MB=4096
 [ ! "$MAPS_MB" ] && MAPS_MB=768
 [ ! "$REDUCES_MB" ]  && REDUCES_MB=1536
+[ ! "$AM_MB" ]  && AM_MB=1536
 
 # Use instrumented version of Hadoop
 if [ "$INSTRUMENTATION" == "1" ] ; then
@@ -267,6 +270,9 @@ NUM_CORES=$NUM_CORES
 CONTAINER_MIN_MB=$CONTAINER_MIN_MB
 CONTAINER_MAX_MB=$CONTAINER_MAX_MB
 MAPS_MB=$MAPS_MB
+AM_MB=$AM_MB
+JAVA_AM_XMS=$JAVA_AM_XMS
+JAVA_AM_XMX=$JAVA_AM_XMX
 REDUCES_MB=$REDUCES_MB
 Master node: $master_name "
 
