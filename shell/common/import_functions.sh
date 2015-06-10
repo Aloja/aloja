@@ -678,7 +678,7 @@ delete_untars() {
   fi
 }
 
-[$1 name history folder]
+#$1 name history folder
 get_xml_exec_params() {
 	local histFolder="mapred/history"
 	if [ ! -z $1 ]; then

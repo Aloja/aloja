@@ -11,7 +11,7 @@ class MLFindAttributesController extends AbstractController
 {
 	public function mlfindattributesAction()
 	{
-		$instance = $message = $tree_descriptor = '';
+		$instance = $message = $tree_descriptor = $model_html = '';
 		$must_wait = 'NO';
 		try
 		{
@@ -62,6 +62,9 @@ class MLFindAttributesController extends AbstractController
 			$other_models = array();
 			$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
+
+			$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
+			foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
 
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
@@ -273,7 +276,7 @@ class MLFindAttributesController extends AbstractController
 				'types' => $params['types'],
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
-				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+				'models' => $model_html,
 				'models_id' => $possible_models_id,
 				'other_models_id' => $other_models,
 				'current_model' => $current_model,
