@@ -1,7 +1,6 @@
 ### Quick start [![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=master)](https://travis-ci.org/Aloja/aloja)
 
-First get familiar with the Web app, browse data and views at: [**http://hadoop.bsc.es**](http://hadoop.bsc.es)
-And checkout some slides or publications as background and documentation: [http://hadoop.bsc.es/publications](http://hadoop.bsc.es/publications)
+First get familiar with the Web app, browse data and views at: [**http://hadoop.bsc.es**](http://hadoop.bsc.es). And checkout some slides or publications as background and documentation: [http://hadoop.bsc.es/publications](http://hadoop.bsc.es/publications)
 
 ##### To experiment on a local DEV copy:
 
@@ -30,4 +29,4 @@ This repository includes the on-going open source tools of this project that con
 ### More info
 The project is under constant development and in the process of being documented. Feel free to browse the site, the code, and send inquiries, feature requests or bug reports to: 
 
-*Write us at: [hadoop@bsc.es](mailto:hadoop@bsc.es)*
+**Write us at: [hadoop@bsc.es](mailto:hadoop@bsc.es)**
