@@ -150,21 +150,26 @@ install_ALOJA_DB() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-    if [ "$1" ] ; then
-      logger "INFO: Inserting sample data"
-      vm_execute "
-sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja.execs.8d_2015.sql.bz2|mysql aloja2 '
-sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja.8d_2015_50execs.sql.bz2|mysql aloja2 '
-"
-#sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja2.sql.bz2|mysql aloja2 '
-#sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja2.execs.sql.bz2|mysql aloja2 '
-
-    fi
 
     logger "INFO: Attempting to create database schema and default values..."
     vm_execute "
 bash $(get_repo_path)/shell/create-update_DB.sh
 "
+
+    if [ "$1" ] ; then
+      logger "INFO: Inserting sample data (12k execs + 5 with perf details)"
+      vm_execute "
+sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.8d_2015_5execs.sql.bz2|mysql -f -b --show-warnings -B aloja2'
+sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.execs.8d_2015.sql.bz2|mysql -f -b --show-warnings -B aloja2 '
+
+"
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.execs.8d_2015.sql.bz2|mysql -f -b --show-warnings -B aloja2 '
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.8d_2015_5execs.sql.bz2|mysql -f -b --show-warnings -B aloja2'
+
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja2.sql.bz2|mysql aloja2 '
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja2.execs.sql.bz2|mysql aloja2 '
+
+    fi
 
 
     test_action="$(vm_execute " [ \"\$(sudo mysql -B -e 'select * from aloja2.clusters;' |grep 'vagrant-99' )\" ] && echo '$testKey'")"
