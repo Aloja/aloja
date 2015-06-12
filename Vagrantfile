@@ -14,10 +14,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.name = "aloja-web"
 
     #Default base image to build from scratch
-    #config.vm.box = "hashicorp/precise64"
-    config.vm.box = "ubuntu/trusty64"
+    #config.vm.box = "ubuntu/trusty64"
     #Prebuilt box for ALOJA
-    #config.vm.box = "npoggi/aloja-precise64"
+    #config.vm.box = "npoggi/aloja-precise64" #Aloja v1 VM on Ubuntu 12.04
+    config.vm.box = "npoggi/aloja-trusty64" #Aloja v2 VM on Ubuntu 14.04
 
     v.memory = 2048 #change as needed
     v.cpus = 2 #change as needed
@@ -41,8 +41,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   #web document root
   #config.vm.synced_folder "./", "/vagrant/aloja"
-  #config.vm.synced_folder "./aloja-web/logs", "/vagrant/aloja/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
-  #config.vm.synced_folder "./aloja-web/cache", "/vagrant/aloja/aloja-web/cache", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
+  config.vm.synced_folder "./aloja-web/logs", "/vagrant/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
+  config.vm.synced_folder "./aloja-web/cache", "/vagrant/aloja-web/cache", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
 
   #bash scripts
   #config.vm.provision :shell, :path => "aloja-deploy/providers/vagrant-ubuntu-14-bootstrap.sh"
