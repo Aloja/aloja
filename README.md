@@ -19,12 +19,13 @@ The [**ALOJA**](http://hadoop.bsc.es) research project is an initiative from the
 In ALOJA we have currently created the largest vendor-neutral repository of Hadoop benchmark with over **42,000 public results**, as well as several tools for the management of the full-cycle from planning and execution of benchmarks, to data analysis and automated tools to produce insights to better understand system behavior and take decisions on framework and cluster design.
 
 This repository includes the on-going open source tools of this project that consists of:
--Cluster definition and automated deployment
--Benchmark selection and iteration of configurations
--Metrics collections, results gathering, and importing into a DB
--Web application to manage results
--Advanced data views for aggregate results with filters
--Predictive Analytics (PA) aka Machine Learning tools for modeling and Knowledge Discovery
+* Cluster definition and automated deployment
+
+* Benchmark selection and iteration of configurations
+* Metrics collections, results gathering, and importing into a DB
+* Web application to manage results
+* Advanced data views for aggregate results with filters
+* Predictive Analytics (PA) aka Machine Learning tools for modeling and Knowledge Discovery
 
 ### More info
 The project is under constant development and in the process of being documented. Feel free to browse the site, the code, and send inquiries, feature requests or bug reports to: 
