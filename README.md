@@ -20,7 +20,6 @@ In ALOJA we have currently created the largest vendor-neutral repository of Hado
 
 This repository includes the on-going open source tools of this project that consists of:
 * Cluster definition and automated deployment
-
 * Benchmark selection and iteration of configurations
 * Metrics collections, results gathering, and importing into a DB
 * Web application to manage results
