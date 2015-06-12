@@ -246,9 +246,9 @@ vm_execute() {
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
-      echo "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo -e "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo -e "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
     #chmod 0644 $(get_ssh_key)
   #Use password
@@ -347,6 +347,11 @@ get_master_name() {
 get_master_name_IB() {
   #logger "WARN: Special master name for InfiniBand not defined, using regular"
   echo "$(get_master_name)"
+}
+
+#overwrite if different in your provider
+get_repo_path(){
+  echo "$homePrefixAloja/$userAloja/share/"
 }
 
 #vm_name must be set
@@ -644,73 +649,6 @@ vm_check_attach_disks() {
 #  fi
 #}
 
-vm_install_base_packages() {
-  if check_sudo ; then
-
-    local bootstrap_file="vm_install_packages"
-
-    if check_bootstraped "$bootstrap_file" ""; then
-      logger "Installing packages for for VM $vm_name "
-
-      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp"
-
-      #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
-
-      #only update apt sources when is 1 day old (86400) to save time
-      local install_packages_command='
-#if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 86400 ]; then
-#  sudo apt-get update -m;
-#fi
-
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get update -m;
-sudo apt-get -o Dpkg::Options::="--force-confold" install -y -f '
-
-      local install_packages_command="$install_packages_command ssh $base_packages;"
-
-      vm_execute "$install_packages_command"
-
-      test_install_extra_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
-      if [ ! -z "$test_install_extra_packages" ] ; then
-        #set the lock
-        check_bootstraped "$bootstrap_file" "set"
-      else
-        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_extra_packages"
-      fi
-
-    else
-      logger "Packages already initialized"
-    fi
-  else
-    logger "WARNING: no sudo access or disabled, no packages installed"
-  fi
-}
-
-vm_install_extra_packages() {
-  if check_sudo ; then
-
-    local bootstrap_file="vm_install_extra_packages"
-
-    if check_bootstraped "$bootstrap_file" ""; then
-      logger "Installing extra packages for for VM $vm_name "
-
-      vm_execute "sudo apt-get install -y -f screen vim mc git iotop htop;"
-
-      local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
-      if [ ! -z "$test_install_extra_packages" ] ; then
-        #set the lock
-        check_bootstraped "$bootstrap_file" "set"
-      else
-        logger "ERROR: installing extra packages for $vm_name. Test output: $test_install_extra_packages"
-      fi
-
-    else
-      logger "Extra packages already initialized"
-    fi
-  else
-    logger "WARNING: no sudo access or disabled, no extra packages installed"
-  fi
-}
 
 vm_set_dsh() {
   local bootstrap_file="vm_set_dsh"

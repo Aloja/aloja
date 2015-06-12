@@ -2,9 +2,11 @@
 
 logger "INFO: Creating DB and tables for $DB (if necessary)"
 
-$MYSQL "
+$MYSQL_CREATE "
 
 CREATE DATABASE IF NOT EXISTS \`$DB\`;
+
+USE \`$DB\`;
 
 CREATE TABLE IF NOT EXISTS \`execs\` (
   \`id_exec\` int(11) NOT NULL AUTO_INCREMENT,
@@ -500,12 +502,12 @@ CREATE TABLE IF NOT EXISTS \`JOB_tasks\` (
   UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`job_name\`, \`TASKID\`),
   KEY \`index2\` (\`id_exec\`),
   KEY \`index_job_name\` (\`job_name\`),
-  KEY \`JOBID\` (\`JOBID\`),
-  KEY \`TASK_TYPE\` (\`TASK_TYPE\`)
+  KEY \`index_JOBID\` (\`JOBID\`),
+  KEY \`index_TASK_TYPE\` (\`TASK_TYPE\`)
 ) ENGINE=InnoDB;
 
-ALTER TABLE \`JOB_tasks\` ADD INDEX (\`JOBID\`);
-ALTER TABLE \`JOB_tasks\` ADD INDEX (\`TASK_TYPE\`);
+#ALTER TABLE \`JOB_tasks\` ADD INDEX (\`JOBID\`);
+#ALTER TABLE \`JOB_tasks\` ADD INDEX (\`TASK_TYPE\`);
 
 
 CREATE TABLE IF NOT EXISTS \`execs_conf_parameters\` (
