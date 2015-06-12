@@ -70,7 +70,6 @@ CREATE TABLE IF NOT EXISTS \`trees\` (
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_findattrs\`),
   KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -89,7 +88,6 @@ CREATE TABLE IF NOT EXISTS \`resolutions\` (
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_resolution\`),
   KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -103,7 +101,6 @@ CREATE TABLE IF NOT EXISTS \`minconfigs\` (
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_minconfigs\`),
   KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -150,8 +147,7 @@ CREATE TABLE IF NOT EXISTS \`summaries\` (
   \`summary\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_summaries\`),
-  KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`)
+  KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 "
 
