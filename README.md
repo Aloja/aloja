@@ -1,4 +1,6 @@
-### Quick start [![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=master)](https://travis-ci.org/Aloja/aloja)
+# ALOJA Big Data benchmarking platform
+
+###Quick start [![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=master)](https://travis-ci.org/Aloja/aloja)
 
 First get familiar with the Web app, browse data and views at: [**http://hadoop.bsc.es**](http://hadoop.bsc.es). And checkout some slides or publications as background and documentation: [http://hadoop.bsc.es/publications](http://hadoop.bsc.es/publications)
 
