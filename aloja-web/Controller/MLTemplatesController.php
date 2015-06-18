@@ -164,7 +164,7 @@ class MLTemplatesController extends AbstractController
 					$content = addslashes($content);
 					fclose($fp);
 
-					$query = "INSERT INTO model_storage (id_learner,file) VALUES ('".md5($config)."','".$content."');";
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
 
 					// Remove temporal files

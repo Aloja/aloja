@@ -153,10 +153,11 @@ CREATE TABLE IF NOT EXISTS \`summaries\` (
 
 
 CREATE TABLE IF NOT EXISTS \`model_storage\` (
-  \`id_learner\` varchar(255) NOT NULL,
+  \`id_hash\` varchar(255) NOT NULL,
+  \`type\` varchar(255) NOT NULL,
   \`file\` MEDIUMBLOB NOT NULL,
   \`creation_time\` datetime NOT NULL,
-  PRIMARY KEY (\`id_learner\`)
+  PRIMARY KEY (\`id_hash\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
 "

@@ -101,6 +101,17 @@ class MLOutliersController extends AbstractController
 						fputcsv($fp, array_values($row),',','"');
 					}
 
+					// Retrieve file model from DB
+					$query = "SELECT file FROM model_storage WHERE id_hash='".$current_model."' AND type='learner';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$content = $row['file'];
+
+					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$fp = fopen($filemodel, 'w');
+					fwrite($fp,$content);
+					fclose($fp);
+
 					// launch query
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock');
 					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
@@ -131,8 +142,20 @@ class MLOutliersController extends AbstractController
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 					}
 
+					// Store file model to DB
+					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','resolution','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+
 					// Remove temporary files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$current_model.'-object.rds');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-object.rds');
 
 					$is_cached = true;
 				}

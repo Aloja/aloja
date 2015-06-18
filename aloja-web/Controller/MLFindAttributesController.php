@@ -92,7 +92,7 @@ class MLFindAttributesController extends AbstractController
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
 					// Retrieve file model from DB
-					$query = "SELECT file FROM model_storage WHERE id_learner='".$current_model."';";
+					$query = "SELECT file FROM model_storage WHERE id_hash='".$current_model."' AND type='learner';";
 					$result = $dbml->query($query);
 					$row = $result->fetch();
 					$content = $row['file'];
