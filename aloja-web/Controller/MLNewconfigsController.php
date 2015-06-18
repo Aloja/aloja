@@ -21,13 +21,11 @@ class MLNewconfigsController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$configurations = array ();	// Useless here
 		    	$where_configs = '';
-		    	$concat_config = "";		// Useless here
 
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes',
-						'datanodess','bench_types','vm_OSs','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
+						'bench_types','datanodess','headnodess','vm_OSs','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			if (count($_GET) <= 1
@@ -40,6 +38,7 @@ class MLNewconfigsController extends AbstractController
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
 				$params['datanodess'] = array('3');// $where_configs .= ' AND datanodes = 3';
+				$params['headnodess'] = array('1');// $where_configs .= ' AND headnodes = 1';
 				$params['bench_types'] = array('HiBench');// $where_configs .= ' AND bench_type = "HiBench"';
 				$params['vm_OSs'] = array('linux');// $where_configs .= ' AND vm_OS = "linux"';				
 				$params['vm_sizes'] = array('SYS-6027R-72RF');// $where_configs .= ' AND vm_size = "SYS-6027R-72RF"';
@@ -86,8 +85,9 @@ class MLNewconfigsController extends AbstractController
 				// get headers for csv
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','datanodes' => 'Datanodes','bench_type' => 'Bench.Type','vm_OS' => 'VM.OS',
-					'vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version','type' => 'Type','bench_type' => 'Bench.Type'
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','bench_type' => 'Bench.Type',
+					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version',
+					'type' => 'Type'
 				);
 
 				$headers = array_keys($header_names);
@@ -109,11 +109,13 @@ class MLNewconfigsController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query; touch '.md5($config).'.lock');
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,Bench.Type,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Bench.Type,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Bench.Type,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':prange=\'0,10000\':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Bench.Type,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
+
+				sleep(2);
 			}
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
 
@@ -150,10 +152,10 @@ class MLNewconfigsController extends AbstractController
 								$header = fgetcsv($handle, 1000, ",");
 
 								$token = 0;
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
 								while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 								{
-									$specific_instance = implode(",",array_slice($data, 2, 19));
+									$specific_instance = implode(",",array_slice($data, 2, 20));
 									$specific_data = implode(",",$data);
 									$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 									$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
@@ -175,7 +177,6 @@ class MLNewconfigsController extends AbstractController
 								fclose($handle);
 							}
 						}
-
 						// Remove temporal files
 						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$learner_1.'*.{dat,csv}');
 					}
@@ -232,7 +233,7 @@ class MLNewconfigsController extends AbstractController
 							$specific_data = str_replace(",","','",$specific_data);
 
 							// register minconfigs_props to DB
-							$query = "INSERT INTO minconfigs_centers (id_minconfigs,cluster,id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,support)";
+							$query = "INSERT INTO minconfigs_centers (id_minconfigs,cluster,id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,bench_type,support)";
 							$query = $query." VALUES ('".md5($config.'R')."','".$cluster."','".$specific_data."','".$sizes[$i++]."');";
 							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving centers into DB');
 						}
@@ -241,15 +242,22 @@ class MLNewconfigsController extends AbstractController
 					fclose($handle_sizes);
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.{csv,dat}');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.{csv,dat,data}');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.{csv,dat}');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.{csv,dat}');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.{fin,csv,dat}');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.dat');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.csv');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.dat');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.csv');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.dat');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.csv');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.dat');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
 				}
 
 				// Retrieve minconfig progression results from DB
-				$header = "id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,support";
+				$header = "id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,bench_type,support";
 				$header_array = explode(",",$header);
 
 				$last_y = 9E15;
@@ -287,9 +295,11 @@ class MLNewconfigsController extends AbstractController
 				}
 				$configs = $configs.']';
 				$jsonData = json_encode($jsonData);
-				$jsonHeader = '[{title:""},{title:"Est.Time"},{title:"Benchmark"},{title:"Network"},{title:"Disk"},{title:"Maps"},{title:"IO.SF"},{title:"Replicas"},{title:"IO.FBuf"},{title:"Compression"},{title:"Blk.Size"},{title:"Main Ref. Cluster"},{title:"Support"}]';
+				$jsonHeader = '[{title:""},{title:"Est.Time"},{title:"Benchmark"},{title:"Network"},{title:"Disk"},{title:"Maps"},{title:"IO.SF"},{title:"Replicas"},{title:"IO.FBuf"},{title:"Compression"},{title:"Blk.Size"},{title:"Bench.Type"},{title:"Support"}]';
 
-				$is_cached_mysql = $dbml->query("SELECT MAX(cluster) as mcluster, MAX(MAE) as mmae, MAX(RAE) as mrae FROM minconfigs_props WHERE id_minconfigs='".md5($config.'R')."'");
+				$query = "SELECT MAX(cluster) as mcluster, MAX(MAE) as mmae, MAX(RAE) as mrae FROM minconfigs_props WHERE id_minconfigs='".md5($config.'R')."'";
+				$is_cached_mysql = $dbml->query($query);
+
 				$tmp_result = $is_cached_mysql->fetch();
 				$max_x = ((float)$tmp_result['mmae'] > 0)?(float)$tmp_result['mmae']:(float)$tmp_result['mrae'];
 				$max_y = (float)$tmp_result['mcluster'];
@@ -318,8 +328,10 @@ class MLNewconfigsController extends AbstractController
 				'replications' => $params['replications'],
 				'iosfs' => $params['iosfs'],
 				'iofilebufs' => $params['iofilebufs'],
+				'headnodess' => $params['headnodess'],				
 				'datanodess' => $params['datanodess'],
 				'bench_types' => $params['bench_types'],
+				'vm_OSs' => $params['vm_OSs'],				
 				'vm_sizes' => $params['vm_sizes'],
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
