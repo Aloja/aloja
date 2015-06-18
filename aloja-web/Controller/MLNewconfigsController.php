@@ -241,14 +241,45 @@ class MLNewconfigsController extends AbstractController
 					}
 					fclose($handle_sizes);
 
+					// Store file model to DB
+					$filemodel = getcwd().'/cache/query/'.md5($config.'F').'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config.'F')."','learner','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+
+					$filemodel = getcwd().'/cache/query/'.md5($config.'M').'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config.'M')."','learner','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+
+					$filemodel = getcwd().'/cache/query/'.md5($config.'R').'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config.'R')."','minconf','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file minconf into DB');
+
 					// Remove temporal files
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.rds');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.dat');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.csv');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.dat');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'D').'*.data');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.rds');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.csv');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'F').'*.dat');
+					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.rds');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.csv');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config.'M').'*.dat');
 					exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');

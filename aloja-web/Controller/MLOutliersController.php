@@ -150,7 +150,7 @@ class MLOutliersController extends AbstractController
 					fclose($fp);
 
 					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','resolution','".$content."');";
-					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file resolution into DB');
 
 					// Remove temporary files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');

@@ -220,8 +220,29 @@ class MLMinconfigsController extends AbstractController
 					}
 					fclose($handle_sizes);
 
+					// Store file model to DB
+					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+
+					$filemodel = getcwd().'/cache/query/'.md5($config.'R').'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config.'R')."','minconf','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file minconf into DB');
+
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.rds');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.rds');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
 				}
 
