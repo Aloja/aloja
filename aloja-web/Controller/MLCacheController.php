@@ -42,6 +42,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM learners";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing learners from DB');
 
+				$query = "DELETE FROM model_storage";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing file models from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat}';
 				$output[] = shell_exec($command);
 			}

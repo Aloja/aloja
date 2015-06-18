@@ -150,6 +150,15 @@ CREATE TABLE IF NOT EXISTS \`summaries\` (
   PRIMARY KEY (\`id_summaries\`),
   KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE IF NOT EXISTS \`model_storage\` (
+  \`id_learner\` varchar(255) NOT NULL,
+  \`file\` MEDIUMBLOB NOT NULL,
+  \`creation_time\` datetime NOT NULL,
+  PRIMARY KEY (\`id_learner\`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
 "
 
 

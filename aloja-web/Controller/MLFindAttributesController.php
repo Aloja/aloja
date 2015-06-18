@@ -91,6 +91,18 @@ class MLFindAttributesController extends AbstractController
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
+					// Retrieve file model from DB
+					$query = "SELECT file FROM model_storage WHERE id_learner='".$current_model."';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$content = $row['file'];
+
+					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$fp = fopen($filemodel, 'w');
+					fwrite($fp,$content);
+					fclose($fp);
+
+					// Run the predictor
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
 					$count = 1;
 					foreach ($instances as $inst)
@@ -164,6 +176,7 @@ class MLFindAttributesController extends AbstractController
 
 						// Remove temporal files
 						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
+						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$current_model.'-object.rds');
 
 						$is_cached = true;
 					}

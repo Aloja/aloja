@@ -157,10 +157,21 @@ class MLTemplatesController extends AbstractController
 						}
 					}
 
+					// Store file model to DB
+					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_learner,file) VALUES ('".md5($config)."','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.rds');
 				}
 
 				$must_wait = "NO";
