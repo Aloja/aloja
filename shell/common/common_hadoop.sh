@@ -83,7 +83,7 @@ get_hadoop_conf_dir() {
 get_hive_env(){
   echo "export HADOOP_PREFIX=${BENCH_H_DIR} && \
         export HADOOP_USER_CLASSPATH_FIRST=true && \
-        export PATH=$PATH:$HIVE_HOME/bin:$HADOOP_HOME/bin && \
+        export PATH=$PATH:$HIVE_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin && \
   "
 }
 
@@ -899,7 +899,7 @@ generate_TPCH_data() {
   if [ "${PIPESTATUS[0]}" -ne 0 ]; then
     loggerb "DATA GENERATOR NOT BUILD, TRYING TO BUILD IT"
 
-     $DSH_MASTER "cd ${TPCH_HOME}; bash tpch-build.sh" 2>&1 | tee -a $LOG_PATH
+     $DSH_MASTER "$EXP cd ${TPCH_HOME}; bash tpch-build.sh" 2>&1 | tee -a $LOG_PATH
      if [ "${PIPESTATUS[0]}" -ne 0 ]; then
       loggerb "ERROR WHEN BUILDING DATA GENERATOR FOR TCPH, exiting..."
       exit 1;
