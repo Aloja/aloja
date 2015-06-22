@@ -251,6 +251,7 @@ class MLFindAttributesController extends AbstractController
 				if (isset($_GET['pass'])) { return "-1"; }
 				$config = "";
 				$possible_models = $possible_models_id = array("None");
+				$other_models = array();
 			}
 			$dbml = null;
 		}
