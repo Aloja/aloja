@@ -45,7 +45,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM model_storage";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing file models from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat}';
+				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
 
@@ -73,6 +73,15 @@ class MLCacheController extends AbstractController
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a resolution from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmr'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
+			if (isset($_GET['rms']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM summaries WHERE id_summaries='".$_GET['rms']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a summary from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rms'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -134,6 +143,19 @@ class MLCacheController extends AbstractController
 			$jsonResolutions = $jsonResolutions.']';
 			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
 
+			// Compilation of Summaries on Cache
+			$query="SELECT DISTINCT id_summaries, instance, model, creation_time
+				FROM summaries
+				";
+			$rows = $dbml->query($query);
+			$jsonSummaries = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonSummaries = $jsonSummaries.(($jsonSummaries=='[')?'':',')."['".$row['id_summaries']."','".$row['instance']."','".$row['model']."','".$row['creation_time']."','<a href=\'/mlclearcache?rms=".$row['id_summaries']."\'>Remove</a>']";
+			}
+			$jsonSummaries = $jsonSummaries.']';
+			$jsonSummariesHeader = "[{'title':'ID'},{'title':'Instance'},{'title':'Model'},{'title':'Creation'},{'title':'Actions'}]";
+
 			$dbml = null;
 		}
 		catch(Exception $e)
@@ -149,7 +171,9 @@ class MLCacheController extends AbstractController
 				'minconfs' => $jsonMinconfs,
 				'header_minconfs' => $jsonMinconfsHeader,
 				'resolutions' => $jsonResolutions,
-				'header_resolutions' => $jsonResolutionsHeader
+				'header_resolutions' => $jsonResolutionsHeader,
+				'summaries' => $jsonSummaries,
+				'header_summaries' => $jsonSummariesHeader
 			)
 		);
 	}
