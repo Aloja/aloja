@@ -10,7 +10,44 @@
 		<p style="text-align:justify"><b>Data Summary</b>: This tool provides a summary of the selected executions through the filter box at the right panel.</p>
 		<hr />
 	</div>
-	<div id="dataframe" style="float: left; width: 68%;"><p style="text-align: left; font-family:'Courier New'; overflow-x:scroll;">{{displaydata | raw}}</p></div>
+	<div id="dataframe" style="float: left; width: 68%;">
+	<style>
+		.benchtable
+		{
+			border: solid 1px;
+		}
+
+		.summarytable
+		{
+			border-spacing: 10px;
+			border-collapse: separate;
+			display: inline-block;
+			vertical-align: top;
+		}
+
+		.level
+		{
+			font-weight:bold;
+		}
+
+		.levelhead
+		{
+			width: 100%;
+			color: #FFF;
+			background-color: #AAA;
+			padding: 5px;
+			font-weight:bold;
+		}
+
+		.summarytable table
+		{
+			width: 100%;
+			border-spacing: 10px;
+			border-collapse: separate;
+		}
+	</style>
+		{{displaydata | raw}}
+	</div>
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}
 	</div>

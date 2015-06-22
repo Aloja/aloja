@@ -76,7 +76,7 @@ class MLSummariesController extends AbstractController
 				}
 
 				// launch query
-				$command = 'cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000'; #fwidth=135
+				$command = 'cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000:html=1'; #fwidth=135
 				$output = shell_exec($command);
 
 				// Save to DB
@@ -85,7 +85,7 @@ class MLSummariesController extends AbstractController
 					$displaydata = "";
 					while (($data = fgets($handle)) !== FALSE)
 					{
-						$displaydata = $displaydata.str_replace(' ','&nbsp;',$data)."<br />";
+						$displaydata = $displaydata.$data;
 					}
 					fclose($handle);
 
