@@ -13,12 +13,12 @@ vm_final_bootstrap() {
  vm_execute "pscp.pssh -h slaves .ssh/{config,id_rsa,id_rsa.pub} /home/pristine/.ssh/"
  vm_execute "dsh -M -f machines -Mc -- sudo yum -y -q install bwm-ng sshfs sysstat ntp"
  vm_execute "dsh -f machines -Mc -- 'mkdir -p share'"
- vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-us.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
- vm_execute "dsh -f slaves -cM -- sudo mount -a"
+ vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep 162.209.77.102\`' | sudo tee -a /etc/fstab > /dev/null\""
+ vm_execute "dsh -f machines -cM -- sudo mount -a"
 #vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
 # vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
 # vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
- vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
+ vm_execute "cp /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar ."
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /data1'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /data1'"
 }
@@ -37,6 +37,11 @@ get_slaves_names() {
         node_names="${node_names}\nslave-${i}.local"
     done
     echo -e "$node_names"
+}
+
+get_node_names() {
+   slaves=$(get_slaves_names)
+   echo -e "master-1.local $slaves"
 }
 
 #$1 node_name, expects workernode{id}
