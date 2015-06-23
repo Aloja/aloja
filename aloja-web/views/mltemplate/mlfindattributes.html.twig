@@ -337,6 +337,8 @@
 
 		if (jsondata == '[]') $("#footer").hide();
 
+		$('#headingAdvancedFilters').parent().hide();
+
 		if ("{{must_wait}}" == "NO")
 		{
 			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));

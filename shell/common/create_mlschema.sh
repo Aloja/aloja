@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
   \`id_cluster\` int(11) DEFAULT NULL,
+  \`bench_type\` varchar(255) DEFAULT NULL,
   \`support\` mediumtext DEFAULT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_minconfigs_centers\`),
@@ -149,6 +150,16 @@ CREATE TABLE IF NOT EXISTS \`summaries\` (
   PRIMARY KEY (\`id_summaries\`),
   KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE IF NOT EXISTS \`model_storage\` (
+  \`id_hash\` varchar(255) NOT NULL,
+  \`type\` varchar(255) NOT NULL,
+  \`file\` MEDIUMBLOB NOT NULL,
+  \`creation_time\` datetime NOT NULL,
+  PRIMARY KEY (\`id_hash\`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
 "
 
 
@@ -158,7 +169,7 @@ $MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` mediumtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` mediumtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`support\` mediumtext NOT NULL;"
 $MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`summary\` longtext NOT NULL;"
-
+$MYSQL "ALTER TABLE \`minconfigs_centers\` ADD \`bench_type\` varchar(255) ;"
 
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLPrediction Default','mlprediction',1,'MLPrediction Default','/mlprediction?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&learn=regtree&umodel=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLFindAttrs Default','mlfindattributes',1,'MLFindAttrs Default','/mlfindattributes?benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&mapss[]=4&comps[]=0&replications[]=1&blk_sizes[]=128&iosfs[]=10&iofilebufs[]=65536&iofilebufs[]=131072&current_model=ee7c939fefa656a3f82f80002ed39c1d&unseen=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
