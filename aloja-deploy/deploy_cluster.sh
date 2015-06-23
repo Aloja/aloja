@@ -5,7 +5,7 @@ type="cluster"
 source include/include_deploy.sh
 
 #Sequential Node deploy
-if [ "$defaultProvider" != "hdinsight" ]; then
+if [ "$defaultProvider" != "hdinsight" ] && [ "$defaultProvider" != "rackspacecbd" ]; then
 	for vm_name in $(get_node_names) ; do #pad the sequence with 0s
 	
 	  vm_ssh_port="$(get_ssh_port)" #for Azure
@@ -23,7 +23,7 @@ if [ "$defaultProvider" != "hdinsight" ]; then
 	#parallel Node config
 	cluster_parallel_config
 	
-else #If HDI only run create node once
+else #If PaaS only run create node once
 	vm_create_node
 fi
 
