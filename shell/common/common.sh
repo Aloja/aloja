@@ -35,7 +35,7 @@ logger() {
 #$1 string to traspose $2 traspose
 nl2char() {
   local tmp="$(echo -e "$1"|tr "\n" "$2")"
-  echo -e "${tmp::-1}" #remove trailing $2
+  echo -e "${tmp%?}" #remove trailing $2
 }
 
 #trasposes old string to new string

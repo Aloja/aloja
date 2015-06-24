@@ -40,8 +40,13 @@ get_slaves_names() {
 }
 
 get_node_names() {
-   slaves=$(get_slaves_names)
-   echo -e "master-1.local $slaves"
+    local nodes=`expr $numberOfNodes`
+    local node_names
+    for i in `seq 0 $nodes` ; do
+        node_names="${node_names}\nslave-${i}.local"
+    done
+    node_names="${node_names}\nmaster-1.local"
+    echo -e "$node_names"
 }
 
 #$1 node_name, expects workernode{id}

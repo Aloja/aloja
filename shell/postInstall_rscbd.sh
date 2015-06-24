@@ -27,13 +27,12 @@ installDsh() {
  fi
 }
 
-yum install -y -q "sysstat"
-yum install -y -q "bwm-ng"
 installDsh
 
 sudo sed -i.bak 's/Defaults    requiretty/Defaults    !requiretty/g' /etc/sudoers
 cp /etc/hadoop/conf/slaves /home/pristine/slaves; cp /home/pristine/slaves /home/pristine/machines && echo master-1 >> /home/pristine/machines
-#dsh -f slaves -cM -- "sudo -i.bak sed 's/Defaults    requiretty/Defaults    !requiretty/g' /etc/sudoers"
+sudo yum -y -q upgrade --skip-broken
+
 #sudo yum -y -q install pdsh pssh git
 #pscp.pssh -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/
 #dsh -M -f machines -Mc -- sudo yum -y -q install bwm-ng sshfs sysstat ntp
