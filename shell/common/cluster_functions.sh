@@ -40,8 +40,8 @@ vm_create_node() {
 		if [ $status -eq 0 ]; then
 		  create_hdi_cluster "$clusterName"
 		fi
-		  vm_provision
-		  vm_final_bootstrap "$clusterName"
+		  vm_provision "pw"
+		  vm_final_bootstrap "$clusterName" "pw"
 	elif [ "$defaultProvider" == "rackspacecbd" ]; then
 	    vm_name="$clusterName"
 		#vm_provision
@@ -477,7 +477,7 @@ make_fstab(){
     local create_string="$fs_mount"
   fi
 
- if [ "$defaultProvider" != "hdinsight" ] && [ "$defaultProvider" != "rackspacecbd" ]; then
+ if [ "$clusterType" != "PaaS" ]; then
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string

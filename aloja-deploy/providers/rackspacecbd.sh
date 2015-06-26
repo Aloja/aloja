@@ -21,6 +21,8 @@ vm_final_bootstrap() {
  vm_execute "cp /usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar ."
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /data1'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /data1'"
+ vm_execute "sudo su hdfs -c \"hdfs dfs -mkdir /HiBench\""
+ vm_execute "sudo su hdfs -c \"hdfs dfs -chown pristine /HiBench\""
 }
 
 #$1 cluster name
@@ -31,18 +33,18 @@ node_delete() {
 }
 
 get_slaves_names() {
-    local nodes=`expr $numberOfNodes`
+    local nodes=$numberOfNodes
     local node_names
-    for i in `seq 0 $nodes` ; do
+    for i in `seq 1 $nodes` ; do
         node_names="${node_names}\nslave-${i}.local"
     done
     echo -e "$node_names"
 }
 
 get_node_names() {
-    local nodes=`expr $numberOfNodes`
+    local nodes=$numberOfNodes
     local node_names
-    for i in `seq 0 $nodes` ; do
+    for i in `seq 1 $nodes` ; do
         node_names="${node_names}\nslave-${i}.local"
     done
     node_names="${node_names}\nmaster-1.local"

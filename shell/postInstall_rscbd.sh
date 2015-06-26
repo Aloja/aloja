@@ -31,7 +31,6 @@ installDsh
 
 sudo sed -i.bak 's/Defaults    requiretty/Defaults    !requiretty/g' /etc/sudoers
 cp /etc/hadoop/conf/slaves /home/pristine/slaves; cp /home/pristine/slaves /home/pristine/machines && echo master-1 >> /home/pristine/machines
-sudo yum -y -q upgrade --skip-broken
 
 #sudo yum -y -q install pdsh pssh git
 #pscp.pssh -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/

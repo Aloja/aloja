@@ -5,7 +5,7 @@ type="cluster"
 source include/include_deploy.sh
 
 #Sequential Node deploy
-if [ "$defaultProvider" != "hdinsight" ] && [ "$defaultProvider" != "rackspacecbd" ]; then
+if [ "$clusterType" != "PaaS" ]; then
 	for vm_name in $(get_node_names) ; do #pad the sequence with 0s
 	
 	  vm_ssh_port="$(get_ssh_port)" #for Azure

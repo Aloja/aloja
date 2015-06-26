@@ -355,7 +355,7 @@ restart_hadoop(){
 }
 
 stop_hadoop(){
- if [ "$defaultProvider" != "hdinsight" ]; then
+ if [ "$clusterType=" != "PaaS" ]; then
   loggerb "Stop Hadoop"
   if [ "$HADOOP_VERSION" == "hadoop1" ]; then
     $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 |tee -a $LOG_PATH
@@ -614,7 +614,7 @@ execute_hdi_hadoop() {
 
   #need to send all the environment variables over SSH
   EXP="export JAVA_HOME=$JAVA_HOME && \
-export HADOOP_HOME=/usr/hdp/current/hadoop && \
+export HADOOP_HOME=/usr/hdp/2.*/hadoop && \
 export HADOOP_EXECUTABLE=hadoop && \
 export HADOOP_CONF_DIR=/etc/hadoop/conf && \
 export HADOOP_EXAMPLES_JAR=/home/pristine/hadoop-mapreduce-examples.jar && \
@@ -691,16 +691,22 @@ save_hadoop() {
   $DSH "cp -r ${BENCH_H_DIR}/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
 
   # Hadoop 2 saves job history to HDFS, get it from there
-  if [ "$defaultProvider" == "hdinsight" ]; then
-	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
-	hdfs dfs -rm -r /mr-history
-	hdfs dfs -expunge
+  if [ "$clusterType" == "PaaS" ]; then
+    if [ "$defaultProvider" == "rackspacecbd" ]; then
+        hdfs dfs -copyToLocal /mr-history/tmp/pristine $JOB_PATH/$1/mr-history/'done'
+        hdfs dfs -rm -r /mr-history/tmp/pristine/*
+        sudo su hdfs -c "hdfs dfs -expunge" 
+    else
+	    hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
+	    hdfs dfs -rm -r /mr-history
+	    hdfs dfs -expunge
+    fi
   else
     $DSH "cp $BENCH_H_DIR/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
   fi
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
-  if [[ "$HADOOP_VERSION" == "hadoop2" && "$defaultProvider" != "hdinsight" ]]; then
+  if [[ "$HADOOP_VERSION" == "hadoop2" && "$clusterType=" != "PaaS" ]]; then
     $BENCH_H_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1 2>&1 |tee -a $LOG_PATH
     loggerb "Deleting history files after copy to local"
     $BENCH_H_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history 2>&1 |tee -a $LOG_PATH
