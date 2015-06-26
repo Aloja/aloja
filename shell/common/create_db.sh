@@ -554,12 +554,19 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_details\` (
   \`SPILLED_RECORDS\` bigint(20) NOT NULL,
   \`SPLIT_RAW_BYTES\` bigint(20) NOT NULL,
   \`SUBMIT_TIME\` bigint(20) NOT NULL,
+  \`DATA_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
   \`TOTAL_LAUNCHED_MAPS\` bigint(20) NOT NULL,
   \`TOTAL_MAPS\` bigint(20) NOT NULL,
   \`TOTAL_REDUCES\` bigint(20) NOT NULL,
   \`USER\` varchar(255) NOT NULL,
   \`VCORES_MILLIS_MAPS\` bigint(20) NOT NULL,
   \`VIRTUAL_MEMORY_BYTES\` bigint(20) NOT NULL,
+  \`HDFS_BYTES_WRITTEN\` bigint DEFAULT NULL,
+  \`HDFS_BYTES_READ\` bigint DEFAULT NULL,
+  \`HDFS_READ_OPS\` bigint DEFAULT NULL,
+  \`HDFS_WRITE_OPS\` bigint DEFAULT NULL,
+  \`HDFS_LARGE_READ_OPS\` bigint DEFAULT NULL,
+  \`HDFS_LARGE_WRITE_OPS\` bigint DEFAULT NULL,
   \`WASB_BYTES_READ\` bigint(20) NOT NULL,
   \`WASB_BYTES_WRITTEN\` bigint(20) NOT NULL,
   \`WASB_LARGE_READ_OPS\` bigint(20) NOT NULL,
@@ -622,6 +629,12 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   \`TASK_STATUS\` varchar(255) NOT NULL,
   \`TASK_TYPE\` varchar(255) NOT NULL,
   \`VIRTUAL_MEMORY_BYTES\` bigint(20) DEFAULT '0',
+  \`HDFS_BYTES_WRITTEN\` bigint DEFAULT NULL,
+  \`HDFS_BYTES_READ\` bigint DEFAULT NULL,
+  \`HDFS_LARGE_READ_OPS\` bigint DEFAULT NULL,
+  \`HDFS_LARGE_WRITE_OPS\` bigint DEFAULT NULL,
+  \`HDFS_READ_OPS\` bigint DEFAULT NULL,
+  \`HDFS_WRITE_OPS\` bigint DEFAULT NULL,
   \`WASB_BYTES_READ\` bigint(20) DEFAULT '0',
   \`WASB_BYTES_WRITTEN\` bigint(20) DEFAULT '0',
   \`WASB_LARGE_READ_OPS\` bigint(20) DEFAULT '0',
@@ -717,6 +730,20 @@ $MYSQL "alter table clusters
   add description varchar(256) default null;"
 
 $MYSQL "alter table HDI_JOB_details ADD COLUMN NUM_FAILED_MAPS varchar(255) DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN HDFS_BYTES_READ bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN HDFS_BYTES_WRITTEN bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN HDFS_READ_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN HDFS_WRITE_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN HDFS_LARGE_READ_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN HDFS_LARGE_WRITE_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_details ADD COLUMN DATA_LOCAL_MAPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_tasks ADD COLUMN HDFS_BYTES_READ bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_tasks ADD COLUMN HDFS_BYTES_WRITTEN bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_tasks ADD COLUMN HDFS_LARGE_READ_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_tasks ADD COLUMN HDFS_LARGE_WRITE_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_tasks ADD COLUMN HDFS_READ_OPS bigint DEFAULT NULL;"
+$MYSQL "alter table HDI_JOB_tasks ADD COLUMN HDFS_WRITE_OPS bigint DEFAULT NULL;"
+
 $MYSQL "alter table clusters add column cost_remote int DEFAULT 0"
 $MYSQL "alter table clusters add column cost_SSD int DEFAULT 0"
 $MYSQL "alter table clusters add column cost_IB int DEFAULT 0"
