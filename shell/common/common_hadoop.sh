@@ -611,13 +611,19 @@ execute_hdi_hadoop() {
   local start_exec=`timestamp`
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
   loggerb "# EXECUTING ${3}${1}"
+  local HADOOP_EXECUTABLE=hadoop
+  local HADOOP_EXAMPLES_JAR=/home/pristine/hadoop-mapreduce-examples.jar
+  if [ "$defaultProvider" == "rackspacecbd" ]; then
+    HADOOP_EXECUTABLE='sudo -u hdfs hadoop'
+    HADOOP_EXAMPLES_JAR=/usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples.jar
+  fi
 
   #need to send all the environment variables over SSH
   EXP="export JAVA_HOME=$JAVA_HOME && \
 export HADOOP_HOME=/usr/hdp/2.*/hadoop && \
-export HADOOP_EXECUTABLE=hadoop && \
+export HADOOP_EXECUTABLE='$HADOOP_EXECUTABLE' && \
 export HADOOP_CONF_DIR=/etc/hadoop/conf && \
-export HADOOP_EXAMPLES_JAR=/home/pristine/hadoop-mapreduce-examples.jar && \
+export HADOOP_EXAMPLES_JAR='$HADOOP_EXAMPLES_JAR' && \
 export MAPRED_EXECUTABLE=ONLY_IN_HADOOP_2 && \
 export HADOOP_VERSION=$HADOOP_VERSION && \
 export COMPRESS_GLOBAL=$COMPRESS_GLOBAL && \
@@ -693,8 +699,8 @@ save_hadoop() {
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
-        hdfs dfs -copyToLocal /mr-history/tmp/pristine $JOB_PATH/$1/mr-history/'done'
-        hdfs dfs -rm -r /mr-history/tmp/pristine/*
+        hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
+        hdfs dfs -rm -r /mr-history/*
         sudo su hdfs -c "hdfs dfs -expunge" 
     else
 	    hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1

@@ -22,7 +22,8 @@ vm_final_bootstrap() {
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /data1'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /data1'"
  vm_execute "sudo su hdfs -c \"hdfs dfs -mkdir /HiBench\""
- vm_execute "sudo su hdfs -c \"hdfs dfs -chown pristine /HiBench\""
+# vm_execute "sudo su hdfs -c \"hdfs dfs -chown pristine /HiBench\""
+# vm_execute "sudo su hdfs -c \"hdfs dfs -chmod 1777 /mr-history\""
 }
 
 #$1 cluster name
