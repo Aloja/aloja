@@ -40,8 +40,12 @@ vm_create_node() {
 		if [ $status -eq 0 ]; then
 		  create_hdi_cluster "$clusterName"
 		fi
-		  vm_provision "password"
-		  vm_final_bootstrap "$clusterName" "password"
+		  vm_provision "pw"
+		  vm_final_bootstrap "$clusterName" "pw"
+	elif [ "$defaultProvider" == "rackspacecbd" ]; then
+	    vm_name="$clusterName"
+		#vm_provision
+		vm_final_bootstrap "$clusterName"
 	elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
@@ -473,7 +477,7 @@ make_fstab(){
     local create_string="$fs_mount"
   fi
 
- if [ "$defaultProvider" != "hdinsight" ]; then
+ if [ "$clusterType" != "PaaS" ]; then
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string

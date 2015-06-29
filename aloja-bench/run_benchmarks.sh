@@ -233,7 +233,7 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 
 [ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="hadoop1"
 
-if [ "$defaultProvider" == "hdinsight" ]; then
+if [ "$clusterType" == "PaaS" ]; then
   HADOOP_VERSION="hadoop2"
 fi
 
@@ -335,7 +335,7 @@ $DSH_MASTER "touch $LOG_PATH"
 
 loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
-if [ "$defaultProvider" != "hdinsight" ]; then
+if [ "$clusterType" != "PaaS" ]; then
 	bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
 	vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
 	bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
@@ -350,7 +350,7 @@ fi
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 
-if [ "$defaultProvider" != "hdinsight" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
+if [ "$clusterType" != "PaaS" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
     $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
@@ -425,7 +425,7 @@ loggerb  ""
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
 
-if [ "$defaultProvider" != "hdinsight" ]; then
+if [ "$clusterType" != "PaaS" ]; then
  prepare_config
 fi
 

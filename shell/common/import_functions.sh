@@ -351,10 +351,10 @@ get_job_confs() {
     if [ -d "prep_$bench_folder" ]; then
       #1st: get jobs in prep
       cd ../"prep_$bench_folder"
-      prepjobs=$(find "./history/done" -type f -name "job*.xml");
+      prepjobs=$(find "./history" -type f -name "job*.xml");
       #2nd: get jobs in bench folder
       cd ../$bench_folder
-      jobconfs=$(find "./history/done" -type f -name "job*.xml");
+      jobconfs=$(find "./history" -type f -name "job*.xml");
       #3rd: 2 files, with one line per job in bench folder and prep folder
       echo $jobconfs | tr ' ' '\n' > file.tmp
       echo $prepjobs | tr ' ' '\n' > file2.tmp
@@ -487,14 +487,20 @@ import_hadoop2_jhist() {
 
 #Expects folder to contain jhist (Job History) files
 extract_import_hadoop2_jobs() {
-  for jhist in `find mr-history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
-    import_hadoop2_jhist "$jhist"
-  done
+  if [ "$defaultProvider" == "hdinsight" ]; then
+    for jhist in `find mr-history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
+      import_hadoop2_jhist "$jhist"
+    done
+  else
+    for jhist in `find history/ -type f -name *.jhist | grep SUCCEEDED` ; do
+      import_hadoop2_jhist "$jhist"
+    done
+  fi
 }
 
 extract_hadoop_jobs() {
   #get the Hadoop job logs
-  job_files=$(find "./history/done" -type f -name "job*"|grep -v ".xml")
+  job_files=$(find "./history" -type f -name "job*"|grep -v ".xml")
 
   logger "Generating Hadoop Job CSVs for $bench_folder"
   rm -rf "hadoop_job"
@@ -680,12 +686,12 @@ delete_untars() {
 
 #$1 name history folder
 get_xml_exec_params() {
-	local histFolder="mapred/history"
+	local histFolder="mapred/"
 	if [ ! -z $1 ]; then
 	  histFolder=$1
     fi
 
-	xmlFile=$(find $histFolder/done/ -type f -name *.xml | head -n 1)
+	xmlFile=$(find $histFolder -type f -name *.xml | head -n 1)
 	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
 	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
 	maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
