@@ -424,6 +424,11 @@ loggerb  ""
 #$DSH "rm -rf $DIR/conf/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
+##GLOBAL ARRAYS FOR TIMES
+#declared globally here due to multi bash version issues
+declare -A EXEC_TIME
+declare -A EXEC_START
+declare -A EXEC_END
 
 if [ "$clusterType" != "PaaS" ]; then
  prepare_config
