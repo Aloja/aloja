@@ -40,7 +40,7 @@ class MLFindAttributesController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		    	
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
@@ -118,7 +118,7 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
@@ -154,7 +154,7 @@ class MLFindAttributesController extends AbstractController
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 								$token = 0;
 								$token_i = 0;
 							}
@@ -195,7 +195,7 @@ class MLFindAttributesController extends AbstractController
 					if (isset($_GET['pass']) && $_GET['pass'] == 2) { $dbml = null; return "2"; }
 
 					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Prediction','Observed');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -251,6 +251,7 @@ class MLFindAttributesController extends AbstractController
 				if (isset($_GET['pass'])) { return "-1"; }
 				$config = "";
 				$possible_models = $possible_models_id = array("None");
+				$other_models = array();
 			}
 			$dbml = null;
 		}
@@ -287,6 +288,7 @@ class MLFindAttributesController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
 				'models' => $model_html,

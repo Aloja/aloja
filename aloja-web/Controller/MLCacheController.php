@@ -54,6 +54,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM learners WHERE id_learner='".$_GET['rml']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a learner from DB');
 
+				$query = "DELETE FROM model_storage WHERE id_hash='".$_GET['rml']."' AND type='learner'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rml'].'*';
 				$output[] = shell_exec($command);
  			}

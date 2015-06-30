@@ -31,7 +31,7 @@ class MLCrossvarController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
@@ -74,7 +74,7 @@ class MLCrossvarController extends AbstractController
 					$jsonData = '[]';
 					$categories1 = $categories2 = "''";
 				}
-				else if ($ret_data == -1)
+				else if ($ret_learn == -1)
 				{
 					$must_wait = "NO";
 					$jsonData = '[]';
@@ -179,6 +179,7 @@ class MLCrossvarController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'message' => $message,
 				'instance' => $instance,
 				'model_info' => $model_info,
@@ -213,7 +214,7 @@ class MLCrossvarController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
@@ -377,6 +378,7 @@ class MLCrossvarController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'message' => $message,
 				'instance' => $instance,
 				'model_info' => $model_info,
@@ -415,7 +417,7 @@ class MLCrossvarController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
@@ -564,6 +566,7 @@ class MLCrossvarController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'message' => $message,
 				'instance' => $instance,
 				'model_info' => $model_info,

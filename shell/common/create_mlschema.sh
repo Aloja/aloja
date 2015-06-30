@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS \`learners\` (
   \`sid_learner\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`algorithm\` varchar(255) NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_learner\`),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS \`trees\` (
   \`id_findattrs\` varchar(255) NOT NULL,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`tree_code\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_findattrs\`),
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS \`resolutions\` (
   \`id_learner\` varchar(255) NOT NULL,
   \`id_exec\` int(11) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`sigma\` int(8) NOT NULL,
   \`outlier_code\` int(8) DEFAULT 0,  
   \`predicted\` int(11) DEFAULT 0,  
@@ -96,7 +96,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs\` (
   \`id_minconfigs\` varchar(255) NOT NULL,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`is_new\` int(1) NOT NULL DEFAULT 0,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_minconfigs\`),
@@ -144,7 +144,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
 CREATE TABLE IF NOT EXISTS \`summaries\` (
   \`id_summaries\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`summary\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_summaries\`),
@@ -162,18 +162,19 @@ CREATE TABLE IF NOT EXISTS \`model_storage\` (
 
 "
 
-
-$MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`trees\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`tree_code\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`trees\` MODIFY \`model\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`trees\` MODIFY \`tree_code\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` longtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`support\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`summary\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` longtext NOT NULL"
+$MYSQL "ALTER TABLE \`summaries\` MODIFY \`summary\` longtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs_centers\` ADD \`bench_type\` varchar(255) ;"
 
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLPrediction Default','mlprediction',1,'MLPrediction Default','/mlprediction?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&learn=regtree&umodel=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLFindAttrs Default','mlfindattributes',1,'MLFindAttrs Default','/mlfindattributes?benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&mapss[]=4&comps[]=0&replications[]=1&blk_sizes[]=128&iosfs[]=10&iofilebufs[]=65536&iofilebufs[]=131072&current_model=ee7c939fefa656a3f82f80002ed39c1d&unseen=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLParamEval Default','mlparameval',1,'MLParamEval Default','/mlparameval?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&current_model=c26c7cb6440534304333eb1d66cd33fc&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
+$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLParamEval Default','mlparameval',1,'MLParamEval Default','/mlparameval?benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&current_model=c26c7cb6440534304333eb1d66cd33fc&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLOutliers Default','mloutliers',1,'MLOutliers Default','/mloutliers?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&current_model=c26c7cb6440534304333eb1d66cd33fc&sigma=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLSummaries Default','mlsummaries',1,'MLSummaries Default','/mlsummaries?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HDD&disks[]=SSD&feature=Benchmark&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLDataCollapse Default','mldatacollapse',1,'MLDataCollapse Default','/mldatacollapse?benchs[]=bayes&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=65536&iofilebufs[]=131072&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
