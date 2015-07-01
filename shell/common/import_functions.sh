@@ -487,8 +487,8 @@ import_hadoop2_jhist() {
 
 #Expects folder to contain jhist (Job History) files
 extract_import_hadoop2_jobs() {
-  if [ "$defaultProvider" == "hdinsight" ]; then
-    for jhist in `find mr-history/done/ -type f -name *.jhist | grep SUCCEEDED` ; do
+  if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
+    for jhist in `find mr-history/ -type f -name *.jhist | grep SUCCEEDED` ; do
       import_hadoop2_jhist "$jhist"
     done
   else
@@ -686,7 +686,7 @@ delete_untars() {
 
 #$1 name history folder
 get_xml_exec_params() {
-	local histFolder="mapred/"
+	local histFolder="history/"
 	if [ ! -z $1 ]; then
 	  histFolder=$1
     fi
