@@ -31,6 +31,15 @@ installDsh
 
 sudo sed -i.bak 's/Defaults    requiretty/Defaults    !requiretty/g' /etc/sudoers
 cp /etc/hadoop/conf/slaves /home/pristine/slaves; cp /home/pristine/slaves /home/pristine/machines && echo master-1 >> /home/pristine/machines
+wget http://pagesperso-orange.fr/sebastien.godard/sysstat-10.0.3.tar.bz2
+tar -jxf sysstat-10.0.3.tar.bz2
+cd sysstat-10.0.3
+./configure
+make
+sudo make install
+sudo mv sadf /usr/bin/
+sudo mv sar /usr/bin
+cd ..
 
 #sudo yum -y -q install pdsh pssh git
 #pscp.pssh -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/
