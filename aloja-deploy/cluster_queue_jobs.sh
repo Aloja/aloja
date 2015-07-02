@@ -2,7 +2,7 @@
 
 #load init and common functions
 type="cluster"
-source "include/include.sh"
+source include/include_deploy.sh
 
 #get cluster master details
 vm_name="$(get_master_name)"

@@ -24,29 +24,69 @@
 		<hr />
 	</div>
 	<div id="content" style="float: left; width: 68%;">
-		<div id="stuffdiv" style="float: left; width: 100%;">
-			<div id="chart" style="float: left; width: 100%;"></div>
-			<div style="width: 40%; margin: 0 auto;">
-					Display # Configs:	<select class="form-control" name="select_configs" id="select_configs"></select>
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingChartDiv">
+				<i id="ChartFG" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" aria-expanded="true" aria-controls="chartDivFilter">
+						Estimated Error Regression
+					</a>
+				</h4>
+			</div>
+			<div id="chartDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingChartDiv">
+				<div class="panel-body">
+					<div id="chart" style="float: left; width: 100%;"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingBenchDiv">
+				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" aria-expanded="true" aria-controls="benchDivFilter">
+						Recommended Minimal Configurations
+					</a>
+				</h4>
+			</div>
+			<div id="benchDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
+				<div class="panel-body">
+					<div style="width: 40%; margin: 0 auto;">
+						Display # Configs:
+						<select class="form-control" name="select_configs" id="select_configs"></select>
 					</div>
-			<div id="benchdiv" style="float: left; width: 100%;"></div>
-		</div>
-		<div id="information" style="float: left; width: 100%;">
-			<p>{{error_stats | raw}}</p>
-			<p>Model information:
-				<ul>
-				<li>Run cache ID: {{id_newconf|raw}}</li>
-				<li>First Model cache ID: {{id_newconf_first|raw}} &#8658; DataSet cache ID: {{id_newconf_dataset|raw}}</li>
-				<li>New Model cache ID: {{id_newconf_model|raw}} &#8658; NewConfigs cache ID: {{id_newconf_result|raw}}</li>
-				<li>Instance: {{instance|raw}}</li>
-				<li>Model Info: {{model_info|raw}}</li>
-				</ul>
-			</p>
+					<div id="benchdiv" style="float: left; width: 100%;"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Run cache ID: {{id_newconf|raw}}</li>
+						<li>First Model cache ID: {{id_newconf_first|raw}} &#8658; DataSet cache ID: {{id_newconf_dataset|raw}}</li>
+						<li>New Model cache ID: {{id_newconf_model|raw}} &#8658; NewConfigs cache ID: {{id_newconf_result|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'common/config_filters.html.twig' %}
+	{% include 'mltemplate/custom_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -64,8 +104,6 @@
 	<script type="text/javascript">
 	$(document).ready(function()
 	{
-		document.getElementById('submit').id = 'submitForm';
-
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{must_wait}}"== "NO")
@@ -163,7 +201,12 @@
 		}
 		else
 		{
-			$('#stuffdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+
 			setInterval( function() { window.location.reload(); }, 600000 );
 		}	
 	});

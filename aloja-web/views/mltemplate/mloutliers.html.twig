@@ -26,37 +26,75 @@
 		<hr />
 	</div>
 	<div id="stuffdiv" style="float: left; width: 68%;">
-		<div id="chart" style="float: left; width: 100%;"></div>
-		<div id="controls" style="display: none; float: left; width: 100%;">
-			<form>
-				<table style="float: right; width: 20%;">
-				<tr><td><label>Associate to Predictions DB: </label></td></tr><tr>
-				<td><input class="form-control" type="button" id="outliers-apply" value="Accept resolutions" /></td>
-				</tr></table>
-			</form>
-		</div>
-		<div id="information" style="float: left; width: 100%;">
-			<p>{{error_stats | raw}}</p>
-			<p>Model information:
-				<ul>
-				<li>Model cache ID: {{current_model|raw}}</li>
-				<li>Resolution cache ID: {{resolution_id|raw}}</li>
-				<li>Instance: {{instance|raw}}</li>
-				</ul>
-			</p>
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingChartDiv">
+				<i id="ChartFG" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" aria-expanded="true" aria-controls="chartDivFilter">
+						Outliers Detected
+					</a>
+				</h4>
+			</div>
+			<div id="chartDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingChartDiv">
+				<div class="panel-body">
+					<div id="chart" style="float: left; width: 100%;"></div>
+					<div id="controls" style="display: none; float: left; width: 100%;">
+						<form>
+							<table style="float: right; width: 20%;">
+							<tr><td><label>Associate to Predictions DB: </label></td></tr><tr>
+							<td><input class="form-control" type="button" id="outliers-apply" value="Accept resolutions" /></td>
+							</tr></table>
+						</form>
+					</div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingOutliers">
+				<i id="OutliersFG" data-toggle="collapse" data-parent="#stuffdivs" href="#outliersFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#outliersFilter" aria-expanded="true" aria-controls="outliersFilter">
+						List of Resolutions
+					</a>
+				</h4>
+			</div>
+			<div id="outliersFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingOutliers">
+				<div class="panel-body">
+					<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+							<li>Model cache ID: {{current_model|raw}}</li>
+							<li>Resolution cache ID: {{resolution_id|raw}}</li>
+							<li>Instance: {{instance|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
 		</div>
 	</div>
+
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
 	<div id="options" style="display: none">
-		List of outliers : <a id="displayText1" href="javascript:toggle('benchdiv','displayText1');">show</a>
-		<div id="benchdiv" style="display: none; float: left; width: 100%;">
-			<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
-		</div>
-		<hr />
 		Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
 		<div id="footer" style="display: none; float: left; width: 100%;">	
 			<div style="float: left; width: 70%;">
@@ -88,6 +126,7 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
+		$('#headingAdvancedFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 		if ('{{jsonData | raw}}' == '[]' && '{{jsonWarns | raw}}' == '[]' && '{{jsonOuts | raw}}' == '[]') $("#footer").hide();
@@ -171,7 +210,7 @@
 			oTable = $('#benchmark').dataTable({
 				"aaData": {{ jsonTable | raw }},
 				"columns": {{ jsonHeader | raw }},
-				"columnDefs" : [{"targets" : {{ jsonTable | raw }}, "render" : function (data) { return Math.round(data); }}]
+				"columnDefs" : [{"targets" : -1, "render" : function (data) { return Math.round(data); }},]
 			});
 			$(window).bind('resize', function () {
 				oTable.fnAdjustColumnSizing();
@@ -180,7 +219,12 @@
 		}
 		else
 		{
-			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#outliersFilter').show(); $('#headingOutliers').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+
 			setInterval( function() { window.location.reload(); }, 300000 );
 		}	
 	});

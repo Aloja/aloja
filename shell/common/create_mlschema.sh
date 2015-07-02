@@ -8,13 +8,12 @@ CREATE TABLE IF NOT EXISTS \`learners\` (
   \`sid_learner\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`algorithm\` varchar(255) NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_learner\`),
   UNIQUE KEY \`id_learner_UNIQUE\` (\`id_learner\`),
-  KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`)
+  KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
 CREATE TABLE IF NOT EXISTS \`predictions\` (
@@ -66,12 +65,11 @@ CREATE TABLE IF NOT EXISTS \`trees\` (
   \`id_findattrs\` varchar(255) NOT NULL,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`tree_code\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_findattrs\`),
   KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -82,7 +80,7 @@ CREATE TABLE IF NOT EXISTS \`resolutions\` (
   \`id_learner\` varchar(255) NOT NULL,
   \`id_exec\` int(11) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`sigma\` int(8) NOT NULL,
   \`outlier_code\` int(8) DEFAULT 0,  
   \`predicted\` int(11) DEFAULT 0,  
@@ -90,7 +88,6 @@ CREATE TABLE IF NOT EXISTS \`resolutions\` (
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_resolution\`),
   KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -99,12 +96,11 @@ CREATE TABLE IF NOT EXISTS \`minconfigs\` (
   \`id_minconfigs\` varchar(255) NOT NULL,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`is_new\` int(1) NOT NULL DEFAULT 0,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_minconfigs\`),
   KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -137,6 +133,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
   \`id_cluster\` int(11) DEFAULT NULL,
+  \`bench_type\` varchar(255) DEFAULT NULL,
   \`support\` mediumtext DEFAULT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_minconfigs_centers\`),
@@ -147,23 +144,33 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
 CREATE TABLE IF NOT EXISTS \`summaries\` (
   \`id_summaries\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
-  \`model\` mediumtext NOT NULL,
+  \`model\` longtext NOT NULL,
   \`summary\` longtext NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`id_summaries\`),
-  KEY \`idx_instance\` (\`instance\`),
-  KEY \`idx_model\` (\`model\`)
+  KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
+
+CREATE TABLE IF NOT EXISTS \`model_storage\` (
+  \`id_hash\` varchar(255) NOT NULL,
+  \`type\` varchar(255) NOT NULL,
+  \`file\` MEDIUMBLOB NOT NULL,
+  \`creation_time\` datetime NOT NULL,
+  PRIMARY KEY (\`id_hash\`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
 "
 
-
-$MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`trees\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`tree_code\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`trees\` MODIFY \`model\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`trees\` MODIFY \`tree_code\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` longtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`support\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` mediumtext NOT NULL, MODIFY \`summary\` longtext NOT NULL;"
-
+$MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` longtext NOT NULL"
+$MYSQL "ALTER TABLE \`summaries\` MODIFY \`summary\` longtext NOT NULL;"
+$MYSQL "ALTER TABLE \`minconfigs_centers\` ADD \`bench_type\` varchar(255) ;"
 
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLPrediction Default','mlprediction',1,'MLPrediction Default','/mlprediction?benchs[]=terasort&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&learn=regtree&umodel=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLFindAttrs Default','mlfindattributes',1,'MLFindAttrs Default','/mlfindattributes?benchs[]=terasort&mapss[]=4&comps[]=0&replications[]=1&blk_sizes[]=128&iosfs[]=10&iofilebufs[]=65536&iofilebufs[]=131072&current_model=ee7c939fefa656a3f82f80002ed39c1d&unseen=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"

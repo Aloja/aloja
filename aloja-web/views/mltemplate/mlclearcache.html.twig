@@ -42,6 +42,12 @@
 		<div id="outlierdiv" style="float: left; width: 100%;">
 			<table id="outliertable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 		</div>
+		<br/>
+		<hr/>
+		<h4><p style="text-align:justify">Table of current Summaries printed</p></h4>
+		<div id="summarydiv" style="float: left; width: 100%;">
+			<table id="summarytable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+		</div>
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -76,6 +82,15 @@
 			"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
 			"aaData": {{ resolutions | raw }},
 			"columns": {{ header_resolutions | raw }},
+			"columnDefs" : [],
+			"sScrollX": "100%",
+			"bScrollCollapse": true
+		});
+
+		sTable = $('#summarytable').dataTable({
+			"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+			"aaData": {{ summaries | raw }},
+			"columns": {{ header_summaries | raw }},
 			"columnDefs" : [],
 			"sScrollX": "100%",
 			"bScrollCollapse": true

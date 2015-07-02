@@ -101,18 +101,16 @@
 			</div>
 			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
 				<div class="panel-body">
-					<div id="information" style="float: left; width: 65%;">
-						<p>{{error_stats | raw}}</p>
-						<p>
-							<ul>
-							<li>Model cache ID: {{current_model|raw}}</li>
-							<li>Search cache ID: {{id_findattr|raw}}</li>
-							<li>Instance: {{instance|raw}}</li>
-							<li>Model Info: {{model_info|raw}}</li>
-							<li>Instances: {{instances|raw}}</li>
-							</ul>
-						</p>
-					</div>
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Model cache ID: {{current_model|raw}}</li>
+						<li>Search cache ID: {{id_findattr|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						<li>Instances: {{instances|raw}}</li>
+						</ul>
+					</p>
 				</div>
 			</div>
 		</div>
@@ -337,6 +335,8 @@
 
 		if (jsondata == '[]') $("#footer").hide();
 
+		$('#headingAdvancedFilters').parent().hide();
+
 		if ("{{must_wait}}" == "NO")
 		{
 			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
@@ -352,6 +352,7 @@
 				"columns": jsonObjHeader,
 				"columnDefs" : [
 					{"targets" : -1, "render" : function (data) { return Math.round(data); }},
+					{"targets" : 22, "render" : function (data) { return Math.max(data,100); }},
 					{"targets" : [11,12,13,14,15,16,17,18,19], "visible": false}
 				]
 			});
@@ -372,7 +373,7 @@
 
 			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
 			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
-			$('#modelInfoFilter').show(); $('#headingModelInfo').show();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
 			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
 
 			$('#footer').hide();
