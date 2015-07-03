@@ -119,6 +119,7 @@ for folder in 201* ; do
 	          id_cluster="${folder:(-2):2}"
 
 	          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+	          source $clusterConfigFile
 
             echo "ID cluster $id_cluster CFF $clusterConfigFile"
 
@@ -145,7 +146,7 @@ for folder in 201* ; do
 	          $MYSQL "$insert"
 
 	          if [ "$hadoop_version" == "2" ]; then
-	              if [ "$defaultProvider" == "hdinsight" ]; then
+	              if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
 				  	get_xml_exec_params "mr-history"
 				  else
 				  	get_xml_exec_params "history"

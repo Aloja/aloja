@@ -40,7 +40,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   end
 
   #web document root
-  #config.vm.synced_folder "./", "/vagrant/aloja"
+  #config.vm.synced_folder "./", "/vagrant"
+  config.vm.synced_folder "./aloja-web", "/vagrant/aloja-web", :owner=> 'www-data'
   config.vm.synced_folder "./aloja-web/logs", "/vagrant/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
   config.vm.synced_folder "./aloja-web/cache", "/vagrant/aloja-web/cache", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
 
