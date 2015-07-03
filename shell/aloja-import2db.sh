@@ -119,6 +119,7 @@ for folder in 201* ; do
 	          id_cluster="${folder:(-2):2}"
 
 	          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+	          source $clusterConfigFile
 
             echo "ID cluster $id_cluster CFF $clusterConfigFile"
 
@@ -144,8 +145,12 @@ for folder in 201* ; do
 
 	          $MYSQL "$insert"
 
-	          if [ "$hadoop_version" = "2" ]; then
-				  get_xml_exec_params "mr-history"
+	          if [ "$hadoop_version" == "2" ]; then
+	              if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
+				  	get_xml_exec_params "mr-history"
+				  else
+				  	get_xml_exec_params "history"
+				  fi
 				  update="UPDATE execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
 				  logger "updating exec params from execution conf: $update"
 				  $MYSQL "$update"

@@ -32,7 +32,7 @@ class MLParamevalController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 
@@ -43,7 +43,7 @@ class MLParamevalController extends AbstractController
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
+			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			if($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
@@ -245,7 +245,7 @@ class MLParamevalController extends AbstractController
 			$possible_models = $possible_models_id = array();
 			$must_wait = 'NO';
 		}
-		echo $this->container->getTwig ()->render ('mltemplate/mlconfigperf.html.twig', array (
+		echo $this->container->getTwig ()->render ('mltemplate/mlparameval.html.twig', array (
 				'selected' => 'mlparameval',
 				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'categories' => $categories,
@@ -266,6 +266,7 @@ class MLParamevalController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'money' => $money,
 				'paramEval' => $paramEval,
 				'instance' => $instance,

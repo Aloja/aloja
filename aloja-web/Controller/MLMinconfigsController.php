@@ -32,14 +32,14 @@ class MLMinconfigsController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
-			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
+			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -75,13 +75,13 @@ class MLMinconfigsController extends AbstractController
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
 					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type'
+					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
 				);
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench_type = 'HiBench' AND bench NOT LIKE 'prep_%' AND e.exe_time > 100".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench_type = 'HiBench' AND bench NOT LIKE 'prep_%' AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -130,10 +130,10 @@ class MLMinconfigsController extends AbstractController
 							$header = fgetcsv($handle, 1000, ",");
 
 							$token = 0;
-							$query = "INSERT INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
+							$query = "INSERT INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
-								$specific_instance = implode(",",array_slice($data, 2, 19));
+								$specific_instance = implode(",",array_slice($data, 2, 20));
 								$specific_data = implode(",",$data);
 								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
@@ -212,7 +212,7 @@ class MLMinconfigsController extends AbstractController
 							$specific_data = str_replace(",","','",$specific_data);
 
 							// register minconfigs_props to DB
-							$query = "INSERT INTO minconfigs_centers (id_minconfigs,cluster,id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,support)";
+							$query = "INSERT INTO minconfigs_centers (id_minconfigs,cluster,id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,support)"; // FIXME - Bench_type and Hadoop Version NOT here yet
 							$query = $query." VALUES ('".md5($config.'R')."','".$cluster."','".$specific_data."','".$sizes[$i++]."');";
 							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving centers into DB');
 						}
@@ -220,8 +220,29 @@ class MLMinconfigsController extends AbstractController
 					}
 					fclose($handle_sizes);
 
+					// Store file model to DB
+					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
+
+					$filemodel = getcwd().'/cache/query/'.md5($config.'R').'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config.'R')."','minconf','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file minconf into DB');
+
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config.'R').'*.rds');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.rds');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
 				}
 
@@ -302,6 +323,7 @@ class MLMinconfigsController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'message' => $message,
 				'instance' => $instance,
 				'id_learner' => md5($config),

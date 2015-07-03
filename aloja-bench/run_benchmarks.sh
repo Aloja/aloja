@@ -78,7 +78,7 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
       ;;
     b)
       BENCH=$OPTARG
-      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || usage
+      [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
       ;;
     r)
       REPLICATION=$OPTARG
@@ -228,10 +228,12 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 
 [ ! "$JAVA_XMS" ] && JAVA_XMS="-Xms256m"
 [ ! "$JAVA_XMX" ] && JAVA_XMX="-Xmx512m"
+[ ! "$JAVA_AM_XMS" ] && JAVA_AM_XMS="-Xms256m"
+[ ! "$JAVA_AM_XMX" ] && JAVA_AM_XMX="-Xmx512m"
 
 [ ! "$HADOOP_VERSION" ] && HADOOP_VERSION="hadoop1"
 
-if [ "$defaultProvider" == "hdinsight" ]; then
+if [ "$clusterType" == "PaaS" ]; then
   HADOOP_VERSION="hadoop2"
 fi
 
@@ -249,6 +251,10 @@ fi
 [ ! "$CONTAINER_MAX_MB" ] && CONTAINER_MAX_MB=4096
 [ ! "$MAPS_MB" ] && MAPS_MB=768
 [ ! "$REDUCES_MB" ]  && REDUCES_MB=1536
+[ ! "$AM_MB" ]  && AM_MB=1536
+
+##FOR TPCH ONLY, default 1TB
+[ ! "$TPCH_SCALE_FACTOR" ] && TPCH_SCALE_FACTOR=1000
 
 # Use instrumented version of Hadoop
 if [ "$INSTRUMENTATION" == "1" ] ; then
@@ -267,6 +273,9 @@ NUM_CORES=$NUM_CORES
 CONTAINER_MIN_MB=$CONTAINER_MIN_MB
 CONTAINER_MAX_MB=$CONTAINER_MAX_MB
 MAPS_MB=$MAPS_MB
+AM_MB=$AM_MB
+JAVA_AM_XMS=$JAVA_AM_XMS
+JAVA_AM_XMX=$JAVA_AM_XMX
 REDUCES_MB=$REDUCES_MB
 Master node: $master_name "
 
@@ -301,7 +310,7 @@ fi
 
 #make sure all spawned background jobs are killed when done (ssh ie ssh port forwarding)
 #trap "kill 0" SIGINT SIGTERM EXIT
-if [ ! -z "$EXECUTE_HIBENCH" ] ; then
+if [ ! -z "$EXECUTE_HIBENCH" ] || [ "$BENCH" == "TPCH" ]; then
   trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; stop_sniffer; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
 else
   trap 'echo "RUNNING TRAP!"; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM EXIT
@@ -326,7 +335,7 @@ $DSH_MASTER "touch $LOG_PATH"
 
 loggerb "DEBUG: JAVA_HOME=$JAVA_HOME"
 
-if [ "$defaultProvider" != "hdinsight" ]; then
+if [ "$clusterType" != "PaaS" ]; then
 	bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
 	vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
 	bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
@@ -341,7 +350,7 @@ fi
 echo "$(date '+%s') : STARTING EXECUTION of $JOB_NAME"
 
 
-if [ "$defaultProvider" != "hdinsight" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
+if [ "$clusterType" != "PaaS" ] && [ ! -z "$EXECUTE_HIBENCH" ]; then
   #temporary OS config
   if [ -z "$noSudo" ] ; then
     $DSH "sudo sysctl -w vm.swappiness=0 > /dev/null;
@@ -415,8 +424,13 @@ loggerb  ""
 #$DSH "rm -rf $DIR/conf/*" 2>&1 |tee -a $LOG_PATH
 #$DSH "cp -r $DIR/$CONF/* $DIR/conf/" 2>&1 |tee -a $LOG_PATH
 
+##GLOBAL ARRAYS FOR TIMES
+#declared globally here due to multi bash version issues
+declare -A EXEC_TIME
+declare -A EXEC_START
+declare -A EXEC_END
 
-if [ "$defaultProvider" != "hdinsight" ]; then
+if [ "$clusterType" != "PaaS" ]; then
  prepare_config
 fi
 

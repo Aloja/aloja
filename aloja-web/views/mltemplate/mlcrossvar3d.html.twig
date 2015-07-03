@@ -11,15 +11,43 @@
 		<hr />
 	</div>
 	<div id="container" style="float: left; width: 68%; margin: 0 auto;">
-		<div id="chart" style="float: left; width: 100%; margin: 0 auto; height: 600px;"></div>
-		<div id="information" style="float: left; width: 100%;">
-			<p>{{error_stats | raw}}</p>
-			<p>Model information:
-				<ul>
-				<li>Instance: {{instance|raw}}</li>
-				<li>Model Info: {{model_info|raw}}</li>
-				</ul>
-			</p>
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingChartDiv">
+				<i id="ChartFG" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" aria-expanded="true" aria-controls="chartDivFilter">
+						Variable Crossing in 3D (vs Observed Executions)
+					</a>
+				</h4>
+			</div>
+			<div id="chartDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingChartDiv">
+				<div class="panel-body">
+					<div id="chart" style="float: left; width: 100%; margin: 0 auto; height: 600px;"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
@@ -36,6 +64,7 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
+		$('#headingAdvancedFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
@@ -185,7 +214,11 @@
 
 			});
 		} else {
-			$('#chart')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+
 			setInterval( function() { window.location.reload(); }, 300000 );
 		}
 	});

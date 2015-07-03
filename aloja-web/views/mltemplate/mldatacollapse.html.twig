@@ -31,17 +31,42 @@
 		<hr />
 	</div>
 	<div id="stuff" style="float: left; width: 68%;">
-		<div id="benchdiv" style="float: left; width: 100%;">
-			<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingCollapseData">
+				<i id="CollapseDataFG" data-toggle="collapse" data-parent="#stuffdivs" href="#collapseDataFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#collapseDataFilter" aria-expanded="true" aria-controls="collapseDataFilter">
+						Collapsed Summary of Data
+					</a>
+				</h4>
+			</div>
+			<div id="collapseDataFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingCollapseData">
+				<div class="panel-body">
+					<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+				</div>
+			</div>
 		</div>
-		<div id="information" style="float: left; display: none; width: 100%;">
-			<p>{{error_stats | raw}}</p>
-			<p>Model information:
-				<ul>
-				<li>Instance: {{instance|raw}}</li>
-				<li>Model Info: {{model_info|raw}}</li>
-				</ul>
-			</p>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
 		</div>
 	</div>
 	{% endblock %}
@@ -78,6 +103,7 @@
 		$('#submitForm').attr('value', 'Collapse Data');
 		$("#submitForm").html('Collapse Data');
 		$('#machineLearningFilter').parent().hide();
+		$('#headingAdvancedFilters').parent().hide();
 
 		var test = {{ jsonColor | raw }};
 

@@ -62,4 +62,5 @@ fi
 
 MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
 DB="aloja2"
+MYSQL_CREATE="sudo mysql $MYSQL_ARGS -e " #do not include DB name in case it doesn't exist yet
 MYSQL="sudo mysql $MYSQL_ARGS $DB -e "

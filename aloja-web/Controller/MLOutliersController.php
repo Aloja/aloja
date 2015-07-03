@@ -12,7 +12,7 @@ class MLOutliersController extends AbstractController
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
-		$message = $instance = $jsonHeader = $jsonTable = '';
+		$message = $instance = $jsonHeader = $jsonTable = $model_html = '';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		try
@@ -38,7 +38,7 @@ class MLOutliersController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
@@ -58,6 +58,13 @@ class MLOutliersController extends AbstractController
 
 			if (!empty($possible_models_id))
 			{
+				$other_models = array();
+				$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
+				foreach ($result as $row) $other_models[] = $row['id_learner'];
+
+				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
+
 				if ($current_model == "")
 				{
 					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
@@ -82,13 +89,13 @@ class MLOutliersController extends AbstractController
 						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
 						'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type'
+						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
 					);
 					$headers = array_keys($header_names);
 					$names = array_values($header_names);
 
 					// dump the result to csv
-					$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
+					$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
 				    	$rows = $db->get_rows($query);
 					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -100,6 +107,17 @@ class MLOutliersController extends AbstractController
 						$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
 						fputcsv($fp, array_values($row),',','"');
 					}
+
+					// Retrieve file model from DB
+					$query = "SELECT file FROM model_storage WHERE id_hash='".$current_model."' AND type='learner';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$content = $row['file'];
+
+					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$fp = fopen($filemodel, 'w');
+					fwrite($fp,$content);
+					fclose($fp);
 
 					// launch query
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock');
@@ -131,8 +149,20 @@ class MLOutliersController extends AbstractController
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 					}
 
+					// Store file model to DB
+					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$fp = fopen($filemodel, 'r');
+					$content = fread($fp, filesize($filemodel));
+					$content = addslashes($content);
+					fclose($fp);
+
+					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','resolution','".$content."');";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file resolution into DB');
+
 					// Remove temporary files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$current_model.'-object.rds');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-object.rds');
 
 					$is_cached = true;
 				}
@@ -167,7 +197,7 @@ class MLOutliersController extends AbstractController
 					$max_x = $row['max_x'];
 					$max_y = $row['max_y'];
 
-					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','ID');
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','ID');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -213,7 +243,7 @@ class MLOutliersController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$model = '';
-			$possible_models_id = $possible_models = array();
+			$possible_models_id = $possible_models = $other_models = array();
 			$dbml = null;
 		}
 		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig',
@@ -241,9 +271,11 @@ class MLOutliersController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'must_wait' => $must_wait,
-				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+				'models' => $model_html,
 				'models_id' => $possible_models_id,
+				'other_models_id' => $other_models,
 				'current_model' => $current_model,
 				'resolution_id' => md5($config),
 				'sigma' => $sigma_param,

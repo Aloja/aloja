@@ -43,9 +43,6 @@ export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
   echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
   # Save execution information in an array to allow import later
-  declare -gA EXEC_TIME
-  declare -gA EXEC_START
-  declare -gA EXEC_END
   EXEC_TIME[${BENCH}]="$total_secs"
   EXEC_START[${BENCH}]="$start_exec"
   EXEC_END[${BENCH}]="$end_exec"

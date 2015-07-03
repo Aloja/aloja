@@ -1,4 +1,75 @@
-#$1 datadir (optional, if not uses default)
+vm_install_base_packages() {
+  if check_sudo ; then
+
+    local bootstrap_file="vm_install_packages"
+
+    if check_bootstraped "$bootstrap_file" ""; then
+      logger "Installing packages for for VM $vm_name "
+
+      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp"
+
+      #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
+
+      #only update apt sources when is 1 day old (86400) to save time
+      local install_packages_command='
+#if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 86400 ]; then
+#  sudo apt-get update -m;
+#fi
+
+export DEBIAN_FRONTEND=noninteractive
+sudo apt-get update -m;
+sudo apt-get -o Dpkg::Options::="--force-confold" install -y -f '
+
+      local install_packages_command="$install_packages_command ssh $base_packages; sudo apt-get autoremove -y;"
+
+      vm_execute "$install_packages_command"
+
+      test_install_extra_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
+      if [ ! -z "$test_install_extra_packages" ] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_extra_packages"
+      fi
+
+    else
+      logger "Packages already initialized"
+    fi
+  else
+    logger "WARNING: no sudo access or disabled, no packages installed"
+  fi
+}
+
+vm_install_extra_packages() {
+  if check_sudo ; then
+
+    local bootstrap_file="vm_install_extra_packages"
+
+    if check_bootstraped "$bootstrap_file" ""; then
+      logger "Installing extra packages for for VM $vm_name "
+
+      vm_execute "sudo apt-get install -y -f screen vim mc git iotop htop;"
+
+      local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
+      if [ ! -z "$test_install_extra_packages" ] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        logger "ERROR: installing extra packages for $vm_name. Test output: $test_install_extra_packages"
+      fi
+
+    else
+      logger "Extra packages already initialized"
+    fi
+  else
+    logger "WARNING: no sudo access or disabled, no extra packages installed"
+  fi
+}
+
+
+
+
+#$1 datadir (optional, if not uses default) $2 prod (default) or dev
 install_percona() {
 
   local bootstrap_file="install_percona"
@@ -21,9 +92,10 @@ sudo cp /etc/mysql/my.cnf /etc/mysql/my.cnf.bak
 sudo service mysql stop;
 sudo apt-get remove -y mysql-server mysql-client mysql-common;
 sudo apt-get autoremove -y;
+sudo mkdir -p /etc/mysql/conf.d;
   "
 
-    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf)
+    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "$2")
 $datadir" "secured"
 
     logger "INFO: Installing Percona"
@@ -40,16 +112,20 @@ Pin-Priority: 1001 > /etc/apt/preferences.d/00percona.pref"
 
     #first install version 5.5 in case of migration
     vm_execute "
+wget -O - http://www.percona.com/redir/downloads/RPM-GPG-KEY-percona | gpg --import;
+gpg --armor --export 1C4CBDCDCD2EFD2A | apt-key add -;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;
-sudo apt-get install -y percona-server-server-5.5"
+sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.5 in case of migrations
 
+    #upgrade to latest now
     test_action="$(vm_execute " [ \"\$\(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona' && sudo mysql -e 'SHOW VARIABLES LIKE \"innodb_autoinc_lock_mode%\";' |grep '0'\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       logger "INFO: Upgrading to latest version"
-      vm_execute "sudo apt-get install -y percona-server-server percona-xtrabackup qpress php5-mysql;"
+      vm_execute "sudo apt-get install -y --force-yes percona-server-server percona-xtrabackup qpress php5-mysql;"
     fi
 
+    #retest
     test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
@@ -66,36 +142,50 @@ sudo apt-get install -y percona-server-server-5.5"
 
 }
 
-# NOT USED ANY MORE
-#vm_install_pyxtrabackup() {
-#
-#  local bootstrap_file="vm_install_pyxtrabackup"
-#
-#  if check_bootstraped "$bootstrap_file" ""; then
-#    logger "Executing $bootstrap_file"
-#
-#    logger "INFO: Installing pip and pyxtrabackup"
-#    vm_execute "
-#sudo apt-get install -y curl python;
-#sudo curl --silent --show-error --retry 5 https://bootstrap.pypa.io/get-pip.py | sudo python2.7;
-#sudo pip install pyxtrabackup;
-#"
-#
-#    test_action="$(vm_execute " [ \"\$(which pyxtrabackup |grep 'pyxtrabackup')\" ] && echo '$testKey'")"
-#
-#    if [ "$test_action" == "$testKey" ] ; then
-#      logger "INFO: $bootstrap_file installed succesfully"
-#      #set the lock
-#      check_bootstraped "$bootstrap_file" "set"
-#    else
-#      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
-#    fi
-#
-#  else
-#    logger "$bootstrap_file already configured"
-#  fi
-#
-#}
+#$1 sample data data
+install_ALOJA_DB() {
+
+  local bootstrap_file="install_ALOJA_DB"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+
+    logger "INFO: Attempting to create database schema and default values..."
+    vm_execute "
+bash $(get_repo_path)/shell/create-update_DB.sh
+"
+
+    if [ "$1" ] ; then
+      logger "INFO: Inserting sample data (12k execs + 5 with perf details)"
+      vm_execute "
+sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.8d_2015_5execs.sql.bz2|mysql -f -b --show-warnings -B aloja2'
+sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.execs.8d_2015.sql.bz2|mysql -f -b --show-warnings -B aloja2 '
+
+"
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.execs.8d_2015.sql.bz2|mysql -f -b --show-warnings -B aloja2 '
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.8d_2015_5execs.sql.bz2|mysql -f -b --show-warnings -B aloja2'
+
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja2.sql.bz2|mysql aloja2 '
+#sudo bash -c 'bzip2 -dc $(get_repo_path)/shell/common/aloja2.execs.sql.bz2|mysql aloja2 '
+
+    fi
+
+
+    test_action="$(vm_execute " [ \"\$(sudo mysql -B -e 'select * from aloja2.clusters;' |grep 'vagrant-99' )\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
 
 
 vm_install_IB() {
