@@ -171,7 +171,6 @@ class MLTemplatesController extends AbstractController
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.rds');
 				}
 
 				$must_wait = "NO";

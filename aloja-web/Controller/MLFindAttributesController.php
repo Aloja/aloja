@@ -176,7 +176,6 @@ class MLFindAttributesController extends AbstractController
 
 						// Remove temporal files
 						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$current_model.'-object.rds');
 
 						$is_cached = true;
 					}
