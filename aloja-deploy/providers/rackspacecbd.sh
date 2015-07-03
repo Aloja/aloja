@@ -22,6 +22,12 @@ vm_final_bootstrap() {
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /data1'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /data1'"
  vm_execute "sudo su hdfs -c \"hdfs dfs -mkdir /HiBench\""
+ ##Initiate hosts files
+ vm_execute "dsh -f slaves -- cat /etc/hosts >> hosts.tmp"
+ vm_execute "cat hosts.tmp | cut -d: -f2 |  sed -e 's/^[ \t]*//' | sudo tee -a /etc/hosts"
+ vm_execute "dsh -f slaves -cM -- \"echo '\`cat /etc/hosts\`' | sudo tee -a /etc/hosts\""
+ vm_execute "pscp.pssh -r -h slaves sysstat-10.0.3/ /home/pristine"
+ vm_execute "dsh -f slaves -cM -- 'cd sysstat-10.0.3 && sudo make install'"
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chown pristine /HiBench\""
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chmod 1777 /mr-history\""
 }

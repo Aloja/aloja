@@ -568,9 +568,7 @@ export NUM_ITERATIONS=$NUM_ITERATIONS
   echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
   # Save execution information in an array to allow import later
-  declare -gA EXEC_TIME
-  declare -gA EXEC_START
-  declare -gA EXEC_END
+  
   EXEC_TIME[${3}${1}]="$total_secs"
   EXEC_START[${3}${1}]="$start_exec"
   EXEC_END[${3}${1}]="$end_exec"
@@ -657,9 +655,7 @@ export NUM_ITERATIONS=$NUM_ITERATIONS && \
   echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
   # Save execution information in an array to allow import later
-  declare -gA EXEC_TIME
-  declare -gA EXEC_START
-  declare -gA EXEC_END
+  
   EXEC_TIME[${3}${1}]="$total_secs"
   EXEC_START[${3}${1}]="$start_exec"
   EXEC_END[${3}${1}]="$end_exec"
@@ -699,9 +695,10 @@ save_hadoop() {
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
+        sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
         hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
-        hdfs dfs -rm -r /mr-history/*
-        sudo su hdfs -c "hdfs dfs -expunge" 
+        sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
+        sudo su hdfs -c "hdfs dfs -expunge"
     else
 	    hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
 	    hdfs dfs -rm -r /mr-history
@@ -865,10 +862,19 @@ stop_sniffer(){
 execute_TPCH(){
   restart_hadoop
 
+  ##putting hadoop binaries to path
+
   if [ "$DELETE_HDFS" == "1" ]; then
     generate_TPCH_data "prep_tpch" "$TPCH_SCALE_FACTOR"
   else
     loggerb  "Reusing previous RUN TPCH data"
+  fi
+
+  if [ "$LIST_BENCHS" == "all" ]; then
+     LIST_BENCHS=""
+     for number in $(seq 1 22) ; do
+        LIST_BENCHS="${LIST_BENCHS} query${number}"
+     done
   fi
 
   for query in $(echo "$LIST_BENCHS") ; do
@@ -939,9 +945,7 @@ generate_TPCH_data() {
   echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
   # Save execution information in an array to allow import later
-  declare -gA EXEC_TIME
-  declare -gA EXEC_START
-  declare -gA EXEC_END
+  
   EXEC_TIME[${3}${1}]="$total_secs"
   EXEC_START[${3}${1}]="$start_exec"
   EXEC_END[${3}${1}]="$end_exec"
@@ -988,9 +992,7 @@ execute_TPCH_query() {
   echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
 
   # Save execution information in an array to allow import later
-  declare -gA EXEC_TIME
-  declare -gA EXEC_START
-  declare -gA EXEC_END
+  
   EXEC_TIME[${3}${1}]="$total_secs"
   EXEC_START[${3}${1}]="$start_exec"
   EXEC_END[${3}${1}]="$end_exec"
