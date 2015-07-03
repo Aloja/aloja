@@ -862,10 +862,19 @@ stop_sniffer(){
 execute_TPCH(){
   restart_hadoop
 
+  ##putting hadoop binaries to path
+
   if [ "$DELETE_HDFS" == "1" ]; then
     generate_TPCH_data "prep_tpch" "$TPCH_SCALE_FACTOR"
   else
     loggerb  "Reusing previous RUN TPCH data"
+  fi
+
+  if [ "$LIST_BENCHS" == "all" ]; then
+     LIST_BENCHS=""
+     for number in $(seq 1 22) ; do
+        LIST_BENCHS="${LIST_BENCHS} query${number}"
+     done
   fi
 
   for query in $(echo "$LIST_BENCHS") ; do
