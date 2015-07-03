@@ -161,8 +161,6 @@ class MLOutliersController extends AbstractController
 
 					// Remove temporary files
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.$current_model.'-object.rds');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-object.rds');
 
 					$is_cached = true;
 				}
