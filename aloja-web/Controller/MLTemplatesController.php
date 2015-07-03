@@ -78,7 +78,7 @@ class MLTemplatesController extends AbstractController
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";"; // FIXME - RACKSPACE (removed the hadoop_version condition...)
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -86,6 +86,7 @@ class MLTemplatesController extends AbstractController
 				fputcsv($fp, $names,',','"');
 			    	foreach($rows as $row)
 				{
+					if ($row['hadoop_version'] == '') $row['hadoop_version'] = '1'; // FIXME - RACKSPACE (convert null hadoop_version to '1')
 					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
 					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
 					fputcsv($fp, array_values($row),',','"');
@@ -171,7 +172,6 @@ class MLTemplatesController extends AbstractController
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.rds');
 				}
 
 				$must_wait = "NO";
