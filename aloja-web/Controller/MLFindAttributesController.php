@@ -11,7 +11,7 @@ class MLFindAttributesController extends AbstractController
 {
 	public function mlfindattributesAction()
 	{
-		$instance = $message = $tree_descriptor = '';
+		$instance = $message = $tree_descriptor = $model_html = '';
 		$must_wait = 'NO';
 		try
 		{
@@ -40,7 +40,7 @@ class MLFindAttributesController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		    	
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
@@ -59,15 +59,18 @@ class MLFindAttributesController extends AbstractController
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
-			$other_models = array();
-			$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
-			foreach ($result as $row) $other_models[] = $row['id_learner'];
-
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
 			if (!empty($possible_models_id))
 			{
+				$other_models = array();
+				$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
+				foreach ($result as $row) $other_models[] = $row['id_learner'];
+
+				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
+
 				if ($current_model == "")
 				{
 					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
@@ -88,6 +91,18 @@ class MLFindAttributesController extends AbstractController
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
+					// Retrieve file model from DB
+					$query = "SELECT file FROM model_storage WHERE id_hash='".$current_model."' AND type='learner';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$content = $row['file'];
+
+					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$fp = fopen($filemodel, 'w');
+					fwrite($fp,$content);
+					fclose($fp);
+
+					// Run the predictor
 					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
 					$count = 1;
 					foreach ($instances as $inst)
@@ -103,7 +118,7 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
@@ -139,7 +154,7 @@ class MLFindAttributesController extends AbstractController
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 								$token = 0;
 								$token_i = 0;
 							}
@@ -179,7 +194,7 @@ class MLFindAttributesController extends AbstractController
 					if (isset($_GET['pass']) && $_GET['pass'] == 2) { $dbml = null; return "2"; }
 
 					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Prediction','Observed');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -235,6 +250,7 @@ class MLFindAttributesController extends AbstractController
 				if (isset($_GET['pass'])) { return "-1"; }
 				$config = "";
 				$possible_models = $possible_models_id = array("None");
+				$other_models = array();
 			}
 			$dbml = null;
 		}
@@ -271,9 +287,10 @@ class MLFindAttributesController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'jsonData' => $jsonData,
 				'jsonHeader' => $jsonHeader,
-				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+				'models' => $model_html,
 				'models_id' => $possible_models_id,
 				'other_models_id' => $other_models,
 				'current_model' => $current_model,

@@ -2,7 +2,7 @@
 
 #load init and common functions
 type="cluster"
-source "include/include.sh"
+source include/include_deploy.sh
 
 #Sequential Node deploy
 for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s

@@ -31,7 +31,7 @@ class MLDataCollapseController extends AbstractController
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types'); // Order is important
+			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
@@ -40,7 +40,8 @@ class MLDataCollapseController extends AbstractController
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			$dims1 = ((empty($params['nets']))?'':'Net,').((empty($params['disks']))?'':'Disk,').((empty($params['blk_sizes']))?'':'Blk.size,').((empty($params['comps']))?'':'Comp,');
-			$dims1 = $dims1.((empty($params['id_clusters']))?'':'Cluster,').((empty($params['mapss']))?'':'Maps,').((empty($params['replications']))?'':'Rep,').((empty($params['iosfs']))?'':'IO.SFac,').((empty($params['iofilebufs']))?'':'IO.FBuf');
+			$dims1 = $dims1.((empty($params['id_clusters']))?'':'Cluster,').((empty($params['mapss']))?'':'Maps,').((empty($params['replications']))?'':'Rep,').((empty($params['iosfs']))?'':'IO.SFac,').((empty($params['iofilebufs']))?'':'IO.FBuf,');
+			$dims1 = $dims1.((empty($params['hadoop_versionss']))?'':'Version,').((empty($params['bench_types']))?'':'Bench.Type');
 			if (substr($dims1, -1) == ',') $dims1 = substr($dims1,0,-1);
 
 			$dims2 = "Benchmark";
@@ -76,7 +77,7 @@ class MLDataCollapseController extends AbstractController
 				'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
 				'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type'
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
 			);
 			$headers = array_keys($header_names);
 			$names = array_values($header_names);
@@ -91,7 +92,7 @@ class MLDataCollapseController extends AbstractController
 				$dims1_concat = $dims1_concat.(($dims1_concat=='')?'':',":",').array_search($d1value, $header_names);
 			}
 
-			$query = "SELECT distinct bench FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." ORDER BY bench;";
+			$query = "SELECT distinct bench FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." ORDER BY bench;";
 			$rows = $db->get_rows($query);
 			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -106,7 +107,7 @@ class MLDataCollapseController extends AbstractController
 			$jsonHeader = $jsonHeader.']';
 
 
-			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
+			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
 			$rows = $db->get_rows($query);
 			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -174,6 +175,7 @@ class MLDataCollapseController extends AbstractController
 				'vm_coress' => $params['vm_coress'],
 				'vm_RAMs' => $params['vm_RAMs'],
 				'types' => $params['types'],
+				'hadoop_versions' => $params['hadoop_versions'],
 				'jsonEncoded' => $jsonData,
 				'jsonHeader' => $jsonHeader,
 				'jsonColumns' => $jsonColumns,

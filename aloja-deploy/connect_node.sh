@@ -2,6 +2,6 @@
 
 #load init and common functions
 type="node"
-source "include/include.sh"
+source include/include_deploy.sh
 
 node_connect "$1"

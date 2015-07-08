@@ -12,6 +12,7 @@ aloja-deploy/cache/*
 !aloja-deploy/cache/.git_ignored_folder
 
 #vagrant
+.vagrant
 vagrant/.vagrant/*
 
 #SECURITY
