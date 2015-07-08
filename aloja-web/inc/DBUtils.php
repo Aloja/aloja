@@ -90,6 +90,8 @@ class DBUtils
 
     public static function getFilterExecs()
     {
+        return " AND e.exe_time < 5000 ";
+
         return " AND e.id_cluster IN (select id_cluster from clusters c where provider = 'rackspace' and id_cluster != 38) " ;
 
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
