@@ -90,7 +90,7 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-        return " AND e.exe_time < 5000 AND e.id_cluster NOT IN (38, 42) ";
+        return " AND e.exe_time < 5000 AND e.id_cluster NOT IN ( 42 ) ";
 
         return " AND e.id_cluster IN (select id_cluster from clusters c where provider = 'rackspace' and id_cluster != 38) " ;
 
