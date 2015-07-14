@@ -753,7 +753,6 @@ cluster_initialize_disks() {
     echo 'Initializing disks';
 
     $create_string
-    echo 'Here';
 
     test_action=\"\$(lsblk|grep ${devicePrefix}c1\) ] && echo '$testKey')\"
     if [ \"\$test_action\" == \"$testKey\" ] ; then
