@@ -34,22 +34,24 @@ vm_check_create() {
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-	if [ "$defaultProvider" == "hdinsight" ]; then
-		vm_name="$clusterName"
-		status=$(hdi_cluster_check_create "$clusterName")
-		if [ $status -eq 0 ]; then
-		  create_hdi_cluster "$clusterName"
-		fi
-		  vm_provision "pw"
-		  vm_final_bootstrap "$clusterName" "pw"
-	elif [ "$defaultProvider" == "rackspacecbd" ]; then
-	    vm_name="$clusterName"
-		#vm_provision
-		vm_final_bootstrap "$clusterName"
-	elif [ "$vmType" != 'windows' ] ; then
+
+  if [ "$defaultProvider" == "hdinsight" ]; then
+    vm_name="$clusterName"
+    status=$(hdi_cluster_check_create "$clusterName")
+    if [ $status -eq 0 ]; then
+      create_hdi_cluster "$clusterName"
+    fi
+    vm_provision "pw"
+    vm_final_bootstrap "$clusterName" "pw"
+  elif [ "$defaultProvider" == "rackspacecbd" ]; then
+    vm_name="$clusterName"
+    #vm_provision
+    vm_final_bootstrap "$clusterName"
+  elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it
+
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
 
@@ -58,7 +60,6 @@ vm_create_node() {
     else
       vm_provision
     fi
-
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -77,6 +78,7 @@ vm_create_connect() {
 
   #test first if machines are accessible via SSH to save time
   if ! wait_vm_ssh_ready "1" ; then
+
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
 
@@ -201,8 +203,13 @@ get_ssh_port() {
 
 #default port, override to change i.e. Openstack might need first root
 get_ssh_user() {
-  echo "$userAloja"
+  echo "${userAloja}"
 }
+
+get_ssh_pass() {
+  echo "${passwordAloja}"
+}
+
 
 vm_initial_bootstrap() {
   : #not necesarry by default
@@ -260,9 +267,9 @@ vm_execute() {
     check_sshpass
 
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
     else
-      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
     fi
   fi
 }
@@ -297,7 +304,7 @@ vm_connect() {
   else
     check_sshpass
     logger "Connecting to VM $vm_name (using PASS), with details: ssh  $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
@@ -316,7 +323,7 @@ vm_local_scp() {
    logger "password"
     check_sshpass
 
-    sshpass -p "$passwordAloja" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -534,11 +541,12 @@ wait_vm_ready() {
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
+
   logger "Checking SSH status of VM $vm_name"
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
 
-    test_action="$(vm_execute " [ \"\$\(ls\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute "echo '$testKey'")"
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
