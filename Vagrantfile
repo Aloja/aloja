@@ -79,7 +79,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.hostname = nodeName
       node.vm.network :private_network, ip: ipAddrPrefix + num.to_s
 
-      node.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "vagrant-cluster"
+      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "vagrant-99"
 
       node.vm.provider "virtualbox" do |v|
         v.name = "vagrant-0" + num.to_s
