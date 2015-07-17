@@ -10,9 +10,9 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # default box (aloja-web)
-  default_name = "aloja-web"
-  config.vm.define default_name, primary: true do |default|
-    default.vm.hostname = default_name
+  defaultName = "aloja-web"
+  config.vm.define defaultName, primary: true do |default|
+    default.vm.hostname = defaultName
 
     #Default base image to build from scratch
     #config.vm.box = "ubuntu/trusty64"
@@ -24,7 +24,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
     #for Virtualbox (Default)
     default.vm.provider 'virtualbox' do |v|
-      v.name = default_name
+      v.name = defaultName
 
       v.memory = 2048 #change as needed
       v.cpus = 4 #change as needed
@@ -62,19 +62,32 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   end
 
+  # cluster nodes for benchmarking (aloja-deploy)
+  # start with vagrant up /.*/ or vagrant machine1 machine2
 
+  # Number of nodes to provision (starts at 0)
+  numNodes = 1 #2 nodes
+  # IP Address Base for private network
+  ipAddrPrefix = "192.168.99.1"
 
-  #
-  # # cluster nodes for benchmarking (aloja-deploy)
-  # config.vm.define "vagrant1", autostart: false do |node|
-  #  node.vm.hostname = "vagrant1"
-  #  node.vm.network "private_network", ip: "10.42.42.101"
-  #  node.vm.provision "shell", path: "vagrant/files/vagrant_cluster/provision.sh"
-  # end
-  # config.vm.define "vagrant2", autostart: false do |node|
-  #  node.vm.hostname = "vagrant2"
-  #  node.vm.network "private_network", ip: "10.42.42.102"
-  #  node.vm.provision "shell", path: "vagrant/files/vagrant_cluster/provision.sh"
-  # end
+  # Provision Config for each of the nodes
+  0.upto(numNodes) do |num|
+
+    nodeName = "vagrant-0" + num.to_s
+    config.vm.define nodeName, autostart: false do |node|
+      node.vm.box = "ubuntu/trusty64"
+      node.vm.hostname = nodeName
+      node.vm.network :private_network, ip: ipAddrPrefix + num.to_s
+
+      node.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "vagrant-cluster"
+
+      node.vm.provider "virtualbox" do |v|
+        v.name = "vagrant-0" + num.to_s
+        v.memory = 1024 #change as needed
+        v.cpus = 1 #change as needed
+      end
+    end
+  end
+
 
 end
