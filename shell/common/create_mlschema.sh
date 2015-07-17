@@ -160,6 +160,18 @@ CREATE TABLE IF NOT EXISTS \`model_storage\` (
   PRIMARY KEY (\`id_hash\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
+
+CREATE TABLE IF NOT EXISTS \`precisions\` (
+  \`id_precision\` varchar(255) NOT NULL,
+  \`instance\` varchar(255) NOT NULL,
+  \`model\` longtext NOT NULL,
+  \`diversity\` longtext NOT NULL,
+  \`precisions\` longtext NOT NULL,
+  \`discvar\` varchar(255) NOT NULL,
+  \`creation_time\` datetime NOT NULL,
+  PRIMARY KEY (\`id_precision\`,\`discvar\`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
 "
 
 $MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` longtext NOT NULL;"
