@@ -17,6 +17,23 @@ get_ssh_port() {
   fi
 }
 
+#vm_name must be set
+get_vm_ssh_port() {
+  local node_ssh_port=""
+  local vagrant_cluster_prefix="2222"
+
+  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+    local vm_name_tmp="${clusterName}-${vm_id}"
+
+    if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+      local node_ssh_port="$vagrant_cluster_prefix${vm_id:2}"
+      break #just return on match
+    fi
+  done
+
+  echo "$node_ssh_port"
+}
+
 vagrant_link_repo(){
   logger "INFO: Making sure /var/www is linked for the vagrant VM"
   vm_execute "
