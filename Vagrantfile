@@ -11,6 +11,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # default box (aloja-web)
   defaultName = "aloja-web"
+  defaultSSHPort = 22200
+  defaultIP = "192.168.99.2" #do not use .1 to avoid some vagrant warnings
+
   config.vm.define defaultName, primary: true do |default|
     default.vm.hostname = defaultName
 
@@ -20,7 +23,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #Prebuilt box for ALOJA
     #config.vm.box = "npoggi/aloja-precise64" #Aloja v1 VM on Ubuntu 12.04
     default.vm.box = "npoggi/aloja-trusty64" #Aloja v2 VM on Ubuntu 14.04
-
 
     #for Virtualbox (Default)
     default.vm.provider 'virtualbox' do |v|
@@ -46,6 +48,18 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #   d.has_ssh = true
     # end
 
+    #used a fixed port, so that we can connect from the deploy scripts
+    default.ssh.port = defaultSSHPort
+    default.vm.network :forwarded_port, guest: 22, host: defaultSSHPort, id: 'ssh'
+    default.ssh.insert_key = false #relaxed security (for now...)
+
+    default.vm.network :private_network, ip: defaultIP
+
+    #net ports
+    default.vm.network :forwarded_port, host: 8080, guest: 80 #web
+    default.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
+    #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
+
     #use aloja-deploy for provisiong (bash scripts)
     default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "vagrant"
 
@@ -54,11 +68,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     default.vm.synced_folder "./aloja-web", "/vagrant/aloja-web", :owner=> 'www-data'
     default.vm.synced_folder "./aloja-web/logs", "/vagrant/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
     default.vm.synced_folder "./aloja-web/cache", "/vagrant/aloja-web/cache", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
-
-    #net ports
-    default.vm.network :forwarded_port, host: 8080, guest: 80 #web
-    default.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
-    #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
 
   end
 
@@ -70,6 +79,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # IP Address Base for private network
   ipAddrPrefix = "192.168.99.1"
 
+  sshPortPrefix = 22220 #prefix port for the different VMs
+
   # Provision Config for each of the nodes
   0.upto(numNodes) do |num|
 
@@ -79,7 +90,12 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.hostname = nodeName
       node.vm.network :private_network, ip: ipAddrPrefix + num.to_s
 
-      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "vagrant-99"
+      #used a fixed port, so that we can connect from the deploy scripts
+      node.ssh.port = sshPortPrefix + num
+      node.vm.network :forwarded_port, guest: 22, host: sshPortPrefix + num, id: 'ssh'
+      node.ssh.insert_key = false #relaxed security (for now...)
+
+      #node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "vagrant-99"
 
       node.vm.provider "virtualbox" do |v|
         v.name = "vagrant-0" + num.to_s
