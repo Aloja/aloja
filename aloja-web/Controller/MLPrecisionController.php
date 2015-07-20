@@ -31,7 +31,7 @@ class MLPrecisionController extends AbstractController
  			{
 				$preset = Utils::setDefaultPreset($db, 'mlprecision');
  			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "MLPrecision Default";
 		    	
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
@@ -95,7 +95,7 @@ class MLPrecisionController extends AbstractController
 			}
 			$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/query/'.md5($config).'-*.lock | wc -w ') == 2*count($eval_names));
 
-			if ($finished_process && !$is_cached) // TODO - Remove false
+			if ($finished_process && !$is_cached)
 			{
 				$token = 0;
 				$token_i = 0;
