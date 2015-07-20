@@ -31,6 +31,13 @@ logger() {
   fi
 }
 
+#log and die, $1 message
+#TODO improve this function so that it exits even if within a sub-shell
+die() {
+  logger "ERROR: $1"
+  exit 1
+}
+
 #trasposes new lines to selected string
 #$1 string to traspose $2 traspose
 nl2char() {
