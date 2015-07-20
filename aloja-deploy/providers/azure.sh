@@ -150,6 +150,27 @@ get_ssh_host() {
  echo "${dnsName}.cloudapp.net"
 }
 
+#azure special case for ssh ids
+get_vm_ssh_port() {
+  local node_ssh_port=''
+
+  if [ "$type" == "node" ] ; then
+      local node_ssh_port="$vm_ssh_port" #for Azure nodes
+  else #cluster auto id
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local vm_name_tmp="${clusterName}-${vm_id}"
+      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
+
+      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+        local node_ssh_port="2${clusterID}${vm_id}"
+        break #just return one
+      fi
+    done
+  fi
+
+  echo "$node_ssh_port"
+}
+
 #construct the port number from vm_name
 get_ssh_port() {
   echo "$(get_vm_ssh_port)"
