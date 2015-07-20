@@ -358,29 +358,9 @@ get_repo_path(){
   echo "$homePrefixAloja/$userAloja/share/"
 }
 
-#vm_name must be set
+#vm_name must be set, override when needed ie., azure, vagrant,...
 get_vm_ssh_port() {
-  local node_ssh_port=''
-
-  if [ "$type" == "node" ] ; then
-    if [ "$cloud_provider" == "azure" ] ; then
-      local node_ssh_port="$vm_ssh_port" #for Azure nodes
-    else
-      local node_ssh_port="22" #default
-    fi
-  else #cluster auto id
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-      local vm_name_tmp="${clusterName}-${vm_id}"
-      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
-
-      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-        local node_ssh_port="2${clusterID}${vm_id}"
-        break #just return one
-      fi
-    done
-  fi
-
-  echo "$node_ssh_port"
+  echo "22"
 }
 
 #$1 vm_name
