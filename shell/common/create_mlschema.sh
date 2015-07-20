@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS \`learners\` (
   \`instance\` varchar(255) NOT NULL,
   \`model\` longtext NOT NULL,
   \`algorithm\` varchar(255) NOT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`sid_learner\`),
   UNIQUE KEY \`id_learner_UNIQUE\` (\`id_learner\`),
   KEY \`idx_instance\` (\`instance\`)
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS \`predictions\` (
   \`vm_OS\` varchar(127) DEFAULT NULL,
   \`vm_cores\` int(11) DEFAULT NULL,
   \`vm_RAM\` decimal(10,3) DEFAULT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id_prediction\`),
   KEY \`idx_bench\` (\`bench\`),
   KEY \`idx_exe_time\` (\`exe_time\`),
@@ -67,7 +67,7 @@ CREATE TABLE IF NOT EXISTS \`trees\` (
   \`instance\` varchar(255) NOT NULL,
   \`model\` longtext NOT NULL,
   \`tree_code\` longtext NOT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id_findattrs\`),
   KEY \`idx_instance\` (\`instance\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS \`resolutions\` (
   \`outlier_code\` int(8) DEFAULT 0,  
   \`predicted\` int(11) DEFAULT 0,  
   \`observed\` int(11) DEFAULT 0, 
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`sid_resolution\`),
   KEY \`idx_instance\` (\`instance\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
@@ -98,7 +98,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs\` (
   \`instance\` varchar(255) NOT NULL,
   \`model\` longtext NOT NULL,
   \`is_new\` int(1) NOT NULL DEFAULT 0,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id_minconfigs\`),
   KEY \`idx_instance\` (\`instance\`),
   FOREIGN KEY (\`id_learner\`) REFERENCES learners(\`id_learner\`) ON DELETE CASCADE
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_props\` (
   \`cluster\` int(11) NOT NULL,
   \`MAE\` decimal(20,3) DEFAULT NULL,
   \`RAE\` decimal(20,3) DEFAULT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`sid_minconfigs_props\`),
   FOREIGN KEY (\`id_minconfigs\`) REFERENCES minconfigs(\`id_minconfigs\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -135,7 +135,7 @@ CREATE TABLE IF NOT EXISTS \`minconfigs_centers\` (
   \`id_cluster\` int(11) DEFAULT NULL,
   \`bench_type\` varchar(255) DEFAULT NULL,
   \`support\` mediumtext DEFAULT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`sid_minconfigs_centers\`),
   FOREIGN KEY (\`id_minconfigs\`) REFERENCES minconfigs(\`id_minconfigs\`) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -146,7 +146,7 @@ CREATE TABLE IF NOT EXISTS \`summaries\` (
   \`instance\` varchar(255) NOT NULL,
   \`model\` longtext NOT NULL,
   \`summary\` longtext NOT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id_summaries\`),
   KEY \`idx_instance\` (\`instance\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -156,7 +156,7 @@ CREATE TABLE IF NOT EXISTS \`model_storage\` (
   \`id_hash\` varchar(255) NOT NULL,
   \`type\` varchar(255) NOT NULL,
   \`file\` MEDIUMBLOB NOT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id_hash\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -168,7 +168,7 @@ CREATE TABLE IF NOT EXISTS \`precisions\` (
   \`diversity\` longtext NOT NULL,
   \`precisions\` longtext NOT NULL,
   \`discvar\` varchar(255) NOT NULL,
-  \`creation_time\` datetime NOT NULL,
+  \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (\`id_precision\`,\`discvar\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -183,6 +183,18 @@ $MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`support\` mediumtext NOT NUL
 $MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` longtext NOT NULL"
 $MYSQL "ALTER TABLE \`summaries\` MODIFY \`summary\` longtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs_centers\` ADD \`bench_type\` varchar(255) ;"
+
+
+$MYSQL "ALTER TABLE \`learners\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`predictions\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`trees\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`minconfigs_props\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`summaries\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+$MYSQL "ALTER TABLE \`model_storage\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+
 
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLPrediction Default','mlprediction',1,'MLPrediction Default','/mlprediction?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&learn=regtree&umodel=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
 $MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLFindAttrs Default','mlfindattributes',1,'MLFindAttrs Default','/mlfindattributes?benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&mapss[]=4&comps[]=0&replications[]=1&blk_sizes[]=128&iosfs[]=10&iofilebufs[]=65536&iofilebufs[]=131072&current_model=ee7c939fefa656a3f82f80002ed39c1d&unseen=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"

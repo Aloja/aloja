@@ -88,7 +88,7 @@ class MLPrecisionController extends AbstractController
 				$count = 1;
 				foreach ($eval_names as $name)
 				{
-					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_diversity -p vdisc="'.$name.'":json=1 -v > '.md5($config).'-D-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
+					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_diversity -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-D-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_precision_split -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-P-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 				}
 
@@ -172,7 +172,7 @@ class MLPrecisionController extends AbstractController
 				$jsonDiversity = "[".implode(",",$diversity)."]";
 				$jsonPrecisions = "[".implode(",",$precisions)."]";
 
-				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Target','Exe.Time');
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Target','Exe.Time','Support');
 				$jsonHeaderDiv = '[';
 				foreach ($header as $title)
 				{
@@ -181,7 +181,7 @@ class MLPrecisionController extends AbstractController
 				}
 				$jsonHeaderDiv = $jsonHeaderDiv.']';
 
-				$jsonPrecisionHeader = '[{"title":"Target"},{"title":"Diversity"},{"title":"# Executions"},{"title":"Deviation (UnPrecision)"}]';
+				$jsonPrecisionHeader = '[{"title":"Target"},{"title":"Diversity"},{"title":"# Executions"},{"title":"Deviation (UnPrecision)"},{"title":"Mean [Stats]"},{"title":"StDev [Stats]"},{"title":"Max [Stats]"},{"title":"Min [Stats]"}]';
 			}
 
 			$dbml = null;

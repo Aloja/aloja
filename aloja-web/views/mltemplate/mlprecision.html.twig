@@ -24,7 +24,7 @@
 	</div>
 	<div id="contentdiv" style="float: left; width: 68%;">
 
-		<div id="waitdiv" style="float: left; width: 100%;">SOMETHING WENT WRONG ON JSCRIPT</div>
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
 
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
 			<div class="panel-heading" role="tab" id="headingBenchDiv">
@@ -50,7 +50,7 @@
 						<option value="Hadoop.Version">Hadoop Version</option>
 						<option value="Bench.Type">Benchmark Type</option>
 					</select></td></tr></table>
-					<table id="precisiontab" cellpadding="0" cellspacing="0" border="0" class="display" width="65%"><thead></thead></table>
+					<table id="precisiontab" cellpadding="0" cellspacing="0" border="0" class="display" width="95%"><thead></thead></table>
 				</div>
 			</div>
 
@@ -64,7 +64,6 @@
 			</div>
 			<div id="diversityDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingDiversityDiv">
 				<div class="panel-body">
-					<div id="chart" style="float:left; width: 100%"></div>
 					<table width="100%"><tr><td>Target:&nbsp;&nbsp;&nbsp;</td><td width="100%">
 					<select class="form-control" class="control-form in " name="feature" style="width:25%" onchange="update_divtable(this.value)">
 						<option value="Cl.Name" SELECTED>Cluster Name</option>
@@ -81,6 +80,7 @@
 					<input type='hidden' id='current_page' />
 					<input type='hidden' id='show_per_page' />
 					<input type='hidden' id='current_discvar' />
+					<div id="chart" style="float:left; width: 100%"></div>
 					<div id="tablesdiv" width="100%"></div>
 					<div id='page_navigation' style="text-align: right"></div>
 				</div>
@@ -205,39 +205,15 @@
 				"bFilter": false,
 				"bSearchable":false,
 				"bInfo":false,
-				"bPaginate": false
-			});
-		}
-	}
-
-	function update_divtable (variable2)
-	{
-		var divselect = diversity_select (variable2);
-
-		for (var i = 0; i < divselect.length; i++)		// Beware oh high cardinality
-		{
-			if($("#benchmark"+i).dataTable() != null) $("#benchmark"+i).dataTable().fnDestroy();
-			$("#benchmark"+i).empty();
-		}
-		$("#tablesdiv").empty();
-
-		for (var i = 0; i < divselect.length; i++)		// Beware oh high cardinality
-		{
-			$("#tablesdiv").append('<table id="benchmark' + i + '" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>');
-			auxTable = $("#benchmark"+i).dataTable({
-				"data": divselect[i],
-				"columns": {{ diversityHeader | raw }},
-				"bFilter": false,
-				"bSearchable":false,
-				"bInfo":false,
-				"bPaginate": false
+				"bPaginate": false,
+				"columnDefs" : [{"targets" : 10, "render" : function (data) { return Math.round(data); }}]
 			});
 		}
 
 		if (divselect.length == 0)
 		{
-			$("#tablesdiv").append('<table id="benchmark' + i + '" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>');
-			auxTable = $("#benchmark"+i).dataTable({
+			$("#tablesdiv").append('<table id="benchmark0" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>');
+			auxTable = $("#benchmark0").dataTable({
 				"data": [],
 				"columns": {{ diversityHeader | raw }},
 				"bFilter": false,
@@ -246,6 +222,18 @@
 				"bPaginate": false
 			});		
 		}
+	}
+
+	function update_divtable (variable2)
+	{
+		for (var i = 0; i < $("#tablesdiv").children().length; i++)		// Beware oh high cardinality
+		{
+			if($("#benchmark"+i).dataTable() != null) $("#benchmark"+i).dataTable().fnDestroy();
+			$("#benchmark"+i).empty();
+		}
+		$("#tablesdiv").empty();
+
+		diversity_table (variable2);
 
 		init_pages();
 
@@ -264,7 +252,7 @@
 		{
 			var first = divselect[i][0];
 			var newcat = "";
-			for (var j = 0; j < first.length - 2; j++)
+			for (var j = 0; j < first.length - 3; j++)
 			{
 				if (newcat != "") newcat = newcat + ",";
 				newcat = newcat + first[j];
@@ -277,7 +265,7 @@
 		{
 			for (var j = 0; j < divselect[i].length; j++)
 			{
-				var aux_class = divselect[i][j][divselect[i][j].length - 2];
+				var aux_class = divselect[i][j][divselect[i][j].length - 3];
 				if (tmp_series.indexOf(aux_class) == -1) tmp_series.push(aux_class);
 			}
 		}
@@ -291,11 +279,11 @@
 				var aux_value = [null];
 				for (var j = 0; j < divselect[i].length; j++)
 				{
-					var aux_class = divselect[i][j][divselect[i][j].length - 2];
+					var aux_class = divselect[i][j][divselect[i][j].length - 3];
 
 					if (aux_class == tmp_series[s])
 					{
-						aux_value = [ aux_categories[i-from], parseInt(divselect[i][j][divselect[i][j].length - 1])];
+						aux_value = [ aux_categories[i-from], parseInt(divselect[i][j][divselect[i][j].length - 2])];
 					}
 				}
 				aux_data.push(aux_value);
@@ -308,7 +296,7 @@
 
 		$('#chart').highcharts({
 			chart: { type: 'bar', renderTo: 'chart' },
-			title: { text: 'Comparision of Executions' },
+			title: { text: 'Comparison of Executions' },
 			subtitle: { text: 'Separated by the Target variable' },
 			xAxis: {
 				title: { enabled: true, text: 'Configurations (' + from + ' to ' + to + ')' },
@@ -351,6 +339,7 @@
 		auxTable = $("#precisiontab").dataTable({
 			"data": preselect,
 			"columns": {{ precisionHeader | raw }},
+			"columnDefs" : [{"targets" : [1,3,4,5], "render" : function (data) { return parseFloat(data).toFixed(5); }}]
 		});
 	}
 
