@@ -12,6 +12,7 @@ logger "Creating tables, applying alters, updating data..."
 
 source "$CUR_DIR/common/create_db.sh"
 source "$CUR_DIR/common/create_mlschema.sh"
+source "$CUR_DIR/common/create_presets_schema.sh"
 
 logger "Updating clusters and hosts"
 

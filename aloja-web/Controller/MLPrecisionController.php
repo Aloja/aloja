@@ -29,7 +29,7 @@ class MLPrecisionController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
-				$preset = Utils::setDefaultPreset($db, 'mlprecision');
+				$preset = Utils::getDefaultPreset($db, 'mlprecision');
  			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "MLPrecision Default";
 		    	
