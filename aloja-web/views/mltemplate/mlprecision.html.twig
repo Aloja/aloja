@@ -64,7 +64,7 @@
 			</div>
 			<div id="diversityDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingDiversityDiv">
 				<div class="panel-body">
-					<div id="chart" style="float: left; width: 65%;"></div>
+					<div id="chart" style="float:left; width: 100%"></div>
 					<table width="100%"><tr><td>Target:&nbsp;&nbsp;&nbsp;</td><td width="100%">
 					<select class="form-control" class="control-form in " name="feature" style="width:25%" onchange="update_divtable(this.value)">
 						<option value="Cl.Name" SELECTED>Cluster Name</option>
@@ -303,6 +303,7 @@
 			aux_series.push({ name : tmp_series[s], data: aux_data });
 		}
 
+		if (!$('#chart').is(":visible")) $('#chart').width("65%"); else $('#chart').width("100%");
 		$('#chart').empty();
 
 		$('#chart').highcharts({
