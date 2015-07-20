@@ -631,7 +631,7 @@ vm_check_attach_disks() {
     numberOfDisks="$(number_of_attached_disks "$1")"
     logger " $numberOfDisks attached disks to VM $1"
 
-    if [ "$attachedVolumes" -gt "$numberOfDisks" ] ; then
+    if [ "$attachedVolumes" -gt "$numberOfDisks" ] 2>/dev/null; then #2>/dev/null avoid integer exp errors
       missingDisks="$(( attachedVolumes - numberOfDisks ))"
       logger " need to attach $missingDisks disk(s) to VM $1"
       for ((disk=0; disk<missingDisks; disk++ )) ; do
@@ -753,7 +753,6 @@ cluster_initialize_disks() {
     echo 'Initializing disks';
 
     $create_string
-    echo 'Here';
 
     test_action=\"\$(lsblk|grep ${devicePrefix}c1\) ] && echo '$testKey')\"
     if [ \"\$test_action\" == \"$testKey\" ] ; then
