@@ -8,30 +8,36 @@ get_ssh_key() {
  echo "$CONF_DIR/../../aloja-deploy/providers/vagrant_insecure_key"
 }
 
+#vm_name must be set, override when needed ie., azure,...
+get_vm_ssh_port() {
+  local node_ssh_port=""
+  local vagrant_cluster_prefix="2222"
+
+  #for nodes
+  if [ "$type" == "node" ] ; then
+      local node_ssh_port="$vm_ssh_port"
+  #for clusters
+  else
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local vm_name_tmp="${clusterName}-${vm_id}"
+
+      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+        local node_ssh_port="$vagrant_cluster_prefix${vm_id:1}"
+        break #just return on match
+      fi
+    done
+  fi
+
+  echo "$node_ssh_port"
+}
+
 #default port, override to change i.e. in Azure
 get_ssh_port() {
   if [ -d  "/vagrant" ] ; then
     echo "22" #from inside the vagrant box
   else
-    echo "$vm_ssh_port" #default port for the vagrant vm
+    echo "$(get_vm_ssh_port)" #default port for the vagrant vm
   fi
-}
-
-#vm_name must be set
-get_vm_ssh_port() {
-  local node_ssh_port=""
-  local vagrant_cluster_prefix="2222"
-
-  for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-    local vm_name_tmp="${clusterName}-${vm_id}"
-
-    if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-      local node_ssh_port="$vagrant_cluster_prefix${vm_id:2}"
-      break #just return on match
-    fi
-  done
-
-  echo "$node_ssh_port"
 }
 
 vagrant_link_repo(){

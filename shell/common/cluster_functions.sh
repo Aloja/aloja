@@ -192,10 +192,23 @@ get_ssh_key() {
 
 #default port, override to change i.e. in Azure
 get_ssh_port() {
+  local vm_ssh_port_tmp=""
+
   if [ ! -z "$vm_ssh_port" ] ; then
-    echo "$vm_ssh_port"
+    local vm_ssh_port_tmp="$vm_ssh_port"
   else
-    echo "22" #default port when empty or not overwriten
+    if [ "$type" == "node" ] ; then
+      local vm_ssh_port_tmp="22" #default port when empty or not overwriten
+    #for clusters
+    else
+      local vm_ssh_port_tmp="$(get_vm_ssh_port)" #default port when empty or not overwriten
+    fi
+  fi
+
+  if [ "$vm_ssh_port_tmp" ] ; then
+    echo "$vm_ssh_port_tmp"
+  else
+    die "EEROR: cannot get SSH port for VM $vm_name"
   fi
 }
 
