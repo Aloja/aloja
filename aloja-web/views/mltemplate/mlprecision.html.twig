@@ -19,7 +19,12 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify"><b>Precision and Comparison</b>: This tool is in charge of happy stuff happenings!</p>
+		<p style="text-align:justify"><b>Precision and Comparison</b>: This tool displays:
+			<ul>
+			<li>How diverse is the collected executions data, and how precise are clusters or other deployment elements. The precision is the non-dispersion of results given the repetition of executions: given several repetition of executions, the less the execution time varies, the more precise and reliable is the cluster (or the observed deployment element). Here it is shown as the <i>Deviation</i> as opposite to precision: given repeated executions of the same configuration on a cluster or deployment, we expect the execution time to vary this deviation around the expected execution time for such configuration. Also, the diversity is an indicator of how much different executions have been tested on a deployment, as 0 means that all the executions are repetitions of the same one, and 1 that all the executions have different configurations.</li>
+			<li>How different are configurations executed in different clusters or deployments. If the same configuration has been run in different deployments, it will be listed showing the different results for each deployment.</li>
+			</ul>
+		</p>
 		<hr />
 	</div>
 	<div id="contentdiv" style="float: left; width: 68%;">
