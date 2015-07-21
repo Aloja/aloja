@@ -237,19 +237,20 @@ class DefaultController extends AbstractController
         	$preset = Utils::getDefaultPreset($dbUtils, 'Benchmark Executions');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
-        $datefrom = Utils::read_params('datefrom',$where_configs);
-        $dateto	= Utils::read_params('dateto',$where_configs);
-        $benchs         = Utils::read_params('benchs',$where_configs);
-        $nets           = Utils::read_params('nets',$where_configs);
-        $disks          = Utils::read_params('disks',$where_configs);
-        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
-        $comps          = Utils::read_params('comps',$where_configs);
-        $id_clusters    = Utils::read_params('id_clusters',$where_configs);
-        $mapss          = Utils::read_params('mapss',$where_configs);
-        $replications   = Utils::read_params('replications',$where_configs);
-        $iosfs          = Utils::read_params('iosfs',$where_configs);
-        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
-        $money 			= Utils::read_params('money',$where_configs);
+
+        $datefrom = Utils::read_params('datefrom',$where_configs, false );
+        $dateto	= Utils::read_params('dateto',$where_configs, false );
+        $benchs         = Utils::read_params('benchs',$where_configs, false );
+        $nets           = Utils::read_params('nets',$where_configs, false );
+        $disks          = Utils::read_params('disks',$where_configs, false );
+        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs, false );
+        $comps          = Utils::read_params('comps',$where_configs, false );
+        $id_clusters    = Utils::read_params('id_clusters',$where_configs, false );
+        $mapss          = Utils::read_params('mapss',$where_configs, false );
+        $replications   = Utils::read_params('replications',$where_configs, false );
+        $iosfs          = Utils::read_params('iosfs',$where_configs, false );
+        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs, false );
+        $money 			= Utils::read_params('money',$where_configsm, false );
         $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
         $benchtype = Utils::read_params ( 'bench_types', $where_configs );
         $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
