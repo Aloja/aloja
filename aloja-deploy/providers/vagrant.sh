@@ -5,7 +5,11 @@ get_ssh_host() {
 
 #the default key override
 get_ssh_key() {
- echo "$CONF_DIR/../../aloja-deploy/providers/vagrant_insecure_key"
+  if [ "$vm_name" == "aloja-web" ] ; then
+    echo "$CONF_DIR/../../aloja-deploy/providers/vagrant_insecure_key_new" #TODO make the same
+  else
+    echo "$CONF_DIR/../../aloja-deploy/providers/vagrant_insecure_key"
+  fi
 }
 
 #vm_name must be set, override when needed ie., azure,...
@@ -18,7 +22,7 @@ get_vm_ssh_port() {
       local node_ssh_port="$vm_ssh_port"
   #for clusters
   else
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+    for vm_id in $(seq -f '%02g' 0 "$numberOfNodes") ; do #pad the sequence with 0s
       local vm_name_tmp="${clusterName}-${vm_id}"
 
       if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
@@ -33,10 +37,18 @@ get_vm_ssh_port() {
 
 #default port, override to change i.e. in Azure
 get_ssh_port() {
+  local vm_ssh_port_tmp=""
+
   if [ -d  "/vagrant" ] ; then
-    echo "22" #from inside the vagrant box
+    local vm_ssh_port_tmp="22" #from inside the vagrant box
   else
-    echo "$(get_vm_ssh_port)" #default port for the vagrant vm
+    local vm_ssh_port_tmp="$(get_vm_ssh_port)" #default port for the vagrant vm
+  fi
+
+  if [ "$vm_ssh_port_tmp" ] ; then
+    echo "$vm_ssh_port_tmp"
+  else
+    die "cannot get SSH port for VM $vm_name"
   fi
 }
 
