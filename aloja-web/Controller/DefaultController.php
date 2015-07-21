@@ -47,7 +47,7 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($db, 'Config Improvement');
+        	$preset = Utils::getDefaultPreset($db, 'Config Improvement');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         
         $rows_config = '';
@@ -234,10 +234,10 @@ class DefaultController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($dbUtils, 'Benchmark Executions');
+        	$preset = Utils::getDefaultPreset($dbUtils, 'Benchmark Executions');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
-        $datefrom = Utils::read_params('datefrom',$where_configs);;
+        $datefrom = Utils::read_params('datefrom',$where_configs);
         $dateto	= Utils::read_params('dateto',$where_configs);
         $benchs         = Utils::read_params('benchs',$where_configs);
         $nets           = Utils::read_params('nets',$where_configs);
@@ -377,7 +377,7 @@ class DefaultController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($dbUtils, 'Cost Evaluation');
+        	$preset = Utils::getDefaultPreset($dbUtils, 'Cost Evaluation');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         
         try {
@@ -545,7 +545,7 @@ class DefaultController extends AbstractController
         $dbUtil = $this->container->getDBUtils();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($db, 'Performance charts');
+        	$preset = Utils::getDefaultPreset($db, 'Performance charts');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         
         try {
@@ -1181,7 +1181,7 @@ class DefaultController extends AbstractController
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
             $preset = null;
             if(sizeof($_GET) <= 1)
-            	$preset = Utils::setDefaultPreset($db, 'Best configuration');
+            	$preset = Utils::getDefaultPreset($db, 'Best configuration');
             $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
             
             $discreteOptions = array();
@@ -1402,7 +1402,7 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils ();
         $preset = null;
 		if(sizeof($_GET) <= 1)
-			$preset = Utils::setDefaultPreset($db, 'Best configuration');
+			$preset = Utils::getDefaultPreset($db, 'Best configuration');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		
         $rows_config = '';
@@ -1537,7 +1537,7 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils ();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($db, 'Parameter Evaluation');
+        	$preset = Utils::getDefaultPreset($db, 'Parameter Evaluation');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
         $rows = '';
@@ -1999,7 +1999,7 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils ();
         $preset = null;
         if(sizeof($_GET) <= 1)
-        	$preset = Utils::setDefaultPreset($db, 'Cost-Effectiveness of clusters');
+        	$preset = Utils::getDefaultPreset($db, 'Cost-Effectiveness of clusters');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
         $data = array();
@@ -2149,7 +2149,7 @@ class DefaultController extends AbstractController
     	$dbUtils = $this->container->getDBUtils();
     	$preset = null;
     	if(sizeof($_GET) <= 1)
-    		$preset = Utils::setDefaultPreset($dbUtils, 'Clusters Cost Evaluation');
+    		$preset = Utils::getDefaultPreset($dbUtils, 'Clusters Cost Evaluation');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
     	try {
@@ -2327,7 +2327,7 @@ class DefaultController extends AbstractController
     	$dbUtils = $this->container->getDBUtils();
     	$preset = null;
     	if(sizeof($_GET) <= 1)
-    		$preset = Utils::setDefaultPreset($dbUtils, 'Best Clusters Cost Evaluation');
+    		$preset = Utils::getDefaultPreset($dbUtils, 'Best Clusters Cost Evaluation');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
     	try {
@@ -2540,7 +2540,7 @@ class DefaultController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
         $preset = null;
         if(sizeof($_GET) <= 1)
-            $preset = Utils::setDefaultPreset($dbUtils, 'Number of Nodes Evaluation');
+            $preset = Utils::getDefaultPreset($dbUtils, 'Number of Nodes Evaluation');
 
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 

@@ -331,7 +331,10 @@
                       {% elseif selected == 'Benchmark Executions' %}
                       "data": newQuery,
                       {% endif %}
-                      "success": fnCallback
+                      "success": fnCallback,
+						"error": function( e, settings, techNote, message ) {
+							$("#loading").html('No data available within the chosen settings');
+						}
                     } );
                 },
                 {% if selected == 'Performance Metrics' %}

@@ -577,7 +577,7 @@ class Utils
     	$options['vm_ram'] = $dbUtils->get_rows("SELECT DISTINCT vm_RAM FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
     	$options['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
     	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
-    	$options['presets'] = $dbUtils->get_rows("SELECT * FROM filters_presets ORDER BY name DESC");
+    	$options['presets'] = $dbUtils->get_rows("SELECT * FROM filter_presets ORDER BY short_name DESC");
         $options['provider'] = $dbUtils->get_rows("SELECT DISTINCT provider FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
     	$options['vm_OS'] = $dbUtils->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_OS DESC;");
     	return $options;
@@ -638,9 +638,9 @@ class Utils
     	
     	return json_encode($clusters);
     }
-    
-    public static function setDefaultPreset($db, $screen) {
-    	$presets = $db->get_rows("SELECT * FROM filters_presets WHERE preset = 1 AND screen = '$screen'");
+
+    public static function getDefaultPreset($db, $screen) {
+    	$presets = $db->get_rows("SELECT * FROM filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
     	$return = null;
     	if(count($presets)>=1) {
 	    	$url = $presets[0]['URL'];

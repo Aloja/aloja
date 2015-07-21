@@ -191,3 +191,6 @@ mlnewconfigs:
     pattern: "/mlnewconfigs"
     controller: "alojaweb\\Controller\\MLNewconfigsController::mlnewconfigsAction"
 
+mlprecision:
+    pattern: "/mlprecision"
+    controller: "alojaweb\\Controller\\MLPrecisionController::mlprecisionAction"

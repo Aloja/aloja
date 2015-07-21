@@ -39,10 +39,9 @@
 </head>
 <body id="main">
 	{% block body %}
-	<div id="container">
-		<!-- container -->
-        <img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg" >
-        <table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
+	<div id="container"> <!-- container -->
+		<img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg" >
+		<table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
 			<tr>
 				<td valign="bottom"d>
 					<span style="font-size: 1.5em; color: #4E6CA3;">
@@ -50,14 +49,13 @@
 					</span>
 				</td>
 				<td align="right">
-				  <a target="blank" href="http://www.bscmsrc.eu/">
-					{#<img src="img/bsc-msrc_logo.png" style="margin-bottom: 6px;">#}
-                    <img src="img/bsc-logo_trans.png" style="" width="270">
-				  </a>
+					<a target="blank" href="http://www.bscmsrc.eu/">
+						{#<img src="img/bsc-msrc_logo.png" style="margin-bottom: 6px;">#}
+						<img src="img/bsc-logo_trans.png" style="" width="270">
+					</a>
 				</td>
 			</tr>
-            <tr><td style="height: 10px;"></td><td></td>
-            </tr>
+			<tr><td style="height: 10px;"></td><td></td></tr>
 		</table>
 		<div class="modal fade" id="welcomeModal">
 			<div class="modal-dialog">
@@ -75,8 +73,7 @@
 							<strong>ALOJA</strong> is a project to explore Hadoop's
 							performance under different Software parameters, Hardware, Cloud
 							or On-Premise, and Job types. This site is under constant development and it is
-                            in the process of
-							being documented.
+							in the process of being documented.
 							<br /><br />
 							For more details, visit our <a href="index.php">welcome page</a>.
 							<br /><br />
@@ -92,110 +89,108 @@
 		</div><!-- /.modal -->
 		{% block navigation %}
 		<nav class="navbar navbar-default navbar-static-top" role="navigation">
-		  <div class="container-fluid">
-		    <!-- Brand and toggle get grouped for better mobile display -->
-		    <div class="navbar-header">
-		      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-		        <span class="sr-only">Toggle navigation</span>
-		        <span class="icon-bar"></span>
-		        <span class="icon-bar"></span>
-		        <span class="icon-bar"></span>
-		      </button>
-		      <a class="navbar-brand navlink" href="{{ path('index') }}" >Home</a>
-		    </div>
+		<div class="container-fluid">
+			<!-- Brand and toggle get grouped for better mobile display -->
+			<div class="navbar-header">
+				<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+					<span class="sr-only">Toggle navigation</span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+					<span class="icon-bar"></span>
+				</button>
+			<a class="navbar-brand navlink" href="{{ path('index') }}" >Home</a>
+		</div>
 
-		    <!-- Collect the nav links, forms, and other content for toggling -->
-		    <div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1">
-		      <ul class="nav navbar-nav">
-{#                   <li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>#}
-{#                       <a class="navlink" href="{{ path('index') }}"><span >About</span></a>#}
-{#                   </li>#}
-			   <li class="dropdown">
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1">
+		    <ul class="nav navbar-nav">
+{# 			<li {% if selected is defined and selected == 'About' %}class="active"{% endif %}>#}
+{#				<a class="navlink" href="{{ path('index') }}"><span >About</span></a>#}
+{#			</li>#}
+			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		       		 <li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions',  {'type': 'DETAIL'}) }}">Browse Executions</a></li>
-		             <li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
-
+				<li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions',  {'type': 'DETAIL'}) }}">Browse Executions</a></li>
+				<li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
+				<li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Executions Summary</a></li>
 		          </ul>
 		        </li>
 {# 		        <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}>#}
-{# 		          <a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
+{# 		        	<a class="navlink" href="{{ path('histogram') }}">Histograms</a>#}
 {# 		        </li>#}
-				<li class="dropdown">
+			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Config Evaluations <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
-		            <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
-		            <li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a>
-				  </ul>
+				<li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
+				<li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
+				<li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a></li>
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
+				<li {% if selected is defined and selected == 'mlcrossvar3d' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3d') }}">Variable Crossing (vs Exec.Time)</a></li>
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlprecision' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprecision') }}">Precision and Comparison</a></li>
+			  </ul>
 		        </li>
-				<li class="dropdown">
+			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-                      <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf Scalability of VMs</a></li>
-			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a>
-			        </li>
-			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('bestcostperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of clusters</a>
-			        </li>
+                      		<li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf Scalability of VMs</a></li>
+			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a></li>
+			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestcostperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of clusters</a></li>
 			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
-		            <li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}>
-			          <a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of HW configs</a>
-			        </li>
+				<li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of HW configs</a></li>
 		          </ul>
 		        </li>
-
-
-				<li class="dropdown">
+			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance Details<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
-		            <li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
-
-                    <li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
-                    {% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
-
+				<li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
+				<li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
+				<li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
+				{% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
 		          </ul>
-
+			</li>
 			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            <li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">Modeling Data</a></li>
-			    <li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">Collapse Data</a></li>
-		            <li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">Predict Configurations</a></li>
-			<!--<li {% if selected is defined and selected == 'mlattributestree' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlattributestree') }}">Predicted Config. Tree</a></li>-->
- 		            <li {% if selected is defined and selected == 'mlparameval' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">Parameter Evaluation (ML)</a></li>
-		            <li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
-		            <li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
-		            <!--<li {% if selected is defined and selected == 'mlnewconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlnewconfigs') }}">New Cluster Configurations</a></li>-->
-		            <li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Crossing</a></li>
-		            <li {% if selected is defined and selected == 'mlcrossvar3d' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3d') }}">Variable Crossing (vs Exec.Time)</a></li>		            
-			    <li {% if selected is defined and selected == 'mlcrossvar3dfa' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3dfa') }}">Variable Crossing (vs Prediction)</a></li>
-		            <li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Data Summary</a></li>
- 		            <!--<li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>-->
+				<li {% if selected is defined and selected == 'mlprediction' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprediction') }}">Modeling Data</a></li>
+				<!--<li {% if selected is defined and selected == 'mldatacollapse' %}class="active"{% endif %}><a class="navlink" href="{{ path('mldatacollapse') }}">Collapse Data</a></li>-->
+				<li {% if selected is defined and selected == 'mlfindattributes' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlfindattributes') }}">Predict Configurations</a></li>
+				<li {% if selected is defined and selected == 'mlparameval' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlparameval') }}">Parameter Evaluation (ML)</a></li>
+				<li {% if selected is defined and selected == 'mloutliers' %}class="active"{% endif %}><a class="navlink" href="{{ path('mloutliers') }}">Anomaly Detection</a></li>
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
+				<li {% if selected is defined and selected == 'mlnewconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlnewconfigs') }}">New Cluster Configurations</a></li>
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlcrossvar3dfa' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3dfa') }}">Variable Crossing (vs Prediction)</a></li>
+				{% if not PROD %}
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>
+				{% endif %}
                           </ul>
 		        </li>
 		      </ul>
 		      <ul class="nav navbar-nav navbar-right">
-                <li class="dropdown">
+                	<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">ALOJA Reference<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-		            {#<li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>#}
-		            <li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications and Slides</a></li>
-		            <li {% if selected is defined and selected == 'Team' %}class="active"{% endif %}><a class="navlink" href="{{ path('team') }}">Team & Collaborators</a></li>
-		            <li class="divider"></li>
-		            <li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clusters') }}">Clusters Reference</a></li>
-		            <li {% if selected is defined and selected == 'Clusters Costs' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosts') }}">Clusters Costs Calculations</a></li>
-		            <li class="divider"></li>
-		            <li><a class="navlink" target="_blank" href="http://github.com/Aloja">Browse the code</a></li>
+				{#<li><a class="navlink" href="/slides/template.html">ALOJA-WEB Presentation Slides</a></li>#}
+				<li {% if selected is defined and selected == 'Publications' %}class="active"{% endif %}><a class="navlink" href="{{ path('publications') }}">Publications and Slides</a></li>
+				<li {% if selected is defined and selected == 'Team' %}class="active"{% endif %}><a class="navlink" href="{{ path('team') }}">Team & Collaborators</a></li>
+				<li class="divider"></li>
+				<li {% if selected is defined and selected == 'Clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clusters') }}">Clusters Reference</a></li>
+				<li {% if selected is defined and selected == 'Clusters Costs' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosts') }}">Clusters Costs Calculations</a></li>
+				<li class="divider"></li>
+				<li><a class="navlink" target="_blank" href="http://github.com/Aloja">Browse the code</a></li>
 		          </ul>
 		        </li>
 		        <li>
-		          <a class="navlink" href="http://hadoop.bsc.es/blog"  target="_blank">Blog</a>
+				<a class="navlink" href="http://hadoop.bsc.es/blog"  target="_blank">Blog</a>
 		        </li>
 		        <li>
-                    <a class="navlink" href="http://www.bscmsrc.eu" target="_blank">BSC-MSR Centre</a>
+				<a class="navlink" href="http://www.bscmsrc.eu" target="_blank">BSC-MSR Centre</a>
 		        </li>
 		      </ul>
 		    </div><!-- /.navbar-collapse -->
@@ -203,29 +198,27 @@
 		</nav>
     	{% endblock %}
     	{% block messages %}
-			{% if message is defined and message != '' %}
-			<div class="alert alert-danger" role="alert" style="text-align: center; font-weight: bold;">
-			  {{ message }}
-			</div>
-			{% endif %}
-		{% endblock %}
+		{% if message is defined and message != '' %}
+		<div class="alert alert-danger" role="alert" style="text-align: center; font-weight: bold;">
+		{{ message }}
+		</div>
+		{% endif %}
+	{% endblock %}
     	{% block content %}
     	{% endblock %}
 	</div><!-- /container -->
 	{% endblock %}
 	{% block footer %}
 	<div id="copyright">
-       <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" style="margin-right: 525px;"/></a>
-       <a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" class="logo"/></a>
-
-       <div class="content">
-		 <p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a>
-             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-
-         </p>
-		 <p>Copyright {{ "now"|date("Y") }} © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
-       </div>
-    </div>
+		<a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" style="margin-right: 525px;"/></a>
+		<a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" class="logo"/></a>
+		<div class="content">
+			<p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a>
+			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+			</p>
+			<p>Copyright {{ "now"|date("Y") }} © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
+		</div>
+	</div>
 	{% endblock %}
 	{% block javascript %}
 	<!-- Le javascript
