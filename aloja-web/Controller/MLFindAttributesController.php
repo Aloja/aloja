@@ -35,7 +35,7 @@ class MLFindAttributesController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("pass",$_GET) && array_key_exists("current_model",$_GET)))
 			{
-				$preset = Utils::getDefaultPreset($db, 'mlfindattributes');		
+				$preset = Utils::initDefaultPreset($db, 'mlfindattributes');		
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		    	
