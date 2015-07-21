@@ -288,7 +288,8 @@ set_shh_proxy() {
   fi
 
 }
-#interactive SSH $1 use password
+
+#interactive ssh, $1 use password
 vm_connect() {
 
   set_shh_proxy
@@ -1032,7 +1033,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 #$1 filename
 vm_get_file_contents() {
   if [ "$1" ] ; then
-    local fileContent="$(vm_execute "cat $1")"
+    local fileContent="$(vm_execute " [ -f '$1' ] && cat '$1'")"
   else
     : #error
   fi
