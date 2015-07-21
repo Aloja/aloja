@@ -27,7 +27,7 @@ class MLParamevalController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists('parameval',$_GET))
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mlparameval');
+				$preset = Utils::getDefaultPreset($db, 'mlparameval');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 

@@ -154,12 +154,8 @@ class RestController extends AbstractController
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
             echo $jsonData;
-        } catch (Exception $e) {
-            $noData = array();
-            for($i = 0; $i<=sizeof($show_in_result); ++$i)
-            	$noData[] = 'error';
-            
-            echo json_encode(array('aaData' => array($noData)));
+        } catch (\Exception $e) {
+            echo 'No data available';
         }
     }
 
@@ -259,11 +255,12 @@ class RestController extends AbstractController
             }
 
         } catch (Exception $e) {
-            $noData = array();
+            echo 'No data available';
+           /* $noData = array();
             for($i = 0; $i<=sizeof($show_in_result); ++$i)
             	$noData[] = 'error';
             
-            echo json_encode(array('aaData' => array($noData)));
+            echo json_encode(array('aaData' => array($noData)));*/
         }
     }
 
@@ -633,10 +630,12 @@ VALUES
             echo $jsonData;
                 
         } catch (Exception $e) {
+            echo 'No data available';
+            /*
             $noData = array();
             $noData[] = $e->getMessage();
 
-            echo json_encode(array('aaData' => $noData));
+            echo json_encode(array('aaData' => $noData));*/
         }
     }
     
@@ -672,10 +671,11 @@ VALUES
 			ob_start('ob_gzhandler');
 			echo json_encode($result);
 		} catch ( \Exception $e ) {
-			$noData = array();
+            echo 'No data available';
+/*			$noData = array();
             $noData[] = $e->getMessage();
 
-            echo json_encode(array('error' => $noData));
+            echo json_encode(array('error' => $noData));*/
 		}
     }
 
@@ -805,10 +805,12 @@ VALUES
     		ob_start('ob_gzhandler');
     		echo json_encode($result);
     	} catch ( \Exception $e ) {
+            echo 'No data available';
+            /*
     		$noData = array();
     		$noData[] = $e->getMessage();
     
-    		echo json_encode(array('error' => $noData));
+    		echo json_encode(array('error' => $noData));*/
     	}
     }
     
@@ -958,11 +960,13 @@ VALUES
     			throw new \Exception("No results for query!");
     		 
     	} catch (\Exception $e) {
+            echo 'No data available';
+            /*
     		$noData = array();
             for($i = 0; $i<=sizeof($show_in_result); ++$i)
             	$noData[] = 'error';
             
-            echo json_encode(array('aaData' => array($noData)));
+            echo json_encode(array('aaData' => array($noData)));*/
     	}
     }
 
@@ -1251,11 +1255,12 @@ VALUES
     		}
     
     	} catch (Exception $e) {
-    		$noData = array();
+            echo 'No data available';
+    		/*$noData = array();
     		for($i = 0; $i<=sizeof($show_in_result); ++$i)
     			$noData[] = 'error';
     
-    		echo json_encode(array('aaData' => array($noData)));
+    		echo json_encode(array('aaData' => array($noData)));*/
     	}
     }
 }
