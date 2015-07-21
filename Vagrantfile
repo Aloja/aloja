@@ -84,7 +84,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # Provision Config for each of the nodes
   0.upto(numNodes) do |num|
 
-    nodeName = "vagrant-0" + num.to_s
+    nodeName = "vagrant-99-0" + num.to_s
     config.vm.define nodeName, autostart: false do |node|
       node.vm.box = "ubuntu/trusty64"
       node.vm.hostname = nodeName
@@ -95,10 +95,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.vm.network :forwarded_port, guest: 22, host: sshPortPrefix + num, id: 'ssh'
       node.ssh.insert_key = false #relaxed security (for now...)
 
-      #node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "vagrant-99"
+      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "-n " + nodeName + " vagrant-99"
 
       node.vm.provider "virtualbox" do |v|
-        v.name = "vagrant-0" + num.to_s
+        v.name = "vagrant-99-0" + num.to_s
         v.memory = 1024 #change as needed
         v.cpus = 1 #change as needed
       end
