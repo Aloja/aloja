@@ -639,7 +639,7 @@ class Utils
     	return json_encode($clusters);
     }
 
-    public static function getDefaultPreset($db, $screen) {
+    public static function initDefaultPreset($db, $screen) {
     	$presets = $db->get_rows("SELECT * FROM filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
     	$return = null;
     	if(count($presets)>=1) {
