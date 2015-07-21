@@ -138,10 +138,11 @@ class RestController extends AbstractController
 					'bench_type' => 'Bench',
 				);
             }
+            $where_configs = str_replace('%2F','/',$where_configs);
             
              $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
        	 		join clusters c USING (id_cluster)
-      		 	 WHERE 1 $where_configs ".DBUtils::getFilterExecs().";";
+      		 	 WHERE 1 $where_configs" .DBUtils::getFilterExecs().";";
 
              $exec_rows = $dbUtils->get_rows($query);
 

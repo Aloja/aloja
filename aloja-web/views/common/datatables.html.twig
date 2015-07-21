@@ -242,7 +242,6 @@
 
         //create the table after loading
         $(document).ready(function() {
-			$.ajaxSetup({"processData": false});
             var asInitVals = new Array();
             var oTable;
 
@@ -325,7 +324,7 @@
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
                       "dataType": 'json',
-                      "type": "GET",
+                      "method": "GET",
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
