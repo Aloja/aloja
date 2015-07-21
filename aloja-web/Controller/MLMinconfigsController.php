@@ -27,7 +27,7 @@ class MLMinconfigsController extends AbstractController
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mlminconfigs');
+				$preset = Utils::getDefaultPreset($db, 'mlminconfigs');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 

@@ -26,7 +26,7 @@ class MLCrossvarController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
 			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mlcrossvar');
+				$preset = Utils::getDefaultPreset($db, 'mlcrossvar');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
@@ -209,7 +209,7 @@ class MLCrossvarController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
 			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))		
 			{
-				$preset = Utils::setDefaultPreset($db, 'mlcrossvar3d');		
+				$preset = Utils::getDefaultPreset($db, 'mlcrossvar3d');		
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
@@ -412,7 +412,7 @@ class MLCrossvarController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
 			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mlcrossvar3dfa');
+				$preset = Utils::getDefaultPreset($db, 'mlcrossvar3dfa');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
