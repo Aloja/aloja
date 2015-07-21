@@ -29,9 +29,9 @@ class MLPrecisionController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
-				$preset = Utils::getDefaultPreset($db, 'mlprecision');
+				$preset = Utils::initDefaultPreset($db, 'mlprecision');
  			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "MLPrecision Default";
+		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		    	
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
