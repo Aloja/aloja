@@ -237,7 +237,7 @@ class DefaultController extends AbstractController
         	$preset = Utils::getDefaultPreset($dbUtils, 'Benchmark Executions');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
-        $datefrom = Utils::read_params('datefrom',$where_configs);;
+        $datefrom = Utils::read_params('datefrom',$where_configs);
         $dateto	= Utils::read_params('dateto',$where_configs);
         $benchs         = Utils::read_params('benchs',$where_configs);
         $nets           = Utils::read_params('nets',$where_configs);
