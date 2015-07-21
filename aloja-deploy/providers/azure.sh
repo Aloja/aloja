@@ -173,7 +173,13 @@ get_vm_ssh_port() {
 
 #construct the port number from vm_name
 get_ssh_port() {
-  echo "$(get_vm_ssh_port)"
+  local vm_ssh_port_tmp="$(get_vm_ssh_port)" #default port for the vagrant vm
+
+  if [ "$vm_ssh_port_tmp" ] ; then
+    echo "$vm_ssh_port_tmp"
+  else
+    die "cannot get SSH port for VM $vm_name"
+  fi
 }
 
 #$1 $endpoints list $2 end1 $3 end2
