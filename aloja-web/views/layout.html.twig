@@ -111,8 +111,8 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 				<li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions',  {'type': 'DETAIL'}) }}">Browse Executions</a></li>
-				<li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
-				<li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
+				<li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop1 Job Counters</a></li>
+				<li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">Hadoop2 Job Counters</a></li>
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Executions Summary</a></li>
 		          </ul>
