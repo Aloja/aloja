@@ -2,6 +2,7 @@
 
 #### start $cloud_provider customizations
 
+# $1 vm name
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
@@ -143,7 +144,7 @@ vm_attach_new_disk() {
 
 #Azure uses a different key
 get_ssh_key() {
- echo "../secure/keys/myPrivateKey.key"
+ echo "$ALOJA_SSH_KEY"
 }
 
 get_ssh_host() {
