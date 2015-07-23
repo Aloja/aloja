@@ -49,6 +49,7 @@ else #If PaaS or only one node is selected
 	vm_create_node
 fi
 
+wait #for background processes
 
 #master config to execute benchmarks
 [ ! -z "$queueJobs" ] && cluster_queue_jobs
