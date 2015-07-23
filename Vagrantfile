@@ -13,6 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   defaultName = "aloja-web"
   defaultSSHPort = 22200
   defaultIP = "192.168.99.2" #do not use .1 to avoid some vagrant warnings
+  sshKeyPath = "../aloja-deploy/providers/vagrant_keys/id_rsa"
 
   config.vm.define defaultName, primary: true do |default|
     default.vm.hostname = defaultName
@@ -51,7 +52,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #used a fixed port, so that we can connect from the deploy scripts
     default.ssh.port = defaultSSHPort
     default.vm.network :forwarded_port, guest: 22, host: defaultSSHPort, id: 'ssh'
-    default.ssh.insert_key = false #relaxed security (for now...)
+    default.ssh.private_key_path = File.expand_path(sshKeyPath, __FILE__)
+    default.ssh.insert_key = false #relaxed security
 
     default.vm.network :private_network, ip: defaultIP
 
@@ -61,7 +63,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
 
     #use aloja-deploy for provisiong (bash scripts)
-    default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "vagrant"
+    default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "aloja-web-vagrant"
 
     #web document root
     #config.vm.synced_folder "./", "/vagrant"
@@ -75,30 +77,32 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # start with vagrant up /.*/ or vagrant machine1 machine2
 
   # Number of nodes to provision (starts at 0)
-  numNodes = 1 #2 nodes
+  numberOfNodes = 1 #2 nodes
   # IP Address Base for private network
   ipAddrPrefix = "192.168.99.1"
-
-  sshPortPrefix = 22220 #prefix port for the different VMs
+  # Prefix port for the different VMs
+  sshPortPrefix = 22220
 
   # Provision Config for each of the nodes
-  0.upto(numNodes) do |num|
+  0.upto(numberOfNodes) do |num|
 
     nodeName = "vagrant-99-0" + num.to_s
     config.vm.define nodeName, autostart: false do |node|
       node.vm.box = "ubuntu/trusty64"
       node.vm.hostname = nodeName
-      node.vm.network :private_network, ip: ipAddrPrefix + num.to_s
+      node.vm.network :private_network, ip: ipAddrPrefix + num.to_s.rjust(2, '0')
 
       #used a fixed port, so that we can connect from the deploy scripts
       node.ssh.port = sshPortPrefix + num
       node.vm.network :forwarded_port, guest: 22, host: sshPortPrefix + num, id: 'ssh'
-      node.ssh.insert_key = false #relaxed security (for now...)
+      node.ssh.private_key_path = File.expand_path(sshKeyPath, __FILE__)
+      node.ssh.insert_key = false #relaxed security
 
+      #use aloja-deploy for provisiong (bash scripts)
       node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "-n " + nodeName + " vagrant-99"
 
       node.vm.provider "virtualbox" do |v|
-        v.name = "vagrant-99-0" + num.to_s
+        v.name = "vagrant-99-" + num.to_s.rjust(2, '0')
         v.memory = 1024 #change as needed
         v.cpus = 1 #change as needed
       end
