@@ -1982,7 +1982,7 @@ class DefaultController extends AbstractController
 
         echo $this->container->getTwig()->render('counters/hdp2counters.html.twig',
             array('selected' => 'Hadoop 2 Job Counters',
-                'theaders' => $show_in_result_counters,
+                'theaders' => (isset($show_in_result_counters) ? $show_in_result_counters:array()),
                 //'table_fields' => $table_fields,
                 'message' => $message,
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
