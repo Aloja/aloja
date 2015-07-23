@@ -1761,12 +1761,12 @@ class DefaultController extends AbstractController
         if (strlen($jobid) == 0 || $jobid === "random") {
             $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
             $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                #ORDER BY t.`JOBID` DESC
+            $query = '
+                SELECT DISTINCT(t.JOBID)
+                FROM JOB_tasks t
+                #ORDER BY t.JOBID DESC
                 LIMIT 100
-            ;";
+            ;';
             $jobid = $db->get_rows($query)[rand(0,count($jobid))]['JOBID'];
         }
 
