@@ -230,6 +230,7 @@
             oTable.fnDraw();
         }
 
+
         {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
             var buildExecParams = new Array();
             var index = 0;
@@ -241,7 +242,6 @@
 
         //create the table after loading
         $(document).ready(function() {
-
             var asInitVals = new Array();
             var oTable;
 
@@ -324,7 +324,7 @@
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
                       "dataType": 'json',
-                      "type": "GET",
+                      "method": "GET",
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},

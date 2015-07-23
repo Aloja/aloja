@@ -33,7 +33,7 @@ class MLOutliersController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 3 && array_key_exists('register',$_GET) && array_key_exists('current_model',$_GET)))
 			{
-				$preset = Utils::getDefaultPreset($db, 'mloutliers');
+				$preset = Utils::initDefaultPreset($db, 'mloutliers');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
