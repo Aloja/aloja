@@ -141,7 +141,7 @@ nodeseval:
 
 mlprediction:
     pattern: "/mlprediction"
-    controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
+    controller: "alojaweb\\Controller\\MLPredictionController::mlpredictionAction"
 
 mldatacollapse:
     pattern: "/mldatacollapse"

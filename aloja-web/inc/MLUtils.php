@@ -15,7 +15,7 @@ class MLUtils
 		if (array_key_exists("vm_ram",$filter_options))	{ $filter_options['vm_RAM'] = $filter_options['vm_ram']; unset ($filter_options['vm_ram']); }
 		if (array_key_exists("benchtype",$filter_options)) { $filter_options['bench_type'] = $filter_options['benchtype']; unset ($filter_options['benchtype']); }
 
-		$paramAllOptions = $tokens = array();
+		$paramAllOptions = array();
 		$model_info = '';
 		foreach ($param_names as $p) 
 		{
@@ -24,6 +24,19 @@ class MLUtils
 			else $model_info = $model_info.((empty($params[$p]))?' '.substr($p,0,-1).' ("'.implode('","',$paramAllOptions[$p]).'")':' '.substr($p,0,-1).' ("'.implode('","',$params[$p]).'")');
 		}
 		return $model_info;
+	}
+
+	public static function generateDatasliceInfo($param_names_additional, $params_additional)
+	{
+		$slice_info = '[';
+		foreach ($param_names_additional as $p)
+		{
+			if (empty($params_additional[$p])) $slice_info = $slice_info.'*,';
+			else $slice_info = $slice_info.$params_additional[$p].',';
+		}
+		$slice_info = substr($slice_info,0,-1).']';
+
+		return $slice_info;
 	}
 
 	public static function generateSimpleInstance($param_names, $params, $condition, $db)

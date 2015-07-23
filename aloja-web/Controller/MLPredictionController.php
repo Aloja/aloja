@@ -7,7 +7,7 @@ use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
 use alojaweb\inc\MLUtils;
 
-class MLTemplatesController extends AbstractController
+class MLPredictionController extends AbstractController
 {
 	public function mlpredictionAction()
 	{
@@ -37,6 +37,10 @@ class MLTemplatesController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params_additional[$p]); }
+
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
 
@@ -47,8 +51,9 @@ class MLTemplatesController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted,$db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
-			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R');
+			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R').' '.$slice_info;
 			$learn_options = 'saveall='.md5($config);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
@@ -116,8 +121,8 @@ class MLTemplatesController extends AbstractController
 				if (!$is_cached) 
 				{
 					// register model to DB
-					$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm)";
-					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
+					$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm,dataslice)";
+					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
 
 					// read results of the CSV and dump to DB
@@ -223,40 +228,27 @@ class MLTemplatesController extends AbstractController
 			$must_wait = 'NO';
 			$dbml = null;
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig',
-			array(
-				'selected' => 'mlprediction',
-				'jsonExecs' => json_encode($jsonExecs),
-				'max_p' => min(array($max_x,$max_y)),
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'unrestricted' => $unrestricted,
-				'learn' => $learn_param,
-				'must_wait' => $must_wait,
-				'instance' => $instance,
-				'model_info' => $model_info,
-				'id_learner' => md5($config),
-				'error_stats' => $error_stats,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
+
+		$return_params = array(
+			'selected' => 'mlprediction',
+			'jsonExecs' => json_encode($jsonExecs),
+			'max_p' => min(array($max_x,$max_y)),
+			'unrestricted' => $unrestricted,
+			'learn' => $learn_param,
+			'must_wait' => $must_wait,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'id_learner' => md5($config),
+			'error_stats' => $error_stats,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
 		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig', $return_params);
 	}
 }
 ?>
