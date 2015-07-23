@@ -1767,7 +1767,7 @@ class DefaultController extends AbstractController
                 #ORDER BY t.`JOBID` DESC
                 LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,count($jobid))]['JOBID'];
         }
 
         echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
