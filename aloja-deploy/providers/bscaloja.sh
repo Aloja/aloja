@@ -6,6 +6,19 @@ source "$CUR_DIR_TMP/on-premise.sh"
 #TODO move to another place, this right now is in secure but it cannot be read when executing benchs
 homePrefixAloja="/home" #/home is not on the default location on minerva100
 
+get_mount_disks() {
+
+  local create_string="
+    #mkdir -p ~/{share,minerva};
+    sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
+    $(get_extra_mount_disks)
+    sudo chown -R $userAloja: /scratch;
+    sudo mount -a;
+  "
+  echo -e "$create_string"
+}
+
+
 
 #minerva needs *real* user first
 get_ssh_user() {
@@ -38,8 +51,6 @@ vm_initial_bootstrap() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Bootstraping $vm_name "
 
-    echo "lllllllllllll"; exit 1
-
     vm_execute "
 sudo useradd --create-home --home $homePrefixAloja/$userAloja -s /bin/bash $userAloja;
 sudo echo -n '$userAloja:$passwordAloja' |sudo chpasswd;
@@ -53,7 +64,6 @@ sudo bash -c \"echo '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authori
 sudo chown -R $userAloja: $homePrefixAloja/$userAloja/.ssh;
 sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc /root/;
 "
-
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
@@ -66,6 +76,7 @@ sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc
   else
     logger "$bootstrap_file already configured"
   fi
+
 }
 
 #$1 vm_name
@@ -113,55 +124,5 @@ sudo chown -R pristine: /scratch/attached/1;
     logger "$bootstrap_file already configured"
   fi
 
-}
-
-vm_final_bootstrap() {
-
-  logger "Checking if to install Infiniband on node"
-  vm_install_IB
-
-#  logger "INFO: removing security packages and configs from Ubuntu 14.04"
-#  vm_execute "
-#sudo service apparmor stop
-#sudo update-rc.d -f apparmor remove
-#sudo apt-get purge -y apparmor apparmor-utils -y
-#sudo ufw disable;
-#"
-
-  logger "INFO: making sure minerva-100 config is up to date"
-  vm_execute "
-sudo apt-get -y purge hadoop
-"
-
-
-}
-
-#$1 vm_name
-
-get_extra_fstab() {
-
-  local minerva100_tmp="$homePrefixAloja/$userAloja/tmp"
-  vm_execute "mkdir -p $minerva100_tmp"
-  local create_string="$minerva100_tmp       /scratch/local    none bind,nobootwait 0 0"
-
-  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
-    local create_string="$create_string
-/scratch/attached/6       /scratch/ssd/1    none bind,nobootwait 0 0
-/scratch/attached/7       /scratch/ssd/2    none bind,nobootwait 0 0"
-
-  elif [ "$clusterName" == "minerva100-02-18-22" ] ; then
-    local create_string="$create_string
-/scratch/attached/7       /scratch/ssd/1    none bind,nobootwait 0 0"
-  fi
-
-  echo -e "$create_string"
-}
-
-get_extra_mount_disks() {
-  if [ "$clusterName" == "minerva100-10-18-21" ] ; then
-    echo -e "sudo mkdir -p /scratch/ssd/{1..2};"
-  elif [ "$clusterName" == "minerva100-02-18-22" ] ; then
-    echo -e "sudo mkdir -p /scratch/ssd/1;"
-  fi
 }
 

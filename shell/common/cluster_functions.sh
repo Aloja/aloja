@@ -71,6 +71,7 @@ vm_create_node() {
     logger "ERROR: Invalid VM OS type. Type $type"
     exit 1
   fi
+
 }
 
 #$1 vm_name
@@ -100,6 +101,7 @@ vm_create_connect() {
 vm_provision() {
   vm_initial_bootstrap
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
+  needPasswordPre=
 
   if [ ! -z $1 ]; then
     vm_set_ssh $1
@@ -126,11 +128,14 @@ vm_provision() {
 
   logger "Provisioning for VM $vm_name ready, finalizing deployment"
   #check if extra commands are specified once VMs are provisioned
+
   vm_finalize &
+
 }
 
 vm_finalize() {
   #extra commands to exectute (if defined)
+
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
   [ ! -z "$extraPackages" ] && vm_install_extra_packages
@@ -251,15 +256,18 @@ vm_execute() {
   set_shh_proxy
 
   local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+  local result
 
   #Use SSH keys
-  if [ -z "$3" ] ; then
+  if [ -z "$3" ] && [ -z "${requireRootFirst[$vm_name]}" ] && [ "${needPasswordPre}" != "1" ]; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
       echo -e "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      result=$?
     else
       echo -e "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      result=$?
     fi
     #chmod 0644 $(get_ssh_key)
   #Use password
@@ -268,10 +276,13 @@ vm_execute() {
 
     if [ -z "$2" ] ; then
       echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      result=$?
     else
       echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      result=$?
     fi
   fi
+  return ${result}
 }
 
 set_shh_proxy() {
@@ -408,33 +419,47 @@ get_initizalize_disks() {
     exit 1;
   fi
 
-logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
+  logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
 
-  local create_string="echo ' DEBUG: listing devices'; lsblk;"
+  local create_string="error=0; echo ' DEBUG: listing devices'; lsblk;"
 
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+maxwait=60
+waited=0
+devok=0
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+while true; do
+  if lsblk | grep -q '${devicePrefix}${drive_letter}'; then
+    devok=1
+    break
+  fi
+  echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+  ((waited+=10))
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+  [ \$waited -gt \$maxwait ] && break
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+  sleep 10
+done
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
-
-sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
-sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
+if [ \$devok -eq 1 ]; then
+  sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
+  sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;
+else
+  echo ' WARNING: device ${devicePrefix}${drive_letter} not ready, skip initialization'
+  error=1
+fi"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
+
+  create_string="$create_string
+exit \$error
+"
 
   echo -e "$create_string"
 }
@@ -498,13 +523,13 @@ make_fstab(){
   local create_string="$create_string
 $(get_extra_fstab)"
 
-
 #sudo chmod 777 /etc/fstab; sudo echo -e '# <file system> <mount point>   <type>  <options>       <dump>  <pass>
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
 
   logger "INFO: Updating /etc/fstab template"
   vm_update_template "/etc/fstab" "$create_string" "secured_file"
+
 }
 
 #requires $create_string to be defined
@@ -610,13 +635,13 @@ vm_set_ssh() {
     fi
 
     vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
+                echo -e \"Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel quiet\n\" > ~/.ssh/config;
                 echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "$use_password"
 
     vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 ~/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "cat ~/.ssh/config |grep 'UserKnownHostsFile' && ls ~/.ssh/id_rsa")"
+    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' ~/.ssh/config && ls ~/.ssh/id_rsa")"
     #logger "TEST SSH $test_set_ssh"
 
     if [ ! -z "$test_set_ssh" ] ; then
@@ -722,6 +747,7 @@ cluster_execute() {
 }
 
 vm_initialize_disks() {
+
   if [[ "$attachedVolumes" -gt "0" ]] ; then
 
     if check_bootstraped "vm_initialize_disks" ""; then
@@ -730,13 +756,14 @@ vm_initialize_disks() {
       local create_string="$(get_initizalize_disks)"
 
       vm_execute "$create_string"
+      local result=$?
 
-      test_action="$(vm_execute " [ \"\$\(lsblk|grep ${devicePrefix}c1\)\" ] && echo '$testKey'")"
-      if [ "$test_action" == "$testKey" ] ; then
+      if [ $result -eq 0 ] ; then
         #set the lock
         check_bootstraped "vm_initialize_disks" "set"
       else
         logger "ERROR initializing disks for $vm_name. Test output: $test_action"
+        exit 1
       fi
 
     else
@@ -746,6 +773,7 @@ vm_initialize_disks() {
   else
     logger " no need to attach disks for VM $vm_name"
   fi
+
 }
 
 cluster_initialize_disks() {
@@ -772,6 +800,7 @@ cluster_initialize_disks() {
 }
 
 vm_mount_disks() {
+
   if check_bootstraped "vm_mount_disks" ""; then
 
     make_fstab
@@ -779,20 +808,23 @@ vm_mount_disks() {
     logger "INFO: Mounting disks for VM $vm_name "
 
     local create_string="$(get_mount_disks)"
+    local error
 
     vm_execute "$create_string"
+    error=$?    
 
-    test_action="$(vm_execute " [ \"\$\(grep ${devicePrefix}c1 /etc/fstab\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [ $error -eq 0 ] ; then
       #set the lock
       check_bootstraped "vm_mount_disks" "set"
     else
       logger "ERROR mounting disks for $vm_name. Test output: $test_action"
+      exit 1
     fi
 
   else
     logger "Disks already mounted for VM $vm_name "
   fi
+
 }
 
 cluster_mount_disks() {
@@ -846,10 +878,19 @@ check_bootstraped() {
 
   local bootstrap_filename="bootstrap_${1}_${vm_name}"
 
+  local result
+
   if [ -z "$3" ] ; then
     fileExists="$(vm_execute "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
+    result=$?
   else
     fileExists="$(vm_execute_master "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
+    result=$?
+  fi
+
+  if [ $result -eq 255 ]; then
+    logger "ERROR: cannot check bootstrap file status (SSH error?)"
+    exit 1
   fi
 
   #set lock
@@ -1003,6 +1044,8 @@ vm_make_fs() {
         logger " Linking $homePrefixAloja/$userAloja/share to $share_disk_path"
 
         vm_execute "
+
+sudo mkdir -p '$share_disk_path'
 sudo chown -R ${userAloja}: $share_disk_path;
 [ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share $homePrefixAloja/$userAloja/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
@@ -1034,7 +1077,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    #vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
@@ -1042,6 +1085,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   logger "RSynching aplic for possible updates"
   vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
+
 }
 
 #$1 filename

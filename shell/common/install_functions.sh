@@ -1,4 +1,5 @@
 vm_install_base_packages() {
+
   if check_sudo ; then
 
     local bootstrap_file="vm_install_packages"
@@ -272,7 +273,7 @@ vm_install_webserver() {
     logger "INFO: Installing NGINX and PHP"
 
     vm_execute "
-sudo apt-get install python-software-properties software-properties-common python3-software-PROPERTIES
+sudo apt-get -y install python-software-properties software-properties-common python3-software-PROPERTIES
 sudo add-apt-repository -y ppa:ondrej/php5 #up to date PHP version
 sudo apt-get update
 sudo apt-get install --force-yes -y php5-fpm php5-cli php5-mysql php5-xdebug php5-curl nginx
@@ -329,7 +330,7 @@ sudo mkdir -p /var/www
 
 sudo rm -rf /tmp/aloja;
 mkdir -p /tmp/aloja
-sudo git clone https://github.com/Aloja/aloja.git /tmp/aloja
+git clone https://github.com/Aloja/aloja.git /tmp/aloja
 sudo cp -ru /tmp/aloja/. /var/www/
 
 cd /var/www
@@ -359,6 +360,8 @@ sudo service nginx restart
   else
     logger "$bootstrap_file already configured"
   fi
+
+  echo llllllllllllll; exit 1
 
 }
 
