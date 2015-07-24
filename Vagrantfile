@@ -13,7 +13,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   defaultName = "aloja-web"
   defaultSSHPort = 22200
   defaultIP = "192.168.99.2" #do not use .1 to avoid some vagrant warnings
-  sshKeyPath = "../aloja-deploy/providers/vagrant_keys/id_rsa"
+  sshKeyPath = "../secure/keys_vagrant/id_rsa"
 
   config.vm.define defaultName, primary: true do |default|
     default.vm.hostname = defaultName

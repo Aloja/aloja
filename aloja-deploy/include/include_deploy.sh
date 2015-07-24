@@ -6,7 +6,6 @@ self_name="$(basename $0)"
 [ -z $1 ] && { echo "Usage: $self_name ${type}_name [If no default provider then: <provider:azure|openstack|rackspace|on-premise|carma|vagrant>]  [Optional non-default conf_file]"; exit 1;}
 
 #0) find the directory root
-#/vagrant/shell/common/../../aloja-deploy/providers/
 
 if [ -d  "/vagrant" ] ; then
   ROOT_DIR_INCLUDE="/vagrant"
@@ -54,28 +53,28 @@ else
 	securedProviderFile="$ROOT_DIR_INCLUDE/secure/$3"
 fi
 
-#check for secured conf file
-if [ ! -f "$securedProviderFile" ]; then
-  logger "WARNING: SECURED Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
-
-  #try non secured files (in git)
-  # load defaultProvider
-  if [ -z $2 ]; then
-    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${defaultProvider}_settings.conf"
-  #load user specified provider conf file
-  elif [ -z $3 ]; then
-    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${2}_settings.conf"
-  #load user specified conf file
-  else
-    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/$3"
-  fi
-
-  if [ ! -f "$securedProviderFile" ]; then
-    logger "ERROR: either secured or non-secured provider config files exists.  Exiting... DEBUG data: file=$securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
-    exit 1
-  fi
-
-fi
+##OLD for loading unsecured files
+#if [ ! -f "$securedProviderFile" ]; then
+#  logger "WARNING: SECURED Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
+#
+#  #try non secured files (in git)
+#  # load defaultProvider
+#  if [ -z $2 ]; then
+#    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${defaultProvider}_settings.conf"
+#  #load user specified provider conf file
+#  elif [ -z $3 ]; then
+#    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${2}_settings.conf"
+#  #load user specified conf file
+#  else
+#    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/$3"
+#  fi
+#
+#  if [ ! -f "$securedProviderFile" ]; then
+#    logger "ERROR: either secured or non-secured provider config files exists.  Exiting... DEBUG data: file=$securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
+#    exit 1
+#  fi
+#
+#fi
 
 
 #load non versioned conf first (order is important for overrides)
@@ -88,7 +87,6 @@ logger " for Provider: $cloud_provider"
 
 #logger "INFO: Re-Loading $clusterConfigFile"
 source "$configFolderPath/$clusterConfigFile"
-
 
 
 #4) Load the common cluster functions
@@ -105,7 +103,6 @@ else
   providerFunctionsFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${2}.sh"
   defaultProvider="$2"
 fi
-
 
 
 #check if provider file exists
