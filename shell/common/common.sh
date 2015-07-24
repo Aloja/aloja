@@ -3,7 +3,7 @@
 
 # Check bash version >= 4
 if (( BASH_VERSINFO[0] < 4 )) ; then
-  echo -e "ERROR: bash 4 or newer is required"
+  echo -e "ERROR: bash 4 or newer is required to run ALOJA.  If not present, you can run it from the vagrant box"
   exit 1
 fi
 
@@ -11,6 +11,8 @@ fi
 startTime="$(date +%s)"
 
 testKey="###OK###"
+
+[ ! "$PARENT_PID" ] && PARENT_PID=$$ #for killing the process from subshells
 
 #common funtions
 
@@ -29,6 +31,13 @@ logger() {
   else
     echo -e "$dateTime $$${vm_info}: $1" >> $log_file
   fi
+}
+
+#log and die, $1 message
+die() {
+  logger "ERROR: $1" >&2 #>&2 to print the output
+  kill -s TERM $PARENT_PID
+  exit 1 #should not be necessary
 }
 
 #trasposes new lines to selected string

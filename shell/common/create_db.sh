@@ -678,18 +678,7 @@ CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
   PRIMARY KEY (\`id\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS \`filters_presets\` (
- \`id\` int(11) NOT NULL AUTO_INCREMENT,
- \`name\` varchar(255) NOT NULL,
- \`screen\` varchar(255) NOT NULL,
- \`URL\` varchar(65536) NOT NULL,
- \`preset\` int NOT NULL DEFAULT 0,
- \`description\` varchar(255),
- PRIMARY KEY (\`id\`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
-
-
 
 
 ####################################################
@@ -778,7 +767,7 @@ update ignore execs SET bench_type='HiBench-min' where bench_type='-min';
 update ignore execs SET bench_type='HiBench-10' where bench_type='-10';
 update ignore execs SET bench_type='HiBench-1TB' where bench_type='-1TB';
 update ignore execs SET bench_type='HiBench-1TB' where bench IN ('prep_terasort', 'terasort') and start_time between '2014-12-02' AND '2014-12-17 12:00';
-update ignore execs SET hadoop_version='1.03' where hadoop_version='';
+update ignore execs SET hadoop_version='1.03' where hadoop_version IS NULL;
 update ignore execs SET net='IB' where id_cluster = 26;
 update ignore execs SET disk='HDD' where disk = 'SSD' AND id_cluster = 26;
 

@@ -23,24 +23,6 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     v.cpus = 2 #change as needed
   end
 
-  #for Docker (optional, but faster on Linux)
-  config.vm.provider 'docker' do |d, override|
-    override.vm.box = nil #Vagrant gets confused with the Virtualbox name
-    #use a prebuilt image ie 'npoggi/vagrant-docker:latest'
-    if ENV['DOCKER_IMAGE'] then
-      print "Using docker image " + ENV['DOCKER_IMAGE'] + " (downloads if necessary)\n"
-      d.image = ENV['DOCKER_IMAGE']
-    else
-      #build from the Dockerfile
-      d.build_dir = 'aloja-deploy/providers/'
-      d.name = 'aloja-vagrant-docker'
-    end
-    #the docker image must remain running for SSH (See the Dockerfile)
-    d.has_ssh = true
-  end
-
-  #web document root
-  #config.vm.synced_folder "./", "/vagrant/aloja"
   config.vm.synced_folder "./aloja-web/logs", "/vagrant/aloja-web/logs", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
   config.vm.synced_folder "./aloja-web/cache", "/vagrant/aloja-web/cache", :owner=> 'www-data', :mount_options => ["dmode=775", "fmode=664"]
 
@@ -56,20 +38,5 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   default.vm.network :forwarded_port, host: 8080, guest: 80 #web
   default.vm.network :forwarded_port, host: 4306, guest: 3306 #mysql
   #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
-
-end
-
-#
-## cluster nodes for benchmarking (aloja-deploy)
-#config.vm.define "vagrant1", autostart: false do |node|
-#  node.vm.hostname = "vagrant1"
-#  node.vm.network "private_network", ip: "10.42.42.101"
-#  node.vm.provision "shell", path: "vagrant/files/vagrant_cluster/provision.sh"
-#end
-#config.vm.define "vagrant2", autostart: false do |node|
-#  node.vm.hostname = "vagrant2"
-#  node.vm.network "private_network", ip: "10.42.42.102"
-#  node.vm.provision "shell", path: "vagrant/files/vagrant_cluster/provision.sh"
-#end
 
 end

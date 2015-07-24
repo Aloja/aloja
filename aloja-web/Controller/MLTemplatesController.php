@@ -29,7 +29,7 @@ class MLTemplatesController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
-				$preset = Utils::setDefaultPreset($db, 'mlprediction');
+				$preset = Utils::initDefaultPreset($db, 'mlprediction');
  			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		    	
@@ -171,7 +171,6 @@ class MLTemplatesController extends AbstractController
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.rds');
 				}
 
 				$must_wait = "NO";

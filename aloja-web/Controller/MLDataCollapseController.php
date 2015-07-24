@@ -26,7 +26,7 @@ class MLDataCollapseController extends AbstractController
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mldatacollapse');
+				$preset = Utils::initDefaultPreset($db, 'mldatacollapse');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 

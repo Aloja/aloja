@@ -25,7 +25,7 @@ class MLSummariesController extends AbstractController
 		        $preset = null;
 			if (count($_GET) <= 1)
 			{
-				$preset = Utils::setDefaultPreset($db, 'mlsummaries');
+				$preset = Utils::initDefaultPreset($db, 'mlsummaries');
  			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
