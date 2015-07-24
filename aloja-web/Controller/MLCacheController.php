@@ -88,6 +88,15 @@ class MLCacheController extends AbstractController
 				$output[] = shell_exec($command);
  			}
 
+			if (isset($_GET['rmp']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM precisions WHERE id_precision='".$_GET['rmp']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a precision from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmp'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
 			// Compilation of Learners on Cache
 			$query="SELECT v.*, COUNT(t.id_findattrs) as num_trees
 				FROM (	SELECT s.*, COUNT(r.id_resolution) AS num_resolutions
@@ -147,17 +156,31 @@ class MLCacheController extends AbstractController
 			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
 
 			// Compilation of Summaries on Cache
-			$query="SELECT DISTINCT id_summaries, instance, model, creation_time
+			$query="SELECT DISTINCT id_summaries, model, creation_time
 				FROM summaries
 				";
 			$rows = $dbml->query($query);
 			$jsonSummaries = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonSummaries = $jsonSummaries.(($jsonSummaries=='[')?'':',')."['".$row['id_summaries']."','".$row['instance']."','".$row['model']."','".$row['creation_time']."','<a href=\'/mlclearcache?rms=".$row['id_summaries']."\'>Remove</a>']";
+				$jsonSummaries = $jsonSummaries.(($jsonSummaries=='[')?'':',')."['".$row['id_summaries']."','".$row['model']."','".$row['creation_time']."','<a href=\'/mlclearcache?rms=".$row['id_summaries']."\'>Remove</a>']";
 			}
 			$jsonSummaries = $jsonSummaries.']';
-			$jsonSummariesHeader = "[{'title':'ID'},{'title':'Instance'},{'title':'Model'},{'title':'Creation'},{'title':'Actions'}]";
+			$jsonSummariesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Creation'},{'title':'Actions'}]";
+
+			// Compilation of Precisions on Cache
+			$query="SELECT id_precision, model, creation_time
+				FROM precisions
+				GROUP BY id_precision
+				";
+			$rows = $dbml->query($query);
+			$jsonPrecisions = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonPrecisions = $jsonPrecisions.(($jsonPrecisions=='[')?'':',')."['".$row['id_precision']."','".$row['model']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmp=".$row['id_precision']."\'>Remove</a>']";
+			}
+			$jsonPrecisions = $jsonPrecisions.']';
+			$jsonPrecisionsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Creation'},{'title':'Actions'}]";
 
 			$dbml = null;
 		}
@@ -176,7 +199,9 @@ class MLCacheController extends AbstractController
 				'resolutions' => $jsonResolutions,
 				'header_resolutions' => $jsonResolutionsHeader,
 				'summaries' => $jsonSummaries,
-				'header_summaries' => $jsonSummariesHeader
+				'header_summaries' => $jsonSummariesHeader,
+				'precisions' => $jsonPrecisions,
+				'header_precisions' => $jsonPrecisionsHeader
 			)
 		);
 	}

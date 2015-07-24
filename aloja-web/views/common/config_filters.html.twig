@@ -1,6 +1,6 @@
 {% set show = false %}
 {% for selopt in options['presets'] if not show %}
-  {% if selopt['screen'] == selected %}
+  {% if selopt['selected_tool'] == selected %}
     {% set show = true %}
   {% endif %}
 {% endfor %}
@@ -11,8 +11,8 @@
 		<select form="configFilters" class="form-control" class="control-form" name="presets" style="width: 100%;">
 		 <option value="none" url="" title="None" {% if preset is null or preset == "" %}selected{% endif %}>None</option>
 		{% for selopt in options['presets'] %}
-		 {% if selopt['screen'] == selected %}
-		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}" {% if selPreset == loop.index or preset == selopt['URL'] %}selected="true"{% endif %}>{{ selopt['name'] }}</option>
+		 {% if selopt['selected_tool'] == selected %}
+		 <option value="{{ loop.index }}" url="{{ selopt['URL'] }}" title="{{ selopt['description'] }}" {% if selPreset == loop.index or preset == selopt['URL'] %}selected="true"{% endif %}>{{ selopt['short_name'] }}</option>
 		 {% endif %} 
 		{% endfor %}
 		</select>

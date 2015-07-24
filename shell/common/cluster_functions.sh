@@ -189,15 +189,28 @@ get_ssh_host() {
 
 #the default key override if necessary i.e. in Azure
 get_ssh_key() {
- echo "../secure/keys/id_rsa"
+ echo "$ALOJA_SSH_KEY"
 }
 
 #default port, override to change i.e. in Azure
 get_ssh_port() {
+  local vm_ssh_port_tmp=""
+
   if [ ! -z "$vm_ssh_port" ] ; then
-    echo "$vm_ssh_port"
+    local vm_ssh_port_tmp="$vm_ssh_port"
   else
-    echo "22" #default port when empty or not overwriten
+    if [ "$type" == "node" ] ; then
+      local vm_ssh_port_tmp="22" #default port when empty or not overwriten
+    #for clusters
+    else
+      local vm_ssh_port_tmp="$(get_vm_ssh_port)" #default port when empty or not overwriten
+    fi
+  fi
+
+  if [ "$vm_ssh_port_tmp" ] ; then
+    echo "$vm_ssh_port_tmp"
+  else
+    die "EEROR: cannot get SSH port for VM $vm_name"
   fi
 }
 
@@ -287,7 +300,8 @@ set_shh_proxy() {
   fi
 
 }
-#interactive SSH $1 use password
+
+#interactive ssh, $1 use password
 vm_connect() {
 
   set_shh_proxy
@@ -370,29 +384,9 @@ get_repo_path(){
   echo "$homePrefixAloja/$userAloja/share/"
 }
 
-#vm_name must be set
+#vm_name must be set, override when needed ie., azure, vagrant,...
 get_vm_ssh_port() {
-  local node_ssh_port=''
-
-  if [ "$type" == "node" ] ; then
-    if [ "$cloud_provider" == "azure" ] ; then
-      local node_ssh_port="$vm_ssh_port" #for Azure nodes
-    else
-      local node_ssh_port="22" #default
-    fi
-  else #cluster auto id
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-      local vm_name_tmp="${clusterName}-${vm_id}"
-      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
-
-      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-        local node_ssh_port="2${clusterID}${vm_id}"
-        break #just return one
-      fi
-    done
-  fi
-
-  echo "$node_ssh_port"
+  echo "22"
 }
 
 #$1 vm_name
@@ -530,7 +524,7 @@ $(get_extra_fstab)"
 get_mount_disks() {
 
   local create_string="
-    mkdir -p ~/{share,minerva};
+    mkdir -p $homePrefixAloja/$userAloja/{share,minerva};
     sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     $(get_extra_mount_disks)
     sudo chown -R $userAloja: /scratch;
@@ -614,6 +608,7 @@ vm_test_initiallize_disks() {
   fi
 }
 
+
 #$1 use password based auth
 vm_set_ssh() {
 
@@ -627,14 +622,14 @@ vm_set_ssh() {
       local use_password="true" #use password
     fi
 
-    vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n  StrictHostKeyChecking no\n  UserKnownHostsFile /dev/null\n  LogLevel quiet\n\" > ~/.ssh/config;
-                echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "$use_password"
+    vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
+                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > $homePrefixAloja/$userAloja/.ssh/config;
+                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
 
-    vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "$use_password"
-    vm_execute "chmod -R 0600 ~/.ssh/*;" "" "$use_password"
+    vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
+    vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' ~/.ssh/config && ls ~/.ssh/id_rsa")"
+    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa")"
     #logger "TEST SSH $test_set_ssh"
 
     if [ ! -z "$test_set_ssh" ] ; then
@@ -657,7 +652,7 @@ vm_check_attach_disks() {
     numberOfDisks="$(number_of_attached_disks "$1")"
     logger " $numberOfDisks attached disks to VM $1"
 
-    if [ "$attachedVolumes" -gt "$numberOfDisks" ] ; then
+    if [ "$attachedVolumes" -gt "$numberOfDisks" ] 2>/dev/null; then #2>/dev/null avoid integer exp errors
       missingDisks="$(( attachedVolumes - numberOfDisks ))"
       logger " need to attach $missingDisks disk(s) to VM $1"
       for ((disk=0; disk<missingDisks; disk++ )) ; do
@@ -686,12 +681,12 @@ vm_set_dsh() {
     logger "Setting up DSH for VM $vm_name "
 
     node_names="$(char2char "$(get_node_names)" ' ' '\n')"
-    vm_update_template "~/.dsh/group/a" "$node_names" ""
+    vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/a" "$node_names" ""
 
     slave_names="$(char2char "$(get_slaves_names)" ' ' '\n')"
-    vm_update_template "~/.dsh/group/s" "$slave_names" ""
+    vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/s" "$slave_names" ""
 
-    test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.dsh/group/a ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -710,18 +705,18 @@ vm_set_dot_files() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up $function_name for VM $vm_name "
 
-    vm_execute "touch ~/.hushlogin;" #avoid welcome banners
+    vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
-    vm_update_template "~/.bashrc" "
+    vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'" ""
 
-    vm_update_template "~/.screenrc" "
+    vm_update_template "$homePrefixAloja/$userAloja/.screenrc" "
 defscrollback 99999
 startup_message off" ""
 
-    test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' ~/.bashrc\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' $homePrefixAloja/$userAloja/.bashrc\)\" ] && echo '$testKey'")"
     if [ "$test_action" == "$testKey" ] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -769,7 +764,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  local bootstrap_file="~/bootstrap_cluster_initialize_disks"
+  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_initialize_disks"
 
   local create_string="$(get_initizalize_disks)"
 
@@ -818,7 +813,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  local bootstrap_file="~/bootstrap_cluster_mount_disk"
+  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_mount_disk"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
@@ -870,10 +865,10 @@ check_bootstraped() {
   local result
 
   if [ -z "$3" ] ; then
-    fileExists="$(vm_execute "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
+    fileExists="$(vm_execute "[[ -f $homePrefixAloja/$userAloja/$bootstrap_filename ]] && echo '$testKey'")"
     result=$?
   else
-    fileExists="$(vm_execute_master "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
+    fileExists="$(vm_execute_master "[[ -f $homePrefixAloja/$userAloja/$bootstrap_filename ]] && echo '$testKey'")"
     result=$?
   fi
 
@@ -884,13 +879,13 @@ check_bootstraped() {
 
   #set lock
   if [ ! -z "$2" ] ; then
-    vm_execute "touch ~/$bootstrap_filename;"
+    vm_execute "touch $homePrefixAloja/$userAloja/$bootstrap_filename;"
   fi
 
   if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
     logger " Avoiding subsequent welcome banners"
-    vm_execute "touch ~/.hushlogin; " #avoid subsequent banners
-    fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+    vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin; " #avoid subsequent banners
+    fileExists="$(vm_execute "[[ -f $homePrefixAloja/$userAloja/bootstrap_$1 ]] && echo '$testKey'")"
   fi
 #TODO fix return codes should be the opposite
   if [ "$fileExists" == "$testKey" ] ; then
@@ -951,7 +946,7 @@ vm_set_master_forer() {
   #vm_execute_master "bash -c \"(nohup export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName; touch nohup-exit) > /dev/null &\""
 
   logger "Checking if queues dirs already setup"
-  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/queue.log && echo '$testKey'")"
+  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/local/queue_${clusterName}/queue.log && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -961,7 +956,7 @@ vm_set_master_forer() {
   fi
 
   logger "Checking if queues already setup"
-  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
+  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -999,7 +994,7 @@ vm_set_master_forer() {
 vm_puppet_apply() {
 
   logger "Transfering puppet to VM"
-  vm_rsync "$puppet" "~/" ""
+  vm_rsync "$puppet" "$homePrefixAloja/$userAloja/" ""
   logger "Puppet install modules and apply"
 
 	vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetBootFile'"
@@ -1079,7 +1074,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 #$1 filename
 vm_get_file_contents() {
   if [ "$1" ] ; then
-    local fileContent="$(vm_execute "cat $1")"
+    local fileContent="$(vm_execute " [ -f '$1' ] && cat '$1'")"
   else
     : #error
   fi
@@ -1143,4 +1138,42 @@ vm_update_template() {
   #logger "DEBUG: TEMPLATE GOT NEW contents"
   vm_put_file_contents "$1" "$fileNewContent" "$3"
   #logger "DEBUG: TEMPLATE UPDATED $1 with template"
+}
+
+#$1 filename on remote machine $2 template part content $3 change permissions
+vm_update_host_template() {
+
+  #logger "DEBUG: TEMPLATE getting $1 contents"
+  local fileCurrentContent="$(vm_get_file_contents "$1")"
+
+  #remove the same machine
+  local fileCurrentContent="$(echo -e "$fileCurrentContent" |grep -v "$vm_name")"
+
+  #logger "DEBUG: TEMPLATE $1 GOT contents"
+  local fileNewContent="$(template_update_stream "$fileCurrentContent" "$2")"
+  #logger "DEBUG: TEMPLATE GOT NEW contents"
+  vm_put_file_contents "$1" "$fileNewContent" "$3"
+  #logger "DEBUG: TEMPLATE UPDATED $1 with template"
+}
+
+#override if necessary ie., openstack
+make_hosts_file() {
+  local hosts_file=""
+  echo -e "$hosts_file"
+}
+
+#updates /etc/hosts if called
+vm_update_hosts_file() {
+  logger "Getting list of hostnames for hosts file for VM $vm_name"
+  #local hosts_file_command="$(make_hosts_file_command)"
+  local hosts_file="$(make_hosts_file)"
+
+  #remove the same machine
+  #local hosts_file="$(echo -e "$hosts_file" |grep -v "$vm_name")"
+
+  logger "Updating hosts file for VM $vm_name"
+  #logger "DEBUG: $hosts_file $hosts_file_command"
+
+  #vm_execute "$hosts_file_command"
+  vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
 }

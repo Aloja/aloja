@@ -47,17 +47,17 @@ class RestController extends AbstractController
 
             $datefrom = Utils::read_params('datefrom',$where_configs);;
             $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs         = Utils::read_params('benchs',$where_configs);
-            $nets           = Utils::read_params('nets',$where_configs);
-            $disks          = Utils::read_params('disks',$where_configs);
-            $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
-            $comps          = Utils::read_params('comps',$where_configs);
-            $id_clusters    = Utils::read_params('id_clusters',$where_configs);
-            $mapss          = Utils::read_params('mapss',$where_configs);
-            $replications   = Utils::read_params('replications',$where_configs);
-            $iosfs          = Utils::read_params('iosfs',$where_configs);
-            $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
-            $money 			= Utils::read_params('money',$where_configs);
+            $benchs = Utils::read_params ( 'benchs', $where_configs, false );
+            $nets = Utils::read_params ( 'nets', $where_configs, false );
+            $disks = Utils::read_params ( 'disks', $where_configs, false );
+            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false );
+            $comps = Utils::read_params ( 'comps', $where_configs, false );
+            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false );
+            $mapss = Utils::read_params ( 'mapss', $where_configs, false );
+            $replications = Utils::read_params ( 'replications', $where_configs, false );
+            $iosfs = Utils::read_params ( 'iosfs', $where_configs, false );
+            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false );
+            $money = Utils::read_params ( 'money', $where_configs, false );
             $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
             $benchtype = Utils::read_params ( 'bench_types', $where_configs );
             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -67,10 +67,10 @@ class RestController extends AbstractController
             $types = Utils::read_params ( 'types', $where_configs, false );
             $filters = Utils::read_params ( 'filters', $where_configs, false );
             $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $type = Utils::get_GET_string("type");
             $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
             $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
             $provider = Utils::read_params ( 'providers', $where_configs, false );
+            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             $type = Utils::get_GET_string('type');
             if(!$type)
@@ -138,10 +138,11 @@ class RestController extends AbstractController
 					'bench_type' => 'Bench',
 				);
             }
+            $where_configs = str_replace('%2F','/',$where_configs);
             
              $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
        	 		join clusters c USING (id_cluster)
-      		 	 WHERE 1 $where_configs ".DBUtils::getFilterExecs().";";
+      		 	 WHERE 1 $where_configs" .DBUtils::getFilterExecs().";";
 
              $exec_rows = $dbUtils->get_rows($query);
 
@@ -154,12 +155,8 @@ class RestController extends AbstractController
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
             echo $jsonData;
-        } catch (Exception $e) {
-            $noData = array();
-            for($i = 0; $i<=sizeof($show_in_result); ++$i)
-            	$noData[] = 'error';
-            
-            echo json_encode(array('aaData' => array($noData)));
+        } catch (\Exception $e) {
+            echo 'No data available';
         }
     }
 
@@ -259,11 +256,12 @@ class RestController extends AbstractController
             }
 
         } catch (Exception $e) {
-            $noData = array();
+            echo 'No data available';
+           /* $noData = array();
             for($i = 0; $i<=sizeof($show_in_result); ++$i)
             	$noData[] = 'error';
             
-            echo json_encode(array('aaData' => array($noData)));
+            echo json_encode(array('aaData' => array($noData)));*/
         }
     }
 
@@ -633,10 +631,12 @@ VALUES
             echo $jsonData;
                 
         } catch (Exception $e) {
+            echo 'No data available';
+            /*
             $noData = array();
             $noData[] = $e->getMessage();
 
-            echo json_encode(array('aaData' => $noData));
+            echo json_encode(array('aaData' => $noData));*/
         }
     }
     
@@ -672,10 +672,11 @@ VALUES
 			ob_start('ob_gzhandler');
 			echo json_encode($result);
 		} catch ( \Exception $e ) {
-			$noData = array();
+            echo 'No data available';
+/*			$noData = array();
             $noData[] = $e->getMessage();
 
-            echo json_encode(array('error' => $noData));
+            echo json_encode(array('error' => $noData));*/
 		}
     }
 
@@ -805,10 +806,12 @@ VALUES
     		ob_start('ob_gzhandler');
     		echo json_encode($result);
     	} catch ( \Exception $e ) {
+            echo 'No data available';
+            /*
     		$noData = array();
     		$noData[] = $e->getMessage();
     
-    		echo json_encode(array('error' => $noData));
+    		echo json_encode(array('error' => $noData));*/
     	}
     }
     
@@ -958,11 +961,13 @@ VALUES
     			throw new \Exception("No results for query!");
     		 
     	} catch (\Exception $e) {
+            echo 'No data available';
+            /*
     		$noData = array();
             for($i = 0; $i<=sizeof($show_in_result); ++$i)
             	$noData[] = 'error';
             
-            echo json_encode(array('aaData' => array($noData)));
+            echo json_encode(array('aaData' => array($noData)));*/
     	}
     }
 
@@ -1251,11 +1256,12 @@ VALUES
     		}
     
     	} catch (Exception $e) {
-    		$noData = array();
+            echo 'No data available';
+    		/*$noData = array();
     		for($i = 0; $i<=sizeof($show_in_result); ++$i)
     			$noData[] = 'error';
     
-    		echo json_encode(array('aaData' => array($noData)));
+    		echo json_encode(array('aaData' => array($noData)));*/
     	}
     }
 }

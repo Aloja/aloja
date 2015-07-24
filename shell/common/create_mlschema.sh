@@ -160,6 +160,18 @@ CREATE TABLE IF NOT EXISTS \`model_storage\` (
   PRIMARY KEY (\`id_hash\`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
+
+CREATE TABLE IF NOT EXISTS \`precisions\` (
+  \`id_precision\` varchar(255) NOT NULL,
+  \`instance\` varchar(255) NOT NULL,
+  \`model\` longtext NOT NULL,
+  \`diversity\` longtext NOT NULL,
+  \`precisions\` longtext NOT NULL,
+  \`discvar\` varchar(255) NOT NULL,
+  \`creation_time\` datetime NOT NULL,
+  PRIMARY KEY (\`id_precision\`,\`discvar\`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
 "
 
 $MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` longtext NOT NULL;"
@@ -172,15 +184,14 @@ $MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` longtext NOT NULL"
 $MYSQL "ALTER TABLE \`summaries\` MODIFY \`summary\` longtext NOT NULL;"
 $MYSQL "ALTER TABLE \`minconfigs_centers\` ADD \`bench_type\` varchar(255) ;"
 
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLPrediction Default','mlprediction',1,'MLPrediction Default','/mlprediction?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&learn=regtree&umodel=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLFindAttrs Default','mlfindattributes',1,'MLFindAttrs Default','/mlfindattributes?benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&mapss[]=4&comps[]=0&replications[]=1&blk_sizes[]=128&iosfs[]=10&iofilebufs[]=65536&iofilebufs[]=131072&current_model=ee7c939fefa656a3f82f80002ed39c1d&unseen=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLParamEval Default','mlparameval',1,'MLParamEval Default','/mlparameval?benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&current_model=c26c7cb6440534304333eb1d66cd33fc&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLOutliers Default','mloutliers',1,'MLOutliers Default','/mloutliers?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&current_model=c26c7cb6440534304333eb1d66cd33fc&sigma=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLSummaries Default','mlsummaries',1,'MLSummaries Default','/mlsummaries?benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HDD&disks[]=SSD&feature=Benchmark&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLDataCollapse Default','mldatacollapse',1,'MLDataCollapse Default','/mldatacollapse?benchs[]=bayes&benchs[]=sort&benchs[]=terasort&benchs[]=wordcount&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=65536&iofilebufs[]=131072&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLCrossVariables Default','mlcrossvar',1,'MLCrossVariables Default','/mlcrossvar?variable1=maps&variable2=exe_time&benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLCrossVariables3D Default','mlcrossvar3d',1,'MLCrossVariables3D Default','/mlcrossvar3d?variable1=maps&variable2=net&benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLCrossVariables3DFA Default','mlcrossvar3dfa',1,'MLCrossVariables3DFA Default','/mlcrossvar3dfa?variable1=maps&variable2=net&benchs[]=terasort&id_clusters[]=1&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&blk_sizes[]=128&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&current_model=&unseen=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLMinConfigs Default','mlminconfigs',1,'MLMinConfigs Default','/mlminconfigs?benchs[]=terasort&disks[]=HDD&disks[]=SSD&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&learn=regtree&umodel=1&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')"
-#$MYSQL "REPLACE INTO aloja2.filters_presets (name,screen,preset,description,URL) VALUES ('MLNewConfigs Default','mlnewconfigs',1,'MLNewConfigs Default','/mlnewconfigs?benchs[]=terasort&disks[]=HDD&disks[]=SSD&datanodess[]=3&vm_sizes[]=SYS-6027R-72RF&vm_coress[]=12&vm_RAMs[]=128.000&types[]=On-premise&comps[]=0&replications[]=1&iofilebufs[]=32768&iofilebufs[]=65536&iofilebufs[]=131072&hadoop_versions[]=1&learn=regtree&allunchecked=&selected-groups=&datefrom=&dateto=&minexetime=&maxexetime=')·
+
+#$MYSQL "ALTER TABLE \`learners\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`predictions\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`trees\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`minconfigs_props\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`summaries\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+#$MYSQL "ALTER TABLE \`model_storage\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
 

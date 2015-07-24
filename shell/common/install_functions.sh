@@ -407,7 +407,7 @@ sudo R CMD javareconf
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=TRUE);
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=TRUE);
 
 
 # For all Ubuntu releases until 14.04

@@ -1,0 +1,404 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %} {{ parent() }}
+	<style type="text/css">
+        @import "js/datatables.new/media/css/demo_table.css";
+        @import "js/datatables.new/media/css/jquery.dataTables.css";
+        @import "js/datatables.new/extensions/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables.new/extensions/TableTools/media/css/TableTools.css";
+        @import "js/datatables.new/extensions/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x: auto;
+	    float: left;
+            width: 100%;
+        }
+	</style>
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify"><b>Precision and Comparison</b>: This tool displays:
+			<ul>
+			<li>How diverse is the collected executions data, and how precise are clusters or other deployment elements. The precision is the non-dispersion of results given the repetition of executions: given several repetition of executions, the less the execution time varies, the more precise and reliable is the cluster (or the observed deployment element). Here it is shown as the <i>Deviation</i> as opposite to precision: given repeated executions of the same configuration on a cluster or deployment, we expect the execution time to vary this deviation around the expected execution time for such configuration. Also, the diversity is an indicator of how much different executions have been tested on a deployment, as 0 means that all the executions are repetitions of the same one, and 1 that all the executions have different configurations.</li>
+			<li>How different are configurations executed in different clusters or deployments. If the same configuration has been run in different deployments, it will be listed showing the different results for each deployment.</li>
+			</ul>
+		</p>
+		<hr />
+	</div>
+	<div id="contentdiv" style="float: left; width: 68%;">
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingBenchDiv">
+				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" aria-expanded="true" aria-controls="benchDivFilter">
+						Precision on Executions
+					</a>
+				</h4>
+			</div>
+			<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
+				<div class="panel-body">
+					<table width="100%"><tr><td>Target:&nbsp;&nbsp;&nbsp;</td><td width="100%">
+					<select class="form-control" class="control-form in " name="feature_pre" style="width:25%" onchange="update_pretable(this.value)">
+						<option value="Cl.Name" SELECTED>Cluster Name</option>
+						<option value="Datanodes">Datanodes</option>
+						<option value="Headnodes">Headnodes</option>
+						<option value="VM.OS">VM OS</option>
+						<option value="VM.Cores">VM Cores</option>
+						<option value="VM.RAM">VM RAM</option>
+						<option value="Provider">Provider</option>
+						<option value="VM.Size">Type</option>
+						<option value="Hadoop.Version">Hadoop Version</option>
+						<option value="Bench.Type">Benchmark Type</option>
+					</select></td></tr></table>
+					<table id="precisiontab" cellpadding="0" cellspacing="0" border="0" class="display" width="95%"><thead></thead></table>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingDiversityDiv">
+				<i id="DiversityFG" data-toggle="collapse" data-parent="#stuffdivs" href="#diversityDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#diversityDivFilter" aria-expanded="true" aria-controls="benchDivFilter">
+						Comparisons on Observed Executions
+					</a>
+				</h4>
+			</div>
+			<div id="diversityDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingDiversityDiv">
+				<div class="panel-body">
+					<table width="100%"><tr><td>Target:&nbsp;&nbsp;&nbsp;</td><td width="100%">
+					<select class="form-control" class="control-form in " name="feature" style="width:25%" onchange="update_divtable(this.value)">
+						<option value="Cl.Name" SELECTED>Cluster Name</option>
+						<option value="Datanodes">Datanodes</option>
+						<option value="Headnodes">Headnodes</option>
+						<option value="VM.OS">VM OS</option>
+						<option value="VM.Cores">VM Cores</option>
+						<option value="VM.RAM">VM RAM</option>
+						<option value="Provider">Provider</option>
+						<option value="VM.Size">Type</option>
+						<option value="Hadoop.Version">Hadoop Version</option>
+						<option value="Bench.Type">Benchmark Type</option>
+					</select></td></tr></table>
+					<input type='hidden' id='current_page' />
+					<input type='hidden' id='show_per_page' />
+					<input type='hidden' id='current_discvar' />
+					<div id="chart" style="float:left; width: 100%"></div>
+					<div id="tablesdiv" width="100%"></div>
+					<div id='page_navigation' style="text-align: right"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Search cache ID: {{id_precision|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div style="float: right; width: 30%;">
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
+	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+
+	var precisions = {{ precisions | raw }};
+	var diversity = {{ diversity | raw }};
+	var discvars = {{ discvars | raw }};
+
+	/*********************************************************************/
+	/* Diversity of results. Comparision.                                */
+	/*********************************************************************/
+
+	function init_pages ()
+	{
+		var show_per_page = 5;
+		var number_of_items = $('#tablesdiv').children().size();
+		var number_of_pages = Math.ceil(number_of_items/show_per_page);
+
+		$('#current_page').val(0);
+		$('#show_per_page').val(show_per_page);
+
+		var navigation_html = '<a class="previous_link" href="javascript:previous_page();">Prev</a>&nbsp;';
+		var current_link = 0;
+		while(number_of_pages > current_link)
+		{
+			navigation_html += '<a class="page_link" href="javascript:go_to_page('+current_link+')" longdesc="'+current_link+'">'+(current_link+1)+'</a>&nbsp;';
+			current_link++;
+		}
+		navigation_html += '<a class="next_link" href="javascript:next_page();">Next</a>';
+
+		$('#page_navigation').html(navigation_html);
+		$('#page_navigation .page_link:first').addClass('active_page');
+		$('#tablesdiv').children().css('display', 'none');
+		$('#tablesdiv').children().slice(0, show_per_page).css('display', 'block');  
+	}  
+  
+	function previous_page()
+	{  
+		new_page = parseInt($('#current_page').val()) - 1;
+		if($('.active_page').prev('.page_link').length==true) go_to_page(new_page);
+	}  
+  
+	function next_page()
+	{
+		new_page = parseInt($('#current_page').val()) + 1;
+		if($('.active_page').next('.page_link').length==true) go_to_page(new_page);
+	}
+
+	function go_to_page(page_num)
+	{  
+		var show_per_page = parseInt($('#show_per_page').val());
+		start_from = page_num * show_per_page;
+		end_on = start_from + show_per_page;
+		$('#tablesdiv').children().css('display', 'none').slice(start_from, end_on).css('display', 'block');
+		$('.page_link[longdesc='+page_num+']').addClass('active_page').siblings('.active_page').removeClass('active_page');
+		$('#current_page').val(page_num);
+
+		create_chart ($('#current_discvar').val(),start_from,end_on);
+	}  
+	
+	function diversity_select (variable1)
+	{
+		var index = 0;
+		for (var i = 0; i < discvars.length; i++)
+		{
+			if (discvars[i] == variable1) index = i;
+		}
+
+		return diversity[index];
+	}
+
+	function diversity_table (variable1)
+	{
+		var divselect = diversity_select (variable1);
+
+		for (var i = 0; i < divselect.length; i++)		// Beware oh high cardinality
+		{
+			$("#tablesdiv").append('<table id="benchmark' + i + '" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>');
+			auxTable = $("#benchmark"+i).dataTable({
+				"data": divselect[i],
+				"columns": {{ diversityHeader | raw }},
+				"bFilter": false,
+				"bSearchable":false,
+				"bInfo":false,
+				"bPaginate": false,
+				"columnDefs" : [{"targets" : 10, "render" : function (data) { return Math.round(data); }}]
+			});
+		}
+
+		if (divselect.length == 0)
+		{
+			$("#tablesdiv").append('<table id="benchmark0" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>');
+			auxTable = $("#benchmark0").dataTable({
+				"data": [],
+				"columns": {{ diversityHeader | raw }},
+				"bFilter": false,
+				"bSearchable":false,
+				"bInfo":false,
+				"bPaginate": false
+			});		
+		}
+	}
+
+	function update_divtable (variable2)
+	{
+		for (var i = 0; i < $("#tablesdiv").children().length; i++)		// Beware oh high cardinality
+		{
+			if($("#benchmark"+i).dataTable() != null) $("#benchmark"+i).dataTable().fnDestroy();
+			$("#benchmark"+i).empty();
+		}
+		$("#tablesdiv").empty();
+
+		diversity_table (variable2);
+
+		init_pages();
+
+		$('#current_discvar').val(variable2);
+		create_chart ($('#current_discvar').val(),0,5);
+	}
+
+	function create_chart (variable1,from,to)
+	{
+		var divselect = diversity_select (variable1);
+
+		if (to >= divselect.length) to = divselect.length;
+
+		var aux_categories = [];
+		for (var i = from; i < to; i++)
+		{
+			var first = divselect[i][0];
+			var newcat = "";
+			for (var j = 0; j < first.length - 3; j++)
+			{
+				if (newcat != "") newcat = newcat + ",";
+				newcat = newcat + first[j];
+			}
+			aux_categories.push(newcat);
+		}
+
+		var tmp_series = [];
+		for (var i = 0; i < divselect.length; i++)
+		{
+			for (var j = 0; j < divselect[i].length; j++)
+			{
+				var aux_class = divselect[i][j][divselect[i][j].length - 3];
+				if (tmp_series.indexOf(aux_class) == -1) tmp_series.push(aux_class);
+			}
+		}
+
+		var aux_series = [];
+		for (var s = 0; s < tmp_series.length; s++)
+		{
+			var aux_data = [];
+			for (var i = from; i < to; i++)
+			{
+				var aux_value = [null];
+				for (var j = 0; j < divselect[i].length; j++)
+				{
+					var aux_class = divselect[i][j][divselect[i][j].length - 3];
+
+					if (aux_class == tmp_series[s])
+					{
+						aux_value = [ aux_categories[i-from], parseInt(divselect[i][j][divselect[i][j].length - 2])];
+					}
+				}
+				aux_data.push(aux_value);
+			}
+			aux_series.push({ name : tmp_series[s], data: aux_data });
+		}
+
+		if (!$('#chart').is(":visible")) $('#chart').width("65%"); else $('#chart').width("100%");
+		$('#chart').empty();
+
+		$('#chart').highcharts({
+			chart: { type: 'bar', renderTo: 'chart' },
+			title: { text: 'Comparison of Executions' },
+			subtitle: { text: 'Separated by the Target variable' },
+			xAxis: {
+				title: { enabled: true, text: 'Configurations (' + from + ' to ' + to + ')' },
+				categories: aux_categories,
+			},
+			yAxis: {
+				title: { text: 'Observed Execution Time' },
+				labels: { overflow: 'justify' }
+			},
+			credits: { enabled: false },
+			plotOptions: {
+				bar: {
+					dataLabels: { enabled: true }
+				},
+				series: { cursor: 'pointer' }
+			},
+    		        series: aux_series
+		});
+	}
+
+	/*********************************************************************/
+	/* Precision of results. Comparision.                                */
+	/*********************************************************************/
+
+	function precision_select (variable1)
+	{
+		var index = 0;
+		for (var i = 0; i < discvars.length; i++)
+		{
+			if (discvars[i] == variable1) index = i;
+		}
+
+		return precisions[index];
+	}
+
+	function precision_table (variable1)
+	{
+		var preselect = precision_select (variable1);
+
+		auxTable = $("#precisiontab").dataTable({
+			"data": preselect,
+			"columns": {{ precisionHeader | raw }},
+			"columnDefs" : [{"targets" : [1,3,4,5], "render" : function (data) { return parseFloat(data).toFixed(5); }}]
+		});
+	}
+
+	function update_pretable (variable2)
+	{
+		if($("#precisiontab").dataTable() != null) $("#precisiontab").dataTable().fnDestroy();
+		$("#precisiontab").empty();
+
+		precision_table (variable2);
+	}
+
+	/*********************************************************************/
+	/* Regular web-page start-up.                                        */
+	/*********************************************************************/
+
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Check Values');
+		$("#submitForm").html('Check Values');
+
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		$('#headingAdvancedFilters').parent().hide();
+
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#controls').show();
+			$('#waitdiv').hide();
+
+			// Precision Stuff
+
+			precision_table ("Cl.Name");
+
+			// Diversity Stuff
+			$('#current_discvar').val("Cl.Name");
+
+			diversity_table ($('#current_discvar').val());
+			create_chart ($('#current_discvar').val(),0,5);
+
+			init_pages ();
+
+			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
+		}
+		else
+		{
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#diversityDivFilter').hide(); $('#headingDiversityDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}	
+	});
+    </script>
+{% endblock %}

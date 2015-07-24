@@ -96,7 +96,7 @@ get_OK_status() {
 
 #Azure uses a different key
 get_ssh_key() {
- echo "../secure/keys/id_rsa"
+ echo "$CONF_DIR/../../secure/keys/id_rsa"
 }
 
 get_ssh_host() {

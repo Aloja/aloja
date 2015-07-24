@@ -1,5 +1,6 @@
 ###These are just a function list that should be implemented if necessary in the provider
 
+# $1 vm name
 vm_exists() {
   logger "WARNING: Function vm_exists not implemented or not necessary for provider"
 }
