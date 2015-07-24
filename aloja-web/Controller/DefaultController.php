@@ -1761,13 +1761,13 @@ class DefaultController extends AbstractController
         if (strlen($jobid) == 0 || $jobid === "random") {
             $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
             $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                #ORDER BY t.`JOBID` DESC
+            $query = '
+                SELECT DISTINCT(t.JOBID)
+                FROM JOB_tasks t
+                #ORDER BY t.JOBID DESC
                 LIMIT 100
-            ;";
-            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
+            ;';
+            $jobid = $db->get_rows($query)[rand(0,count($jobid))]['JOBID'];
         }
 
         echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
@@ -1982,7 +1982,7 @@ class DefaultController extends AbstractController
 
         echo $this->container->getTwig()->render('counters/hdp2counters.html.twig',
             array('selected' => 'Hadoop 2 Job Counters',
-                'theaders' => $show_in_result_counters,
+                'theaders' => (isset($show_in_result_counters) ? $show_in_result_counters:array()),
                 //'table_fields' => $table_fields,
                 'message' => $message,
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
