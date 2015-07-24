@@ -32,5 +32,10 @@ for clusterConfigFile in $configFolderPath/cluster_* ; do
 done
 
 #update filters in the whole DB (slow)
-logger "Updating VALID and FILTER fields (probably will take a while...)"
-$MYSQL "$(get_filter_sql)"
+if [ -d  "/vagrant" ] ; then
+  echo "INFO: Not updating valids in vagrant VM as most don't have perf counters, but are marked as valid"
+else
+  logger "Updating VALID and FILTER fields (probably will take a while...)"
+  $MYSQL "$(get_filter_sql)"
+fi
+
