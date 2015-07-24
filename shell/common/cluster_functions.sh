@@ -126,14 +126,11 @@ vm_provision() {
 
   logger "Provisioning for VM $vm_name ready, finalizing deployment"
   #check if extra commands are specified once VMs are provisioned
-
   vm_finalize &
-
 }
 
 vm_finalize() {
   #extra commands to exectute (if defined)
-
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
   [ ! -z "$extraPackages" ] && vm_install_extra_packages
@@ -212,7 +209,6 @@ get_ssh_user() {
 get_ssh_pass() {
   echo "${passwordAloja}"
 }
-
 
 vm_initial_bootstrap() {
   : #not necesarry by default
@@ -521,13 +517,13 @@ make_fstab(){
   local create_string="$create_string
 $(get_extra_fstab)"
 
+
 #sudo chmod 777 /etc/fstab; sudo echo -e '# <file system> <mount point>   <type>  <options>       <dump>  <pass>
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
 
   logger "INFO: Updating /etc/fstab template"
   vm_update_template "/etc/fstab" "$create_string" "secured_file"
-
 }
 
 #requires $create_string to be defined
