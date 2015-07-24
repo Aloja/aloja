@@ -814,7 +814,6 @@ vm_mount_disks() {
   else
     logger "Disks already mounted for VM $vm_name "
   fi
-
 }
 
 cluster_mount_disks() {
@@ -1075,7 +1074,6 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   logger "RSynching aplic for possible updates"
   vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
-
 }
 
 #$1 filename
