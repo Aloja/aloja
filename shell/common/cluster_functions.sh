@@ -51,7 +51,6 @@ vm_create_node() {
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it
-
     vm_create_connect "$vm_name"
     #boostrap and provision VM with base packages in parallel
 
@@ -60,6 +59,7 @@ vm_create_node() {
     else
       vm_provision
     fi
+
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -71,7 +71,6 @@ vm_create_node() {
     logger "ERROR: Invalid VM OS type. Type $type"
     exit 1
   fi
-
 }
 
 #$1 vm_name
@@ -79,7 +78,6 @@ vm_create_connect() {
 
   #test first if machines are accessible via SSH to save time
   if ! wait_vm_ssh_ready "1" ; then
-
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
 
@@ -1077,7 +1075,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    #vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
