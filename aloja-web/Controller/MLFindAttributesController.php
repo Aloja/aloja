@@ -11,7 +11,8 @@ class MLFindAttributesController extends AbstractController
 {
 	public function mlfindattributesAction()
 	{
-		$instance = $message = $tree_descriptor = $model_html = '';
+		$instance = $instances =  $message = $tree_descriptor = $model_html = $config = '';
+		$possible_models = $possible_models_id = $other_models = array();
 		$must_wait = 'NO';
 		try
 		{
@@ -62,12 +63,17 @@ class MLFindAttributesController extends AbstractController
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
+			// Other models for filling
+			$where_models = '';
 			if (!empty($possible_models_id))
 			{
-				$other_models = array();
-				$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
-				foreach ($result as $row) $other_models[] = $row['id_learner'];
+				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
+			}
+			$result = $dbml->query("SELECT id_learner FROM learners".$where_models);
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
+			if (!empty($possible_models_id) || $current_model != "")
+			{
 				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
 
@@ -248,9 +254,6 @@ class MLFindAttributesController extends AbstractController
 				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
 				if (isset($_GET['dump'])) { echo "-1"; exit(0); }
 				if (isset($_GET['pass'])) { return "-1"; }
-				$config = "";
-				$possible_models = $possible_models_id = array("None");
-				$other_models = array();
 			}
 			$dbml = null;
 		}
@@ -259,8 +262,6 @@ class MLFindAttributesController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
 			$jsonData = $jsonHeader = "[]";
-			$instance = $instances = $possible_models_id = "";
-			$possible_models = $possible_models_id = $other_models = array();
 			$must_wait = 'NO';
 			$mae = $rae = 0;
 

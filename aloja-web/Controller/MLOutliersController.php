@@ -13,6 +13,7 @@ class MLOutliersController extends AbstractController
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
 		$message = $instance = $jsonHeader = $jsonTable = $model_html = '';
+		$possible_models = $possible_models_id = $other_models = array();
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		try
@@ -56,12 +57,17 @@ class MLOutliersController extends AbstractController
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
+			// Other models for filling
+			$where_models = '';
 			if (!empty($possible_models_id))
 			{
-				$other_models = array();
-				$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
-				foreach ($result as $row) $other_models[] = $row['id_learner'];
+				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
+			}
+			$result = $dbml->query("SELECT id_learner FROM learners".$where_models);
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
+			if (!empty($possible_models_id))
+			{
 				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
 
@@ -241,7 +247,7 @@ class MLOutliersController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$model = '';
-			$possible_models_id = $possible_models = $other_models = array();
+
 			$dbml = null;
 		}
 		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig',
