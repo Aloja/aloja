@@ -765,7 +765,6 @@ vm_initialize_disks() {
   else
     logger " no need to attach disks for VM $vm_name"
   fi
-
 }
 
 cluster_initialize_disks() {
@@ -792,7 +791,6 @@ cluster_initialize_disks() {
 }
 
 vm_mount_disks() {
-
   if check_bootstraped "vm_mount_disks" ""; then
 
     make_fstab
