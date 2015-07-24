@@ -183,7 +183,7 @@ CREATE TABLE IF NOT EXISTS \`precisions\` (
 
 $MYSQL "ALTER TABLE $DBML.learners MODIFY model longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.trees MODIFY model longtext NOT NULL;"
-$MYSQL "ALTER TABLE $DBML.trees. MODIFY tree_code longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.trees MODIFY tree_code longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.resolutions MODIFY model longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs MODIFY model longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers MODIFY support mediumtext NOT NULL;"
