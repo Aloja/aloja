@@ -560,7 +560,6 @@ wait_vm_ready() {
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
-
   logger "Checking SSH status of VM $vm_name"
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
@@ -741,7 +740,6 @@ cluster_execute() {
 }
 
 vm_initialize_disks() {
-
   if [[ "$attachedVolumes" -gt "0" ]] ; then
 
     if check_bootstraped "vm_initialize_disks" ""; then
