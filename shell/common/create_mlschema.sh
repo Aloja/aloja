@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS \`learners\` (
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
   \`model\` longtext NOT NULL,
+  \`dataslice\` longtext NOT NULL,
   \`algorithm\` varchar(255) NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_learner\`),
@@ -189,6 +190,7 @@ $MYSQL "ALTER TABLE $DBML.minconfigs_centers MODIFY support mediumtext NOT NULL;
 $MYSQL "ALTER TABLE $DBML.summaries MODIFY model longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries MODIFY summary longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD bench_type varchar(255);"
+$MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 
 
 #$MYSQL "ALTER TABLE \`learners\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
