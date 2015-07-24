@@ -21,8 +21,9 @@ settings_secured.yaml
 /secure
 !secure/.git_ignored_folder
 !secure/keys_vagrant/*
-!secure/account_defaults.sample.conf
+!secure/*.sample.conf
 !secure/vagrant_settings.conf
+!secure/README.md
 
 #test PHP file to check the configuration (insecure in production)
 test.php
