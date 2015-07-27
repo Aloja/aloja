@@ -55,6 +55,9 @@ class Container
             $container['config'] = Yaml::parse(file_get_contents($config_file));
             $container['env'] = 'prod';
         }
+	if(!$container['config']['show_warnings']) {
+	   error_reporting(E_ERROR | E_PARSE);
+	}
 
         $container['log'] = function ($c) {
             $logLevel = ($c['env'] == 'dev') ? Logger::DEBUG : Logger::WARNING;
