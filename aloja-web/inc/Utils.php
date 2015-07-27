@@ -647,6 +647,7 @@ class Utils
 	    	$return = $url;
 	    	$filters = explode('?',$url)[1];
 	    	$filters = explode('&',$filters);
+            $filters = array_filter($filters); //make sure we don't get empty values in cases like ?&afa=dfa
 	    	foreach($filters as $filter) {
 	    		$explode = explode('=',$filter);
 	    		$filterName = $explode[0];
@@ -655,7 +656,7 @@ class Utils
 	    			$filterName = substr($filterName,0,strlen($filterName)-2);
 	    			$isArray = true;
 	    		}
-	    		
+
 	    		$filterValue = $explode[1];
 	    		
 	    		if($isArray)

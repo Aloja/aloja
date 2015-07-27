@@ -40,3 +40,4 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
 
 end
+end

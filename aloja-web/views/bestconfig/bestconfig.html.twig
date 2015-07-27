@@ -5,6 +5,11 @@
 
 {% endblock %} 
 {% block content %}
+
+	This page shows the configuration for a benchmark that achieved either the best execution time (lower)
+	or the best ratio between execution time and cost (lower).  According to the selected filter.
+	Try the sample presets or change the filters to see different examples.
+
 <div id="chart"></div>
 <div style="float: left; width: 50%;">
     <h3>Best {{ bestexec['bench'] }} configuration</h3>
