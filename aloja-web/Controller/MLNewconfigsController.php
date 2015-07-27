@@ -37,14 +37,15 @@ class MLNewconfigsController extends AbstractController
 				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
 				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
 				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				//$params['hadoop_versions'] = array('1','1.03'); $where_configs .= ' AND hadoop_version IN ("1","1.03")';
+				//$params['bench_types'] = array('HiBench'); $where_configs .= ' AND bench_type = "HiBench"';
 				$params['datanodess'] = array('3');// $where_configs .= ' AND datanodes = 3';
 				$params['headnodess'] = array('1');// $where_configs .= ' AND headnodes = 1';
-				$params['bench_types'] = array('HiBench');// $where_configs .= ' AND bench_type = "HiBench"';
 				$params['vm_OSs'] = array('linux');// $where_configs .= ' AND vm_OS = "linux"';				
 				$params['vm_sizes'] = array('SYS-6027R-72RF');// $where_configs .= ' AND vm_size = "SYS-6027R-72RF"';
 				$params['vm_coress'] = array('12');// $where_configs .= ' AND vm_cores = 12';
 				$params['vm_RAMs'] = array('128');// $where_configs .= ' AND vm_RAM = 128';
-				$params['hadoop_versions'] = array('1');// $where_configs .= ' AND hadoop_version = 1';
+
 				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 			}
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
@@ -94,7 +95,7 @@ class MLNewconfigsController extends AbstractController
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench NOT LIKE 'prep_%' AND e.exe_time > 100 AND hadoop_version IN ('1','2')".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench NOT LIKE 'prep_%' AND e.exe_time > 100".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
