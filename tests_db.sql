@@ -1076,7 +1076,7 @@ UNLOCK TABLES;
 --
 -- Table structure for table `filters_presets`
 --
-CREATE TABLE filters_presets(id INT(11) NOT NULL AUTO_INCREMENT, short_name VARCHAR(255) NOT NULL, selected_tool varchar(255) NOT NULL, URL longtext NOT NULL, default_preset int(1) NOT NULL DEFAULT 0, description longtext, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+CREATE TABLE filter_presets(id INT(11) NOT NULL AUTO_INCREMENT, short_name VARCHAR(255) NOT NULL, selected_tool varchar(255) NOT NULL, URL longtext NOT NULL, default_preset int(1) NOT NULL DEFAULT 0, description longtext, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 
 --
