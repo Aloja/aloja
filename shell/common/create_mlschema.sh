@@ -2,13 +2,20 @@
 
 logger "INFO: Creating DB machine learning tables for $DB (if necessary)"
 
-$MYSQL "
+DBML='aloja_ml';
+
+$MYSQL_CREATE "
+
+CREATE DATABASE IF NOT EXISTS \`$DBML\`;
+
+USE \`$DBML\`;
 
 CREATE TABLE IF NOT EXISTS \`learners\` (
   \`sid_learner\` int(11) NOT NULL AUTO_INCREMENT,
   \`id_learner\` varchar(255) NOT NULL,
   \`instance\` varchar(255) NOT NULL,
   \`model\` longtext NOT NULL,
+  \`dataslice\` longtext NOT NULL,
   \`algorithm\` varchar(255) NOT NULL,
   \`creation_time\` datetime NOT NULL,
   PRIMARY KEY (\`sid_learner\`),
@@ -174,15 +181,16 @@ CREATE TABLE IF NOT EXISTS \`precisions\` (
 
 "
 
-$MYSQL "ALTER TABLE \`learners\` MODIFY \`model\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`trees\` MODIFY \`model\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`trees\` MODIFY \`tree_code\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`resolutions\` MODIFY \`model\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`minconfigs\` MODIFY \`model\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`minconfigs_centers\` MODIFY \`support\` mediumtext NOT NULL;"
-$MYSQL "ALTER TABLE \`summaries\` MODIFY \`model\` longtext NOT NULL"
-$MYSQL "ALTER TABLE \`summaries\` MODIFY \`summary\` longtext NOT NULL;"
-$MYSQL "ALTER TABLE \`minconfigs_centers\` ADD \`bench_type\` varchar(255) ;"
+$MYSQL "ALTER TABLE $DBML.learners MODIFY model longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.trees MODIFY model longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.trees MODIFY tree_code longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.resolutions MODIFY model longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.minconfigs MODIFY model longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.minconfigs_centers MODIFY support mediumtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.summaries MODIFY model longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.summaries MODIFY summary longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD bench_type varchar(255);"
+$MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 
 
 #$MYSQL "ALTER TABLE \`learners\` MODIFY \`creation_time\` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
