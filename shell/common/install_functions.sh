@@ -109,12 +109,10 @@ deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
     vm_execute "
 sudo echo -e 'Package: *
 Pin: release o=Percona Development Team
-Pin-Priority: 1001 > /etc/apt/preferences.d/00percona.pref"
+Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref"
 
     #first install version 5.5 in case of migration
     vm_execute "
-wget -O - http://www.percona.com/redir/downloads/RPM-GPG-KEY-percona | gpg --import;
-gpg --armor --export 1C4CBDCDCD2EFD2A | apt-key add -;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;
 sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.5 in case of migrations
@@ -140,7 +138,6 @@ sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.
   else
     logger "$bootstrap_file already configured"
   fi
-
 }
 
 #$1 sample data data
@@ -360,9 +357,6 @@ sudo service nginx restart
   else
     logger "$bootstrap_file already configured"
   fi
-
-  echo llllllllllllll; exit 1
-
 }
 
 install_R() {
