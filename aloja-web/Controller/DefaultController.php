@@ -490,7 +490,7 @@ class DefaultController extends AbstractController
 
             $seriesData .= "{
             name: '" . $exec['exec'] . "',
-                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]},";
+                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]], idexec: ${exec['id_exec']}},";
         }
 
         $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
