@@ -46,15 +46,15 @@
     			    {% elseif column_name == 'Running Cost $' %}
     			      {% set column_name = column_name ~ makeTooltip('Cost on USD dependant of running time and hardware configuration.') %}
     			    {% elseif column_name == 'Replicas' %}
-    			      {% set column_name = column_name ~ makeTooltip('Number of replicas.') %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of HDFS file replicas.') %}
     			    {% elseif column_name == 'Maps' %}
-    			      {% set column_name = column_name ~ makeTooltip('Number of hadoop mappers used.') %}
+    			      {% set column_name = column_name ~ makeTooltip('Maximum number of simultaneos map tasks.') %}
     			    {% elseif column_name == 'Disk' %}
     			      {% set column_name = column_name ~ makeTooltip('Kind of disks used.') %}
     			    {% elseif column_name == 'Net' %}
     			      {% set column_name = column_name ~ makeTooltip('Network.') %}
     			    {% elseif column_name == 'Rep' %}
-    			      {% set column_name = column_name ~ makeTooltip('Number of replicas.') %}
+    			      {% set column_name = column_name ~ makeTooltip('Number of HDFS file .') %}
     			    {% elseif column_name == 'Comp' %}
     			      {% set column_name = column_name ~ makeTooltip('Compression algorithm.') %}
     			    {% elseif column_name == 'Blk size' %}
