@@ -36,10 +36,10 @@ $MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,
 $MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('2015+ Benchmarks','Benchmark Executions','benchexecs?datefrom=2015%2F01%2F01$filter_common',0,'All benchmarks from 2015');"
 
 #bestconfig
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from ALL','Best Configuration','/bestconfig?$filter_common',1,'Best config for all executions without applying filters');"
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from On-Prem','Best Configuration','/bestconfig?types[]=On-Premise$filter_common',0,'Best config for On-Premise (local) exectuions');"
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from IaaS','Best Configuration','/bestconfig?types[]=IaaS$filter_common',0,'Best config for IaaS (cloud) exectuions');"
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from PaaS','Best Configuration','/bestconfig?types[]=PaaS$filter_common',0,'Best config for PaaS (cloud) exectuions');"
+$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from ALL','Best configuration','/bestconfig?$filter_common',1,'Best config for all executions without applying filters');"
+$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from On-Prem','Best configuration','/bestconfig?types[]=On-Premise$filter_common',0,'Best config for On-Premise (local) exectuions');"
+$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from IaaS','Best configuration','/bestconfig?types[]=IaaS$filter_common',0,'Best config for IaaS (cloud) exectuions');"
+$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from PaaS','Best configuration','/bestconfig?types[]=PaaS$filter_common',0,'Best config for PaaS (cloud) exectuions');"
 
 #configimprovement
 $MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Clusters of 8DN','Config Improvement','configimprovement?selected-groups=id_cluster$filter_HiBench_Terasort_WordCount_Sort_8d_2015',1,'Comparisson of cluster speeup for terasort, wordcount and sort and 8 datanodes');"
@@ -55,7 +55,7 @@ $MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,
 $MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('PaaS num nodes scalability','Number of Nodes Evaluation','/nodeseval?types[]=PaaS$filter_common',0,'HDI number of nodes evaluation');"
 
 #costperfeval
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Terasort (filtered)','Cost/Perf Evaluation','/cosfperfeval?$filter_HiBench_Terasort_8d_2015',1,'Terasort executions filtering outliyers and failed.');"
+$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Terasort (filtered)','Cost Evaluation','/cosfperfeval?$filter_HiBench_Terasort_8d_2015',1,'Terasort executions filtering outliyers and failed.');"
 #$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Terasort test','Cost/Perf Evaluation','/cosfperfeval??benchs[]=terasort&disks[]=RL1&disks[]=RL2&disks[]=RL3&disks[]=RL4&disks[]=RL5&disks[]=RL6&disks[]=RR1&disks[]=RR2&disks[]=RR3&disks[]=RR4&disks[]=RR5&disks[]=RR6&disks[]=RS3&bench_types[]=HDI&bench_types[]=HiBench&types[]=IaaS&types[]=PaaS&filters[]=valid&filters[]=filters&allunchecked',1,'Terasort executions filtering outliyers and failed.');"
 
 #costperfclustereval
