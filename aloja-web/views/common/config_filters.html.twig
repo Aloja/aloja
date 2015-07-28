@@ -171,19 +171,19 @@
 				</div>
 			</div>
 			{% endif %}
-			{% if selected == 'Best configuration' %}
 			<div class="row">
-				<div class="col-md-6">
+		  		{% if selected == 'Best configuration' %}
+		  		<div class="col-md-6">
 					Best config by:<select class="form-control" name="ordertype">
 						<option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>
 						<option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>
 					</select>
 				</div>
+		  		{% endif %}
 				<div class="col-md-6">
 					Max cost (US$):<input type="number" step="any" class="form-control" name="money" {% if money is defined and money != null %}value="{{ money }}"{% endif %}/>
 				</div>
 			</div>
-			{% endif %}
 			<div class="row">
 				<div class="col-md-6">
 					{% if show_filter_benchs is not defined or show_filter_benchs == true %}

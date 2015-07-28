@@ -9,3 +9,5 @@ in_cache: true
 enable_debug: true
 twig_cache_path: "cache/twig"
 twig_views_path: "views/"
+#Show PHP warnings?
+show_warnings: false

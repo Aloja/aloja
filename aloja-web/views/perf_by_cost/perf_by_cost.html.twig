@@ -109,9 +109,19 @@
 //                                textShadow: '0 0 3px white, 0 0 3px white'
 //                            }
 //                        }
+                    },
+                    series: {
+                        cursor: 'pointer',
+                        point: {
+                            events: {
+                                click: function () {
+                                    var id = this.series.options.idexec;
+                                    top.location.href = "{{ path('perfcharts') }}?execs[]=" + id;
+                                }
+                            }
+                        }
                     }
                 },
-
                 series: [{{ seriesData | raw }}
                          ]
             });
