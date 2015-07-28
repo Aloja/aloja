@@ -326,7 +326,7 @@ class MLCrossvarController extends AbstractController
 					if ($entry['x'] > $maxx) $maxx = $entry['x'];
 					if ($entry['x'] < $minx) $minx = $entry['x'];
 
-					$entry['z'] = -1 * max(100,(int)$row['V3']*(rand(990,1010)/1000));
+					$entry['z'] = max(100,(int)$row['V3']*(rand(990,1010)/1000));
 					if ($entry['z'] > $maxz) $maxz = $entry['z'];
 					if ($entry['z'] < $minz) $minz = $entry['z'];
 
@@ -511,7 +511,7 @@ class MLCrossvarController extends AbstractController
 					if ($entry['x'] > $maxx) $maxx = $entry['x'];
 					if ($entry['x'] < $minx) $minx = $entry['x'];
 
-					$entry['z'] = -1 * (int)$row['V3']*(rand(990,1010)/1000);
+					$entry['z'] = (int)$row['V3']*(rand(990,1010)/1000);
 					if ($entry['z'] > $maxz) $maxz = $entry['z'];
 					if ($entry['z'] < $minz) $minz = $entry['z'];
 

@@ -93,6 +93,17 @@
     </script>
     {% endblock %}
     {% block content %}
+        <div id="intro_text">
+        This tool shows the <strong><a href="https://en.wikipedia.org/wiki/Speedup" target="_blank">speedup</a></strong>
+        (higher is better) over the average from the selected data slice (filters).  The values are normalized.
+        </br>
+        Over 1 (in light blue), it presents an improvement.
+        Below 1 (light red), is a decrease in performance.
+        </br>
+        To use this tool, first select the group criteria, and the filter (data slice).
+        </div>
+        </br></br>
+
         <div id="navigation">
             {% include 'common/group_filters.html.twig' %}
             <div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
