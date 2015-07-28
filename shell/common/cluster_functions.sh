@@ -969,13 +969,13 @@ vm_puppet_apply() {
 #$1 share location
 vm_make_fs() {
 
-  logger "Initializing the shared file system for VM $vm_name"
-
   if [ -z "$1" ] ; then
     local share_disk_path="/scratch/attached/1"
   else
     local share_disk_path="$1"
   fi
+
+  logger "INFO: Initializing the shared file system for VM $vm_name at $share_disk_path"
 
   if [ -z "$homeIsShared" ] ; then
     logger "Checking if $homePrefixAloja/$userAloja/share is correctly linked"
@@ -1021,7 +1021,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv http://aloja.bsc.es/public/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
@@ -1029,6 +1029,20 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   logger "RSynching aplic for possible updates"
   vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
+}
+
+#[$1 share location]
+vm_rsync_public() {
+
+  if [ -z "$1" ] ; then
+    local share_disk_path="/scratch/attached/1/public"
+  else
+    local share_disk_path="$1"
+  fi
+
+  logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
+
+  vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
 }
 
 #$1 filename
