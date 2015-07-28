@@ -13,7 +13,7 @@ cd aloja
 vagrant up
 xdg-open http://localhost:8080
 ```
-**Note:** Requires git, [vagrant >= v1.6](http://www.vagrantup.com), some patience to download and import the VM, and a web browser.
+**Note:** Requires git, [vagrant >= v1.6](http://www.vagrantup.com), [virtualbox >= v4.2](https://www.virtualbox.org), some patience to download and import the VM, and a web browser.
 
 ### About ALOJA
 
