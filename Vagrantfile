@@ -3,6 +3,75 @@ Vagrant.require_version ">= 1.6"
 
 VAGRANTFILE_API_VERSION = "2"
 
+# defaults for aloja-web
+vm_name = "aloja-web"
+vm_ssh_port = 22200
+
+# extract relevant values from config files
+node_config = "shell/conf/node_aloja-web-vagrant.conf"
+IO.foreach(node_config) do |line|
+
+  # skip comments and empty lines
+  next if line =~ /^(\s*)(#|$)/
+
+  # strip comments
+  line.gsub!(/\s*#.*/, '')
+
+  if line =~ /^\s*vm_name\s*=\s*(.*)/
+    vm_name = $1.to_s.strip.gsub(/^['"]|['"]$/, '')
+  elsif line =~ /^\s*vm_ssh_port\s*=\s*(.*)/
+    vm_ssh_port = $1.to_s.strip.gsub(/^['"]|['"]$/, '')
+  end
+end
+
+# env overrides
+vm_mem = 2048
+if ENV['WMEM']
+  vm_mem = ENV['WMEM']
+end
+
+vm_cpus = 4
+if ENV['WCPUS']
+  vm_cpus = ENV['WCPUS']
+end
+
+
+# defaults for cluster
+numberOfNodes = 1   # really means 2
+vmRAM = 1024
+vmCPUS = 1
+
+# extract relevant values from config files
+cluster_config = "shell/conf/cluster_vagrant-99.conf"
+IO.foreach(cluster_config) do |line|
+
+  # skip comments and empty lines
+  next if line =~ /^(\s*)(#|$)/
+
+  # strip comments
+  line.gsub!(/\s*#.*/, '')
+
+  if line =~ /^\s*numberOfNodes\s*=\s*(.*)/
+    numberOfNodes = $1.to_s.strip.gsub(/^['"]|['"]$/, '').to_i
+  elsif line =~ /^\s*vmRAM\s*=\s*(.*)/
+    vmRAM = $1.to_s.strip.gsub(/^['"]|['"]$/, '').to_i * 1024
+  end
+end
+
+# env overrides
+if ENV['CNODES']
+  numberOfNodes = ENV['CNODES'].to_i
+end
+
+if ENV['CMEM']
+  vmRAM = ENV['CMEM'].to_i
+end
+
+if ENV['CCPUS']
+  vmCPUS = ENV['CCPUS'].to_i
+end
+
+
 #Uncomment below for docker as default provider
 #avoids having to $ vagrant up --provider docker
 #ENV['VAGRANT_DEFAULT_PROVIDER'] ||= 'docker'
@@ -10,8 +79,8 @@ VAGRANTFILE_API_VERSION = "2"
 Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
   # default box (aloja-web)
-  defaultName = "aloja-web"
-  defaultSSHPort = 22200
+  defaultName = vm_name
+  defaultSSHPort = vm_ssh_port
   defaultIP = "192.168.99.2" #do not use .1 to avoid some vagrant warnings
   sshKeyPath = "../secure/keys_vagrant/id_rsa"
 
@@ -30,8 +99,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     default.vm.provider 'virtualbox' do |v|
       v.name = defaultName
 
-      v.memory = 2048 #change as needed
-      v.cpus = 4 #change as needed
+      v.memory = vm_mem   #change as needed
+      v.cpus = vm_cpus    #change as needed
     end
 
     # #for Docker (optional, but faster on Linux)
@@ -78,7 +147,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # start with vagrant up /.*/ or vagrant machine1 machine2
 
   # Number of nodes to provision (starts at 0)
-  numberOfNodes = 1 #2 nodes
+  ### numberOfNodes = 1 #2 nodes
   # IP Address Base for private network
   ipAddrPrefix = "192.168.99.1"
   # Prefix port for the different VMs
@@ -104,11 +173,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       node.vm.provider "virtualbox" do |v|
         v.name = "vagrant-99-" + num.to_s.rjust(2, '0')
-        v.memory = 1024 #change as needed
-        v.cpus = 1 #change as needed
+        v.memory = vmRAM #change as needed
+        v.cpus = vmCPUS  #change as needed
       end
     end
   end
-
-
 end

@@ -1,3 +1,4 @@
+#Travis CI Web tests file
 language: php
 php:
   - 5.5
@@ -8,15 +9,16 @@ before_install:
   - npm install -g casperjs
 before_script:
   - mysql -e "create database aloja2;" -uroot 
-  - mysql -uroot aloja2 < tests_db.sql
+  - mysql -uroot aloja2 < aloja-web/tests/tests_db.sql
+#  - shell/create-update_DB.sh
   - cd aloja-web && php -S localhost:8080 travis_index.php &
   - sleep 3
 install:
   - npm install
   - cd aloja-web && composer update && cd ..
 script:
-  - bash tests.sh
-  - bash tests_phpunit.sh
+  - bash aloja-web/tests/tests.sh
+  - bash aloja-web/tests/tests_phpunit.sh
 services:
   - mysql
 notifications:
@@ -25,4 +27,4 @@ notifications:
        - aaron.call@bsc.es
        - nicolas.poggi@bsc.es
      on_success: change
-     on_failure: always
+     on_failure: change

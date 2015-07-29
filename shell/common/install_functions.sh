@@ -1,4 +1,5 @@
 vm_install_base_packages() {
+
   if check_sudo ; then
 
     local bootstrap_file="vm_install_packages"
@@ -108,12 +109,10 @@ deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
     vm_execute "
 sudo echo -e 'Package: *
 Pin: release o=Percona Development Team
-Pin-Priority: 1001 > /etc/apt/preferences.d/00percona.pref"
+Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref"
 
     #first install version 5.5 in case of migration
     vm_execute "
-wget -O - http://www.percona.com/redir/downloads/RPM-GPG-KEY-percona | gpg --import;
-gpg --armor --export 1C4CBDCDCD2EFD2A | apt-key add -;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;
 sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.5 in case of migrations
@@ -139,7 +138,6 @@ sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.
   else
     logger "$bootstrap_file already configured"
   fi
-
 }
 
 #$1 sample data data
@@ -272,7 +270,7 @@ vm_install_webserver() {
     logger "INFO: Installing NGINX and PHP"
 
     vm_execute "
-sudo apt-get install python-software-properties software-properties-common python3-software-PROPERTIES
+sudo apt-get -y install python-software-properties software-properties-common python3-software-PROPERTIES
 sudo add-apt-repository -y ppa:ondrej/php5 #up to date PHP version
 sudo apt-get update
 sudo apt-get install --force-yes -y php5-fpm php5-cli php5-mysql php5-xdebug php5-curl nginx
@@ -308,6 +306,51 @@ sudo service php5-fpm restart
 
 }
 
+
+#install defined PHP composer vendors
+install_PHP_vendors() {
+
+  local bootstrap_file="install_PHP_vendors"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Checking if to download vendor files"
+
+    test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+    if [ "$test_action" != "$testKey" ] ; then
+      logger "INFO: downloading and copying bundled vendors folder"
+      vm_execute "
+cd /tmp;
+wget $ALOJA_PUBLIC_HTTP/files/PHP_vendors.tar.bz2;
+tar -xjf PHP_vendors.tar.bz2;
+sudo cp -r aloja-web /var/www/;
+"
+    fi
+
+    logger "INFO: Installing PHP composer vendors"
+    vm_execute "
+sudo mkdir -p /var/www/aloja-web/vendor;
+sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
+sudo bash -c 'cd /var/www/aloja-web/ && php composer.phar update';
+sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
+"
+    test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
 #$1 repo name (optional)
 vm_install_repo() {
 
@@ -329,22 +372,16 @@ sudo mkdir -p /var/www
 
 sudo rm -rf /tmp/aloja;
 mkdir -p /tmp/aloja
-sudo git clone https://github.com/Aloja/aloja.git /tmp/aloja
+git clone https://github.com/Aloja/aloja.git /tmp/aloja
 sudo cp -ru /tmp/aloja/. /var/www/
 
 cd /var/www
 sudo git checkout '$repo'
 
-sudo mkdir -p /var/www/aloja-web/vendor
-sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
-sudo bash -c 'cd /var/www/aloja-web/ && php composer.phar update'
-sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
-
 sudo cp /var/www/aloja-web/config/config.sample.yml /var/www/aloja-web/config/config.yml
 
 sudo service php5-fpm restart
 sudo service nginx restart
-
 "
     test_action="$(vm_execute " [ \"\$\(wget -q -O- http://localhost/|grep 'ALOJA')\" ] && echo '$testKey'")"
 
@@ -360,8 +397,12 @@ sudo service nginx restart
     logger "$bootstrap_file already configured"
   fi
 
+  #now install the PHP composer vendors
+  install_PHP_vendors
 }
 
+
+#install R packages (slow)
 install_R() {
 
   local bootstrap_file="install_R"
