@@ -320,7 +320,7 @@
                 "oSearch": {"bCaseInsensitive":false, "sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
-                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}"+newQuery{% endif %},
+                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}{% endif %}"{% if selected == 'Benchmark Executions' %}+newQuery{% endif %},
                 //Trick to allow ajax cache
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
@@ -329,7 +329,6 @@
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
-
                       {% endif %}
                       "success": fnCallback,
 						"error": function( e, settings, techNote, message ) {
