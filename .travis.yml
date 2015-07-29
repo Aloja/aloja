@@ -1,3 +1,4 @@
+#Travis CI Web tests file
 language: php
 php:
   - 5.5
@@ -9,6 +10,7 @@ before_install:
 before_script:
   - mysql -e "create database aloja2;" -uroot 
   - mysql -uroot aloja2 < tests_db.sql
+  - shell/create-update_DB.sh
   - cd aloja-web && php -S localhost:8080 travis_index.php &
   - sleep 3
 install:
@@ -25,4 +27,4 @@ notifications:
        - aaron.call@bsc.es
        - nicolas.poggi@bsc.es
      on_success: change
-     on_failure: always
+     on_failure: change

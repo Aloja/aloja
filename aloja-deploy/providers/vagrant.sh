@@ -191,7 +191,10 @@ ${VAGRANT_ipAddrPrefix}${vm_id}\t${vm_name_tmp}"
 }
 
 vm_final_bootstrap() {
-  logger "Finalizing VM $vm_name bootstrap"
+  logger "INFO: Finalizing VM $vm_name bootstrap"
+
+  logger "INFO: Checking if to install/update aloja-web/vendor dir"
+  install_PHP_vendors
 
   #currently is run everytime it is executed
   vm_update_hosts_file

@@ -1061,7 +1061,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv http://aloja.bsc.es/public/aplic.tar.bz2"
+    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv $ALOJA_PUBLIC_HTTP/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"

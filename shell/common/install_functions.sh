@@ -306,6 +306,51 @@ sudo service php5-fpm restart
 
 }
 
+
+#install defined PHP composer vendors
+install_PHP_vendors() {
+
+  local bootstrap_file="install_PHP_vendors"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Checking if to download vendor files"
+
+    test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+    if [ "$test_action" != "$testKey" ] ; then
+      logger "INFO: downloading and copying bundled vendors folder"
+      vm_execute "
+cd /tmp;
+wget $ALOJA_PUBLIC_HTTP/files/PHP_vendors.tar.bz2;
+tar -xjf PHP_vendors.tar.bz2;
+sudo cp -r aloja-web /var/www/;
+"
+    fi
+
+    logger "INFO: Installing PHP composer vendors"
+    vm_execute "
+sudo mkdir -p /var/www/aloja-web/vendor;
+sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
+sudo bash -c 'cd /var/www/aloja-web/ && php composer.phar update';
+sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
+"
+    test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
 #$1 repo name (optional)
 vm_install_repo() {
 
@@ -333,16 +378,10 @@ sudo cp -ru /tmp/aloja/. /var/www/
 cd /var/www
 sudo git checkout '$repo'
 
-sudo mkdir -p /var/www/aloja-web/vendor
-sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
-sudo bash -c 'cd /var/www/aloja-web/ && php composer.phar update'
-sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor
-
 sudo cp /var/www/aloja-web/config/config.sample.yml /var/www/aloja-web/config/config.yml
 
 sudo service php5-fpm restart
 sudo service nginx restart
-
 "
     test_action="$(vm_execute " [ \"\$\(wget -q -O- http://localhost/|grep 'ALOJA')\" ] && echo '$testKey'")"
 
@@ -357,8 +396,13 @@ sudo service nginx restart
   else
     logger "$bootstrap_file already configured"
   fi
+
+  #now install the PHP composer vendors
+  install_PHP_vendors
 }
 
+
+#install R packages (slow)
 install_R() {
 
   local bootstrap_file="install_R"
