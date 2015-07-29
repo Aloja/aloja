@@ -313,7 +313,7 @@ for node in $node_names ; do
 
     if [ ! "$(ssh "$node" "[ -d \"$BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
       #logger "Downloading initial aplic dir from dropbox"
-      #$DSH "wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2?dl=1 -O $BASE_DIR/aplic.tar.bz2"
+      #$DSH "wget -nv http://aloja.bsc.es/public/aplic.tar.bz2 -O $BASE_DIR/aplic.tar.bz2"
 
       $DSH "rsync -aur --force $BASE_DIR/aplic.tar.bz2 /tmp/"
 
