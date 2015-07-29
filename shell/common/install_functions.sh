@@ -325,7 +325,7 @@ install_PHP_vendors() {
 cd /tmp;
 wget $ALOJA_PUBLIC_HTTP/files/PHP_vendors.tar.bz2;
 tar -xjf PHP_vendors.tar.bz2;
-cp -r aloja-web /var/www/;
+sudo cp -r aloja-web /var/www/;
 "
     fi
 
