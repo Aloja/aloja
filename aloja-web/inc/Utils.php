@@ -94,8 +94,6 @@ class Utils
     			$filters = $_GET['filters'];
     			if(in_array("valid",$filters))
     				$where_configs .= ' AND valid = 1 ';
-    			if(in_array("filters",$filters))
-    				$where_configs .= ' AND filter = 0 ';
     			if(in_array("prepares",$filters))
     				$includePrepares = true;
     			if(in_array("perfdetails",$filters))
@@ -107,6 +105,9 @@ class Utils
     				else
     					$where_configs .= " AND outlier IN (0,1) ";
     			}
+
+                $where_configs .= (in_array("filters",$filters)) ? ' AND filter = 0 ' : '';
+
     			
     		} else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
     			$_GET['filters'][] = 'valid';
@@ -149,8 +150,8 @@ class Utils
         
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
-         	$items = Utils::delete_none($items);            
-        } else if(!isset($_GET['allunchecked']) && $setDefaultValues) {
+         	$items = Utils::delete_none($items);
+        } else if($setDefaultValues) {
             if ($item_name == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');
             } elseif ($item_name == 'nets') {
@@ -172,6 +173,7 @@ class Utils
             ' AND '.
             $single_item_name. //remove trailing 's'
             ' IN ("'.join('","', $items).'")';
+
         }
 
         return $items;

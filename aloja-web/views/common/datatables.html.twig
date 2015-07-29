@@ -290,16 +290,17 @@
 
 
             {% if selected == 'Benchmark Executions' %}
-	            var queryDict = {}
-			    var newQuery = {}
-		            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]})
+	          /*  var queryDict = {};
+			    var newQuery = {};
+		            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
 			   
 			    for(key in queryDict) {
 					newKey = key.replace("%5B","[").replace("%5D","]");
 					newQuery[newKey] = queryDict[key];
 			    }
 			    newQuery['type'] = '{{ type }}';
-		 	    queryDict = {}	
+		 	    queryDict = {};*/
+				var newQuery = location.search;
 
 		 	    var clustersInfo = {{ clustersInfo | raw }};
 		    {% endif %}
@@ -319,7 +320,7 @@
                 "oSearch": {"bCaseInsensitive":false, "sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
-                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}{% endif %}",
+                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}"+newQuery{% endif %},
                 //Trick to allow ajax cache
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
@@ -328,8 +329,7 @@
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
                       "data": {'execs': buildExecParams, 'type': '{{ type }}'},
-                      {% elseif selected == 'Benchmark Executions' %}
-                      "data": newQuery,
+
                       {% endif %}
                       "success": fnCallback,
 						"error": function( e, settings, techNote, message ) {
