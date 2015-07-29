@@ -23,6 +23,7 @@ settings_secured.yaml
 !secure/keys_vagrant/*
 !secure/*.sample.conf
 !secure/vagrant_settings.conf
+!secure/provider_defaults.conf
 !secure/README.md
 
 #test PHP file to check the configuration (insecure in production)
