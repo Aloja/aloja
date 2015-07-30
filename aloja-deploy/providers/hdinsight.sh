@@ -4,9 +4,9 @@
 
 #$1 storage account name $2 redundancy type (LRS/ZRS/GRS/RAGRS/PLRS)
 vm_create_storage_account() {
-	if [ -z "$(azure storage account list "$1" | grep "$1")" ]; then
+	if [ -z "$(azure storage account list "$1" | grep -w "$1")" ]; then
 		logger "Creating storage account $1"
-		azure storage account create "$1" -s "$subscriptionID" -l "South Central US" --type "$2"	
+		azure storage account create "$1" -s "$subscriptionID" -l "$3" --type "$2"	
 	else
 		logger "WARNING: Storage account $1 already exists, skipping.."
 	fi
@@ -15,7 +15,7 @@ vm_create_storage_account() {
 
 #$1 storage account name $2 container name $3 storage account key
 vm_create_storage_container() {
-	if [ -z "$(azure storage container list -a "$1" -k "$3" | grep "$2")" ]; then
+	if [ -z "$(azure storage container list -a "$1" -k "$3" | grep -w "$2")" ]; then
 		logger "Creating container $2 on storage $1"
 		azure storage container create -a "$1" -k "$3" "$2"
 	else
@@ -25,7 +25,7 @@ vm_create_storage_container() {
 
 #$1 cluster name
 hdi_cluster_check_create() {
-	if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+	if [ -z "$(azure hdinsight cluster list | grep -w "$1")" ] ; then
     	echo 0
 	 else
     	logger "WARNING: cluster name already exists!"
@@ -35,7 +35,7 @@ hdi_cluster_check_create() {
 
 #$1 cluster name
 hdi_cluster_check_delete() {
-	if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+	if [ ! -z "$(azure hdinsight cluster list | grep -w "$1")" ] ; then
     	return 0
 	 else
     	logger "ERROR: cluster name doesn't exists!"
@@ -72,13 +72,16 @@ create_hdi_cluster() {
  if [ -z "$storageAccount" ]; then
 	storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
+ if [ -z "$location" ]; then
+   	location="Central US"
+ fi
 
- vm_create_storage_account "$storageAccount" "LRS"
+ vm_create_storage_account "$storageAccount" "LRS" "$location"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
      azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
 	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-	--location "South Central US" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+	--location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
 	--sshPassword "$passwordAloja" -s "$subscriptionID"
 
   wait_hdi_cluster $1
