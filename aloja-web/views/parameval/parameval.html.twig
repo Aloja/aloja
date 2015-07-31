@@ -59,11 +59,10 @@
         </br></br>
 
         <div id="navigation">
-         <form class="form-inline">
-        	<div style="width: 50%; margin-left: 10%;" class="control-group">
+        	<div style="width: 50%; margin-left: 10%;" class="form-inline control-group">
         	    <div style="width: 40%; margin: 0 auto; text-align: center;" class="controls">
         	      <label class="control-label" style="display: block;">Parameter to evaluate:</label>
-        	      <select class="form-control" name="parameval">
+        	      <select form="configFilters" class="form-control" name="parameval">
 						<option value="maps" {% if paramEval == 'cost' %}selected="selected"{% endif %}>Maps</option>
 						<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
 						<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
@@ -80,7 +79,7 @@
 						<option value="hadoop_version" {% if paramEval == 'hadoop_version' %}selected="selected"{% endif %}> Hadoop version</option>
 						<option value="type" {% if paramEval == 'type' %}selected="selected"{% endif %}> Cluster type</option>
 					</select>&nbsp;&nbsp;
-				<button type="submit" class="btn btn-info">Update</button>
+				<button form="configFilters" type="submit" class="btn btn-info">Update</button>
 			   </div>
 			</div>
 			<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
