@@ -332,10 +332,10 @@ class DefaultController extends AbstractController
 			);
 		} else
 			$show_in_result = self::$show_in_result;
-		
+
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$where_configs);
         echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
-            array('selected' => 'Benchmark Executions',
+            array('selected' => $this->container->getScreenName(),
                 'theaders' => $show_in_result,
                 'discreteOptions' => $discreteOptions,
                 'datefrom' => $datefrom,
@@ -1402,60 +1402,24 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
-        $preset = null;
-		if(sizeof($_GET) <= 1)
-			$preset = Utils::initDefaultPreset($db, 'Best configuration');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-		
-        $rows_config = '';
+        $filtersData = Utils::getFilters($db,$this->container->getScreenName());
+
         $bestexec = '';
         $cluster = '';
-        $comp = '';
-        $execsDetails = array ();
         try {
-            $where_configs = '';
+            $whereClause = $filtersData['filtersWhereClause'];
 
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
-            $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs = Utils::read_params ( 'benchs', $where_configs, false );
-            $nets = Utils::read_params ( 'nets', $where_configs, false );
-            $disks = Utils::read_params ( 'disks', $where_configs, false );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false );
-            $comps = Utils::read_params ( 'comps', $where_configs, false );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false );
-            $mapss = Utils::read_params ( 'mapss', $where_configs, false );
-            $replications = Utils::read_params ( 'replications', $where_configs, false );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs, false );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false );
-            $money = Utils::read_params ( 'money', $where_configs, false );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-            $types = Utils::read_params ( 'types', $where_configs, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, false );
-            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-			$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-			$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
-
-            if (! $benchs)
-                $where_configs .= 'AND bench IN (\'terasort\')';
             $order_type = Utils::get_GET_string ( 'ordertype' );
             if (! $order_type)
                 $order_type = 'exe_time';
 
-            $filter_execs = DBUtils::getFilterExecs();
-            $order_conf = 'LENGTH(conf), conf';
+            $filterExecs = DBUtils::getFilterExecs();
 
             // get the result rows
             $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
     		from execs e
     		join clusters c USING (id_cluster)
-    		WHERE 1 $filter_execs $where_configs
+    		WHERE 1 $filterExecs $whereClause
     		GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
     		ORDER BY $order_type ASC;";
 
@@ -1482,9 +1446,6 @@ class DefaultController extends AbstractController
 	            	$bestexec = $rows[$minCostIdx];
             	}
 
-                $conf = $bestexec['exec'];
-                $parameters = explode ( '_', $conf );
-                //$cluster =  explode ( '/', $parameters [count ( $parameters ) - 1] )[0]; //(explode ( '/', $parameters [count ( $parameters ) - 1] )[0] == 'az') ? 'Azure' : 'Local';
                 $cluster=$bestexec['name'];
                 Utils::makeExecInfoBeauty($bestexec);
             }
@@ -1492,49 +1453,19 @@ class DefaultController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        if (empty ( $benchs ))
-            $benchs = array (
-                'terasort'
-            );
-		
-        echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', array (
+        $screenParameters = array_merge(array (
             'selected' => 'Best configuration',
             'title' => 'Best Run Configuration',
             'bestexec' => $bestexec,
             'cluster' => $cluster,
             'order_type' => $order_type,
-            'datefrom' => $datefrom,
-            'dateto' => $dateto,
-            'benchs' => $benchs,
-            'nets' => $nets,
-            'disks' => $disks,
-            'blk_sizes' => $blk_sizes,
-            'comps' => $comps,
-            'id_clusters' => $id_clusters,
-            'mapss' => $mapss,
-            'replications' => $replications,
-            'iosfs' => $iosfs,
-            'iofilebufs' => $iofilebufs,
-            'money' => $money,
-            'datanodess' => $datanodes,
-            'bench_types' => $benchtype,
-            'vm_sizes' => $vm_sizes,
-            'vm_coress' => $vm_coress,
-            'vm_RAMs' => $vm_RAMs,
-            'vm_OS' => $vm_OS,
-            'hadoop_versions' => $hadoop_versions,
-            'types' => $types,
-            'providers' => $provider,
-            'filters' => $filters,
-            'allunchecked' => $allunchecked,
-            'select_multiple_benchs' => false,
-        	'minexetime' => $minexetime,
-        	'maxexetime' => $maxexetime,
-        	'preset' => $preset,
-            'selPreset' => $selPreset,
             'options' => Utils::getFilterOptions($db)
-        ) );
+        ), $filtersData['selectedFilters']);
+
+
+        echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', $screenParameters );
     }
+
     public function paramEvaluationAction() {
         $db = $this->container->getDBUtils ();
         $preset = null;

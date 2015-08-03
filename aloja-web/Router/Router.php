@@ -38,6 +38,25 @@ class Router
     }
 
     /**
+     * @param string $uri If not URI specified uses the current URI
+     * @return string The screen's name matching the uri
+     * @throws \Exception
+     */
+    public function getRouteScreenName($uri = null) {
+        $givenRoute = ($uri == null ) ? $this->request->getPathInfo() : $uri;
+        $result = "";
+        foreach ($this->routesCollection as $route) {
+            if (!$result && $route['pattern'] == $givenRoute) {
+                $result = $route['screenName'];
+            }
+        }
+        if(!$result)
+            throw new \Exception('Route not found');
+        else
+            return $result;
+    }
+
+    /**
 	 * @throws \Exception
 	 * @return array:
 	 */

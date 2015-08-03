@@ -2,6 +2,8 @@
 
 namespace alojaweb\inc;
 
+use alojaweb\Container;
+
 class Utils
 {
     public function __construct()
@@ -60,7 +62,7 @@ class Utils
         return $selectedGroups;
     }
 
-    public static function read_params($item_name, &$where_configs, $setDefaultValues = true, $table_name = null)
+    public static function read_params($item_name, &$where_configs, $setDefaultValues = true)
     {
     	if($item_name == 'money' && isset($_GET['money'])) {
     		$money = $_GET['money'];
@@ -165,15 +167,10 @@ class Utils
         	$items = array();
 
         if ($items) {
-            if ($table_name !== null) {
-                $single_item_name = $table_name.'.`'.$single_item_name.'`';
-            }
-
             $where_configs .=
             ' AND '.
             $single_item_name. //remove trailing 's'
             ' IN ("'.join('","', $items).'")';
-
         }
 
         return $items;
@@ -669,5 +666,74 @@ class Utils
     	}
     	 
     	return $return;
+    }
+
+    public static function getFilters($dbConnection, $screenName) {
+        $preset = null;
+        if(sizeof($_GET) <= 1)
+            $preset = Utils::initDefaultPreset($dbConnection, $screenName);
+        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+        $filtersWhereClause = '';
+
+        $money = Utils::read_params('money',$filtersWhereClause, false);
+        $benchs = Utils::read_params('benchs',$filtersWhereClause, true);
+        $benchtype = Utils::read_params ( 'bench_types', $filtersWhereClause );
+        $nets = Utils::read_params('nets',$filtersWhereClause, false);
+        $disks = Utils::read_params('disks',$filtersWhereClause, false);
+        $blk_sizes = Utils::read_params('blk_sizes',$filtersWhereClause, false);
+        $comps = Utils::read_params('comps',$filtersWhereClause, false);
+        $id_clusters = Utils::read_params('id_clusters',$filtersWhereClause, false);
+        $mapss = Utils::read_params('mapss',$filtersWhereClause, false);
+        $replications = Utils::read_params('replications',$filtersWhereClause, false);
+        $iosfs = Utils::read_params('iosfs',$filtersWhereClause, false);
+        $iofilebufs = Utils::read_params('iofilebufs',$filtersWhereClause, false);
+        $provider = Utils::read_params ( 'providers', $filtersWhereClause, false );
+        $vm_OS = Utils::read_params ( 'vm_OSs', $filtersWhereClause, false );
+        $datanodes = Utils::read_params ( 'datanodess', $filtersWhereClause, false );
+        $vm_sizes = Utils::read_params ( 'vm_sizes', $filtersWhereClause, false );
+        $vm_coress = Utils::read_params ( 'vm_coress', $filtersWhereClause, false );
+        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $filtersWhereClause, false );
+        $types = Utils::read_params ( 'types', $filtersWhereClause, false );
+        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $filtersWhereClause, false );
+        $filters = Utils::read_params ( 'filters', $filtersWhereClause, false );
+        $minexetime = Utils::read_params ( 'minexetime', $filtersWhereClause, false);
+        $maxexetime = Utils::read_params ( 'maxexetime', $filtersWhereClause, false);
+        $datefrom = Utils::read_params('datefrom',$filtersWhereClause, false);
+        $dateto	= Utils::read_params('dateto',$filtersWhereClause, false);
+        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+
+        $selFilters = array(
+            'benchs' => $benchs,
+            'nets' => $nets,
+            'disks' => $disks,
+            'blk_sizes' => $blk_sizes,
+            'comps' => $comps,
+            'id_clusters' => $id_clusters,
+            'mapss' => $mapss,
+            'replications' => $replications,
+            'iosfs' => $iosfs,
+            'iofilebufs' => $iofilebufs,
+            'money' => $money,
+            'datanodess' => $datanodes,
+            'bench_types' => $benchtype,
+            'vm_sizes' => $vm_sizes,
+            'vm_coress' => $vm_coress,
+            'vm_RAMs' => $vm_RAMs,
+            'vm_OS' => $vm_OS,
+            'hadoop_versions' => $hadoop_versions,
+            'types' => $types,
+            'providers' => $provider,
+            'filters' => $filters,
+            'minexetime' => $minexetime,
+            'maxexetime' => $maxexetime,
+            'datefrom' => $datefrom,
+            'dateto' => $dateto,
+            'allunchecked' => $allunchecked,
+            'preset' => $preset,
+            'selPreset' => $selPreset);
+
+
+        return array('filtersWhereClause' => $filtersWhereClause, 'selectedFilters' => $selFilters);
     }
 }

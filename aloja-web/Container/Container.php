@@ -55,9 +55,10 @@ class Container
             $container['config'] = Yaml::parse(file_get_contents($config_file));
             $container['env'] = 'prod';
         }
-	if(!$container['config']['show_warnings']) {
-	   error_reporting(E_ERROR | E_PARSE);
-	}
+
+        if(!$container['config']['show_warnings']) {
+           error_reporting(E_ERROR | E_PARSE);
+        }
 
         $container['log'] = function ($c) {
             $logLevel = ($c['env'] == 'dev') ? Logger::DEBUG : Logger::WARNING;
@@ -161,5 +162,17 @@ class Container
         echo $this->container['twig']->render('server_error.html.twig', array(
         	'message' => $message
         ));
+    }
+
+    /**
+     * @return string Current screen name
+     */
+    public function getScreenName() {
+        if(isset($this->container['routeScreenName']))
+            return $this->container['routeScreenName'];
+        else {
+            $this->container['routeScreenName'] = $this->container['router']->getRouteScreenName();
+            return $this->container['routeScreenName'];
+        }
     }
 }
