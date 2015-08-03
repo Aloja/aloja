@@ -56,7 +56,7 @@ class DefaultController extends AbstractController
             $where_configs = '';
             $concat_config = "";
 
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $datefrom = Utils::read_params('datefrom',$where_configs);
             $dateto	= Utils::read_params('dateto',$where_configs);
             $benchs         = Utils::read_params('benchs',$where_configs);
             $nets           = Utils::read_params('nets',$where_configs);
@@ -409,6 +409,7 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs);
             $iosfs = Utils::read_params('iosfs', $where_configs);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $money = Utils::read_params ( 'money', $where_configs, false );
             $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
             $benchtype = Utils::read_params ( 'bench_types', $where_configs );
             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -489,7 +490,7 @@ class DefaultController extends AbstractController
 
             $seriesData .= "{
             name: '" . $exec['exec'] . "',
-                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]},";
+                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]], idexec: ${exec['id_exec']}},";
         }
 
         $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
@@ -532,7 +533,7 @@ class DefaultController extends AbstractController
         	'preset' => $preset,
             'selPreset' => $selPreset,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-//        	'money' => $money,
+        	'money' => $money,
             'options' => Utils::getFilterOptions($dbUtils),
             'clusters' => $clusters,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
@@ -2023,6 +2024,7 @@ class DefaultController extends AbstractController
         $replications = Utils::read_params('replications', $where_configs);
         $iosfs = Utils::read_params('iosfs', $where_configs);
         $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+        $money = Utils::read_params ( 'money', $where_configs, false );
         $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
         $benchtype = Utils::read_params ( 'bench_types', $where_configs );
         $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -2123,6 +2125,7 @@ class DefaultController extends AbstractController
     			'replications' => $replications,
     			'iosfs' => $iosfs,
     			'iofilebufs' => $iofilebufs,
+                'money' => $money,
     			'datanodess' => $datanodes,
     			'bench_types' => $benchtype,
     			'vm_sizes' => $vm_sizes,
@@ -2181,6 +2184,7 @@ class DefaultController extends AbstractController
     		$replications = Utils::read_params('replications', $where_configs);
     		$iosfs = Utils::read_params('iosfs', $where_configs);
     		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $money = Utils::read_params ( 'money', $where_configs, false );
     		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
     		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
     		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -2315,7 +2319,7 @@ class DefaultController extends AbstractController
     			'preset' => $preset,
                 'selPreset' => $selPreset,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-    			//        	'money' => $money,
+    			'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
@@ -2358,6 +2362,7 @@ class DefaultController extends AbstractController
     		$replications = Utils::read_params('replications', $where_configs);
     		$iosfs = Utils::read_params('iosfs', $where_configs);
     		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $money = Utils::read_params ( 'money', $where_configs, false );
     		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
     		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
     		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -2527,7 +2532,7 @@ class DefaultController extends AbstractController
     			'minexetime' => $minexetime,
     			'maxexetime' => $maxexetime,
     			'bestExecs' => $bestExecs,
-    			//        	'money' => $money,
+    			'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
     			'preset' => $preset,

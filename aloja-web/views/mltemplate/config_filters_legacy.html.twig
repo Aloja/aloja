@@ -5,12 +5,10 @@
   {% endif %}
 {% endfor %}
 {% if show  %}
-<form id="configFilters" name="configFilters" method="GET" role="form">
-
 <div class="row" style="margin-bottom: .5em;">
 	<div class="col-md-8">
-	   Predefined views:<br />
-		<select form="configFilters" class="form-control" name="presets" style="width: 100%;">
+	   Predefined views:</br>
+		<select form="configFilters" class="form-control" class="control-form" name="presets" style="width: 100%;">
 		 <option value="none" url="" title="None" {% if preset is null or preset == "" %}selected{% endif %}>None</option>
 		{% for selopt in options['presets'] %}
 		 {% if selopt['selected_tool'] == selected %}
@@ -21,13 +19,14 @@
 	</div>
 	<div class="col-md-4">
 		<br />
-		<button style="width: 100%;" type="submit" value="Apply" class="btn btn-success">Apply</button>
+		<button form="configFilters" style="width: 100%;" type="submit" value="Apply" class="btn btn-success">Apply</button>
 	</div>
 </div>
 {% endif %}
 <div class="row panel panel-default" style="width: 100%; margin: 0 auto; margin-bottom: 1em;">
 	<div class="panel-heading"><h3 class="panel-title" style="font-size: 1.5em; text-align: center;">Filters</h3></div>
 	<div class="panel-body col-md-10 col-md-offset-1">
+		<form id="configFilters" name="configFilters" method="GET" role="form">
 		<div class="row">
 				<div class="col-md-6">
 				 	<button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
@@ -172,19 +171,19 @@
 				</div>
 			</div>
 			{% endif %}
+			{% if selected == 'Best configuration' %}
 			<div class="row">
-		  		{% if selected == 'Best configuration' %}
-		  		<div class="col-md-6">
+				<div class="col-md-6">
 					Best config by:<select class="form-control" name="ordertype">
 						<option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>
 						<option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>
 					</select>
 				</div>
-		  		{% endif %}
 				<div class="col-md-6">
 					Max cost (US$):<input type="number" step="any" class="form-control" name="money" {% if money is defined and money != null %}value="{{ money }}"{% endif %}/>
 				</div>
 			</div>
+			{% endif %}
 			<div class="row">
 				<div class="col-md-6">
 					{% if show_filter_benchs is not defined or show_filter_benchs == true %}
@@ -199,7 +198,7 @@
 							  </div>
 					      </div>
 						{% else %}
-						Benchmarks:<br />
+						Benchmarks:</br>
 						<select class="form-control" class="control-form" name="benchs[]">
 							{% for selopt in options['benchs'] %}
 							  <option value="{{ selopt['bench'] }}" {% if selopt['bench'] in benchs %}SELECTED{% endif %}>{{ selopt['bench'] }}</option>
@@ -260,7 +259,7 @@
 			<div class="row">
 				<div class="col-md-6">
 					{% if selected == 'mlnewconfigs' %}
-					Cluster datanodes: <br /> <select class="form-control" name="datanodess[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+					Cluster datanodes: </br> <select class="form-control" name="datanodess[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
 						{% for selopt in options['datanodes'] %}
 					    <option value="{{ selopt['datanodes'] }}" {% if selopt['datanodes'] in datanodess %}SELECTED{% endif %}>{{ selopt['datanodes'] }}</option>
 					   {% endfor %}
@@ -279,7 +278,7 @@
 				</div>
 				<div class="col-md-6">
 					{% if selected == 'mlnewconfigs' %}
-					Benchmark type: <br /> <select class="form-control" name="bench_types[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+					Benchmark type: </br> <select class="form-control" name="bench_types[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
 						{% for selopt in options['benchtype'] %}
 					    <option value="{{ selopt['bench_type'] }}" {% if selopt['bench_type'] in bench_types %}SELECTED{% endif %}>{{ selopt['bench_type'] }}</option>
 					   {% endfor %}
@@ -300,7 +299,7 @@
 			<div class="row">
 				<div class="col-md-6">
 					{% if selected == 'mlnewconfigs' %}
-					VM size: <br /> <select class="form-control" name="vm_sizes[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+					VM size: </br> <select class="form-control" name="vm_sizes[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
 						{% for selopt in options['vm_size'] %}
 						<option value="{{ selopt['vm_size'] }}" {% if selopt['vm_size'] in vm_sizes %}SELECTED{% endif %}>{{ selopt['vm_size'] }}</option>
 						{% endfor %}
@@ -319,7 +318,7 @@
 				</div>
 				<div class="col-md-6">
 					{% if selected == 'mlnewconfigs' %}
-					VM #cores: <br /> <select class="form-control"	name="vm_coress[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+					VM #cores: </br> <select class="form-control"	name="vm_coress[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
 						{% for selopt in options['vm_cores'] %}
 						<option value="{{ selopt['vm_cores'] }}" {% if selopt['vm_cores'] in vm_coress %}SELECTED{% endif %}>{{ selopt['vm_cores'] }}</option>
 						{% endfor %}
@@ -340,7 +339,7 @@
 			<div class="row">
 				<div class="col-md-6">
 					{% if selected == 'mlnewconfigs' %}
-					VM RAM: <br /> <select class="form-control" name="vm_RAMs[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+					VM RAM: </br> <select class="form-control" name="vm_RAMs[]" {% if selected != 'mlnewconfigs' %} multiple {% endif %}>
 						{% for selopt in options['vm_ram'] %}
 						<option value="{{ selopt['vm_RAM'] }}" {% if selopt['vm_RAM'] in vm_RAMs %}SELECTED{% endif %}>{{ selopt['vm_RAM'] | number_format(0,',','.') }} GB</option>
 						{% endfor %}
@@ -359,7 +358,7 @@
 				</div>
 				<div class="col-md-6">
 					{% if selected == 'mlnewconfigs' %}
-					Cluster type: <br /> <select class="form-control" name="types[]"	{% if selected != 'mlnewconfigs' %} multiple {% endif %}>
+					Cluster type: </br> <select class="form-control" name="types[]"	{% if selected != 'mlnewconfigs' %} multiple {% endif %}>
 						{% for selopt in options['type'] %}
 						<option value="{{ selopt['type'] }}" {% if selopt['type'] in types %}SELECTED{% endif %}>{{ selopt['type'] }}</option>
 						{% endfor %}
@@ -535,7 +534,7 @@
 				</select>
 				{% endif %}
 				{% if selected in ['mlprediction','mlminconfigs','mlnewconfigs','mlcrossvar'] %}
-				Learning method:<br /> <select class="form-control" name="learn" >
+				Learning method:</br> <select class="form-control" name="learn" >
 					<option value="regtree" {% if 'regtree' in learn %} SELECTED {% endif %}>RegTree</option>
 					<option value="nneighbours" {% if 'nneighbours' in learn %} SELECTED {% endif %}>k-NN</option>
 					<option value="nnet" {% if 'nnet' in learn %} SELECTED {% endif %}>NNets</option>
@@ -566,7 +565,7 @@
 				<br/><table><tr><td><input type="checkbox" name="unseen" value="1" {% if unseen %}checked{% endif %}></td><td>&nbsp;</td><td>Predict with unseen atributes &#9888;</td></tr></table><br>
 				{% endif %}
 				{% if selected == 'mloutliers' %}
-				Sigmas:<br /> <select class="form-control" name="sigma" >
+				Sigmas:</br> <select class="form-control" name="sigma" >
 					<option value="1" {% if sigma == '1' %} SELECTED {% endif %}>1</option>
 					<option value="2" {% if sigma == '2' %} SELECTED {% endif %}>2</option>
 					<option value="3" {% if sigma == '3' %} SELECTED {% endif %}>3</option>
@@ -622,4 +621,3 @@
   </div>
 </div>
 </form>
-

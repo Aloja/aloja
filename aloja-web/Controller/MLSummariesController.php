@@ -33,6 +33,8 @@ class MLSummariesController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+
 			$separate_feat = 'joined';
 			if (array_key_exists('feature',$_GET)) $separate_feat = $_GET['feature'];
 
@@ -61,7 +63,7 @@ class MLSummariesController extends AbstractController
 				$names = array_values($header_names);
 
 				// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
