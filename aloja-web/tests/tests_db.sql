@@ -991,7 +991,7 @@ CREATE TABLE `clusters` (
 
 LOCK TABLES `clusters` WRITE;
 /*!40000 ALTER TABLE `clusters` DISABLE KEYS */;
-INSERT INTO `clusters` VALUES (1,'Local 1',12.000,'Colocated','http://hadoop.bsc.es/?page_id=51',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'Azure Linux',7.000,'IaaS Cloud','http://www.windowsazure.com/en-us/pricing/calculator/',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `clusters` VALUES (1,'Local 1',12.000,'Colocated','http://aloja.bsc.es/?page_id=51',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'Azure Linux',7.000,'IaaS Cloud','http://www.windowsazure.com/en-us/pricing/calculator/',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `clusters` ENABLE KEYS */;
 UNLOCK TABLES;
 
