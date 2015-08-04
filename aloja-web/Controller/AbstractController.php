@@ -37,13 +37,13 @@ class AbstractController
         $this->container = $container;
     }
 
-    public function render($screen, $parameters) {
+    public function render($templatePath, $parameters) {
         $genericParameters = array('selected' => $this->container->getScreenName());
         if($this->filters) {
             $genericParameters = array_merge($genericParameters, $this->filters->getSelectedFilters());
         }
 
-        echo $this->container->getTwig()->render($screen,array_merge(
+        echo $this->container->getTwig()->render($templatePath,array_merge(
                 $genericParameters,
                 $parameters)
         );
