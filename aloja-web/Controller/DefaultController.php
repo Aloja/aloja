@@ -1402,12 +1402,12 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
-        $filtersData = Utils::getFilters($db,$this->container->getScreenName());
+        $this->buildFilters($db);
 
         $bestexec = '';
         $cluster = '';
         try {
-            $whereClause = $filtersData['filtersWhereClause'];
+            $whereClause = $this->filters->getWhereClause();
 
             $order_type = Utils::get_GET_string ( 'ordertype' );
             if (! $order_type)
@@ -1454,15 +1454,14 @@ class DefaultController extends AbstractController
         }
 
         $screenParameters = array_merge(array (
-            'selected' => 'Best configuration',
             'title' => 'Best Run Configuration',
             'bestexec' => $bestexec,
             'cluster' => $cluster,
             'order_type' => $order_type
-        ), $filtersData['selectedFilters']);
+        ));
 
 
-        echo $this->container->getTwig ()->render ( 'bestconfig/bestconfig.html.twig', $screenParameters );
+        return $this->render ( 'bestconfig/bestconfig.html.twig', $screenParameters );
     }
 
     public function paramEvaluationAction() {

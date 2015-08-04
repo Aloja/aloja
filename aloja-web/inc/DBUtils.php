@@ -88,15 +88,14 @@ class DBUtils
         return $rows;
     }
 
-    public static function getFilterExecs()
+    public static function getFilterExecs($execsAlias = "e")
     {
         return " AND 1=1" ;
 
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
             return " " ;
         } else {
-            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
-            //return " AND c.provider != 'rackspace' ";
+            return " AND $execsAlias.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
         }
 
 //         return "

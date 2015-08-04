@@ -73,7 +73,7 @@ create_hdi_cluster() {
 	storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
  if [ -z "$location" ]; then
-   	location="Central US"
+   	location="South Central US"
  fi
 
  vm_create_storage_account "$storageAccount" "LRS" "$location"

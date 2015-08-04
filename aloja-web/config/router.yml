@@ -76,7 +76,7 @@ histogramtasksdata:
 bestconfig:
     pattern: "/bestconfig"
     controller: "alojaweb\\Controller\\DefaultController::bestConfigAction"
-    screenName: "Best Configuration"
+    screenName: "Best configuration"
     
 bestconfigdata:
     pattern: "/bestconfigdata"
