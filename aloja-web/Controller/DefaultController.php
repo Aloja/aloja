@@ -1438,7 +1438,7 @@ class DefaultController extends AbstractController
             	if($order_type == 'cost') {
 	            	foreach($rows as $key => &$exec) {
 	            		$cost = Utils::getExecutionCost($exec,$exec['cost_hour'],$exec['cost_remote'],$exec['cost_SSD'],$exec['cost_IB']);
-	            		if($cost < $minCost || $minCost = -1) {
+                        if(($cost < $minCost) || $minCost == -1) {
 	            			$minCost = $cost;
 	            			$minCostIdx = $key;
 	            		}
@@ -1458,8 +1458,7 @@ class DefaultController extends AbstractController
             'title' => 'Best Run Configuration',
             'bestexec' => $bestexec,
             'cluster' => $cluster,
-            'order_type' => $order_type,
-            'options' => Utils::getFilterOptions($db)
+            'order_type' => $order_type
         ), $filtersData['selectedFilters']);
 
 

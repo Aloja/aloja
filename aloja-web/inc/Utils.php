@@ -147,9 +147,7 @@ class Utils
     		} else
     			return "";
     	}
-    	
-        $single_item_name = substr($item_name, 0, -1);
-        
+
         if (isset($_GET[$item_name])) {
             $items = $_GET[$item_name];
          	$items = Utils::delete_none($items);
@@ -167,9 +165,11 @@ class Utils
         	$items = array();
 
         if ($items) {
+            $single_item_name = substr($item_name, 0, -1);  //remove trailing 's'
+
             $where_configs .=
             ' AND '.
-            $single_item_name. //remove trailing 's'
+            $single_item_name.
             ' IN ("'.join('","', $items).'")';
         }
 
@@ -731,7 +731,8 @@ class Utils
             'dateto' => $dateto,
             'allunchecked' => $allunchecked,
             'preset' => $preset,
-            'selPreset' => $selPreset);
+            'selPreset' => $selPreset,
+            'options' => Utils::getFilterOptions($dbConnection));
 
 
         return array('filtersWhereClause' => $filtersWhereClause, 'selectedFilters' => $selFilters);
