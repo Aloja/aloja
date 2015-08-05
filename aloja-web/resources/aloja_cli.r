@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MSR hadoop.bsc.es
+# ALOJA-BSC-MSR aloja.bsc.es
 # 2014-12-11
 # Launcher of ALOJA-ML
  

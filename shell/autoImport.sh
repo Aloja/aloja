@@ -11,6 +11,8 @@ hit_page() {
   #-o /dev/null
 }
 
+repo="provider/minerva100"
+
 while true ; do
 
   logger "\nChecking for new files to copy...\n\n"
@@ -29,52 +31,58 @@ while true ; do
   logger "\nDeleting caches\n\n"
 
   cd /var/www/;
-  sudo git reset --hard HEAD;
-  sudo git --no-edit pull origin provider/minerva100;
-  #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_* /tmp/twig/*;
-  sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
-  sudo /etc/init.d/varnish restart;
-  sudo service php5-fpm restart;
-  sudo /etc/init.d/nginx restart;
-  sudo /usr/sbin/nginx;
-  cd -
+  sudo git checkout "$repo";
+  sudo git fetch;
+  if [ ! "$(git status| grep 'branch is up-to-date')" ] ; then
+    update_cache="true"
+    sudo git reset --hard HEAD;
+    sudo git pull --no-edit origin "$repo";
+    #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_* /tmp/twig/*;
+    sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
+    sudo service php5-fpm restart;
+    sudo /etc/init.d/nginx restart;
+  else
+    logger "INFO: branch $repo is up to date. Not updating caches"
+  fi
+  cd -;
 
-  logger "\nGenerating basic caches...\n\n"
-  hit_page 'http://localhost/?NO_CACHE=1'
-  hit_page 'http://localhost/benchdata?NO_CACHE=1'
-  hit_page 'http://localhost/counters?NO_CACHE=1'
-  hit_page 'http://localhost/benchexecs?NO_CACHE=1'
-  hit_page 'http://localhost/bestconfig?NO_CACHE=1'
-  hit_page 'http://localhost/configimprovement?NO_CACHE=1'
-  hit_page 'http://localhost/parameval?NO_CACHE=1'
-  hit_page 'http://localhost/costperfeval?NO_CACHE=1'
-  hit_page 'http://localhost/perfcharts?random=1?NO_CACHE=1'
-  hit_page 'http://localhost/metrics?NO_CACHE=1'
-  hit_page 'http://localhost/metrics?type=MEMORY&NO_CACHE=1'
-  hit_page 'http://localhost/metrics?type=DISK&NO_CACHE=1'
-  hit_page 'http://localhost/metrics?type=NETWORK&NO_CACHE=1'
-  hit_page 'http://localhost/dbscan?NO_CACHE=1'
-  hit_page 'http://localhost/dbscanexecs?NO_CACHE=1'
+  if [ ! "$update_cache" ] ; then
+    logger "\nGenerating basic caches...\n\n"
+    hit_page 'http://localhost/?NO_CACHE=1'
+    hit_page 'http://localhost/benchdata?NO_CACHE=1'
+    hit_page 'http://localhost/counters?NO_CACHE=1'
+    hit_page 'http://localhost/benchexecs?NO_CACHE=1'
+    hit_page 'http://localhost/bestconfig?NO_CACHE=1'
+    hit_page 'http://localhost/configimprovement?NO_CACHE=1'
+    hit_page 'http://localhost/parameval?NO_CACHE=1'
+    hit_page 'http://localhost/costperfeval?NO_CACHE=1'
+    hit_page 'http://localhost/perfcharts?random=1?NO_CACHE=1'
+    hit_page 'http://localhost/metrics?NO_CACHE=1'
+    hit_page 'http://localhost/metrics?type=MEMORY&NO_CACHE=1'
+    hit_page 'http://localhost/metrics?type=DISK&NO_CACHE=1'
+    hit_page 'http://localhost/metrics?type=NETWORK&NO_CACHE=1'
+    hit_page 'http://localhost/dbscan?NO_CACHE=1'
+    hit_page 'http://localhost/dbscanexecs?NO_CACHE=1'
 
-  hit_page 'http://localhost/'
-  hit_page 'http://localhost/benchdata'
-  hit_page 'http://localhost/counters'
-  hit_page 'http://localhost/benchexecs'
-  hit_page 'http://localhost/bestconfig'
-  hit_page 'http://localhost/configimprovement'
-  hit_page 'http://localhost/parameval'
-  hit_page 'http://localhost/costperfeval'
-  hit_page 'http://localhost/perfcharts?random=1'
-  hit_page 'http://localhost/metrics'
-  hit_page 'http://localhost/metrics?type=MEMORY'
-  hit_page 'http://localhost/metrics?type=DISK'
-  hit_page 'http://localhost/metrics?type=NETWORK'
-  hit_page 'http://localhost/dbscan'
-  hit_page 'http://localhost/dbscanexecs'
-  #hit_page 'http://localhost/'
+    hit_page 'http://localhost/'
+    hit_page 'http://localhost/benchdata'
+    hit_page 'http://localhost/counters'
+    hit_page 'http://localhost/benchexecs'
+    hit_page 'http://localhost/bestconfig'
+    hit_page 'http://localhost/configimprovement'
+    hit_page 'http://localhost/parameval'
+    hit_page 'http://localhost/costperfeval'
+    hit_page 'http://localhost/perfcharts?random=1'
+    hit_page 'http://localhost/metrics'
+    hit_page 'http://localhost/metrics?type=MEMORY'
+    hit_page 'http://localhost/metrics?type=DISK'
+    hit_page 'http://localhost/metrics?type=NETWORK'
+    hit_page 'http://localhost/dbscan'
+    hit_page 'http://localhost/dbscanexecs'
+    #hit_page 'http://localhost/'
+  fi
 
   logger "\nSleeping for 15 mins\n\n"
   sleep 900
-
 done
 
