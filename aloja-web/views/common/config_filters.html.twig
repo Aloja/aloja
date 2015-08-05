@@ -1,11 +1,11 @@
+<form id="configFilters" name="configFilters" method="GET" role="form">
+
 {% set show = false %}
 {% for selopt in options['presets'] if not show %}
   {% if selopt['selected_tool'] == selected %}
     {% set show = true %}
   {% endif %}
 {% endfor %}
-<form id="configFilters" name="configFilters" method="GET" role="form">
-
 {% if show  %}
 <div class="row" style="margin-bottom: .5em;">
 	<div class="col-md-8">

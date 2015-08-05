@@ -3,3 +3,4 @@ logs/*
 cache/query/*
 cache/twig/*
 cache/prv/*
+ganglia/*

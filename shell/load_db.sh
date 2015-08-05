@@ -51,7 +51,7 @@ if [ "$BASE_TABLES" == "1" ] ; then
   if [[ -z $table_exists ]] ; then
     echo "Create clusters table (if not exists) and insert"
     $MYSQL "create table if not exists clusters (id_cluster int, name varchar(127), cost_hour decimal(10,3), `type` varchar(127), link varchar(255), primary key (id_cluster)) engine InnoDB;
-    insert into clusters set name='Local 1', id_cluster=1, cost_hour=12, type='Colocated', link='http://hadoop.bsc.es/?page_id=51';
+    insert into clusters set name='Local 1', id_cluster=1, cost_hour=12, type='Colocated', link='http://aloja.bsc.es/?page_id=51';
     insert into clusters set name='Azure Linux', id_cluster=2, cost_hour=7, type='IaaS Cloud', link='http://www.windowsazure.com/en-us/pricing/calculator/';"
   fi
 
