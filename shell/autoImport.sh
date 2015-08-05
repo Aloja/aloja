@@ -30,13 +30,11 @@ while true ; do
 
   cd /var/www/;
   sudo git reset --hard HEAD;
-  sudo git --no-edit pull origin provider/minerva100;
+  sudo git pull --no-edit origin prod;
   #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_* /tmp/twig/*;
   sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
-  sudo /etc/init.d/varnish restart;
   sudo service php5-fpm restart;
-  sudo /etc/init.d/nginx restart;
-  sudo /usr/sbin/nginx;
+  sudo service nginx restart;
   cd -
 
   logger "\nGenerating basic caches...\n\n"
