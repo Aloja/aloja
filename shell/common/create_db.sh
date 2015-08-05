@@ -814,7 +814,7 @@ update execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (
 
 #$MYSQL "
 #
-##insert ignore into clusters set name='m1000-01',     id_cluster=1, cost_hour=12, type='on-premise', link='http://hadoop.bsc.es/?page_id=51';
+##insert ignore into clusters set name='m1000-01',     id_cluster=1, cost_hour=12, type='on-premise', link='http://aloja.bsc.es/?page_id=51';
 ##insert ignore into clusters set name='al-02', id_cluster=2, cost_hour=7, type='IaaS', link='http://www.windowsazure.com/en-us/pricing/calculator/';
 ##INSERT ignore INTO clusters(id_cluster,name,cost_hour,type,link,datanodes) values(20,'HDInsight','0.32','PaaS','http://azure.microsoft.com/en-gb/pricing/details/hdinsight/',4);
 #
