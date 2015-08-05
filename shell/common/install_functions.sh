@@ -7,7 +7,7 @@ vm_install_base_packages() {
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing packages for for VM $vm_name "
 
-      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp"
+      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp curl unzip wamerican" #wamerican is for hivebench
 
       #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
 
@@ -447,7 +447,7 @@ sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
 ## For Ubuntu 14.04
 sudo add-apt-repository 'deb http://cran.r-project.org/bin/linux/ubuntu trusty/'
 sudo apt-get update
-sudo wget http://security.ubuntu.com/ubuntu/pool/main/t/tiff/libtiff4_3.9.5-2ubuntu1.6_amd64.deb
+sudo wget http://launchpad.net/~ubuntu-security/+archive/ubuntu/ppa/+build/5979984/+files/libtiff4_3.9.5-2ubuntu1.6_amd64.deb
 sudo dpkg -i ./libtiff4_3.9.5-2ubuntu1.6_amd64.deb
 sudo apt-get install curl libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk r-base r-base-core r-base-dev r-base-html \
 	r-cran-bitops r-cran-boot r-cran-class r-cran-cluster r-cran-codetools r-cran-foreign r-cran-kernsmooth \
@@ -461,8 +461,7 @@ sudo R CMD javareconf
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=TRUE);
-
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=TRUE);
 
 # For all Ubuntu releases until 14.04
 install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
