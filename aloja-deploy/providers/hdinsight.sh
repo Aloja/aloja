@@ -4,43 +4,42 @@
 
 #$1 storage account name $2 redundancy type (LRS/ZRS/GRS/RAGRS/PLRS)
 vm_create_storage_account() {
-	if [ -z "$(azure storage account list "$1" | grep -w "$1")" ]; then
-		logger "Creating storage account $1"
-		azure storage account create "$1" -s "$subscriptionID" -l "$3" --type "$2"	
-	else
-		logger "WARNING: Storage account $1 already exists, skipping.."
-	fi
-	storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
+    if [ -z "$(azure storage account list "$1" | grep "$1")" ]; then
+        logger "Creating storage account $1"
+        azure storage account create "$1" -s "$subscriptionID" -l "$3" --type "$2"  
+    else
+        logger "WARNING: Storage account $1 already exists, skipping.."
+    fi
+    storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
 }
 
 #$1 storage account name $2 container name $3 storage account key
 vm_create_storage_container() {
-	if [ -z "$(azure storage container list -a "$1" -k "$3" | grep -w "$2")" ]; then
-		logger "Creating container $2 on storage $1"
-		azure storage container create -a "$1" -k "$3" "$2"
-	else
-		logger "WARNING: Container $2 already exists on $1, skipping.."
-	fi
+    if [ -z "$(azure storage container list -a "$1" -k "$3" | grep "$2")" ]; then
+        logger "Creating container $2 on storage $1"
+        azure storage container create -a "$1" -k "$3" "$2"
+    else
+        logger "WARNING: Container $2 already exists on $1, skipping.."
+    fi
 }
 
 #$1 cluster name
 hdi_cluster_check_create() {
-	if [ -z "$(azure hdinsight cluster list | grep -w "$1")" ] ; then
-    	echo 0
-	 else
-    	logger "WARNING: cluster name already exists!"
-		echo 1
-	 fi
+    if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+        echo 0
+     else
+        echo 1
+     fi
 }
 
 #$1 cluster name
 hdi_cluster_check_delete() {
-	if [ ! -z "$(azure hdinsight cluster list | grep -w "$1")" ] ; then
-    	return 0
-	 else
-    	logger "ERROR: cluster name doesn't exists!"
-		exit
-	 fi
+    if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+        return 0
+     else
+        logger "ERROR: cluster name doesn't exists!"
+        exit
+     fi
 }
 
 #$1 cluster name  $2 vm OS
@@ -70,19 +69,19 @@ wait_hdi_cluster() {
 #$1 cluster name
 create_hdi_cluster() {
  if [ -z "$storageAccount" ]; then
-	storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
+    storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
  if [ -z "$location" ]; then
-   	location="South Central US"
+    location="South Central US"
  fi
 
  vm_create_storage_account "$storageAccount" "LRS" "$location"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
      azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
-	--storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-	--location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
-	--sshPassword "$passwordAloja" -s "$subscriptionID"
+    --storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
+    --location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+    --sshPassword "$passwordAloja" -s "$subscriptionID"
 
   wait_hdi_cluster $1
   ssh-keygen -f "~/.ssh/known_hosts" -R $(get_ssh_host)
@@ -146,17 +145,17 @@ vm_final_bootstrap() {
 
 #$1 cluster name
 node_delete() {
-	hdi_cluster_check_delete $1
-	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
-	ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
+    hdi_cluster_check_delete $1
+    azure hdinsight cluster delete "$1" "South Central US" "$vmType"
+    ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
 }
 
 get_master_name() {
-	echo "headnode0"	
+    echo "headnode0"    
 }
 
 get_node_names() {
-	cat /home/pristine/machines	
+    cat /home/pristine/machines 
 }
 
 get_slaves_names() {
