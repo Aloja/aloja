@@ -97,16 +97,6 @@ class DBUtils
         } else {
             return " AND $execsAlias.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
         }
-
-//         return "
-// #AND (bench_type = 'HiBench' OR bench_type = 'HDI')
-// #AND bench not like 'prep_%'
-// #AND bench_type not like 'HDI-prep%'
-// #AND exe_time between 200 and 15000
-// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null))
-// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null))
-// ";
-//AND valid = 1
     }
 
     public function get_execs($filter_execs = null)
@@ -357,7 +347,7 @@ class DBUtils
 
             JOIN `execs` e
             ON e.`id_exec` = d.`id_exec`
-
+            INNER JOIN clusters c ON e.id_cluster = c.id_cluster
             LEFT OUTER JOIN `JOB_dbscan` s
             ON
                 e.`bench` = s.`bench` AND
@@ -370,15 +360,15 @@ class DBUtils
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."
-                $where_configs
-
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset
             AND s.`id` IS null
             AND t.`JOBID` IS NOT null
+            $where_configs
             GROUP BY e.`bench`, d.`id_exec`, d.`JOBID`
             ORDER BY d.`id_exec`
         ;";
+
         $query_params = array(
             ":bench" => $bench,
             ":job_offset" => "%_$job_offset",

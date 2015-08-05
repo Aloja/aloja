@@ -40,7 +40,8 @@ class AbstractController
     public function render($templatePath, $parameters) {
         $genericParameters = array('selected' => $this->container->getScreenName());
         if($this->filters) {
-            $genericParameters = array_merge($genericParameters, $this->filters->getSelectedFilters());
+            $genericParameters = array_merge($genericParameters, $this->filters->getSelectedFilters(),
+                array('options' => $this->filters->getFilterOptions($this->container->getDBUtils())));
         }
 
         echo $this->container->getTwig()->render($templatePath,array_merge(
@@ -49,11 +50,8 @@ class AbstractController
         );
     }
 
-    public function buildFilters($dbConnection = null) {
-        if(!$dbConnection)
-            $dbConnection = $this->container->getDBUtils();
-
+    public function buildFilters() {
         $this->filters = new Filters();
-        $this->filters->getFilters($dbConnection,$this->container->getScreenName());
+        $this->filters->getFilters($this->container->getDBUtils(),$this->container->getScreenName());
     }
 }

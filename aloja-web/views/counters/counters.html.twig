@@ -18,6 +18,12 @@
 	            {% endif %}
 	        </h2>
 	    </div>
+	     <div style="text-align: center; margin-bottom: .5em;">
+        	 <button id="showFilters" class="btn btn-info">Show filters</button>
+         </div>
+         <div id="filtersTab" style="display: none;">
+        	{% include "common/config_filters.html.twig" %}
+         </div>
 	    Click on a <strong>Job Name</strong> to see it's tasks and history </br>
 
      {% block datatablescontent %}{{ parent() }}{% endblock %}
@@ -27,5 +33,6 @@
 {% endblock %}
 {% block javascript %}
     {{ parent() }}
+    <script type="text/javascript" language="javascript" src="js/utils.js"></script>
       {% block javascriptdatatables %}{{ parent() }}{% endblock %}
     {% endblock %}

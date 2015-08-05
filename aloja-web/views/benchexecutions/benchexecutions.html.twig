@@ -28,16 +28,4 @@
     {{ parent() }}
      <script type="text/javascript" language="javascript" src="js/utils.js"></script>
       {% block javascriptdatatables %}{{ parent() }}{% endblock %}
-     <script type="text/javascript">
- 		$(document).ready(function() {
-			$("#showFilters").click(function() {
-				$("#filtersTab").slideToggle(400, function() {
-				  if($("#filtersTab").is(':visible')) {
-				    $("#showFilters").text('Hide filters');
-				  } else
-				    $("#showFilters").text('Show filters');
-				});
-			});
- 	 	});
-     </script>
     {% endblock %}

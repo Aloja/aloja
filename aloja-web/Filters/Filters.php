@@ -11,8 +11,13 @@ class Filters
 
     private $selectedFilters;
 
-    public function getWhereClause() {
-        return $this->whereClause;
+    public function getWhereClause($execsAlias = "", $clustersAlias = "") {
+        $whereClause = $this->whereClause;
+        $execsAlias = ($execsAlias != "") ? "$execsAlias." : "";
+        $clustersAlias = ($clustersAlias != "") ? "$clustersAlias." : "";
+        $whereClause = str_replace('execsAlias.',$execsAlias,$whereClause);
+        $whereClause = str_replace('clustersAlias.',$clustersAlias,$whereClause);
+        return $whereClause;
     }
 
     public function getSelectedFilters() {
@@ -50,31 +55,31 @@ class Filters
             $preset = Utils::initDefaultPreset($dbConnection, $screenName);
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
-        $money = $this->readFilter('money',$filtersWhereClause, false);
-        $benchs = $this->readFilter('benchs',$filtersWhereClause, true);
-        $benchtype = $this->readFilter ( 'bench_types', $filtersWhereClause, true );
-        $nets = $this->readFilter('nets',$filtersWhereClause, false);
-        $disks = $this->readFilter('disks',$filtersWhereClause, false);
-        $blk_sizes = $this->readFilter('blk_sizes',$filtersWhereClause, false);
-        $comps = $this->readFilter('comps',$filtersWhereClause, false);
-        $id_clusters = $this->readFilter('id_clusters',$filtersWhereClause, false);
-        $mapss = $this->readFilter('mapss',$filtersWhereClause, false);
-        $replications = $this->readFilter('replications',$filtersWhereClause, false);
-        $iosfs = $this->readFilter('iosfs',$filtersWhereClause, false);
-        $iofilebufs = $this->readFilter('iofilebufs',$filtersWhereClause, false);
-        $provider = $this->readFilter ( 'providers', $filtersWhereClause, false );
-        $vm_OS = $this->readFilter ( 'vm_OSs', $filtersWhereClause, false );
-        $datanodes = $this->readFilter ( 'datanodess', $filtersWhereClause, false );
-        $vm_sizes = $this->readFilter ( 'vm_sizes', $filtersWhereClause, false );
-        $vm_coress = $this->readFilter ( 'vm_coress', $filtersWhereClause, false );
-        $vm_RAMs = $this->readFilter ( 'vm_RAMs', $filtersWhereClause, false );
-        $types = $this->readFilter ( 'types', $filtersWhereClause, false );
-        $hadoop_versions = $this->readFilter ( 'hadoop_versions', $filtersWhereClause, false );
-        $filters = $this->readFilter ( 'filters', $filtersWhereClause, false );
-        $minexetime = $this->readFilter ( 'minexetime', $filtersWhereClause, false);
-        $maxexetime = $this->readFilter ( 'maxexetime', $filtersWhereClause, false);
-        $datefrom = $this->readFilter('datefrom',$filtersWhereClause, false);
-        $dateto	= $this->readFilter('dateto',$filtersWhereClause, false);
+        $money = $this->readFilter('money','execs',$filtersWhereClause, false);
+        $benchs = $this->readFilter('benchs','execs',$filtersWhereClause, true);
+        $benchtype = $this->readFilter ( 'bench_types','execs', $filtersWhereClause, true );
+        $nets = $this->readFilter('nets','execs',$filtersWhereClause, false);
+        $disks = $this->readFilter('disks','execs',$filtersWhereClause, false);
+        $blk_sizes = $this->readFilter('blk_sizes','execs',$filtersWhereClause, false);
+        $comps = $this->readFilter('comps','execs',$filtersWhereClause, false);
+        $id_clusters = $this->readFilter('id_clusters','execs',$filtersWhereClause, false);
+        $mapss = $this->readFilter('mapss','execs',$filtersWhereClause, false);
+        $replications = $this->readFilter('replications','execs',$filtersWhereClause, false);
+        $iosfs = $this->readFilter('iosfs','execs',$filtersWhereClause, false);
+        $iofilebufs = $this->readFilter('iofilebufs','execs',$filtersWhereClause, false);
+        $provider = $this->readFilter ( 'providers','clusters', $filtersWhereClause, false );
+        $vm_OS = $this->readFilter ( 'vm_OSs','clusters', $filtersWhereClause, false );
+        $datanodes = $this->readFilter ( 'datanodess','clusters', $filtersWhereClause, false );
+        $vm_sizes = $this->readFilter ( 'vm_sizes','clusters', $filtersWhereClause, false );
+        $vm_coress = $this->readFilter ( 'vm_coress','clusters', $filtersWhereClause, false );
+        $vm_RAMs = $this->readFilter ( 'vm_RAMs','clusters', $filtersWhereClause, false );
+        $types = $this->readFilter ( 'types','clusters', $filtersWhereClause, false );
+        $hadoop_versions = $this->readFilter ( 'hadoop_versions','execs', $filtersWhereClause, false );
+        $filters = $this->readFilter ( 'filters','execs', $filtersWhereClause, false );
+        $minexetime = $this->readFilter ( 'minexetime','execs', $filtersWhereClause, false);
+        $maxexetime = $this->readFilter ( 'maxexetime','execs', $filtersWhereClause, false);
+        $datefrom = $this->readFilter('datefrom','execs',$filtersWhereClause, false);
+        $dateto	= $this->readFilter('dateto','execs',$filtersWhereClause, false);
         $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 
         $selFilters = array(
@@ -105,71 +110,72 @@ class Filters
             'dateto' => $dateto,
             'allunchecked' => $allunchecked,
             'preset' => $preset,
-            'selPreset' => $selPreset,
-            'options' => $this->getFilterOptions($dbConnection));
+            'selPreset' => $selPreset);
 
         $this->whereClause = $filtersWhereClause;
         $this->selectedFilters = $selFilters;
     }
 
-    private function readFilter($item_name, &$where_configs, $setDefaultValues = true)
+    private function readFilter($filterName, $tableName, &$whereClause, $setDefaultValues = true)
     {
-        if($item_name == 'money' && isset($_GET['money'])) {
+        $alias = "${tableName}Alias";
+        if($filterName == 'money' && isset($_GET['money'])) {
             $money = $_GET['money'];
             if($money != '') {
-                $where_configs .= ' AND (exe_time/3600)*(cost_hour) <= '.$_GET['money'];
+                $whereClause .= ' AND ('.$alias.'.exe_time/3600)*('.$alias.'.cost_hour) <= '.$_GET['money'];
             }
             return $_GET['money'];
         }
 
-        if($item_name == 'datefrom' && isset($_GET['datefrom'])) {
+        if($filterName == 'datefrom' && isset($_GET['datefrom'])) {
             $datefrom = $_GET['datefrom'];
             if($datefrom != '') {
-                $where_configs .= " AND start_time >= '$datefrom'";
+                $whereClause .= " AND $alias.start_time >= '$datefrom'";
             }
             return $datefrom;
-        } else if($item_name == 'datefrom')
+        } else if($filterName == 'datefrom')
             return "";
 
-        if($item_name == 'dateto' && isset($_GET['dateto'])) {
+        if($filterName == 'dateto' && isset($_GET['dateto'])) {
             $dateto = $_GET['dateto'];
             if($dateto != '') {
-                $where_configs .= " AND end_time <= '$dateto'";
+                $whereClause .= " AND $alias.end_time <= '$dateto'";
             }
             return $dateto;
-        } else if($item_name == 'dateto')
+        } else if($filterName == 'dateto')
             return "";
 
-        if($item_name == "filters") {
+        //Advanced filters parsing
+        if($filterName == "filters") {
             $includePrepares = false;
             if(isset($_GET['filters'])) {
                 $filters = $_GET['filters'];
                 if(in_array("valid",$filters))
-                    $where_configs .= ' AND valid = 1 ';
+                    $whereClause .= ' AND '.$alias.'.valid = 1 ';
                 if(in_array("prepares",$filters))
                     $includePrepares = true;
                 if(in_array("perfdetails",$filters))
-                    $where_configs .= ' AND perf_details = 1 ';
+                    $whereClause .= ' AND '.$alias.'.perf_details = 1 ';
 
                 if(in_array("outliers", $filters)) {
                     if(in_array("warnings", $filters))
-                        $where_configs .= " AND outlier IN (0,1,2) ";
+                        $whereClause .= " AND $alias.outlier IN (0,1,2) ";
                     else
-                        $where_configs .= " AND outlier IN (0,1) ";
+                        $whereClause .= " AND $alias.outlier IN (0,1) ";
                 }
 
-                $where_configs .= (in_array("filters",$filters)) ? ' AND filter = 0 ' : '';
+                $whereClause .= (in_array("filters",$filters)) ? ' AND '.$alias.'.filter = 0 ' : '';
 
 
             } else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
                 $_GET['filters'][] = 'valid';
                 $_GET['filters'][] = 'filters';
 
-                $where_configs .= ' AND valid = 1 AND filter = 0 ';
+                $whereClause .= ' AND '.$alias.'.valid = 1 AND '.$alias.'.filter = 0 ';
             }
 
             if(!$includePrepares)
-                $where_configs .= "AND bench not like 'prep_%' AND bench_type not like 'HDI-prep%'";
+                $whereClause .= "AND $alias.bench not like 'prep_%' AND $alias.bench_type not like 'HDI-prep%'";
 
             if(isset($_GET['filters']))
                 return $_GET['filters'];
@@ -177,36 +183,37 @@ class Filters
                 return "";
         }
 
-        if($item_name == "minexetime") {
+        if($filterName == "minexetime") {
             $minexetime = (isset($_GET["minexetime"])) ? $_GET["minexetime"] : 50;
 
             if($minexetime != null)
-                $where_configs .= " AND exe_time >= $minexetime ";
+                $whereClause .= " AND $alias.exe_time >= $minexetime ";
 
             return $minexetime;
         }
 
-        if($item_name == "maxexetime") {
+        if($filterName == "maxexetime") {
             if(isset($_GET["maxexetime"])) {
                 $maxexetime = $_GET["maxexetime"];
 
                 if($maxexetime != null)
-                    $where_configs .= " AND exe_time <= $maxexetime ";
+                    $whereClause .= " AND $alias.exe_time <= $maxexetime ";
 
                 return $maxexetime;
             } else
                 return "";
         }
 
-        if (isset($_GET[$item_name])) {
-            $items = $_GET[$item_name];
+        //General filters
+        if (isset($_GET[$filterName])) {
+            $items = $_GET[$filterName];
             $items = Utils::delete_none($items);
         } else if($setDefaultValues) {
-            if ($item_name == 'benchs') {
+            if ($filterName == 'benchs') {
                 $items = array('terasort', 'wordcount', 'sort');
-            } elseif ($item_name == 'nets') {
+            } elseif ($filterName == 'nets') {
                 $items = array();
-            } elseif ($item_name == 'bench_types') {
+            } elseif ($filterName == 'bench_types') {
                 $items = array('HiBench','HiBench3','HiBench3HDI');
             } else {
                 $items = array();
@@ -215,11 +222,11 @@ class Filters
             $items = array();
 
         if ($items) {
-            $single_item_name = substr($item_name, 0, -1);  //remove trailing 's'
+            $tableItemName = substr($filterName, 0, -1);  //remove trailing 's'
 
-            $where_configs .=
+            $whereClause .=
                 ' AND '.
-                $single_item_name.
+                $alias.'.'.$tableItemName.
                 ' IN ("'.join('","', $items).'")';
         }
 

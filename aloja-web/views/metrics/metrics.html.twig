@@ -14,7 +14,12 @@
 	            <a href="{{ modifyUrl({'type': 'NETWORK'}) }}"><span {% if type == 'NETWORK' %}style="font-weight: bold;"{% endif %}>NETWORK</span></a>
 	        </h2>
 	    </div>
-	    
+	    <div style="text-align: center; margin-bottom: .5em;">
+                	 <button id="showFilters" class="btn btn-info">Show filters</button>
+                 </div>
+                 <div id="filtersTab" style="display: none;">
+                	{% include "common/config_filters.html.twig" %}
+                 </div>
      {% block datatablescontent %}{{ parent() }}{% endblock %}
     <div id="chart"></div>
 

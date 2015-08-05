@@ -37,52 +37,19 @@ class DefaultController extends AbstractController
 
     public function indexAction()
     {
-        echo $this->container->get('twig')->render('welcome.html.twig', array(
-            'selected' => 'About'
-        ));
+        return $this->render('welcome.html.twig', array());
     }
 
     public function configImprovementAction()
     {
         $db = $this->container->getDBUtils();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-        	$preset = Utils::initDefaultPreset($db, 'Config Improvement');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-        
+
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
+       
         $rows_config = '';
         try {
-            
-            $where_configs = '';
             $concat_config = "";
-
-            $datefrom = Utils::read_params('datefrom',$where_configs);
-            $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs         = Utils::read_params('benchs',$where_configs);
-            $nets           = Utils::read_params('nets',$where_configs);
-            $disks          = Utils::read_params('disks',$where_configs);
-            $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
-            $comps          = Utils::read_params('comps',$where_configs);
-            $id_clusters    = Utils::read_params('id_clusters',$where_configs);
-            $mapss          = Utils::read_params('mapss',$where_configs);
-            $replications   = Utils::read_params('replications',$where_configs);
-            $iosfs          = Utils::read_params('iosfs',$where_configs);
-            $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
-            $money 			= Utils::read_params('money',$where_configs);
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-            $types = Utils::read_params ( 'types', $where_configs, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, false );
-            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
-            
             $selectedGroups = array();
             if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
                $selectedGroups = explode(",",$_GET['selected-groups']);
@@ -98,7 +65,7 @@ class DefaultController extends AbstractController
 
             //get configs first (categories)
             $query = "SELECT count(*) num, concat($concat_config) conf from execs e
-                      JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs
+                      JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
 
@@ -112,7 +79,7 @@ class DefaultController extends AbstractController
             }
 
             //get the result rows
-            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
+            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $whereClause) P50_ALL_exe_time,
             $query = "SELECT #count(*),
             		  e.id_exec,
                       concat($concat_config) conf, bench,
@@ -122,12 +89,12 @@ class DefaultController extends AbstractController
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
-                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $where_configs) AVG_ALL_exe_time,
-                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $where_configs) MAX_ALL_exe_time,
-                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
+                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
+                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $whereClause) MAX_ALL_exe_time,
+                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $whereClause) MIN_ALL_exe_time,
                       'none'
                       from execs e JOIN clusters USING (id_cluster)
-                      WHERE 1 $filter_execs $where_configs
+                      WHERE 1 $filter_execs $whereClause
                       GROUP BY conf, bench order by bench, $order_conf;";
 
             $rows = $db->get_rows($query);
@@ -187,44 +154,11 @@ class DefaultController extends AbstractController
                     }, ";
         }
 
-        echo $this->container->getTwig()->render('config_improvement/config_improvement.html.twig',
-            array('selected' => 'Config Improvement',
+        return $this->render ( 'config_improvement/config_improvement.html.twig', array (
                 'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
-                'datefrom' => $datefrom,
-                'dateto' => $dateto,
-                'benchs' => $benchs,
-                'nets' => $nets,
-                'disks' => $disks,
-                'blk_sizes' => $blk_sizes,
-                'comps' => $comps,
-                'id_clusters' => $id_clusters,
-                'mapss' => $mapss,
-                'replications' => $replications,
-                'iosfs' => $iosfs,
-                'iofilebufs' => $iofilebufs,
-                'count' => $count,
-                'height' => $height,
-                'money' => $money,
-                'datanodess' => $datanodes,
-                'bench_types' => $benchtype,
-                'vm_sizes' => $vm_sizes,
-                'vm_coress' => $vm_coress,
-                'vm_RAMs' => $vm_RAMs,
-                'vm_OS' => $vm_OS,
-                'hadoop_versions' => $hadoop_versions,
-                'types' => $types,
-                'providers' => $provider,
-                'filters' => $filters,
-                'allunchecked' => $allunchecked,
-            	'minexetime' => $minexetime,
-            	'maxexetime' => $maxexetime,
-            	'selectedGroups' => $selectedGroups,
-            	'preset' => $preset,
-                'selPreset' => $selPreset,
-                'options' => Utils::getFilterOptions($db)
             )
         );
     }
@@ -232,39 +166,10 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-        	$preset = Utils::initDefaultPreset($dbUtils, 'Benchmark Executions');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
 
-
-        $datefrom = Utils::read_params('datefrom',$where_configs, false );
-        $dateto	= Utils::read_params('dateto',$where_configs, false );
-        $benchs         = Utils::read_params('benchs',$where_configs, false );
-        $nets           = Utils::read_params('nets',$where_configs, false );
-        $disks          = Utils::read_params('disks',$where_configs, false );
-        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs, false );
-        $comps          = Utils::read_params('comps',$where_configs, false );
-        $id_clusters    = Utils::read_params('id_clusters',$where_configs, false );
-        $mapss          = Utils::read_params('mapss',$where_configs, false );
-        $replications   = Utils::read_params('replications',$where_configs, false );
-        $iosfs          = Utils::read_params('iosfs',$where_configs, false );
-        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs, false );
-        $money 			= Utils::read_params('money',$where_configsm, false );
-        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-        $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-        $types = Utils::read_params ( 'types', $where_configs, false );
-        $filters = Utils::read_params ( 'filters', $where_configs, false );
-        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 		$type = Utils::get_GET_string("type");
-		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-        $provider = Utils::read_params ( 'providers', $where_configs, false );
-        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 		
 		if(!$type)
 			$type = 'SUMMARY';
@@ -333,42 +238,13 @@ class DefaultController extends AbstractController
 		} else
 			$show_in_result = self::$show_in_result;
 
-        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$where_configs);
-        echo $this->container->getTwig()->render('benchexecutions/benchexecutions.html.twig',
-            array('selected' => $this->container->getScreenName(),
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$whereClause);
+        return $this->render('benchexecutions/benchexecutions.html.twig',
+            array(
                 'theaders' => $show_in_result,
-                'discreteOptions' => $discreteOptions,
-                'datefrom' => $datefrom,
-                'dateto' => $dateto,
-                'benchs' => $benchs,
-                'nets' => $nets,
-                'disks' => $disks,
-                'blk_sizes' => $blk_sizes,
-                'comps' => $comps,
-                'id_clusters' => $id_clusters,
-                'mapss' => $mapss,
-                'replications' => $replications,
-                'iosfs' => $iosfs,
-                'iofilebufs' => $iofilebufs,
-                'money' => $money,
-                'datanodess' => $datanodes,
-                'bench_types' => $benchtype,
-                'vm_sizes' => $vm_sizes,
-                'vm_coress' => $vm_coress,
-                'vm_RAMs' => $vm_RAMs,
-                'vm_OS' => $vm_OS,
-                'hadoop_versions' => $hadoop_versions,
-                'types' => $types,
-                'providers' => $provider,
-                'filters' => $filters,
-                'allunchecked' => $allunchecked,
-            	'minexetime' => $minexetime,
-            	'maxexetime' => $maxexetime,
-            	'preset' => $preset,
-                'selPreset' => $selPreset,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
-                'options' => Utils::getFilterOptions($dbUtils),
-            	'type' => $type
+            	'type' => $type,
+                'discreteOptions' => $discreteOptions
             ));
     }
 
@@ -376,10 +252,8 @@ class DefaultController extends AbstractController
     {
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-        	$preset = Utils::initDefaultPreset($dbUtils, 'Cost Evaluation');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
         
         try {
             if(isset($_GET['benchs']))
@@ -392,37 +266,6 @@ class DefaultController extends AbstractController
                 $bench = 'terasort';
                 $bench_where = " AND bench = '$bench'";
             }
-
-            
-            $where_configs = '';
-            $concat_config = "";
-
-            // $benchs = $dbUtils->read_params('benchs',$where_configs);
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
-            $dateto	= Utils::read_params('dateto',$where_configs);
-            $nets = Utils::read_params('nets', $where_configs);
-            $disks = Utils::read_params('disks', $where_configs);
-            $blk_sizes = Utils::read_params('blk_sizes', $where_configs);
-            $comps = Utils::read_params('comps', $where_configs);
-            $id_clusters = Utils::read_params('id_clusters', $where_configs);
-            $mapss = Utils::read_params('mapss', $where_configs);
-            $replications = Utils::read_params('replications', $where_configs);
-            $iosfs = Utils::read_params('iosfs', $where_configs);
-            $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
-            $money = Utils::read_params ( 'money', $where_configs, false );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-            $types = Utils::read_params ( 'types', $where_configs, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, false );
-            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
             /*
              * 1. Get execs and cluster associated costs
@@ -438,7 +281,7 @@ class DefaultController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs ORDER BY rand() LIMIT 500";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $whereClause ORDER BY rand() LIMIT 500";
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -495,48 +338,16 @@ class DefaultController extends AbstractController
 
         $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
 
-        echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
+        return $this->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
-            // 'show_in_result' => count($show_in_result),
             'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
             'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
             'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
             'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
             'seriesData' => $seriesData,
-            'datefrom' => $datefrom,
-            'dateto' => $dateto,
-            'benchs' => array($bench),
-            'select_multiple_benchs' => false,
-            'nets' => $nets,
-            'disks' => $disks,
-            'blk_sizes' => $blk_sizes,
-            'comps' => $comps,
-            'id_clusters' => $id_clusters,
-            'mapss' => $mapss,
-            'replications' => $replications,
-            'iosfs' => $iosfs,
-            'iofilebufs' => $iofilebufs,
-            'datanodess' => $datanodes,
-            'bench_types' => $benchtype,
-            'vm_sizes' => $vm_sizes,
-            'vm_coress' => $vm_coress,
-            'vm_RAMs' => $vm_RAMs,
-            'vm_OS' => $vm_OS,
-            'hadoop_versions' => $hadoop_versions,
-            'types' => $types,
-            'providers' => $provider,
-            'filters' => $filters,
-            'allunchecked' => $allunchecked,
-        	'minexetime' => $minexetime,
-        	'maxexetime' => $maxexetime,
-        	'preset' => $preset,
-            'selPreset' => $selPreset,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-        	'money' => $money,
-            'options' => Utils::getFilterOptions($dbUtils),
             'clusters' => $clusters,
-            // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));
     }
 
@@ -545,11 +356,7 @@ class DefaultController extends AbstractController
         $exec_rows = null;
         $id_exec_rows = null;
         $dbUtil = $this->container->getDBUtils();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-        	$preset = Utils::initDefaultPreset($db, 'Performance charts');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-        
+
         try {
             //TODO fix, initialize variables
             $dbUtil->get_exec_details('1', 'id_exec',$exec_rows,$id_exec_rows);
@@ -1159,7 +966,7 @@ class DefaultController extends AbstractController
         if(!isset($exec))
             $exec = '';
 
-        echo $this->container->getTwig()->render('perfcharts/perfcharts.html.twig',
+        return $this->render('perfcharts/perfcharts.html.twig',
             array('selected' => 'Performance charts',
                 'show_in_result' => count(self::$show_in_result),
                 'title' => 'Hadoop Job/s Execution details and System Performance Charts',
@@ -1171,28 +978,24 @@ class DefaultController extends AbstractController
                 'hosts' => $hosts,
                 'host_rows' => $dbUtil->get_hosts($clusters),
                 'detail' => $detail,
-                'selPreset' => $selPreset,
             ));
-
     }
 
     public function countersAction()
     {
         try {
             $db = $this->container->getDBUtils();
+            $this->buildFilters();
+            $whereClause = $this->filters->getWhereClause();
+
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
-            $preset = null;
-            if(sizeof($_GET) <= 1)
-            	$preset = Utils::initDefaultPreset($db, 'Best configuration');
-            $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-            
+
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
             foreach($benchOptions as $option) {
                 $discreteOptions['bench'][] = array_shift($option);
             }
 
-            $dbUtil = $this->container->getDBUtils();
             $message = null;
 
             //check the URL
@@ -1204,8 +1007,8 @@ class DefaultController extends AbstractController
                 $type = 'SUMMARY';
             }
 
-            $join = "JOIN execs e using (id_exec) WHERE JOBNAME NOT IN
-        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
+            $join = "JOIN execs e using (id_exec) JOIN clusters USING (id_cluster) WHERE JOBNAME NOT IN
+        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
                 $join.= " AND JOBID = '${_GET['jobid']}' ";
@@ -1276,7 +1079,7 @@ class DefaultController extends AbstractController
                 throw new \Exception('Unknown type!');
             }
 
-            $exec_rows = $dbUtil->get_rows($query);
+            $exec_rows = $db->get_rows($query);
 
             if (count($exec_rows) > 0) {
 
@@ -1296,23 +1099,23 @@ class DefaultController extends AbstractController
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
-        echo $this->container->getTwig()->render('counters/counters.html.twig',
-            array('selected' => 'Hadoop Job Counters',
+        return $this->render('counters/counters.html.twig',
+            array(
                 'theaders' => $show_in_result_counters,
-                //'table_fields' => $table_fields,
                 'message' => $message,
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
                 'type' => $type,
                 'execs' => $execs,
                 'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
                 'discreteOptions' => $discreteOptions,
-                'selPreset' => $selPreset,
-                //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
 
     public function performanceTableAction()
     {
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
+
         $show_in_result_metrics = array();
         $type = Utils::get_GET_string('type');
         if(!$type || $type == 'CPU') {
@@ -1354,9 +1157,9 @@ class DefaultController extends AbstractController
                 'Avg txcmp/s', 'Max txcmp/s', 'Min txcmp/s', 'Stddev txcmp/s', 'Var txcmp/s', 'Sum txcmp/s',
                 'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster', 'end_time' => 'End time');
 
-        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils());
-        echo $this->container->getTwig()->render('metrics/metrics.html.twig',
-            array('selected' => 'Performance Metrics',
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(), $whereClause);
+        return $this->render('metrics/metrics.html.twig',
+            array(
                 'theaders' => $show_in_result_metrics,
                 'title' => 'Hadoop Performance Counters',
                 'type' => $type ? $type : 'CPU',
@@ -1402,7 +1205,7 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
-        $this->buildFilters($db);
+        $this->buildFilters();
 
         $bestexec = '';
         $cluster = '';
@@ -1453,62 +1256,26 @@ class DefaultController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        $screenParameters = array_merge(array (
+        return $this->render ( 'bestconfig/bestconfig.html.twig', array (
             'title' => 'Best Run Configuration',
+            'select_multiple_benchs' => false,
             'bestexec' => $bestexec,
             'cluster' => $cluster,
             'order_type' => $order_type
         ));
-
-
-        return $this->render ( 'bestconfig/bestconfig.html.twig', $screenParameters );
     }
 
     public function paramEvaluationAction() {
         $db = $this->container->getDBUtils ();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-        	$preset = Utils::initDefaultPreset($db, 'Parameter Evaluation');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
 
-        $rows = '';
         $categories = '';
         $series = '';
         try {
-            $where_configs = '';
-            $concat_config = "";
-
-            if(!(isset($_GET['benchs']))) {
+           /* if(!(isset($_GET['benchs']))) {
                 $_GET['benchs'] = array('wordcount', 'terasort', 'sort');
-            }
-
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
-            $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs = Utils::read_params ( 'benchs', $where_configs );
-            $nets = Utils::read_params ( 'nets', $where_configs );
-            $disks = Utils::read_params ( 'disks', $where_configs );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs );
-            $comps = Utils::read_params ( 'comps', $where_configs );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs );
-            $mapss = Utils::read_params ( 'mapss', $where_configs );
-            $replications = Utils::read_params ( 'replications', $where_configs );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs );
-            $money = Utils::read_params ( 'money', $where_configs );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-            $types = Utils::read_params ( 'types', $where_configs, false );
-            $valid = Utils::read_params ( 'valids', $where_configs );
-            $filters = Utils::read_params ( 'filters', $where_configs, false );
-            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+            }*/
 
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
@@ -1535,31 +1302,12 @@ class DefaultController extends AbstractController
                     $paramOptions[] = $option[$paramEval];
             }
 
-// 			if($paramEval == 'maps')
-// 				$paramOptions = array(4,6,8,10,12,16,24,32);
-// 			else if($paramEval == 'comp')
-// 				$paramOptions = array('None','ZLIB','BZIP2','Snappy');
-// 		    else if($paramEval == 'id_cluster')
-// 				$paramOptions = array('rl-06');
-// 			else if($paramEval == 'net')
-// 				$paramOptions = array('Ethernet','Infiniband');
-// 			else if($paramEval == 'disk')
-// 				$paramOptions = array('Hard-disk drive','1 HDFS remote(s)/tmp local','2 HDFS remote(s)/tmp local','3 HDFS remote(s)/tmp local','1 HDFS remote(s)', '2 HDFS remote(s)', '3 HDFS remote(s)', 'SSD');
-// 			else if($paramEval == 'replication')
-// 				$paramOptions = array(1,2,3);
-// 			else if($paramEval == 'iofilebuf')
-// 				$paramOptions = array(1,4,16,32,64,128,256);
-// 			else if($paramEval == 'blk_size')
-// 				$paramOptions = array(32,64,128,256);
-// 			else if($paramEval == 'iosf')
-// 				$paramOptions = array(5,10,20,50);
-
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
 
             // get the result rows
             $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
                 "exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-                "from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs".
+                "from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause".
                 "GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 
             $rows = $db->get_rows ( $query );
@@ -1604,39 +1352,10 @@ class DefaultController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        echo $this->container->getTwig ()->render ('parameval/parameval.html.twig', array (
-            'selected' => 'Parameter Evaluation',
+        return $this->render ('parameval/parameval.html.twig', array (
             'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
             'categories' => $categories,
             'series' => $series,
-            'datefrom' => $datefrom,
-            'dateto' => $dateto,
-            'benchs' => $benchs,
-            'nets' => $nets,
-            'disks' => $disks,
-            'blk_sizes' => $blk_sizes,
-            'comps' => $comps,
-            'id_clusters' => $id_clusters,
-            'mapss' => $mapss,
-            'replications' => $replications,
-            'iosfs' => $iosfs,
-            'iofilebufs' => $iofilebufs,
-            'money' => $money,
-            'datanodess' => $datanodes,
-            'bench_types' => $benchtype,
-            'vm_sizes' => $vm_sizes,
-            'vm_coress' => $vm_coress,
-            'vm_RAMs' => $vm_RAMs,
-            'vm_OS' => $vm_OS,
-            'hadoop_versions' => $hadoop_versions,
-            'types' => $types,
-            'providers' => $provider,
-            'filters' => $filters,
-            'allunchecked' => $allunchecked,
-        	'minexetime' => $minexetime,
-        	'maxexetime' => $maxexetime,
-        	'preset' => $preset,
-            'selPreset' => $selPreset,
             'paramEval' => $paramEval,
             'options' => $options
         ) );
@@ -1713,88 +1432,35 @@ class DefaultController extends AbstractController
     public function dbscanexecsAction()
     {
         $dbUtils = $this->container->getDBUtils();
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause("e","c");
 
         $jobid = Utils::get_GET_string("jobid");
-
-        $where_configs = '';
-        $datefrom = Utils::read_params('datefrom',$where_configs);
-        $dateto = Utils::read_params('dateto',$where_configs);
-        $benchs = Utils::read_params ( 'benchs', $where_configs, true );
-        $nets = Utils::read_params ( 'nets', $where_configs, true );
-        $disks = Utils::read_params ( 'disks', $where_configs, true );
-        $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, true );
-        $comps = Utils::read_params ( 'comps', $where_configs, true );
-        $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, true );
-        $mapss = Utils::read_params ( 'mapss', $where_configs, true );
-        $replications = Utils::read_params ( 'replications', $where_configs, true );
-        $iosfs = Utils::read_params ( 'iosfs', $where_configs, true );
-        $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, true );
-        $money = Utils::read_params ( 'money', $where_configs, true );
-        $datanodes = Utils::read_params ( 'datanodess', $where_configs, true );
-        $benchtype = Utils::read_params ( 'bench_types', $where_configs, true );
-        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, true );
-        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, true );
-        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, true );
-        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, true );
-        $types = Utils::read_params ( 'types', $where_configs, true );
-        $filters = Utils::read_params ( 'filters', $where_configs, true );
-        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-        $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
-        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
-        $provider = Utils::read_params ( 'providers', $where_configs, false );
-        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
         // if no job requested, show a random one
         if (strlen($jobid) == 0 || $jobid === "random") {
             $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
             $db = $this->container->getDBUtils();
             $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                #ORDER BY t.`JOBID` DESC
+                SELECT DISTINCT(t.JOBID)
+                FROM JOB_tasks t JOIN execs e USING (id_exec)
+                JOIN clusters c USING (id_cluster) WHERE 1=1 $whereClause
                 LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,10)]['JOBID'];
         }
 
         list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
 
         echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
             array(
-                'selected' => 'DBSCANexecs',
                 'highcharts_js' => HighCharts::getHeader(),
                 'jobid' => $jobid,
                 'bench' => $bench,
                 'job_offset' => $job_offset,
                 'METRICS' => DBUtils::$TASK_METRICS,
                 'show_filter_benchs' => false,
-                'options' => Utils::getFilterOptions($dbUtils),
-                'datefrom' => $datefrom,
-                'dateto' => $dateto,
-                'benchs' => $benchs,
-                'nets' => $nets,
-                'disks' => $disks,
-                'blk_sizes' => $blk_sizes,
-                'comps' => $comps,
-                'id_clusters' => $id_clusters,
-                'mapss' => $mapss,
-                'replications' => $replications,
-                'iosfs' => $iosfs,
-                'iofilebufs' => $iofilebufs,
-                'money' => $money,
-                'datanodess' => $datanodes,
-                'bench_types' => $benchtype,
-                'vm_sizes' => $vm_sizes,
-                'vm_coress' => $vm_coress,
-                'vm_RAMs' => $vm_RAMs,
-                'hadoop_versions' => $hadoop_versions,
-                'types' => $types,
-                'providers' => $provider,
-                'filters' => $filters,
-                'allunchecked' => $allunchecked,
                 'select_multiple_benchs' => false,
-                'minexetime' => $minexetime,
-                'maxexetime' => $maxexetime,
             )
         );
     }
@@ -1803,6 +1469,9 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
+            $this->buildFilters();
+            $whereClause = $this->filters->getWhereClause();
+
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
@@ -1823,8 +1492,8 @@ class DefaultController extends AbstractController
                 $type = 'SUMMARY';
             }
 
-            $join = "JOIN execs e using (id_exec) WHERE job_name NOT IN
-        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
+            $join = "JOIN execs e using (id_exec) JOIN clusters USING (id_cluster) WHERE job_name NOT IN
+        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
                 $join.= " AND JOB_ID = '${_GET['jobid']}' ";
@@ -1910,10 +1579,9 @@ class DefaultController extends AbstractController
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
-        echo $this->container->getTwig()->render('counters/hdp2counters.html.twig',
-            array('selected' => 'Hadoop 2 Job Counters',
+        return $this->render('counters/hdp2counters.html.twig',
+            array(
                 'theaders' => (isset($show_in_result_counters) ? $show_in_result_counters:array()),
-                //'table_fields' => $table_fields,
                 'message' => $message,
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
                 'type' => $type,
@@ -1921,52 +1589,18 @@ class DefaultController extends AbstractController
                 'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
                 'discreteOptions' => $discreteOptions,
                 'hdp2' => true,
-                //'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
             ));
     }
 
     public function clusterCostEffectivenessAction()
     {
         $db = $this->container->getDBUtils ();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-        	$preset = Utils::initDefaultPreset($db, 'Cost-Effectiveness of clusters');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
 
         $data = array();
 
         $filter_execs = DBUtils::getFilterExecs();
-        
-        $where_configs = '';
-        $concat_config = "";
-
-        // $benchs = $dbUtils->read_params('benchs',$where_configs);
-        $datefrom = Utils::read_params('datefrom',$where_configs);;
-        $dateto	= Utils::read_params('dateto',$where_configs);
-        $benchs = Utils::read_params ( 'benchs', $where_configs, false );
-        $nets = Utils::read_params('nets', $where_configs);
-        $disks = Utils::read_params('disks', $where_configs);
-        $blk_sizes = Utils::read_params('blk_sizes', $where_configs);
-        $comps = Utils::read_params('comps', $where_configs);
-        $id_clusters = Utils::read_params('id_clusters', $where_configs);
-        $mapss = Utils::read_params('mapss', $where_configs);
-        $replications = Utils::read_params('replications', $where_configs);
-        $iosfs = Utils::read_params('iosfs', $where_configs);
-        $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
-        $money = Utils::read_params ( 'money', $where_configs, false );
-        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-        $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-        $types = Utils::read_params ( 'types', $where_configs, false );
-        $filters = Utils::read_params ( 'filters', $where_configs, false );
-        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-        $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-        $provider = Utils::read_params ( 'providers', $where_configs, false );
-        $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
 
         if(isset($_GET['benchs']))
             $_GET['benchs'] = $_GET['benchs'][0];
@@ -1981,8 +1615,8 @@ class DefaultController extends AbstractController
 
         $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN clusters c USING (id_cluster)
         		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
-        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+        					 WHERE  1 $bench_where $whereClause GROUP BY name,net,disk ORDER BY name ASC)
+        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
         
     	try {
     		$rows = $db->get_rows($query);
@@ -2039,40 +1673,10 @@ class DefaultController extends AbstractController
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
     	
-    	echo $this->container->getTwig()->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
-    			'selected' => 'Cost-Effectiveness of clusters',
+    	return $this->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
     			'series' => json_encode($data),
-    			'datefrom' => $datefrom,
-    			'dateto' => $dateto,
-    			'benchs' => $bench,
-    			'nets' => $nets,
-    			'disks' => $disks,
-    			'blk_sizes' => $blk_sizes,
-    			'comps' => $comps,
-    			'id_clusters' => $id_clusters,
-    			'mapss' => $mapss,
-    			'replications' => $replications,
-    			'iosfs' => $iosfs,
-    			'iofilebufs' => $iofilebufs,
-                'money' => $money,
-    			'datanodess' => $datanodes,
-    			'bench_types' => $benchtype,
-    			'vm_sizes' => $vm_sizes,
-    			'vm_coress' => $vm_coress,
-    			'vm_RAMs' => $vm_RAMs,
-                'vm_OS' => $vm_OS,
-    			'hadoop_versions' => $hadoop_versions,
-    			'types' => $types,
-                'providers' => $provider,
-    			'filters' => $filters,
-    			'allunchecked' => $allunchecked,
-    			'bestExecs' => $bestExecs,
-    			'minexetime' => $minexetime,
-    			'maxexetime' => $maxexetime,
-    			'preset' => $preset,
-                'selPreset' => $preset,
     			'select_multiple_benchs' => false,
-    			'options' => Utils::getFilterOptions($db)
+                'bestExecs' => $bestExecs
     		));
     }
     
@@ -2080,10 +1684,8 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
-    	$preset = null;
-    	if(sizeof($_GET) <= 1)
-    		$preset = Utils::initDefaultPreset($dbUtils, 'Clusters Cost Evaluation');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+        $this->buildFilters();
 
     	try {
     		if(isset($_GET['benchs']))
@@ -2098,35 +1700,7 @@ class DefaultController extends AbstractController
     		}
     
     		
-    		$where_configs = '';
-    		$concat_config = "";
-    
-    		// $benchs = $dbUtils->read_params('benchs',$where_configs);
-    		$datefrom = Utils::read_params('datefrom',$where_configs);;
-    		$dateto	= Utils::read_params('dateto',$where_configs);
-    		$nets = Utils::read_params('nets', $where_configs);
-    		$disks = Utils::read_params('disks', $where_configs);
-    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs);
-    		$comps = Utils::read_params('comps', $where_configs);
-    		$id_clusters = Utils::read_params('id_clusters', $where_configs);
-    		$mapss = Utils::read_params('mapss', $where_configs);
-    		$replications = Utils::read_params('replications', $where_configs);
-    		$iosfs = Utils::read_params('iosfs', $where_configs);
-    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
-            $money = Utils::read_params ( 'money', $where_configs, false );
-    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-    		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
-    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-    		$types = Utils::read_params ( 'types', $where_configs, false );
-    		$filters = Utils::read_params ( 'filters', $where_configs, false );
-    		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+    		$whereClause = $this->filters->getWhereClause();
 
     		/*
     		 * 1. Get execs and cluster associated costs
@@ -2146,8 +1720,8 @@ class DefaultController extends AbstractController
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
       		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
-        					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
-        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
+        					 WHERE  1 $filter_execs $bench_where $whereClause GROUP BY name,net,disk ORDER BY name ASC)
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
     		$execs = $dbUtils->get_rows($execs);
@@ -2209,7 +1783,7 @@ class DefaultController extends AbstractController
     	usort($execs, function($a,$b) {
     		return ($a['cost_std']) > ($b['cost_std']);
     	});
-    	echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
+    	return $this->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
     			'selected' => 'Clusters Cost Evaluation',
     			'highcharts_js' => HighCharts::getHeader(),
     			// 'show_in_result' => count($show_in_result),
@@ -2218,40 +1792,11 @@ class DefaultController extends AbstractController
     			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
     			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
     			'seriesData' => $seriesData,
-    			'datefrom' => $datefrom,
-    			'dateto' => $dateto,
     			'benchs' => array($bench),
     			'select_multiple_benchs' => false,
-    			'nets' => $nets,
-    			'disks' => $disks,
-    			'blk_sizes' => $blk_sizes,
-    			'comps' => $comps,
-    			'id_clusters' => $id_clusters,
-    			'mapss' => $mapss,
-    			'replications' => $replications,
-    			'iosfs' => $iosfs,
-    			'iofilebufs' => $iofilebufs,
-    			'datanodess' => $datanodes,
-    			'bench_types' => $benchtype,
-    			'vm_sizes' => $vm_sizes,
-    			'vm_coress' => $vm_coress,
-    			'vm_RAMs' => $vm_RAMs,
-                'vm_OS' => $vm_OS,
-    			'hadoop_versions' => $hadoop_versions,
-    			'types' => $types,
-                'providers' => $provider,
-    			'filters' => $filters,
-    			'allunchecked' => $allunchecked,
-    			'minexetime' => $minexetime,
-    			'maxexetime' => $maxexetime,
     			'execs' => $execs,
-    			'preset' => $preset,
-                'selPreset' => $selPreset,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-    			'money' => $money,
-    			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
-    			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     	));
     }
     
@@ -2259,11 +1804,8 @@ class DefaultController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
-    	$preset = null;
-    	if(sizeof($_GET) <= 1)
-    		$preset = Utils::initDefaultPreset($dbUtils, 'Best Clusters Cost Evaluation');
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
+        $this->buildFilters();
     	try {
     		if(isset($_GET['benchs']))
     			$_GET['benchs'] = $_GET['benchs'][0];
@@ -2276,35 +1818,7 @@ class DefaultController extends AbstractController
     			$bench_where = " AND bench = '$bench'";
     		}
 
-    		$where_configs = '';
-    		$concat_config = "";
-    
-    		// $benchs = $dbUtils->read_params('benchs',$where_configs);
-    		$datefrom = Utils::read_params('datefrom',$where_configs);;
-    		$dateto	= Utils::read_params('dateto',$where_configs);
-    		$nets = Utils::read_params('nets', $where_configs);
-    		$disks = Utils::read_params('disks', $where_configs);
-    		$blk_sizes = Utils::read_params('blk_sizes', $where_configs);
-    		$comps = Utils::read_params('comps', $where_configs);
-    		$id_clusters = Utils::read_params('id_clusters', $where_configs);
-    		$mapss = Utils::read_params('mapss', $where_configs);
-    		$replications = Utils::read_params('replications', $where_configs);
-    		$iosfs = Utils::read_params('iosfs', $where_configs);
-    		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
-            $money = Utils::read_params ( 'money', $where_configs, false );
-    		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-    		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
-    		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-    		$vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-    		$vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-    		$hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-    		$types = Utils::read_params ( 'types', $where_configs, false );
-    		$filters = Utils::read_params ( 'filters', $where_configs, false );
-    		$allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-    		$minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-    		$maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+    		$whereClause = $this->filters->getWhereClause();
 
     		/*
     		 * 1. Get execs and cluster associated costs
@@ -2319,13 +1833,12 @@ class DefaultController extends AbstractController
     		$maxCost = 0;
     		$minExeTime = -1;
     		$maxExeTime = 0;
-    		$sumCount = 0;
-    		
+
     		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
       		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
-        					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
-        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
+        					 WHERE  1 $filter_execs $bench_where $whereClause GROUP BY name,net,disk ORDER BY name ASC)
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
     		$execs = $dbUtils->get_rows($execs);
@@ -2425,8 +1938,7 @@ class DefaultController extends AbstractController
     		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	
-    	echo $this->container->getTwig()->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
-    			'selected' => 'Best Clusters Cost Evaluation',
+    	return $this->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
     			'highcharts_js' => HighCharts::getHeader(),
     			// 'show_in_result' => count($show_in_result),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
@@ -2434,38 +1946,11 @@ class DefaultController extends AbstractController
     			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
     			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
     			'seriesData' => $seriesData,
-    			'datefrom' => $datefrom,
-    			'dateto' => $dateto,
     			'benchs' => array($bench),
     			'select_multiple_benchs' => false,
-    			'nets' => $nets,
-    			'disks' => $disks,
-    			'blk_sizes' => $blk_sizes,
-    			'comps' => $comps,
-    			'id_clusters' => $id_clusters,
-    			'mapss' => $mapss,
-    			'replications' => $replications,
-    			'iosfs' => $iosfs,
-    			'iofilebufs' => $iofilebufs,
-    			'datanodess' => $datanodes,
-    			'bench_types' => $benchtype,
-    			'vm_sizes' => $vm_sizes,
-    			'vm_coress' => $vm_coress,
-    			'vm_RAMs' => $vm_RAMs,
-                'vm_OS' => $vm_OS,
-    			'hadoop_versions' => $hadoop_versions,
-    			'types' => $types,
-                'providers' => $provider,
-    			'filters' => $filters,
-    			'allunchecked' => $allunchecked,
-    			'minexetime' => $minexetime,
-    			'maxexetime' => $maxexetime,
     			'bestExecs' => $bestExecs,
-    			'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
-    			'preset' => $preset,
-                'selPreset' => $selPreset,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     	));
     }
@@ -2473,77 +1958,14 @@ class DefaultController extends AbstractController
     public function nodesEvaluationAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-            $preset = Utils::initDefaultPreset($dbUtils, 'Number of Nodes Evaluation');
 
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-
+        $this->buildFilters();
         try {
             $filter_execs = DBUtils::getFilterExecs();
 
-            $where_configs = '';
+            $whereClause = $this->filters->getWhereClause();
 
-            $datefrom = Utils::read_params('datefrom',$where_configs);
-            $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs = Utils::read_params ( 'benchs', $where_configs, true );
-            $nets = Utils::read_params ( 'nets', $where_configs, true );
-            $disks = Utils::read_params ( 'disks', $where_configs, true );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, true );
-            $comps = Utils::read_params ( 'comps', $where_configs, true );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, true );
-            $mapss = Utils::read_params ( 'mapss', $where_configs, true );
-            $replications = Utils::read_params ( 'replications', $where_configs, true );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs, true );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, true );
-            $money = Utils::read_params ( 'money', $where_configs, true );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, true );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs, true );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, true );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, true );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, true );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, true );
-            $types = Utils::read_params ( 'types', $where_configs, true );
-            $filters = Utils::read_params ( 'filters', $where_configs, true );
-            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, true);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, true);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
-
-            if (! $benchs)
-                $where_configs .= 'AND bench IN (\'terasort\')';
-/*
-            $selectedGroups = array();
-            if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
-                $selectedGroups = explode(",",$_GET['selected-groups']);
-            }
-            else {
-                $selectedGroups[] = 'exec_type';
-                $selectedGroups[] = 'vm_OS';
-            }
-            $selectedString = implode(',',Utils::getStandardGroupBy($selectedGroups));
-
-            $query = "SELECT ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size,(e.exe_time * (c.cost_hour / 3600)) as cost, e.*, c.*".
-                " FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN (
-                    SELECT ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size
-                ) t ON";
-
-            $it = 0;
-            foreach(explode(',',$selectedString) as $group) {
-                if ($it != 0)
-                    $query .= " AND";
-
-                $tableName = str_replace("execTable", "e", $group);
-                $tableName = str_replace("clusterTable", "c", $tableName);
-                $withoutPrefixes = str_replace(array("execTable.", "clusterTable."), '', $group);
-                $query .= " t.$withoutPrefixes = $tableName";
-                $it++;
-            }
-            $query .= " AND t.vmsize = c.vm_size WHERE 1 GROUP BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size ORDER BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size DESC;";
-            $execs = $dbUtils->get_rows($query);
-*/
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $whereClause GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
@@ -2594,42 +2016,12 @@ class DefaultController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        echo $this->container->getTwig()->render('nodeseval/nodes_evaluation.html.twig', array(
-            'selected' => 'Number of Nodes Evaluation',
+        return $this->render('nodeseval/nodes_evaluation.html.twig', array(
             'highcharts_js' => HighCharts::getHeader(),
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
-            'options' => Utils::getFilterOptions($dbUtils),
-          //  'selectedGroups' => $selectedGroups,
-            'datefrom' => $datefrom,
-            'dateto' => $dateto,
-            'benchs' => $benchs,
-            'nets' => $nets,
-            'disks' => $disks,
-            'blk_sizes' => $blk_sizes,
-            'comps' => $comps,
-            'id_clusters' => $id_clusters,
-            'mapss' => $mapss,
-            'replications' => $replications,
-            'iosfs' => $iosfs,
-            'iofilebufs' => $iofilebufs,
-            'money' => $money,
             'datanodess' => $datanodes,
-            'bench_types' => $benchtype,
-            'vm_sizes' => $vm_sizes,
-            'vm_coress' => $vm_coress,
-            'vm_RAMs' => $vm_RAMs,
-            'vm_OS' => $vm_OS,
-            'hadoop_versions' => $hadoop_versions,
-            'types' => $types,
-            'providers' => $provider,
-            'filters' => $filters,
-            'allunchecked' => $allunchecked,
             'select_multiple_benchs' => false,
-            'minexetime' => $minexetime,
-            'maxexetime' => $maxexetime,
-            'preset' => $preset,
-            'selPreset' => $selPreset,
             'select_multiple_benchs' => false,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));

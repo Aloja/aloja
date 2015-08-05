@@ -241,6 +241,14 @@
 					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
             });
 
+			$("#showFilters").click(function() {
+				$("#filtersTab").slideToggle(400, function() {
+				  if($("#filtersTab").is(':visible')) {
+				    $("#showFilters").text('Hide filters');
+				  } else
+				    $("#showFilters").text('Show filters');
+				});
+			});
 			$(".datepicker").each(function() {
 				$(this).datepicker({
 					autoclose: true,

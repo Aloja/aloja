@@ -41,36 +41,8 @@ class RestController extends AbstractController
 
         try {
             $dbUtils = $this->container->getDBUtils();
-            $configurations = array();
-            $where_configs = '';
-            $concat_config = "";
-
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
-            $dateto	= Utils::read_params('dateto',$where_configs);
-            $benchs = Utils::read_params ( 'benchs', $where_configs, false );
-            $nets = Utils::read_params ( 'nets', $where_configs, false );
-            $disks = Utils::read_params ( 'disks', $where_configs, false );
-            $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false );
-            $comps = Utils::read_params ( 'comps', $where_configs, false );
-            $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false );
-            $mapss = Utils::read_params ( 'mapss', $where_configs, false );
-            $replications = Utils::read_params ( 'replications', $where_configs, false );
-            $iosfs = Utils::read_params ( 'iosfs', $where_configs, false );
-            $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false );
-            $money = Utils::read_params ( 'money', $where_configs, false );
-            $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
-            $benchtype = Utils::read_params ( 'bench_types', $where_configs );
-            $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
-            $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false );
-            $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false );
-            $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false );
-            $types = Utils::read_params ( 'types', $where_configs, false );
-            $filters = Utils::read_params ( 'filters', $where_configs, false );
-            $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-            $minexetime = Utils::read_params ( 'minexetime', $where_configs, false);
-            $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false);
-            $provider = Utils::read_params ( 'providers', $where_configs, false );
-            $vm_OS = Utils::read_params ( 'vm_OSs', $where_configs, false );
+            $this->buildFilters();
+            $whereClause = $this->filters->getWhereClause();
 
             $type = Utils::get_GET_string('type');
             if(!$type)
@@ -138,11 +110,11 @@ class RestController extends AbstractController
 					'bench_type' => 'Bench',
 				);
             }
-            $where_configs = str_replace('%2F','/',$where_configs);
+            $whereClause = str_replace('%2F','/',$whereClause);
             
              $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
        	 		join clusters c USING (id_cluster)
-      		 	 WHERE 1 $where_configs" .DBUtils::getFilterExecs().";";
+      		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs().";";
 
              $exec_rows = $dbUtils->get_rows($query);
 
@@ -163,6 +135,8 @@ class RestController extends AbstractController
     public function countersDataAction()
     {
         $db = $this->container->getDBUtils();
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
         try {
             //check the URL
             $execs = Utils::get_GET_execs();
@@ -170,8 +144,8 @@ class RestController extends AbstractController
             if (!($type = Utils::get_GET_string('type')))
                 $type = 'SUMMARY';
 
-            $join = "JOIN execs e using (id_exec) WHERE e.valid = 1 AND JOBNAME NOT IN
-        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
+            $join = "JOIN execs e using (id_exec) JOIN clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
+        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
 
             if ($type == 'SUMMARY') {
@@ -550,6 +524,8 @@ VALUES
         $show_in_result_metrics = array();
         $query = '';
         $dbUtil = $this->container->getDBUtils();
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
         
         try {
             $type = Utils::get_GET_string('type');
@@ -563,7 +539,7 @@ VALUES
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
                  AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time,
                  c.name cluster_name '.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)
+                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                 ';
@@ -579,7 +555,7 @@ VALUES
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
                     AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time,
                     c.name cluster_name '.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)
+                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                     ';
@@ -596,7 +572,7 @@ VALUES
                      AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time,
                      c.name cluster_name '.
                     ' FROM SAR_memory_util su '.
-                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)
+                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                     ';
@@ -612,7 +588,7 @@ VALUES
                     'e.id_cluster,e.end_time,
                     c.name cluster_name
                     FROM SAR_net_devices s
-                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' GROUP BY (e.id_exec)
+                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                     ';
@@ -1039,44 +1015,21 @@ VALUES
         //ini_set('memory_limit', '384M');
 
         $db = $this->container->getDBUtils();
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause("e","c");
 
-        $where_configs = '';
         $table_name = "e";
-        $datefrom = Utils::read_params('datefrom',$where_configs, false, $table_name);
-        $dateto = Utils::read_params('dateto',$where_configs, false, $table_name);
-        $benchs = Utils::read_params ( 'benchs', $where_configs, false, $table_name);
-        $nets = Utils::read_params ( 'nets', $where_configs, false, $table_name);
-        $disks = Utils::read_params ( 'disks', $where_configs, false, $table_name);
-        $blk_sizes = Utils::read_params ( 'blk_sizes', $where_configs, false, $table_name);
-        $comps = Utils::read_params ( 'comps', $where_configs, false, $table_name);
-        $id_clusters = Utils::read_params ( 'id_clusters', $where_configs, false, $table_name);
-        $mapss = Utils::read_params ( 'mapss', $where_configs, false, $table_name);
-        $replications = Utils::read_params ( 'replications', $where_configs, false, $table_name);
-        $iosfs = Utils::read_params ( 'iosfs', $where_configs, false, $table_name);
-        $iofilebufs = Utils::read_params ( 'iofilebufs', $where_configs, false, $table_name);
-        $money = Utils::read_params ( 'money', $where_configs, false, $table_name);
-        $datanodes = Utils::read_params ( 'datanodess', $where_configs, false, $table_name);
-        $benchtype = Utils::read_params ( 'bench_types', $where_configs, false, $table_name);
-        $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false, $table_name);
-        $vm_coress = Utils::read_params ( 'vm_coress', $where_configs, false, $table_name);
-        $vm_RAMs = Utils::read_params ( 'vm_RAMs', $where_configs, false, $table_name);
-        $hadoop_versions = Utils::read_params ( 'hadoop_versions', $where_configs, false, $table_name);
-        $types = Utils::read_params ( 'types', $where_configs, false, $table_name);
-        $filters = Utils::read_params ( 'filters', $where_configs, false, $table_name);
-        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
-        $minexetime = Utils::read_params ( 'minexetime', $where_configs, false, $table_name);
-        $maxexetime = Utils::read_params ( 'maxexetime', $where_configs, false, $table_name);
-        $provider = Utils::read_params ( 'providers', $where_configs, false, $table_name);
 
         $jobid = Utils::get_GET_string("jobid");
         $metric_x = Utils::get_GET_int("metric_x") !== null ? Utils::get_GET_int("metric_x") : 0;
         $metric_y = Utils::get_GET_int("metric_y") !== null ? Utils::get_GET_int("metric_y") : 1;
         $task_type = $db->get_task_type(Utils::get_GET_string("task_type"));
 
+
         list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
 
         // Calc pending dbscanexecs (if any)
-        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $where_configs);
+        $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $whereClause);
         if (count($pending) > 0) {
             $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y, $task_type);
         }
@@ -1089,6 +1042,7 @@ VALUES
                 d.`centroid_x`,
                 d.`centroid_y`
             FROM `JOB_dbscan` d, `execs` e
+            JOIN clusters c USING (id_cluster)
             WHERE
                 d.`id_exec` = e.`id_exec` AND
                 d.`bench` = :bench AND
@@ -1096,7 +1050,7 @@ VALUES
                 d.`metric_x` = :metric_x AND
                 d.`metric_y` = :metric_y
                 ".$task_type_select('d')."
-                $where_configs
+                $whereClause
         ;";
         $query_params = array(
             ":bench" => $bench,
@@ -1168,6 +1122,8 @@ VALUES
     public function hdp2CountersDataAction()
     {
     	$db = $this->container->getDBUtils();
+        $this->buildFilters();
+        $whereClause = $this->filters->getWhereClause();
     	try {
     		//check the URL
     		$execs = Utils::get_GET_execs();
@@ -1176,7 +1132,7 @@ VALUES
     			$type = 'SUMMARY';
     
     		$join = "JOIN execs e using (id_exec) WHERE e.valid = 1 AND job_name NOT IN
-        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
+        ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
             ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
     
     		if ($type == 'SUMMARY') {
