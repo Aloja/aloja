@@ -354,22 +354,21 @@ sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
 #$1 repo name (optional)
 vm_install_repo() {
 
+  if [ "$1" ] ; then
+    local repo="$1"
+  else
+    local repo="master"
+  fi
+
   local bootstrap_file="vm_install_repo"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-    if [ "$1" ] ; then
-      local repo="$1"
-    else
-      local repo="master"
-    fi
-
     logger "INFO: Installing branch $1"
     vm_execute "
 
-sudo mkdir -p /var/www
-
+sudo mkdir -p /var/www;
 sudo rm -rf /tmp/aloja;
 mkdir -p /tmp/aloja
 git clone https://github.com/Aloja/aloja.git /tmp/aloja
@@ -395,7 +394,24 @@ sudo service nginx restart
 
   else
     logger "$bootstrap_file already configured"
+    logger "updating the ALOJA-WEB git repo to: origin $repo"
+    vm_execute "
+cd /var/www/;
+sudo git checkout $repo;
+sudo git fetch;
+if [ ! \"\$(git status| grep 'branch is up-to-date')\" ] ; then
+  sudo git reset --hard HEAD;
+  sudo git pull --no-edit origin $repo;
+  sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
+  sudo service php5-fpm restart;
+  sudo service nginx restart;
+fi
+cd -;
+"
+
   fi
+
+
 
   #now install the PHP composer vendors
   install_PHP_vendors
