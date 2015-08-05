@@ -1082,7 +1082,11 @@ vm_rsync_public() {
 
   logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
 
-  vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+  if [ -d "$CONF_DIR/../../blobs" ] ; then
+    vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+  else
+    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $CONF_DIR/../../blobs"
+  fi
 }
 
 #$1 filename
