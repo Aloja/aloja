@@ -29,7 +29,7 @@ class Filters
          *
          */
         $this->filtersNamesOptions = array('money' => array('table' => 'execs', 'default' => null, 'type' => 'inputNumber'),
-            'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount','sort'), 'type' => 'selectMultiple'),
+            'bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
             'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
             'disk' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
@@ -103,12 +103,14 @@ class Filters
 
             $values = null;
             if(isset($_GET[$filterName])) {
-                $values = html_entity_decode($_GET[$filterName]);
+                $values = $_GET[$filterName];
+                array_walk($values, function(&$item) {
+                    $item=str_replace('%2F','/',$item);
+                });
             } else if($definition['default'] != null) {
                 $values = $definition['default'];
             }
             $this->selectedFilters[$filterName] = $values;
-
 
             if($values != null) {
                 $type = $definition['type'];

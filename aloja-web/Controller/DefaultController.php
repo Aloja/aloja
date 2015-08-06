@@ -252,7 +252,9 @@ class DefaultController extends AbstractController
     {
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' =>
+            array('table' => 'execs', 'default' => array('terasort'),
+                'type' => 'selectOne')));
         $whereClause = $this->filters->getWhereClause();
         
         try {
@@ -348,6 +350,7 @@ class DefaultController extends AbstractController
             'seriesData' => $seriesData,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
             'clusters' => $clusters,
+            'select_multiple_benchs' => false
         ));
     }
 

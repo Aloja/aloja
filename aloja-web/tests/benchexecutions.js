@@ -3,7 +3,7 @@ casper.test.begin("Datatable tests", function(test) {
 		this.echo(msg);
 	});
 
-	casper.start('http://localhost:8080/benchexecs?type=DETAIL', function() {
+	casper.start('http://localhost:8080/benchexecs?pageTab=DETAIL', function() {
 		test.assertExists("table#benchmarks", "Datatable created");
 		test.assertEval(function() {
 			return $("#benchmarks td").length > 1;
