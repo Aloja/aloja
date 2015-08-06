@@ -1447,19 +1447,18 @@ class DefaultController extends AbstractController
                 JOIN clusters c USING (id_cluster) WHERE 1=1 $whereClause
                 LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[rand(0,10)]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
         }
 
         list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
 
-        echo $this->container->getTwig()->render('dbscanexecs/dbscanexecs.html.twig',
+        echo $this->render('dbscanexecs/dbscanexecs.html.twig',
             array(
                 'highcharts_js' => HighCharts::getHeader(),
                 'jobid' => $jobid,
                 'bench' => $bench,
                 'job_offset' => $job_offset,
                 'METRICS' => DBUtils::$TASK_METRICS,
-                'show_filter_benchs' => false,
                 'select_multiple_benchs' => false,
             )
         );
