@@ -41,7 +41,7 @@ class RestController extends AbstractController
 
         try {
             $dbUtils = $this->container->getDBUtils();
-            $this->buildFilters();
+            $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
             $whereClause = $this->filters->getWhereClause();
 
             $type = Utils::get_GET_string('pageTab');
@@ -135,7 +135,7 @@ class RestController extends AbstractController
     public function countersDataAction()
     {
         $db = $this->container->getDBUtils();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
         $whereClause = $this->filters->getWhereClause();
         try {
             //check the URL
@@ -524,7 +524,7 @@ VALUES
         $show_in_result_metrics = array();
         $query = '';
         $dbUtil = $this->container->getDBUtils();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
         $whereClause = $this->filters->getWhereClause();
         
         try {
@@ -1122,7 +1122,7 @@ VALUES
     public function hdp2CountersDataAction()
     {
     	$db = $this->container->getDBUtils();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
         $whereClause = $this->filters->getWhereClause();
     	try {
     		//check the URL

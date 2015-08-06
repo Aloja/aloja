@@ -1,4 +1,4 @@
-<form id="configFilters" name="configFilters" method="GET" role="form">
+<form id="configFilters" name="configFilters" method="GET" role="form" autocomplete="off">
 {% set show = false %}
 {% for selopt in options['presets'] if not show %}
   {% if selopt['selected_tool'] == selected %}
@@ -198,8 +198,8 @@
 							  </div>
 					      </div>
 						{% else %}
-						Benchmarks:<br />
-						<select class="form-control" class="control-form" name="bench[]">
+						Benchmarks: <br />
+						<select class="form-control" name="bench[]">
 							{% for selopt in options['bench'] %}
 							  <option value="{{ selopt['bench'] }}" {% if selopt['bench'] in bench %}SELECTED{% endif %}>{{ selopt['bench'] }}</option>
 							{% endfor %}

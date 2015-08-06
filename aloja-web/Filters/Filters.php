@@ -29,7 +29,7 @@ class Filters
          *
          */
         $this->filtersNamesOptions = array('money' => array('table' => 'execs', 'default' => null, 'type' => 'inputNumber'),
-            'bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple'),
             'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
             'disk' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),

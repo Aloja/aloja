@@ -166,7 +166,7 @@ class DefaultController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
         $whereClause = $this->filters->getWhereClause();
 
 		$type = Utils::get_GET_string("pageTab");
@@ -988,7 +988,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $this->buildFilters();
+            $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
             $whereClause = $this->filters->getWhereClause();
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
@@ -1116,7 +1116,7 @@ class DefaultController extends AbstractController
 
     public function performanceMetricsAction()
     {
-        $this->buildFilters();
+        $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
         $whereClause = $this->filters->getWhereClause();
 
         $show_in_result_metrics = array();
@@ -1291,7 +1291,6 @@ class DefaultController extends AbstractController
 
             $filter_execs = DBUtils::getFilterExecs();
 
-            $options = Utils::getFilterOptions($db);
             $paramOptions = array();
             foreach($options[$paramEval] as $option) {
                 if($paramEval == 'id_cluster')
@@ -1332,7 +1331,6 @@ class DefaultController extends AbstractController
             }
 
             $series = array();
-            $bench = '';
             foreach($rows as $row) {
                 if($paramEval == 'comp')
                     $row[$paramEval] = Utils::getCompressionName($row['comp']);
@@ -1362,8 +1360,7 @@ class DefaultController extends AbstractController
             'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
             'categories' => $categories,
             'series' => $series,
-            'paramEval' => $paramEval,
-            'options' => $options
+            'paramEval' => $paramEval
         ) );
     }
 
@@ -1474,7 +1471,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $this->buildFilters();
+            $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
             $whereClause = $this->filters->getWhereClause();
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
@@ -1600,7 +1597,9 @@ class DefaultController extends AbstractController
     public function clusterCostEffectivenessAction()
     {
         $db = $this->container->getDBUtils ();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' =>
+            array('table' => 'execs', 'default' => array('terasort'),
+                'type' => 'selectOne')));
         $whereClause = $this->filters->getWhereClause();
 
         $data = array();
@@ -1690,7 +1689,9 @@ class DefaultController extends AbstractController
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
 
-        $this->buildFilters();
+        $this->buildFilters(array('bench' =>
+            array('table' => 'execs', 'default' => array('terasort'),
+                'type' => 'selectOne')));
 
     	try {
     		if(isset($_GET['benchs']))
@@ -1810,19 +1811,10 @@ class DefaultController extends AbstractController
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
 
-        $this->buildFilters();
+        $this->buildFilters(array('bench' =>
+            array('table' => 'execs', 'default' => array('terasort'),
+                'type' => 'selectOne')));
     	try {
-    		if(isset($_GET['benchs']))
-    			$_GET['benchs'] = $_GET['benchs'][0];
-    
-    		if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
-    			$bench = $_GET['benchs'];
-    			$bench_where = " AND bench = '$bench'";
-    		} else {
-    			$bench = 'terasort';
-    			$bench_where = " AND bench = '$bench'";
-    		}
-
     		$whereClause = $this->filters->getWhereClause();
 
     		/*
@@ -1951,10 +1943,8 @@ class DefaultController extends AbstractController
     			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
     			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
     			'seriesData' => $seriesData,
-    			'benchs' => array($bench),
     			'select_multiple_benchs' => false,
     			'bestExecs' => $bestExecs,
-    			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     	));
@@ -1964,7 +1954,9 @@ class DefaultController extends AbstractController
     {
         $dbUtils = $this->container->getDBUtils();
 
-        $this->buildFilters();
+        $this->buildFilters(array('bench' =>
+            array('table' => 'execs', 'default' => array('terasort'),
+                'type' => 'selectOne')));
         try {
             $filter_execs = DBUtils::getFilterExecs();
 
@@ -2026,7 +2018,6 @@ class DefaultController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
             'datanodess' => $datanodes,
-            'select_multiple_benchs' => false,
             'select_multiple_benchs' => false,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));
