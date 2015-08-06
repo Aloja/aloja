@@ -50,7 +50,7 @@ export2prv:
     
 metrics:
     pattern: "/metrics"
-    controller: "alojaweb\\Controller\\DefaultController::performanceTableAction"
+    controller: "alojaweb\\Controller\\DefaultController::performanceMetricsAction"
     screenName: "Performance Metrics"
     
 metricsdata:

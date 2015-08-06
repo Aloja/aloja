@@ -8,13 +8,13 @@
         <div id="navigation" style="text-align: center;">
 	        <h2 class="compare body">
 	            <strong>Job counter types:</strong>
-	            <a href="{{ modifyUrl({'type': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
-	            <a href="{{ modifyUrl({'type': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
-	            <a href="{{ modifyUrl({'type': 'REDUCE'}) }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>
-	            <a href="{{ modifyUrl({'type': 'FILE-IO'}) }}"><span {% if type == 'FILE-IO' %}style="font-weight: bold;"{% endif %}>FILE-IO</span></a>
-	            <a href="{{ modifyUrl({'type': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAIL</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'REDUCE'}) }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'FILE-IO'}) }}"><span {% if type == 'FILE-IO' %}style="font-weight: bold;"{% endif %}>FILE-IO</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAIL</span></a>
 	            {% if execs is defined %}
-	            <a href="{{ modifyUrl({'type': 'TASKS'}) }}"><span {% if type == 'TASKS' %}style="font-weight: bold;"{% endif %}>JOB/S TASKS</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'TASKS'}) }}"><span {% if type == 'TASKS' %}style="font-weight: bold;"{% endif %}>JOB/S TASKS</span></a>
 	            {% endif %}
 	        </h2>
 	    </div>

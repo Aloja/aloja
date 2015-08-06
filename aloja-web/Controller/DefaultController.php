@@ -169,7 +169,7 @@ class DefaultController extends AbstractController
         $this->buildFilters();
         $whereClause = $this->filters->getWhereClause();
 
-		$type = Utils::get_GET_string("type");
+		$type = Utils::get_GET_string("pageTab");
 		
 		if(!$type)
 			$type = 'SUMMARY';
@@ -1111,13 +1111,13 @@ class DefaultController extends AbstractController
             ));
     }
 
-    public function performanceTableAction()
+    public function performanceMetricsAction()
     {
         $this->buildFilters();
         $whereClause = $this->filters->getWhereClause();
 
         $show_in_result_metrics = array();
-        $type = Utils::get_GET_string('type');
+        $type = Utils::get_GET_string('pageTab');
         if(!$type || $type == 'CPU') {
             $show_in_result_metrics = array('Conf','bench' => 'Benchmark', 'net' => 'Net', 'disk' => 'Disk','maps' => 'Maps','comp' => 'Comp','Rep','blk_size' => 'Blk size',
                 'Avg %user', 'Max %user', 'Min %user', 'Stddev %user', 'Var %user',

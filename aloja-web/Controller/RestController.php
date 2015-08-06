@@ -44,7 +44,7 @@ class RestController extends AbstractController
             $this->buildFilters();
             $whereClause = $this->filters->getWhereClause();
 
-            $type = Utils::get_GET_string('type');
+            $type = Utils::get_GET_string('pageTab');
             if(!$type)
             	$type = 'SUMMARY';
             
@@ -141,7 +141,7 @@ class RestController extends AbstractController
             //check the URL
             $execs = Utils::get_GET_execs();
 
-            if (!($type = Utils::get_GET_string('type')))
+            if (!($type = Utils::get_GET_string('pageTab')))
                 $type = 'SUMMARY';
 
             $join = "JOIN execs e using (id_exec) JOIN clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
@@ -528,7 +528,7 @@ VALUES
         $whereClause = $this->filters->getWhereClause();
         
         try {
-            $type = Utils::get_GET_string('type');
+            $type = Utils::get_GET_string('pageTab');
             $filter_execs = DBUtils::getFilterExecs();
             if(!$type || $type == 'CPU') {
                 $query = 'SELECT e.id_exec, e.exec, e.bench, e.net, e.disk, e.maps, e.comp, e.replication, e.blk_size, '.
@@ -1128,7 +1128,7 @@ VALUES
     		//check the URL
     		$execs = Utils::get_GET_execs();
     
-    		if (!($type = Utils::get_GET_string('type')))
+    		if (!($type = Utils::get_GET_string('pageTab')))
     			$type = 'SUMMARY';
     
     		$join = "JOIN execs e using (id_exec) WHERE e.valid = 1 AND job_name NOT IN

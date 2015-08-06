@@ -50,8 +50,8 @@ class Filters
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
             'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberge'),
             'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle'),
-            'datefrom' => array('table' => 'execs', 'default' => null, 'type' => 'inputDatege'),
-            'dateto' => array('table' => 'execs', 'default' => null, 'type' => 'inputDatele'));
+            'datefrom' => array('table' => 'execs', 'field' => 'start_time', 'default' => null, 'type' => 'inputDatege'),
+            'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele'));
 
         $this->aliasesTables = array('execs' => '','clusters' => '');
     }
@@ -103,7 +103,7 @@ class Filters
 
             $values = null;
             if(isset($_GET[$filterName])) {
-                $values = $_GET[$filterName];
+                $values = html_entity_decode($_GET[$filterName]);
             } else if($definition['default'] != null) {
                 $values = $definition['default'];
             }
@@ -119,10 +119,14 @@ class Filters
                     $this->whereClause .= " AND $DBreference IN (". join(',', $values) .")";
                 } else if($type == "inputText" || $type == "inputNumber") {
                     $this->whereClause .= " AND $DBreference = $values";
-                } else if($type == "inputDatele" || $type == "inputNumberle") {
+                } else if($type == "inputNumberle") {
                     $this->whereClause .= " AND $DBreference <= $values";
-                } else if($type == "inputDatege" || $type == "inputNumberge") {
+                } else if($type == "inputNumberge") {
                     $this->whereClause .= " AND $DBreference >= $values";
+                } else if($type == "inputDatele") {
+                    $this->whereClause .= " AND $DBreference <= '$values'";
+                } else if($type == "inputDatege") {
+                    $this->whereClause .= " AND $DBreference >= '$values'";
                 }
             }
         }
