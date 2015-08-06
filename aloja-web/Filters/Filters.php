@@ -11,12 +11,60 @@ class Filters
 
     private $selectedFilters;
 
-    public function getWhereClause($execsAlias = "", $clustersAlias = "") {
+    private $filtersNamesOptions;
+
+    private $aliasesTables;
+
+    public function __construct() {
+        /* In this array there are the filter names with its default options
+         * that will be overwritten by the given custom defaults and options if given
+         * Array with filter => filter specific settings
+         *
+         * Specific settings is an array with
+         * types: inputText, inputNumber[{le,ge}], inputDate[{le,ge}], selectOne, selectMultiple
+         * default: null (any), array(values)
+         * table: associated DB table name
+         *
+         * Very custom filters such as advanced filters not in this array
+         *
+         */
+        $this->filtersNamesOptions = array('money' => array('table' => 'execs', 'default' => null, 'type' => 'inputNumber'),
+            'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount','sort'), 'type' => 'selectMultiple'),
+            'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple'),
+            'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'disk' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'blk_size' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'comp' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'id_cluster' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'maps' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'replication' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'iosf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'iofilebuf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'provider' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'vm_OS' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'datanodes' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'vm_size' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'vm_cores' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'vm_RAM' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple'),
+            'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple'),
+            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberge'),
+            'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle'),
+            'datefrom' => array('table' => 'execs', 'default' => null, 'type' => 'inputDatege'),
+            'dateto' => array('table' => 'execs', 'default' => null, 'type' => 'inputDatele'));
+
+        $this->aliasesTables = array('execs' => '','clusters' => '');
+    }
+
+    public function getWhereClause($aliasesToReplace) {
         $whereClause = $this->whereClause;
-        $execsAlias = ($execsAlias != "") ? "$execsAlias." : "";
-        $clustersAlias = ($clustersAlias != "") ? "$clustersAlias." : "";
-        $whereClause = str_replace('execsAlias.',$execsAlias,$whereClause);
-        $whereClause = str_replace('clustersAlias.',$clustersAlias,$whereClause);
+        foreach($this->aliasesTables as $table => $alias) {
+            if(array_key_exists($table, $aliasesToReplace)) {
+                $whereClause = str_replace("${table}Alias.",$aliasesToReplace[$table].'.',$whereClause);
+            } else {
+                $whereClause = str_replace("${table}Alias.",$alias,$whereClause);
+            }
+        }
         return $whereClause;
     }
 
@@ -25,7 +73,7 @@ class Filters
     }
 
     public function getFilterOptions(\alojaweb\inc\DBUtils $dbUtils) {
-        $options['benchs'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+        $options['bench'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
         $options['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
         $options['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
         $options['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
@@ -48,188 +96,124 @@ class Filters
         return $options;
     }
 
-    public function getFilters(\alojaweb\inc\DBUtils $dbConnection, $screenName) {
+    private function parseFilters() {
+        foreach($this->filtersNamesOptions as $filterName => $definition) {
+            $DBreference = "${definition['table']}Alias.";
+            $DBreference .= (isset($definition['field'])) ? $definition['field'] : $filterName;
 
-        $preset = null;
-        if(sizeof($_GET) <= 1)
-            $preset = Utils::initDefaultPreset($dbConnection, $screenName);
-        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+            $values = null;
+            if(isset($_GET[$filterName])) {
+                $values = $_GET[$filterName];
+            } else if($definition['default'] != null) {
+                $values = $definition['default'];
+            }
+            $this->selectedFilters[$filterName] = $values;
 
-        $money = $this->readFilter('money','execs',$filtersWhereClause, false);
-        $benchs = $this->readFilter('benchs','execs',$filtersWhereClause, true);
-        $benchtype = $this->readFilter ( 'bench_types','execs', $filtersWhereClause, true );
-        $nets = $this->readFilter('nets','execs',$filtersWhereClause, false);
-        $disks = $this->readFilter('disks','execs',$filtersWhereClause, false);
-        $blk_sizes = $this->readFilter('blk_sizes','execs',$filtersWhereClause, false);
-        $comps = $this->readFilter('comps','execs',$filtersWhereClause, false);
-        $id_clusters = $this->readFilter('id_clusters','execs',$filtersWhereClause, false);
-        $mapss = $this->readFilter('mapss','execs',$filtersWhereClause, false);
-        $replications = $this->readFilter('replications','execs',$filtersWhereClause, false);
-        $iosfs = $this->readFilter('iosfs','execs',$filtersWhereClause, false);
-        $iofilebufs = $this->readFilter('iofilebufs','execs',$filtersWhereClause, false);
-        $provider = $this->readFilter ( 'providers','clusters', $filtersWhereClause, false );
-        $vm_OS = $this->readFilter ( 'vm_OSs','clusters', $filtersWhereClause, false );
-        $datanodes = $this->readFilter ( 'datanodess','clusters', $filtersWhereClause, false );
-        $vm_sizes = $this->readFilter ( 'vm_sizes','clusters', $filtersWhereClause, false );
-        $vm_coress = $this->readFilter ( 'vm_coress','clusters', $filtersWhereClause, false );
-        $vm_RAMs = $this->readFilter ( 'vm_RAMs','clusters', $filtersWhereClause, false );
-        $types = $this->readFilter ( 'types','clusters', $filtersWhereClause, false );
-        $hadoop_versions = $this->readFilter ( 'hadoop_versions','execs', $filtersWhereClause, false );
-        $filters = $this->readFilter ( 'filters','execs', $filtersWhereClause, false );
-        $minexetime = $this->readFilter ( 'minexetime','execs', $filtersWhereClause, false);
-        $maxexetime = $this->readFilter ( 'maxexetime','execs', $filtersWhereClause, false);
-        $datefrom = $this->readFilter('datefrom','execs',$filtersWhereClause, false);
-        $dateto	= $this->readFilter('dateto','execs',$filtersWhereClause, false);
-        $allunchecked = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
 
-        $selFilters = array(
-            'benchs' => $benchs,
-            'nets' => $nets,
-            'disks' => $disks,
-            'blk_sizes' => $blk_sizes,
-            'comps' => $comps,
-            'id_clusters' => $id_clusters,
-            'mapss' => $mapss,
-            'replications' => $replications,
-            'iosfs' => $iosfs,
-            'iofilebufs' => $iofilebufs,
-            'money' => $money,
-            'datanodess' => $datanodes,
-            'bench_types' => $benchtype,
-            'vm_sizes' => $vm_sizes,
-            'vm_coress' => $vm_coress,
-            'vm_RAMs' => $vm_RAMs,
-            'vm_OS' => $vm_OS,
-            'hadoop_versions' => $hadoop_versions,
-            'types' => $types,
-            'providers' => $provider,
-            'filters' => $filters,
-            'minexetime' => $minexetime,
-            'maxexetime' => $maxexetime,
-            'datefrom' => $datefrom,
-            'dateto' => $dateto,
-            'allunchecked' => $allunchecked,
-            'preset' => $preset,
-            'selPreset' => $selPreset);
-
-        $this->whereClause = $filtersWhereClause;
-        $this->selectedFilters = $selFilters;
+            if($values != null) {
+                $type = $definition['type'];
+                if($type == "selectOne" || $type == "selectMultiple") {
+                    array_walk($values,function(&$item) {
+                        $item = "'$item'";
+                    });
+                    $this->whereClause .= " AND $DBreference IN (". join(',', $values) .")";
+                } else if($type == "inputText" || $type == "inputNumber") {
+                    $this->whereClause .= " AND $DBreference = $values";
+                } else if($type == "inputDatele" || $type == "inputNumberle") {
+                    $this->whereClause .= " AND $DBreference <= $values";
+                } else if($type == "inputDatege" || $type == "inputNumberge") {
+                    $this->whereClause .= " AND $DBreference >= $values";
+                }
+            }
+        }
     }
 
-    private function readFilter($filterName, $tableName, &$whereClause, $setDefaultValues = true)
-    {
-        $alias = "${tableName}Alias";
-        if($filterName == 'money' && isset($_GET['money'])) {
-            $money = $_GET['money'];
-            if($money != '') {
-                $whereClause .= ' AND ('.$alias.'.exe_time/3600)*('.$alias.'.cost_hour) <= '.$_GET['money'];
+    private function parseAdvancedFilters() {
+        $alias = 'execsAlias';
+        $includePrepares = false;
+        if(isset($_GET['filters'])) {
+            $filters = $_GET['filters'];
+            if(in_array("valid",$filters))
+                $this->whereClause .= ' AND '.$alias.'.valid = 1 ';
+            if(in_array("prepares",$filters))
+                $includePrepares = true;
+            if(in_array("perfdetails",$filters))
+                $this->whereClause .= ' AND '.$alias.'.perf_details = 1 ';
+
+            if(in_array("outliers", $filters)) {
+                if(in_array("warnings", $filters))
+                    $this->whereClause .= " AND $alias.outlier IN (0,1,2) ";
+                else
+                    $this->whereClause .= " AND $alias.outlier IN (0,1) ";
             }
-            return $_GET['money'];
+
+            $this->whereClause .= (in_array("filters",$filters)) ? ' AND '.$alias.'.filter = 0 ' : '';
+
+        } else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
+            $_GET['filters'][] = 'valid';
+            $_GET['filters'][] = 'filters';
+
+            $this->whereClause .= ' AND '.$alias.'.valid = 1 AND '.$alias.'.filter = 0 ';
         }
 
-        if($filterName == 'datefrom' && isset($_GET['datefrom'])) {
-            $datefrom = $_GET['datefrom'];
-            if($datefrom != '') {
-                $whereClause .= " AND $alias.start_time >= '$datefrom'";
+        if(!$includePrepares)
+            $this->whereClause .= "AND $alias.bench not like 'prep_%' AND $alias.bench_type not like 'HDI-prep%'";
+
+        $this->selectedFilters['filters'] = (isset($_GET['filters'])) ? $_GET['filters'] : "";
+    }
+
+    public function getFilters(\alojaweb\inc\DBUtils $dbConnection, $screenName, $customDefaultValues) {
+
+        $this->readPresets($dbConnection,$screenName);
+
+        //Override with custom default values
+        foreach($this->filtersNamesOptions as $index => &$options) {
+            if(array_key_exists($index,$customDefaultValues)) {
+                $options = $customDefaultValues[$index];
             }
-            return $datefrom;
-        } else if($filterName == 'datefrom')
-            return "";
+        }
 
-        if($filterName == 'dateto' && isset($_GET['dateto'])) {
-            $dateto = $_GET['dateto'];
-            if($dateto != '') {
-                $whereClause .= " AND $alias.end_time <= '$dateto'";
-            }
-            return $dateto;
-        } else if($filterName == 'dateto')
-            return "";
+        $this->parseFilters();
+        $this->parseAdvancedFilters();
 
-        //Advanced filters parsing
-        if($filterName == "filters") {
-            $includePrepares = false;
-            if(isset($_GET['filters'])) {
-                $filters = $_GET['filters'];
-                if(in_array("valid",$filters))
-                    $whereClause .= ' AND '.$alias.'.valid = 1 ';
-                if(in_array("prepares",$filters))
-                    $includePrepares = true;
-                if(in_array("perfdetails",$filters))
-                    $whereClause .= ' AND '.$alias.'.perf_details = 1 ';
+        //Workaround to know if all advanced options selected or not, due unable to know in a "beauty" way with GET parameters
+        $this->selectedFilters['allunchecked'] = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
+    }
 
-                if(in_array("outliers", $filters)) {
-                    if(in_array("warnings", $filters))
-                        $whereClause .= " AND $alias.outlier IN (0,1,2) ";
-                    else
-                        $whereClause .= " AND $alias.outlier IN (0,1) ";
+    private function readPresets($dbConnection, $screenName) {
+        $preset = null;
+        if(sizeof($_GET) <= 1)
+        $this->selectedFilters['preset'] = $this->initDefaultPreset($dbConnection, $screenName);
+        $this->selectedFilters['selPreset'] = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+    }
+
+    private function initDefaultPreset($db, $screen) {
+        $presets = $db->get_rows("SELECT * FROM filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
+        $return = null;
+        if(count($presets)>=1) {
+            $url = $presets[0]['URL'];
+            $return = $url;
+            $filters = explode('?',$url)[1];
+            $filters = explode('&',$filters);
+            $filters = array_filter($filters); //make sure we don't get empty values in cases like ?&afa=dfa
+            foreach($filters as $filter) {
+                $explode = explode('=',$filter);
+                $filterName = $explode[0];
+                $isArray = false;
+                if($filterName[strlen($filterName)-1] == "]") {
+                    $filterName = substr($filterName,0,strlen($filterName)-2);
+                    $isArray = true;
                 }
 
-                $whereClause .= (in_array("filters",$filters)) ? ' AND '.$alias.'.filter = 0 ' : '';
+                $filterValue = $explode[1];
 
-
-            } else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
-                $_GET['filters'][] = 'valid';
-                $_GET['filters'][] = 'filters';
-
-                $whereClause .= ' AND '.$alias.'.valid = 1 AND '.$alias.'.filter = 0 ';
+                if($isArray)
+                    $_GET[$filterName][] = $filterValue;
+                else
+                    $_GET[$filterName] = $filterValue;
             }
-
-            if(!$includePrepares)
-                $whereClause .= "AND $alias.bench not like 'prep_%' AND $alias.bench_type not like 'HDI-prep%'";
-
-            if(isset($_GET['filters']))
-                return $_GET['filters'];
-            else
-                return "";
         }
 
-        if($filterName == "minexetime") {
-            $minexetime = (isset($_GET["minexetime"])) ? $_GET["minexetime"] : 50;
-
-            if($minexetime != null)
-                $whereClause .= " AND $alias.exe_time >= $minexetime ";
-
-            return $minexetime;
-        }
-
-        if($filterName == "maxexetime") {
-            if(isset($_GET["maxexetime"])) {
-                $maxexetime = $_GET["maxexetime"];
-
-                if($maxexetime != null)
-                    $whereClause .= " AND $alias.exe_time <= $maxexetime ";
-
-                return $maxexetime;
-            } else
-                return "";
-        }
-
-        //General filters
-        if (isset($_GET[$filterName])) {
-            $items = $_GET[$filterName];
-            $items = Utils::delete_none($items);
-        } else if($setDefaultValues) {
-            if ($filterName == 'benchs') {
-                $items = array('terasort', 'wordcount', 'sort');
-            } elseif ($filterName == 'nets') {
-                $items = array();
-            } elseif ($filterName == 'bench_types') {
-                $items = array('HiBench','HiBench3','HiBench3HDI');
-            } else {
-                $items = array();
-            }
-        } else
-            $items = array();
-
-        if ($items) {
-            $tableItemName = substr($filterName, 0, -1);  //remove trailing 's'
-
-            $whereClause .=
-                ' AND '.
-                $alias.'.'.$tableItemName.
-                ' IN ("'.join('","', $items).'")';
-        }
-
-        return $items;
+        return $return;
     }
 }

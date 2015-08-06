@@ -1205,7 +1205,10 @@ class DefaultController extends AbstractController
 
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
-        $this->buildFilters();
+        $this->buildFilters(array('bench' =>
+            array('table' => 'execs', 'default' => array('terasort'),
+                'type' => 'selectOne'))
+        );
 
         $bestexec = '';
         $cluster = '';
@@ -1433,7 +1436,7 @@ class DefaultController extends AbstractController
     {
         $dbUtils = $this->container->getDBUtils();
         $this->buildFilters();
-        $whereClause = $this->filters->getWhereClause("e","c");
+        $whereClause = $this->filters->getWhereClause(array('execs' => 'e', 'clusters' => 'c'));
 
         $jobid = Utils::get_GET_string("jobid");
 

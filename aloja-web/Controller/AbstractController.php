@@ -50,8 +50,8 @@ class AbstractController
         );
     }
 
-    public function buildFilters() {
+    public function buildFilters($customDefaultValues = array()) {
         $this->filters = new Filters();
-        $this->filters->getFilters($this->container->getDBUtils(),$this->container->getScreenName());
+        $this->filters->getFilters($this->container->getDBUtils(),$this->container->getScreenName(),$customDefaultValues);
     }
 }

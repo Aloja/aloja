@@ -1016,7 +1016,7 @@ VALUES
 
         $db = $this->container->getDBUtils();
         $this->buildFilters();
-        $whereClause = $this->filters->getWhereClause("e","c");
+        $whereClause = $this->filters->getWhereClause(array('execs' => 'e', 'clusters' => 'c'));
 
         $table_name = "e";
 
