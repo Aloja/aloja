@@ -319,7 +319,6 @@ class CostPerfEvaluationController extends AbstractController
     			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
     			'seriesData' => $seriesData,
     			'benchs' => array($bench),
-    			'select_multiple_benchs' => false,
     			'execs' => $execs,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			'clusters' => $clusters,
@@ -463,7 +462,6 @@ class CostPerfEvaluationController extends AbstractController
     			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
     			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
     			'seriesData' => $seriesData,
-    			'select_multiple_benchs' => false,
     			'bestExecs' => $bestExecs,
     			'clusters' => $clusters,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
@@ -538,7 +536,6 @@ class CostPerfEvaluationController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
             'datanodess' => $datanodes,
-            'select_multiple_benchs' => false,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));
     }

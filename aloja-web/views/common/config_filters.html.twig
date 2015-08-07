@@ -186,10 +186,8 @@
 			</div>
 			<div class="row">
 				<div class="col-md-6">
-					{% if show_filter_benchs is not defined or show_filter_benchs == true %}
-						{% if select_multiple_benchs is not defined or
-						select_multiple_benchs %}
-						  Benchmark:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+						{% if filtersNamesOptions['bench']['type'] == 'selectMultiple' %}
+						  Benchmarks:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 						  <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 							  <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
 								{% for selopt in options['bench'] %}
@@ -198,7 +196,7 @@
 							  </div>
 					      </div>
 						{% else %}
-						Benchmarks: <br />
+						Benchmark: <br />
 						<select class="form-control" name="bench[]">
 							{% for selopt in options['bench'] %}
 							  <option value="{{ selopt['bench'] }}" {% if selopt['bench'] in bench %}SELECTED{% endif %}>{{ selopt['bench'] }}</option>
@@ -207,7 +205,6 @@
 							<option value="None"  {% if not bench %} SELECTED {% endif %}>ALL</option>{% endif %}
 						</select>
 						{% endif %}
-					{% endif %}
 				</div>
 				<div class="col-md-6">
 					 Clusters: (CL)&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />

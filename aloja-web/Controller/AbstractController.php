@@ -41,7 +41,8 @@ class AbstractController
         $genericParameters = array('selected' => $this->container->getScreenName());
         if($this->filters) {
             $genericParameters = array_merge($genericParameters, $this->filters->getSelectedFilters(),
-                array('options' => $this->filters->getFilterOptions($this->container->getDBUtils())));
+                array('filtersNamesOptions' => $this->filters->getFiltersNamesOptions(),
+                    'options' => $this->filters->getFilterOptions($this->container->getDBUtils())));
         }
 
         echo $this->container->getTwig()->render($templatePath,array_merge(

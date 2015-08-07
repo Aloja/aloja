@@ -234,4 +234,8 @@ class Filters
     public function getGroupFilters() {
         return $this->selectedFilters['selectedGroups'];
     }
+
+    public function getFiltersNamesOptions() {
+        return $this->filtersNamesOptions;
+    }
 }

@@ -181,7 +181,6 @@ class ConfigEvaluationsController extends AbstractController
 
         return $this->render ( 'bestconfig/bestconfig.html.twig', array (
             'title' => 'Best Run Configuration',
-            'select_multiple_benchs' => false,
             'bestexec' => $bestexec,
             'cluster' => $cluster,
             'order_type' => $order_type

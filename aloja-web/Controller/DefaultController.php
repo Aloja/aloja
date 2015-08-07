@@ -15,7 +15,6 @@ class DefaultController extends AbstractController
 
     public function histogramAction()
     {
-        $db = $this->container->getDBUtils();
         $idExec = '';
         try {
             $idExec = Utils::get_GET_string('id_exec');
@@ -33,7 +32,6 @@ class DefaultController extends AbstractController
 
     public function histogramHDIAction()
     {
-        $db = $this->container->getDBUtils();
         $idExec = '';
         try {
             $idExec = Utils::get_GET_string('id_exec');

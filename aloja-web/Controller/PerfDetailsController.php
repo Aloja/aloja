@@ -750,7 +750,6 @@ class PerfDetailsController extends AbstractController
                 'bench' => $bench,
                 'job_offset' => $job_offset,
                 'METRICS' => DBUtils::$TASK_METRICS,
-                'select_multiple_benchs' => false,
             )
         );
     }
