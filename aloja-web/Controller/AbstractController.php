@@ -54,4 +54,11 @@ class AbstractController
         $this->filters = new Filters();
         $this->filters->getFilters($this->container->getDBUtils(),$this->container->getScreenName(),$customDefaultValues);
     }
+
+    public function buildGroupFilters() {
+        if(!$this->filters) {
+            $this->filters = new Filters();
+        }
+        $this->filters->buildGroupFilters();
+    }
 }

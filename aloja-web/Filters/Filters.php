@@ -222,4 +222,16 @@ class Filters
 
         return $return;
     }
+
+    public function buildGroupFilters($defaultGroups = array('disk')) {
+        if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
+            $this->selectedFilters['selectedGroups'] = explode(",", $_GET['selected-groups']);
+        } else {
+            $this->selectedFilters['selectedGroups'] = join(',',$defaultGroups);
+        }
+    }
+
+    public function getGroupFilters() {
+        return $this->selectedFilters['selectedGroups'];
+    }
 }

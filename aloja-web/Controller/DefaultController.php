@@ -45,20 +45,12 @@ class DefaultController extends AbstractController
         $db = $this->container->getDBUtils();
 
         $this->buildFilters();
+        $this->buildGroupFilters();
         $whereClause = $this->filters->getWhereClause();
        
         $rows_config = '';
         try {
-            $concat_config = "";
-            $selectedGroups = array();
-            if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
-               $selectedGroups = explode(",",$_GET['selected-groups']);
-           	   $concat_config = Utils::getConfig($selectedGroups);
-            }
-            else {
-            	$concat_config = 'disk';
-            	$selectedGroups = array('disk');
-            }
+           	$concat_config = Utils::getConfig($this->filters->getGroupFilters());
 
             $filter_execs = DBUtils::getFilterExecs();
             $order_conf = 'LENGTH(conf), conf';
