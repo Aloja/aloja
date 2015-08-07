@@ -71,9 +71,9 @@ class Router
                     $class = explode('::',$controller)[0];
                     $method = explode('::',$controller)[1];
                     if (!class_exists($class)) {
-                        throw new \Exception('The route class doesn\'t exist!');
+                        throw new \Exception('The route class '.$class.' doesn\'t exist!');
                     } else if(!method_exists($class,$method))
-                        throw new \Exception('The route class\'s method doesn\'t exist!');
+                        throw new \Exception('The route class\'s '.$method.' method doesn\'t exist!');
 
                     $this->logger->addInfo("Route controller method found: $class -> $method");
 

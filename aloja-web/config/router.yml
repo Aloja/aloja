@@ -6,13 +6,13 @@ index:
 configimprovement:
     pattern: "/configimprovement"
     legacy: "/config_improvement.php"
-    controller: "alojaweb\\Controller\\DefaultController::configImprovementAction"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::configImprovementAction"
     screenName: "Config Improvement"
 
 benchexecutions:
     pattern: "/benchexecs"
     legacy: "/datatable.php"
-    controller: "alojaweb\\Controller\\DefaultController::benchExecutionsAction"
+    controller: "alojaweb\\Controller\\RepositoryController::benchExecutionsAction"
     screenName: "Benchmark Executions"
 
 benchdata:
@@ -23,19 +23,19 @@ benchdata:
 costperfeval:
     pattern: "/costperfeval"
     legacy: "/perf_by_cost.php"
-    controller: "alojaweb\\Controller\\DefaultController::costPerfEvaluationAction"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::costPerfEvaluationAction"
     screenName: "Cost Evaluation"
 
 perfcharts:
     pattern: "/perfcharts"
     legacy: "/charts1.php"
-    controller: "alojaweb\\Controller\\DefaultController::performanceChartsAction"
+    controller: "alojaweb\\Controller\\PerfDetailsController::performanceChartsAction"
     screenName: "Performance charts"
 
 counters:
     pattern: "/counters"
     legacy: "/counters.php"
-    controller: "alojaweb\\Controller\\DefaultController::countersAction"
+    controller: "alojaweb\\Controller\\RepositoryController::countersAction"
     screenName: "Hadoop Job Counters"
 
 countersdata:
@@ -50,7 +50,7 @@ export2prv:
     
 metrics:
     pattern: "/metrics"
-    controller: "alojaweb\\Controller\\DefaultController::performanceMetricsAction"
+    controller: "alojaweb\\Controller\\PerfDetailsController::performanceMetricsAction"
     screenName: "Performance Metrics"
     
 metricsdata:
@@ -75,7 +75,7 @@ histogramtasksdata:
 
 bestconfig:
     pattern: "/bestconfig"
-    controller: "alojaweb\\Controller\\DefaultController::bestConfigAction"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::bestConfigAction"
     screenName: "Best configuration"
     
 bestconfigdata:
@@ -85,7 +85,7 @@ bestconfigdata:
     
 parameval:
     pattern: "/parameval"
-    controller: "alojaweb\\Controller\\DefaultController::paramEvaluationAction"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::paramEvaluationAction"
     screenName: "Parameter Evaluation"
     
 publications:
@@ -110,7 +110,7 @@ clustercosts:
 
 dbscan:
     pattern: "/dbscan"
-    controller: "alojaweb\\Controller\\DefaultController::dbscanAction"
+    controller: "alojaweb\\Controller\\PerfDetailsController::dbscanAction"
     screenName: "DBSCAN"
 
 dbscandata:
@@ -120,7 +120,7 @@ dbscandata:
 
 dbscanexecs:
     pattern: "/dbscanexecs"
-    controller: "alojaweb\\Controller\\DefaultController::dbscanexecsAction"
+    controller: "alojaweb\\Controller\\PerfDetailsController::dbscanexecsAction"
     screenName: "DBSCANexecs"
 
 dbscanexecsdata:
@@ -130,7 +130,7 @@ dbscanexecsdata:
 
 hdp2counters:
     pattern: "/hdp2counters"
-    controller: "alojaweb\\Controller\\DefaultController::hdp2CountersAction"
+    controller: "alojaweb\\Controller\\RepositoryController::hdp2CountersAction"
     screenName: "Hadoop 2 Job Counters"
     
 hdp2countersdata:
@@ -155,22 +155,22 @@ histogramhditasksdata:
     
 clustercosteffectiveness:
     pattern: "/clustercosteffectiveness"
-    controller: "alojaweb\\Controller\\DefaultController::clusterCostEffectivenessAction"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::clusterCostEffectivenessAction"
     screenName: "Cost-Effectiveness of clusters"
 
 costperfclustereval:
     pattern: "/costperfclustereval"
-    controller: "alojaweb\\Controller\\DefaultController::costPerfClusterEvaluationAction"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::costPerfClusterEvaluationAction"
     screenName: "Clusters Cost Evaluation"
     
 bestcostperfclustereval:
     pattern: "/bestcostperfclustereval"
-    controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::BestCostPerfClusterEvaluationAction"
     screenName: "Best Clusters Cost Evaluation"
 
 nodeseval:
     pattern: "/nodeseval"
-    controller: "alojaweb\\Controller\\DefaultController::NodesEvaluationAction"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::NodesEvaluationAction"
     screenName: "Number of Nodes Evaluation"
 
 mlprediction:
