@@ -138,7 +138,7 @@ number_of_attached_disks() {
 
 #$1 vm_name $2 disk size in MB $3 disk number
 vm_attach_new_disk() {
-  logger " Attaching a new disk #$3 to VM $1 of size ${2}MB"
+  logger " Attaching a new disk #$3 to VM $1 of size ${2}GB"
   azure vm disk attach-new "$1" "$2" -s "$subscriptionID"
 }
 

@@ -60,7 +60,6 @@ vm_create_node() {
       vm_provision
     fi
 
-
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
     wait_vm_ready "$vm_name"
@@ -80,7 +79,6 @@ vm_create_connect() {
   if ! wait_vm_ssh_ready "1" ; then
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
-
     vm_check_attach_disks "$1"
 
     #wait for ssh to be ready
@@ -555,10 +553,12 @@ wait_vm_ready() {
 #1 number of tries
 wait_vm_ssh_ready() {
   logger "Checking SSH status of VM $vm_name"
+
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
 
     test_action="$(vm_execute "echo '$testKey'")"
+
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -835,7 +835,7 @@ cluster_mount_disks() {
 }
 
 #parallel Node config
-function cluster_parallel_config() {
+cluster_parallel_config() {
   if [ "$vmType" != 'windows' ] && [ -z "$dont_mount_share" ] && check_sudo; then
 
 #    logger "Checking if to initilize cluster disks"
@@ -850,7 +850,7 @@ function cluster_parallel_config() {
 }
 
 #master config to execute benchmarks
-function cluster_queue_jobs() {
+cluster_queue_jobs() {
   if [ "$vmType" != 'windows' ] ; then
     vm_set_master_crontab
     vm_set_master_forer
