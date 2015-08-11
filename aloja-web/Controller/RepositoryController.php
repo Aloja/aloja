@@ -138,8 +138,8 @@ class RepositoryController extends AbstractController
             //check the URL
             $execs = Utils::get_GET_execs();
 
-            if (Utils::get_GET_string('type')) {
-                $type = Utils::get_GET_string('type');
+            if (Utils::get_GET_string('pageTab')) {
+                $type = Utils::get_GET_string('pageTab');
             } else {
                 $type = 'SUMMARY';
             }
@@ -269,8 +269,8 @@ class RepositoryController extends AbstractController
             //check the URL
             $execs = Utils::get_GET_execs();
 
-            if (Utils::get_GET_string('type')) {
-                $type = Utils::get_GET_string('type');
+            if (Utils::get_GET_string('pageTab')) {
+                $type = Utils::get_GET_string('pageTab');
             } else {
                 $type = 'SUMMARY';
             }
