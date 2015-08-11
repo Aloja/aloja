@@ -14,7 +14,7 @@ class CostPerfEvaluationController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne')));
+                'type' => 'selectOne', 'label' => 'Benchmark:')));
         $whereClause = $this->filters->getWhereClause();
         
         try {
@@ -119,7 +119,7 @@ class CostPerfEvaluationController extends AbstractController
         $db = $this->container->getDBUtils ();
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne')));
+                'type' => 'selectOne', 'label' => 'Benchmark:')));
         $whereClause = $this->filters->getWhereClause();
 
         $data = array();
@@ -211,7 +211,7 @@ class CostPerfEvaluationController extends AbstractController
 
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne')));
+                'type' => 'selectOne', 'label' => 'Benchmark:')));
 
     	try {
     		if(isset($_GET['benchs']))
@@ -332,7 +332,7 @@ class CostPerfEvaluationController extends AbstractController
 
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne')));
+                'type' => 'selectOne', 'label' => 'Benchmark:')));
     	try {
     		$whereClause = $this->filters->getWhereClause();
 
@@ -474,7 +474,7 @@ class CostPerfEvaluationController extends AbstractController
 
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne')));
+                'type' => 'selectOne', 'label' => 'Benchmark:')));
         try {
             $filter_execs = DBUtils::getFilterExecs();
 

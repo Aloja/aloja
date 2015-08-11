@@ -127,7 +127,7 @@ class ConfigEvaluationsController extends AbstractController
         $db = $this->container->getDBUtils ();
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne'))
+                'type' => 'selectOne', 'label' => 'Benchmark:'))
         );
 
         $bestexec = '';

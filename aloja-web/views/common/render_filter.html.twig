@@ -21,6 +21,7 @@
             </div>
         </div>
     {% elseif filter['type'] == 'selectOne' %}
+        {{ filter['label'] }}<br />
         <select class="form-control" name="{{ filterName }}[]">
             {% for selopt in filter['choices'] %}
                 <option value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}SELECTED{% endif %}>{{ beautify(filter,selopt[filterName]) }}</option>
