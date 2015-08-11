@@ -47,7 +47,7 @@ class Utils
     	
     	return $concatConfig;
     }
-    
+
     public static function generateJSONTable($csv, $show_in_result, $precision = null, $type = null)
     {
         $jsonData = array();

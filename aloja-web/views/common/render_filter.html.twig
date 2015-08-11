@@ -27,9 +27,9 @@
             {% endfor %}
         </select>
     {% elseif filter['type'] starts with 'inputNumber' %}
-        {{ filter['label'] }}<input type="number" step="any" class="form-control" name="{{ filterName }}[]" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %}/>
+        {{ filter['label'] }}<input type="number" step="any" class="form-control" name="{{ filterName }}" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %}/>
     {% elseif filter['type'] starts with 'inputDate' %}
-        {{ filter['label'] }}<input type="text"  class="datepicker form-control" data-date-format="yyyy/mm/dd"  name="{{ filterName }}[]" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %}/>
+        {{ filter['label'] }}<input type="text"  class="datepicker form-control" data-date-format="yyyy/mm/dd"  name="{{ filterName }}" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %}/>
     {% endif %}
     </div>
 {% endfor %}

@@ -17,7 +17,14 @@ class Filters
 
     private $filterGroups;
 
-    public function __construct() {
+    /**
+     * @\alojaweb\inc\DBUtils
+     */
+    private $dbConnection;
+
+    public function __construct(\alojaweb\inc\DBUtils $dbConnection) {
+        $this->dbConnection = $dbConnection;
+
         /* In this array there are the filter names with its default options
          * that will be overwritten by the given custom defaults and options if given
          * Array with filter => filter specific settings
@@ -33,7 +40,10 @@ class Filters
         $this->filters = array(
             'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:'),
             'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple', 'label' => 'Benchmark type:'),
-            'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:'),
+            'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
+                'beautifier' => function($value) {
+                    return Utils::getNetworkName($value);
+                }),
             'disk' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Disk:'),
             'blk_size' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Block size (b):',
                 'beautifier' => function($value) {
@@ -43,7 +53,15 @@ class Filters
             'beautifier' => function($value) {
                 return Utils::getCompressionName($value);
             }),
-            'id_cluster' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Clusters (CL):'),
+            'id_cluster' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Clusters (CL):',
+                'beautifier' => function($value) {
+                    //Not nice, but saves multiple queries to DB
+                    $clusters = $this->filters['id_cluster']['choices'];
+                    foreach($clusters as $cluster) {
+                        if($cluster['id_cluster'] == $value)
+                            return $cluster['name'];
+                    }
+                }),
             'maps' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Maps:'),
             'replication' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Replication (r):'),
             'iosf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O sort factor (I):'),
@@ -94,26 +112,26 @@ class Filters
         return $this->additionalFilters;
     }
 
-    public function generateFilterChoices(\alojaweb\inc\DBUtils $dbUtils) {
-        $choices['bench'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
-        $choices['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
-        $choices['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
-        $choices['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
-        $choices['comp'] = $dbUtils->get_rows("SELECT DISTINCT comp FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
-        $choices['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name from execs e join clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
-        $choices['maps'] = $dbUtils->get_rows("SELECT DISTINCT maps FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
-        $choices['replication'] = $dbUtils->get_rows("SELECT DISTINCT replication FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
-        $choices['iosf'] = $dbUtils->get_rows("SELECT DISTINCT iosf FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
-        $choices['iofilebuf'] = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
-        $choices['datanodes'] = $dbUtils->get_rows("SELECT DISTINCT datanodes FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
-        $choices['bench_type'] = $dbUtils->get_rows("SELECT DISTINCT bench_type FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench_type ASC");
-        $choices['vm_size'] = $dbUtils->get_rows("SELECT DISTINCT vm_size FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
-        $choices['vm_cores'] = $dbUtils->get_rows("SELECT DISTINCT vm_cores FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
-        $choices['vm_RAM'] = $dbUtils->get_rows("SELECT DISTINCT vm_RAM FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
-        $choices['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
-        $choices['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
-        $choices['provider'] = $dbUtils->get_rows("SELECT DISTINCT provider FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
-        $choices['vm_OS'] = $dbUtils->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_OS DESC;");
+    public function generateFilterChoices() {
+        $choices['bench'] = $this->dbConnection->get_rows("SELECT DISTINCT bench FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+        $choices['net'] = $this->dbConnection->get_rows("SELECT DISTINCT net FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
+        $choices['disk'] = $this->dbConnection->get_rows("SELECT DISTINCT disk FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
+        $choices['blk_size'] = $this->dbConnection->get_rows("SELECT DISTINCT blk_size FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
+        $choices['comp'] = $this->dbConnection->get_rows("SELECT DISTINCT comp FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
+        $choices['id_cluster'] = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from execs e join clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+        $choices['maps'] = $this->dbConnection->get_rows("SELECT DISTINCT maps FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
+        $choices['replication'] = $this->dbConnection->get_rows("SELECT DISTINCT replication FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
+        $choices['iosf'] = $this->dbConnection->get_rows("SELECT DISTINCT iosf FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
+        $choices['iofilebuf'] = $this->dbConnection->get_rows("SELECT DISTINCT iofilebuf FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
+        $choices['datanodes'] = $this->dbConnection->get_rows("SELECT DISTINCT datanodes FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
+        $choices['bench_type'] = $this->dbConnection->get_rows("SELECT DISTINCT bench_type FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench_type ASC");
+        $choices['vm_size'] = $this->dbConnection->get_rows("SELECT DISTINCT vm_size FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
+        $choices['vm_cores'] = $this->dbConnection->get_rows("SELECT DISTINCT vm_cores FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
+        $choices['vm_RAM'] = $this->dbConnection->get_rows("SELECT DISTINCT vm_RAM FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
+        $choices['hadoop_version'] = $this->dbConnection->get_rows("SELECT DISTINCT hadoop_version FROM execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
+        $choices['type'] = $this->dbConnection->get_rows("SELECT DISTINCT type FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
+        $choices['provider'] = $this->dbConnection->get_rows("SELECT DISTINCT provider FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
+        $choices['vm_OS'] = $this->dbConnection->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_OS DESC;");
         foreach($choices as $key => $value) {
             $this->filters[$key]['choices'] = $value;
         }
@@ -191,9 +209,9 @@ class Filters
         $this->filters['execsfilters']['currentChoice'] = (isset($_GET['execsfilters'])) ? $_GET['execsfilters'] : "";
     }
 
-    public function getFilters(\alojaweb\inc\DBUtils $dbConnection, $screenName, $customDefaultValues) {
+    public function getFilters($screenName, $customDefaultValues) {
 
-        $this->readPresets($dbConnection,$screenName);
+        $this->readPresets($screenName);
 
         //Override with custom default values
         foreach($this->filters as $index => &$options) {
@@ -205,7 +223,7 @@ class Filters
 
         $this->parseFilters();
         $this->parseAdvancedFilters();
-        $this->generateFilterChoices($dbConnection);
+        $this->generateFilterChoices();
 
         //Workaround to know if all advanced options selected or not, due unable to know in a "beauty" way with GET parameters
         $this->additionalFilters['allunchecked'] = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
@@ -215,22 +233,22 @@ class Filters
         return $this->filters;
     }
 
-    private function readPresets($dbConnection, $screenName) {
+    private function readPresets($screenName) {
         /* If sizeof GET > 1 means form has been submitted
          * therefore we don't want to overwrite selected filters - including presets -
         */
 
         if(sizeof($_GET) <= 1)
-            $this->initDefaultPreset($dbConnection, $screenName);
+            $this->initDefaultPreset($screenName);
 
         $this->additionalFilters['presets']['currentChoice'] = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-        $this->additionalFilters['presets']['choices'] = $dbConnection->get_rows("
+        $this->additionalFilters['presets']['choices'] = $this->dbConnection->get_rows("
           SELECT * FROM filter_presets WHERE selected_tool = '$screenName' ORDER BY short_name DESC");
 
     }
 
     private function initDefaultPreset($db, $screen) {
-        $presets = $db->get_rows("SELECT * FROM filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
+        $presets = $this->dbConnection->get_rows("SELECT * FROM filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
         if(count($presets)>=1) {
             $url = $presets[0]['URL'];
             $this->additionalFilters['presets']['default'] = $url;
