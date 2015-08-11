@@ -257,7 +257,7 @@
 			});
 
 			$("form[name='configFilters'] input").change(function() {
-				if($(this).attr('name') != 'filters[]') {
+				if($(this).attr('name') != 'execsfilters[]') {
 					if($(this).val() == "None") {
 						if($(this).attr('checked')) {
 							$(this).parent().find('input').each(function() {
@@ -283,8 +283,8 @@
 				}
 			});
 
-			$("input[name='filters[]']").change(function() {
-				var ids = $("input[name='filters[]']:checked");
+			$("input[name='execsfilters[]']").change(function() {
+				var ids = $("input[name='execsfilters[]']:checked");
 				if(ids.length == 0) {
 				   $("#allunchecked").val("allunchecked");
 				}

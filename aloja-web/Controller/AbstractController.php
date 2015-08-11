@@ -40,9 +40,11 @@ class AbstractController
     public function render($templatePath, $parameters) {
         $genericParameters = array('selected' => $this->container->getScreenName());
         if($this->filters) {
-            $genericParameters = array_merge($genericParameters, $this->filters->getSelectedFilters(),
-                array('filtersNamesOptions' => $this->filters->getFiltersNamesOptions(),
-                    'options' => $this->filters->getFilterOptions($this->container->getDBUtils())));
+            $genericParameters = array_merge($genericParameters,
+                array('additionalFilters' => $this->filters->getAdditionalFilters(),
+                    'filters' => $this->filters->getFiltersArray(),
+                    'filterGroups' => $this->filters->getFiltersGroups(),
+                   ));
         }
 
         echo $this->container->getTwig()->render($templatePath,array_merge(

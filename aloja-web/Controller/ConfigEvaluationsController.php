@@ -126,7 +126,7 @@ class ConfigEvaluationsController extends AbstractController
     public function bestConfigAction() {
         $db = $this->container->getDBUtils ();
         $this->buildFilters(array('bench' =>
-            array('table' => 'execs', 'default' => array('terasort'),
+            array('default' => array('terasort'),
                 'type' => 'selectOne'))
         );
 
@@ -195,9 +195,6 @@ class ConfigEvaluationsController extends AbstractController
         $categories = '';
         $series = '';
         try {
-           /* if(!(isset($_GET['benchs']))) {
-                $_GET['benchs'] = array('wordcount', 'terasort', 'sort');
-            }*/
 
             $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
@@ -207,8 +204,9 @@ class ConfigEvaluationsController extends AbstractController
 
             $filter_execs = DBUtils::getFilterExecs();
 
+            $options = $this->filters->getFiltersArray()[$paramEval]['choices'];
             $paramOptions = array();
-            foreach($options[$paramEval] as $option) {
+            foreach($options as $option) {
                 if($paramEval == 'id_cluster')
                     $paramOptions[] = $option['name'];
                 else if($paramEval == 'comp')
@@ -274,6 +272,7 @@ class ConfigEvaluationsController extends AbstractController
 
         return $this->render ('parameval/parameval.html.twig', array (
             'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
+            'minexecs' => $minExecs,
             'categories' => $categories,
             'series' => $series,
             'paramEval' => $paramEval

@@ -36,7 +36,7 @@ class RepositoryController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
+        $this->buildFilters(array('bench' => array('default' => null)));
         $whereClause = $this->filters->getWhereClause();
 
 		$type = Utils::get_GET_string("pageTab");
@@ -122,7 +122,7 @@ class RepositoryController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
+            $this->buildFilters(array('bench' => array('default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
@@ -252,7 +252,7 @@ class RepositoryController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $this->buildFilters(array('bench' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple')));
+            $this->buildFilters(array('bench' => array('default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");

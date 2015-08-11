@@ -13,7 +13,7 @@ class CostPerfEvaluationController extends AbstractController
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
         $this->buildFilters(array('bench' =>
-            array('table' => 'execs', 'default' => array('terasort'),
+            array('default' => array('terasort'),
                 'type' => 'selectOne')));
         $whereClause = $this->filters->getWhereClause();
         
@@ -118,7 +118,7 @@ class CostPerfEvaluationController extends AbstractController
     {
         $db = $this->container->getDBUtils ();
         $this->buildFilters(array('bench' =>
-            array('table' => 'execs', 'default' => array('terasort'),
+            array('default' => array('terasort'),
                 'type' => 'selectOne')));
         $whereClause = $this->filters->getWhereClause();
 
@@ -210,7 +210,7 @@ class CostPerfEvaluationController extends AbstractController
     	$dbUtils = $this->container->getDBUtils();
 
         $this->buildFilters(array('bench' =>
-            array('table' => 'execs', 'default' => array('terasort'),
+            array('default' => array('terasort'),
                 'type' => 'selectOne')));
 
     	try {
@@ -331,7 +331,7 @@ class CostPerfEvaluationController extends AbstractController
     	$dbUtils = $this->container->getDBUtils();
 
         $this->buildFilters(array('bench' =>
-            array('table' => 'execs', 'default' => array('terasort'),
+            array('default' => array('terasort'),
                 'type' => 'selectOne')));
     	try {
     		$whereClause = $this->filters->getWhereClause();
@@ -473,7 +473,7 @@ class CostPerfEvaluationController extends AbstractController
         $dbUtils = $this->container->getDBUtils();
 
         $this->buildFilters(array('bench' =>
-            array('table' => 'execs', 'default' => array('terasort'),
+            array('default' => array('terasort'),
                 'type' => 'selectOne')));
         try {
             $filter_execs = DBUtils::getFilterExecs();

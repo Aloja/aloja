@@ -1,0 +1,36 @@
+{# Required variables: filterGroup, filters, filterName #}
+{% for currFilter in filterGroup %}
+    {% set filter = filters[currFilter] %}
+    {% set filterName = currFilter %}
+	{% if (loop.index0 % 2) == 0 %}
+        {% if loop.index0 != 0 %}
+		   </div>
+		{% endif %}
+        <div class="row">
+    {% endif %}
+    <div class="col-md-6">
+    {% if filterName == 'emptySpace' %}
+        &nbsp;
+    {% elseif filter['type'] == 'selectMultiple' %}
+        {{ filter['label'] }}&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+        <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+            <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+            {% for selopt in filter['choices'] %}
+                <input type="checkbox" name="{{ filterName }}[]" value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}checked{% endif %}>&nbsp;{{ beautify(filter,selopt[filterName]) }}<br />
+            {% endfor %}
+            </div>
+        </div>
+    {% elseif filter['type'] == 'selectOne' %}
+        <select class="form-control" name="{{ filterName }}[]">
+            {% for selopt in filter['choices'] %}
+                <option value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}SELECTED{% endif %}>{{ beautify(filter,selopt[filterName]) }}</option>
+            {% endfor %}
+        </select>
+    {% elseif filter['type'] starts with 'inputNumber' %}
+        {{ filter['label'] }}<input type="number" step="any" class="form-control" name="{{ filterName }}[]" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %}/>
+    {% elseif filter['type'] starts with 'inputDate' %}
+        {{ filter['label'] }}<input type="text"  class="datepicker form-control" data-date-format="yyyy/mm/dd"  name="{{ filterName }}[]" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %}/>
+    {% endif %}
+    </div>
+{% endfor %}
+</div>

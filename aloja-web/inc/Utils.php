@@ -528,13 +528,13 @@ class Utils
     
     public static function makeExecInfoBeauty(&$execInfo)
     {
-    	if(key_exists('comp',$execInfo))
+    	if(array_key_exists('comp',$execInfo))
     		$execInfo['comp'] = self::getCompressionName($execInfo['comp']);
     	
-    	if(key_exists('net',$execInfo))
+    	if(array_key_exists('net',$execInfo))
     		$execInfo['net'] = self::getNetworkName($execInfo['net']);
     	
-    	if(key_exists('disk',$execInfo))
+    	if(array_key_exists('disk',$execInfo))
     		$execInfo['disk'] = self::getDisksName($execInfo['disk']);
     }
     
