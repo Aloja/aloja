@@ -568,7 +568,6 @@ grunt run:all
 
 }
 
-# $1 (optional): mcast_if
 install_ganglia_gmond(){
 
   local bootstrap_file="install_gmond"
@@ -597,10 +596,51 @@ sudo apt-get -y install ganglia-monitor
   fi
 }
 
+# $1 cluster name, $2 (optional): mcast_if
 config_ganglia_gmond(){
 
-  # nothing to do for now
-  :
+  local bootstrap_file="config_gmond"
+  local result mcastif
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring ganglia-monitor (gmond)"
+
+    [ "$2" != "" ] && mcastif=$2 || mcastif=eth0
+
+    vm_local_scp files/gmond.conf.t /tmp/ "" ""
+
+    vm_execute "
+
+    # create conf from template
+    awk -v clustername='$1' -v mcastif='$mcastif' '
+
+    { sub(/%%%CLUSTERNAME%%%/, clustername)
+      sub(/%%%MCASTIF%%%/, mcastif)
+    }
+    { print }
+    ' /tmp/gmond.conf.t > /tmp/gmond.conf
+
+    # copy conf to destination
+    sudo cp /tmp/gmond.conf /etc/ganglia
+
+    sudo /etc/init.d/ganglia-monitor restart"
+
+    result=$?
+
+    if [ $result -eq 0 ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name."
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
 
 }
 
