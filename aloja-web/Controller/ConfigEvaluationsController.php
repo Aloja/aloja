@@ -137,7 +137,7 @@ class ConfigEvaluationsController extends AbstractController
 
             $order_type = Utils::get_GET_string ( 'ordertype' );
             if (! $order_type)
-                $order_type = 'exe_time';
+                $order_type = 'e.exe_time';
 
             $filterExecs = DBUtils::getFilterExecs();
 
@@ -149,7 +149,7 @@ class ConfigEvaluationsController extends AbstractController
     		GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
     		ORDER BY $order_type ASC;";
 
-            $this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
+        //    $this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
             $rows = $db->get_rows ( $query );
 
             if (! $rows) {
@@ -170,7 +170,8 @@ class ConfigEvaluationsController extends AbstractController
 	            		}
 	            	}
 	            	$bestexec = $rows[$minCostIdx];
-            	}
+            	} else
+                    $bestexec['cost'] = Utils::getExecutionCost($bestexec,$bestexec['cost_hour'],$bestexec['cost_remote'],$bestexec['cost_SSD'],$bestexec['cost_IB']);
 
                 $cluster=$bestexec['name'];
                 Utils::makeExecInfoBeauty($bestexec);
