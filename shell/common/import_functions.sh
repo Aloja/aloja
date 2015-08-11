@@ -125,6 +125,7 @@ update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extrala
 update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
 
 ##HDInsight filters
+update execs join clusters using (id_cluster) set valid = 0 where type != 'PaaS' AND exec LIKE '%hdi%';
 update execs join clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
 update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
 update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
@@ -144,6 +145,8 @@ update execs join clusters using (id_cluster) set exec_type = 'default' where ex
 update execs join clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
 update execs join clusters using (id_cluster) set filter = 1 where type = 'PaaS' and provider = 'hdinsight' and exe_time < 100;
 
+#Wrong imports filter
+update execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL) and valid = 1 and filter = 0;
 "
 
 #update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
