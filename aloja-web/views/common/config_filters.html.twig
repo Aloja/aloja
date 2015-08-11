@@ -40,6 +40,23 @@
     </div>
     <div id="basicFilters" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBasicFilters">
       <div class="panel-body">
+        {% if selected == 'Parameter Evaluation' %}
+          <div class="row">
+            <div class="col-md-6">
+              Minimum executions:<input type="number" step="1" class="form-control" name="minexecs" {% if minexecs is defined and minexecs != null %}value="{{ minexecs }}"{% endif %}/>
+            </div>
+          </div>
+        {% endif %}
+        {% if selected == 'Best configuration' %}
+          <div class="row">
+            <div class="col-md-6">
+              Best config by:<select class="form-control" name="ordertype">
+                <option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>
+                <option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>
+              </select>
+            </div>
+          </div>
+        {% endif %}
 		  {{ include('common/render_filter.html.twig', {'filterGroup': filterGroups['basic'], 'filters': filters}) }}
       </div>
     </div>

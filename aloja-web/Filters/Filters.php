@@ -215,15 +215,19 @@ class Filters
         $this->filters['execsfilters']['currentChoice'] = (isset($_GET['execsfilters'])) ? $_GET['execsfilters'] : "";
     }
 
-    public function getFilters($screenName, $customDefaultValues) {
+    public function getFilters($screenName, $customFilters) {
 
         $this->readPresets($screenName);
 
-        //Override with custom default values
-        foreach($this->filters as $index => &$options) {
-            if(array_key_exists($index,$customDefaultValues)) {
-                foreach($customDefaultValues[$index] as $key => $newValue)
-                    $options[$key] = $newValue;
+        foreach($customFilters as $index => $options) {
+            //Modify existing filter
+            if(array_key_exists($index,$this->filters)) {
+                foreach($options as $key => $value)
+                    $this->filters[$index][$key] = $value;
+            } else {
+                //Add new filter
+                $this->filters[$index] = $options;
+                array_push($this->filterGroups['basic'],$index);
             }
         }
 
