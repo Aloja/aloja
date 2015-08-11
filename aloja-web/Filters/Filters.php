@@ -73,7 +73,12 @@ class Filters
             'iosf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O sort factor (I):'),
             'iofilebuf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O file buffer:',
                 'beautifier' => function($value) {
-                    return $value . ' KB';
+                    $suffix = ' KB';
+                    if($value >= 1024) {
+                        $value /= 1024;
+                        $suffix = ' MB';
+                    }
+                    return $value.$suffix;
                 }),
             'provider' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Provider:'),
             'vm_OS' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'VM OS:'),
