@@ -112,8 +112,8 @@ class Utils
             $jsonData[] = $jsonRow;
             $i++;
         }
-
-        return json_encode(array('aaData' => $jsonData));
+        return $jsonData;
+        //return json_encode(array('aaData' => $jsonData));
     }
 
     public static function get_GET_execs()

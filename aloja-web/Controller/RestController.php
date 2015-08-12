@@ -36,7 +36,9 @@ class RestController extends AbstractController
             'init_time' => 'End time',
         	'hadoop_version' => 'H Version',
             'bench_type' => 'Bench',
-            'counters' => 'Counters'
+            'counters' => 'Counters',
+            'perf_details' => 'Perf details',
+
         );
 
         try {
@@ -64,7 +66,9 @@ class RestController extends AbstractController
             			'init_time' => 'End time',
             			'hadoop_version' => 'H Version',
             			'bench_type' => 'Bench',
-            	);
+                    'perf_details' => 'Perf details',
+
+                );
             } else if($type == 'HWCONFIG') {
             	$show_in_result = array(
             			'id_exec' => 'ID',
@@ -83,7 +87,9 @@ class RestController extends AbstractController
             			'init_time' => 'End time',
             			'hadoop_version' => 'H Version',
             			'bench_type' => 'Bench',
-            	);
+                    'perf_details' => 'Perf details',
+
+                );
             } else if($type == 'SWCONFIG') {
             	$show_in_result = array(
 					'id_exec' => 'ID',
@@ -108,7 +114,9 @@ class RestController extends AbstractController
 					'init_time' => 'End time',
 					'hadoop_version' => 'H Version',
 					'bench_type' => 'Bench',
-				);
+                    'perf_details' => 'Perf details',
+
+                );
             }
             $whereClause = str_replace('%2F','/',$whereClause);
             
@@ -126,7 +134,7 @@ class RestController extends AbstractController
 
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
-            echo $jsonData;
+            echo json_encode(array('aaData' => $jsonData));
         } catch (\Exception $e) {
             echo 'No data available';
         }
@@ -215,7 +223,7 @@ class RestController extends AbstractController
                 $jsonData = Utils::generateJSONTable($exec_rows, $show_in_result_counters, 0, 'COUNTER');
 
                 header('Content-Type: application/json');
-                echo $jsonData;
+                echo json_encode(array('aaData' => $jsonData));
                 //         if (count($exec_rows) > 10000) {
                 //             $message .= 'WARNING, large resulset, please limit the query! Rows: '.count($exec_rows);
                 //         }
@@ -604,7 +612,7 @@ VALUES
         
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
-            echo $jsonData;
+            echo json_encode(array('aaData' => $jsonData));
                 
         } catch (Exception $e) {
             echo 'No data available';
@@ -1197,7 +1205,7 @@ VALUES
     			$jsonData = Utils::generateJSONTable($exec_rows, $show_in_result_counters, 0, 'COUNTER');
     
     			header('Content-Type: application/json');
-    			echo $jsonData;
+                echo json_encode(array('aaData' => $jsonData));
     			//         if (count($exec_rows) > 10000) {
     			//             $message .= 'WARNING, large resulset, please limit the query! Rows: '.count($exec_rows);
     			//         }
