@@ -259,9 +259,13 @@ netmask 255.255.0.0" "secured_file"
   fi
 }
 
+# $1 = env (default prod)
 vm_install_webserver() {
 
   local bootstrap_file="vm_install_webserver"
+  local env=prod
+
+  [ "$1" != "" ] && env=$1
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -283,9 +287,14 @@ EOF
 sudo service nginx restart
 
 sudo bash -c 'sudo cat << \"EOF\" > /etc/php5/fpm/conf.d/90-overrides.ini
-$(get_php_conf)
+$(get_php_conf \"$env\")
 EOF
 '
+
+# enable opcache in prod
+if [ '$env' = 'prod' ]; then
+  sudo php5enmod opcache
+fi
 
 sudo service php5-fpm restart
 "

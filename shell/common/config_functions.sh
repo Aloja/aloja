@@ -56,13 +56,21 @@ server {
 
 }
 
+# $1 env
 get_php_conf(){
 
-echo -e '
+  echo -e '
 memory_limit = 1024M
 xdebug.default_enable = 0
 xdebug.remote_enable = 0
 '
+
+  # enable opcache in prod
+  if [ "$1" = 'prod' ]; then
+    echo -e 'opcache.enable=1
+'
+  fi
+
 }
 
 #$1 env (prod, dev)
