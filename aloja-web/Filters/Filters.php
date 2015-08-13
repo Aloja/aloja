@@ -33,6 +33,7 @@ class Filters
          * types: inputText, inputNumber[{le,ge}], inputDate[{le,ge}], selectOne, selectMultiple
          * default: null (any), array(values)
          * table: associated DB table name
+         * parseFunction: function to parse special filter, for filters that need a lot of customization
          *
          * Very custom filters such as advanced filters not in this array
          *
@@ -97,6 +98,9 @@ class Filters
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
             'money' => array('table' => 'mixed', 'field' => '(clustersAlias.cost_hour/3600)*execsAlias.exe_time',
                     'default' => null, 'type' => 'inputNumberle','label' => 'Max cost (US$):'),
+            'execsfilters' => array('table' => null, 'field' => null, 'default' => array('valid','filter'),
+                'parseFunction' => 'parseAdvancedFilters', 'labels' => array('valid' => 'Only valid execs',
+                    'filter' => 'Filter', 'prepares' => 'Include prepares', 'perfdetails' => 'Only execs with perf details'))
         );
 
         $this->aliasesTables = array('execs' => '','clusters' => '');
@@ -150,37 +154,41 @@ class Filters
 
     private function parseFilters() {
         foreach($this->filters as $filterName => $definition) {
-            $DBreference = ($definition['table'] != 'mixed') ? "${definition['table']}Alias." : '';
-            $DBreference .= (isset($definition['field'])) ? $definition['field'] : $filterName;
+            if(isset($definition['parseFunction'])) {
+                $this->$definition['parseFunction']();
+            } else {
+                $DBreference = ($definition['table'] != 'mixed') ? "${definition['table']}Alias." : '';
+                $DBreference .= (isset($definition['field'])) ? $definition['field'] : $filterName;
 
-            $values = null;
-            if(isset($_GET[$filterName])) {
-                $values = $_GET[$filterName];
-                array_walk($values, function(&$item) {
-                    $item=str_replace('%2F','/',$item);
-                });
-            } else if($definition['default'] != null) {
-                $values = $definition['default'];
-            }
-            $this->filters[$filterName]['currentChoice'] = $values;
-
-            if($values != null) {
-                $type = $definition['type'];
-                if($type == "selectOne" || $type == "selectMultiple") {
-                    array_walk($values,function(&$item) {
-                        $item = "'$item'";
+                $values = null;
+                if (isset($_GET[$filterName])) {
+                    $values = $_GET[$filterName];
+                    array_walk($values, function (&$item) {
+                        $item = str_replace('%2F', '/', $item);
                     });
-                    $this->whereClause .= " AND $DBreference IN (". join(',', $values) .")";
-                } else if($type == "inputText" || $type == "inputNumber") {
-                    $this->whereClause .= " AND $DBreference = $values";
-                } else if($type == "inputNumberle") {
-                    $this->whereClause .= " AND $DBreference <= $values";
-                } else if($type == "inputNumberge") {
-                    $this->whereClause .= " AND $DBreference >= $values";
-                } else if($type == "inputDatele") {
-                    $this->whereClause .= " AND $DBreference <= '$values'";
-                } else if($type == "inputDatege") {
-                    $this->whereClause .= " AND $DBreference >= '$values'";
+                } else if ($definition['default'] != null) {
+                    $values = $definition['default'];
+                }
+                $this->filters[$filterName]['currentChoice'] = $values;
+
+                if ($values != null) {
+                    $type = $definition['type'];
+                    if ($type == "selectOne" || $type == "selectMultiple") {
+                        array_walk($values, function (&$item) {
+                            $item = "'$item'";
+                        });
+                        $this->whereClause .= " AND $DBreference IN (" . join(',', $values) . ")";
+                    } else if ($type == "inputText" || $type == "inputNumber") {
+                        $this->whereClause .= " AND $DBreference = $values";
+                    } else if ($type == "inputNumberle") {
+                        $this->whereClause .= " AND $DBreference <= $values";
+                    } else if ($type == "inputNumberge") {
+                        $this->whereClause .= " AND $DBreference >= $values";
+                    } else if ($type == "inputDatele") {
+                        $this->whereClause .= " AND $DBreference <= '$values'";
+                    } else if ($type == "inputDatege") {
+                        $this->whereClause .= " AND $DBreference >= '$values'";
+                    }
                 }
             }
         }
@@ -237,7 +245,6 @@ class Filters
         }
 
         $this->parseFilters();
-        $this->parseAdvancedFilters();
         $this->generateFilterChoices();
     }
 
