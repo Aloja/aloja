@@ -461,7 +461,7 @@ sudo R CMD javareconf
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=TRUE);
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
 install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
