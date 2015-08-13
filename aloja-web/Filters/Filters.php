@@ -187,6 +187,7 @@ class Filters
     }
 
     private function parseAdvancedFilters() {
+        $formSubmitted = isset($_GET['submit']);
         $alias = 'execsAlias';
         $includePrepares = false;
         if(isset($_GET['execsfilters'])) {
@@ -207,7 +208,7 @@ class Filters
 
             $this->whereClause .= (in_array("filter",$filters)) ? ' AND '.$alias.'.filter = 0 ' : '';
 
-        } else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
+        } else if(!$formSubmitted) {
             $_GET['execsfilters'][] = 'valid';
             $_GET['execsfilters'][] = 'filter';
 
@@ -215,7 +216,7 @@ class Filters
         }
 
         if(!$includePrepares)
-            $this->whereClause .= "AND $alias.bench not like 'prep_%' AND $alias.bench_type not like 'HDI-prep%'";
+            $this->whereClause .= " AND $alias.bench not like 'prep_%' AND $alias.bench_type not like 'HDI-prep%'";
 
         $this->filters['execsfilters']['currentChoice'] = (isset($_GET['execsfilters'])) ? $_GET['execsfilters'] : "";
     }
@@ -239,9 +240,6 @@ class Filters
         $this->parseFilters();
         $this->parseAdvancedFilters();
         $this->generateFilterChoices();
-
-        //Workaround to know if all advanced options selected or not, due unable to know in a "beauty" way with GET parameters
-        $this->additionalFilters['allunchecked'] = (isset($_GET['allunchecked'])) ? $_GET['allunchecked']  : '';
     }
 
     public function getFiltersArray() {

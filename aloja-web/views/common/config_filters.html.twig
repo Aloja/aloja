@@ -22,6 +22,8 @@
 		<div class="row">
 				<div class="col-md-6">
 				 	<button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
+                    <!-- to know if form has been submitted through GET -->
+                    <input type="hidden" name="submit" />
 				</div>
 			   <div class="col-md-6">
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
@@ -108,7 +110,6 @@
         <input type="checkbox" name="execsfilters[]" value="perfdetails" {% if 'perfdetails' in filters['execsfilters']['currentChoice'] %}checked{% endif %}>Only execs with perf details<br />
 {#         <input type="checkbox" name="execsfilters[]" value="outliers" {% if 'outliers' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Show outliers<br />#}
 {#         <input type="checkbox" name="execsfilters[]" value="warnings" style="margin-left: 1em;" {% if 'warnings' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Show warnings#}
-        <input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
         <input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
 		  <div class="row">
 			<div class="col-md-6">

@@ -279,15 +279,6 @@
 				}
 			});
 
-			$("input[name='execsfilters[]']").change(function() {
-				var ids = $("input[name='execsfilters[]']:checked");
-				if(ids.length == 0) {
-				   $("#allunchecked").val("allunchecked");
-				}
-				else
-				   $("#allunchecked").val("");
-			});
-
 			$("select[name='presets']").change(function() { 
 			    var url = $(this).find("option:selected").first().attr('url');
 			    if (url == "") {

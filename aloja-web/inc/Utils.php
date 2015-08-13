@@ -275,7 +275,7 @@ class Utils
         $filter_execs = $where_configs ." ".DBUtils::getFilterExecs();
 
         $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+        $netOptions = $db->get_rows("SELECT DISTINCT net FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
     	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
