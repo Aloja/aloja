@@ -168,6 +168,7 @@ class ConfigEvaluationsController extends AbstractController
 	            			$minCost = $cost;
 	            			$minCostIdx = $key;
 	            		}
+                        $exec['cost'] = $cost;
 	            	}
 	            	$bestexec = $rows[$minCostIdx];
             	} else
