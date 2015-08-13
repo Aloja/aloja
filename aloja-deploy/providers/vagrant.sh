@@ -164,6 +164,14 @@ if [ ! -d '/var/www/aloja-web' ] ; then
 fi"
 }
 
+vagrant_link_share(){
+  logger "INFO: Making sure ~/share is linked in the vagrant VM"
+  vm_execute "
+if [ ! -L '/home/vagrant/share' ] ; then
+  sudo ln -fs /vagrant/blobs /home/vagrant/share
+fi"
+}
+
 make_hosts_file() {
 
   local hosts_file="$VAGRANT_WEB_IP\taloja-web"
@@ -195,6 +203,7 @@ vm_final_bootstrap() {
 
   #currently is run everytime it is executed
   vm_update_hosts_file
+  vagrant_link_share
 }
 
 
@@ -211,5 +220,7 @@ vm_mount_disks() {
 cluster_final_boostrap() {
   : #not necessary for vagrant (yet)
 }
+
+
 
 
