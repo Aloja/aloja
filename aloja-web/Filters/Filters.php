@@ -293,7 +293,7 @@ class Filters
         if(isset($_GET['selected-groups']) && $_GET['selected-groups'] != "") {
             $this->additionalFilters['selectedGroups'] = explode(",", $_GET['selected-groups']);
         } else {
-            $this->additionalFilters['selectedGroups'] = join(',',$defaultGroups);
+            $this->additionalFilters['selectedGroups'] = $defaultGroups;
         }
     }
 
