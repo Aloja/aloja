@@ -116,17 +116,30 @@ class Utils
         //return json_encode(array('aaData' => $jsonData));
     }
 
-    public static function get_GET_execs()
+    public static function get_GET_intArray($param)
     {
-        $execs = array();
-        if (isset($_GET['execs'])) {
-            $execs_tmp = array_unique($_GET['execs']);
-            foreach ($execs_tmp as $exec) {
-                $execs[] = filter_var($exec, FILTER_SANITIZE_NUMBER_INT);
+        $paramArray = array();
+        if (isset($_GET[$param])) {
+            $paramArray = array_unique($_GET[$param]);
+            foreach ($paramArray as $value) {
+                $value = filter_var($value, FILTER_SANITIZE_NUMBER_INT);
             }
         }
 
-        return $execs;
+        return $paramArray;
+    }
+
+    public static function get_GET_stringArray($param)
+    {
+        $paramArray = array();
+        if (isset($_GET[$param])) {
+            $paramArray = array_unique($_GET[$param]);
+            foreach ($paramArray as &$value) {
+                $value = filter_var($value, FILTER_SANITIZE_STRING);
+            }
+        }
+
+        return $paramArray;
     }
 
     public static function get_GET_string($param)
@@ -350,7 +363,7 @@ class Utils
 
     public static function getClusterName($clusterCode, $db)
     {
-        $clusterName = $db->get_rows("SELECT name FROM clusters WHERE id_cluster=$clusterCode");
+        $clusterName = $db->get_rows("SELECT CONCAT_WS('/',LPAD(id_cluster,2,0),vm_size,CONCAT(datanodes,'Dn')) as name FROM clusters WHERE id_cluster=$clusterCode");
 
         return $clusterName[0]['name'];
     }

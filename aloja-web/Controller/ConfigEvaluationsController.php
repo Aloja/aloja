@@ -197,8 +197,8 @@ class ConfigEvaluationsController extends AbstractController
         $series = '';
         try {
 
-            $paramEval = (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
-            $minExecs = (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
+            $paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
+            $minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
             $minExecsFilter = "";
             if($minExecs > 0)
                 $minExecsFilter = "HAVING COUNT(*) > $minExecs";
@@ -261,6 +261,7 @@ class ConfigEvaluationsController extends AbstractController
                 $arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['y'] = round((int)$row['avg_exe_time'],2);
                 $arrayBenchs[strtolower($row['bench'])][$row[$paramEval]]['count'] = (int)$row['count'];
             }
+
 
             foreach($arrayBenchs as $key => $arrayBench)
             {

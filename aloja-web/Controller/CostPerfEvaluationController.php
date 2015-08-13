@@ -8,27 +8,25 @@ use alojaweb\inc\DBUtils;
 
 class CostPerfEvaluationController extends AbstractController
 {
+	private $whereClause;
+
+	//Need to get container since overwritting parent constructor
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->buildFilters(array('bench' =>
+			array('default' => array('terasort'),
+				'type' => 'selectOne', 'label' => 'Benchmark:')));
+		$this->whereClause = $this->filters->getWhereClause();
+	}
+	
     public function costPerfEvaluationAction()
     {
         $filter_execs = DBUtils::getFilterExecs();
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters(array('bench' =>
-            array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:')));
-        $whereClause = $this->filters->getWhereClause();
         
         try {
-            if(isset($_GET['benchs']))
-                $_GET['benchs'] = $_GET['benchs'][0];
-
-            if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
-                $bench = $_GET['benchs'];
-                $bench_where = " AND bench = '$bench'";
-            } else {
-                $bench = 'terasort';
-                $bench_where = " AND bench = '$bench'";
-            }
-
             /*
              * 1. Get execs and cluster associated costs
              * 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -43,7 +41,7 @@ class CostPerfEvaluationController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $whereClause ORDER BY rand() LIMIT 500";
+            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -117,30 +115,15 @@ class CostPerfEvaluationController extends AbstractController
     public function clusterCostEffectivenessAction()
     {
         $db = $this->container->getDBUtils ();
-        $this->buildFilters(array('bench' =>
-            array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:')));
-        $whereClause = $this->filters->getWhereClause();
 
         $data = array();
 
         $filter_execs = DBUtils::getFilterExecs();
 
-        if(isset($_GET['benchs']))
-            $_GET['benchs'] = $_GET['benchs'][0];
-
-        if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
-            $bench = $_GET['benchs'];
-            $bench_where = " AND bench = '$bench'";
-        } else {
-            $bench = 'terasort';
-            $bench_where = " AND bench = '$bench'";
-        }
-
         $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN clusters c USING (id_cluster)
         		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
-        					 WHERE  1 $bench_where $whereClause GROUP BY name,net,disk ORDER BY name ASC)
-        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+        					 WHERE  1 $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
+        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
         
     	try {
     		$rows = $db->get_rows($query);
@@ -208,26 +191,8 @@ class CostPerfEvaluationController extends AbstractController
     {
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
-
-        $this->buildFilters(array('bench' =>
-            array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:')));
-
+		
     	try {
-    		if(isset($_GET['benchs']))
-    			$_GET['benchs'] = $_GET['benchs'][0];
-    
-    		if (isset($_GET['benchs']) and strlen($_GET['benchs']) > 0) {
-    			$bench = $_GET['benchs'];
-    			$bench_where = " AND bench = '$bench'";
-    		} else {
-    			$bench = 'terasort';
-    			$bench_where = " AND bench = '$bench'";
-    		}
-    
-    		
-    		$whereClause = $this->filters->getWhereClause();
-
     		/*
     		 * 1. Get execs and cluster associated costs
     		* 2. For each exec calculate cost, exe_time/3600 * (cost_cluster + clust_remote|ssd|ib|eth)
@@ -246,8 +211,8 @@ class CostPerfEvaluationController extends AbstractController
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
       		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
-        					 WHERE  1 $filter_execs $bench_where $whereClause GROUP BY name,net,disk ORDER BY name ASC)
-        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $whereClause
+        					 WHERE  1 $filter_execs $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
     		$execs = $dbUtils->get_rows($execs);
@@ -310,15 +275,12 @@ class CostPerfEvaluationController extends AbstractController
     		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	return $this->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
-    			'selected' => 'Clusters Cost Evaluation',
     			'highcharts_js' => HighCharts::getHeader(),
-    			// 'show_in_result' => count($show_in_result),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
     			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
     			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
     			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
     			'seriesData' => $seriesData,
-    			'benchs' => array($bench),
     			'execs' => $execs,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
     			'clusters' => $clusters,
@@ -330,11 +292,8 @@ class CostPerfEvaluationController extends AbstractController
     	$filter_execs = DBUtils::getFilterExecs();
     	$dbUtils = $this->container->getDBUtils();
 
-        $this->buildFilters(array('bench' =>
-            array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:')));
     	try {
-    		$whereClause = $this->filters->getWhereClause();
+    		
 
     		/*
     		 * 1. Get execs and cluster associated costs
@@ -353,8 +312,8 @@ class CostPerfEvaluationController extends AbstractController
     		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM execs e JOIN clusters c USING (id_cluster)
       		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
-        					 WHERE  1 $filter_execs $bench_where $whereClause GROUP BY name,net,disk ORDER BY name ASC)
-        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $whereClause
+        					 WHERE  1 $filter_execs $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
     		$execs = $dbUtils->get_rows($execs);
@@ -456,7 +415,6 @@ class CostPerfEvaluationController extends AbstractController
     	
     	return $this->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
     			'highcharts_js' => HighCharts::getHeader(),
-    			// 'show_in_result' => count($show_in_result),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
     			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
     			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
@@ -464,23 +422,17 @@ class CostPerfEvaluationController extends AbstractController
     			'seriesData' => $seriesData,
     			'bestExecs' => $bestExecs,
     			'clusters' => $clusters,
-    			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
     	));
     }
 
     public function nodesEvaluationAction()
     {
         $dbUtils = $this->container->getDBUtils();
-
-        $this->buildFilters(array('bench' =>
-            array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:')));
+		
         try {
             $filter_execs = DBUtils::getFilterExecs();
 
-            $whereClause = $this->filters->getWhereClause();
-
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $whereClause GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $this->whereClause GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
@@ -536,7 +488,6 @@ class CostPerfEvaluationController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
             'datanodess' => $datanodes,
-            // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
         ));
     }
 }

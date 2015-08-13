@@ -136,7 +136,7 @@ class RepositoryController extends AbstractController
             $message = null;
 
             //check the URL
-            $execs = Utils::get_GET_execs();
+            $execs = Utils::get_GET_intArray('execs');
 
             if (Utils::get_GET_string('pageTab')) {
                 $type = Utils::get_GET_string('pageTab');
@@ -148,7 +148,7 @@ class RepositoryController extends AbstractController
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
-                $join.= " AND JOBID = '${_GET['jobid']}' ";
+                $join.= " AND JOBID = '".Utils::get_GET_string('jobid')."' ";
             }
             $join .= " LIMIT 10000";
 
@@ -243,7 +243,7 @@ class RepositoryController extends AbstractController
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
                 'type' => $type,
                 'execs' => $execs,
-                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
+                'execsParam' => (isset($_GET['execs'])) ? Utils::get_GET_intArray('execs') : '',
                 'discreteOptions' => $discreteOptions,
             ));
     }
@@ -267,7 +267,7 @@ class RepositoryController extends AbstractController
             $message = null;
 
             //check the URL
-            $execs = Utils::get_GET_execs();
+            $execs = Utils::get_GET_intArray('execs');
 
             if (Utils::get_GET_string('pageTab')) {
                 $type = Utils::get_GET_string('pageTab');
@@ -279,7 +279,7 @@ class RepositoryController extends AbstractController
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
-                $join.= " AND JOB_ID = '${_GET['jobid']}' ";
+                $join.= " AND JOB_ID = '".Utils::get_GET_string('jobid')."' ";
             }
             $join .= " LIMIT 10000";
 
@@ -369,7 +369,7 @@ class RepositoryController extends AbstractController
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
                 'type' => $type,
                 'execs' => $execs,
-                'execsParam' => (isset($_GET['execs'])) ? $_GET['execs'] : '',
+                'execsParam' => (isset($_GET['execs'])) ? Utils::get_GET_intArray('execs') : '',
                 'discreteOptions' => $discreteOptions,
                 'hdp2' => true,
             ));

@@ -38,7 +38,6 @@ class RestController extends AbstractController
             'bench_type' => 'Bench',
             'counters' => 'Counters',
             'perf_details' => 'Perf details',
-
         );
 
         try {
@@ -147,7 +146,7 @@ class RestController extends AbstractController
         $whereClause = $this->filters->getWhereClause();
         try {
             //check the URL
-            $execs = Utils::get_GET_execs();
+            $execs = Utils::get_GET_intArray('execs');
 
             if (!($type = Utils::get_GET_string('pageTab')))
                 $type = 'SUMMARY';
@@ -1134,7 +1133,7 @@ VALUES
         $whereClause = $this->filters->getWhereClause();
     	try {
     		//check the URL
-    		$execs = Utils::get_GET_execs();
+    		$execs = Utils::get_GET_intArray('execs');
     
     		if (!($type = Utils::get_GET_string('pageTab')))
     			$type = 'SUMMARY';

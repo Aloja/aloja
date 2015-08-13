@@ -66,8 +66,9 @@ class DefaultController extends AbstractController
         $clusterNameSelected = null;
 
         if(isset($_GET['cluster_name'])) {
-            $clusterNameSelected = $_GET['cluster_name'];
+            $clusterNameSelected = Utils::get_GET_string('cluster_name');
         }
+
 
         $filter_execs = DBUtils::getFilterExecs();
 
