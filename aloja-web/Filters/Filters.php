@@ -187,7 +187,6 @@ class Filters
     }
 
     private function parseAdvancedFilters() {
-        $formSubmitted = isset($_GET['submit']);
         $alias = 'execsAlias';
         $includePrepares = false;
         if(isset($_GET['execsfilters'])) {
@@ -208,7 +207,7 @@ class Filters
 
             $this->whereClause .= (in_array("filter",$filters)) ? ' AND '.$alias.'.filter = 0 ' : '';
 
-        } else if(!$formSubmitted) {
+        } else if(!$this->formIsSubmitted()) {
             $_GET['execsfilters'][] = 'valid';
             $_GET['execsfilters'][] = 'filter';
 
@@ -301,5 +300,9 @@ class Filters
 
     public function getFiltersGroups() {
         return $this->filterGroups;
+    }
+
+    private function formIsSubmitted() {
+        return isset($_GET['submit']);
     }
 }
