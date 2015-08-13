@@ -8,6 +8,10 @@ source "$CONF_DIR/common.sh"
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
+#make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
+trap 'echo "RUNNING TRAP "; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
+PARENT_PID=$$ #for killing the process from subshells
+
 ###################
 
 #test and load cluster config
@@ -21,20 +25,22 @@ configFolderPath="$CONF_DIR/../conf"
 logger "INFO: loading $configFolderPath/$clusterConfigFile"
 source "$configFolderPath/$clusterConfigFile"
 
+# load defaultProvider
+logger "INFO: attempting to load secured account configs if present"
+securedProviderFile="$CONF_DIR/../../secure/${defaultProvider}_settings.conf"
+
+if [ -f "$securedProviderFile" ] ; then
+  logger "INFO: loading $securedProviderFile"
+  source "$securedProviderFile"
+else
+  logger "INFO: no secured accounts file present"
+fi
+
 logger "INFO: loading benchmarks_defaults.conf"
 source "$CONF_DIR/../conf/benchmarks_defaults.conf"
 
-## load defaultProvider
-#if [ -z $2 ]; then
-#  securedProviderFile="$CONF_DIR/../../secure/${defaultProvider}_settings.conf"
-##load user specified provider conf file
-#elif [ -z $3 ]; then
-#  securedProviderFile="$CONF_DIR/../../secure/${2}_settings.conf"
-##load user specified conf file
-#else
-#	securedProviderFile="$CONF_DIR/../../secure/$3"
-#fi
-#
+
+
 ##check for secured conf file
 #if [ ! -f "$securedProviderFile" ]; then
 #  echo "WARNING: Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
@@ -47,7 +53,7 @@ source "$CONF_DIR/../conf/benchmarks_defaults.conf"
 
 #source "$configFolderPath/$clusterConfigFile"
 
-logger "Starting ALOJA deploy tools for Provider: $default_provider"
+logger "Starting ALOJA benchamking tools for Provider: $defaultProvider"
 
 source "$CONF_DIR/cluster_functions.sh"
 
@@ -88,3 +94,7 @@ source "$CONF_DIR/common_benchmarks.sh"
 
 logger "INFO: loading $CONF_DIR/benchmark_${BENCH}.sh"
 source "$CONF_DIR/benchmark_${BENCH}.sh"
+
+#load cluster or node config
+logger "INFO: Re-loading $configFolderPath/$clusterConfigFile for overrides"
+source "$configFolderPath/$clusterConfigFile"

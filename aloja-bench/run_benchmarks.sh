@@ -1,10 +1,11 @@
-#!/bin/bash
-# SCRIPT TO STOP, SET CONFIG, AND START HADOOP and run HiBench in AZURE
+#!/bin/env bash
+
 
 usage() {
-  echo -e "Usage:
-$0 -C clusterName
-`#[-n net <IB|ETH>] `
+  echo -e "ALOJA-BENCH, script to run benchmarks and collect results
+Usage:
+$0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
+[-n net <IB|ETH>]
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
 [-b benchmark <-min|-10>]
 [-r replicaton <positive int>]
@@ -20,9 +21,8 @@ $0 -C clusterName
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
 
-example: $0 -C al-04 -n IB -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
-" 1>&2;
-
+example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
+"
   exit 1;
 }
 
@@ -42,18 +42,17 @@ OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in th
 [ ! "$EXEC_TYPE" ] && EXEC_TYPE="default"
 [ ! "$COMPRESS_GLOBAL" ] && COMPRESS_GLOBAL=0
 [ ! "$COMPRESS_TYPE" ] && COMPRESS_TYPE=0
-[ ! "$INSTRUMENTATION" ] && INSTRUMENTATION==0
+[ ! "$INSTRUMENTATION" ] && INSTRUMENTATION=0
+
+[ ! "$BLOCK_SIZE" ] && BLOCK_SIZE=67108864
+[ ! "$SAVE_BENCH" ] && SAVE_BENCH=""
+[ ! "$DELETE_HDFS" ] && DELETE_HDFS="1"
 
 #COMPRESS_GLOBAL=1
 #COMPRESS_TYPE=1
 #COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.DefaultCodec
 #COMPRESS_CODEC_GLOBAL=com.hadoop.compression.lzo.LzoCodec
 #COMPRESS_CODEC_GLOBAL=org.apache.hadoop.io.compress.SnappyCodec
-[ ! "$SAVE_BENCH" ] && SAVE_BENCH=""
-
-[ ! "$SAVE_BENCH" ] && BLOCK_SIZE=67108864
-
-[ ! "$SAVE_BENCH" ] && DELETE_HDFS=1
 
 while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
     case "$opt" in
@@ -65,16 +64,14 @@ while getopts ":h:?:C:v:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
       ;;
     C)
       clusterName=$OPTARG
-      [ ! -z "$clusterName" ] || usage
       ;;
     n)
       NET=$OPTARG
-      #[ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
+      [ "$NET" == "IB" ] || [ "$NET" == "ETH" ] || usage
       ;;
     d)
       DISK=$OPTARG
       defaultDisk=0
-      #[ "$DISK" == "SSD" ] || [ "$DISK" == "HDD" ] || [ "$DISK" == "RR1" ] || [ "$DISK" == "RR2" ] || [ "$DISK" == "RR3" ] || [ "$DISK" == "RR4" ]  || [ "$DISK" == "RR5" ]  || [ "$DISK" == "RR6" ] || [ "$DISK" == "RL1" ] || [ "$DISK" == "RL2" ] || [ "$DISK" == "RL3" ] || [ "$DISK" == "RL4" ] || [ "$DISK" == "RL5" ]  || [ "$DISK" == "RL6" ] || [ "$DISK" == "HD1" ] || [ "$DISK" == "HD2" ] || [ "$DISK" == "HD3" ] || [ "$DISK" == "HD4" ] || [ "$DISK" == "HD5" ] || [ "$DISK" == "HD6" ] || [ "$DISK" == "HD7" ] || usage
       ;;
     b)
       BENCH=$OPTARG
@@ -151,16 +148,20 @@ shift $((OPTIND-1))
 
 [ "$1" = "--" ] && shift
 
-[ -z "$clusterName" ] && usage
-
 #####
 #load cluster config and common functions
-#clusterConfigFile="cluster_${clusterName}.conf"
+
+# attempt first to load local cluster config if defined
+if [[ -z "$clusterName" &&  -f ~/aloja_cluster.conf ]] ; then
+  source ~/aloja_cluster.conf  #here we don't have globals loaded yet
+else
+  usage
+fi
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
-loggerb  "INFO: includes loaded"
+loggerb  "INFO: include files loaded"
 
 #####
 
@@ -262,7 +263,8 @@ if [ "$INSTRUMENTATION" == "1" ] ; then
 fi
 
 
-loggerb  "DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
+loggerb  "DEBUG: userAloja=$userAloja
+DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
 BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
 BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
@@ -278,6 +280,7 @@ JAVA_AM_XMS=$JAVA_AM_XMS
 JAVA_AM_XMX=$JAVA_AM_XMX
 REDUCES_MB=$REDUCES_MB
 Master node: $master_name "
+
 
 #check that we got the dynamic disk location correctly
 if [ -z "$(get_initial_disk "$DISK")" ] ; then

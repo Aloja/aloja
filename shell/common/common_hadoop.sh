@@ -418,7 +418,7 @@ execute_HiBench(){
       fi
 
 
-      #if [ "$bench" = "wordcounta" ] ; then
+      #if [ "$bench" = "wordcount" ] ; then
       #  echo "# $(date +"%H:%M:%S") SAVING PREPARED DATA for $bench"
       #
       #  $DIR/bin/hadoop fs -get /HiBench $PREPARED/$bench/
