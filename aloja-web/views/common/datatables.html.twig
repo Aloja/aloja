@@ -389,7 +389,7 @@
 
 						var headTitle = $("#benchmarks thead tr:first-child th:nth-child(" + index + ")").text();
 						{% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
-						if (headTitle == 'JOBID')
+						if (headTitle == 'JOBID' && aData[aData.length-1] == 1)
 								{% if hdp2 is defined %}
 							$(this).html('<a href="{{ path('hdp2counters') }}?execs[]=' + aData[0] + '&jobid=' + aData[2] + '&pageTab=TASKS" target="_blank">' + aData[2] + '</a>');
 						{% else %}

@@ -157,7 +157,8 @@ class RestController extends AbstractController
 
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
-                c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS
+                c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS,
+                e.perf_details
                 FROM JOB_details c $join";
             } elseif ($type == 'MAP') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -169,7 +170,8 @@ class RestController extends AbstractController
                 `Map output records`,
                 `Map input bytes`,
                 `Map output bytes`,
-                `Map output materialized bytes`
+                `Map output materialized bytes`,
+                e.perf_details
                 FROM JOB_details c $join";
             } elseif ($type == 'REDUCE') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -180,7 +182,8 @@ class RestController extends AbstractController
                 `Reduce output records`,
                 `Reduce shuffle bytes`,
                 `Combine input records`,
-                `Combine output records`
+                `Combine output records`,
+                e.perf_details
                 FROM JOB_details c $join";
             } elseif ($type == 'FILE-IO') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -193,12 +196,14 @@ class RestController extends AbstractController
                 `HDFS_BYTES_WRITTEN`,
                 `HDFS_BYTES_READ`,
                 `Bytes Read`,
-                `Bytes Written`
+                `Bytes Written`,
+                e.perf_details
                 FROM JOB_details c $join";
             } elseif ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.*, e.perf_details
+                FROM JOB_details c $join";
             } elseif ($type == 'TASKS') {
-                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM JOB_tasks c
+                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.*,e.perf_details FROM JOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
             } else {
                 throw new \Exception('Unknown type!');
@@ -228,12 +233,7 @@ class RestController extends AbstractController
                 //         }
 
             } else {
-                $noData = array();
-                for($i = 0; $i<18; ++$i)
-                    $noData[] = 'No Data found';
-
-                ob_start('ob_gzhandler');
-                echo json_encode(array('aaData' => $noData));
+                echo 'No data available';
             }
 
         } catch (Exception $e) {
@@ -1144,7 +1144,8 @@ VALUES
     
     		if ($type == 'SUMMARY') {
     			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
-    			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS
+    			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS,
+    			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'MAP') {
     			$query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -1154,7 +1155,8 @@ VALUES
     			`MAP_INPUT_RECORDS`,
     			`MAP_OUTPUT_RECORDS`,
     			`MAP_OUTPUT_BYTES`,
-    			`MAP_OUTPUT_MATERIALIZED_BYTES`
+    			`MAP_OUTPUT_MATERIALIZED_BYTES`,
+    			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'REDUCE') {
     			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -1165,7 +1167,8 @@ VALUES
     			`REDUCE_OUTPUT_RECORDS`,
     			`REDUCE_SHUFFLE_BYTES`,
     			`COMBINE_INPUT_RECORDS`,
-    			`COMBINE_OUTPUT_RECORDS`
+    			`COMBINE_OUTPUT_RECORDS`,
+    			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'FILE-IO') {
     			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
@@ -1178,12 +1181,13 @@ VALUES
     			`WASB_BYTES_WRITTEN`,
     			`WASB_BYTES_READ`,
     			`BYTES_READ`,
-    			`BYTES_WRITTEN`
+    			`BYTES_WRITTEN`,
+    			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'DETAIL') {
-    			$query = "SELECT e.bench, exe_time, c.* FROM HDI_JOB_details c $join";
+    			$query = "SELECT e.bench, exe_time, c.*,e.perf_details FROM HDI_JOB_details c $join";
     		} elseif ($type == 'TASKS') {
-    			$query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
+    			$query = "SELECT e.bench, exe_time, j.job_name, c.*,e.perf_details FROM HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
     		} else {
     			throw new \Exception('Unknown type!');
@@ -1210,12 +1214,7 @@ VALUES
     			//         }
     
     		} else {
-    			$noData = array();
-    			for($i = 0; $i<18; ++$i)
-    				$noData[] = 'No Data found';
-    
-    			ob_start('ob_gzhandler');
-    			echo json_encode(array('aaData' => $noData));
+                echo 'No data available';
     		}
     
     	} catch (Exception $e) {

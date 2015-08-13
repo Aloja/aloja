@@ -217,7 +217,6 @@ class RepositoryController extends AbstractController
             }
 
             $exec_rows = $db->get_rows($query);
-
             if (count($exec_rows) > 0) {
 
                 $show_in_result_counters = array(
