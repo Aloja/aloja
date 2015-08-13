@@ -86,7 +86,7 @@ vm_create_connect() {
     #wait for ssh to be ready
     wait_vm_ssh_ready
 
-  #make sure the correct number of disks is innitialized
+  #make sure the correct number of disks is initialized
   elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
@@ -130,6 +130,10 @@ vm_provision() {
 }
 
 vm_finalize() {
+  if [ "$type" == "cluster" ] ; then
+      cluster_create_local_conf
+  fi
+
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
@@ -1194,4 +1198,15 @@ vm_update_hosts_file() {
 
   #vm_execute "$hosts_file_command"
   vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
+}
+
+cluster_create_local_conf() {
+  logger "INFO: Creating or updating local cluster config file"
+  local cluster_conf="
+# Cluster config, file is to be sourced by benchmarking scripts
+clusterID='$clusterID'
+clusterName='$clusterName'
+numberOfNodes='$numberOfNodes'
+"
+  vm_update_host_template "$homePrefixAloja/$userAloja/aloja_cluster.conf" "$cluster_conf"
 }
