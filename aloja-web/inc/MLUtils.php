@@ -67,7 +67,7 @@ class MLUtils
 			'vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
 		);
 		$cluster_descriptor = array();
-		$query = "select ".implode(",",array_keys($cluster_header_names))." from clusters;";
+		$query = "select ".implode(",",array_keys($cluster_header_names))." from aloja2.clusters;";
 	    	$rows = $db->get_rows($query);
 	    	foreach($rows as $row)
 		{
@@ -136,7 +136,7 @@ class MLUtils
 
 	public static function findMatchingModels ($model_info, &$possible_models, &$possible_models_id, $dbml)
 	{
-		$query = "SELECT id_learner, model FROM learners";
+		$query = "SELECT id_learner, model FROM aloja_ml.learners";
 		$result = $dbml->query($query);
 		foreach ($result as $row)
 		{

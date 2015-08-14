@@ -10,11 +10,11 @@ fi
 #TODO add the query
 
 #select distinct(substring(exec, 1, (locate('/',exec)-1)))
-#from execs e join clusters c using (id_cluster) where exe_time > 100 and type != 'PaaS'
+#from aloja2.execs e JOIN aloja2.clusters c using (id_cluster) where exe_time > 100 and type != 'PaaS'
 #and (
-#id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null)
+#id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null)
 #OR
-#id_exec NOT IN(select distinct (id_exec) from SAR_cpu where id_exec is not null)
+#id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.SAR_cpu where id_exec is not null)
 #)
 #;
 
