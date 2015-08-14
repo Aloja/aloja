@@ -63,13 +63,8 @@ get_php_conf(){
 memory_limit = 1024M
 xdebug.default_enable = 0
 xdebug.remote_enable = 0
+opcache.enable=1
 '
-
-  # enable opcache in prod
-  if [ "$1" = 'prod' ]; then
-    echo -e 'opcache.enable=1
-'
-  fi
 
 }
 

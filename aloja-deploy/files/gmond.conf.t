@@ -32,18 +32,13 @@ host {
 /* Feel free to specify as many udp_send_channels as you like.  Gmond 
    used to only support having a single channel */ 
 udp_send_channel { 
-  mcast_join = 239.2.11.71 
-  mcast_if = %%%MCASTIF%%%
+  host = %%%NODE0%%%
   port = 8649 
-  ttl = 1 
 } 
 
 /* You can specify as many udp_recv_channels as you like as well. */ 
 udp_recv_channel { 
-  mcast_join = 239.2.11.71 
-  mcast_if = %%%MCASTIF%%%
   port = 8649 
-  bind = 239.2.11.71 
 } 
 
 /* You can specify as many tcp_accept_channels as you like to share 

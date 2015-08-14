@@ -291,10 +291,7 @@ $(get_php_conf \"$env\")
 EOF
 '
 
-# enable opcache in prod
-if [ '$env' = 'prod' ]; then
-  sudo php5enmod opcache
-fi
+sudo php5enmod opcache
 
 sudo service php5-fpm restart
 "
@@ -605,7 +602,7 @@ sudo apt-get -y install ganglia-monitor
   fi
 }
 
-# $1 cluster name, $2 (optional): mcast_if
+# $1 cluster name
 config_ganglia_gmond(){
 
   local bootstrap_file="config_gmond"
@@ -617,17 +614,15 @@ config_ganglia_gmond(){
 
     logger "INFO: Configuring ganglia-monitor (gmond)"
 
-    [ "$2" != "" ] && mcastif=$2 || mcastif=eth0
-
     vm_local_scp files/gmond.conf.t /tmp/ "" ""
 
     vm_execute "
 
     # create conf from template
-    awk -v clustername='$1' -v mcastif='$mcastif' '
+    awk -v clustername='$1' -v node0='${1}-00' '
 
     { sub(/%%%CLUSTERNAME%%%/, clustername)
-      sub(/%%%MCASTIF%%%/, mcastif)
+      sub(/%%%NODE0%%%/, node0)
     }
     { print }
     ' /tmp/gmond.conf.t > /tmp/gmond.conf
