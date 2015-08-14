@@ -19,7 +19,7 @@ class PerfDetailsController extends AbstractController
             $dbUtil->get_exec_details('1', 'id_exec',$exec_rows,$id_exec_rows);
 
             //check the URL
-            $execs = Utils::get_GET_execs();
+            $execs = Utils::get_GET_intArray('execs');
 
             if (Utils::get_GET_string('random') && !$execs) {
                 $keys = array_keys($exec_rows);
@@ -752,5 +752,54 @@ class PerfDetailsController extends AbstractController
                 'METRICS' => DBUtils::$TASK_METRICS,
             )
         );
+    }
+
+    public function histogramAction()
+    {
+        $idExec = '';
+        $dbConn = $this->getContainer()->getDBUtils();
+        try {
+            $idExec = Utils::get_GET_string('id_exec');
+            if(!$idExec) {
+                $idExec = $dbConn->get_rows("SELECT id_exec FROM execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 LIMIT 5")[rand(0,5)]['id_exec'];
+            }
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+        if(!$idExec) {
+            $this->container->getTwig()->addGlobal('message','No executions with performance details available');
+            $exec = null;
+        } else
+            $exec = $dbConn->get_rows("SELECT * FROM execs JOIN clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
+
+        return $this->render('histogram/histogram.html.twig',
+            array(
+                'idExec' => $idExec,
+                'exec' => $exec
+            ));
+    }
+
+    public function histogramHDIAction()
+    {
+        $idExec = '';
+        $dbConn = $this->getContainer()->getDBUtils();
+        try {
+            $idExec = Utils::get_GET_string('id_exec');
+            if(!$idExec)
+                $idExec = $dbConn->get_rows("SELECT id_exec FROM execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 AND hadoop_version = 2 LIMIT 5")[rand(0,5)]['id_exec'];
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+
+        if(!$idExec) {
+            $this->container->getTwig()->addGlobal('message','No executions of Hadoop 2 with performance details available');
+            $exec = null;
+        } else
+            $exec = $dbConn->get_rows("SELECT * FROM execs JOIN clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
+
+        return $this->render('histogram/histogramhdi.html.twig',
+            array('idExec' => $idExec,
+                'exec' => $exec
+            ));
     }
 }

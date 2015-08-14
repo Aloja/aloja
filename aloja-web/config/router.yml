@@ -60,7 +60,7 @@ metricsdata:
     
 histogram:
     pattern: "/histogram"
-    controller: "alojaweb\\Controller\\DefaultController::histogramAction"
+    controller: "alojaweb\\Controller\\PerfDetailsController::histogramAction"
     screenName: "Histogram"
     
 histogramdata:
@@ -140,8 +140,8 @@ hdp2countersdata:
    
 histogramhdi:
     pattern: "/histogramhdi"
-    controller: "alojaweb\\Controller\\DefaultController::histogramHDIAction"
-    screenName: "Histogram"
+    controller: "alojaweb\\Controller\\PerfDetailsController::histogramHDIAction"
+    screenName: "Histogram HDP2"
      
 histogramhdidata:
     pattern: "/histogramhdidata"

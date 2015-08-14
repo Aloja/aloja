@@ -13,40 +13,6 @@ class DefaultController extends AbstractController
         return $this->render('welcome.html.twig', array());
     }
 
-    public function histogramAction()
-    {
-        $idExec = '';
-        try {
-            $idExec = Utils::get_GET_string('id_exec');
-            if(!$idExec)
-                throw new \Exception("No execution selected!");
-        } catch (\Exception $e) {
-            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-        }
-
-        echo $this->container->getTwig()->render('histogram/histogram.html.twig',
-            array('selected' => 'Histogram',
-                'idExec' => $idExec
-            ));
-    }
-
-    public function histogramHDIAction()
-    {
-        $idExec = '';
-        try {
-            $idExec = Utils::get_GET_string('id_exec');
-            if(!$idExec)
-                throw new \Exception("No execution selected!");
-        } catch (\Exception $e) {
-            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
-        }
-
-        echo $this->container->getTwig()->render('histogram/histogramhdi.html.twig',
-            array('selected' => 'Histogram',
-                'idExec' => $idExec
-            ));
-    }
-
     public function publicationsAction()
     {
         echo $this->container->getTwig()->render('publications/publications.html.twig', array(

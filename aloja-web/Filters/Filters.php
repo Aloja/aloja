@@ -98,7 +98,7 @@ class Filters
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
             'money' => array('table' => 'mixed', 'field' => '(clustersAlias.cost_hour/3600)*execsAlias.exe_time',
                     'default' => null, 'type' => 'inputNumberle','label' => 'Max cost (US$):'),
-            'execsfilters' => array('table' => null, 'field' => null, 'default' => array('valid','filter'),
+            'execsfilters' => array('table' => 'execs', 'field' => array('valid','filter','perf_details'), 'default' => array('valid','filter'),
                 'parseFunction' => 'parseAdvancedFilters', 'labels' => array('valid' => 'Only valid execs',
                     'filter' => 'Filter', 'prepares' => 'Include prepares', 'perfdetails' => 'Only execs with perf details'))
         );
