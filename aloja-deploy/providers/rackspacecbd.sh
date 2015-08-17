@@ -61,7 +61,7 @@ get_node_names() {
 
 #$1 node_name, expects workernode{id}
 get_vm_id() {
-    local id=$(echo "$1" | grep -oP "[0-9]+")
+    local id="$(echo "$1" | grep -oP "[0-9]+"|tail -n 1)"
     printf %02d "$id"
 }
 

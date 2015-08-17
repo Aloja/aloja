@@ -1,7 +1,6 @@
 mysql_user: root
 mysql_pwd:
 db_conn_chain: "mysql:host=localhost;dbname=aloja2"
-db_conn_chain_ml: "mysql:host=localhost;dbname=aloja_ml"
 #Prod MySQL, need to SSH first in Vagrant VM with: ssh -L localhost:3307:host:3306 prod_user@prod_server
 #db_conn_chain: "mysql:host=127.0.0.1;dbname=aloja2;port=3307"
 db_cache_path: "cache/query"
@@ -10,4 +9,8 @@ enable_debug: true
 twig_cache_path: "cache/twig"
 twig_views_path: "views/"
 #Show PHP warnings?
-show_warnings: false
+show_warnings: true
+
+protected_urls: { "/mlclearcache": "", }
+protected_user: vagrant
+protected_pass: vagrant

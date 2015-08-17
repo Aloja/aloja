@@ -14,7 +14,7 @@ dir=`cat $1`
 MYSQL_CREDENTIALS='-uroot'
 
 check_exec() {
-  mysql $MYSQL_CREDENTIALS 'aloja2' -e "select id_exec from execs where exec = '$1' AND id_exec IN (SELECT id_exec FROM SAR_cpu WHERE id_exec=id_exec) LIMIT 1" > $2
+  mysql $MYSQL_CREDENTIALS 'aloja2' -e "select id_exec from aloja2.execs where exec = '$1' AND id_exec IN (SELECT id_exec FROM aloja_logs.SAR_cpu WHERE id_exec=id_exec) LIMIT 1" > $2
 }
 
 for execution in $dir; do
