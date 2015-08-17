@@ -212,4 +212,32 @@ cluster_final_boostrap() {
   : #not necessary for vagrant (yet)
 }
 
+### ganglia
 
+config_ganglia_gmetad(){
+
+  local bootstrap_file="config_gmetad"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring gmetad"
+
+    vm_execute "
+sudo sed -i 's/data_source \"my cluster\" localhost/data_source \"vagrant-99\" vagrant-99-00/' /etc/ganglia/gmetad.conf
+"
+    test_action="$(vm_execute " [ \"\$\(grep vagrant-99 /etc/ganglia/gmetad.conf)\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
