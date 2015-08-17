@@ -17,22 +17,23 @@ try {
     // check whether the user is accessing a protected page and is authenticated
 
     // extract first portion
-    $uri = explode('/', $_SERVER['REQUEST_URI'])[1];
+    $uri = '/' . explode('/', $_SERVER['REQUEST_URI'])[1];
     // remove arguments if any
     $uri = preg_replace('/\?.*/', '', $uri);
 
-    if (array_key_exists($uri, $container->get('config')['protected_urls'] ) &&
+    if ( ( array_key_exists($uri, $container->get('config')['protected_urls']) ||
+           array_key_exists('/', $container->get('config')['protected_urls'] ) ) &&
         
-       ( !isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW']) ||
-         $_SERVER['PHP_AUTH_USER'] != $container->get('config')['protected_user'] ||
-         $_SERVER['PHP_AUTH_PW'] != $container->get('config')['protected_pass'] )) {
+         ( !isset($_SERVER['PHP_AUTH_USER']) || !isset($_SERVER['PHP_AUTH_PW']) ||
+           $_SERVER['PHP_AUTH_USER'] != $container->get('config')['protected_user'] ||
+           $_SERVER['PHP_AUTH_PW'] != $container->get('config')['protected_pass'] ) ) {
 
-          // No credentials found - send an unauthorized challenge response
-          header('WWW-Authenticate: Basic realm="Aloja"');
-          header('HTTP/1.0 401 Unauthorized');
-          // This is displayed if the user cancels the challenge
-          echo('You need a username and password to access this page');
-          exit;
+        // No credentials found - send an unauthorized challenge response
+        header('WWW-Authenticate: Basic realm="Aloja"');
+        header('HTTP/1.0 401 Unauthorized');
+        // This is displayed if the user cancels the challenge
+        echo('You need a username and password to access this page');
+        exit;
     }
 
     $router = $container->getRouter();
