@@ -259,9 +259,13 @@ netmask 255.255.0.0" "secured_file"
   fi
 }
 
+# $1 = env (default prod)
 vm_install_webserver() {
 
   local bootstrap_file="vm_install_webserver"
+  local env=prod
+
+  [ "$1" != "" ] && env=$1
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -283,9 +287,11 @@ EOF
 sudo service nginx restart
 
 sudo bash -c 'sudo cat << \"EOF\" > /etc/php5/fpm/conf.d/90-overrides.ini
-$(get_php_conf)
+$(get_php_conf \"$env\")
 EOF
 '
+
+sudo php5enmod opcache
 
 sudo service php5-fpm restart
 "
@@ -567,3 +573,173 @@ grunt run:all
   fi
 
 }
+
+install_ganglia_gmond(){
+
+  local bootstrap_file="install_gmond"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing ganglia-monitor (gmond)"
+
+    vm_execute "
+sudo apt-get -y install ganglia-monitor
+"
+
+    test_action="$(vm_execute " [ \"\$\(pgrep gmond)\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
+# $1 cluster name
+config_ganglia_gmond(){
+
+  local bootstrap_file="config_gmond"
+  local result mcastif
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring ganglia-monitor (gmond)"
+
+    vm_local_scp files/gmond.conf.t /tmp/ "" ""
+
+    vm_execute "
+
+    # create conf from template
+    awk -v clustername='$1' -v node0='${1}-00' '
+
+    { sub(/%%%CLUSTERNAME%%%/, clustername)
+      sub(/%%%NODE0%%%/, node0)
+    }
+    { print }
+    ' /tmp/gmond.conf.t > /tmp/gmond.conf
+
+    # copy conf to destination
+    sudo cp /tmp/gmond.conf /etc/ganglia
+
+    sudo /etc/init.d/ganglia-monitor restart"
+
+    result=$?
+
+    if [ $result -eq 0 ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name."
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+
+install_ganglia_gmetad(){
+
+
+  local bootstrap_file="install_gmetad"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing gmetad"
+
+    vm_execute "
+sudo apt-get -y install gmetad
+"
+
+    test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+
+}
+
+config_ganglia_gmetad(){
+  :
+}
+
+
+install_ganglia_web(){
+
+  local bootstrap_file="install_ganglia_web"
+  local tarball gdir
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing ganglia_web"
+
+    tarball=ganglia-web-3.7.0.tar.gz
+    gdir=${tarball%.tar.gz}
+
+    vm_execute "
+
+    sudo apt-get -y install php5-gd rrdtool || exit 1;
+    cd /tmp || exit 1;
+    wget $ALOJA_PUBLIC_HTTP/files/$tarball || exit 1;
+    tar -xf $tarball || exit 1;
+    sudo mv $gdir ganglia || exit 1;
+    sudo rm -rf /var/www/ganglia || exit 1;
+    sudo mv ganglia /var/www/ || exit 1;
+    sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+"
+
+    if [ $? -ne 0 ]; then
+      die "Error installing ganglia-web"
+    fi
+
+    # config: /var/www/ganglia/conf.php
+    vm_execute "
+
+    echo '
+$conf['gweb_confdir'] = '/var/www/ganglia';
+    ' > /var/www/ganglia/conf.php
+
+    test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
+
+    if [ "$test_action" == "$testKey" ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+config_ganglia_web(){
+
+  :
+
+}
+
