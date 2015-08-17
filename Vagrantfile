@@ -89,10 +89,10 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     default.vm.box_check_update = true
 
     #Default base image to build from scratch
-    default.vm.box = "ubuntu/trusty64"
+    #default.vm.box = "ubuntu/trusty64"
     #Prebuilt box for ALOJA
     #default.vm.box = "npoggi/aloja-precise64" #Aloja v1 VM on Ubuntu 12.04
-    #default.vm.box = "npoggi/aloja-trusty64" #Aloja v2 VM on Ubuntu 14.04
+    default.vm.box = "npoggi/aloja-trusty64" #Aloja v2 VM on Ubuntu 14.04
     #default.vm.box_version = "2.1" #to force upload version
 
     #for Virtualbox (Default)

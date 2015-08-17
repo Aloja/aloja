@@ -58,7 +58,7 @@ create table if not exists hosts (
 create table if not exists clusters (
 id_cluster int,
 name varchar(127),
-cost_hour decimal(10,3),
+cost_hour decimal(10,5),
 \`type\` varchar(127),
 provider varchar(127),
 datanodes int DEFAULT NULL,
@@ -739,6 +739,7 @@ $MYSQL "alter table aloja2.execs add hadoop_version varchar(127) default NULL;"
 
 $MYSQL "alter table aloja2.clusters  add datanodes int DEFAULT NULL;"
 $MYSQL "alter table aloja2.clusters  add provider varchar(127);"
+$MYSQL "alter table aloja2.clusters modify cost_hour decimal(10,5);"
 
 $MYSQL "alter table clusters
   add headnodes int DEFAULT NULL,
@@ -800,7 +801,6 @@ update ignore aloja2.execs SET bench_type='HiBench-1TB' where bench IN ('prep_te
 update ignore aloja2.execs SET hadoop_version='1.03' where hadoop_version IS NULL;
 update ignore aloja2.execs SET net='IB' where id_cluster = 26;
 update ignore aloja2.execs SET disk='HDD' where disk = 'SSD' AND id_cluster = 26;
-
 
 #azure VMs (this should also be in get_filter_sql)
 update ignore aloja2.clusters  SET vm_size='A1' where vm_size IN ('small', 'Small');

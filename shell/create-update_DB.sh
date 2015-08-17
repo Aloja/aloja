@@ -21,7 +21,7 @@ logger "Creating tables, applying alters, updating data..."
 
 logger "Creating/Updating DB aloja2"
 source "$CUR_DIR/common/create_db.sh"
-logger "Creating/Updating DB aloja_db"
+logger "Creating/Updating DB aloja_ml"
 source "$CUR_DIR/common/create_mlschema.sh"
 logger "Regenerating presets"
 source "$CUR_DIR/common/create_presets_schema.sh"
@@ -45,7 +45,7 @@ done
 
 #update filters in the whole DB (slow)
 if [ "$DONT_UPDATE_FILTERS" ] ; then
-  logger "Not updating filters for the whole DB"
+  logger "Skipping updating filters for the whole DB to save time or for vagrant VM"
 else
   logger "Updating VALID and FILTER fields (probably will take a while...)"
   $MYSQL "$(get_filter_sql)"
