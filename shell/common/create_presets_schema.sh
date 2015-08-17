@@ -22,7 +22,7 @@ $MYSQL "DROP TABLE IF EXISTS filters_presets;"
 # Presets for Local Deployment
 
 #common settings for most filters
-filter_common="&minexetime=50&maxexetime=5000&filters[]=valid&filters[]=filters"
+filter_common="&minexetime=50&maxexetime=3000&filters[]=valid&filters[]=filters"
 filter_ml="&bench_types[]=HiBench"
 
 filter_HiBench_Terasort_8d_2015="$filter_common&bench_types[]=HiBench&benchs[]=terasort&datanodess[]=8&datefrom=2015/01/01"
