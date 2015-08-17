@@ -9,8 +9,8 @@ enable_debug: true
 twig_cache_path: "cache/twig"
 twig_views_path: "views/"
 #Show PHP warnings?
-show_warnings: false
+show_warnings: true
 
-protected_urls: { "/": "", "/bestconfig": "", "/metrics": "" }
-protected_user: pristine
-protected_pass: pristine2014
+protected_urls: { "/mlclearcache": "", }
+protected_user: vagrant
+protected_pass: vagrant
