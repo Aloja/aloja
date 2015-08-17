@@ -11,3 +11,7 @@ twig_cache_path: "cache/twig"
 twig_views_path: "views/"
 #Show PHP warnings?
 show_warnings: false
+
+protected_urls: { bestconfig: "", metrics: "" }
+protected_user: pristine
+protected_pass: pristine2014
