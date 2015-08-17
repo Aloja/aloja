@@ -15,7 +15,7 @@ class MLPrecisionController extends AbstractController
 		$instance = $error_stats = '';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
@@ -48,7 +48,7 @@ class MLPrecisionController extends AbstractController
 			$config = $model_info."-precision";
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM precisions WHERE id_precision = '".md5($config)."'");
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.precisions WHERE id_precision = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
@@ -70,7 +70,7 @@ class MLPrecisionController extends AbstractController
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -99,7 +99,7 @@ class MLPrecisionController extends AbstractController
 			{
 				$token = 0;
 				$token_i = 0;
-				$query = "INSERT IGNORE INTO precisions (id_precision,model,instance,diversity,precisions,discvar) VALUES ";
+				$query = "INSERT IGNORE INTO aloja_ml.precisions (id_precision,model,instance,diversity,precisions,discvar) VALUES ";
 				foreach ($eval_names as $name)
 				{
 					$treated_line_d = "";
@@ -159,7 +159,7 @@ class MLPrecisionController extends AbstractController
 				$diversity = array();
 				$precisions = array();
 
-				$query = "SELECT id_precision,model,instance,diversity,precisions,discvar FROM precisions WHERE id_precision = '".md5($config)."'";
+				$query = "SELECT id_precision,model,instance,diversity,precisions,discvar FROM aloja_ml.precisions WHERE id_precision = '".md5($config)."'";
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{

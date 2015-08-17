@@ -56,13 +56,16 @@ server {
 
 }
 
+# $1 env
 get_php_conf(){
 
-echo -e '
+  echo -e '
 memory_limit = 1024M
 xdebug.default_enable = 0
 xdebug.remote_enable = 0
+opcache.enable=1
 '
+
 }
 
 #$1 env (prod, dev)
