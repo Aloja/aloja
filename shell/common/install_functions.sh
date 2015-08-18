@@ -421,7 +421,7 @@ install_PHP_vendors() {
 
     local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
 
-    if [[ "$test_action" == *"$testKey"* ]] ; then
+    if [[ "$test_action" != *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
 
       aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
@@ -568,18 +568,19 @@ sudo rm $libtiff_file"
       R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
 
       install_packages "$R_packages"
+#
+#      logger "INFO: Downloading precompiled R binary updates (to save time)"
+#      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
+#      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
+#
+#      logger "INFO: Uncompressing and copying files"
+#      vm_execute "
+#cd /tmp;
+#tar -xjf '$R_file';
+#sudo cp -rf 'R' /usr/lib/
+#rm -rf '$R_file' 'R';
+#"
 
-      logger "INFO: Downloading precompiled R binary updates (to save time)"
-      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
-
-      logger "INFO: Uncompressing and copying files"
-      vm_execute "
-cd /tmp;
-tar -xjf '$R_file';
-sudo cp -rf 'R' /usr/lib/
-rm -rf '$R_file' 'R';
-"
       logger "INFO: Updating package (will take a while if changes are found)"
       vm_execute "
 cat <<- EOF > /tmp/packages.r
@@ -588,8 +589,8 @@ cat <<- EOF > /tmp/packages.r
 #update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
-#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-#'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
+'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
 
 update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
