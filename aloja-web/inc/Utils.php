@@ -274,18 +274,18 @@ class Utils
     {
         $filter_execs = $where_configs ." ".DBUtils::getFilterExecs();
 
-        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-        $netOptions = $db->get_rows("SELECT DISTINCT net FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$clusterOptions = $db->get_rows("SELECT DISTINCT c.name FROM execs e JOIN clusters c USING(id_cluster) WHERE  valid = 1 AND filter = 0 $filter_execs");
-    	$clusterNodes = $db->get_rows("SELECT DISTINCT c.datanodes FROM execs e JOIN clusters c USING(id_cluster) WHERE valid = 1 AND filter = 0 $filter_execs");
-    	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM execs e JOIN clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$vmOS = $db->get_rows("SELECT DISTINCT vm_OS FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-        $execTypes = $db->get_rows("SELECT DISTINCT exec_type FROM execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT c.name FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE  valid = 1 AND filter = 0 $filter_execs");
+    	$clusterNodes = $db->get_rows("SELECT DISTINCT c.datanodes FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE valid = 1 AND filter = 0 $filter_execs");
+    	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+    	$vmOS = $db->get_rows("SELECT DISTINCT vm_OS FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+        $execTypes = $db->get_rows("SELECT DISTINCT exec_type FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
 
         $discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
@@ -363,7 +363,7 @@ class Utils
 
     public static function getClusterName($clusterCode, $db)
     {
-        $clusterName = $db->get_rows("SELECT CONCAT_WS('/',LPAD(id_cluster,2,0),vm_size,CONCAT(datanodes,'Dn')) as name FROM clusters WHERE id_cluster=$clusterCode");
+        $clusterName = $db->get_rows("SELECT CONCAT_WS('/',LPAD(id_cluster,2,0),vm_size,CONCAT(datanodes,'Dn')) as name FROM aloja2.clusters WHERE id_cluster=$clusterCode");
 
         return $clusterName[0]['name'];
     }
@@ -443,6 +443,30 @@ class Utils
     	return $unit;
     }
     
+    public static function getFilterOptions($dbUtils) {
+    	$options['benchs'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+    	$options['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
+    	$options['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
+    	$options['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
+    	$options['comp'] = $dbUtils->get_rows("SELECT DISTINCT comp FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
+    	$options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name from aloja2.execs e JOIN aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+    	$options['maps'] = $dbUtils->get_rows("SELECT DISTINCT maps FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
+    	$options['replication'] = $dbUtils->get_rows("SELECT DISTINCT replication FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
+    	$options['iosf'] = $dbUtils->get_rows("SELECT DISTINCT iosf FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
+    	$options['iofilebuf'] = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
+    	$options['datanodes'] = $dbUtils->get_rows("SELECT DISTINCT datanodes FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
+    	$options['benchtype'] = $dbUtils->get_rows("SELECT DISTINCT bench_type FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench_type ASC");
+    	$options['vm_size'] = $dbUtils->get_rows("SELECT DISTINCT vm_size FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
+    	$options['vm_cores'] = $dbUtils->get_rows("SELECT DISTINCT vm_cores FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
+    	$options['vm_ram'] = $dbUtils->get_rows("SELECT DISTINCT vm_RAM FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
+    	$options['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
+    	$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
+    	$options['presets'] = $dbUtils->get_rows("SELECT * FROM aloja2.filter_presets ORDER BY short_name DESC");
+        $options['provider'] = $dbUtils->get_rows("SELECT DISTINCT provider FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
+    	$options['vm_OS'] = $dbUtils->get_rows("SELECT DISTINCT vm_OS FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_OS DESC;");
+    	return $options;
+    }
+    
     public static function getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB) { 
 
     	$num_remotes = 0;
@@ -489,7 +513,7 @@ class Utils
     }
     
     public static function getClustersInfo($dbUtils) {
-    	$rows = $dbUtils->get_rows("SELECT * FROM clusters");
+    	$rows = $dbUtils->get_rows("SELECT * FROM aloja2.clusters");
 
     	$clusters = array();
     	foreach($rows as $row) {
@@ -497,5 +521,35 @@ class Utils
     	}
     	
     	return json_encode($clusters);
+    }
+
+    public static function initDefaultPreset($db, $screen) {
+    	$presets = $db->get_rows("SELECT * FROM aloja2.filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
+    	$return = null;
+    	if(count($presets)>=1) {
+	    	$url = $presets[0]['URL'];
+	    	$return = $url;
+	    	$filters = explode('?',$url)[1];
+	    	$filters = explode('&',$filters);
+            $filters = array_filter($filters); //make sure we don't get empty values in cases like ?&afa=dfa
+	    	foreach($filters as $filter) {
+	    		$explode = explode('=',$filter);
+	    		$filterName = $explode[0];
+	    		$isArray = false;
+	    		if($filterName[strlen($filterName)-1] == "]") {
+	    			$filterName = substr($filterName,0,strlen($filterName)-2);
+	    			$isArray = true;
+	    		}
+
+	    		$filterValue = $explode[1];
+	    		
+	    		if($isArray)
+	    			$_GET[$filterName][] = $filterValue;
+	    		else
+	    			$_GET[$filterName] = $filterValue;
+	    	}
+    	}
+    	 
+    	return $return;
     }
 }

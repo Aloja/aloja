@@ -14,9 +14,9 @@ class MLParamevalController extends AbstractController
 		$rows = $categories = $series = '';
 		$must_wait = 'NO';
 		try {
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
 
@@ -60,12 +60,12 @@ class MLParamevalController extends AbstractController
 				else $paramOptions[] = $option[$paramEval];
 			}
 
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 						
 			// get the result rows
 			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-				"from execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs".
+				"from aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs".
 				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 			$rows = $db->get_rows ( $query );
 			if (!$rows) throw new \Exception ( "No results for query!" );
@@ -122,14 +122,14 @@ class MLParamevalController extends AbstractController
 			{
 				if ($current_model == "")
 				{
-					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
+					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM aloja_ml.predictions p, aloja_ml.learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
 					$result = $dbml->query($query);
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
 				$config = $instance.'-'.$current_model."-parameval";
 
-				$query_cache = "SELECT count(*) as total FROM trees WHERE id_learner = '".$current_model."' AND model = '".$model_info."'";
+				$query_cache = "SELECT count(*) as total FROM aloja_ml.trees WHERE id_learner = '".$current_model."' AND model = '".$model_info."'";
 				$is_cached_mysql = $dbml->query($query_cache);
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['total'] > 0);
@@ -163,7 +163,7 @@ class MLParamevalController extends AbstractController
 					$must_wait = 'NO';
 
 					$query = "SELECT count(*) as count, $paramEval, bench, exe_time, avg(pred_time) avg_pred_time, min(pred_time) min_pred_time ".
-						"FROM predictions e WHERE e.id_learner = '".$current_model."' $filter_execs $where_configs".
+						"FROM aloja_ml.predictions e WHERE e.id_learner = '".$current_model."' $filter_execs $where_configs".
 						"GROUP BY $paramEval, bench $minExecsFilter order by bench, $paramEval";
 					$result = $dbml->query($query);
 					

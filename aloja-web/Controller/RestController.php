@@ -120,7 +120,7 @@ class RestController extends AbstractController
             $whereClause = str_replace('%2F','/',$whereClause);
             
              $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
-       	 		join clusters c USING (id_cluster)
+       	 		join aloja2.clusters c USING (id_cluster)
       		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs().";";
 
              $exec_rows = $dbUtils->get_rows($query);
@@ -151,7 +151,7 @@ class RestController extends AbstractController
             if (!($type = Utils::get_GET_string('pageTab')))
                 $type = 'SUMMARY';
 
-            $join = "JOIN execs e using (id_exec) JOIN clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
+            $join = "JOIN execs e using (id_exec) JOIN aloja2.clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
 
@@ -203,7 +203,7 @@ class RestController extends AbstractController
                 $query = "SELECT e.bench, exe_time, c.*, e.perf_details
                 FROM JOB_details c $join";
             } elseif ($type == 'TASKS') {
-                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.*,e.perf_details FROM JOB_tasks c
+                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.*,e.perf_details FROM aloja_logsJOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
             } else {
                 throw new \Exception('Unknown type!');
@@ -277,14 +277,14 @@ class RestController extends AbstractController
                     substring(host, -1),
                     ":1:",
                     (unix_timestamp(date) -
-                    (select unix_timestamp(min(date)) FROM SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
+                    (select unix_timestamp(min(date)) FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
                     ":2001:",round(AVG(`%user`)),
                     ":2002:",round(AVG(`%system`)),
                     ":2003:",round(AVG(`%steal`)),
                     ":2004:",round(AVG(`%iowait`)),
                     ":2005:",round(AVG(`%nice`))
                     ) prv
-                    FROM SAR_cpu t WHERE id_exec = "'.$id_exec.'"
+                    FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"
                     GROUP BY date, host ORDER by date, host;';
 
                 $prv_rows = $dbUtils->get_rows($query);
@@ -292,7 +292,7 @@ class RestController extends AbstractController
                 if (!isset($prv_rows)) throw new \Exception('No data returned!');
 
                 #$query_job_history = 'select time, maps, reduce from JOB_job_history where id_exec = "'.$id_exec.'" ORDER by time';
-                $query_job_history = 'select date, maps, reduce from JOB_status where id_exec = "'.$id_exec.'" ORDER by date';
+                $query_job_history = 'select date, maps, reduce FROM aloja_logs.JOB_status where id_exec = "'.$id_exec.'" ORDER by date';
 
                 $job_history_rows = $dbUtils->get_rows($query_job_history);
 
@@ -546,7 +546,7 @@ VALUES
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
                  AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`),e.id_cluster,e.end_time,
                  c.name cluster_name '.
-                ' FROM SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
+                ' FROM aloja_logs.SAR_cpu s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                 ';
@@ -562,7 +562,7 @@ VALUES
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
                     AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`), e.id_cluster,e.end_time,
                     c.name cluster_name '.
-                    ' FROM SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
+                    ' FROM aloja_logs.SAR_block_devices s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                     ';
@@ -578,8 +578,8 @@ VALUES
                      AVG(su.kbactive), MAX(su.kbactive), MIN(su.kbactive), STDDEV_POP(su.kbactive), VAR_POP(su.kbactive), 
                      AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact) ,e.id_cluster,e.end_time,
                      c.name cluster_name '.
-                    ' FROM SAR_memory_util su '.
-                    'JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
+                    ' FROM aloja_logs.SAR_memory_util su '.
+                    'JOIN aloja2.execs e USING (id_exec) JOIN aloja2.clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                     ';
@@ -594,8 +594,8 @@ VALUES
                     AVG(s.`rxmcst/s`),MAX(s.`rxmcst/s`),MIN(s.`rxmcst/s`),STDDEV_POP(s.`rxmcst/s`),VAR_POP(s.`rxmcst/s`),SUM(s.`rxmcst/s`),'.
                     'e.id_cluster,e.end_time,
                     c.name cluster_name
-                    FROM SAR_net_devices s
-                    JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
+                    FROM aloja_logs.SAR_net_devices s
+                    JOIN aloja2.execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE e.valid = 1 '.$filter_execs.' '.$whereClause.' GROUP BY (e.id_exec)
                 #TODO fix this
                 LIMIT 100;
                     ';
@@ -635,7 +635,7 @@ VALUES
 			// get the result rows
 			$metric_duration = $db->get_task_metric_query("Duration");
 			$query = "SELECT e.bench,j.*,".$metric_duration('j')." as Duration
-			from JOB_tasks j JOIN execs e USING (id_exec) 
+			FROM aloja_logs.JOB_tasks j JOIN aloja2.execs e USING (id_exec)
 			where e.valid = 1 AND j.id_exec = $idExec;";
 			
 			$this->getContainer ()->getLog ()->addInfo ( 'Histogram query: ' . $query );
@@ -686,7 +686,7 @@ VALUES
                     t.`TASKID` as TASK_ID,
                     ".$metric_select('t')." as TASK_VALUE,
                     TIMESTAMPDIFF(SECOND, t.`START_TIME`, t.`FINISH_TIME`) as TASK_DURATION
-                FROM `JOB_tasks` as t
+                FROM aloja_logs.JOB_tasks as t
                 WHERE t.`JOBID` = :jobid
                 ".$task_type_select('t')."
                 ORDER BY t.`TASKID`
@@ -701,7 +701,7 @@ VALUES
                     STDDEV(".$metric_select('t').") as TASK_VALUE_STDDEV,
                     t.`TASK_TYPE`,
                     CONVERT(SUBSTRING(t.`TASKID`, 26), UNSIGNED INT) DIV :group as MYDIV
-                FROM `JOB_tasks` t
+                FROM aloja_logs.JOB_tasks t
                 WHERE t.`JOBID` = :jobid
                 ".$task_type_select('t')."
                 GROUP BY MYDIV, t.`TASK_TYPE`
@@ -767,7 +767,7 @@ VALUES
     		// get the result rows
     		$metric_duration = $db->get_task_metric_query("Duration");
     		$query = "SELECT e.bench,j.*,".$metric_duration('c','LAUNCH_TIME')." as Duration
-    		from HDI_JOB_tasks j JOIN execs e USING (id_exec)
+    		FROM aloja_logs.HDI_JOB_tasks j JOIN aloja2.execs e USING (id_exec)
     		JOIN HDI_JOB_details c USING (JOB_ID)
     		where e.valid = 1 AND j.id_exec = $idExec;";
     			
@@ -936,8 +936,8 @@ VALUES
     		$order_conf = 'LENGTH(conf), conf';
     		 
     		//get best config
-    		$query = "SELECT e2.* from execs e2 WHERE e.id_exec IN ".
-    				"(SELECT MIN(e2.exe_time) FROM execs e WHERE 1 $filter_execs $where_configs LIMIT 1);";
+    		$query = "SELECT e2.* from aloja2.execs e2 WHERE e.id_exec IN ".
+    				"(SELECT MIN(e2.exe_time) FROM aloja2.execs e WHERE 1 $filter_execs $where_configs LIMIT 1);";
     		 
     		$rows = $db->get_rows($query);
     		if(!$rows)
@@ -1138,7 +1138,7 @@ VALUES
     		if (!($type = Utils::get_GET_string('pageTab')))
     			$type = 'SUMMARY';
     
-    		$join = "JOIN execs e using (id_exec) WHERE e.valid = 1 AND job_name NOT IN
+    		$join = "JOIN aloja2.execs e using (id_exec) WHERE e.valid = 1 AND job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
             ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
     
@@ -1185,10 +1185,10 @@ VALUES
     			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'DETAIL') {
-    			$query = "SELECT e.bench, exe_time, c.*,e.perf_details FROM HDI_JOB_details c $join";
+    			$query = "SELECT e.bench, exe_time, c.*,e.perf_details FROM aloja_logs.HDI_JOB_details c $join";
     		} elseif ($type == 'TASKS') {
-    			$query = "SELECT e.bench, exe_time, j.job_name, c.*,e.perf_details FROM HDI_JOB_tasks c
-    			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
+    			$query = "SELECT e.bench, exe_time, j.job_name, c.*,e.perf_details FROM aloja_logs.HDI_JOB_tasks c
+    			JOIN aloja_logs.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
     		} else {
     			throw new \Exception('Unknown type!');
     		}
