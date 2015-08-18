@@ -202,11 +202,6 @@ install_ALOJA_DB() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-    logger "INFO: Creating database schema and default values..."
-    vm_execute "
-bash $(get_repo_path)/shell/create-update_DB.sh
-"
-
     if [ "$download_URL" ] ; then
       logger "INFO: Downloading DB dump from $download_URL"
       # TODO this code expects the file to be tar.bz2
@@ -214,10 +209,10 @@ bash $(get_repo_path)/shell/create-update_DB.sh
 
       aloja_wget "$download_URL" "$dump_name"
 
+      logger "INFO: Installing DB dump into MySQL"
       # need to drop aloja_logs so that imported tables are moved
       vm_execute "
-sudo mysql -B -e 'DROP database aloja_logs';
-sudo bash -c 'bzip2 -dc $dump_name|mysql -f -b --show-warnings -B aloja2';
+sudo bash -c 'bzip2 -dc $dump_name|mysql -f -b --show-warnings -B';
 rm '$dump_name';
 "
 
@@ -316,7 +311,7 @@ vm_install_IB() {
 
       logger "INFO: Downloading drivers (if needed)"
 
-      vm_execute "[ ! -f "$work_dir/$driver_name" ] && wget --no-verbose 'http://aloja.bsc.es/public/files/IB/$driver_name' -O '$work_dir/$driver_name'"
+      vm_execute "[ ! -f '$work_dir/$driver_name' ] && wget --no-verbose '$ALOJA_PUBLIC_HTTP/files/IB/$driver_name' -O '$work_dir/$driver_name'"
       #cp /home/dcarrera/MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64.tgz .
 
       logger "INFO: Untaring drivers"
@@ -429,12 +424,12 @@ install_PHP_vendors() {
     if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
 
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
 
       vm_execute "
 cd /tmp;
 tar -xjf PHP_vendors.tar.bz2;
-sudo cp -r aloja-web /var/www/;
+sudo cp -r vendor /var/www/aloja-web/;
 "
     fi
 
@@ -575,26 +570,29 @@ sudo rm $libtiff_file"
       install_packages "$R_packages"
 
       logger "INFO: Downloading precompiled R binary updates (to save time)"
-      local R_file="R_site-library_Ubuntu-14.04_20150813.tar.bz2"
+      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
       aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
 
       logger "INFO: Uncompressing and copying files"
       vm_execute "
 cd /tmp;
-sudo tar -xjf '$R_file';
-cp -rf 'site-library' /usr/lib/R/
-rm '$R_file' 'site-library';
+tar -xjf '$R_file';
+sudo cp -rf 'R' /usr/lib/
+rm -rf '$R_file' 'R';
 "
       logger "INFO: Updating package (will take a while if changes are found)"
       vm_execute "
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
-install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
+#'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+
 EOF
 
 sudo chmod a+x /tmp/packages.r
