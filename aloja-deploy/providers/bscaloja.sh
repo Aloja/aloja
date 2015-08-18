@@ -66,7 +66,7 @@ sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc
 "
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -86,7 +86,7 @@ get_vm_id() {
 
 vm_create_RAID0() {
 
-  local bootstrap_file="vm_create_RAID0"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -113,7 +113,7 @@ sudo chown -R pristine: /scratch/attached/1;
 
     test_action="$(vm_execute " [ \"\$(sudo mdadm --examine /dev/sdb1 |grep 'Raid Devices : $num_drives')\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else

@@ -136,7 +136,7 @@ for folder in 201* ; do
 	        if [[ ! -z $exec_values ]] ; then
 	          folder_OK="$(( folder_OK + 1 ))"
 	
-	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
+	          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
 	                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
 	                  ON DUPLICATE KEY UPDATE
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
@@ -151,14 +151,14 @@ for folder in 201* ; do
 				  else
 				  	get_xml_exec_params "history"
 				  fi
-				  update="UPDATE execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
+				  update="UPDATE aloja2.execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
 				  logger "updating exec params from execution conf: $update"
 				  $MYSQL "$update"
 			  fi
 	        elif [ "$bench_folder" == "SCWC" ] ; then
 	          logger "Processing SCWC"
 	
-	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+	          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
 	                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
 	                  ;"
 	                  #ON DUPLICATE KEY UPDATE

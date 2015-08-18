@@ -51,7 +51,7 @@ class MLCrossvarController extends AbstractController
 			{
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2
-					FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster LEFT JOIN JOB_details j ON e.id_exec = j.id_exec
+					FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
 					WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
 					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 			    	$rows = $db->get_rows ( $query );
@@ -92,7 +92,7 @@ class MLCrossvarController extends AbstractController
 					// Get stuff from the DB
 					$query="SELECT ".$var1." as V1, ".$var2." as V2
 						FROM (	SELECT ".$other_var.", e.id_exec
-							FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster LEFT JOIN JOB_details j ON e.id_exec = j.id_exec
+							FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
 							WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
 						) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec
 						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
@@ -235,7 +235,7 @@ class MLCrossvarController extends AbstractController
 			{		
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2,".$cross_var3." as V3
-					FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster LEFT JOIN JOB_details j ON e.id_exec = j.id_exec
+					FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
 					WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
 					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 			    	$rows = $db->get_rows ( $query );
@@ -278,7 +278,7 @@ class MLCrossvarController extends AbstractController
 					// Get stuff from the DB
 					$query="SELECT ".$var1." as V1, ".$var2." as V2,".$cross_var3." as V3
 						FROM (	SELECT ".$other_var.", e.id_exec
-							FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster LEFT JOIN JOB_details j ON e.id_exec = j.id_exec
+							FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
 							WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
 						) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec
 						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
@@ -398,9 +398,9 @@ class MLCrossvarController extends AbstractController
 		$must_wait = 'NO';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
 		    	
@@ -464,10 +464,10 @@ class MLCrossvarController extends AbstractController
 			{
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
-					FROM predictions as p
-					WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM trees WHERE model='".$model_info."')").$where_configs."
+					FROM aloja_ml.predictions as p
+					WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
 					GROUP BY p.instance
-					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+					ORDER BY RAND() LIMIT 5000;"; // TODO FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 				$rows = $dbml->query($query);
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 			}

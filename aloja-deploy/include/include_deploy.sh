@@ -115,7 +115,7 @@ if [ "$defaultProvider" == "rackspace" ] || [ "$defaultProvider" == "openstack" 
 
   #check if azure command is installed
   if ! nova --version 2>&1 > /dev/null ; then
-    echo -e "ERROR: nova command not instaled. Run:\nrun apt-get install install python-pip;\nsudo pip install rackspace-novaclient"
+    echo -e "ERROR: nova command not instaled, you can use the vagrant VM. Or run:\nrun apt-get install install python-pip;\nsudo pip install rackspace-novaclient"
     exit 1
   fi
 

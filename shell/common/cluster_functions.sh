@@ -60,7 +60,6 @@ vm_create_node() {
       vm_provision
     fi
 
-
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
     wait_vm_ready "$vm_name"
@@ -80,7 +79,6 @@ vm_create_connect() {
   if ! wait_vm_ssh_ready "1" ; then
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
-
     vm_check_attach_disks "$1"
 
     #wait for ssh to be ready

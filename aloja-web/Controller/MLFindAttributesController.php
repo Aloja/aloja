@@ -16,9 +16,9 @@ class MLFindAttributesController extends AbstractController
 		$must_wait = 'NO';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
 
@@ -69,24 +69,24 @@ class MLFindAttributesController extends AbstractController
 			{
 				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
 			}
-			$result = $dbml->query("SELECT id_learner FROM learners".$where_models);
+			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
 			if (!empty($possible_models_id) || $current_model != "")
 			{
-				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
+				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
 
 				if ($current_model == "")
 				{
-					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
+					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM aloja_ml.predictions p, aloja_ml.learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
 					$result = $dbml->query($query);
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
 				$config = $instance.'-'.$current_model.'-'.(($unseen)?'U':'R');
 
-				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM trees WHERE id_findattrs = '".md5($config)."'");
+				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.trees WHERE id_findattrs = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['total'] > 0);
 
@@ -98,7 +98,7 @@ class MLFindAttributesController extends AbstractController
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
 					// Retrieve file model from DB
-					$query = "SELECT file FROM model_storage WHERE id_hash='".$current_model."' AND type='learner';";
+					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";
 					$result = $dbml->query($query);
 					$row = $result->fetch();
 					$content = $row['file'];
@@ -124,7 +124,7 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
@@ -133,14 +133,14 @@ class MLFindAttributesController extends AbstractController
 
 							// Fetch Real Value
 							$inst_aux = preg_split("/\s+/", $line);
-							$query_var = "SELECT AVG(exe_time) as AVG, id_exec, outlier FROM predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
+							$query_var = "SELECT AVG(exe_time) as AVG, id_exec, outlier FROM aloja_ml.predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
 							$result = $dbml->query($query_var);
 							$row = $result->fetch();
 
 							$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
 							$realid_exec = (is_null($row['id_exec']) || $row['outlier'] == 2)?0:$row['id_exec'];
 
-							$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
+							$query_var = "SELECT count(*) as num FROM aloja_ml.predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
                                                         $result = $dbml->query($query_var);
                                                         $row = $result->fetch();
 
@@ -160,7 +160,7 @@ class MLFindAttributesController extends AbstractController
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 								$token = 0;
 								$token_i = 0;
 							}
@@ -173,7 +173,7 @@ class MLFindAttributesController extends AbstractController
 						// Descriptive Tree
 						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output="html" -v 2> /dev/null');
 						$tree_descriptor = substr($tree_descriptor, 5, -2);
-						$query = "INSERT INTO trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
+						$query = "INSERT INTO aloja_ml.trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
 
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 
@@ -205,7 +205,7 @@ class MLFindAttributesController extends AbstractController
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
 
-					$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM predictions, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
+					$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
 					$result = $dbml->query($query);
 					$jsonData = '[';
 					foreach ($result as $row)
@@ -218,7 +218,7 @@ class MLFindAttributesController extends AbstractController
 					foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
 					// Fetch MAE & RAE values
-					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
+					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
 					$result = $dbml->query($query);
 					$row = $result->fetch();
 					$mae = $row['MAE'];
@@ -243,7 +243,7 @@ class MLFindAttributesController extends AbstractController
 					}
 
 					// Display Descriptive Tree
-					$query = "SELECT tree_code FROM trees WHERE id_findattrs = '".md5($config)."'";
+					$query = "SELECT tree_code FROM aloja_ml.trees WHERE id_findattrs = '".md5($config)."'";
 					$result = $dbml->query($query);
 					$row = $result->fetch();
 					$tree_descriptor = $row['tree_code'];

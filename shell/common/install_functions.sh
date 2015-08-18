@@ -1,58 +1,122 @@
-vm_install_base_packages() {
+# File to group install functions
+
+# Function to group install packages to avoid repetition of options
+# $1 list of packages
+# $2 if to update the repo first (optional)
+install_packages() {
+  local packages_list="$1"
+  local update_repo="$2"
+
+  [ ! "$packages_list" ] && die "No package to install defined. Exiting..."
 
   if check_sudo ; then
 
-    local bootstrap_file="vm_install_packages"
+    if [[ "$vmOSType" == "Ubuntu" ]] ; then #&& "$vmOSTypeVersion" == "14.04"
+      if [ "$update_repo" ] ; then
 
-    if check_bootstraped "$bootstrap_file" ""; then
-      logger "Installing packages for for VM $vm_name "
+        #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
+        #only update apt sources when is 1 day old (86400) to save time
+        #if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 86400 ]; then
+        #  sudo apt-get update -m;
+        #fi
 
-      local base_packages="dsh rsync sshfs sysstat gawk libxml2-utils ntp curl unzip wamerican" #wamerican is for hivebench
-
-      #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
-
-      #only update apt sources when is 1 day old (86400) to save time
-      local install_packages_command='
-#if [ ! -f /var/lib/apt/periodic/update-success-stamp ] || [ "$( $(date +%s) - $(stat -c %Y /var/lib/apt/periodic/update-success-stamp) )" -ge 86400 ]; then
-#  sudo apt-get update -m;
-#fi
-
-export DEBIAN_FRONTEND=noninteractive
+        logger "INFO: Updating repo for $vmOSType $vmOSTypeVersion"
+        vm_execute "
+export DEBIAN_FRONTEND=noninteractive;
 sudo apt-get update -m;
-sudo apt-get -o Dpkg::Options::="--force-confold" install -y -f '
-
-      local install_packages_command="$install_packages_command ssh $base_packages; sudo apt-get autoremove -y;"
-
-      vm_execute "$install_packages_command"
-
-      test_install_extra_packages="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi'")"
-      if [ ! -z "$test_install_extra_packages" ] ; then
-        #set the lock
-        check_bootstraped "$bootstrap_file" "set"
-      else
-        logger "ERROR: installing base packages for $vm_name. Test output: $test_install_extra_packages"
+  "
       fi
 
+      logger "INFO: Intalling for $vmOSType $vmOSTypeVersion packages: $packages_list"
+
+      vm_execute "
+export DEBIAN_FRONTEND=noninteractive;
+sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $packages_list
+  "
+
+  #sudo apt-get autoremove -y;
+
     else
-      logger "Packages already initialized"
+      die " OS type: $vmOSType install packages not implemented yet. You have work to do!, Exiting..."
+    fi
+
+  else
+      logger "WARNING: no sudo access or disabled, no packages installed"
+  fi
+}
+
+# Unifies repo updates
+# $1 repo
+# $2 don't update the repo (optional, to save time)
+install_repo() {
+  local repo="$1"
+  local dont_update="$2"
+
+  [ ! "$repo" ] && die "no repo defined. Exiting"
+
+  if check_sudo ; then
+    if [[ "$vmOSType" == "Ubuntu" ]] ; then
+
+      [ ! "$dont_update" ] && local update="sudo apt-get update -m;" || local update=""
+
+      vm_execute "
+export DEBIAN_FRONTEND=noninteractive;
+sudo add-apt-repository -y '$repo'
+$update
+"
+    else
+      die " OS type: $vmOSType install packages not implemented yet. You have work to do!, Exiting..."
     fi
   else
-    logger "WARNING: no sudo access or disabled, no packages installed"
+      logger "WARNING: no sudo access or disabled, no repo installed"
+  fi
+}
+
+# Function to wrap wget usage
+# $1 Full URL
+# $2 output filename and path (optional)
+aloja_wget() {
+  local URL="$1"
+  local out_file_name="$2"
+
+  local wget_command="wget --progress=dot -e dotbytes=10M $URL"
+  [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
+
+  vm_execute "$wget_command" #--no-verbose
+}
+
+# install the base packages for VMs
+vm_install_base_packages() {
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Installing packages for for VM $vm_name "
+
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican" "update" #wamerican is for hivebench
+
+    local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: installing base packages for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "Packages already initialized"
   fi
 }
 
 vm_install_extra_packages() {
-  if check_sudo ; then
-
-    local bootstrap_file="vm_install_extra_packages"
+    local bootstrap_file="${FUNCNAME[0]}"
 
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing extra packages for for VM $vm_name "
 
-      vm_execute "sudo apt-get install -y -f screen vim mc git iotop htop;"
+      install_packages "screen vim mc git iotop htop;"
 
-      local test_install_extra_packages="$(vm_execute "vim --version |grep 'VIM - Vi IMproved'")"
-      if [ ! -z "$test_install_extra_packages" ] ; then
+      local test_action="$(vm_execute "vim --version |grep 'VIM - Vi IMproved' && echo '$testKey'")"
+      if [[ "$test_action" == *"$testKey"* ]] ; then
         #set the lock
         check_bootstraped "$bootstrap_file" "set"
       else
@@ -62,18 +126,12 @@ vm_install_extra_packages() {
     else
       logger "Extra packages already initialized"
     fi
-  else
-    logger "WARNING: no sudo access or disabled, no extra packages installed"
-  fi
 }
-
-
-
 
 #$1 datadir (optional, if not uses default) $2 prod (default) or dev
 install_percona() {
 
-  local bootstrap_file="install_percona"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -83,7 +141,6 @@ install_percona() {
     else
       local datadir=""
     fi
-
 
     logger "Installing Percona server"
 
@@ -105,29 +162,23 @@ $datadir" "secured"
     vm_update_template "/etc/apt/sources.list" "deb http://repo.percona.com/apt $ubuntu_version main
 deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
 
+#for 5.5 to 5.6 migrations first install 5.5 in case of migrations
+#sudo apt-get install -y --force-yes percona-server-server-5.5
+
     #here we don't use templates as template backups are also read
     vm_execute "
 sudo echo -e 'Package: *
 Pin: release o=Percona Development Team
-Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref"
-
-    #first install version 5.5 in case of migration
-    vm_execute "
+Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
-sudo apt-get update;
-sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.5 in case of migrations
+sudo apt-get update;"
 
-    #upgrade to latest now
-    test_action="$(vm_execute " [ \"\$\(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona' && sudo mysql -e 'SHOW VARIABLES LIKE \"innodb_autoinc_lock_mode%\";' |grep '0'\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
-      logger "INFO: Upgrading to latest version"
-      vm_execute "sudo apt-get install -y --force-yes percona-server-server percona-xtrabackup qpress php5-mysql;"
-    fi
+    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql"
 
-    #retest
-    test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
+    #test
+    local test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -140,10 +191,65 @@ sudo apt-get install -y --force-yes percona-server-server-5.5" #first install 5.
   fi
 }
 
-#$1 sample data data
+# Creates the default DB and installs a dump if specified
+# $1 dump URL
 install_ALOJA_DB() {
 
-  local bootstrap_file="install_ALOJA_DB"
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  local download_URL="$1"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    if [ "$download_URL" ] ; then
+      logger "INFO: Downloading DB dump from $download_URL"
+      # TODO this code expects the file to be tar.bz2
+      local dump_name="/tmp/dump.tar.bz2"
+
+      aloja_wget "$download_URL" "$dump_name"
+
+      logger "INFO: Installing DB dump into MySQL"
+      # need to drop aloja_logs so that imported tables are moved
+      vm_execute "
+sudo bash -c 'bzip2 -dc $dump_name|mysql -f -b --show-warnings -B';
+rm '$dump_name';
+"
+
+    fi
+
+    logger "INFO: Updating database schema and default values..."
+    vm_execute "
+bash $(get_repo_path)/shell/create-update_DB.sh
+"
+
+    local test_action="$(vm_execute " [ \"\$(sudo mysql -B -e 'select * from aloja2.clusters;' |grep 'vagrant-99' )\" ] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
+# executes create-update DB script
+update_ALOJA_DB () {
+  logger "Updating DB..."
+  local result="$(vm_execute "$(get_repo_path)/shell/create-update_DB.sh 2>&1 /dev/null")"  #hide update output
+  logger "Updating DB ready"
+}
+
+# OLD install DB function, enable manually
+#$1 sample data data
+install_ALOJA_DB_test() {
+
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -169,10 +275,9 @@ sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.execs.8d_2015.sql.bz2|mysql -f -b
 
     fi
 
+    local test_action="$(vm_execute " [ \"\$(sudo mysql -B -e 'select * from aloja2.clusters;' |grep 'vagrant-99' )\" ] && echo '$testKey'")"
 
-    test_action="$(vm_execute " [ \"\$(sudo mysql -B -e 'select * from aloja2.clusters;' |grep 'vagrant-99' )\" ] && echo '$testKey'")"
-
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -188,7 +293,7 @@ sudo bash -c 'bzip2 -dc $(get_repo_path)/aloja.execs.8d_2015.sql.bz2|mysql -f -b
 
 vm_install_IB() {
 
-  local bootstrap_file="vm_install_IB"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
 
@@ -206,7 +311,7 @@ vm_install_IB() {
 
       logger "INFO: Downloading drivers (if needed)"
 
-      vm_execute "[ ! -f "$work_dir/$driver_name" ] && wget 'https://www.dropbox.com/s/d8u924cuiurhy3v/$driver_name?dl=1' -O '$work_dir/$driver_name'"
+      vm_execute "[ ! -f '$work_dir/$driver_name' ] && wget --no-verbose '$ALOJA_PUBLIC_HTTP/files/IB/$driver_name' -O '$work_dir/$driver_name'"
       #cp /home/dcarrera/MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64.tgz .
 
       logger "INFO: Untaring drivers"
@@ -241,9 +346,9 @@ netmask 255.255.0.0" "secured_file"
       logger "INFO: Recreating /etc/hosts with IB names for $(get_vm_IB_hostname $vm_name)"
       vm_update_template "/etc/hosts" "$(get_IB_hostnames)" "secured_file"
 
-      test_action="$(vm_execute " [ \"\$(ping -c 1 $(get_vm_IB_hostname $vm_name))\" ] && echo '$testKey'")"
+      local test_action="$(vm_execute " [ \"\$(ping -c 1 $(get_vm_IB_hostname $vm_name))\" ] && echo '$testKey'")"
 
-      if [ "$test_action" == "$testKey" ] ; then
+      if [[ "$test_action" == *"$testKey"* ]] ; then
         #set the lock
         check_bootstraped "$bootstrap_file" "set"
       else
@@ -261,7 +366,7 @@ netmask 255.255.0.0" "secured_file"
 
 vm_install_webserver() {
 
-  local bootstrap_file="vm_install_webserver"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -269,30 +374,27 @@ vm_install_webserver() {
     #TODO: remove php5-xdebug for prod servers
     logger "INFO: Installing NGINX and PHP"
 
-    vm_execute "
-sudo apt-get -y install python-software-properties software-properties-common python3-software-PROPERTIES
-sudo add-apt-repository -y ppa:ondrej/php5 #up to date PHP version
-sudo apt-get update
-sudo apt-get install --force-yes -y php5-fpm php5-cli php5-mysql php5-xdebug php5-curl nginx
+    install_packages "python-software-properties software-properties-common python3-software-PROPERTIES"
+    install_repo "ppa:ondrej/php5" #up to date PHP version
+    install_packages "php5-fpm php5-cli php5-mysql php5-xdebug php5-curl nginx"
 
+    logger "INFO: Configuring NGINX and PHP"
+    vm_execute "
 sudo bash -c 'cat << \"EOF\" > /etc/nginx/sites-available/default
 $(get_nginx_conf)
 EOF
 '
-
 sudo service nginx restart
-
 sudo bash -c 'sudo cat << \"EOF\" > /etc/php5/fpm/conf.d/90-overrides.ini
 $(get_php_conf)
 EOF
 '
-
 sudo service php5-fpm restart
 "
 
-    test_action="$(vm_execute " [ \"\$\(pgrep nginx && pgrep php5-fpm)\" ] && echo '$testKey'")"
+    local test_action="$(vm_execute " [ \"\$\(pgrep nginx && pgrep php5-fpm)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -310,22 +412,24 @@ sudo service php5-fpm restart
 #install defined PHP composer vendors
 install_PHP_vendors() {
 
-  local bootstrap_file="install_PHP_vendors"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
     logger "INFO: Checking if to download vendor files"
 
-    test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+    local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
 
-    if [ "$test_action" != "$testKey" ] ; then
+    if [[ "$test_action" != *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
+
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
+
       vm_execute "
 cd /tmp;
-wget $ALOJA_PUBLIC_HTTP/files/PHP_vendors.tar.bz2;
 tar -xjf PHP_vendors.tar.bz2;
-sudo cp -r aloja-web /var/www/;
+sudo cp -r vendor /var/www/aloja-web/;
 "
     fi
 
@@ -336,7 +440,7 @@ sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
 sudo bash -c 'cd /var/www/aloja-web/ && php composer.phar update';
 sudo chown www-data: -R /var/www && sudo chmod 775 -R /var/www/aloja-web/vendor;
 "
-    test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+    local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
 
     if [ "$test_action" == "$testKey" ] ; then
       logger "INFO: $bootstrap_file installed succesfully"
@@ -360,7 +464,7 @@ vm_install_repo() {
     local repo="master"
   fi
 
-  local bootstrap_file="vm_install_repo"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -382,9 +486,9 @@ sudo cp /var/www/aloja-web/config/config.sample.yml /var/www/aloja-web/config/co
 sudo service php5-fpm restart
 sudo service nginx restart
 "
-    test_action="$(vm_execute " [ \"\$\(wget -q -O- http://localhost/|grep 'ALOJA')\" ] && echo '$testKey'")"
+    local test_action="$(vm_execute " [ \"\$\(wget -q -O- http://localhost/|grep 'ALOJA')\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -408,10 +512,7 @@ if [ ! \"\$(git status| grep 'branch is up-to-date')\" ] ; then
 fi
 cd -;
 "
-
   fi
-
-
 
   #now install the PHP composer vendors
   install_PHP_vendors
@@ -421,7 +522,7 @@ cd -;
 #install R packages (slow)
 install_R() {
 
-  local bootstrap_file="install_R"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -440,41 +541,101 @@ install_R() {
 #dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
 
 
-    logger "INFO: Installing R packages for Ubuntu 14"
-    vm_execute "
-sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9
+    if [[ "$vmOSType" == "Ubuntu" && "$vmOSTypeVersion" == "14.04" ]] ; then
 
-## For Ubuntu 14.04
-sudo add-apt-repository 'deb http://cran.r-project.org/bin/linux/ubuntu trusty/'
-sudo apt-get update
-sudo wget http://launchpad.net/~ubuntu-security/+archive/ubuntu/ppa/+build/5979984/+files/libtiff4_3.9.5-2ubuntu1.6_amd64.deb
-sudo dpkg -i ./libtiff4_3.9.5-2ubuntu1.6_amd64.deb
-sudo apt-get install curl libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk r-base r-base-core r-base-dev r-base-html \
-	r-cran-bitops r-cran-boot r-cran-class r-cran-cluster r-cran-codetools r-cran-foreign r-cran-kernsmooth \
-	r-cran-lattice r-cran-mass r-cran-matrix r-cran-mgcv r-cran-nlme r-cran-nnet r-cran-rpart r-cran-spatial \
-	r-cran-survival r-recommended r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest \
-	r-cran-evaluate r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer \
-	r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas -y --force-yes
+      logger "INFO: Installing R packages for Ubuntu 14 from repo"
+      vm_execute "sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys E084DAB9;"
 
-sudo R CMD javareconf
+      install_repo "deb http://cran.r-project.org/bin/linux/ubuntu trusty/"
 
+      logger "INFO: Updating libtiff4 for R" #TODO remove when not necessary
+      local libtiff_file="libtiff4_3.9.5-2ubuntu1.6_amd64.deb" #http://launchpad.net/~ubuntu-security/+archive/ubuntu/ppa/+build/5979984/+files/$libtiff_file
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$libtiff_file" "$libtiff_file"
+      vm_execute "
+sudo dpkg -i ./$libtiff_file;
+sudo rm $libtiff_file"
+
+      logger "INFO: Installing R dependencies (JAVA)"
+      install_packages "libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk"
+      vm_execute "sudo R CMD javareconf"
+
+      logger "INFO: Installing R core and available packages in repo"
+      local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-bitops r-cran-boot r-cran-class r-cran-cluster"
+      R_packages="$R_packages r-cran-codetools r-cran-foreign r-cran-kernsmooth r-cran-lattice r-cran-mass r-cran-matrix"
+      R_packages="$R_packages r-cran-mgcv r-cran-nlme r-cran-nnet r-cran-rpart r-cran-spatial r-cran-survival r-recommended"
+      R_packages="$R_packages r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-evaluate"
+      R_packages="$R_packages r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer"
+      R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
+
+      install_packages "$R_packages"
+#
+#      logger "INFO: Downloading precompiled R binary updates (to save time)"
+#      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
+#      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
+#
+#      logger "INFO: Uncompressing and copying files"
+#      vm_execute "
+#cd /tmp;
+#tar -xjf '$R_file';
+#sudo cp -rf 'R' /usr/lib/
+#rm -rf '$R_file' 'R';
+#"
+
+      logger "INFO: Updating package (will take a while if changes are found)"
+      vm_execute "
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=TRUE);
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
 install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=TRUE);
+'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+
 EOF
 
 sudo chmod a+x /tmp/packages.r
 sudo /tmp/packages.r
 "
 
-    test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
+      local test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+      if [[ "$test_action" == *"$testKey"* ]] ; then
+        logger "INFO: $bootstrap_file installed succesfully"
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+      fi
+  else
+    logger "ERROR: cannot install R packages automatically for OS version different than Ubuntu 14.04"
+  fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+# Install the Azure cli tools
+# Docs at: https://azure.microsoft.com/en-us/documentation/articles/xplat-cli/
+install_azure_cli() {
+
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing Azure command line tools https://azure.microsoft.com/en-us/documentation/articles/xplat-cli/"
+
+    install_packages "nodejs-legacy npm"
+    vm_execute "sudo npm install -g azure-cli"
+
+    local test_action="$(vm_execute " \[ \$(which azure) \] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -485,32 +646,59 @@ sudo /tmp/packages.r
   else
     logger "$bootstrap_file already configured"
   fi
-
 }
 
+# Install the OpenStack and Rackspace cli tools
+# Docs at: https://azure.microsoft.com/en-us/documentation/articles/xplat-cli/
+install_openstack_cli() {
 
+  local bootstrap_file="${FUNCNAME[0]}"
 
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing OpenStack and Rackspace CLI"
+
+    install_packages "python-dev python-pip"
+    vm_execute "
+sudo pip install --upgrade python-novaclient
+sudo pip install --upgrade rackspace-neutronclient
+sudo pip install --upgrade rackspace-novaclient
+"
+
+    local test_action="$(vm_execute " \[ \$(which nova) \] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
+# Install script for private sharelatex VM
 install_sharelatex() {
 
-  local bootstrap_file="install_sharelatex"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
 
     logger "INFO: Installing ShareLatex"
-    vm_execute "
 
-sudo apt-get install git build-essential curl python-software-properties zlib1g-dev zip unzip
-sudo add-apt-repository ppa:chris-lea/node.js
-sudo apt-get update
-sudo apt-get install -y nodejs
-sudo npm install -g grunt-cli
+    install_repo "ppa:chris-lea/node.js" "no update"
+    install_repo "ppa:chris-lea/redis-server"
+
+    install_packages "nodejs redis-server git build-essential curl python-software-properties zlib1g-dev zip unzip"
+
+    vm_execute "sudo npm install -g grunt-cli
 sudo npm install -g node-gyp
-
-sudo add-apt-repository ppa:chris-lea/redis-server
-sudo apt-get update
-sudo apt-get install -y redis-server
 
 #We recommend you have the append only option enabled so redis persists to disk. If you do not have this enabled a restart may mean you loose some document updates.
 #appendonly yes
@@ -526,7 +714,7 @@ sudo apt-get install aspell
 #There are lots of additional dictionaries available, which can be listed with:
 #apt-cache search aspell | grep aspell
 
-wget http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
+wget --progress=dot http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 tar -xvf install-tl-unx.tar.gz
 cd install-tl-*
 sudo ./install-tl
@@ -550,11 +738,10 @@ grunt install
 
 grunt run:all
 
-
 "
-    test_action="$(vm_execute " [ \"\$\(which sharelatex)\" ] && echo '$testKey'")"
+    local test_action="$(vm_execute " [ \"\$\(which sharelatex)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -565,5 +752,168 @@ grunt run:all
   else
     logger "$bootstrap_file already configured"
   fi
+}
+
+
+
+install_ganglia_gmond(){
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing ganglia-monitor (gmond)"
+
+    install_packages "ganglia-monitor"
+
+    test_action="$(vm_execute " [ \"\$\(pgrep gmond)\" ] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
+# $1 cluster name
+config_ganglia_gmond(){
+
+  local bootstrap_file="${FUNCNAME[0]}"
+  local result mcastif
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring ganglia-monitor (gmond)"
+
+    vm_local_scp files/gmond.conf.t /tmp/ "" ""
+
+    vm_execute "
+
+    # create conf from template
+    awk -v clustername='$1' -v node0='${1}-00' '
+
+    { sub(/%%%CLUSTERNAME%%%/, clustername)
+      sub(/%%%NODE0%%%/, node0)
+    }
+    { print }
+    ' /tmp/gmond.conf.t > /tmp/gmond.conf
+
+    # copy conf to destination
+    sudo cp /tmp/gmond.conf /etc/ganglia
+
+    sudo /etc/init.d/ganglia-monitor restart"
+
+    result=$?
+
+    if [ $result -eq 0 ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name."
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+
+install_ganglia_gmetad(){
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing gmetad"
+
+    install_packages "gmetad"
+
+    test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+
+}
+
+config_ganglia_gmetad(){
+  :
+}
+
+
+install_ganglia_web(){
+
+  local bootstrap_file="${FUNCNAME[0]}"
+  local tarball gdir
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing ganglia_web"
+
+    tarball=ganglia-web-3.7.0.tar.gz
+    gdir=${tarball%.tar.gz}
+
+    install_packages "php5-gd rrdtool"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball"
+
+    vm_execute "
+    cd /tmp || exit 1;
+    tar -xf $tarball || exit 1;
+    sudo mv $gdir ganglia || exit 1;
+    sudo rm -rf /var/www/ganglia || exit 1;
+    sudo mv ganglia /var/www/ || exit 1;
+    sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+"
+
+    if [ $? -ne 0 ]; then
+      die "Error installing ganglia-web"
+    fi
+
+    # config: /var/www/ganglia/conf.php
+    vm_execute "
+
+    echo '
+$conf['gweb_confdir'] = '/var/www/ganglia';
+    ' > /var/www/ganglia/conf.php"
+
+    test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+config_ganglia_web(){
+
+  :
 
 }
