@@ -758,21 +758,18 @@ grunt run:all
 
 
 install_ganglia_gmond(){
-
-  local bootstrap_file="install_gmond"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
     logger "INFO: Installing ganglia-monitor (gmond)"
 
-    vm_execute "
-sudo apt-get -y install ganglia-monitor
-"
+    install_packages "ganglia-monitor"
 
     test_action="$(vm_execute " [ \"\$\(pgrep gmond)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -788,7 +785,7 @@ sudo apt-get -y install ganglia-monitor
 # $1 cluster name
 config_ganglia_gmond(){
 
-  local bootstrap_file="config_gmond"
+  local bootstrap_file="${FUNCNAME[0]}"
   local result mcastif
 
   if check_bootstraped "$bootstrap_file" ""; then
@@ -833,22 +830,18 @@ config_ganglia_gmond(){
 
 
 install_ganglia_gmetad(){
-
-
-  local bootstrap_file="install_gmetad"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
     logger "INFO: Installing gmetad"
 
-    vm_execute "
-sudo apt-get -y install gmetad
-"
+    install_packages "gmetad"
 
     test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
@@ -870,7 +863,7 @@ config_ganglia_gmetad(){
 
 install_ganglia_web(){
 
-  local bootstrap_file="install_ganglia_web"
+  local bootstrap_file="${FUNCNAME[0]}"
   local tarball gdir
 
   if check_bootstraped "$bootstrap_file" ""; then
@@ -881,11 +874,11 @@ install_ganglia_web(){
     tarball=ganglia-web-3.7.0.tar.gz
     gdir=${tarball%.tar.gz}
 
-    vm_execute "
+    install_packages "php5-gd rrdtool"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball"
 
-    sudo apt-get -y install php5-gd rrdtool || exit 1;
+    vm_execute "
     cd /tmp || exit 1;
-    wget $ALOJA_PUBLIC_HTTP/files/$tarball || exit 1;
     tar -xf $tarball || exit 1;
     sudo mv $gdir ganglia || exit 1;
     sudo rm -rf /var/www/ganglia || exit 1;
@@ -902,11 +895,11 @@ install_ganglia_web(){
 
     echo '
 $conf['gweb_confdir'] = '/var/www/ganglia';
-    ' > /var/www/ganglia/conf.php
+    ' > /var/www/ganglia/conf.php"
 
     test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
