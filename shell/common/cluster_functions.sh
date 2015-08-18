@@ -244,10 +244,9 @@ check_sudo() {
 check_sshpass() {
   if ! which sshpass > /dev/null; then
     logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
-    install_packages "sshpass"
+    sudo apt-get install -y sshpass
     if ! which sshpass > /dev/null; then
-      logger "ERROR: sshpass could not be installed or not found"
-      exit 1
+      die "sshpass could not be installed or not found"
     fi
   fi
 }
@@ -255,16 +254,16 @@ check_sshpass() {
 #$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
-  #logger "Executing in VM $vm_name command(s): $1"
-  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
   local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
   local result
 
+  #logger "DEBUG: vm_execute: ssh -i $(get_ssh_key) $(eval echo $sshOptions) -o PasswordAuthentication=no -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)" "" "log to file"
+
   #Use SSH keys
-  if [ -z "$3" ] && [ -z "${requireRootFirst[$vm_name]}" ] && [ "${needPasswordPre}" != "1" ]; then
+  if [ -z "$3" ] && [ "${needPasswordPre}" != "1" ]; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
@@ -278,7 +277,6 @@ vm_execute() {
   #Use password
   else
     check_sshpass
-
     if [ -z "$2" ] ; then
       echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
       result=$?
@@ -552,7 +550,7 @@ wait_vm_ready() {
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
-  logger "Checking SSH status of VM $vm_name"
+  logger "INFO: Checking SSH status of VM $vm_name: $(get_ssh_user)@$(get_ssh_host):$(get_ssh_port)"
 
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do

@@ -88,7 +88,7 @@ node_start() {
     logger "INFO: Starting vagrant VM $1"
     cd $CONF_DIR/../../; vagrant up "$1"; cd -;
   else
-    die "ERROR: cannot start vagrant VM $1 from inside the VM"
+    die "cannot start vagrant VM $1 from inside the VM"
   fi
 }
 
@@ -97,7 +97,7 @@ vm_get_status(){
   if ! inside_vagrant ; then
     echo "$(vagrant global-status |grep " $1 "|cut -d " " -f 5 )"
   else
-    die "ERROR: cannot start vagrant VM $1 from inside the VM"
+    die "cannot start vagrant VM $1 from inside the VM"
   fi
 }
 
