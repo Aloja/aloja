@@ -244,7 +244,7 @@ check_sudo() {
 check_sshpass() {
   if ! which sshpass > /dev/null; then
     logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
-    sudo apt-get install -y sshpass
+    install_packages "sshpass"
     if ! which sshpass > /dev/null; then
       logger "ERROR: sshpass could not be installed or not found"
       exit 1
@@ -611,8 +611,8 @@ vm_test_initiallize_disks() {
 
 #$1 use password based auth
 vm_set_ssh() {
+  local bootstrap_file="${FUNCNAME[0]}"
 
-  local bootstrap_file="vm_set_ssh"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
@@ -629,10 +629,10 @@ vm_set_ssh() {
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa")"
+    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
     #logger "TEST SSH $test_set_ssh"
 
-    if [ ! -z "$test_set_ssh" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -676,7 +676,8 @@ vm_check_attach_disks() {
 
 
 vm_set_dsh() {
-  local bootstrap_file="vm_set_dsh"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
@@ -687,7 +688,7 @@ vm_set_dsh() {
     vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.dsh/group/a ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -700,10 +701,10 @@ vm_set_dsh() {
 }
 
 vm_set_dot_files() {
-  local function_name="Dotfiles"
-  local bootstrap_file="vm_set_dot_files"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
-    logger "Setting up $function_name for VM $vm_name "
+    logger "Setting up $bootstrap_file for VM $vm_name "
 
     vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
@@ -717,15 +718,15 @@ defscrollback 99999
 startup_message off" ""
 
     test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' $homePrefixAloja/$userAloja/.bashrc\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
-      logger "ERROR setting $function_name for $vm_name. Test output: $test_action"
+      logger "ERROR setting $bootstrap_file for $vm_name. Test output: $test_action"
     fi
 
   else
-    logger "$function_name already configured"
+    logger "$bootstrap_file already configured"
   fi
 }
 
@@ -764,7 +765,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_initialize_disks"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   local create_string="$(get_initizalize_disks)"
 
@@ -813,7 +814,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_mount_disk"
+  local bootstrap_file="${FUNCNAME[0]}"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2

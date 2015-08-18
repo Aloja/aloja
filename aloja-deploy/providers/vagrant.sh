@@ -216,7 +216,7 @@ cluster_final_boostrap() {
 
 config_ganglia_gmetad(){
 
-  local bootstrap_file="config_gmetad"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -228,7 +228,7 @@ sudo sed -i 's/data_source \"my cluster\" localhost/data_source \"vagrant-99\" v
 "
     test_action="$(vm_execute " [ \"\$\(grep vagrant-99 /etc/ganglia/gmetad.conf)\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
