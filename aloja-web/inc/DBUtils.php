@@ -304,8 +304,8 @@ class DBUtils
                 e.`bench`,
                 e.`id_exec`
             FROM
-                `JOB_details` d,
-                `execs` e
+                `aloja_logs.JOB_details` d,
+                `aloja2.execs` e
             WHERE
                 e.`id_exec` = d.`id_exec` AND
                 d.`JOBID` = :jobid
@@ -343,12 +343,12 @@ class DBUtils
                 e.`bench`,
                 d.`id_exec`,
                 d.`JOBID` as jobid
-            FROM `JOB_details` d
+            FROM `aloja_logs.JOB_details` d
 
-            JOIN `execs` e
+            JOIN `aloja2.execs` e
             ON e.`id_exec` = d.`id_exec`
-            INNER JOIN clusters c ON e.id_cluster = c.id_cluster
-            LEFT OUTER JOIN `JOB_dbscan` s
+            INNER JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster
+            LEFT OUTER JOIN `aloja2.JOB_dbscan` s
             ON
                 e.`bench` = s.`bench` AND
                 s.`metric_x` = :metric_x AND
@@ -408,7 +408,7 @@ class DBUtils
         $query_values = implode(', ', array_fill(0, count($clusters), '('.str_pad('', (count($columns)*2)-1, '?,').')'));
         $query = "
             INSERT INTO
-                `JOB_dbscan` (".implode(',', $columns).")
+                `aloja2.JOB_dbscan` (".implode(',', $columns).")
             VALUES
                 $query_values
         ;";

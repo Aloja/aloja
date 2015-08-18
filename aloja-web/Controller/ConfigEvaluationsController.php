@@ -24,8 +24,8 @@ class ConfigEvaluationsController extends AbstractController
             $order_conf = 'LENGTH(conf), conf';
 
             //get configs first (categories)
-            $query = "SELECT count(*) num, concat($concat_config) conf from execs e
-                      JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause
+            $query = "SELECT count(*) num, concat($concat_config) conf from aloja2.execs e
+                      JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
 
@@ -53,7 +53,7 @@ class ConfigEvaluationsController extends AbstractController
                       #(select MAX(exe_time) FROM execs WHERE bench = e.bench $whereClause) MAX_ALL_exe_time,
                       #(select MIN(exe_time) FROM execs WHERE bench = e.bench $whereClause) MIN_ALL_exe_time,
                       'none'
-                      from execs e JOIN clusters USING (id_cluster)
+                      from aloja2.execs e JOIN aloja2.clusters USING (id_cluster)
                       WHERE 1 $filter_execs $whereClause
                       GROUP BY conf, bench order by bench, $order_conf;";
 
@@ -143,8 +143,8 @@ class ConfigEvaluationsController extends AbstractController
 
             // get the result rows
             $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
-    		from execs e
-    		join clusters c USING (id_cluster)
+    		FROM aloja2.execs e
+    		join aloja2.clusters c USING (id_cluster)
     		WHERE 1 $filterExecs $whereClause
     		GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
     		ORDER BY $order_type ASC;";
@@ -223,7 +223,7 @@ class ConfigEvaluationsController extends AbstractController
                     $paramOptions[] = $option[$paramEval];
             }
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
 
             // get the result rows
             $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".

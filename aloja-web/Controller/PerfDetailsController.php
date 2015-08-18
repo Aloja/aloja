@@ -128,7 +128,7 @@ class PerfDetailsController extends AbstractController
                     'job_status' => array(
                         'metric'    => "ALL",
                         'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,
-                        maps map,shuffle,merge,reduce,waste FROM JOB_status
+                        maps map,shuffle,merge,reduce,waste FROM aloja_logs.JOB_status
                         WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, time;",
                         'fields'    => array('map', 'shuffle', 'reduce', 'waste', 'merge'),
                         'title'     => "Job execution history $exec_title ",
@@ -140,7 +140,7 @@ class PerfDetailsController extends AbstractController
                     'cpu' => array(
                         'metric'    => "CPU",
                         'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%user`) `%user`, $aggr(`%system`) `%system`, $aggr(`%steal`) `%steal`, $aggr(`%iowait`)
-                        `%iowait`, $aggr(`%nice`) `%nice` FROM SAR_cpu $where $group_by;",
+                        `%iowait`, $aggr(`%nice`) `%nice` FROM aloja_logs.SAR_cpu $where $group_by;",
                         'fields'    => array('%user', '%system', '%steal', '%iowait', '%nice'),
                         'title'     => "CPU Utilization ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Utilization '."($aggr_text, $hosts)",
@@ -151,7 +151,7 @@ class PerfDetailsController extends AbstractController
                     'load' => array(
                         'metric'    => "CPU",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
-                        FROM SAR_load $where $group_by;",
+                        FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
                         'title'     => "CPU Load Average ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Load Average '."($aggr_text, $hosts)",
@@ -162,7 +162,7 @@ class PerfDetailsController extends AbstractController
                     'load_queues' => array(
                         'metric'    => "CPU",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`runq-sz`) `runq-sz`, $aggr(`blocked`) `blocked`
-                        FROM SAR_load $where $group_by;",
+                        FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('runq-sz', 'blocked'),
                         'title'     => "CPU Queues ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Queues '."($aggr_text, $hosts)",
@@ -172,7 +172,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'load_tasks' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM SAR_load $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('plist-sz'),
                         'title'     => "Number of tasks for CPUs ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Number of tasks for CPUs '."($aggr_text, $hosts)",
@@ -182,7 +182,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'switches' => array(
                         'metric'    => "CPU",
-                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM SAR_switches $where $group_by;",
+                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM aloja_logs.SAR_switches $where $group_by;",
                         'fields'    => array('proc/s', 'cswch/s'),
                         'title'     => "CPU Context Switches ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Context Switches'." ($aggr_text, $hosts)",
@@ -192,7 +192,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'interrupts' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM SAR_interrupts $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM aloja_logs.SAR_interrupts $where $group_by;",
                         'fields'    => array('intr/s'),
                         'title'     => "CPU Interrupts ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Interrupts '."($aggr_text, $hosts)",
@@ -203,7 +203,7 @@ class PerfDetailsController extends AbstractController
                     'memory_util' => array(
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbmemfree)*1024 kbmemfree, $aggr(kbmemused)*1024 kbmemused
-                        FROM SAR_memory_util $where $group_by;",
+                        FROM aloja_logs.SAR_memory_util $where $group_by;",
                         'fields'    => array('kbmemfree', 'kbmemused'),
                         'title'     => "Memory Utilization ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Utilization'." ($aggr_text, $hosts)",
@@ -215,7 +215,7 @@ class PerfDetailsController extends AbstractController
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbbuffers)*1024 kbbuffers,  $aggr(kbcommit)*1024 kbcommit, $aggr(kbcached)*1024 kbcached,
                         $aggr(kbactive)*1024 kbactive, $aggr(kbinact)*1024 kbinact
-                        FROM SAR_memory_util $where $group_by;",
+                        FROM aloja_logs.SAR_memory_util $where $group_by;",
                         'fields'    => array('kbcached', 'kbbuffers', 'kbinact', 'kbcommit',  'kbactive'), //
                         'title'     => "Memory Utilization Details ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Utilization Details'." ($aggr_text, $hosts)",
@@ -234,7 +234,7 @@ class PerfDetailsController extends AbstractController
                     'memory' => array(
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
-                    FROM SAR_memory $where $group_by;",
+                    FROM aloja_logs.SAR_memory $where $group_by;",
                         'fields'    => array('frmpg/s','bufpg/s','campg/s'),
                         'title'     => "Memory Stats ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Stats'." ($aggr_text, $hosts)",
@@ -245,7 +245,7 @@ class PerfDetailsController extends AbstractController
                     'io_pagging_disk' => array(
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
-                                    FROM SAR_io_paging $where $group_by;",
+                                    FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('pgpgin/s', 'pgpgout/s'),
                         'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging IN/OUT to disk'." ($aggr_text, $hosts)",
@@ -257,7 +257,7 @@ class PerfDetailsController extends AbstractController
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
                                 $aggr(`pgscank/s`) `pgscank/s`, $aggr(`pgscand/s`) `pgscand/s`, $aggr(`pgsteal/s`) `pgsteal/s`
-                                    FROM SAR_io_paging $where $group_by;",
+                                    FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
                         'title'     => "I/O Paging ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging'." ($aggr_text, $hosts)",
@@ -267,7 +267,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'io_pagging_vmeff' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('%vmeff'),
                         'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging %vmeff'." ($aggr_text, $hosts)",
@@ -278,7 +278,7 @@ class PerfDetailsController extends AbstractController
                     'io_transactions' => array(
                         'metric'    => "Disk",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
-                                                        FROM SAR_io_rate $where $group_by;",
+                                                        FROM aloja_logs.SAR_io_rate $where $group_by;",
                         'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
                         'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Transactions/s'." ($aggr_text, $hosts)",
@@ -289,7 +289,7 @@ class PerfDetailsController extends AbstractController
                     'io_bytes' => array(
                         'metric'    => "Disk",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
-                                            FROM SAR_io_rate $where $group_by;",
+                                            FROM aloja_logs.SAR_io_rate $where $group_by;",
                         'fields'    => array('KB_read/s', 'KB_wrtn/s'),
                         'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'KB R/W'." ($aggr_text, $hosts)",
@@ -331,7 +331,7 @@ class PerfDetailsController extends AbstractController
                 id_exec, host, date,
                 sum(`%util`) `%util_SUM`,
                     max(`%util`) `%util_MAX`
-                    from SAR_block_devices d WHERE id_exec = '$exec'
+                    from aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                     GROUP BY date, host
                 ) t $where $group_by;",
                         'fields'    => array('%util_SUM', '%util_MAX'),
@@ -349,7 +349,7 @@ class PerfDetailsController extends AbstractController
                     id_exec, host, date,
                     sum(`await`) `await_SUM`,
                     max(`await`) `await_MAX`
-                        from SAR_block_devices d WHERE id_exec = '$exec'
+                        from aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                         GROUP BY date, host
                             ) t $where $group_by;",
                         'fields'    => array('await_SUM', 'await_MAX'),
@@ -367,7 +367,7 @@ class PerfDetailsController extends AbstractController
                                         id_exec, host, date,
                                         sum(`svctm`) `svctm_SUM`,
                                             max(`svctm`) `svctm_MAX`
-                                            from SAR_block_devices d WHERE id_exec = '$exec'
+                                            from aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                                             GROUP BY date, host
                                         ) t $where $group_by;",
                         'fields'    => array('svctm_SUM', 'svctm_MAX'),
@@ -398,7 +398,7 @@ class PerfDetailsController extends AbstractController
                     'vmstats_io' => array(
                         'metric'    => "Disk",
                         'query' => "SELECT time, $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
-            FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+            FROM aloja_logs.VMSTATS $where_VMSTATS $group_by_vmstats;",
                         'fields'    => array('KB_IN', 'KB_OUT'),
                         'title'     => "VMSTATS KB I/O ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS KB I/O'." ($aggr_text, $hosts)",
@@ -408,7 +408,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'vmstats_rb' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+                        'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM aloja_logs.VMSTATS $where_VMSTATS $group_by_vmstats;",
                         'fields'    => array('runnable procs', 'sleep procs'),
                         'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
@@ -422,7 +422,7 @@ class PerfDetailsController extends AbstractController
                     $aggr(`cache`) `cache`,
                         $aggr(`free`) `free`,
                         $aggr(`swpd`) `swpd`
-                        FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+                        FROM aloja_logs.VMSTATS $where_VMSTATS $group_by_vmstats;",
                         'fields'    => array('buff', 'cache', 'free', 'swpd'),
                         'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
@@ -433,7 +433,7 @@ class PerfDetailsController extends AbstractController
                     'net_devices_kbs' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
-                        FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                        FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_NET', 'txMB/s_NET'),
                         'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'MB/s received and transmitted'." ($aggr_text, $hosts)",
@@ -444,7 +444,7 @@ class PerfDetailsController extends AbstractController
                     'net_devices_kbs_local' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
-                        FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                        FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_LOCAL', 'txMB/s_LOCAL'),
                         'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'MB/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
@@ -455,7 +455,7 @@ class PerfDetailsController extends AbstractController
                     'net_devices_pcks' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
-                                            FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                                            FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
                         'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
@@ -466,7 +466,7 @@ class PerfDetailsController extends AbstractController
                     'net_devices_pcks_local' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
-                                            FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                                            FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
                         'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Packets/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
@@ -482,7 +482,7 @@ class PerfDetailsController extends AbstractController
                                                     $aggr(`rawsck`) `rawsck`,
                                                     $aggr(`ip-frag`) `ip-frag`,
                                                     $aggr(`tcp-tw`) `tcp-time-wait`
-                                                    FROM SAR_net_sockets $where $group_by;",
+                                                    FROM aloja_logs.SAR_net_sockets $where $group_by;",
                         'fields'    => array('totsck', 'tcpsck', 'udpsck', 'rawsck', 'ip-frag', 'tcp-time-wait'),
                         'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
@@ -501,7 +501,7 @@ class PerfDetailsController extends AbstractController
                                                                 $aggr(`rxfram/s`) `rxfram/s`,
                                                                 $aggr(`rxfifo/s`) `rxfifo/s`,
                                                                 $aggr(`txfifo/s`) `txfifo/s`
-                                                                FROM SAR_net_errors $where $group_by;",
+                                                                FROM aloja_logs.SAR_net_errors $where $group_by;",
                         'fields'    => array('rxerr/s', 'txerr/s', 'coll/s', 'rxdrop/s', 'txdrop/s', 'txcarr/s', 'rxfram/s', 'rxfifo/s', 'txfifo/s'),
                         'title'     => "Network errors ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Network errors'." ($aggr_text, $hosts)",
@@ -514,7 +514,7 @@ class PerfDetailsController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                                                             $aggr(`bytes_in`)/(1024*1024) `MB_in`,
                                                                                 $aggr(`bytes_out`)/(1024*1024) `MB_out`
-                                                                                FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
+                                                                                FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                         'fields'    => array('MB_in', 'MB_out'),
                         'title'     => "BW Monitor NG Total Bytes IN/OUT ($aggr_text, $hosts) $exec_title",
                         'group_title' => 'BW Monitor NG Total Bytes IN/OUT'." ($aggr_text, $hosts)",
@@ -527,7 +527,7 @@ class PerfDetailsController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                                                                         $aggr(`packets_in`) `packets_in`,
                                                                                         $aggr(`packets_out`) `packets_out`
-                                                                                            FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
+                                                                                            FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                         'fields'    => array('packets_in', 'packets_out'),
                         'title'     => "BW Monitor NG Total packets IN/OUT ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'BW Monitor NG Total packets IN/OUT'." ($aggr_text, $hosts)",
@@ -540,7 +540,7 @@ class PerfDetailsController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                             $aggr(`errors_in`) `errors_in`,
                                             $aggr(`errors_out`) `errors_out`
-                                            FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
+                                            FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                         'fields'    => array('errors_in', 'errors_out'),
                         'title'     => "BW Monitor NG Total errors IN/OUT ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'BW Monitor NG Total errors IN/OUT'." ($aggr_text, $hosts)",
@@ -703,7 +703,7 @@ class PerfDetailsController extends AbstractController
             $db = $this->container->getDBUtils();
             $query = '
                 SELECT DISTINCT(t.JOBID)
-                FROM JOB_tasks t
+                FROM aloja_logs.JOB_tasks t
                 #ORDER BY t.JOBID DESC
                 LIMIT 100
             ;';
@@ -734,8 +734,8 @@ class PerfDetailsController extends AbstractController
             $db = $this->container->getDBUtils();
             $query = "
                 SELECT DISTINCT(t.JOBID)
-                FROM JOB_tasks t JOIN execs e USING (id_exec)
-                JOIN clusters c USING (id_cluster) WHERE 1=1 $whereClause
+                FROM aloja_logs.JOB_tasks t JOIN aloja2.execs e USING (id_exec)
+                JOIN aloja2.clusters c USING (id_cluster) WHERE 1=1 $whereClause
                 LIMIT 100
             ;";
             $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
@@ -761,7 +761,7 @@ class PerfDetailsController extends AbstractController
         try {
             $idExec = Utils::get_GET_string('id_exec');
             if(!$idExec) {
-                $idExec = $dbConn->get_rows("SELECT id_exec FROM execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 LIMIT 5")[rand(0,5)]['id_exec'];
+                $idExec = $dbConn->get_rows("SELECT id_exec FROM aloja2.execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 LIMIT 5")[rand(0,5)]['id_exec'];
             }
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
@@ -770,7 +770,7 @@ class PerfDetailsController extends AbstractController
             $this->container->getTwig()->addGlobal('message','No executions with performance details available');
             $exec = null;
         } else
-            $exec = $dbConn->get_rows("SELECT * FROM execs JOIN clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
+            $exec = $dbConn->get_rows("SELECT * FROM aloja2.execs JOIN aloja2.clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
 
         return $this->render('histogram/histogram.html.twig',
             array(
@@ -786,7 +786,7 @@ class PerfDetailsController extends AbstractController
         try {
             $idExec = Utils::get_GET_string('id_exec');
             if(!$idExec)
-                $idExec = $dbConn->get_rows("SELECT id_exec FROM execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 AND hadoop_version = 2 LIMIT 5")[rand(0,5)]['id_exec'];
+                $idExec = $dbConn->get_rows("SELECT id_exec FROM aloja2.execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 AND hadoop_version = 2 LIMIT 5")[rand(0,5)]['id_exec'];
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
@@ -795,7 +795,7 @@ class PerfDetailsController extends AbstractController
             $this->container->getTwig()->addGlobal('message','No executions of Hadoop 2 with performance details available');
             $exec = null;
         } else
-            $exec = $dbConn->get_rows("SELECT * FROM execs JOIN clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
+            $exec = $dbConn->get_rows("SELECT * FROM aloja2.execs JOIN aloja2.clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
 
         return $this->render('histogram/histogramhdi.html.twig',
             array('idExec' => $idExec,

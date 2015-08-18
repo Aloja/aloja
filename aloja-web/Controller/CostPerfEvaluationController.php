@@ -41,7 +41,7 @@ class CostPerfEvaluationController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
+            $execs = "SELECT e.*, c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -96,7 +96,7 @@ class CostPerfEvaluationController extends AbstractController
                 data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]], idexec: ${exec['id_exec']}},";
         }
 
-        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
+        $clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM aloja2.execs e WHERE 1 $filter_execs);");
 
         return $this->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
@@ -120,8 +120,8 @@ class CostPerfEvaluationController extends AbstractController
 
         $filter_execs = DBUtils::getFilterExecs();
 
-        $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN clusters c USING (id_cluster)
-        		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
+        $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN aloja2.clusters c USING (id_cluster)
+        		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM aloja2.execs JOIN aloja2.clusters USING(id_cluster)
         					 WHERE  1 $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
         
@@ -209,8 +209,8 @@ class CostPerfEvaluationController extends AbstractController
     		$sumCount = 0;
     
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
-    		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+    		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster)
         					 WHERE  1 $filter_execs $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
@@ -268,7 +268,7 @@ class CostPerfEvaluationController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+    	$clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM aloja2.execs e WHERE 1 $filter_execs);");
     
     	//Sorting clusters by size
     	usort($execs, function($a,$b) {
@@ -310,8 +310,8 @@ class CostPerfEvaluationController extends AbstractController
     		$maxExeTime = 0;
 
     		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
-    		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+    		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster)
         					 WHERE  1 $filter_execs $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
@@ -406,7 +406,7 @@ class CostPerfEvaluationController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+    	$clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM aloja2.execs e WHERE 1 $filter_execs);");
 
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
@@ -432,7 +432,7 @@ class CostPerfEvaluationController extends AbstractController
         try {
             $filter_execs = DBUtils::getFilterExecs();
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $this->whereClause GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN aloja2.clusters c2 USING (id_cluster) WHERE 1 $this->whereClause GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
