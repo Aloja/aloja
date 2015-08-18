@@ -24,7 +24,7 @@ install_packages() {
         vm_execute "
 export DEBIAN_FRONTEND=noninteractive;
 sudo apt-get update -m;
-  "
+  " || return $?
       fi
 
       logger "INFO: Intalling for $vmOSType $vmOSTypeVersion packages: $packages_list"
@@ -32,7 +32,7 @@ sudo apt-get update -m;
       vm_execute "
 export DEBIAN_FRONTEND=noninteractive;
 sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $packages_list
-  "
+  " || return $?
 
   #sudo apt-get autoremove -y;
 
@@ -83,6 +83,8 @@ aloja_wget() {
   [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
 
   vm_execute "$wget_command" #--no-verbose
+
+  return $?
 }
 
 # install the base packages for VMs
@@ -854,8 +856,72 @@ install_ganglia_gmetad(){
 
 }
 
+# parameters: list of clusters to manage
 config_ganglia_gmetad(){
-  :
+  
+  local bootstrap_file="${FUNCNAME[0]}"
+  local cname sep clist
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring gmetad"
+
+    clist=
+    sep=
+    for cname in "$@"; do
+      clist="${clist}${sep}${cname}"
+      sep=%
+    done
+
+    vm_local_scp files/gmetad.conf.t /tmp/ "" ""
+
+    vm_execute "
+
+    # create conf from template
+    awk -v clist='${clist}' -v dq='\"' '
+
+    BEGIN{
+      nds = split(clist, temp, /%/)
+      for (i=1; i <= nds; i++) {
+        space = index(temp[i], \" \")
+        dsname[i] = substr(temp[i], 1, space - 1)
+        dsnode[i] = substr(temp[i], space + 1)
+      }
+    }
+
+    /%%%DATASOURCELIST%%%/ {
+      for (i = 1; i <= nds; i++) {
+        print \"data_source \" dq dsname[i] dq \" \" dsnode[i]
+      }
+      next
+    }
+
+    { print }
+
+    ' /tmp/gmetad.conf.t > /tmp/gmetad.conf
+
+    # copy conf to destination
+    sudo cp /tmp/gmetad.conf /etc/ganglia
+
+    sudo /etc/init.d/gmetad restart"
+
+    result=$?
+
+    test_action="$(vm_execute " [ \"\$\(grep '^data_source ' /etc/ganglia/gmetad.conf)\" ] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
 }
 
 
@@ -872,8 +938,10 @@ install_ganglia_web(){
     tarball=ganglia-web-3.7.0.tar.gz
     gdir=${tarball%.tar.gz}
 
-    install_packages "php5-gd rrdtool"
-    aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball"
+    install_packages "php5-gd rrdtool" || die "Error installing ganglia-web"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball" || die "Error installing ganglia-web"
+
+    vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
 
     vm_execute "
     cd /tmp || exit 1;
@@ -881,6 +949,8 @@ install_ganglia_web(){
     sudo mv $gdir ganglia || exit 1;
     sudo rm -rf /var/www/ganglia || exit 1;
     sudo mv ganglia /var/www/ || exit 1;
+    sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
+    sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
     sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
 "
 
@@ -888,14 +958,8 @@ install_ganglia_web(){
       die "Error installing ganglia-web"
     fi
 
-    # config: /var/www/ganglia/conf.php
-    vm_execute "
-
-    echo '
-$conf['gweb_confdir'] = '/var/www/ganglia';
-    ' > /var/www/ganglia/conf.php"
-
-    test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
+    # look for the freshly added line
+    test_action="$(vm_execute " [ \"\$\(grep ' = ./var/www/ganglia.;' /var/www/ganglia/conf.php\)\" ] && echo '$testKey'")"
 
     if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
