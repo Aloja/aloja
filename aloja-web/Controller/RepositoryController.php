@@ -125,7 +125,7 @@ class RepositoryController extends AbstractController
             $this->buildFilters(array('bench' => array('default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja_logs.JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -155,7 +155,7 @@ class RepositoryController extends AbstractController
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS
-                FROM aloja_logs.JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'MAP') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `Launched map tasks`,
@@ -167,7 +167,7 @@ class RepositoryController extends AbstractController
                 `Map input bytes`,
                 `Map output bytes`,
                 `Map output materialized bytes`
-                FROM aloja_logs.JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'REDUCE') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -178,7 +178,7 @@ class RepositoryController extends AbstractController
                 `Reduce shuffle bytes`,
                 `Combine input records`,
                 `Combine output records`
-                FROM aloja_logs.JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'FILE-IO') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME,
@@ -191,12 +191,12 @@ class RepositoryController extends AbstractController
                 `HDFS_BYTES_READ`,
                 `Bytes Read`,
                 `Bytes Written`
-                FROM aloja_logs.JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM aloja_logs.JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.* FROM aloja2.JOB_details c $join";
             } elseif ($type == 'TASKS') {
                 $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM aloja_logs.JOB_tasks c
-                JOIN aloja_logs.JOB_details j USING(id_exec, JOBID) $join ";
+                JOIN aloja2.JOB_details j USING(id_exec, JOBID) $join ";
                 #$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");
                 #TODO cache this result into a temp table
 //                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM JOB_tasks limit 10000) t");
@@ -215,8 +215,8 @@ class RepositoryController extends AbstractController
             } else {
                 throw new \Exception('Unknown type!');
             }
-
             $exec_rows = $db->get_rows($query);
+
             if (count($exec_rows) > 0) {
 
                 $show_in_result_counters = array(
@@ -254,7 +254,7 @@ class RepositoryController extends AbstractController
             $this->buildFilters(array('bench' => array('default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja_logs.HDI_JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.HDI_JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -286,7 +286,7 @@ class RepositoryController extends AbstractController
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS
-    			FROM aloja_logs.HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == "MAP") {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
@@ -296,7 +296,7 @@ class RepositoryController extends AbstractController
     			`MAP_OUTPUT_RECORDS`,
     			`MAP_OUTPUT_BYTES`,
     			`MAP_OUTPUT_MATERIALIZED_BYTES`
-    			FROM aloja_logs.HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'REDUCE') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -307,7 +307,7 @@ class RepositoryController extends AbstractController
     			`REDUCE_SHUFFLE_BYTES`,
     			`COMBINE_INPUT_RECORDS`,
     			`COMBINE_OUTPUT_RECORDS`
-    			FROM aloja_logs.HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'FILE-IO') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME,
@@ -320,12 +320,12 @@ class RepositoryController extends AbstractController
     			`WASB_BYTES_READ`,
     			`BYTES_READ`,
     			`BYTES_WRITTEN`
-    			FROM aloja_logs.HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM aloja_logs.HDI_JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.* FROM aloja_logs.aloja2 c $join";
             } else if ($type == "TASKS") {
                 $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM aloja_logs.HDI_JOB_tasks c
-    			JOIN aloja_logs.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
+    			JOIN aloja2.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
 //                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");
 //                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");

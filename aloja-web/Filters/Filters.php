@@ -111,7 +111,7 @@ class Filters
             'hadoop' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'));
     }
 
-    public function getWhereClause($aliasesToReplace) {
+    public function getWhereClause($aliasesToReplace = array()) {
         $whereClause = $this->whereClause;
         foreach($this->aliasesTables as $table => $alias) {
             if(array_key_exists($table, $aliasesToReplace)) {
@@ -163,9 +163,13 @@ class Filters
                 $values = null;
                 if (isset($_GET[$filterName])) {
                     $values = $_GET[$filterName];
-                    array_walk($values, function (&$item) {
-                        $item = str_replace('%2F', '/', $item);
-                    });
+                    if(is_array($values)) {
+                        array_walk($values, function (&$item) {
+                            $item = str_replace('%2F', '/', $item);
+                        });
+                    } else if($values != "" && $values != null)
+                        $values = str_replace('%2F', '/', $values);
+
                 } else if ($definition['default'] != null) {
                     $values = $definition['default'];
                 }
@@ -266,7 +270,7 @@ class Filters
 
     }
 
-    private function initDefaultPreset($db, $screen) {
+    private function initDefaultPreset($screen) {
         $presets = $this->dbConnection->get_rows("SELECT * FROM aloja2.filter_presets WHERE default_preset = 1 AND selected_tool = '$screen'");
         if(count($presets)>=1) {
             $url = $presets[0]['URL'];

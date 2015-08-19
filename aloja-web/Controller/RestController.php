@@ -151,7 +151,7 @@ class RestController extends AbstractController
             if (!($type = Utils::get_GET_string('pageTab')))
                 $type = 'SUMMARY';
 
-            $join = "JOIN execs e using (id_exec) JOIN aloja2.clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
+            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
 
@@ -159,7 +159,7 @@ class RestController extends AbstractController
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS,
                 e.perf_details
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'MAP') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `Launched map tasks`,
@@ -172,7 +172,7 @@ class RestController extends AbstractController
                 `Map output bytes`,
                 `Map output materialized bytes`,
                 e.perf_details
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'REDUCE') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -184,7 +184,7 @@ class RestController extends AbstractController
                 `Combine input records`,
                 `Combine output records`,
                 e.perf_details
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'FILE-IO') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME,
@@ -198,13 +198,13 @@ class RestController extends AbstractController
                 `Bytes Read`,
                 `Bytes Written`,
                 e.perf_details
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'DETAIL') {
                 $query = "SELECT e.bench, exe_time, c.*, e.perf_details
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'TASKS') {
-                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.*,e.perf_details FROM aloja_logsJOB_tasks c
-                JOIN JOB_details j USING(id_exec, JOBID) $join ";
+                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.*,e.perf_details FROM aloja_logs.JOB_tasks c
+                JOIN aloja2.JOB_details j USING(id_exec, JOBID) $join ";
             } else {
                 throw new \Exception('Unknown type!');
             }
@@ -1048,8 +1048,8 @@ VALUES
                 d.`id_exec`,
                 d.`centroid_x`,
                 d.`centroid_y`
-            FROM `JOB_dbscan` d, `execs` e
-            JOIN clusters c USING (id_cluster)
+            FROM `aloja2.JOB_dbscan` d, `aloja2.execs` e
+            JOIN aloja2.clusters c USING (id_cluster)
             WHERE
                 d.`id_exec` = e.`id_exec` AND
                 d.`bench` = :bench AND
