@@ -20,16 +20,43 @@ testKey="###OK###"
 logger() {
   local log_file="aloja-deploy.log"
   local dateTime="$(date +%Y%m%d_%H%M%S)"
-  if [ ! -z "$vm_name" ] ; then
+  local vm_info=""
+
+  if [ "$vm_name" ] ; then
     local vm_info=" $vm_name"
+  fi
+
+  local output=""
+
+  # Colorize when on interactive TERM TODO implement better
+  if [ -t 1 ] ; then
+    local reset="$(tput sgr0)"
+    local red="$(tput setaf 1)"
+    local green="$(tput setaf 2)"
+    local yellow="$(tput setaf 3)"
+    local cyan="$(tput setaf 6)"
+    local white="$(tput setaf 7)"
+
+    if [[ "$1 " == "DEBUG:"* ]] ; then
+      output="${cyan}$dateTime $$${vm_info}: $1${reset}"
+    elif [[ "$1 " == "INFO:"* ]] ; then
+      output="${green}$dateTime $$${vm_info}: $1${reset}"
+    elif [[ "$1 " == "WARNING:"* ]] ; then
+      output="${yellow}$dateTime $$${vm_info}: $1${reset}"
+    elif [[ "$1 " == "ERROR:"* ]] ; then
+      output="${red}$dateTime $$${vm_info}: $1${reset}"
+    else
+      output="${white}$dateTime $$${vm_info}: $1${reset}"
+    fi
+  # non-interactive (no colors)
   else
-    local vm_info=""
+    output="$dateTime $$${vm_info}: $1"
   fi
 
   if [ -z "$3" ] ; then
-    echo -e "$dateTime $$${vm_info}: $1"
+    echo -e "$output"
   else
-    echo -e "$dateTime $$${vm_info}: $1" >> $log_file
+    echo -e "$output" >> $log_file
   fi
 }
 
