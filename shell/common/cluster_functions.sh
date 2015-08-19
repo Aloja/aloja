@@ -361,10 +361,7 @@ get_master_name() {
       break #just return one
     done
   else #generate them from standard naming
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-      local master_name="${clusterName}-${vm_id}"
-      break #just return one
-    done
+    local master_name="${clusterName}-00"
   fi
   echo "$master_name"
 }

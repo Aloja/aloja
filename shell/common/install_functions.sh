@@ -981,3 +981,77 @@ config_ganglia_web(){
   :
 
 }
+
+# input: list of clusters
+install_ssh_tunnel(){
+
+  local bootstrap_file="${FUNCNAME[0]}"
+  local cname tlist sep
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing ssh-tunnel"
+
+    install_packages "autossh" || die "Error installing autossh"
+
+    vm_rsync files/ssh-tunnel /tmp/ "--delete" || die "Error copying ssh-tunnel files"
+    
+    vm_execute "
+    sudo mv /tmp/ssh-tunnel/etc/init.d/ssh-tunnel /etc/init.d || exit 1;
+    sudo mv /tmp/ssh-tunnel/usr/local/bin/ssh-tunnel /usr/local/bin || exit 1;
+    sudo chmod +x /etc/init.d/ssh-tunnel /usr/local/bin/ssh-tunnel || exit 1;
+
+    # autostart
+    sudo update-rc.d ssh-tunnel defaults || exit 1
+
+    # config
+    sudo rm -rf /etc/ssh-tunnel || exit 1
+    sudo mv /tmp/ssh-tunnel/etc/ssh-tunnel /etc || exit 1
+
+    # copy ssh key
+    sudo cp ~pristine/.ssh/id_rsa /etc/ssh-tunnel/keys-enabled || exit 1
+"
+
+    if [ $? -ne 0 ]; then
+      die "Error installing ssh-tunnel"
+    fi
+
+    # ssh-tunnel config to all clusters
+
+    tlist=
+    sep=
+
+    for cname in "$@"; do
+      local ssh_port=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; vm_name=$(get_master_name) get_vm_ssh_port)
+      local dns_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_ssh_host)
+      local master_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_master_name)
+
+      local tunnel="${cname} -p ${ssh_port} -o StrictHostKeychecking=no -L ${ssh_port}:${master_name}:8649 pristine@${dns_name}"
+      tlist="${tlist}${sep}${tunnel}"
+      sep=$'\n'
+    done
+
+    vm_execute "
+
+sudo echo '$tlist' > /etc/ssh-tunnel/groups-enabled/default || exit 1
+sudo /etc/init.d/ssh-tunnel restart || exit 1
+"
+
+    if [ $? -ne 0 ]; then
+      die "Error installing ssh-tunnel"
+    fi
+
+    logger "INFO: $bootstrap_file installed succesfully"
+    #set the lock
+    check_bootstraped "$bootstrap_file" "set"
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+
+
