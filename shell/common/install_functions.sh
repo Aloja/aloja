@@ -1012,6 +1012,7 @@ install_ssh_tunnel(){
 
     # copy ssh key
     sudo cp ~pristine/.ssh/id_rsa /etc/ssh-tunnel/keys-enabled || exit 1
+    sudo chmod 400 /etc/ssh-tunnel/keys-enabled/id_rsa || exit 1
 "
 
     if [ $? -ne 0 ]; then
