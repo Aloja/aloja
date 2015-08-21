@@ -148,6 +148,7 @@ get_date_folder(){
 }
 
 # Tests if the supplied hostname can coincides with any node in the cluster
+# NOTE: if you cluster doesnt pass this function you should overwrite it with and specific implementation in your benchark defs
 # $1 hostname to check
 test_in_cluster() {
   local hostname="$1"
