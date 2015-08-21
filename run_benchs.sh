@@ -1,24 +1,19 @@
 #!/bin/env bash
 
 # Script to orchestrate benchmark execution and metrics collection
+# NOTE: you need to have your cluster configured first
 # for usage run run_benchs.sh -h
 
 # 1.) load cluster config and common functions
 
-# attempt first to load local cluster config if defined
-if [[ -z "$clusterName" &&  -f ~/aloja_cluster.conf ]] ; then
-  source ~/aloja_cluster.conf  #here we don't have globals loaded yet
-fi
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+CONF_DIR="$ALOJA_REPO_PATH/shell/conf" #TODO remove when migrated to use ALOJA_REPO_PATH
+source "$ALOJA_REPO_PATH/shell/common/include_benchmarks.sh"
 
-CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
+logger  "INFO: configs loaded, we can start\n"
 
-logger  "INFO: configs loaded\n"
+# 2.) Validate and initialize run
 
-# 2.) Check options, validate and initialize run
-
-# check command line options
-get_options "$@"
 # some validations
 validate
 # initialize cluster node names and connect string
@@ -57,6 +52,7 @@ start_time=$(date '+%s')
 ########################################################
 loggerb  "Starting execution of $BENCH"
 
+# Benchmark stages
 benchmark_run
 
 stop_monit
@@ -64,7 +60,6 @@ stop_monit
 benchmark_teardown
 
 benchmark_save
-
 
 loggerb  "$(date +"%H:%M:%S") DONE $bench"
 

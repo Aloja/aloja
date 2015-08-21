@@ -2,8 +2,20 @@
 
 # prints usage and exits
 usage() {
-  echo -e "ALOJA-BENCH, script to run benchmarks and collect results
-Usage:
+
+  # Colorize when interactive
+  if [ -t 1 ] ; then
+    local reset="$(tput sgr0)"
+    local red="$(tput setaf 1)"
+    local green="$(tput setaf 2)"
+    local yellow="$(tput setaf 3)"
+    local cyan="$(tput setaf 6)"
+    local white="$(tput setaf 7)"
+
+  fi
+
+  echo -e "${yellow}\nALOJA-BENCH, script to run benchmarks and collect results
+${white}Usage:
 $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-n net <IB|ETH>]
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
@@ -21,8 +33,8 @@ $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
 
-example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
-"
+${cyan}example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
+$reset"
   exit 1;
 }
 
@@ -135,8 +147,29 @@ get_date_folder(){
   echo "$(date +%Y%m%d_%H%M%S)"
 }
 
+# Tests if the supplied hostname can coincides with any node in the cluster
+# $1 hostname to check
+test_in_cluster() {
+  local hostname="$1"
+  local coincides=1 #return code when not found
+
+  if [ "$nodeNames" ] ; then
+    for node in $nodeNames ; do #pad the sequence with 0s
+      [[ "$hostname" == "$node"* ]] && coincides=0
+    done
+  else
+    die "\$nodeNames var is not defined for cluster $clusterName"
+  fi
+
+  return $coincides
+}
+
 # performs some basic validations
 validate() {
+  if ! test_in_cluster "$(hostname)" ; then
+    die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
+  fi
+
   local touch_file="$BENCH_DEFAULT_SCRATCH/$BENCH_FOLDER.touch"
   #if file exists test if we can delete it
   if [ -f "$touch_file" ] ; then
