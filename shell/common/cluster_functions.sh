@@ -1,15 +1,16 @@
-#Check that CONF_DIR is correctly set before starting
-[ -z "$CONF_DIR" ] || [ ! -f "$CONF_DIR/provider_functions.sh" ] && {
-  echo "ERROR: CONF_DIR not set correctly. CONF_DIR=$CONF_DIR" ; exit 1;
-}
+# Common functions for cluster and VM management
+
+# Check that $ALOJA_REPO_PATH is correctly set before starting
+
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../.."
 
 #source includes
-#logger "DEBUG: loading $CONF_DIR/provider_functions.sh"
-source "$CONF_DIR/provider_functions.sh"
-#logger "DEBUG: loading $CONF_DIR/install_functions.sh"
-source "$CONF_DIR/install_functions.sh"
-#logger "DEBUG: loading $CONF_DIR/config_functions.sh"
-source "$CONF_DIR/config_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/provider_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/provider_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/install_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/config_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/config_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -972,14 +973,14 @@ vm_set_master_forer() {
 
     logger "Generating jobs (forer)"
 
-    if [ -f "$CONF_DIR/../forer_$clusterName.sh" ] ; then
+    if [ -f "$ALOJA_REPO_PATH/shell/forer_$clusterName.sh" ] ; then
       logger " synching forer files"
-      vm_rsync "$CONF_DIR/../" "$homePrefixAloja/$userAloja/share/shell/"
+      vm_rsync "$ALOJA_REPO_PATH/shell/" "$homePrefixAloja/$userAloja/share/shell/"
 
       logger " executing forer_$clusterName.sh"
       vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
     else
-      logger " executing forer_az.sh $CONF_DIR/../forer_$clusterName.sh"
+      logger " executing forer_az.sh $ALOJA_REPO_PATH/shell/forer_$clusterName.sh"
       vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_az.sh $clusterName"
     fi
 
@@ -1084,10 +1085,10 @@ vm_rsync_public() {
 
   logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
 
-  if [ -d "$CONF_DIR/../../blobs" ] ; then
-    vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+  if [ -d "$ALOJA_REPO_PATH/blobs" ] ; then
+    vm_rsync "$ALOJA_REPO_PATH/blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
   else
-    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $CONF_DIR/../../blobs"
+    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $ALOJA_REPO_PATH/blobs"
   fi
 }
 
