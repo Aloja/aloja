@@ -131,10 +131,9 @@ get_nginx_conf(){
 
 echo -e '
 server {
-  listen 80;
-  server_name _;
-  root /var/www/aloja-web/;
+  listen 80 default_server;
 
+  root /var/www/aloja-web/;
   index index.html index.php;
   autoindex on;
 
@@ -144,9 +143,15 @@ server {
     autoindex on;
   }
 
-  location /slides {
-    alias /var/presentations/aloja-web;
-    index template.html;
+  location /ganglia {
+
+    root /var/www/;
+
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
   }
 
   location /public {
@@ -160,7 +165,7 @@ server {
     fastcgi_pass unix:/var/run/php5-fpm.sock;
     fastcgi_index index.php;
     include fastcgi_params;
-    #fastcgi_read_timeout 600; # Set fairly high for debugging
+    fastcgi_read_timeout 600; # Set fairly high for debugging
     fastcgi_intercept_errors on;
   }
 

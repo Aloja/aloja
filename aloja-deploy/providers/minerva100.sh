@@ -15,7 +15,7 @@ get_ssh_user() {
     #"WARNINIG: connecting as root"
     echo "npoggi"
   else
-    echo "$userAloja"
+   echo "$userAloja"
   fi
 }
 
@@ -53,6 +53,7 @@ sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc
   else
     logger "$bootstrap_file already configured"
   fi
+
 }
 
 #$1 vm_name

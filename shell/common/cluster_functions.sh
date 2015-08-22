@@ -260,16 +260,16 @@ check_sshpass() {
 #$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
-  #logger "Executing in VM $vm_name command(s): $1"
-  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
-  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
   local result
 
+  #logger "DEBUG: vm_execute: ssh -i $(get_ssh_key) $(eval echo $sshOptions) -o PasswordAuthentication=no -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)" "" "log to file"
+
   #Use SSH keys
-  if [ -z "$3" ] && [ -z "${requireRootFirst[$vm_name]}" ] && [ "${needPasswordPre}" != "1" ]; then
+  if [ -z "$3" ] && [ "${needPasswordPre}" != "1" ]; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
@@ -283,7 +283,6 @@ vm_execute() {
   #Use password
   else
     check_sshpass
-
     if [ -z "$2" ] ; then
       echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
       result=$?
@@ -309,7 +308,7 @@ vm_connect() {
 
   set_shh_proxy
 
-  local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+  local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
 
   #Use SSH keys
   if [ -z "$1" ] ; then
@@ -557,11 +556,13 @@ wait_vm_ready() {
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
-  logger "Checking SSH status of VM $vm_name"
+  logger "INFO: Checking SSH status of VM $vm_name: $(get_ssh_user)@$(get_ssh_host):$(get_ssh_port)"
+
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
 
     test_action="$(vm_execute "echo '$testKey'")"
+
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -614,8 +615,8 @@ vm_test_initiallize_disks() {
 
 #$1 use password based auth
 vm_set_ssh() {
+  local bootstrap_file="${FUNCNAME[0]}"
 
-  local bootstrap_file="vm_set_ssh"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
@@ -632,10 +633,10 @@ vm_set_ssh() {
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa")"
+    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
     #logger "TEST SSH $test_set_ssh"
 
-    if [ ! -z "$test_set_ssh" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -679,7 +680,8 @@ vm_check_attach_disks() {
 
 
 vm_set_dsh() {
-  local bootstrap_file="vm_set_dsh"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
@@ -690,7 +692,7 @@ vm_set_dsh() {
     vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.dsh/group/a ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -703,10 +705,10 @@ vm_set_dsh() {
 }
 
 vm_set_dot_files() {
-  local function_name="Dotfiles"
-  local bootstrap_file="vm_set_dot_files"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
-    logger "Setting up $function_name for VM $vm_name "
+    logger "Setting up $bootstrap_file for VM $vm_name "
 
     vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
@@ -720,15 +722,15 @@ defscrollback 99999
 startup_message off" ""
 
     test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' $homePrefixAloja/$userAloja/.bashrc\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
-      logger "ERROR setting $function_name for $vm_name. Test output: $test_action"
+      logger "ERROR setting $bootstrap_file for $vm_name. Test output: $test_action"
     fi
 
   else
-    logger "$function_name already configured"
+    logger "$bootstrap_file already configured"
   fi
 }
 
@@ -767,7 +769,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_initialize_disks"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   local create_string="$(get_initizalize_disks)"
 
@@ -816,7 +818,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_mount_disk"
+  local bootstrap_file="${FUNCNAME[0]}"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
@@ -838,7 +840,7 @@ cluster_mount_disks() {
 }
 
 #parallel Node config
-function cluster_parallel_config() {
+cluster_parallel_config() {
   if [ "$vmType" != 'windows' ] && [ -z "$dont_mount_share" ] && check_sudo; then
 
 #    logger "Checking if to initilize cluster disks"
@@ -853,7 +855,7 @@ function cluster_parallel_config() {
 }
 
 #master config to execute benchmarks
-function cluster_queue_jobs() {
+cluster_queue_jobs() {
   if [ "$vmType" != 'windows' ] ; then
     vm_set_master_crontab
     vm_set_master_forer
@@ -1064,7 +1066,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv $ALOJA_PUBLIC_HTTP/aplic.tar.bz2"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
