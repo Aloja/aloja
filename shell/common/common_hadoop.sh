@@ -119,7 +119,7 @@ prepare_hadoop_config(){
   #set hadoop home
   export HADOOP_HOME="${BENCH_SOURCE_DIR}/${BENCH_HADOOP_VERSION}"
   export HADOOP_YARN_HOME="$HADOOP_HOME"
-  logger "DEBUG: HADOOP_HOME: $HADOOP_HOME\nHADOOP_YARN_HOME: $HADOOP_YARN_HOME"
+  loggerb "DEBUG: HADOOP_HOME: $HADOOP_HOME\nHADOOP_YARN_HOME: $HADOOP_YARN_HOME"
 
   loggerb "Creating source dir and Copying Hadoop"
   $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH

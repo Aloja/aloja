@@ -414,7 +414,7 @@ echo -e "HDD=$HDD\nHDD_TMP $HDD_TMP\nHDIR=${H_DIR}"
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
-logger "DEBUG: HDFS_NDIR: $HDFS_NDIR\nHDFS_DDIR: $HDFS_DDIR"
+loggerb "DEBUG: HDFS_NDIR: $HDFS_NDIR\nHDFS_DDIR: $HDFS_DDIR"
 
 
 MAX_REDS="$MAX_MAPS"
