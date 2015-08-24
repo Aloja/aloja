@@ -215,3 +215,42 @@ convert_regular2IB_hostnames() {
   echo -e "$(echo -e "$hosts_IB"|tail -n +2 )" #cut the first \n
 }
 
+
+# special gmond config for minerva nodes (already have ganglia installed)
+# $1 cluster name
+config_ganglia_gmond(){
+
+  local bootstrap_file="${FUNCNAME[0]}"
+  local result
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring ganglia-monitor (gmond)"
+
+    vm_local_scp files/ganglia_minerva.conf.t /tmp/aloja.conf "" ""
+
+    vm_execute "
+
+    # create conf from template
+    sudo mkdir -p /etc/ganglia/conf.d || exit 1;
+    sudo mv /tmp/aloja.conf /etc/ganglia/conf.d || exit 1;
+    sudo /etc/init.d/ganglia-monitor restart || exit 1;"
+
+    result=$?
+
+    if [ $result -eq 0 ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name."
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
