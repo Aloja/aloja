@@ -66,7 +66,7 @@ sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc
 "
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -86,7 +86,7 @@ get_vm_id() {
 
 vm_create_RAID0() {
 
-  local bootstrap_file="vm_create_RAID0"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -113,7 +113,7 @@ sudo chown -R pristine: /scratch/attached/1;
 
     test_action="$(vm_execute " [ \"\$(sudo mdadm --examine /dev/sdb1 |grep 'Raid Devices : $num_drives')\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -131,10 +131,9 @@ get_nginx_conf(){
 
 echo -e '
 server {
-  listen 80;
-  server_name _;
-  root /var/www/aloja-web/;
+  listen 80 default_server;
 
+  root /var/www/aloja-web/;
   index index.html index.php;
   autoindex on;
 
@@ -144,9 +143,15 @@ server {
     autoindex on;
   }
 
-  location /slides {
-    alias /var/presentations/aloja-web;
-    index template.html;
+  location /ganglia {
+
+    root /var/www/;
+
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
   }
 
   location /public {
@@ -160,7 +165,7 @@ server {
     fastcgi_pass unix:/var/run/php5-fpm.sock;
     fastcgi_index index.php;
     include fastcgi_params;
-    #fastcgi_read_timeout 600; # Set fairly high for debugging
+    fastcgi_read_timeout 600; # Set fairly high for debugging
     fastcgi_intercept_errors on;
   }
 

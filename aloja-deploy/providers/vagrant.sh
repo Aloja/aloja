@@ -88,7 +88,7 @@ node_start() {
     logger "INFO: Starting vagrant VM $1"
     cd $CONF_DIR/../../; vagrant up "$1"; cd -;
   else
-    die "ERROR: cannot start vagrant VM $1 from inside the VM"
+    die "cannot start vagrant VM $1 from inside the VM"
   fi
 }
 
@@ -97,7 +97,7 @@ vm_get_status(){
   if ! inside_vagrant ; then
     echo "$(vagrant global-status |grep " $1 "|cut -d " " -f 5 )"
   else
-    die "ERROR: cannot start vagrant VM $1 from inside the VM"
+    die "cannot start vagrant VM $1 from inside the VM"
   fi
 }
 
@@ -212,32 +212,68 @@ cluster_final_boostrap() {
   : #not necessary for vagrant (yet)
 }
 
-### ganglia
 
-config_ganglia_gmetad(){
+# for bscaloja, has a special /public dir
+get_nginx_conf(){
 
-  local bootstrap_file="config_gmetad"
+echo -e '
+server {
+  listen 80 default_server;
 
-  if check_bootstraped "$bootstrap_file" ""; then
-    logger "Executing $bootstrap_file"
+  root /var/www/aloja-web/;
+  index index.html index.php;
+  autoindex on;
 
-    logger "INFO: Configuring gmetad"
+  location / {
+    index index.php;
+    try_files $uri $uri/ /index.php?q=$uri&$args;
+    autoindex on;
+  }
 
-    vm_execute "
-sudo sed -i 's/data_source \"my cluster\" localhost/data_source \"vagrant-99\" vagrant-99-00/' /etc/ganglia/gmetad.conf
-"
-    test_action="$(vm_execute " [ \"\$\(grep vagrant-99 /etc/ganglia/gmetad.conf)\" ] && echo '$testKey'")"
+  location /ganglia {
 
-    if [ "$test_action" == "$testKey" ] ; then
-      logger "INFO: $bootstrap_file installed succesfully"
-      #set the lock
-      check_bootstraped "$bootstrap_file" "set"
-    else
-      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
-    fi
+    root /var/www/;
 
-  else
-    logger "$bootstrap_file already configured"
-  fi
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
+  }
+
+  location ~ \.php$ {
+#    try_files $uri =404;
+    try_files $uri /index.php?c=404&q=$uri&$args;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_index index.php;
+    include fastcgi_params;
+    fastcgi_read_timeout 600; # Set fairly high for debugging
+    fastcgi_intercept_errors on;
+  }
+
+  error_page 404 /index.php?c=404&q=$uri&$args;
+
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  #keepalive_timeout ;
+
+  #avoid caches
+  sendfile off;
+  expires off;
+
+  # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
+  reset_timedout_connection on;
+
+  #perf optimizations
+  tcp_nodelay on;
+
+  gzip on;
+  gzip_comp_level 2;
+  gzip_proxied any;
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_disable "msie6";
+}'
 
 }
+

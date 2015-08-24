@@ -24,7 +24,7 @@ install_packages() {
         vm_execute "
 export DEBIAN_FRONTEND=noninteractive;
 sudo apt-get update -m;
-  "
+  " || return $?
       fi
 
       logger "INFO: Intalling for $vmOSType $vmOSTypeVersion packages: $packages_list"
@@ -32,7 +32,7 @@ sudo apt-get update -m;
       vm_execute "
 export DEBIAN_FRONTEND=noninteractive;
 sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $packages_list
-  "
+  " || return $?
 
   #sudo apt-get autoremove -y;
 
@@ -83,6 +83,8 @@ aloja_wget() {
   [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
 
   vm_execute "$wget_command" #--no-verbose
+
+  return $?
 }
 
 # install the base packages for VMs
@@ -202,11 +204,6 @@ install_ALOJA_DB() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-    logger "INFO: Creating database schema and default values..."
-    vm_execute "
-bash $(get_repo_path)/shell/create-update_DB.sh
-"
-
     if [ "$download_URL" ] ; then
       logger "INFO: Downloading DB dump from $download_URL"
       # TODO this code expects the file to be tar.bz2
@@ -214,10 +211,10 @@ bash $(get_repo_path)/shell/create-update_DB.sh
 
       aloja_wget "$download_URL" "$dump_name"
 
+      logger "INFO: Installing DB dump into MySQL"
       # need to drop aloja_logs so that imported tables are moved
       vm_execute "
-sudo mysql -B -e 'DROP database aloja_logs';
-sudo bash -c 'bzip2 -dc $dump_name|mysql -f -b --show-warnings -B aloja2';
+sudo bash -c 'bzip2 -dc $dump_name|mysql -f -b --show-warnings -B';
 rm '$dump_name';
 "
 
@@ -316,7 +313,7 @@ vm_install_IB() {
 
       logger "INFO: Downloading drivers (if needed)"
 
-      vm_execute "[ ! -f "$work_dir/$driver_name" ] && wget --no-verbose 'http://aloja.bsc.es/public/files/IB/$driver_name' -O '$work_dir/$driver_name'"
+      vm_execute "[ ! -f '$work_dir/$driver_name' ] && wget --no-verbose '$ALOJA_PUBLIC_HTTP/files/IB/$driver_name' -O '$work_dir/$driver_name'"
       #cp /home/dcarrera/MLNX_OFED_LINUX-2.4-1.0.0-ubuntu14.04-x86_64.tgz .
 
       logger "INFO: Untaring drivers"
@@ -426,15 +423,15 @@ install_PHP_vendors() {
 
     local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
 
-    if [[ "$test_action" == *"$testKey"* ]] ; then
+    if [[ "$test_action" != *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
 
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
 
       vm_execute "
 cd /tmp;
 tar -xjf PHP_vendors.tar.bz2;
-sudo cp -r aloja-web /var/www/;
+sudo cp -r vendor /var/www/aloja-web/;
 "
     fi
 
@@ -573,28 +570,32 @@ sudo rm $libtiff_file"
       R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
 
       install_packages "$R_packages"
+#
+#      logger "INFO: Downloading precompiled R binary updates (to save time)"
+#      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
+#      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
+#
+#      logger "INFO: Uncompressing and copying files"
+#      vm_execute "
+#cd /tmp;
+#tar -xjf '$R_file';
+#sudo cp -rf 'R' /usr/lib/
+#rm -rf '$R_file' 'R';
+#"
 
-      logger "INFO: Downloading precompiled R binary updates (to save time)"
-      local R_file="R_site-library_Ubuntu-14.04_20150813.tar.bz2"
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
-
-      logger "INFO: Uncompressing and copying files"
-      vm_execute "
-cd /tmp;
-sudo tar -xjf '$R_file';
-cp -rf 'site-library' /usr/lib/R/
-rm '$R_file' 'site-library';
-"
       logger "INFO: Updating package (will take a while if changes are found)"
       vm_execute "
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
 install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
 'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+
 EOF
 
 sudo chmod a+x /tmp/packages.r
@@ -856,8 +857,72 @@ install_ganglia_gmetad(){
 
 }
 
+# parameters: list of clusters to manage
 config_ganglia_gmetad(){
-  :
+  
+  local bootstrap_file="${FUNCNAME[0]}"
+  local cname sep clist
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring gmetad"
+
+    clist=
+    sep=
+    for cname in "$@"; do
+      clist="${clist}${sep}${cname}"
+      sep=%
+    done
+
+    vm_local_scp files/gmetad.conf.t /tmp/ "" ""
+
+    vm_execute "
+
+    # create conf from template
+    awk -v clist='${clist}' -v dq='\"' '
+
+    BEGIN{
+      nds = split(clist, temp, /%/)
+      for (i=1; i <= nds; i++) {
+        space = index(temp[i], \" \")
+        dsname[i] = substr(temp[i], 1, space - 1)
+        dsnode[i] = substr(temp[i], space + 1)
+      }
+    }
+
+    /%%%DATASOURCELIST%%%/ {
+      for (i = 1; i <= nds; i++) {
+        print \"data_source \" dq dsname[i] dq \" \" dsnode[i]
+      }
+      next
+    }
+
+    { print }
+
+    ' /tmp/gmetad.conf.t > /tmp/gmetad.conf
+
+    # copy conf to destination
+    sudo cp /tmp/gmetad.conf /etc/ganglia
+
+    sudo /etc/init.d/gmetad restart"
+
+    result=$?
+
+    test_action="$(vm_execute " [ \"\$\(grep '^data_source ' /etc/ganglia/gmetad.conf)\" ] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
 }
 
 
@@ -874,8 +939,10 @@ install_ganglia_web(){
     tarball=ganglia-web-3.7.0.tar.gz
     gdir=${tarball%.tar.gz}
 
-    install_packages "php5-gd rrdtool"
-    aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball"
+    install_packages "php5-gd rrdtool" || die "Error installing ganglia-web"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball" || die "Error installing ganglia-web"
+
+    vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
 
     vm_execute "
     cd /tmp || exit 1;
@@ -883,6 +950,8 @@ install_ganglia_web(){
     sudo mv $gdir ganglia || exit 1;
     sudo rm -rf /var/www/ganglia || exit 1;
     sudo mv ganglia /var/www/ || exit 1;
+    sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
+    sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
     sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
 "
 
@@ -890,14 +959,8 @@ install_ganglia_web(){
       die "Error installing ganglia-web"
     fi
 
-    # config: /var/www/ganglia/conf.php
-    vm_execute "
-
-    echo '
-$conf['gweb_confdir'] = '/var/www/ganglia';
-    ' > /var/www/ganglia/conf.php"
-
-    test_action="$(vm_execute " [ \"\$\(pgrep gmetad)\" ] && echo '$testKey'")"
+    # look for the freshly added line
+    test_action="$(vm_execute " [ \"\$\(grep ' = ./var/www/ganglia.;' /var/www/ganglia/conf.php\)\" ] && echo '$testKey'")"
 
     if [[ "$test_action" == *"$testKey"* ]] ; then
       logger "INFO: $bootstrap_file installed succesfully"
@@ -918,3 +981,78 @@ config_ganglia_web(){
   :
 
 }
+
+# input: list of clusters
+install_ssh_tunnel(){
+
+  local bootstrap_file="${FUNCNAME[0]}"
+  local cname tlist sep
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing ssh-tunnel"
+
+    install_packages "autossh" || die "Error installing autossh"
+
+    vm_rsync files/ssh-tunnel /tmp/ "--delete" || die "Error copying ssh-tunnel files"
+    
+    vm_execute "
+    sudo mv /tmp/ssh-tunnel/etc/init.d/ssh-tunnel /etc/init.d || exit 1;
+    sudo mv /tmp/ssh-tunnel/usr/local/bin/ssh-tunnel /usr/local/bin || exit 1;
+    sudo chmod +x /etc/init.d/ssh-tunnel /usr/local/bin/ssh-tunnel || exit 1;
+
+    # autostart
+    sudo update-rc.d ssh-tunnel defaults || exit 1
+
+    # config
+    sudo rm -rf /etc/ssh-tunnel || exit 1
+    sudo mv /tmp/ssh-tunnel/etc/ssh-tunnel /etc || exit 1
+
+    # copy ssh key
+    sudo cp ~pristine/.ssh/id_rsa /etc/ssh-tunnel/keys-enabled || exit 1
+    sudo chmod 400 /etc/ssh-tunnel/keys-enabled/id_rsa || exit 1
+"
+
+    if [ $? -ne 0 ]; then
+      die "Error installing ssh-tunnel"
+    fi
+
+    # ssh-tunnel config to all clusters
+
+    tlist=
+    sep=
+
+    for cname in "$@"; do
+      local ssh_port=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; vm_name=$(get_master_name) get_vm_ssh_port)
+      local dns_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_ssh_host)
+      local master_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_master_name)
+
+      local tunnel="${cname} -p ${ssh_port} -o StrictHostKeychecking=no -L ${ssh_port}:${master_name}:8649 pristine@${dns_name}"
+      tlist="${tlist}${sep}${tunnel}"
+      sep=$'\n'
+    done
+
+    vm_execute "
+
+sudo echo '$tlist' > /etc/ssh-tunnel/groups-enabled/default || exit 1
+sudo /etc/init.d/ssh-tunnel restart || exit 1
+"
+
+    if [ $? -ne 0 ]; then
+      die "Error installing ssh-tunnel"
+    fi
+
+    logger "INFO: $bootstrap_file installed succesfully"
+    #set the lock
+    check_bootstraped "$bootstrap_file" "set"
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+
+
