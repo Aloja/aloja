@@ -761,7 +761,7 @@ class PerfDetailsController extends AbstractController
         try {
             $idExec = Utils::get_GET_string('id_exec');
             if(!$idExec) {
-                $idExec = $dbConn->get_rows("SELECT id_exec FROM aloja2.execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 LIMIT 5")[rand(0,5)]['id_exec'];
+                $idExec = $dbConn->get_rows("SELECT id_exec FROM aloja2.execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 AND hadoop_version != 2 LIMIT 5")[rand(0,5)]['id_exec'];
             }
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
