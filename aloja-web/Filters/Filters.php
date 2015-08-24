@@ -40,7 +40,7 @@ class Filters
          */
         $this->filters = array(
             'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:'),
-            'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple', 'label' => 'Benchmark type:'),
+            'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);
@@ -106,8 +106,8 @@ class Filters
         $this->aliasesTables = array('execs' => '','clusters' => '');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
-        $this->filterGroups = array('basic' => array('money','emptySpace','bench','id_cluster','net','disk'),
-            'hardware' => array('datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
+        $this->filterGroups = array('basic' => array('money','emptySpace','bench','bench_type','id_cluster','net','disk'),
+            'hardware' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
             'hadoop' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'));
     }
 

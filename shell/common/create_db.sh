@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`outlier\` int DEFAULT 0,
  \`perf_details\` int DEFAULT 0,
  \`exec_type\` varchar(255) DEFAULT 'default',
+ \`datasize\` varchar(255) DEFAULT NULL,
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
@@ -780,6 +781,9 @@ $MYSQL "alter table hosts
 
 $MYSQL "alter table execs
     add column exec_type varchar(255) default 'default';"
+
+$MYSQL "alter table execs
+    add column datasize varchar(255) default NULL;"
 
 
 ############################################33
