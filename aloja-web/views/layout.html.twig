@@ -360,7 +360,11 @@
 				$("input[name='selected-groups']").attr('value',selected.join());
 		   });
 
-			  showCorrectBenchDatasizes(jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}'));
+			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
+			showCorrectBenchDatasizes(datasizesInfo);
+			$("input[name='bench[]'], select[name='bench[]'], input[name='bench_type[]']").change(function() {
+				showCorrectBenchDatasizes(datasizesInfo);
+			});
 		  });
 	</script>
 	{% endblock %}

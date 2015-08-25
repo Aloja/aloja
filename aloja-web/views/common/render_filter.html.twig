@@ -16,7 +16,9 @@
         <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
             <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
             {% for selopt in filter['choices'] %}
-                <input type="checkbox" name="{{ filterName }}[]" value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}checked{% endif %}>&nbsp;{{ beautify(filter,selopt[filterName]) }}<br />
+                <span id="container{{ filterName }}">
+                    <input type="checkbox" name="{{ filterName }}[]" value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}checked{% endif %}>&nbsp;{{ beautify(filter,selopt[filterName]) }}<br />
+                </span>
             {% endfor %}
             </div>
         </div>
@@ -24,7 +26,7 @@
         {{ filter['label'] }}<br />
         <select class="form-control" name="{{ filterName }}[]">
             {% for selopt in filter['choices'] %}
-                <option value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}SELECTED{% endif %}>{{ beautify(filter,selopt[filterName]) }}</option>
+                <option value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}selected="selected"{% endif %}>{{ beautify(filter,selopt[filterName]) }}</option>
             {% endfor %}
         </select>
     {% elseif filter['type'] starts with 'inputNumber' %}

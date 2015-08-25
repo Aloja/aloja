@@ -27,3 +27,45 @@ function setUrlQuery(query, extra_parameters_string) {
 	}
 	history.replaceState({}, '', uri.toString());
 }
+
+function showCorrectBenchDatasizes(benchSizes) {
+	var selDatasizes = new Array();
+	var selBenchSuites = new Array();
+	var selBenchs = new Array();
+	$("input[name='datasize[]'").each(function() {
+		if($(this).prop('checked'))
+			selDatasizes.push($(this).val());
+	});
+	$("input[name='bench_type[]'").each(function() {
+		if($(this).prop('checked'))
+			selBenchSuites.push($(this).val());
+	});
+	$("input[name='bench[]'").each(function() {
+		if($(this).prop('checked'))
+			selBenchs.push($(this).val());
+	});
+	
+	//Then bench is select one
+	if(selBenchs.length == 0) {
+		selBenchs.push($("select[name='bench[]']").find(":selected").text());
+	}
+
+	$("input[name='datasize[]']").each(function() {
+		$(this).parent().hide();
+		$(this).prop('checked',false);
+	});
+
+	$.each(selBenchSuites, function(index, suite) {
+		if(benchSizes[suite] != undefined) {
+			$.each(selBenchs, function (index2, bench) {
+				if(benchSizes[suite][bench] != undefined) {
+					$.each(benchSizes[suite][bench], function (index3, datasize) {
+						$("input[name='datasize[]'][value='" + datasize + "']").parent().show();
+						if(selDatasizes.indexOf(datasize) > -1)
+							$("input[name='datasize[]'][value='" + datasize + "']").prop('checked',true);
+					});
+				}
+			});
+		}
+	});
+}
