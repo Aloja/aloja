@@ -188,12 +188,15 @@ update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0)
 update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='1TB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='1000000000000';
 update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='300GB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='300000000000';
 update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='100GB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='100000000000';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) set e.datasize='1TB' WHERE e.bench = 'terasort' AND d.WASB_BYTES_WRITTEN='1000000000000';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) set e.datasize='100GB' WHERE e.bench = 'terasort' AND d.WASB_BYTES_WRITTEN='100000000000';
 update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='10KB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='10000';
 
-update ignore aloja2.execs e set e.datasize = '32GB/DN' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
+update ignore aloja2.execs e set e.datasize = '32GB/Dn' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
 update ignore aloja2.execs e set e.datasize = '128GB' where e.bench='wordcount' and e.bench_type='HiBench3HDI';
 
-update ignore aloja2.execs e set e.datasize='24GB/DN' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
+update ignore aloja2.execs e set e.datasize='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
+update ignore aloja2.execs e set e.datasize='Default' where e.datasize IS NULL;
 
 update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
 update ignore aloja2.execs set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%';

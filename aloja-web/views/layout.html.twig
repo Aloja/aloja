@@ -359,6 +359,8 @@
 
 				$("input[name='selected-groups']").attr('value',selected.join());
 		   });
+
+			  showCorrectBenchDatasizes(jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}'));
 		  });
 	</script>
 	{% endblock %}

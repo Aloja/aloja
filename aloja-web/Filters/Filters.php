@@ -30,7 +30,7 @@ class Filters
          * Array with filter => filter specific settings
          *
          * Specific settings is an array with
-         * types: inputText, inputNumber[{le,ge}], inputDate[{le,ge}], selectOne, selectMultiple
+         * types: inputText, inputNumber[{le,ge}], inputDate[{le,ge}], selectOne, selectMultiple, hidden
          * default: null (any), array(values)
          * table: associated DB table name
          * parseFunction: function to parse special filter, for filters that need a lot of customization
@@ -40,6 +40,13 @@ class Filters
          */
         $this->filters = array(
             'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:'),
+            'datasize' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Datasize: ',
+                'beautifier' => function($value) {
+                  if($value == null)
+                      return 'Default';
+                  else
+                      return $value;
+                }),
             'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
@@ -106,7 +113,7 @@ class Filters
         $this->aliasesTables = array('execs' => '','clusters' => '');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
-        $this->filterGroups = array('basic' => array('money','emptySpace','bench','bench_type','id_cluster','net','disk'),
+        $this->filterGroups = array('basic' => array('money','bench','datasize','bench_type','id_cluster','net','disk'),
             'hardware' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
             'hadoop' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'));
     }
@@ -128,7 +135,6 @@ class Filters
     }
 
     public function generateFilterChoices() {
-        $choices['bench'] = $this->dbConnection->get_rows("SELECT DISTINCT bench FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
         $choices['net'] = $this->dbConnection->get_rows("SELECT DISTINCT net FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
         $choices['disk'] = $this->dbConnection->get_rows("SELECT DISTINCT disk FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
         $choices['blk_size'] = $this->dbConnection->get_rows("SELECT DISTINCT blk_size FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
@@ -139,6 +145,8 @@ class Filters
         $choices['iosf'] = $this->dbConnection->get_rows("SELECT DISTINCT iosf FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 AND iosf IS NOT NULL ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
         $choices['iofilebuf'] = $this->dbConnection->get_rows("SELECT DISTINCT iofilebuf FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
         $choices['datanodes'] = $this->dbConnection->get_rows("SELECT DISTINCT datanodes FROM aloja2.execs e JOIN clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
+        $choices['bench'] = $this->dbConnection->get_rows("SELECT DISTINCT bench FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+        $choices['datasize'] = $this->dbConnection->get_rows("SELECT DISTINCT datasize FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datasize ASC");
         $choices['bench_type'] = $this->dbConnection->get_rows("SELECT DISTINCT bench_type FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench_type ASC");
         $choices['vm_size'] = $this->dbConnection->get_rows("SELECT DISTINCT vm_size FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
         $choices['vm_cores'] = $this->dbConnection->get_rows("SELECT DISTINCT vm_cores FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
@@ -150,6 +158,16 @@ class Filters
         foreach($choices as $key => $value) {
             $this->filters[$key]['choices'] = $value;
         }
+
+        //Getting option for benchs as bench + datasize, need special code
+
+        $benchsDatasize = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,datasize FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,datasize ORDER BY bench ASC ");
+        $dataBenchs = array();
+        foreach($benchsDatasize as $row) {
+            $dataBenchs[$row['bench_type']][$row['bench']][] = $row['datasize'];
+        }
+
+        $this->additionalFilters['datasizesInfo'] = json_encode($dataBenchs);
     }
 
     private function parseFilters() {
