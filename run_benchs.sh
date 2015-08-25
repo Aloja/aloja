@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 
 # Script to orchestrate benchmark execution and metrics collection
 # NOTE: you need to have your cluster configured first
@@ -14,24 +14,18 @@ logger  "INFO: configs loaded, we can start\n"
 
 # 2.) Validate and initialize run
 
-# some validations
-validate
-# initialize cluster node names and connect string
-initialize_node_names
-# set the name for the job run
-set_job_config
-# check if all nodes are up
-test_nodes_connection
-# hadoop vars
-initialize_hadoop_vars #TODO execute only for hadoop
-# specify which binaries to use for monitoring
-set_monit_binaries
+# Check we meet basics and we can continue
+validate "$DISK"
 
+# Initialize configs and paths
+initialize
+
+# In PaaS this is already setup (or should)
 if [ "$clusterType" != "PaaS" ]; then
  # change swappiness and other basic OS configs for benchmarking
  update_OS_config
  # create the directory and copy binaries
- prepare_folder
+ prepare_folder "$DISK"
 fi
 
 # check if to copy aplic folders locally
@@ -44,6 +38,9 @@ check_aplic_updates
 declare -A EXEC_TIME
 declare -A EXEC_START
 declare -A EXEC_END
+
+# hadoop vars
+initialize_hadoop_vars #TODO execute only for hadoop
 
 benchmark_config
 

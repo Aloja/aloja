@@ -59,7 +59,7 @@ logger "INFO: loading benchmarks_defaults.conf"
 source "$ALOJA_REPO_PATH/shell/conf/benchmarks_defaults.conf"
 
 
-logger "Starting ALOJA benchamking tools for Provider: $defaultProvider"
+logger "Starting ALOJA benchmarking tools for Provider: $defaultProvider"
 
 source "$ALOJA_REPO_PATH/shell/common/cluster_functions.sh"
 

@@ -1,14 +1,5 @@
 #HADOOP 1 SPECIFIC FUNCTIONS
 
-#$1 port prefix (optional)
-get_aloja_dir() {
- if [ "$1" ] ; then
-  echo "${BENCH_FOLDER}_$PORT_PREFIX"
- else
-  echo "${BENCH_FOLDER}"
- fi
-}
-
 #$1 disk type
 # TODO move to benchmark common file
 get_initial_disk() {
@@ -21,63 +12,25 @@ get_initial_disk() {
 
     #set the first dir
     local dir="${BENCH_DISKS["${disks_type}1"]}"
-
-    #[ ! "$dir" ] && logger "ERROR: cannot find disk definition"
-
-  else
-    :
-    #logger "ERROR: Incorrect disk specified: $1"
   fi
-
-  echo -e "$dir"
-}
-
-#$1 disk type
-get_tmp_disk() {
-
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
-    local dir="${BENCH_DISKS["$DISK"]}"
-  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
-    local disks="${1:(-1)}"
-    local disks_type="${1:0:(-1)}"
-
-    if [ "$disks_type" == "RL" ] ; then
-      local dir="${BENCH_DISKS["HDD"]}"
-    elif [ "$disks_type" == "HS" ] ; then
-      local dir="${BENCH_DISKS["SSD"]}"
-    else
-      local dir="${BENCH_DISKS["${disks_type}1"]}"
-    fi
-
-    #[ ! "$dir" ] && logger "ERROR: cannot find disk definition"
-
-  else
-    :
-    #logger "ERROR: Incorrect disk specified: $1"
-  fi
-
   echo -e "$dir"
 }
 
 #1 disk type $2 postfix $3 port prefix
 get_hadoop_conf_dir() {
+  local dir
 
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
-    local dir="${BENCH_DISKS["$1"]}/$(get_aloja_dir "$3")/$2"
-  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
-    local disks="${1:(-1)}"
-    local disks_type="${1:0:(-1)}"
+  local disks="$(get_specified_disks "$1")"
+  for disk_tmp in $disks ; do
+    dir="$dir\,$disk_tmp/$(get_aloja_dir "$3")/$2"
+  done
 
-    for disk_number in $(seq 1 $disks) ; do
-      local dir="$dir\,${BENCH_DISKS["${disks_type}${disk_number}"]}/$(get_aloja_dir "$3")/$2"
-    done
-
-    local dir="${dir:2}" #remove leading \,
+  if [ "$dir" ] ; then
+    dir="${dir:2}" #remove leading \,
+    echo -e "$dir"
   else
-    logger "ERROR: Incorrect disk specified: $1"
+    die "Cannot get disk config for specified disk $1"
   fi
-
-  echo -e "$dir"
 }
 
 get_hive_env(){
@@ -114,15 +67,16 @@ prepare_hadoop_config(){
     local HADOOP_CONF_PATH="conf"
   elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
     local HADOOP_CONF_PATH="etc/hadoop"
+    export HADOOP_YARN_HOME="$HADOOP_HOME"
   fi
 
   #set hadoop home
   export HADOOP_HOME="${BENCH_SOURCE_DIR}/${BENCH_HADOOP_VERSION}"
-  export HADOOP_YARN_HOME="$HADOOP_HOME"
+
   loggerb "DEBUG: HADOOP_HOME: $HADOOP_HOME\nHADOOP_YARN_HOME: $HADOOP_YARN_HOME"
 
   loggerb "Creating source dir and Copying Hadoop"
-  $DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
+  #$DSH "mkdir -p $HDD/{aplic,hadoop,logs}" 2>&1 |tee -a $LOG_PATH
   $DSH "mkdir -p $BENCH_H_DIR" 2>&1 |tee -a $LOG_PATH
 
   $DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}/* $BENCH_H_DIR/" 2>&1 |tee -a $LOG_PATH
@@ -201,7 +155,9 @@ slaves="$(get_slaves_names)"
   for node in $node_names ; do
     ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/mapred-site.xml" 2>&1 |tee -a $LOG_PATH &
     ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/hdfs-site.xml" 2>&1 |tee -a $LOG_PATH &
-    ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml" 2>&1 |tee -a $LOG_PATH &
+    if [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+      ssh "$node" "/usr/bin/perl -pe \"s,##HOST##,$node,g;\" $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml > $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml.tmp; rm $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml; mv $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml.tmp $BENCH_H_DIR/$HADOOP_CONF_PATH/yarn-site.xml" 2>&1 |tee -a $LOG_PATH &
+    fi
   done
 
   $DSH "echo -e \"$MASTER\" > $BENCH_H_DIR/$HADOOP_CONF_PATH/masters" 2>&1 |tee -a $LOG_PATH
@@ -220,6 +176,17 @@ slaves="$(get_slaves_names)"
   for node in $node_names ; do
     ssh "$node" "cp $BENCH_H_DIR/$HADOOP_CONF_PATH/* $JOB_PATH/conf_$node" 2>&1 |tee -a $LOG_PATH &
   done
+
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    loggerb "Formating HDFS and namenode"
+
+    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
+    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hdfs namenode -format" 2>&1 |tee -a $LOG_PATH
+    fi
+  fi
 
   # Set correct permissions for instrumentation's sniffer
   if [ "$INSTRUMENTATION" == "1" ] ; then
@@ -261,27 +228,6 @@ restart_hadoop(){
     $DSH_MASTER $BENCH_H_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver 2>&1 >> $LOG_PATH
   else
     $DSH_MASTER $BENCH_H_DIR/bin/stop-all.sh 2>&1 >> $LOG_PATH
-  fi
-
-  #delete previous run logs
-  $DSH "rm -rf $HDD/logs; mkdir -p $HDD/logs" 2>&1 |tee -a $LOG_PATH
-
-  if [ "$DELETE_HDFS" == "1" ] ; then
-    loggerb "Deleting previous Hadoop HDFS"
-#$DSH "rm -rf $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/*" 2>&1 |tee -a $LOG_PATH
-#$DSH "mkdir -p $BENCH_DEFAULT_SCRATCH/scratch/attached/{1,2,3}/hadoop-hibench_$PORT_PREFIX/" 2>&1 |tee -a $LOG_PATH
-#TODO fix for variable paths
-# $DSH "rm -rf /scratch/attached/{1..$BENCH_MAX_DISKS}/$(get_aloja_dir "$PORT_PREFIX")/{dfs,mapred,logs}" 2>&1 |tee -a $LOG_PATH
-# $DSH "mkdir -p /scratch/attached/{1..$BENCH_MAX_DISKS}/$(get_aloja_dir "$PORT_PREFIX")/dfs/data; chmod 755 /scratch/attached/{1..$BENCH_MAX_DISKS}/$(get_aloja_dir "$PORT_PREFIX")/dfs/data;" 2>&1 |tee -a $LOG_PATH
-# $DSH "mkdir -p /scratch/local/$(get_aloja_dir "$PORT_PREFIX")/dfs/data; chmod 755 /scratch/local/$(get_aloja_dir "$PORT_PREFIX")/dfs/data" 2>&1 |tee -a $LOG_PATH
-    $DSH "rm -rf $HDD/{dfs,mapred,logs,nm-local-dir} $HDD_TMP/{dfs,mapred,logs,nm-local-dir}; mkdir -p $HDD/logs $HDD_TMP/;" 2>&1 |tee -a $LOG_PATH
-    #send multiple yes to format
-    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
-      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hadoop datanode -format" 2>&1 |tee -a $LOG_PATH
-    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-      $DSH_MASTER "yes Y | $BENCH_H_DIR/bin/hdfs namenode -format" 2>&1 |tee -a $LOG_PATH
-    fi
   fi
 
   if [ "$HADOOP_VERSION" == "hadoop1" ]; then

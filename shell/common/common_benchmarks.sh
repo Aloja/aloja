@@ -11,7 +11,6 @@ usage() {
     local yellow="$(tput setaf 3)"
     local cyan="$(tput setaf 6)"
     local white="$(tput setaf 7)"
-
   fi
 
   echo -e "${yellow}\nALOJA-BENCH, script to run benchmarks and collect results
@@ -165,33 +164,119 @@ test_in_cluster() {
   return $coincides
 }
 
-# performs some basic validations
+#$1 port prefix (optional)
+get_aloja_dir() {
+ if [ "$1" ] ; then
+  echo "${BENCH_FOLDER}_$PORT_PREFIX"
+ else
+  echo "${BENCH_FOLDER}"
+ fi
+}
+
+# Return a list of
+# $1 disk type
+get_specified_disks() {
+  local disk="$1"
+  local dir
+
+  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] ; then
+    dir="${BENCH_DISKS["$disk"]}"
+  elif [[ "$disk" =~ .+[1-9] ]] ; then #if last char is a number
+    local disks="${1:(-1)}"
+    local disks_type="${1:0:(-1)}"
+    for disk_number in $(seq 1 $disks) ; do
+      dir+="${BENCH_DISKS["${disks_type}${disk_number}"]}\n"
+    done
+    dir="${dir:0:(-2)}" #remove trailing \n
+  else
+    die "Incorrect disk specified: $disk"
+  fi
+
+  echo -e "$dir"
+}
+
+# Returns the tmp disk in cases when mixing local and remote disks (eg. RL1)
+#$1 disk type
+get_tmp_disk() {
+  local dir
+
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+    dir="${BENCH_DISKS["$DISK"]}"
+  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
+    local disks="${1:(-1)}"
+    local disks_type="${1:0:(-1)}"
+
+    if [ "$disks_type" == "RL" ] ; then
+      dir="${BENCH_DISKS["HDD"]}"
+    elif [ "$disks_type" == "HS" ] ; then
+      dir="${BENCH_DISKS["SSD"]}"
+    else
+      dir="${BENCH_DISKS["${disks_type}1"]}"
+    fi
+  fi
+
+  if [ "$dir" ] ; then
+    echo -e "$dir"
+  else
+    die "Cannot determine tmp disk"
+  fi
+}
+
+# Simple helper to append the tmp disk path
+get_all_disks() {
+  echo -e "$(get_specified_disks "$disk")
+$(get_tmp_disk "$disk")"
+}
+
+
+# Performs some basic validations
+# $1 DISK
 validate() {
+  local disk="$1"
+
+  # Check whethear we are in the right cluster
   if ! test_in_cluster "$(hostname)" ; then
     die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
-  fi
-
-  local touch_file="$BENCH_DEFAULT_SCRATCH/$BENCH_FOLDER.touch"
-  #if file exists test if we can delete it
-  if [ -f "$touch_file" ] ; then
-    rm "$touch_file" || die "Cannot delete in BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH"
-  else
-    touch "$touch_file" || die "Cannot write in BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH"
-  fi
-
-  if ! inList "$CLUSTER_DISKS" "$DISK" ; then
-    die "Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
   fi
 
   if ! inList "$CLUSTER_NETS" "$NET" ; then
     die "Disk type $NET not supported for $clusterName\nSupported: $NET"
   fi
 
-  #check that we got the dynamic disk location correctly
-  if [ -z "$(get_initial_disk "$DISK")" ] ; then
+  # Disk validations
+  if ! inList "$CLUSTER_DISKS" "$DISK" ; then
+    die "Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
+  fi
+
+  # Check that we got the dynamic disk location correctly
+  if [ ! "$(get_initial_disk "$disk")" ] ; then
     die "cannot determine $DISK path"
   fi
 
+  # Iterate all defined and tmp disks to see if we can write to them
+  local disks="$(get_all_disks)"
+  for disk_tmp in $disks ; do
+    logger "DEBUG: testing write permissions in $disk_tmp"
+    local touch_file="$disk_tmp/aloja.touch"
+    #if file exists test if we can delete it
+    if [ -f "$touch_file" ] ; then
+      rm "$touch_file" || die "Cannot delete files in $disk_tmp"
+    fi
+    touch "$touch_file" || die "Cannot write files in $disk_tmp"
+    rm "$touch_file" || die "Cannot delete files in $disk_tmp"
+  done
+}
+
+# Groups initialization phases
+initialize() {
+  # initialize cluster node names and connect string
+  initialize_node_names
+  # set the name for the job run
+  set_job_config
+  # check if all nodes are up
+  test_nodes_connection
+  # check if ~/share is correctly mounted
+  test_share_dir
 }
 
 #old code moved here
@@ -230,16 +315,17 @@ initialize_node_names() {
   DSH_MASTER="ssh $master_name"
 
   DSH="$DSH $(nl2char "$node_names" ",") "
-  DSH_C="$DSH -c -o " #concurrent
+  DSH_C="$DSH -c " #concurrent
 
   DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 }
 
+# Tests if defined nodes are accesible vis SSH
 test_nodes_connection() {
   loggerb "INFO: Testing connectivity to nodes"
   local node_output="$($DSH "echo '$testKey' 2>&1")"
   local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
-  local num_nodes="$(( (NUMBER_OF_DATA_NODES + 1) ))"
+  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
   if (( num_OK != num_nodes )) ; then
     die "cannot connect via SSH to all nodes. Num OK: $num_OK Out of: $num_nodes
 Output:
@@ -247,6 +333,48 @@ $node_output"
 
   else
     loggerb "INFO: All $num_nodes nodes are accesible via SSH"
+  fi
+}
+
+# Tries to mount shared folder
+# $1 shared folder
+mount_share() {
+  shared_folder="$1"
+
+  if [ ! "$noSudo" ] ; then
+    logger "WARNING: attempting to remount $shared_folder"
+    $DSH "
+if [ ! -d '$shared_folder' ] ; then
+  sudo umount '$shared_folder';
+  sudo mount '$shared_folder';
+  sudo mount -a;
+fi
+"
+
+  fi
+}
+
+# Tests if nodes have the shared dir correctly mounted
+# $1 if to exit (for retries)
+test_share_dir() {
+  local no_retry="$1"
+  local test_file="$homePrefixAloja/$userAloja/share/safe_store"
+
+  loggerb "INFO: Testing is ~/share mounted correctly"
+  local node_output="$($DSH "ls '$test_file' && echo '$testKey' 2>&1")"
+  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
+  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
+  if (( num_OK != num_nodes )) ; then
+    if [ "$no_retry" ] ; then
+      die "~/share dir not mounted correctly  Num OK: $num_OK Out of: $num_nodes
+Output:
+$node_output"
+    else #try again
+      mount_share "$homePrefixAloja/$userAloja/share/"
+      test_share_dir "no_retry"
+    fi
+  else
+    loggerb "INFO: All $num_nodes nodes have the ~/share dir correctly mounted"
   fi
 }
 
@@ -265,28 +393,26 @@ set_job_config() {
   $DSH_MASTER "mkdir -p $JOB_PATH"
   $DSH_MASTER "touch $LOG_PATH"
 
-  #set the main path for the benchmark
-  HDD="$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
-  #for hadoop tmp dir
-  HDD_TMP="$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
-
   loggerb "STARTING EXECUTION of $JOB_NAME"
-
   loggerb  "Job path: $JOB_PATH"
   loggerb  "Log path: $LOG_PATH"
-  loggerb  "Disk location: $HDD"
-  loggerb  "TMP Disk location: $HDD_TMP"
   loggerb  "Conf: $CONF"
   loggerb  "Benchmark: $BENCH_HIB_DIR"
   loggerb  "Benchs to execute: $LIST_BENCHS"
   loggerb  "DSH: $DSH"
+  #loggerb  "DSH_C: $DSH_C"
+  #loggerb  "DSH_SLAVES: $DSH_SLAVES"
   loggerb  ""
+
 }
 
 
 #old code moved here
 # TODO cleanup
 initialize_hadoop_vars() {
+
+  [ ! "$HDD" ] && die "HDD var not set!"
+
   BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
 
   if [[ "$BENCH" == HiBench* ]]; then
@@ -329,7 +455,6 @@ initialize_hadoop_vars() {
   #export HADOOP_HOME="$HADOOP_DIR"
   [ ! $JAVA_HOME ] && export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
 
-
 #loggerb  "DEBUG: userAloja=$userAloja
 #DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 #BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
@@ -369,7 +494,7 @@ set_monit_binaries() {
 
 
 update_OS_config() {
-  if [ -z "$noSudo" ] && [ "$EXECUTE_HIBENCH" ]; then
+  if [ ! "$noSudo" ] && [ "$EXECUTE_HIBENCH" ]; then
 
     $DSH "
 sudo sysctl -w vm.swappiness=0 > /dev/null;
@@ -488,15 +613,55 @@ save_bench() {
   loggerb "Done saving benchmark $1"
 }
 
+# Tests if a directory is present in the system
+# $1 dir to test
+test_directory_not_exists() {
+  local dir="$1"
+  local node_output="$($DSH "[ ! -d '$dir' ] && echo '$testKey' 2>&1")"
+  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
+  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
+  if (( num_OK != num_nodes )) ; then
+    die "Cannot delete folder $dir. Num nodes OK: $num_OK Out of: $num_nodes
+Output:
+$node_output"
+  fi
+}
+
+
+# Sets the aloja-bench folder ready for benchmarking
+# $1 disk
 prepare_folder(){
+  local disk="$1"
 
-  loggerb "Preparing exe dir"
-  loggerb "Deleting previous PORT files from: $HDD"
-  $DSH "rm -rf $HDD/*" 2>&1 |tee -a $LOG_PATH
+  loggerb "INFO: Preparing benchmark run dirs"
+  local disks="$(get_all_disks) "
 
-  loggerb "Creating source dir at: $HDD/aplic"
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    loggerb "INFO: Deleting previous run files of disk config: $disk in: $(get_aloja_dir "$PORT_PREFIX")"
+    for disk_tmp in $disks ; do
+      local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
+      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path" 2>&1 |tee -a $LOG_PATH
+      #check if we had problems deleting a folder
+      test_directory_not_exists "$disk_full_path"
+    done
+  else
+    loggerb "INFO: Deleting only the log dir"
+    for disk_tmp in $disks ; do
+      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*" 2>&1 |tee -a $LOG_PATH
+    done
+  fi
 
-  $DSH "mkdir -p $HDD/aplic" 2>&1 |tee -a $LOG_PATH
+  #set the main path for the benchmark
+  HDD="$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+  #for hadoop tmp dir
+  HDD_TMP="$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+
+  loggerb "Creating bench main dir at: $HDD/aplic"
+
+  $DSH "mkdir -p $HDD/aplic $HDD_TMP" 2>&1 |tee -a $LOG_PATH
+
+  # specify which binaries to use for monitoring
+  set_monit_binaries
 
   $DSH "cp /usr/bin/vmstat $vmstat" 2>&1 |tee -a $LOG_PATH
   $DSH "cp $bwm_source $bwm" 2>&1 |tee -a $LOG_PATH
