@@ -44,7 +44,7 @@ function showCorrectBenchDatasizes(benchSizes) {
 		if($(this).prop('checked'))
 			selBenchs.push($(this).val());
 	});
-	
+
 	//Then bench is select one
 	if(selBenchs.length == 0) {
 		selBenchs.push($("select[name='bench[]']").find(":selected").text());
@@ -68,4 +68,50 @@ function showCorrectBenchDatasizes(benchSizes) {
 			});
 		}
 	});
+}
+
+function showCorrectBenchs(benchSizes) {
+	var availBenchs = new Array();
+	var reselect = false;
+	$("input[name='bench_type[]'").each(function() {
+		if($(this).prop('checked')) {
+			var suite = $(this).val();
+			$.each(benchSizes[suite],function(bench, datasizes) {
+				availBenchs.push(bench);
+			});
+		}
+	});
+
+	if($("input[name='bench[]']").length > 0) {
+		$("input[name='bench[]']").each(function(index,bench) {
+			if(availBenchs.indexOf(bench) == -1 ) {
+				if($(this).prop('checked')) {
+					$(this).prop('checked', false);
+					reselect = true;
+				}
+				$(this).parent().hide();
+			} else {
+				$(this).parent().show();
+			}
+
+			if(reselect)
+				$("input[name='bench[]']:visible").first().prop('checked',true);
+		});
+	} else {
+		$("select[name='bench[]'] option").each(function() {
+			if(availBenchs.indexOf($(this).val()) == -1) {
+				if($(this).prop('selected')) {
+					$(this).prop('selected', false);
+					reselect = true;
+				}
+				$(this).hide();
+			} else {
+				$(this).show();
+			}
+
+			if(reselect) {
+				$("select[name='bench[]'] option:visible").first().prop('selected',true);
+			}
+		});
+	}
 }

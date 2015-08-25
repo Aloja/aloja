@@ -362,7 +362,11 @@
 
 			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
 			showCorrectBenchDatasizes(datasizesInfo);
-			$("input[name='bench[]'], select[name='bench[]'], input[name='bench_type[]']").change(function() {
+			$("input[name='bench[]'], select[name='bench[]']").change(function() {
+				showCorrectBenchDatasizes(datasizesInfo);
+			});
+			$("input[name='bench_type[]']").change(function() {
+				showCorrectBenchs(datasizesInfo);
 				showCorrectBenchDatasizes(datasizesInfo);
 			});
 		  });
