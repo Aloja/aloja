@@ -88,6 +88,18 @@ class DBUtils
         return $rows;
     }
 
+    public function executeQuery($sql, $params = array()) {
+        try {
+          $this->container['log']->addDebug('Executing query: '.$sql);
+          $sth = $this->dbConn->prepare($sql);
+          $sth->execute($params);
+        } catch (Exception $e) {
+          throw new \Exception($e->getMessage(). " SQL: $sql");
+        }
+
+        return true;
+    }
+
     public static function getFilterExecs($execsAlias = "e")
     {
         return " AND 1=1" ;
