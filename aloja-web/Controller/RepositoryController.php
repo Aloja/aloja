@@ -109,7 +109,7 @@ class RepositoryController extends AbstractController
 			$show_in_result = self::$show_in_result;
 
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$whereClause);
-        return $this->render('benchexecutions/benchexecutions.html.twig',
+        return $this->render('repositoryViews/benchexecutions.html.twig',
             array(
                 'theaders' => $show_in_result,
             	'clustersInfo' => Utils::getClustersInfo($dbUtils),
@@ -235,7 +235,7 @@ class RepositoryController extends AbstractController
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
-        return $this->render('counters/counters.html.twig',
+        return $this->render('repositoryViews/counters.html.twig',
             array(
                 'theaders' => $show_in_result_counters,
                 'message' => $message,
@@ -361,7 +361,7 @@ class RepositoryController extends AbstractController
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
-        return $this->render('counters/hdp2counters.html.twig',
+        return $this->render('repositoryViews/hdp2counters.html.twig',
             array(
                 'theaders' => (isset($show_in_result_counters) ? $show_in_result_counters:array()),
                 'message' => $message,

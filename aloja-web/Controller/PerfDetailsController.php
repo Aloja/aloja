@@ -623,7 +623,7 @@ class PerfDetailsController extends AbstractController
         if(!isset($exec))
             $exec = '';
 
-        return $this->render('perfcharts/perfcharts.html.twig',
+        return $this->render('perfDetailsViews/perfcharts.html.twig',
             array(
                 'title' => 'Hadoop Job/s Execution details and System Performance Charts',
                 'chartsJS' => $chartsJS,
@@ -684,7 +684,7 @@ class PerfDetailsController extends AbstractController
                 'Avg rxmcst/s', 'Max rxmcst/s', 'Min rxmcst/s', 'Stddev rxmcst/s', 'Var rxmcst/s', 'Sum rxmcst/s', 'Cluster', 'end_time' => 'End time');
 
         $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(), $whereClause);
-        return $this->render('metrics/metrics.html.twig',
+        return $this->render('perfDetailsViews/metrics.html.twig',
             array(
                 'theaders' => $show_in_result_metrics,
                 'title' => 'Hadoop Performance Counters',
@@ -710,7 +710,7 @@ class PerfDetailsController extends AbstractController
             $jobid = $db->get_rows($query)[rand(0,count($jobid))]['JOBID'];
         }
 
-        echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
+        echo $this->container->getTwig()->render('perfDetailsViews/dbscan.html.twig',
             array(
                 'selected' => 'DBSCAN',
                 'highcharts_js' => HighCharts::getHeader(),
@@ -743,7 +743,7 @@ class PerfDetailsController extends AbstractController
 
         list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
 
-        echo $this->render('dbscanexecs/dbscanexecs.html.twig',
+        echo $this->render('perfDetailsViews/dbscanexecs.html.twig',
             array(
                 'highcharts_js' => HighCharts::getHeader(),
                 'jobid' => $jobid,
@@ -772,7 +772,7 @@ class PerfDetailsController extends AbstractController
         } else
             $exec = $dbConn->get_rows("SELECT * FROM aloja2.execs JOIN aloja2.clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
 
-        return $this->render('histogram/histogram.html.twig',
+        return $this->render('perfDetailsViews/histogram.html.twig',
             array(
                 'idExec' => $idExec,
                 'exec' => $exec
@@ -797,7 +797,7 @@ class PerfDetailsController extends AbstractController
         } else
             $exec = $dbConn->get_rows("SELECT * FROM aloja2.execs JOIN aloja2.clusters USING (id_cluster) WHERE id_exec = $idExec")[0];
 
-        return $this->render('histogram/histogramhdi.html.twig',
+        return $this->render('perfDetailsViews/histogramhdi.html.twig',
             array('idExec' => $idExec,
                 'exec' => $exec
             ));

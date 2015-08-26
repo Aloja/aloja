@@ -114,7 +114,7 @@ class ConfigEvaluationsController extends AbstractController
                     }, ";
         }
 
-        return $this->render ( 'config_improvement/config_improvement.html.twig', array (
+        return $this->render ( 'configEvaluationViews/config_improvement.html.twig', array (
                 'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
@@ -181,7 +181,7 @@ class ConfigEvaluationsController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        return $this->render ( 'bestconfig/bestconfig.html.twig', array (
+        return $this->render ( 'configEvaluationViews/bestconfig.html.twig', array (
             'title' => 'Best Run Configuration',
             'bestexec' => $bestexec,
             'cluster' => $cluster,
@@ -273,7 +273,7 @@ class ConfigEvaluationsController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        return $this->render ('parameval/parameval.html.twig', array (
+        return $this->render ('configEvaluationViews/parameval.html.twig', array (
             'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
             'minexecs' => $minExecs,
             'categories' => $categories,

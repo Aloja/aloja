@@ -98,7 +98,7 @@ class CostPerfEvaluationController extends AbstractController
 
         $clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM aloja2.execs e WHERE 1 $filter_execs);");
 
-        return $this->render('perf_by_cost/perf_by_cost.html.twig', array(
+        return $this->render('costPerfEvaluationViews/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
             'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
@@ -180,7 +180,7 @@ class CostPerfEvaluationController extends AbstractController
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
     	
-    	return $this->render('clustercosteffectiveness/clustercosteffectiveness.html.twig', array(
+    	return $this->render('costPerfEvaluationViews/clustercosteffectiveness.html.twig', array(
     			'series' => json_encode($data),
     			'select_multiple_benchs' => false,
                 'bestExecs' => $bestExecs
@@ -274,7 +274,7 @@ class CostPerfEvaluationController extends AbstractController
     	usort($execs, function($a,$b) {
     		return ($a['cost_std']) > ($b['cost_std']);
     	});
-    	return $this->render('perf_by_cost/perf_by_cost_cluster.html.twig', array(
+    	return $this->render('costPerfEvaluationViews/perf_by_cost_cluster.html.twig', array(
     			'highcharts_js' => HighCharts::getHeader(),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
     			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
@@ -413,7 +413,7 @@ class CostPerfEvaluationController extends AbstractController
     		return ($a['cost_std']) > ($b['cost_std']);
     	});
     	
-    	return $this->render('perf_by_cost/best_perf_by_cost_cluster.html.twig', array(
+    	return $this->render('costPerfEvaluationViews/best_perf_by_cost_cluster.html.twig', array(
     			'highcharts_js' => HighCharts::getHeader(),
     			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
     			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
@@ -483,7 +483,7 @@ class CostPerfEvaluationController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
-        return $this->render('nodeseval/nodes_evaluation.html.twig', array(
+        return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array(
             'highcharts_js' => HighCharts::getHeader(),
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
