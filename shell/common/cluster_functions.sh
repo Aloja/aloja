@@ -1,7 +1,6 @@
 # Common functions for cluster and VM management
 
 # Check that $ALOJA_REPO_PATH is correctly set before starting
-
 [ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../.."
 
 #source includes
@@ -627,8 +626,9 @@ vm_set_ssh() {
     fi
 
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > $homePrefixAloja/$userAloja/.ssh/config;
-                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+
+    vm_update_template "$homePrefixAloja/$userAloja/.ssh/config" "$(get_ssh_config)" ""
 
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
@@ -1088,7 +1088,7 @@ vm_rsync_public() {
   logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
 
   if [ -d "$ALOJA_REPO_PATH/blobs" ] ; then
-    vm_rsync "$ALOJA_REPO_PATH/blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+    vm_rsync "$ALOJA_REPO_PATH/blobs/{aplic2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
   else
     logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $ALOJA_REPO_PATH/blobs"
   fi

@@ -1,6 +1,5 @@
 get_nginx_conf(){
-
-echo -e '
+  echo -e '
 server {
   listen 80;
   server_name _;
@@ -58,7 +57,6 @@ server {
 
 # $1 env
 get_php_conf(){
-
   echo -e '
 memory_limit = 1024M
 xdebug.default_enable = 0
@@ -70,10 +68,9 @@ opcache.enable=1
 
 #$1 env (prod, dev)
 get_mysqld_conf(){
-
-if [ "$1" == "dev" ] ; then
-  #dev, for vagrant
-  echo -e "
+  if [ "$1" == "dev" ] ; then
+    #dev, for vagrant
+    echo -e "
 [mysqld]
 
 bind-address=0.0.0.0
@@ -95,7 +92,7 @@ innodb_additional_mem_pool_size = 16M
 innodb_buffer_pool_size 	= 128M
 innodb_thread_concurrency 	= 8
 "
-else
+  else
   #prod
   echo -e "
 [mysqld]
@@ -119,7 +116,20 @@ innodb_additional_mem_pool_size = 512M
 innodb_buffer_pool_size 	= 2048M
 innodb_thread_concurrency 	= 16
 "
-fi
-
-
+  fi
 }
+
+get_ssh_config() {
+  echo -e "
+Host *
+  StrictHostKeyChecking no
+  UserKnownHostsFile=/dev/null
+  LogLevel=quiet
+  ControlMaster=auto
+  ControlPath=$homePrefixAloja/$userAloja/.ssh/%r@%h-%p
+  ControlPersist=600
+  GSSAPIAuthentication=no
+  ServerAliveInterval=30
+  ServerAliveCountMax=3"
+}
+
