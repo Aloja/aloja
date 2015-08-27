@@ -67,6 +67,22 @@ die() {
   exit 1 #should not be necessary
 }
 
+# Sources file and prints a log message
+# with the intent to centralize and control sources
+# NOTE: declares in sources will not work as they will be local to the function
+# $1 file to source
+source_file() {
+  local file="$1"
+  if [ -f "$file" ] ; then
+    logger "DEBUG: Loading ${file##*/}"
+    source "$file"
+  else
+    die "Cannot source ${file##*/}. Not found in path: $file"
+  fi
+}
+#already loaded this file, but since we didn't had the logger we print it now
+logger "DEBUG: Loading ${BASH_SOURCE##*/}"
+
 #trasposes new lines to selected string
 #$1 string to traspose $2 traspose
 nl2char() {
@@ -80,6 +96,14 @@ char2char() {
   local tmp="$(echo -e "$1"|tr "$2" "$3")"
   echo -e "${tmp}"
 }
+
+# Removes duplicate lines
+# $1 string with possibly duplicate lines
+remove_duplicate_lines() {
+  local string="$1"
+  echo -e "$(echo -e "$string"|sort -u)"
+}
+
 
 #$1 list $2 element
 inList() {
@@ -176,4 +200,12 @@ cache_get() {
   else
       : #logger "DEBUG: Cache file not found $cacheFileName Last modified: $lastModified" "" "log to file"
   fi
+}
+
+# Save env and global vars to file
+# $1 file path
+save_env() {
+  local path="$1"
+  # save all exept for passwords
+  ( set -o posix ; set ) | grep -i -v "password" > "$path"
 }
