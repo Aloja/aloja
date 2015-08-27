@@ -146,7 +146,7 @@ CONF_DIR="$CUR_DIR_TMP/common/"
 source "$CUR_DIR_TMP/common/include_benchmarks.sh"
 
 #bencmark sources
-logger "INFO: loading $CONF_DIR/common_hadoop.sh"
+logger "DEBUG: Loading $CONF_DIR/common_hadoop.sh"
 source "$CONF_DIR/common_hadoop.sh"
 
 #####
