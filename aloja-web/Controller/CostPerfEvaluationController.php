@@ -10,6 +10,8 @@ class CostPerfEvaluationController extends AbstractController
 {
 	private $whereClause;
 
+	private $clusterCosts;
+
 	//Need to get container since overwritting parent constructor
 	public function __construct($container) {
 		parent::__construct($container);
@@ -19,6 +21,8 @@ class CostPerfEvaluationController extends AbstractController
 			array('default' => array('terasort'),
 				'type' => 'selectOne', 'label' => 'Benchmark:')));
 		$this->whereClause = $this->filters->getWhereClause();
+		$this->filters->generateCostsFilters();
+		$this->clusterCosts = $this->filters->getClustersCosts();
 	}
 	
     public function costPerfEvaluationAction()
@@ -48,19 +52,7 @@ class CostPerfEvaluationController extends AbstractController
                 throw new \Exception("No results for query!");
 
             foreach($execs as &$exec) {
-                $costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
-                $_GET['cost_hour'][$exec['id_cluster']] = $costHour;
-
-                $costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
-                $_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-
-                $costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
-                $_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
-
-                $costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
-                $_GET['cost_IB'][$exec['id_cluster']] = $costIB;
-
-                $exec['cost_std'] = Utils::getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB);
+                $exec['cost_std'] = Utils::getExecutionCost($exec, $this->clusterCosts);
 
                 if($exec['cost_std'] > $maxCost)
                     $maxCost = $exec['cost_std'];
@@ -101,10 +93,7 @@ class CostPerfEvaluationController extends AbstractController
         return $this->render('costPerfEvaluationViews/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
             'highcharts_js' => HighCharts::getHeader(),
-            'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
-            'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
-            'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
-            'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
+			'clusterCosts' => $this->clusterCosts,
             'seriesData' => $seriesData,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
             'clusters' => $clusters,
@@ -133,7 +122,7 @@ class CostPerfEvaluationController extends AbstractController
     		$previousCluster = "none";
     		$bestExecs = array();
     		foreach($rows as $key => &$row) {
-    			$cost = Utils::getExecutionCost($row, $row['cost_hour'], $row['cost_remote'], $row['cost_SSD'], $row['cost_IB']);
+    			$cost = Utils::getExecutionCost($row, $this->clusterCosts);
     			$row['cost_std'] = $cost;
     			if($previousCluster != "none" && $previousCluster != $row['name']) {
     				$min = $rows[$minCostKey];
@@ -179,7 +168,7 @@ class CostPerfEvaluationController extends AbstractController
     	} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
-    	
+
     	return $this->render('costPerfEvaluationViews/clustercosteffectiveness.html.twig', array(
     			'series' => json_encode($data),
     			'select_multiple_benchs' => false,
@@ -220,19 +209,7 @@ class CostPerfEvaluationController extends AbstractController
     			throw new \Exception("No results for query!");
     
     		foreach($execs as &$exec) {
-    			$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
-    			$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
-    
-    			$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
-    			$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-    
-    			$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
-    			$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
-    
-    			$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
-    			$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
-    
-    			$exec['cost_std'] = Utils::getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB);
+				$exec['cost_std'] = Utils::getExecutionCost($exec, $this->clusterCosts);
     
     			if($exec['cost_std'] > $maxCost)
     				$maxCost = $exec['cost_std'];
@@ -276,10 +253,7 @@ class CostPerfEvaluationController extends AbstractController
     	});
     	return $this->render('costPerfEvaluationViews/perf_by_cost_cluster.html.twig', array(
     			'highcharts_js' => HighCharts::getHeader(),
-    			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
-    			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
-    			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
-    			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
+				'clusterCosts' => $this->clusterCosts,
     			'seriesData' => $seriesData,
     			'execs' => $execs,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
@@ -346,20 +320,8 @@ class CostPerfEvaluationController extends AbstractController
     				$sumCount = 0;
     			} else if($previousCluster == "none")
     				$previousCluster = $exec['name'];
-    			
-    			$costHour = (isset($_GET['cost_hour'][$exec['id_cluster']])) ? $_GET['cost_hour'][$exec['id_cluster']] : $exec['cost_hour'];
-    			$_GET['cost_hour'][$exec['id_cluster']] = $costHour;
     
-    			$costRemote = (isset($_GET['cost_remote'][$exec['id_cluster']])) ? $_GET['cost_remote'][$exec['id_cluster']] : $exec['cost_remote'];
-    			$_GET['cost_remote'][$exec['id_cluster']] = $costRemote;
-    
-    			$costSSD = (isset($_GET['cost_SSD'][$exec['id_cluster']])) ? $_GET['cost_SSD'][$exec['id_cluster']] : $exec['cost_SSD'];
-    			$_GET['cost_SSD'][$exec['id_cluster']] = $costSSD;
-    
-    			$costIB = (isset($_GET['cost_IB'][$exec['id_cluster']])) ? $_GET['cost_IB'][$exec['id_cluster']] : $exec['cost_IB'];
-    			$_GET['cost_IB'][$exec['id_cluster']] = $costIB;
-    
-    			$exec['cost_std'] = Utils::getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB);
+    			$exec['cost_std'] = Utils::getExecutionCost($exec, $this->clusterCosts);
     			
     			if($tmpMinCost == -1 || $exec['cost_std'] < $tmpMinCost) {
     				$tmpMinCost = $exec['cost_std'];
@@ -415,10 +377,7 @@ class CostPerfEvaluationController extends AbstractController
     	
     	return $this->render('costPerfEvaluationViews/best_perf_by_cost_cluster.html.twig', array(
     			'highcharts_js' => HighCharts::getHeader(),
-    			'cost_hour' => isset($_GET['cost_hour']) ? $_GET['cost_hour'] : null,
-    			'cost_remote' => isset($_GET['cost_remote']) ? $_GET['cost_remote'] : null,
-    			'cost_SSD' => isset($_GET['cost_SSD']) ? $_GET['cost_SSD'] : null,
-    			'cost_IB' => isset($_GET['cost_IB']) ? $_GET['cost_IB'] : null,
+    			'clusterCosts' => $this->clusterCosts,
     			'seriesData' => $seriesData,
     			'bestExecs' => $bestExecs,
     			'clusters' => $clusters,

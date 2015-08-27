@@ -467,7 +467,12 @@ class Utils
     	return $options;
     }
     
-    public static function getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB) { 
+    public static function getExecutionCost($exec, $clusterCosts) {
+
+        $costHour = $clusterCosts['costsHour'][$exec['id_cluster']];
+        $costRemote = $clusterCosts['costsRemote'][$exec['id_cluster']];
+        $costSSD = $clusterCosts['costsSSD'][$exec['id_cluster']];
+        $costIB = $clusterCosts['costsIB'][$exec['id_cluster']];
 
     	$num_remotes = 0;
     	/** calculate remote */

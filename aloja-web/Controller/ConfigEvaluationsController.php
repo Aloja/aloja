@@ -129,6 +129,8 @@ class ConfigEvaluationsController extends AbstractController
             array('default' => array('terasort'),
                 'type' => 'selectOne', 'label' => 'Benchmark:'))
         );
+        $this->filters->generateCostsFilters();
+        $clusterCosts = $this->filters->getClustersCosts();
 
         $bestexec = '';
         $cluster = '';
@@ -163,7 +165,7 @@ class ConfigEvaluationsController extends AbstractController
             	$bestexec = $rows[0];
             	if($order_type == 'cost') {
 	            	foreach($rows as $key => &$exec) {
-	            		$cost = Utils::getExecutionCost($exec,$exec['cost_hour'],$exec['cost_remote'],$exec['cost_SSD'],$exec['cost_IB']);
+	            		$cost = Utils::getExecutionCost($exec,$clusterCosts);
                         if(($cost < $minCost) || $minCost == -1) {
 	            			$minCost = $cost;
 	            			$minCostIdx = $key;
@@ -172,7 +174,7 @@ class ConfigEvaluationsController extends AbstractController
 	            	}
 	            	$bestexec = $rows[$minCostIdx];
             	} else
-                    $bestexec['cost'] = Utils::getExecutionCost($bestexec,$bestexec['cost_hour'],$bestexec['cost_remote'],$bestexec['cost_SSD'],$bestexec['cost_IB']);
+                    $bestexec['cost'] = Utils::getExecutionCost($bestexec,$clusterCosts);
 
                 $cluster=$bestexec['name'];
                 Utils::makeExecInfoBeauty($bestexec);
