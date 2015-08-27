@@ -164,14 +164,18 @@ class CostPerfEvaluationController extends AbstractController
     			//return ($a['cost_std']*$a['exe_time']) > ($b['cost_std']*$b['exe_time']);
     		});
 
-    	} catch (\Exception $e) {
+			$clusters = $db->get_rows("SELECT * FROM aloja2.clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM aloja2.execs e WHERE 1 $filter_execs);");
+
+		} catch (\Exception $e) {
     		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
     	}
 
-    	return $this->render('costPerfEvaluationViews/clustercosteffectiveness.html.twig', array(
+		return $this->render('costPerfEvaluationViews/clustercosteffectiveness.html.twig', array(
     			'series' => json_encode($data),
     			'select_multiple_benchs' => false,
-                'bestExecs' => $bestExecs
+                'bestExecs' => $bestExecs,
+				'clusterCosts' => $this->clusterCosts,
+				'clusters' => $clusters
     		));
     }
     
