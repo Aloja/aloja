@@ -1,5 +1,6 @@
 # Helper functions for running benchmarks
 
+
 # prints usage and exits
 usage() {
 
@@ -137,7 +138,7 @@ get_options() {
 
 loggerb(){
   stamp=$(date '+%s')
-  echo "${stamp} : $1" 2>&1 |tee -a $LOG_PATH
+  echo "${stamp} : $1"
   #log to zabbix
   #zabbix_sender "hadoop.status $stamp $1"
 }
@@ -224,47 +225,70 @@ get_tmp_disk() {
 
 # Simple helper to append the tmp disk path
 get_all_disks() {
-  echo -e "$(get_specified_disks "$disk")
+  local all_disks="$(get_specified_disks "$disk")
 $(get_tmp_disk "$disk")"
+
+  #remove duplicate lines
+  all_disks="$(remove_duplicate_lines "$all_disks")"
+
+  echo -e "$all_disks"
 }
 
+# Retuns the main benchmkar path (useful for multidisk setups)
+# $1 disk type
+get_initial_disk() {
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+    local dir="${BENCH_DISKS["$DISK"]}"
+  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
+    local disks="${1:(-1)}"
+    local disks_type="${1:0:(-1)}"
+
+    #set the first dir
+    local dir="${BENCH_DISKS["${disks_type}1"]}"
+  fi
+  echo -e "$dir"
+}
 
 # Performs some basic validations
 # $1 DISK
 validate() {
   local disk="$1"
 
-  # Check whethear we are in the right cluster
-  if ! test_in_cluster "$(hostname)" ; then
-    die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
-  fi
-
-  if ! inList "$CLUSTER_NETS" "$NET" ; then
-    die "Disk type $NET not supported for $clusterName\nSupported: $NET"
-  fi
-
-  # Disk validations
-  if ! inList "$CLUSTER_DISKS" "$DISK" ; then
-    die "Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
-  fi
-
-  # Check that we got the dynamic disk location correctly
-  if [ ! "$(get_initial_disk "$disk")" ] ; then
-    die "cannot determine $DISK path"
-  fi
-
-  # Iterate all defined and tmp disks to see if we can write to them
-  local disks="$(get_all_disks)"
-  for disk_tmp in $disks ; do
-    logger "DEBUG: testing write permissions in $disk_tmp"
-    local touch_file="$disk_tmp/aloja.touch"
-    #if file exists test if we can delete it
-    if [ -f "$touch_file" ] ; then
-      rm "$touch_file" || die "Cannot delete files in $disk_tmp"
+  if [ "$clusterType" != "PaaS" ]; then
+    # Check whether we are in the right cluster
+    if ! test_in_cluster "$(hostname)" ; then
+      die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
     fi
-    touch "$touch_file" || die "Cannot write files in $disk_tmp"
-    rm "$touch_file" || die "Cannot delete files in $disk_tmp"
-  done
+
+    if ! inList "$CLUSTER_NETS" "$NET" ; then
+      die "Disk type $NET not supported for $clusterName\nSupported: $NET"
+    fi
+
+    # Disk validations
+    if ! inList "$CLUSTER_DISKS" "$DISK" ; then
+      die "Disk type $DISK not supported for $clusterName\nSupported: $CLUSTER_DISKS"
+    fi
+
+    # Check that we got the dynamic disk location correctly
+    if [ ! "$(get_initial_disk "$disk")" ] ; then
+      die "cannot determine $DISK path"
+    fi
+
+    # Iterate all defined and tmp disks to see if we can write to them
+    local disks="$(get_all_disks)"
+    for disk_tmp in $disks ; do
+      logger "DEBUG: testing write permissions in $disk_tmp"
+      local touch_file="$disk_tmp/aloja.touch"
+      #if file exists test if we can delete it
+      if [ -f "$touch_file" ] ; then
+        rm "$touch_file" || die "Cannot delete files in $disk_tmp"
+      fi
+      touch "$touch_file" || die "Cannot write files in $disk_tmp"
+      rm "$touch_file" || die "Cannot delete files in $disk_tmp"
+    done
+  else
+    logger "INFO: Skipping validations"
+  fi
 }
 
 # Groups initialization phases
@@ -320,19 +344,36 @@ initialize_node_names() {
   DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 }
 
+# Tests cluster nodes for a defined condition
+# $1 condition string
+# $2 severity of error
+test_nodes() {
+  local condition="$1"
+  local severity="$2"
+
+  [ ! "$severity" ] && severity="ERROR"
+
+  local node_output="$($DSH "$condition && echo '$testKey' " 2>&1)"
+  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
+  local num_nodes="$(get_num_nodes)"
+  if (( num_OK != num_nodes )) ; then
+    logger "${severity}: Cannot execute: $condition in all nodes. Num OK: $num_OK Num KO: $num_nodes
+DEBUG Output:
+$node_output"
+    return 1
+  else
+    # all is good
+    return 0
+  fi
+}
+
 # Tests if defined nodes are accesible vis SSH
 test_nodes_connection() {
-  loggerb "INFO: Testing connectivity to nodes"
-  local node_output="$($DSH "echo '$testKey' 2>&1")"
-  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
-  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
-  if (( num_OK != num_nodes )) ; then
-    die "cannot connect via SSH to all nodes. Num OK: $num_OK Out of: $num_nodes
-Output:
-$node_output"
-
+  logger "INFO: INFO: Testing connectivity to nodes"
+  if test_nodes "hostname" ; then
+    logger "INFO: INFO: All $(get_num_nodes) nodes are accesible via SSH"
   else
-    loggerb "INFO: All $num_nodes nodes are accesible via SSH"
+    die "Cannot connect via SSH to all nodes"
   fi
 }
 
@@ -344,8 +385,8 @@ mount_share() {
   if [ ! "$noSudo" ] ; then
     logger "WARNING: attempting to remount $shared_folder"
     $DSH "
-if [ ! -d '$shared_folder' ] ; then
-  sudo umount '$shared_folder';
+if [ ! -f '$shared_folder/safe_store' ] ; then
+  sudo umount -f '$shared_folder';
   sudo mount '$shared_folder';
   sudo mount -a;
 fi
@@ -360,21 +401,16 @@ test_share_dir() {
   local no_retry="$1"
   local test_file="$homePrefixAloja/$userAloja/share/safe_store"
 
-  loggerb "INFO: Testing is ~/share mounted correctly"
-  local node_output="$($DSH "ls '$test_file' && echo '$testKey' 2>&1")"
-  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
-  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
-  if (( num_OK != num_nodes )) ; then
+  logger "INFO: INFO: Testing if ~/share mounted correctly"
+  if test_nodes "ls '$test_file'" ; then
+    logger "INFO: INFO: All $(get_num_nodes) nodes have the ~/share dir correctly mounted"
+  else
     if [ "$no_retry" ] ; then
-      die "~/share dir not mounted correctly  Num OK: $num_OK Out of: $num_nodes
-Output:
-$node_output"
+      die "~/share dir not mounted correctly"
     else #try again
       mount_share "$homePrefixAloja/$userAloja/share/"
       test_share_dir "no_retry"
     fi
-  else
-    loggerb "INFO: All $num_nodes nodes have the ~/share dir correctly mounted"
   fi
 }
 
@@ -393,117 +429,120 @@ set_job_config() {
   $DSH_MASTER "mkdir -p $JOB_PATH"
   $DSH_MASTER "touch $LOG_PATH"
 
-  loggerb "STARTING EXECUTION of $JOB_NAME"
-  loggerb  "Job path: $JOB_PATH"
-  loggerb  "Log path: $LOG_PATH"
-  loggerb  "Conf: $CONF"
-  loggerb  "Benchmark: $BENCH_HIB_DIR"
-  loggerb  "Benchs to execute: $LIST_BENCHS"
-  loggerb  "DSH: $DSH"
+  # Automatically log all output to file
+  log_all_output "$JOB_PATH/${0##*/}"
+
+  logger "STARTING RUN $JOB_NAME"
+  logger "INFO: Job path: $JOB_PATH"
+  logger "INFO: Conf: $CONF"
+  logger "INFO: Benchmark: $BENCH_HIB_DIR"
+  logger "INFO: Benchs to execute: $LIST_BENCHS"
+  logger "DEBUG: DSH: $DSH\n"
   #loggerb  "DSH_C: $DSH_C"
   #loggerb  "DSH_SLAVES: $DSH_SLAVES"
-  loggerb  ""
-
 }
 
-
-#old code moved here
-# TODO cleanup
-initialize_hadoop_vars() {
-
-  [ ! "$HDD" ] && die "HDD var not set!"
-
-  BENCH_H_DIR="$HDD/aplic/$BENCH_HADOOP_VERSION" #execution dir
-
-  if [[ "$BENCH" == HiBench* ]]; then
-    EXECUTE_HIBENCH="true"
-  fi
-
-  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
-  if [[ "$BENCH" == HiBench* ]]; then
-    BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench2"
-  fi
-  if [[ "$BENCH" == HiBench3* ]]; then
-    BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
-  fi
-
-  if [ "$clusterType" == "PaaS" ]; then
-    HADOOP_VERSION="hadoop2"
-  fi
-
-  if [ ! "$BENCH_HADOOP_VERSION" ] ; then
-    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-      BENCH_HADOOP_VERSION="hadoop-1.0.3"
-    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-      BENCH_HADOOP_VERSION="hadoop-2.6.0"
-    fi
-  fi
-
-  ##FOR TPCH ONLY, default 1TB
-  [ ! "$TPCH_SCALE_FACTOR" ] && TPCH_SCALE_FACTOR=1000
-
-  # Use instrumented version of Hadoop
-  if [ "$INSTRUMENTATION" == "1" ] ; then
-    BENCH_HADOOP_VERSION="${BENCH_HADOOP_VERSION}-instr"
-  fi
-
-  #make sure all spawned background jobs and services are stoped or killed when done
-  if [ ! -z "$EXECUTE_HIBENCH" ] || [ "$BENCH" == "TPCH" ]; then
-    trap 'echo "RUNNING TRAP!"; stop_hadoop; stop_monit; stop_sniffer; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
-  fi
-
-  #export HADOOP_HOME="$HADOOP_DIR"
-  [ ! $JAVA_HOME ] && export JAVA_HOME="$BENCH_SOURCE_DIR/jdk1.7.0_25"
-
-#loggerb  "DEBUG: userAloja=$userAloja
-#DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
-#BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
-#BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
-#BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
-#BENCH_HADOOP_VERSION=$BENCH_HADOOP_VERSION
-#DEBUG: JAVA_HOME=$JAVA_HOME
-#JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
-#PHYS_MEM=$PHYS_MEM
-#NUM_CORES=$NUM_CORES
-#CONTAINER_MIN_MB=$CONTAINER_MIN_MB
-#CONTAINER_MAX_MB=$CONTAINER_MAX_MB
-#MAPS_MB=$MAPS_MB
-#AM_MB=$AM_MB
-#JAVA_AM_XMS=$JAVA_AM_XMS
-#JAVA_AM_XMX=$JAVA_AM_XMX
-#REDUCES_MB=$REDUCES_MB
-#Master node: $master_name "
-
-}
-
-# old code from cleanup
-# TODO improve
-set_monit_binaries() {
-  if [ "$clusterType" != "PaaS" ]; then
-    bwm_source="$BENCH_SOURCE_DIR/bin/bwm-ng"
-    vmstat="$HDD/aplic/vmstat_$PORT_PREFIX"
-    bwm="$HDD/aplic/bwm-ng_$PORT_PREFIX"
-    sar="$HDD/aplic/sar_$PORT_PREFIX"
-  else
-    bwm_source="bwm-ng"
-    vmstat="vmstat"
-    bwm="bwm-ng"
-    sar="sar"
-  fi
-}
-
-
+# Set some OS requirements (e.g., to dissable swapping)
 update_OS_config() {
   if [ ! "$noSudo" ] && [ "$EXECUTE_HIBENCH" ]; then
-
     $DSH "
 sudo sysctl -w vm.swappiness=0 > /dev/null;
 sudo sysctl vm.panic_on_oom=1 > /dev/null;
 sudo sysctl -w fs.file-max=65536 > /dev/null;
 sudo service ufw stop 2>&1 > /dev/null;
 "
-
   fi
+}
+
+get_apps_path() {
+  echo -e "aplic2/apps"
+}
+
+get_local_apps_path() {
+  echo -e "$BENCH_LOCAL_DIR/$(get_apps_path)"
+}
+
+get_local_configs_path() {
+  echo -e "$BENCH_LOCAL_DIR/aplic2/configs"
+}
+
+get_base_apps_path() {
+  echo -e "$BENCH_BASE_DIR/$(get_apps_path)"
+}
+
+get_base_tarballs_path() {
+  echo -e "$BENCH_BASE_DIR/aplic2/tarballs"
+}
+
+get_base_configs_path() {
+  echo -e "$BENCH_BASE_DIR/aplic2/configs"
+}
+
+# Installs binaries and configs
+# TODO needs improvement
+install_requires() {
+  if [ "${#BENCH_REQUIRED_FILES[@]}" ] ; then
+    #logger "INFO: Checking if need to download/copy files to node local dirs at: $(get_local_apps_path)"
+    for required_file in "${!BENCH_REQUIRED_FILES[@]}" ; do
+      logger "INFO: Checking if to download/copy $required_file"
+      local base_name="${BENCH_REQUIRED_FILES["$required_file"]##*/}"
+
+      # test if we need to download first to share dir
+      local test_action="$($DSH_MASTER "[ -f '$(get_base_tarballs_path)/$base_name' ] && echo '$testKey'")"
+      if [[ ! "$test_action" == *"$testKey"* ]] ; then
+        logger "INFO: Downloading $required_file"
+        $DSH_MASTER "
+mkdir -p '$(get_base_tarballs_path)' && wget --progress=dot -e dotbytes=10M '${BENCH_REQUIRED_FILES["$required_file"]}' -O '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name'"
+
+        # test if download was succesful
+        local test_action="$($DSH_MASTER "[ -f '$(get_base_tarballs_path)/$base_name' ] && echo '$testKey'")"
+        if [[ ! "$test_action" == *"$testKey"* ]] ; then
+          die "Could not download $required_file from ${BENCH_REQUIRED_FILES["$required_file"]}"
+        fi
+      fi
+
+      $DSH "
+if [ ! -d '$(get_local_apps_path)/$required_file' ] ; then
+  mkdir -p '$(get_local_apps_path)/';
+  cd '$(get_local_apps_path)/';
+  echo 'INFO: need to uncompress $(get_base_tarballs_path)/$base_name';
+  if [[ '$base_name' == *'.tar.gz' ]] ; then
+    tar -xzf '$(get_base_tarballs_path)/$base_name';
+  elif [[ '$base_name' == *'.tar.bz2' ]] ; then
+    tar -xjf '$(get_base_tarballs_path)/$base_name';
+  else
+    echo 'ERROR: unknown file extension for $base_name';
+  fi
+else
+  : #echo 'INFO: local dir $(get_local_apps_path)/$required_file exists'
+fi
+"
+    done
+  else
+    logger "INFO: No required files to download/copy specified"
+  fi
+}
+
+# Rsyncs specified config folders in aplic2/configs/
+install_configs() {
+  if [ "$BENCH_CONFIG_FOLDERS" ] ; then
+    for config_folder in $BENCH_CONFIG_FOLDERS ; do
+      local full_config_folder_path="$(get_base_configs_path)/$config_folder"
+      if [ -d "$full_config_folder_path" ] ; then
+        logger "INFO: Synching configs from $config_folder"
+        $DSH "rsync -aur '$full_config_folder_path' '$(get_local_configs_path)' "
+      else
+        die "Cannot find config folder in $full_config_folder_path"
+      fi
+    done
+  else
+    logger "DEBUG: No config folder specified to copy"
+  fi
+}
+
+install_files() {
+  install_requires
+  install_configs
 }
 
 check_aplic_updates() {
@@ -542,6 +581,13 @@ check_aplic_updates() {
 
 }
 
+# Exports a var and path to the cluster
+# $1 varname
+# $2 path
+export_var_path() {
+  : # WiP
+}
+
 zabbix_sender(){
   :
   #echo "al-1001 $1" | /home/pristine/share/aplic/zabbix/bin/zabbix_sender -c /home/pristine/share/aplic/zabbix/conf/zabbix_agentd_az.conf -T -i - 2>&1 > /dev/null
@@ -554,76 +600,131 @@ zabbix_sender(){
 ##"$ssh_tunnel"
 #
 #if [ "${NET}" == "IB" ] ; then
-#  $ssh_tunnel 2>&1 |tee -a $LOG_PATH &
+#  $ssh_tunnel &
 #fi
 
 }
 
-restart_monit(){
-  loggerb "Restarting Monit"
+# Copies specified perf mon binaries to bench path, so that they can be started
+# and specially killed easily
+set_monit_binaries() {
+  if [ "$BENCH_PERF_MONITORS" ] ; then
+    local perf_mon_bin_path
+    local perf_mon_bench_path="$HDD/aplic"
 
-  stop_monit
-
-  $DSH_C "mkdir -p $HDD" 2>&1 |tee -a $LOG_PATH
-  $DSH_C "$vmstat -n 1 >> $HDD/vmstat-\$(hostname).log &" 2>&1 |tee -a $LOG_PATH
-  $DSH_C "$bwm -o csv -I bond0,eth0,eth1,eth2,eth3,ib0,ib1 -u bytes -t 1000 >> $HDD/bwm-\$(hostname).log &" 2>&1 |tee -a $LOG_PATH
-  $DSH_C "$sar -o $HDD/sar-\$(hostname).sar 1 >/dev/null 2>&1 &" 2>&1 |tee -a $LOG_PATH
-
-  loggerb "Monit ready"
+    if [ "$vmType" != "windows" ]; then
+      for perf_mon in $BENCH_PERF_MONITORS ; do
+        logger "INFO: Setting up perfomance monitor: $perf_mon"
+        perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
+        if [ "$perf_mon_bin_path" ] ; then
+          logger "INFO: Copying $perf_mon binary to $perf_mon_bench_path"
+          $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
+        else
+          die "Cannot find $perf_mon binary on the system"
+        fi
+      done
+    else
+      logger "WARNING: no extra perf monitors set for Windows"
+    fi
+  else
+    logger "WARNING: No peformance monitors (e.g., vmstats) have been selected"
+  fi
 }
 
-stop_monit(){
-  loggerb "Stoping monit"
-  $DSH_C "killall -9 $vmstat"   2> /dev/null |tee -a $LOG_PATH
-  $DSH_C "killall -9 $bwm"      2> /dev/null |tee -a $LOG_PATH
-  $DSH_C "killall -9 $sar"      2> /dev/null >> $LOG_PATH
+# Stops monitors (if any) and starts them
+restart_monit(){
+  if [ "$BENCH_PERF_MONITORS" ] ; then
+    local perf_mon_bin_path
+    local perf_mon_bench_path="$HDD/aplic"
 
-  loggerb "Stop monit ready"
+    if [ "$vmType" != "windows" ]; then
+      logger "INFO: Restarting perf monit"
+      stop_monit #in case there is any running
+
+      for perf_mon in $BENCH_PERF_MONITORS ; do
+        run_monit "$perf_mon"
+      done
+      #logger "DEBUG: perf monitors ready"
+    fi
+  fi
+}
+
+# Starts the specified perf_mon
+# They execute in background (&) to start them as close as possible in time
+# $1 perf_mon
+run_monit() {
+  local perf_mon="$1"
+  local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
+
+  if [ "$perf_mon" == "sar" ] ; then
+    $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+  elif [ "$perf_mon" == "vmstat" ] ; then
+    $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+  else
+    die "Specified perf mon $perf_mon not implemented"
+  fi
+
+  wait #for the bg processes
+
+  # BWM not used any more
+  #$DSH_C "$bwm -o csv -I bond0,eth0,eth1,eth2,eth3,ib0,ib1 -u bytes -t 1000 >> $HDD/bwm-\$(hostname).log &"
+}
+
+# Kill possibly running perf mons
+stop_monit(){
+  if [ "$BENCH_PERF_MONITORS" ] ; then
+    if [ "$vmType" != "windows" ]; then
+      logger "INFO: Stoping monit (in case necesary)"
+      for perf_mon in $BENCH_PERF_MONITORS ; do
+        local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
+        $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null |tee -a $LOG_PATH &
+      done
+      #logger "DEBUG: perf monitors ready"
+    fi
+  fi
+
+  wait #for the bg processes
 }
 
 save_bench() {
-  loggerb "Saving benchmark $1"
-  $DSH "mkdir -p $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
-  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $HDD_TMP/{bwm,vmstat}*.log $HDD_TMP/sar*.sar $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
+  logger "INFO: Saving benchmark $1"
+  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
  if [ "$clusterType" == "PaaS" ]; then
-	hdfs dfs -copyToLocal /mr-history $JOB_PATH/$1
+	hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$1"
  fi
   #we cannot move hadoop files
   #take into account naming *.date when changing dates
-  #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  #$DSH "cp -r $HDD/logs/* $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  #$DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/" 2>&1 |tee -a $LOG_PATH
-  #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
+  #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
+  #$DSH "cp -r $HDD/logs/* $JOB_PATH/$1/"
+  #$DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/"
+  #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1"
   #cp "${BENCH_HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
 
-  #loggerb "Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
-  #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH" 2>&1 |tee -a $LOG_PATH
+  #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
+  #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH"
   #pending, delete
 
-  loggerb "Compresing and deleting $1"
+  logger "INFO: Compresing and deleting $1"
 
-  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;" 2>&1 |tee -a $LOG_PATH
+  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;"
   #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
-  $DSH_MASTER "rm -rf $JOB_PATH/$1" 2>&1 |tee -a $LOG_PATH
+  $DSH_MASTER "rm -rf $JOB_PATH/$1"
   #$JOB_PATH/conf_* #TODO check
 
-  #empy the contents from original disk  TODO check if still necessary
-  #$DSH "for i in $HDD/hadoop-*.{log,out}; do echo "" > $i; done;" 2>&1 |tee -a $LOG_PATH
+  logger "INFO: Done saving benchmark $1"
+}
 
-  loggerb "Done saving benchmark $1"
+# Return the total number of nodes starting at one (to include the master node)
+get_num_nodes() {
+  echo -e "$(( NUMBER_OF_DATA_NODES + 1 ))"
 }
 
 # Tests if a directory is present in the system
 # $1 dir to test
 test_directory_not_exists() {
   local dir="$1"
-  local node_output="$($DSH "[ ! -d '$dir' ] && echo '$testKey' 2>&1")"
-  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
-  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
-  if (( num_OK != num_nodes )) ; then
-    die "Cannot delete folder $dir. Num nodes OK: $num_OK Out of: $num_nodes
-Output:
-$node_output"
+  if ! test_nodes "[ ! -d '$dir' ]" ; then
+    die "Cannot delete folder $dir"
   fi
 }
 
@@ -633,21 +734,21 @@ $node_output"
 prepare_folder(){
   local disk="$1"
 
-  loggerb "INFO: Preparing benchmark run dirs"
+  logger "INFO: INFO: Preparing benchmark run dirs"
   local disks="$(get_all_disks) "
 
   if [ "$DELETE_HDFS" == "1" ] ; then
-    loggerb "INFO: Deleting previous run files of disk config: $disk in: $(get_aloja_dir "$PORT_PREFIX")"
+    logger "INFO: INFO: Deleting previous run files of disk config: $disk in: $(get_aloja_dir "$PORT_PREFIX")"
     for disk_tmp in $disks ; do
       local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
-      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path" 2>&1 |tee -a $LOG_PATH
+      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path"
       #check if we had problems deleting a folder
       test_directory_not_exists "$disk_full_path"
     done
   else
-    loggerb "INFO: Deleting only the log dir"
+    logger "INFO: INFO: Deleting only the log dir"
     for disk_tmp in $disks ; do
-      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*" 2>&1 |tee -a $LOG_PATH
+      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*"
     done
   fi
 
@@ -656,20 +757,16 @@ prepare_folder(){
   #for hadoop tmp dir
   HDD_TMP="$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
 
-  loggerb "Creating bench main dir at: $HDD/aplic"
+  logger "INFO: Creating bench main dir at: $HDD (and tmp dir: $HDD_TMP)"
 
-  $DSH "mkdir -p $HDD/aplic $HDD_TMP" 2>&1 |tee -a $LOG_PATH
+  $DSH "mkdir -p $HDD $HDD_TMP"
 
   # specify which binaries to use for monitoring
   set_monit_binaries
-
-  $DSH "cp /usr/bin/vmstat $vmstat" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp $bwm_source $bwm" 2>&1 |tee -a $LOG_PATH
-  $DSH "cp /usr/bin/sar $sar" 2>&1 |tee -a $LOG_PATH
 }
 
 set_omm_killer() {
-  loggerb "WARNING: OOM killer not set for benchmark"
+  logger "WARNING: OOM killer might not set for benchmark"
   #Example: echo 15 > proc/<pid>/oom_adj significantly increase the likelihood that process <pid> will be OOM killed.
   #pgrep apache2 |sudo xargs -I %PID sh -c 'echo 10 > /proc/%PID/oom_adj'
 }

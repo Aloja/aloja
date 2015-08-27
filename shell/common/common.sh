@@ -29,7 +29,7 @@ logger() {
   local output=""
 
   # Colorize when on interactive TERM TODO implement better
-  if [ -t 1 ] ; then
+  if [[ -t 1 || "$ALOJA_FORCE_COLORS" ]] ; then
     local reset="$(tput sgr0)"
     local red="$(tput setaf 1)"
     local green="$(tput setaf 2)"
@@ -58,6 +58,28 @@ logger() {
   else
     echo -e "$output" >> $log_file
   fi
+}
+
+# [dangerous] Function that automatically logs all script output to file
+# and strerr to it's own file (if any)
+# NOTE: some lines might be out of order
+# $1 file_name
+log_all_output() {
+  local file_name="$1"
+
+  if [ "$ALOJA_FORCE_COLORS" ] ; then
+    local strip_colors="sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g'"
+    exec 1> >(tee -a >(eval $strip_colors >> "$file_name.log")) \
+         2> >(tee -a >(eval $strip_colors >> "$file_name.err") | tee -a >(eval $strip_colors >> "$file_name.log") >&2)
+  else
+    exec 1> >(tee -a  "$file_name.log") \
+         2> >(tee -a "$file_name.err" | tee -a "$file_name.log" >&2)
+  fi
+
+  #exec > >(tee -a "$file_name.log") 2>&1
+  #touch "$file_name.log" "$file_name.err"
+  #chmod 777 "$file_name.log" "$file_name.err"
+  #stdbuf -i0 -o0 -e0 #avoid buffering
 }
 
 #log and die, $1 message
@@ -103,7 +125,6 @@ remove_duplicate_lines() {
   local string="$1"
   echo -e "$(echo -e "$string"|sort -u)"
 }
-
 
 #$1 list $2 element
 inList() {
