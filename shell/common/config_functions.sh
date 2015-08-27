@@ -127,9 +127,12 @@ Host *
   LogLevel=quiet
   ControlMaster=auto
   ControlPath=$homePrefixAloja/$userAloja/.ssh/%r@%h-%p
-  ControlPersist=600
   GSSAPIAuthentication=no
   ServerAliveInterval=30
-  ServerAliveCountMax=3"
+  ServerAliveCountMax=3
+"
+# Other possible options to test
+#  ControlPersist=600
+
 }
 
