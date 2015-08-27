@@ -1,3 +1,7 @@
+benchmark_requires() {
+  : # Empty
+}
+
 benchmark_config() {
   : # Empty
 }
@@ -7,6 +11,7 @@ benchmark_run() {
 
   restart_monit
 
+  # Taking a nap for 5 seconds
   for sleep_iterator in {1..5} ; do
     loggerb "Sleeping zzZZZzzz $sleep_iterator"
     $DSH "sleep 1"
