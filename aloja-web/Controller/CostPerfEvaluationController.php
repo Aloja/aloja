@@ -21,8 +21,7 @@ class CostPerfEvaluationController extends AbstractController
 			array('default' => array('terasort'),
 				'type' => 'selectOne', 'label' => 'Benchmark:')));
 		$this->whereClause = $this->filters->getWhereClause();
-		$this->filters->generateCostsFilters();
-		$this->clusterCosts = $this->filters->getClustersCosts();
+		$this->clusterCosts = Utils::generateCostsFilters($this->container->getDBUtils());
 	}
 	
     public function costPerfEvaluationAction()

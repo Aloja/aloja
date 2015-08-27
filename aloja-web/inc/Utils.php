@@ -557,4 +557,38 @@ class Utils
     	 
     	return $return;
     }
+
+    public static function generateCostsFilters($dbConnection) {
+        $clustersInfo = $dbConnection->get_rows("SELECT id_cluster,cost_hour,cost_remote,cost_IB,cost_SSD FROM clusters");
+        foreach ($clustersInfo as $row) {
+            $costsHour[$row['id_cluster']] = $row['cost_hour'];
+            $costsRemote[$row['id_cluster']] = $row['cost_remote'];
+            $costsSSD[$row['id_cluster']] = $row['cost_IB'];
+            $costsIB[$row['id_cluster']] = $row['cost_SSD'];
+        }
+
+        //If form submitted, get given values and change those
+        if(isset($_GET['cost_hour'])) {
+            foreach(Utils::get_GET_intArray('cost_hour') as $idCluster => $value) {
+                $costsHour[$idCluster] = $value;
+            }
+
+            foreach(Utils::get_GET_intArray('cost_remote') as $idCluster => $value) {
+                $costsRemote[$idCluster] = $value;
+            }
+
+            foreach(Utils::get_GET_intArray('cost_IB') as $idCluster => $value) {
+                $costsSSD[$idCluster] = $value;
+            }
+
+            foreach(Utils::get_GET_intArray('cost_SSD') as $idCluster => $value) {
+                $costsIB[$idCluster] = $value;
+            }
+        }
+
+        return array('costsHour' => $costsHour,
+            'costsRemote' => $costsRemote,
+            'costsSSD' => $costsSSD,
+            'costsIB' => $costsIB);
+    }
 }

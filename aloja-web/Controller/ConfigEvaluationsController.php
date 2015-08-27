@@ -130,7 +130,7 @@ class ConfigEvaluationsController extends AbstractController
                 'type' => 'selectOne', 'label' => 'Benchmark:'))
         );
         $this->filters->generateCostsFilters();
-        $clusterCosts = $this->filters->getClustersCosts();
+        $clusterCosts = Utils::getClustersCosts($db);
 
         $bestexec = '';
         $cluster = '';

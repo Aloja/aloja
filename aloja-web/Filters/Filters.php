@@ -17,8 +17,6 @@ class Filters
 
     private $filterGroups;
 
-    private $clustersCosts;
-
     /**
      * @\alojaweb\inc\DBUtils
      */
@@ -333,43 +331,5 @@ class Filters
         }
 
         $this->additionalFilters['datasizesInfo'] = json_encode($dataBenchs);
-    }
-
-    public function generateCostsFilters() {
-        $clustersInfo = $this->dbConnection->get_rows("SELECT id_cluster,cost_hour,cost_remote,cost_IB,cost_SSD FROM clusters");
-        foreach ($clustersInfo as $row) {
-            $costsHour[$row['id_cluster']] = $row['cost_hour'];
-            $costsRemote[$row['id_cluster']] = $row['cost_remote'];
-            $costsSSD[$row['id_cluster']] = $row['cost_IB'];
-            $costsIB[$row['id_cluster']] = $row['cost_SSD'];
-        }
-
-        //If submitted, get given values and change those
-        if($this->formIsSubmitted()) {
-            foreach(Utils::get_GET_intArray('cost_hour') as $idCluster => $value) {
-                $costsHour[$idCluster] = $value;
-            }
-
-            foreach(Utils::get_GET_intArray('cost_remote') as $idCluster => $value) {
-                $costsRemote[$idCluster] = $value;
-            }
-
-            foreach(Utils::get_GET_intArray('cost_IB') as $idCluster => $value) {
-                $costsSSD[$idCluster] = $value;
-            }
-
-            foreach(Utils::get_GET_intArray('cost_SSD') as $idCluster => $value) {
-                $costsIB[$idCluster] = $value;
-            }
-        }
-
-        $this->clustersCosts = array('costsHour' => $costsHour,
-            'costsRemote' => $costsRemote,
-            'costsSSD' => $costsSSD,
-            'costsIB' => $costsIB);
-    }
-
-    public function getClustersCosts() {
-        return $this->clustersCosts;
     }
 }
