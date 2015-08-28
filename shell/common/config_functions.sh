@@ -61,6 +61,8 @@ get_php_conf(){
 
   echo -e '
 memory_limit = 1024M
+allow_url_fopen = Off
+allow_url_include = Off
 max_execution_time = 600
 xdebug.default_enable = 0
 xdebug.remote_enable = 0
