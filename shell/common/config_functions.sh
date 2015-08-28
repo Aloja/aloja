@@ -132,7 +132,7 @@ Host *
   ServerAliveCountMax=3
 "
 # Other possible options to test
-#  ControlPersist=600
+#  ControlPersist=600 #this one is causing problems for some reason
 
 }
 
