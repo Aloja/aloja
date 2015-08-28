@@ -2,11 +2,11 @@
 
 # Script to orchestrate benchmark execution and metrics collection
 # NOTE: you need to have your cluster configured first
-# for usage run run_benchs.sh -h
+# for usage execute run_benchs.sh -h
 
 # 1.) load cluster config and common functions
 
-[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 CONF_DIR="$ALOJA_REPO_PATH/shell/conf" #TODO remove when migrated to use ALOJA_REPO_PATH
 source "$ALOJA_REPO_PATH/shell/common/include_benchmarks.sh"
 

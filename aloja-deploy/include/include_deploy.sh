@@ -22,9 +22,7 @@ source "$CONF_DIR/common.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
-trap 'echo "RUNNING TRAP FOR CLEANUP"; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM #EXIT
-PARENT_PID=$$ #for killing the process from subshells
-
+setup_traps
 
 logger "Starting ALOJA deploy tools"
 

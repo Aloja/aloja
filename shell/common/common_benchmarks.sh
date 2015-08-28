@@ -293,6 +293,7 @@ validate() {
 
 # Groups initialization phases
 initialize() {
+
   # initialize cluster node names and connect string
   initialize_node_names
   # set the name for the job run

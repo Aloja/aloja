@@ -66,32 +66,17 @@ initialize_hadoop_vars() {
   HADOOP_CONF_DIR="$HDD/conf"
   HADOOP_EXPORTS="$(get_hadoop_exports)"
 
-  if [[ "$BENCH" == HiBench* ]]; then
-    EXECUTE_HIBENCH="true"
-  fi
-
-  BENCH_HIB_DIR="$BENCH_SOURCE_DIR/$BENCH"
-  if [[ "$BENCH" == HiBench* ]]; then
-    BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench2"
-  fi
-  if [[ "$BENCH" == HiBench3* ]]; then
-    BENCH_HIB_DIR="$BENCH_SOURCE_DIR/HiBench3"
-  fi
-
   if [ "$clusterType" == "PaaS" ]; then
     HADOOP_VERSION="hadoop2"
   fi
 
-  if [ ! "$BENCH_HADOOP_VERSION" ] ; then
-    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-      BENCH_HADOOP_VERSION="hadoop-1.0.3"
-    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-      BENCH_HADOOP_VERSION="hadoop-2.6.0"
-    fi
-  fi
-
-  ##FOR TPCH ONLY, default 1TB
-  [ ! "$TPCH_SCALE_FACTOR" ] && TPCH_SCALE_FACTOR=1000
+#  if [ ! "$BENCH_HADOOP_VERSION" ] ; then
+#    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
+#      BENCH_HADOOP_VERSION="hadoop-1.0.3"
+#    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
+#      BENCH_HADOOP_VERSION="hadoop-2.6.0"
+#    fi
+#  fi
 
   # Use instrumented version of Hadoop
   if [ "$INSTRUMENTATION" == "1" ] ; then
@@ -99,13 +84,17 @@ initialize_hadoop_vars() {
   fi
 
   #make sure all spawned background jobs and services are stoped or killed when done
-  if [ ! -z "$EXECUTE_HIBENCH" ] || [ "$BENCH" == "TPCH" ]; then
-    if [ "$INSTRUMENTATION" == "1" ] ; then
-      trap 'logger "RUNNING TRAP FOR CLEANUP"; stop_hadoop; stop_monit; stop_sniffer; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
-    else
-      trap 'logger "RUNNING TRAP FOR CLEANUP"; stop_hadoop; stop_monit; [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
-    fi
+  if [ "$INSTRUMENTATION" == "1" ] ; then
+    update_traps "stop_hadoop; stop_monit; stop_sniffer;" "update_logger"
+  else
+    update_traps "stop_hadoop; stop_monit;" "update_logger"
   fi
+
+
+logger "updated traps"
+die "harder"
+sleep 100
+
 
 #logger "INFO: DEBUG: userAloja=$userAloja
 #DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
@@ -374,7 +363,7 @@ stop_hadoop(){
 # TODO old code needs cleanup
 # $1 benchmark name
 # $2 command
-# $3 if prepare (optional
+# $3 if prepare (optional)
 execute_hadoop(){
 
   #clear buffer cache exept for prepare

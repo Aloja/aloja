@@ -24,11 +24,8 @@ declare -g -A BENCH_REQUIRED_FILES
 # Associative array for default disk paths
 declare -g -A BENCH_DISKS
 
-
-
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
-trap 'logger "WARNING: RUNNING TRAP FOR CLEANUP"; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
-PARENT_PID=$$ #for killing the process from subshells
+setup_traps
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
 
@@ -63,7 +60,7 @@ if [ "$INSTRUMENTATION" ] ; then
   source_file "$ALOJA_REPO_PATH/shell/common/common_instrumentation.sh"
 fi
 
-# load defaultProvider
+# Load defaultProvider
 logger "DEBUG: attempting to load secured account configs if present"
 securedProviderFile="$ALOJA_REPO_PATH/secure/${defaultProvider}_settings.conf"
 
