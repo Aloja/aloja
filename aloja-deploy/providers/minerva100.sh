@@ -242,3 +242,143 @@ convert_regular2IB_hostnames() {
   echo -e "$(echo -e "$hosts_IB"|tail -n +2 )" #cut the first \n
 }
 
+
+# special gmond config for minerva nodes (already have ganglia installed)
+# $1 cluster name
+config_ganglia_gmond(){
+
+  local bootstrap_file="${FUNCNAME[0]}"
+  local result
+
+  if check_bootstraped "$bootstrap_file" ""; then
+
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Configuring ganglia-monitor (gmond)"
+
+    vm_local_scp files/ganglia_minerva.conf.t /tmp/aloja.conf "" ""
+
+    vm_execute "
+
+    # create conf from template
+    sudo mkdir -p /etc/ganglia/conf.d || exit 1;
+    sudo mv /tmp/aloja.conf /etc/ganglia/conf.d || exit 1;
+    sudo /etc/init.d/ganglia-monitor restart || exit 1;"
+
+    result=$?
+
+    if [ $result -eq 0 ] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name."
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+
+}
+
+
+echo -e '
+server {
+  listen 80 default_server;
+  listen 8080 default_server;
+
+  root /var/www/aloja-web/;
+  index index.html index.php;
+  autoindex on;
+
+  location / {
+    index index.php;
+    try_files $uri $uri/ /index.php?q=$uri&$args;
+    autoindex on;
+  }
+
+  location /ganglia {
+
+    root /var/www/;
+
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
+  }
+
+  location ~ \.php$ {
+#    try_files $uri =404;
+    try_files $uri /index.php?c=404&q=$uri&$args;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_index index.php;
+    include fastcgi_params;
+    fastcgi_read_timeout 600; # Set fairly high for debugging
+    fastcgi_intercept_errors on;
+  }
+
+  error_page 404 /index.php?c=404&q=$uri&$args;
+
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  #keepalive_timeout ;
+
+  #avoid caches
+  sendfile off;
+  expires off;
+
+  # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
+  reset_timedout_connection on;
+
+  #perf optimizations
+  tcp_nodelay on;
+
+  gzip on;
+  gzip_comp_level 2;
+  gzip_proxied any;
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_disable "msie6";
+}'
+
+
+#$1 env (prod, dev)
+get_mysqld_conf(){
+
+  echo -e "
+[mysqld]
+
+bind-address=0.0.0.0
+skip-external-locking
+key_buffer_size		= 512M
+tmp_table_size		= 128M
+query_cache_limit	= 128M
+query_cache_size  = 512M
+
+# 5.6 stuff (GTID) + binlog
+
+gtid_mode                       = ON
+log-slave-updates               = 1
+enforce-gtid-consistency        = 1
+explicit_defaults_for_timestamp = 1
+
+log_bin         = /scratch/attached/1/mysql/binlogs/mysql-binlog
+
+
+# Set Base Innodb Specific settings here
+innodb_autoinc_lock_mode=0
+innodb_flush_method		= O_DIRECT
+innodb_file_per_table		= 1
+innodb_file_format		= barracuda
+innodb_max_dirty_pages_pct 	= 90
+innodb_lock_wait_timeout 	= 60
+innodb_flush_log_at_trx_commit 	= 2
+innodb_additional_mem_pool_size = 512M
+innodb_buffer_pool_size 	= 2048M
+innodb_thread_concurrency 	= 16
+"
+
+}
+
+

@@ -1028,11 +1028,22 @@ install_ssh_tunnel(){
     sep=
 
     for cname in "$@"; do
-      local ssh_port=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; vm_name=$(get_master_name) get_vm_ssh_port)
-      local dns_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_ssh_host)
-      local master_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_master_name)
 
-      local tunnel="${cname} -p ${ssh_port} -o StrictHostKeychecking=no -L ${ssh_port}:${master_name}:8649 pristine@${dns_name}"
+      local tunnel
+
+      if [[ "$cname" =~ ^\* ]]; then
+        # verbatim, for special cases
+        tunnel=${cname:1}
+      else
+
+        # discover info starting from cluster name
+        local ssh_port=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; vm_name=$(get_master_name) get_vm_ssh_port)
+        local dns_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_ssh_host)
+        local master_name=$(export type=cluster; source include/include_deploy.sh "${cname}" >/dev/null 2>&1; get_master_name)
+
+        tunnel="${cname} -p ${ssh_port} -o StrictHostKeyChecking=no -L ${ssh_port}:${master_name}:8649 pristine@${dns_name}"
+
+      fi
       tlist="${tlist}${sep}${tunnel}"
       sep=$'\n'
     done
