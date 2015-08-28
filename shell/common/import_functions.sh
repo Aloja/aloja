@@ -194,11 +194,54 @@ update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0)
 
 }
 
+# Gets the configuration for the benchmark for both legacy format (from folder name)
+# $1 log_file path
+legacy_get_exec_params() {
+  #here get the zabbix URL to parse filtering prepares and other benchmarks
+  #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
+  local exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
+  awk -v exec=$2 ' \
+  { pri_bar = (index($1,"/")+1); \
+  conf = substr($1, 0, (pri_bar-2));\
+  pri_mas = (index($5,">")-7);\
+  time_pos = (index($5,"&stime=")+7);\
+  split(exec, parts,"_"); \
+  bench = substr($5,(pri_mas+8));\
+  zt = substr($5,(time_pos),14);\
+  \
+  if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
+  print \
+  "\"" bench "\",\"" \
+  $(NF-1) "\",\"" \
+  strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
+  strftime("%F %H:%M:%S", $3, 1) "\",\""\
+  parts[4]"\",\"" \
+  parts[5]"\",\"" \
+  substr(parts[6],2)"\",\"" \
+  substr(parts[7],2)"\",\"" \
+  substr(parts[8],2)"\",\"" \
+  substr(parts[9],2)"\",\"" \
+  substr(parts[10],2)"\",\"" \
+  substr(parts[11],2)"\",\"" \
+  substr(parts[12],2) "\",\"" \
+  substr($5,7,(pri_mas-1)) "\"" \
+  } \
+  ' )"
 
+  echo -e "$exec_params"
+}
+
+# Gets the configuration for the benchmark
+# for both legacy format (from folder name)
+# and newer, from config.sh
+# $1 log_file path
+# $2 name
 get_exec_params() {
 
   local log_file="$1"
   local name="$2"
+
+  local exec_params
 
   # output format:
   # "wordcount","2286","2015-03-17 20:47:41","2015-03-17 21:25:47","ETH","RL3","","4","10","1","65536","0","64","http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20150317214741&period=2286"
@@ -206,36 +249,7 @@ get_exec_params() {
 
   # different parsers for legacy-style and new-style configs
   if [ "${name:15:6}" == "_conf_" ]; then
-    #here get the zabbix URL to parse filtering prepares and other benchmarks
-    #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
-    exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
-    awk -v exec=$2 ' \
-    { pri_bar = (index($1,"/")+1); \
-    conf = substr($1, 0, (pri_bar-2));\
-    pri_mas = (index($5,">")-7);\
-    time_pos = (index($5,"&stime=")+7);\
-    split(exec, parts,"_"); \
-    bench = substr($5,(pri_mas+8));\
-    zt = substr($5,(time_pos),14);\
-    \
-    if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
-    print \
-    "\"" bench "\",\"" \
-    $(NF-1) "\",\"" \
-    strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
-    strftime("%F %H:%M:%S", $3, 1) "\",\""\
-    parts[4]"\",\"" \
-    parts[5]"\",\"" \
-    substr(parts[6],2)"\",\"" \
-    substr(parts[7],2)"\",\"" \
-    substr(parts[8],2)"\",\"" \
-    substr(parts[9],2)"\",\"" \
-    substr(parts[10],2)"\",\"" \
-    substr(parts[11],2)"\",\"" \
-    substr(parts[12],2) "\",\"" \
-    substr($5,7,(pri_mas-1)) "\"" \
-    } \
-    ' )"
+    exec_params="$(legacy_get_exec_params "$log_file")"
   else
 
     local job=""
@@ -296,11 +310,12 @@ get_exec_params() {
 
   fi
 
+  echo -e "$exec_params"
+
 #echo -e "$1\n$exec_params"
 
   # Time from Zabbix format
   # substr(zt,0,4) "-" substr(zt,5,2) "-" substr(zt,7,2) " " substr(zt,9,2) ":" substr(zt,11,2) ":" substr(zt,13,2) "\",\"" \
-
 }
 
 extract_config_var() {
