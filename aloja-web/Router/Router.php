@@ -35,6 +35,27 @@ class Router
             throw new \Exception('The router YAML file isn\'t correct');
         }
         $this->routesCollection = Yaml::parse(file_get_contents($file));
+        $this->includeExternalFiles(dirname($file));
+    }
+
+    private function includeExternalFiles($dirName) {
+        //Imports is a reserved keyword to files included into YAML file
+        if(isset($this->routesCollection["imports"])) {
+            foreach($this->routesCollection["imports"] as $resource) {
+                if(!isset($resource['resource'])) {
+                    throw new \Exception("Imports is a reserved keyword. It can only be used to include files via resource keyword");
+                }
+                $fileToInclude = $dirName.'/'.$resource['resource'];
+                if (!$this->validateRouteFileSyntax($fileToInclude)) {
+                    $this->logger->addError('The included router '.$fileToInclude.' isn\'t correct');
+                    throw new \Exception('The router YAML file '.$fileToInclude.' isn\'t correct');
+                } else {
+                    $newRoutes = Yaml::parse(file_get_contents($fileToInclude));
+                    $this->routesCollection = array_merge($this->routesCollection, $newRoutes);
+                }
+            }
+            unset($this->routesCollection["imports"]);
+        }
     }
 
     /**
@@ -93,6 +114,9 @@ class Router
     public function validateRouteFileSyntax($file)
     {
         $routesCollection = Yaml::parse(file_get_contents($file));
+        //Unset reserved keywords
+        unset($routesCollection["imports"]);
+
         if (!is_array($routesCollection)) {
             $this->logger->addError('The router file doesn\'t have an aproppiate syntax. ');
 

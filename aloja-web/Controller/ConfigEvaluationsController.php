@@ -129,8 +129,7 @@ class ConfigEvaluationsController extends AbstractController
             array('default' => array('terasort'),
                 'type' => 'selectOne', 'label' => 'Benchmark:'))
         );
-        $this->filters->generateCostsFilters();
-        $clusterCosts = Utils::getClustersCosts($db);
+        $clusterCosts = Utils::generateCostsFilters($db);
 
         $bestexec = '';
         $cluster = '';

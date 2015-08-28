@@ -1,0 +1,69 @@
+mlprediction:
+    pattern: "/mlprediction"
+    controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
+    screenName: "mlprediction"
+
+mldatacollapse:
+    pattern: "/mldatacollapse"
+    controller: "alojaweb\\Controller\\MLDataCollapseController::mldatacollapseAction"
+    screenName: "mldatacollapse"
+
+mlfindattributes:
+    pattern: "/mlfindattributes"
+    controller: "alojaweb\\Controller\\MLFindAttributesController::mlfindattributesAction"
+    screenName: "mlfindattributes"
+
+mlattributestree:
+    pattern: "/mlattributestree"
+    controller: "alojaweb\\Controller\\MLFindAttributesController::mlattributestreeAction"
+    screenName: "mlattributestree"
+
+mlclearcache:
+    pattern: "/mlclearcache"
+    controller: "alojaweb\\Controller\\MLCacheController::mlclearcacheAction"
+    screenName: "mlclearcache"
+
+mlparameval:
+    pattern: "/mlparameval"
+    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
+    screenName: "mlparameval"
+
+mloutliers:
+    pattern: "/mloutliers"
+    controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
+    screenName: "mloutliers"
+
+mlcrossvar:
+    pattern: "/mlcrossvar"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
+    screenName: "mlcrossvar"
+
+mlsummaries:
+    pattern: "/mlsummaries"
+    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
+    screenName: "mlsummaries"
+
+mlcrossvar3d:
+    pattern: "/mlcrossvar3d"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dAction"
+    screenName: "mlcrossvar3d"
+
+mlcrossvar3dfa:
+    pattern: "/mlcrossvar3dfa"
+    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dfaAction"
+    screenName: "mlcrossvar3dfa"
+
+mlminconfigs:
+    pattern: "/mlminconfigs"
+    controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"
+    screenName: "mlminconfigs"
+
+mlnewconfigs:
+    pattern: "/mlnewconfigs"
+    controller: "alojaweb\\Controller\\MLNewconfigsController::mlnewconfigsAction"
+    screenName: "mlnewconfigs"
+
+mlprecision:
+    pattern: "/mlprecision"
+    controller: "alojaweb\\Controller\\MLPrecisionController::mlprecisionAction"
+    screenName: "mlprecision"
