@@ -1,11 +1,17 @@
-CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+# Benchmark definition file
 
-# Load hadoop defaults
-source "$CONF_DIR/common_hadoop.sh"
-
+# 1.) Load sources
+# Load Hadoop and java functions and defaults
+source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
+set_hadoop_requires
+source_file "$ALOJA_REPO_PATH/shell/common/common_java.sh"
+set_java_requires
+# Load common benchmark functions
+source_file "$ALOJA_REPO_PATH/shell/common/common_HiBench.sh"
 
 benchmark_config() {
-  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
+  initialize_hadoop_vars
+  prepare_hadoop_config "$NET" "$DISK" "$BENCH"
 }
 
 benchmark_run() {
@@ -23,7 +29,6 @@ benchmark_save() {
 benchmark_cleanup() {
   stop_hadoop
 }
-
 
 benchmark_hibench_config_bayes() {
   export COMPRESS_GLOBAL=1

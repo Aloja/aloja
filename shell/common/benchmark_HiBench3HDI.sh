@@ -9,8 +9,8 @@ benchmark_config() {
 }
 
 format_nodes() {
-   $DSH_MASTER "yes Y | hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
-   $DSH_MASTER "yes Y | hadoop datanode -format" 2>&1 |tee -a $LOG_PATH	
+   $DSH_MASTER "yes Y | hadoop namenode -format"
+   $DSH_MASTER "yes Y | hadoop datanode -format"
 }
 
 benchmark_run() {
