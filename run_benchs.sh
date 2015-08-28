@@ -10,7 +10,7 @@
 CONF_DIR="$ALOJA_REPO_PATH/shell/conf" #TODO remove when migrated to use ALOJA_REPO_PATH
 source "$ALOJA_REPO_PATH/shell/common/include_benchmarks.sh"
 
-logger  "INFO: configs loaded, we can start\n"
+logger  "INFO: configs loaded, ready to start"
 
 # 2.) Validate and initialize run
 
@@ -28,26 +28,17 @@ if [ "$clusterType" != "PaaS" ]; then
  prepare_folder "$DISK"
 fi
 
-# check if to copy aplic folders locally
-check_aplic_updates
+# Check if needed to download files and configs
+install_files
 
 # 3.) Run the benchmarks
-
-##GLOBAL ARRAYS FOR TIMES
-#declared globally here due to multi bash version issues
-declare -A EXEC_TIME
-declare -A EXEC_START
-declare -A EXEC_END
-
-# hadoop vars
-initialize_hadoop_vars #TODO execute only for hadoop
 
 benchmark_config
 
 start_time=$(date '+%s')
 
 ########################################################
-loggerb  "Starting execution of $BENCH"
+logger  "INFO: Starting runing $BENCH benchmark"
 
 # Benchmark stages
 benchmark_run
@@ -58,7 +49,7 @@ benchmark_teardown
 
 benchmark_save
 
-loggerb  "$(date +"%H:%M:%S") DONE $bench"
+logger  "INFO: $(date +"%H:%M:%S") DONE $bench"
 
 
 ########################################################
@@ -66,25 +57,14 @@ end_time=$(date '+%s')
 
 benchmark_cleanup
 
-
-#copy
-loggerb "INFO: Copying resulting files From: $HDD/* To: $JOB_PATH/"
-$DSH "cp $HDD/* $HDD_TMP/* $JOB_PATH/"
-
-# Save current config (all environment variables)
-( set -o posix ; set ) | grep -i -v "password" > $JOB_PATH/config.sh
-
+# Save env vars and globals
+save_env "$JOB_PATH/config.sh"
 
 # Execute post-process of traces
 if [ "$INSTRUMENTATION" == "1" ] ; then
   instrumentation_post_process
 fi
 
+logger "INFO: Size and path: $(du -h $JOB_PATH|tail -n 1)"
+logger "All done, took $(getElapsedTime startTime) seconds"
 
-#report
-#finish_date=`$DATE`
-#total_time=`expr $(date '+%s') - $(date '+%s')`
-#$(touch ${JOB_PATH}/finish_${finish_date})
-#$(touch ${JOB_PATH}/total_${total_time})
-du -h $JOB_PATH|tail -n 1
-loggerb  "DONE, total time $total_time seconds. Path $JOB_PATH"

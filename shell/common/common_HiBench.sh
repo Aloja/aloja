@@ -1,7 +1,33 @@
 #HIBENCH BENCHMARK SPECIFIC FUNCTIONS
 
+get_bench_name(){
+  local full_name
+
+  if [ "$1" == "wordcount" ] ; then
+    full_name="Wordcount"
+  elif [ "$1" == "sort" ] ; then
+    full_name="Sort"
+  elif [ "$1" == "terasort" ] ; then
+    full_name="Terasort"
+  elif [ "$1" == "kmeans" ] ; then
+    full_name="KMeans"
+  elif [ "$1" == "pagerank" ] ; then
+    full_name="Pagerank"
+  elif [ "$1" == "bayes" ] ; then
+    full_name="Bayes"
+  elif [ "$1" == "hivebench" ] ; then
+    full_name="Hivebench"
+  elif [ "$1" == "dfsioe" ] ; then
+    full_name="DFSIOE"
+  else
+    full_name="INVALID"
+  fi
+
+  echo -e "$full_name"
+}
+
 execute_HiBench(){
-  for bench in $(echo "$LIST_BENCHS") ; do
+  for bench in $LIST_BENCHS ; do
     restart_hadoop
 
     #Delete previous data
@@ -16,14 +42,14 @@ execute_HiBench(){
 
     #just in case check if the input file exists in hadoop
     if [ "$DELETE_HDFS" == "0" ] ; then
-      get_bench_name $bench
-      input_exists=$($DSH_MASTER "$HADOOP_EXPORTS $BENCH_H_DIR/bin/hadoop fs -ls /HiBench/$full_name/Input 2> /dev/null |grep 'Found '")
+
+      input_exists=$($DSH_MASTER "$HADOOP_EXPORTS $BENCH_H_DIR/bin/hadoop fs -ls /HiBench/$(get_bench_name)/Input 2> /dev/null |grep 'Found '")
 
       if [ "$input_exists" != "" ] ; then
         loggerb  "Input folder seems OK"
       else
         loggerb  "Input folder does not exist, RESET and RESTART"
-        $DSH_MASTER "$HADOOP_EXPORTS $BENCH_H_DIR/bin/hadoop fs -ls '/HiBench/$full_name/Input'"
+        $DSH_MASTER "$HADOOP_EXPORTS $BENCH_H_DIR/bin/hadoop fs -ls '/HiBench/$(get_bench_name)/Input'"
         DELETE_HDFS=1
         restart_hadoop
       fi
@@ -92,14 +118,13 @@ execute_HDI_HiBench(){
 
     #just in case check if the input file exists in hadoop
     if [ "$DELETE_HDFS" == "0" ] ; then
-      get_bench_name $bench
-      input_exists=$($DSH_MASTER hdfs dfs -ls "/HiBench/$full_name/Input" 2> /dev/null |grep "Found ")
+      input_exists=$($DSH_MASTER hdfs dfs -ls "/HiBench/$(get_bench_name)/Input" 2> /dev/null |grep "Found ")
 
       if [ "$input_exists" != "" ] ; then
         loggerb  "Input folder seems OK"
       else
         loggerb  "Input folder does not exist, RESET and RESTART"
-        $DSH_MASTER hdfs dfs -ls "/HiBench/$full_name/Input"
+        $DSH_MASTER hdfs dfs -ls "/HiBench/$(get_bench_name)/Input"
         DELETE_HDFS=1
         format_nodes
       fi

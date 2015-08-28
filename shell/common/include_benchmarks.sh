@@ -8,20 +8,35 @@ if [ ! "$ALOJA_REPO_PATH" ] || [ -z "$testKey" ] ; then
   exit 1
 fi
 
-logger "INFO: Loading $ALOJA_REPO_PATH/shell/common/common.sh" #actually already loaded it
+logger "DEBUG: Loading $ALOJA_REPO_PATH/shell/common/common.sh" #actually already loaded it
+
+
+#GLOBAL ASSOCIATIVE ARRAYS declared globally here due to multi bash version issues
+# Arrays for times
+declare -g -A EXEC_TIME
+declare -g -A EXEC_START
+declare -g -A EXEC_END
+
+# Associative array for downloading apps and configs
+# Format $BENCH_REQUIRED_FILES["Folder Name after uncompress"]="URL to download tarball"
+declare -g -A BENCH_REQUIRED_FILES
+
+# Associative array for default disk paths
+declare -g -A BENCH_DISKS
+
+
 
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
-trap 'echo "RUNNING TRAP "; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
+trap 'logger "WARNING: RUNNING TRAP FOR CLEANUP"; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM
 PARENT_PID=$$ #for killing the process from subshells
 
-logger "INFO: Loading $ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
-source "$ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
 
 # 2.) Load cluster configs
 
 # Attempt first to load local cluster config if defined
 if [[ -z "$clusterName" &&  -f ~/aloja_cluster.conf ]] ; then
-  source ~/aloja_cluster.conf  #here we don't have globals loaded yet
+  source_file ~/aloja_cluster.conf  #here we don't have globals loaded yet
 fi
 
 # Check command line options
@@ -41,27 +56,29 @@ if [ ! -f "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile" ] ; then
 fi
 
 # Load cluster config
-logger "INFO: loading $ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"
-source "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"
+source_file "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"
+
+# Load instrumentation functions if requested
+if [ "$INSTRUMENTATION" ] ; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_instrumentation.sh"
+fi
 
 # load defaultProvider
-logger "INFO: attempting to load secured account configs if present"
+logger "DEBUG: attempting to load secured account configs if present"
 securedProviderFile="$ALOJA_REPO_PATH/secure/${defaultProvider}_settings.conf"
 
 if [ -f "$securedProviderFile" ] ; then
-  logger "INFO: loading $securedProviderFile"
-  source "$securedProviderFile"
+  source_file "$securedProviderFile"
 else
   logger "INFO: no secured accounts file present"
 fi
 
-logger "INFO: loading benchmarks_defaults.conf"
-source "$ALOJA_REPO_PATH/shell/conf/benchmarks_defaults.conf"
+source_file "$ALOJA_REPO_PATH/shell/conf/benchmarks_defaults.conf"
 
 
 logger "Starting ALOJA benchmarking tools for Provider: $defaultProvider"
 
-source "$ALOJA_REPO_PATH/shell/common/cluster_functions.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/cluster_functions.sh"
 
 if [ ! -z "defaultProvider" ] ; then
   providerFunctionsFile="$ALOJA_REPO_PATH/aloja-deploy/providers/${defaultProvider}.sh"
@@ -72,14 +89,12 @@ fi
 # Check if provider file exists
 [ ! -f "$providerFunctionsFile" ] && die "ERROR: cannot find providers function file in $providerFunctionsFile"
 
-logger "INFO: loading $providerFunctionsFile"
-source "$providerFunctionsFile"
+source_file "$providerFunctionsFile"
 
-# Selected Bencmark specific sources and overrides
+# Selected Bencmark specific source_files and overrides
 
-logger "INFO: loading $ALOJA_REPO_PATH/shell/common/benchmark_${BENCH}.sh"
-source "$ALOJA_REPO_PATH/shell/common/benchmark_${BENCH}.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/benchmark_${BENCH}.sh"
 
 # Re-load cluster or node config
-logger "INFO: Re-loading $ALOJA_REPO_PATH/shell/conf/$clusterConfigFile for overrides"
-source "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"
+logger "DEBUG: Re-loading $ALOJA_REPO_PATH/shell/conf/$clusterConfigFile for overrides"
+source_file "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"

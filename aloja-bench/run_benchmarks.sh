@@ -161,7 +161,7 @@ fi
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CUR_DIR_TMP/../shell/common/include_benchmarks.sh"
 
-loggerb  "INFO: include files loaded"
+logger "INFO: INFO: include files loaded"
 
 #####
 
@@ -218,7 +218,7 @@ DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
 
 
 [ -z "BENCH_HDD" ] || [ -z "BENCH_SOURCE_DIR" ] || [ -z "BENCH_HADOOP_VERSION" ] && {
-  loggerb  "ERROR: Init variables not set"
+  logger "INFO: ERROR: Init variables not set"
   exit 1
 }
 
@@ -263,7 +263,7 @@ if [ "$INSTRUMENTATION" == "1" ] ; then
 fi
 
 
-loggerb  "DEBUG: userAloja=$userAloja
+logger "INFO: DEBUG: userAloja=$userAloja
 DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
 BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
 BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
@@ -366,11 +366,11 @@ fi
 
 
 #only copy files if version has changed (to save time in azure)
-loggerb  "Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
+logger "INFO: Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
 for node in $node_names ; do
-  loggerb  " for host $node"
+  logger "INFO:  for host $node"
   if [ "$(ssh "$node" "[ "\$\(cat $BENCH_BASE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
-    loggerb  "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
+    logger "INFO: At least host $node did not have source dirs. Generating source dirs for ALL hosts"
 
     if [ ! "$(ssh "$node" "[ -d \"$BENCH_BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
       #logger "Downloading initial aplic dir from dropbox"
@@ -378,7 +378,7 @@ for node in $node_names ; do
 
       $DSH "rsync -aur --force $BENCH_BASE_DIR/aplic.tar.bz2 /tmp/"
 
-      loggerb  "Uncompressing aplic"
+      logger "INFO: Uncompressing aplic"
       $DSH  "mkdir -p $BENCH_SOURCE_DIR/; cd $BENCH_SOURCE_DIR/../; tar -C $BENCH_SOURCE_DIR/../ -jxf /tmp/aplic.tar.bz2; "  #rm aplic.tar.bz2;
     fi
 
@@ -386,29 +386,29 @@ for node in $node_names ; do
     $DSH "mkdir -p $BENCH_SOURCE_DIR; rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
     break #dont need to check after one is missing
   else
-    loggerb  " Host $node up to date"
+    logger "INFO:  Host $node up to date"
   fi
 done
 
 #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
-#  loggerb  "Generating source dirs"
+#  logger "INFO: Generating source dirs"
 #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
 #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION};
 #elsefi
-#  loggerb  "Source dirs up to date"
+#  logger "INFO: Source dirs up to date"
 #fi
 
 
-loggerb  "Job name: $JOB_NAME"
-loggerb  "Job path: $JOB_PATH"
-loggerb  "Log path: $LOG_PATH"
-loggerb  "Disk location: $HDD"
-loggerb  "TMP Disk location: $HDD_TMP"
-loggerb  "Conf: $CONF"
-loggerb  "Benchmark: $BENCH_HIB_DIR"
-loggerb  "Benchs to execute: $LIST_BENCHS"
-loggerb  "DSH: $DSH"
-loggerb  ""
+logger "INFO: Job name: $JOB_NAME"
+logger "INFO: Job path: $JOB_PATH"
+logger "INFO: Log path: $LOG_PATH"
+logger "INFO: Disk location: $HDD"
+logger "INFO: TMP Disk location: $HDD_TMP"
+logger "INFO: Conf: $CONF"
+logger "INFO: Benchmark: $BENCH_HIB_DIR"
+logger "INFO: Benchs to execute: $LIST_BENCHS"
+logger "INFO: DSH: $DSH"
+logger "INFO: "
 
 ##For zabbix monitoring make sure IB ports are available
 #ssh_tunnel="ssh -N -L al-1001:30070:al-1001-ib0:30070 -L al-1001:30030:al-1001-ib0:30030 al-1001"
@@ -442,7 +442,7 @@ benchmark_config
 start_time=$(date '+%s')
 
 ########################################################
-loggerb  "Starting execution of $BENCH"
+logger "INFO: Starting execution of $BENCH"
 
 ##PREPARED="/scratch/local/ssd/pristine/prepared"
 #"wordcount" "sort" "terasort" "kmeans" "pagerank" "bayes" "nutchindexing" "hivebench" "dfsioe"
@@ -457,7 +457,7 @@ benchmark_teardown
 benchmark_save
 
 
-loggerb  "$(date +"%H:%M:%S") DONE $bench"
+logger "INFO: $(date +"%H:%M:%S") DONE $bench"
 
 
 ########################################################
@@ -486,4 +486,4 @@ fi
 #$(touch ${JOB_PATH}/finish_${finish_date})
 #$(touch ${JOB_PATH}/total_${total_time})
 du -h $JOB_PATH|tail -n 1
-loggerb  "DONE, total time $total_time seconds. Path $JOB_PATH"
+logger "INFO: DONE, total time $total_time seconds. Path $JOB_PATH"

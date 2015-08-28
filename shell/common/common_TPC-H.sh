@@ -8,7 +8,7 @@ execute_TPCH(){
   if [ "$DELETE_HDFS" == "1" ]; then
     generate_TPCH_data "prep_tpch" "$TPCH_SCALE_FACTOR"
   else
-    loggerb  "Reusing previous RUN TPCH data"
+    logger "INFO: Reusing previous RUN TPCH data"
   fi
 
   if [ "$LIST_BENCHS" == "all" ]; then
@@ -31,7 +31,7 @@ execute_TPCH(){
 
     logger " STARTING $query"
 
-    loggerb  "$(date +"%H:%M:%S") RUNNING QUERY $query"
+    logger "INFO: $(date +"%H:%M:%S") RUNNING QUERY $query"
 
     execute_TPCH_query "$query"
 

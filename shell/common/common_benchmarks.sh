@@ -438,8 +438,8 @@ set_job_config() {
   logger "INFO: Benchmark: $BENCH_HIB_DIR"
   logger "INFO: Benchs to execute: $LIST_BENCHS"
   logger "DEBUG: DSH: $DSH\n"
-  #loggerb  "DSH_C: $DSH_C"
-  #loggerb  "DSH_SLAVES: $DSH_SLAVES"
+  #logger "INFO: DSH_C: $DSH_C"
+  #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
 }
 
 # Set some OS requirements (e.g., to dissable swapping)
@@ -547,11 +547,11 @@ install_files() {
 
 check_aplic_updates() {
   #only copy files if version has changed (to save time)
-  loggerb  "Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
+  logger "INFO: Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
   for node in $node_names ; do
-    loggerb  " for host $node"
+    logger "INFO:  for host $node"
     if [ "$(ssh "$node" "[ "\$\(cat $BENCH_BASE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
-      loggerb  "At least host $node did not have source dirs. Generating source dirs for ALL hosts"
+      logger "INFO: At least host $node did not have source dirs. Generating source dirs for ALL hosts"
 
       if [ ! "$(ssh "$node" "[ -d \"$BENCH_BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
         #logger "Downloading initial aplic dir from dropbox"
@@ -559,7 +559,7 @@ check_aplic_updates() {
 
         $DSH "rsync -aur --force $BENCH_BASE_DIR/aplic.tar.bz2 /tmp/"
 
-        loggerb  "Uncompressing aplic"
+        logger "INFO: Uncompressing aplic"
         $DSH  "mkdir -p $BENCH_SOURCE_DIR/; cd $BENCH_SOURCE_DIR/../; tar -C $BENCH_SOURCE_DIR/../ -jxf /tmp/aplic.tar.bz2; "  #rm aplic.tar.bz2;
       fi
 
@@ -567,16 +567,16 @@ check_aplic_updates() {
       $DSH "mkdir -p $BENCH_SOURCE_DIR; rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
       break #dont need to check after one is missing
     else
-      loggerb  " Host $node up to date"
+      logger "INFO:  Host $node up to date"
     fi
   done
 
   #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
-  #  loggerb  "Generating source dirs"
+  #  logger "INFO: Generating source dirs"
   #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
   #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION};
   #elsefi
-  #  loggerb  "Source dirs up to date"
+  #  logger "INFO: Source dirs up to date"
   #fi
 
 }
