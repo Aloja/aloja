@@ -61,6 +61,7 @@ get_php_conf(){
 
   echo -e '
 memory_limit = 1024M
+max_execution_time = 600
 xdebug.default_enable = 0
 xdebug.remote_enable = 0
 opcache.enable=1
