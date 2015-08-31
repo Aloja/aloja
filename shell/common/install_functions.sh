@@ -783,11 +783,15 @@ install_ganglia_gmond(){
   fi
 }
 
-# $1 cluster name
+# $1 cluster name, $2 receiver node (optional, defaults to $1-00)
 config_ganglia_gmond(){
 
   local bootstrap_file="${FUNCNAME[0]}"
   local result mcastif
+
+  local node0
+
+  [ "$2" != "" ] && node0=${2} || node0="${1}-00"
 
   if check_bootstraped "$bootstrap_file" ""; then
 
@@ -800,7 +804,7 @@ config_ganglia_gmond(){
     vm_execute "
 
     # create conf from template
-    awk -v clustername='$1' -v node0='${1}-00' '
+    awk -v clustername='$1' -v node0='${node0}' '
 
     { sub(/%%%CLUSTERNAME%%%/, clustername)
       sub(/%%%NODE0%%%/, node0)
