@@ -34,19 +34,20 @@ vm_check_create() {
 
 #requires $vm_name and $type to be set
 vm_create_node() {
-	if [ "$defaultProvider" == "hdinsight" ]; then
-		vm_name="$clusterName"
-		status=$(hdi_cluster_check_create "$clusterName")
-		if [ $status -eq 0 ]; then
-		  create_hdi_cluster "$clusterName"
-		fi
-		  vm_provision "pw"
-		  vm_final_bootstrap "$clusterName" "pw"
-	elif [ "$defaultProvider" == "rackspacecbd" ]; then
-	    vm_name="$clusterName"
-		#vm_provision
-		vm_final_bootstrap "$clusterName"
-	elif [ "$vmType" != 'windows' ] ; then
+
+  if [ "$defaultProvider" == "hdinsight" ]; then
+    vm_name="$clusterName"
+    status=$(hdi_cluster_check_create "$clusterName")
+    if [ $status -eq 0 ]; then
+      create_hdi_cluster "$clusterName"
+    fi
+    vm_provision "pw"
+    vm_final_bootstrap "$clusterName" "pw"
+  elif [ "$defaultProvider" == "rackspacecbd" ]; then
+    vm_name="$clusterName"
+    #vm_provision
+    vm_final_bootstrap "$clusterName"
+  elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
 
     #check if machine has been already created or creates it
@@ -58,7 +59,6 @@ vm_create_node() {
     else
       vm_provision
     fi
-
 
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
@@ -79,7 +79,6 @@ vm_create_connect() {
   if ! wait_vm_ssh_ready "1" ; then
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
-
     vm_check_attach_disks "$1"
 
     #wait for ssh to be ready
@@ -98,6 +97,7 @@ vm_create_connect() {
 vm_provision() {
   vm_initial_bootstrap
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
+  needPasswordPre=
 
   if [ ! -z $1 ]; then
     vm_set_ssh $1
@@ -187,21 +187,38 @@ get_ssh_host() {
 
 #the default key override if necessary i.e. in Azure
 get_ssh_key() {
- echo "../secure/keys/id_rsa"
+ echo "$ALOJA_SSH_KEY"
 }
 
 #default port, override to change i.e. in Azure
 get_ssh_port() {
+  local vm_ssh_port_tmp=""
+
   if [ ! -z "$vm_ssh_port" ] ; then
-    echo "$vm_ssh_port"
+    local vm_ssh_port_tmp="$vm_ssh_port"
   else
-    echo "22" #default port when empty or not overwriten
+    if [ "$type" == "node" ] ; then
+      local vm_ssh_port_tmp="22" #default port when empty or not overwriten
+    #for clusters
+    else
+      local vm_ssh_port_tmp="$(get_vm_ssh_port)" #default port when empty or not overwriten
+    fi
+  fi
+
+  if [ "$vm_ssh_port_tmp" ] ; then
+    echo "$vm_ssh_port_tmp"
+  else
+    die "EEROR: cannot get SSH port for VM $vm_name"
   fi
 }
 
 #default port, override to change i.e. Openstack might need first root
 get_ssh_user() {
-  echo "$userAloja"
+  echo "${userAloja}"
+}
+
+get_ssh_pass() {
+  echo "${passwordAloja}"
 }
 
 vm_initial_bootstrap() {
@@ -229,8 +246,7 @@ check_sshpass() {
     logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
     sudo apt-get install -y sshpass
     if ! which sshpass > /dev/null; then
-      logger "ERROR: sshpass could not be installed or not found"
-      exit 1
+      die "sshpass could not be installed or not found"
     fi
   fi
 }
@@ -238,33 +254,38 @@ check_sshpass() {
 #$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
-  #logger "Executing in VM $vm_name command(s): $1"
-  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
-  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
+  local result
+
+  #logger "DEBUG: vm_execute: ssh -i $(get_ssh_key) $(eval echo $sshOptions) -o PasswordAuthentication=no -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)" "" "log to file"
 
   #Use SSH keys
-  if [ -z "$3" ] ; then
+  if [ -z "$3" ] && [ "${needPasswordPre}" != "1" ]; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
       echo -e "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      result=$?
     else
       echo -e "$1" |ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      result=$?
     fi
     #chmod 0644 $(get_ssh_key)
   #Use password
   else
     check_sshpass
-
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      result=$?
     else
-      echo "$1" |sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      result=$?
     fi
   fi
+  return ${result}
 }
 
 set_shh_proxy() {
@@ -275,12 +296,13 @@ set_shh_proxy() {
   fi
 
 }
-#interactive SSH $1 use password
+
+#interactive ssh, $1 use password
 vm_connect() {
 
   set_shh_proxy
 
-  local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 "
+  local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
 
   #Use SSH keys
   if [ -z "$1" ] ; then
@@ -297,7 +319,7 @@ vm_connect() {
   else
     check_sshpass
     logger "Connecting to VM $vm_name (using PASS), with details: ssh  $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$passwordAloja" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
@@ -316,7 +338,7 @@ vm_local_scp() {
    logger "password"
     check_sshpass
 
-    sshpass -p "$passwordAloja" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -339,10 +361,7 @@ get_master_name() {
       break #just return one
     done
   else #generate them from standard naming
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-      local master_name="${clusterName}-${vm_id}"
-      break #just return one
-    done
+    local master_name="${clusterName}-00"
   fi
   echo "$master_name"
 }
@@ -358,29 +377,9 @@ get_repo_path(){
   echo "$homePrefixAloja/$userAloja/share/"
 }
 
-#vm_name must be set
+#vm_name must be set, override when needed ie., azure, vagrant,...
 get_vm_ssh_port() {
-  local node_ssh_port=''
-
-  if [ "$type" == "node" ] ; then
-    if [ "$cloud_provider" == "azure" ] ; then
-      local node_ssh_port="$vm_ssh_port" #for Azure nodes
-    else
-      local node_ssh_port="22" #default
-    fi
-  else #cluster auto id
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-      local vm_name_tmp="${clusterName}-${vm_id}"
-      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
-
-      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-        local node_ssh_port="2${clusterID}${vm_id}"
-        break #just return one
-      fi
-    done
-  fi
-
-  echo "$node_ssh_port"
+  echo "22"
 }
 
 #$1 vm_name
@@ -401,33 +400,47 @@ get_initizalize_disks() {
     exit 1;
   fi
 
-logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
+  logger "DEBUG: devicePrefix ${devicePrefix} cloud_drive_letters $cloud_drive_letters  " "" "to_file_"
 
-  local create_string="echo ' DEBUG: listing devices'; lsblk;"
+  local create_string="error=0; echo ' DEBUG: listing devices'; lsblk;"
 
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+maxwait=60
+waited=0
+devok=0
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+while true; do
+  if lsblk | grep -q '${devicePrefix}${drive_letter}'; then
+    devok=1
+    break
+  fi
+  echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+  ((waited+=10))
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+  [ \$waited -gt \$maxwait ] && break
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
+  sleep 10
+done
 
-[ ! \$(lsblk|grep '${devicePrefix}${drive_letter}') ] && { echo ' Device ${devicePrefix}${drive_letter} not ready, sleeping 10 secs. '; sleep 10;}
-
-sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
-sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;"
+if [ \$devok -eq 1 ]; then
+  sudo parted -s /dev/${devicePrefix}${drive_letter} -- mklabel gpt mkpart primary 0% 100%;
+  sudo mkfs -t ext4 -m 1 -O dir_index,extent,sparse_super -F /dev/${devicePrefix}${drive_letter}1;
+else
+  echo ' WARNING: device ${devicePrefix}${drive_letter} not ready, skip initialization'
+  error=1
+fi"
     #break when we have the required number
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
+
+  create_string="$create_string
+exit \$error
+"
 
   echo -e "$create_string"
 }
@@ -504,7 +517,7 @@ $(get_extra_fstab)"
 get_mount_disks() {
 
   local create_string="
-    mkdir -p ~/{share,minerva};
+    mkdir -p $homePrefixAloja/$userAloja/{share,minerva};
     sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     $(get_extra_mount_disks)
     sudo chown -R $userAloja: /scratch;
@@ -534,11 +547,13 @@ wait_vm_ready() {
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
-  logger "Checking SSH status of VM $vm_name"
+  logger "INFO: Checking SSH status of VM $vm_name: $(get_ssh_user)@$(get_ssh_host):$(get_ssh_port)"
+
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
 
-    test_action="$(vm_execute " [ \"\$\(ls\)\" ] && echo '$testKey'")"
+    test_action="$(vm_execute "echo '$testKey'")"
+
     #in case we get a welcome banner we need to grep
     test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -588,10 +603,11 @@ vm_test_initiallize_disks() {
   fi
 }
 
+
 #$1 use password based auth
 vm_set_ssh() {
+  local bootstrap_file="${FUNCNAME[0]}"
 
-  local bootstrap_file="vm_set_ssh"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
@@ -601,17 +617,17 @@ vm_set_ssh() {
       local use_password="true" #use password
     fi
 
-    vm_execute "mkdir -p ~/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > ~/.ssh/config;
-                echo '${insecureKey}' >> ~/.ssh/authorized_keys;" "parallel" "$use_password"
+    vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
+                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > $homePrefixAloja/$userAloja/.ssh/config;
+                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
 
-    vm_local_scp "../secure/keys/{id_rsa,id_rsa.pub,myPrivateKey.key}" "~/.ssh/" "" "$use_password"
-    vm_execute "chmod -R 0600 ~/.ssh/*;" "" "$use_password"
+    vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
+    vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "cat ~/.ssh/config |grep 'UserKnownHostsFile' && ls ~/.ssh/id_rsa")"
+    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
     #logger "TEST SSH $test_set_ssh"
 
-    if [ ! -z "$test_set_ssh" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -655,18 +671,19 @@ vm_check_attach_disks() {
 
 
 vm_set_dsh() {
-  local bootstrap_file="vm_set_dsh"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
     node_names="$(char2char "$(get_node_names)" ' ' '\n')"
-    vm_update_template "~/.dsh/group/a" "$node_names" ""
+    vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/a" "$node_names" ""
 
     slave_names="$(char2char "$(get_slaves_names)" ' ' '\n')"
-    vm_update_template "~/.dsh/group/s" "$slave_names" ""
+    vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/s" "$slave_names" ""
 
-    test_action="$(vm_execute " [ -f ~/.dsh/group/a ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.dsh/group/a ] && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -679,32 +696,32 @@ vm_set_dsh() {
 }
 
 vm_set_dot_files() {
-  local function_name="Dotfiles"
-  local bootstrap_file="vm_set_dot_files"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
-    logger "Setting up $function_name for VM $vm_name "
+    logger "Setting up $bootstrap_file for VM $vm_name "
 
-    vm_execute "touch ~/.hushlogin;" #avoid welcome banners
+    vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
-    vm_update_template "~/.bashrc" "
+    vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'" ""
 
-    vm_update_template "~/.screenrc" "
+    vm_update_template "$homePrefixAloja/$userAloja/.screenrc" "
 defscrollback 99999
 startup_message off" ""
 
-    test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' ~/.bashrc\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' $homePrefixAloja/$userAloja/.bashrc\)\" ] && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
-      logger "ERROR setting $function_name for $vm_name. Test output: $test_action"
+      logger "ERROR setting $bootstrap_file for $vm_name. Test output: $test_action"
     fi
 
   else
-    logger "$function_name already configured"
+    logger "$bootstrap_file already configured"
   fi
 }
 
@@ -722,13 +739,14 @@ vm_initialize_disks() {
       local create_string="$(get_initizalize_disks)"
 
       vm_execute "$create_string"
+      local result=$?
 
-      test_action="$(vm_execute " [ \"\$\(lsblk|grep ${devicePrefix}c1\)\" ] && echo '$testKey'")"
-      if [ "$test_action" == "$testKey" ] ; then
+      if [ $result -eq 0 ] ; then
         #set the lock
         check_bootstraped "vm_initialize_disks" "set"
       else
         logger "ERROR initializing disks for $vm_name. Test output: $test_action"
+        exit 1
       fi
 
     else
@@ -742,7 +760,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  local bootstrap_file="~/bootstrap_cluster_initialize_disks"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   local create_string="$(get_initizalize_disks)"
 
@@ -771,15 +789,17 @@ vm_mount_disks() {
     logger "INFO: Mounting disks for VM $vm_name "
 
     local create_string="$(get_mount_disks)"
+    local error
 
     vm_execute "$create_string"
+    error=$?    
 
-    test_action="$(vm_execute " [ \"\$\(grep ${devicePrefix}c1 /etc/fstab\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [ $error -eq 0 ] ; then
       #set the lock
       check_bootstraped "vm_mount_disks" "set"
     else
       logger "ERROR mounting disks for $vm_name. Test output: $test_action"
+      exit 1
     fi
 
   else
@@ -789,7 +809,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  local bootstrap_file="~/bootstrap_cluster_mount_disk"
+  local bootstrap_file="${FUNCNAME[0]}"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
@@ -811,7 +831,7 @@ cluster_mount_disks() {
 }
 
 #parallel Node config
-function cluster_parallel_config() {
+cluster_parallel_config() {
   if [ "$vmType" != 'windows' ] && [ -z "$dont_mount_share" ] && check_sudo; then
 
 #    logger "Checking if to initilize cluster disks"
@@ -826,7 +846,7 @@ function cluster_parallel_config() {
 }
 
 #master config to execute benchmarks
-function cluster_queue_jobs() {
+cluster_queue_jobs() {
   if [ "$vmType" != 'windows' ] ; then
     vm_set_master_crontab
     vm_set_master_forer
@@ -838,21 +858,30 @@ check_bootstraped() {
 
   local bootstrap_filename="bootstrap_${1}_${vm_name}"
 
+  local result
+
   if [ -z "$3" ] ; then
-    fileExists="$(vm_execute "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
+    fileExists="$(vm_execute "[[ -f $homePrefixAloja/$userAloja/$bootstrap_filename ]] && echo '$testKey'")"
+    result=$?
   else
-    fileExists="$(vm_execute_master "[[ -f ~/$bootstrap_filename ]] && echo '$testKey'")"
+    fileExists="$(vm_execute_master "[[ -f $homePrefixAloja/$userAloja/$bootstrap_filename ]] && echo '$testKey'")"
+    result=$?
+  fi
+
+  if [ $result -eq 255 ]; then
+    logger "ERROR: cannot check bootstrap file status (SSH error?)"
+    exit 1
   fi
 
   #set lock
   if [ ! -z "$2" ] ; then
-    vm_execute "touch ~/$bootstrap_filename;"
+    vm_execute "touch $homePrefixAloja/$userAloja/$bootstrap_filename;"
   fi
 
   if [ ! -z "$fileExists" ] && [ "$fileExists" != "$testKey" ] ; then
     logger " Avoiding subsequent welcome banners"
-    vm_execute "touch ~/.hushlogin; " #avoid subsequent banners
-    fileExists="$(vm_execute "[[ -f ~/bootstrap_$1 ]] && echo '$testKey'")"
+    vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin; " #avoid subsequent banners
+    fileExists="$(vm_execute "[[ -f $homePrefixAloja/$userAloja/bootstrap_$1 ]] && echo '$testKey'")"
   fi
 #TODO fix return codes should be the opposite
   if [ "$fileExists" == "$testKey" ] ; then
@@ -913,7 +942,7 @@ vm_set_master_forer() {
   #vm_execute_master "bash -c \"(nohup export USER=$userAloja && bash $homePrefixAloja/$userAloja/share/shell/exeq.sh $clusterName; touch nohup-exit) > /dev/null &\""
 
   logger "Checking if queues dirs already setup"
-  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/queue.log && echo '$testKey'")"
+  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/local/queue_${clusterName}/queue.log && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -923,7 +952,7 @@ vm_set_master_forer() {
   fi
 
   logger "Checking if queues already setup"
-  test_action="$(vm_execute "ls ~/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
+  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/local/queue_${clusterName}/conf/counter && echo '$testKey'")"
   #in case we get a welcome banner we need to grep
   test_action="$(echo -e "$test_action"|grep "$testKey")"
 
@@ -961,7 +990,7 @@ vm_set_master_forer() {
 vm_puppet_apply() {
 
   logger "Transfering puppet to VM"
-  vm_rsync "$puppet" "~/" ""
+  vm_rsync "$puppet" "$homePrefixAloja/$userAloja/" ""
   logger "Puppet install modules and apply"
 
 	vm_execute "cd $(basename $puppet) && sudo bash -c './$puppetBootFile'"
@@ -974,13 +1003,13 @@ vm_puppet_apply() {
 #$1 share location
 vm_make_fs() {
 
-  logger "Initializing the shared file system for VM $vm_name"
-
   if [ -z "$1" ] ; then
     local share_disk_path="/scratch/attached/1"
   else
     local share_disk_path="$1"
   fi
+
+  logger "INFO: Initializing the shared file system for VM $vm_name at $share_disk_path"
 
   if [ -z "$homeIsShared" ] ; then
     logger "Checking if $homePrefixAloja/$userAloja/share is correctly linked"
@@ -995,6 +1024,8 @@ vm_make_fs() {
         logger " Linking $homePrefixAloja/$userAloja/share to $share_disk_path"
 
         vm_execute "
+
+sudo mkdir -p '$share_disk_path'
 sudo chown -R ${userAloja}: $share_disk_path;
 [ -d $homePrefixAloja/$userAloja/share ] && [ ! -L $homePrefixAloja/$userAloja/share ] && mv $homePrefixAloja/$userAloja/share $homePrefixAloja/$userAloja/share_backup && echo 'WARNING: share dir moved to ~/share_backup';
 ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
@@ -1026,7 +1057,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
@@ -1036,10 +1067,28 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
   vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
 }
 
+#[$1 share location]
+vm_rsync_public() {
+
+  if [ -z "$1" ] ; then
+    local share_disk_path="/scratch/attached/1/public"
+  else
+    local share_disk_path="$1"
+  fi
+
+  logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
+
+  if [ -d "$CONF_DIR/../../blobs" ] ; then
+    vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+  else
+    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $CONF_DIR/../../blobs"
+  fi
+}
+
 #$1 filename
 vm_get_file_contents() {
   if [ "$1" ] ; then
-    local fileContent="$(vm_execute "cat $1")"
+    local fileContent="$(vm_execute " [ -f '$1' ] && cat '$1'")"
   else
     : #error
   fi
@@ -1103,4 +1152,42 @@ vm_update_template() {
   #logger "DEBUG: TEMPLATE GOT NEW contents"
   vm_put_file_contents "$1" "$fileNewContent" "$3"
   #logger "DEBUG: TEMPLATE UPDATED $1 with template"
+}
+
+#$1 filename on remote machine $2 template part content $3 change permissions
+vm_update_host_template() {
+
+  #logger "DEBUG: TEMPLATE getting $1 contents"
+  local fileCurrentContent="$(vm_get_file_contents "$1")"
+
+  #remove the same machine
+  local fileCurrentContent="$(echo -e "$fileCurrentContent" |grep -v "$vm_name")"
+
+  #logger "DEBUG: TEMPLATE $1 GOT contents"
+  local fileNewContent="$(template_update_stream "$fileCurrentContent" "$2")"
+  #logger "DEBUG: TEMPLATE GOT NEW contents"
+  vm_put_file_contents "$1" "$fileNewContent" "$3"
+  #logger "DEBUG: TEMPLATE UPDATED $1 with template"
+}
+
+#override if necessary ie., openstack
+make_hosts_file() {
+  local hosts_file=""
+  echo -e "$hosts_file"
+}
+
+#updates /etc/hosts if called
+vm_update_hosts_file() {
+  logger "Getting list of hostnames for hosts file for VM $vm_name"
+  #local hosts_file_command="$(make_hosts_file_command)"
+  local hosts_file="$(make_hosts_file)"
+
+  #remove the same machine
+  #local hosts_file="$(echo -e "$hosts_file" |grep -v "$vm_name")"
+
+  logger "Updating hosts file for VM $vm_name"
+  #logger "DEBUG: $hosts_file $hosts_file_command"
+
+  #vm_execute "$hosts_file_command"
+  vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
 }

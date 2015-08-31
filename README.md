@@ -2,8 +2,8 @@
 
 ###Quick start
 
-1. Get familiar with the Web app, browse data and views at: [**http://hadoop.bsc.es**](http://hadoop.bsc.es)
-2. Checkout some slides or publications as background and documentation: [http://hadoop.bsc.es/publications](http://hadoop.bsc.es/publications)
+1. Get familiar with the Web app, browse data and views at: [**http://aloja.bsc.es**](http://aloja.bsc.es)
+2. Checkout some slides or publications as background and documentation: [http://aloja.bsc.es/publications](http://aloja.bsc.es/publications)
 
 ##### To experiment on a local DEV copy:
 
@@ -13,11 +13,11 @@ cd aloja
 vagrant up
 xdg-open http://localhost:8080
 ```
-**Note:** Requires git, [vagrant >= v1.6](http://www.vagrantup.com), some patience to download and import the VM, and a web browser.
+**Note:** Requires git, [vagrant >= v1.6](http://www.vagrantup.com), [virtualbox >= v4.2](https://www.virtualbox.org), some patience to download and import the VM, and a web browser.
 
 ### About ALOJA
 
-The [**ALOJA**](http://hadoop.bsc.es) research project is an initiative from the [Barcelona Supercomputing Center (BSC)]( http://www.bsc.es) to explore new hardware architectures for Big Data processing.  One of the main goals of the project is to produce a systematic study of SW and HW configuration and deployment options; where we are analyzing the cost-effectiveness of the different cloud services (*IaaS or PasS*) as well as on-premise hardware, both commodity and up-scale. 
+The [**ALOJA**](http://aloja.bsc.es) research project is an initiative from the [Barcelona Supercomputing Center (BSC)]( http://www.bsc.es) to explore new hardware architectures for Big Data processing.  One of the main goals of the project is to produce a systematic study of SW and HW configuration and deployment options; where we are analyzing the cost-effectiveness of the different cloud services (*IaaS or PasS*) as well as on-premise hardware, both commodity and up-scale. 
 
 In ALOJA we have currently created the largest vendor-neutral repository of Hadoop benchmark with over **42,000 public results**, as well as several tools for the management of the full-cycle from planning and execution of benchmarks, to data analysis and automated tools to produce insights to better understand system behavior and take decisions on framework and cluster design.
 

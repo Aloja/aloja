@@ -55,7 +55,7 @@ get_insert_cluster_sql() {
     source "$providerFunctionsFile"
 
     local sql="
-INSERT into clusters set
+INSERT into aloja2.clusters  set
       name='$clusterName', id_cluster='$clusterID', cost_hour='$clusterCostHour', cost_remote='$clusterCostDisk', cost_SSD='$clusterCostSSD', cost_IB='$clusterCostIB', type='$clusterType', link='',
       provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription'
 ON DUPLICATE KEY UPDATE
@@ -99,55 +99,59 @@ get_filter_sql() {
 
 #filter, execs that don't have any Hadoop details
 
-update ignore execs SET filter = 0;
-update ignore execs SET filter = 1 where bench like 'HiBench%' AND id_exec  NOT IN(select distinct (id_exec) from JOB_status where id_exec is not null);
+update ignore aloja2.execs SET filter = 0;
+update ignore aloja2.execs SET filter = 1 where bench like 'HiBench%' AND id_exec  NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null);
 
-#perf_detail, execs without perf counters
+#perf_detail, aloja2.execs without perf counters
 
-update ignore execs SET perf_details = 0;
-update ignore execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec is not null);
+update ignore aloja2.execs SET perf_details = 0;
+update ignore aloja2.execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec is not null);
 
 #valid, set everything as valid, exept the ones that do not match the following rules
-update ignore execs SET valid = 1;
-update ignore execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
+update ignore aloja2.execs SET valid = 1;
+update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
     tmp_table
 );
 
-update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM execs e2 left JOIN JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
+update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
 
 
 #azure VMs
-update ignore clusters SET vm_size='A3' where vm_size IN ('large', 'Large');
-update ignore clusters SET vm_size='A2' where vm_size IN ('medium', 'Medium');
-update ignore clusters SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
-update ignore clusters SET vm_size='D4' where vm_size IN ('Standard_D4');
+update ignore aloja2.clusters  SET vm_size='A3' where vm_size IN ('large', 'Large');
+update ignore aloja2.clusters  SET vm_size='A2' where vm_size IN ('medium', 'Medium');
+update ignore aloja2.clusters  SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
+update ignore aloja2.clusters  SET vm_size='D4' where vm_size IN ('Standard_D4');
 
 ##HDInsight filters
-update execs join clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
-update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
-update execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
-update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
-update execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
-update execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
-update execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
+update aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 0 where type != 'PaaS' AND exec LIKE '%hdi%';
+update aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
+update aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
+update aloja2.execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
+update aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
+update aloja2.execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
+update aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
+update aloja2.execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
 
-update execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
+update aloja2.execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
 
-update execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe_time > 1100 AND YEAR(start_time) = '2014';
+update aloja2.execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe_time > 1100 AND YEAR(start_time) = '2014';
 
-update execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
+update aloja2.execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
 
-update execs join clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
-update execs join clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
-update execs join clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
+update aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
+update aloja2.execs JOIN aloja2.clusters using (id_cluster) set filter = 1 where type = 'PaaS' and provider = 'hdinsight' and exe_time < 100;
 
+#Wrong imports filter
+update aloja2.execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL) and valid = 1 and filter = 0;
 "
 
-#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
+#update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
 #  select distinct(id_exec) from
-#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
+#    (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
 #    tmp_table
 #);
 
@@ -162,28 +166,28 @@ get_filter_sql_exec() {
 
 #filter, execs that don't have any Hadoop details
 
-update ignore execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
-update ignore execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) from JOB_status where id_exec = '$1' AND id_exec is not null);
+update ignore aloja2.execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
+update ignore aloja2.execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec = '$1' AND id_exec is not null);
 
-#perf_detail, execs without perf counters
+#perf_detail, aloja2.execs without perf counters
 
-update ignore execs SET perf_details = 0 where id_exec = '$1';
-update ignore execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from SAR_cpu where id_exec = '$1' AND id_exec is not null);
+update ignore aloja2.execs SET perf_details = 0 where id_exec = '$1';
+update ignore aloja2.execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec = '$1' AND id_exec is not null);
 
 #valid, set everything as valid, exept the ones that do not match the following rules
-update ignore execs SET valid = 1 where id_exec = '$1' ;
-update ignore execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
+update ignore aloja2.execs SET valid = 1 where id_exec = '$1' ;
+update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
-    (select b.id_exec from execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
+    (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
     tmp_table
 );
 
-update ignore execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM execs e2 left JOIN JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
+update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
 "
 
-#update ignore execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
+#update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
 #  select distinct(id_exec) from
-#    (select b.id_exec from execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
+#    (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'sort' and HDFS_BYTES_WRITTEN between '73910080224' and '73910985034')
 #    tmp_table
 #);
   fi
@@ -309,10 +313,10 @@ get_id_exec(){
   if [ "$REDO_ALL" ] ; then
     local filter=""
   else
-    local filter="AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null ) #and host not like '%-1001'"
+    local filter="AND id_exec NOT IN (select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec is not null ) #and host not like '%-1001'"
   fi
 
-  local query="SELECT id_exec FROM execs WHERE exec = '$1' $filter LIMIT 1;"
+  local query="SELECT id_exec FROM aloja2.execs WHERE exec = '$1' $filter LIMIT 1;"
 
   #logger "GET ID EXEC query: $query"
 
@@ -321,7 +325,7 @@ get_id_exec(){
 
 
 get_id_exec_conf_params(){
-    id_exec_conf_params=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
+    id_exec_conf_params=$($MYSQL "SELECT id_exec FROM aloja2.execs WHERE exec = '$1'
     AND id_exec NOT IN (select distinct (id_exec) from execs_conf_parameters where id_exec is not null)
     LIMIT 1;"| tail -n 1)
 }
@@ -421,7 +425,7 @@ import_hadoop2_jhist() {
 
 	$MYSQL "$insert"
 
-    local result=`$MYSQL "select count(*) from JOB_status JOIN execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+    local result=`$MYSQL "select count(*) FROM aloja_logs.JOB_status JOIN aloja2.execs e USING (id_exec) where e.id_exec=$id_exec" -N`
 	if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
 		waste=()
 		reduce=()
@@ -444,7 +448,7 @@ import_hadoop2_jhist() {
 			taskFinishTime=`expr $taskFinishTime / 1000`
 			values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
-			insert="INSERT INTO HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
+			insert="INSERT INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 
 			logger "$insert"
@@ -472,7 +476,7 @@ import_hadoop2_jhist() {
 			fi
 			currentTime=`expr $startTimeTS + $i`
 			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
-			insert="INSERT INTO JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
+			insert="INSERT INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
 					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
@@ -595,9 +599,9 @@ import_sar_files() {
                NR > 1  {\$1=\"NULL;${id_exec};\"\$1;  print }" > "$csv_name"
 
           if [ "$PARALLEL_INSERTS" ] ; then
-            insert_DB "${table_name}" "$csv_name" "" ";" &
+            insert_DB "aloja_logs.${table_name}" "$csv_name" "" ";" &
           else
-            insert_DB "${table_name}" "$csv_name" "" ";"
+            insert_DB "aloja_logs.${table_name}" "$csv_name" "" ";"
           fi
 
           local data_OK="1"
@@ -624,9 +628,9 @@ import_vmstats_files() {
       tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp_${vmstats_file}.csv
 
       if [ "$PARALLEL_INSERTS" ] ; then
-        insert_DB "${table_name}" "tmp_${vmstats_file}.csv" "" "," &
+        insert_DB "aloja_logs.${table_name}" "tmp_${vmstats_file}.csv" "" "," &
       else
-        insert_DB "${table_name}" "tmp_${vmstats_file}.csv" "" ","
+        insert_DB "aloja_logs.${table_name}" "tmp_${vmstats_file}.csv" "" ","
       fi
 
     else
@@ -655,9 +659,9 @@ import_bwm_files() {
       logger "Inserting into DB $bwm_file TN $table_name"
 
       if [ "$PARALLEL_INSERTS" ] ; then
-        insert_DB "${table_name}" "tmp_${bwm_file}.csv" "" ";" &
+        insert_DB "aloja_logs.${table_name}" "tmp_${bwm_file}.csv" "" ";" &
       else
-        insert_DB "${table_name}" "tmp_${bwm_file}.csv" "" ";"
+        insert_DB "aloja_logs.${table_name}" "tmp_${bwm_file}.csv" "" ";"
       fi
 
     else

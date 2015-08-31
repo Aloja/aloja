@@ -372,7 +372,7 @@ class DBSCANHeuristicTest extends \PHPUnit_Framework_TestCase
                 t.`TASKID` as TASK_ID,
                 ".$query_select1('t')." as TASK_VALUE_X,
                 ".$query_select2('t')." as TASK_VALUE_Y
-            FROM `JOB_tasks` t
+            FROM aloja_logs.JOB_tasks t
             WHERE t.`JOBID` = :jobid
             ORDER BY t.`TASKID`
         ;";

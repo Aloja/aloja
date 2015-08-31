@@ -28,6 +28,7 @@ vm_final_bootstrap() {
  vm_execute "dsh -f slaves -cM -- \"echo '\`cat /etc/hosts\`' | sudo tee -a /etc/hosts\""
  vm_execute "pscp.pssh -r -h slaves sysstat-10.0.3/ /home/pristine"
  vm_execute "dsh -f slaves -cM -- 'cd sysstat-10.0.3 && sudo make install'"
+ vm_execute "sudo yum install -y -q screen"
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chown pristine /HiBench\""
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chmod 1777 /mr-history\""
 }
@@ -60,7 +61,7 @@ get_node_names() {
 
 #$1 node_name, expects workernode{id}
 get_vm_id() {
-    local id=$(echo "$1" | grep -oP "[0-9]+")
+    local id="$(echo "$1" | grep -oP "[0-9]+"|tail -n 1)"
     printf %02d "$id"
 }
 

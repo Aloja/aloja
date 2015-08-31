@@ -43,7 +43,7 @@
 		<img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg" >
 		<table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
 			<tr>
-				<td valign="bottom"d>
+				<td valign="bottom">
 					<span style="font-size: 1.5em; color: #4E6CA3;">
 						<strong>{{ title|default('ALOJA, Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
 					</span>
@@ -111,8 +111,8 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 				<li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions',  {'type': 'DETAIL'}) }}">Browse Executions</a></li>
-				<li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop Job Counters</a></li>
-				<li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">HDI Job Counters</a></li>
+				<li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop1 Job Counters</a></li>
+				<li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">Hadoop2 Job Counters</a></li>
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlsummaries' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlsummaries') }}">Executions Summary</a></li>
 		          </ul>
@@ -137,10 +137,10 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
                       		<li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf Scalability of VMs</a></li>
-			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of execs</a></li>
-			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestcostperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of clusters</a></li>
+			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval') }}">Cost/Perf Evaluation of execs</a></li>
+			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestcostperfclustereval') }}">Cost/Perf Evaluation of clusters</a></li>
 			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
-				<li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfclustereval', {'benchs[]': 'terasort'}) }}">Cost/Perf Evaluation of HW configs</a></li>
+				<li {% if selected is defined and selected == 'Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfclustereval') }}">Cost/Perf Evaluation of HW configs</a></li>
 		          </ul>
 		        </li>
 			<li class="dropdown">
@@ -287,6 +287,11 @@
 			$("select[name='presets']").change(function() { 
 			    var url = $(this).find("option:selected").first().attr('url');
 			    if (url == "") {
+					//Clear form
+					$("input[type='checkbox']").each(function () {
+						$(this).prop('checked', false);
+					});
+
 				} else {
 					var filters = url.split("?")[1];
 					filters = filters.split("&");

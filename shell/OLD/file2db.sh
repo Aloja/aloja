@@ -102,13 +102,13 @@ get_exec_params(){
 }
 
 get_id_exec(){
-    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
-    AND id_exec NOT IN (select distinct (id_exec) from SAR_cpu where id_exec is not null and host not like '%-1001')
+    id_exec=$($MYSQL "SELECT id_exec FROM aloja2.execs WHERE exec = '$1'
+    AND id_exec NOT IN (select distinct (id_exec) FROM aloja_logs.SAR_cpu where id_exec is not null and host not like '%-1001')
     LIMIT 1;"| tail -n 1)
 }
 
 get_id_exec_conf_params(){
-    id_exec=$($MYSQL "SELECT id_exec FROM execs WHERE exec = '$1'
+    id_exec=$($MYSQL "SELECT id_exec FROM aloja2.execs WHERE exec = '$1'
     AND id_exec NOT IN (select distinct (id_exec) from execs_conf_parameters where id_exec is not null)
     LIMIT 1;"| tail -n 1)
 }
@@ -178,7 +178,7 @@ for folder in 201* ; do
             cluster="2"
           fi
 
-          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
                   VALUES (NULL, $cluster, \"$exec\", $exec_values)
                   ON DUPLICATE KEY UPDATE
                   start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',

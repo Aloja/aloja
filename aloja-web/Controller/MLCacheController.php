@@ -15,35 +15,39 @@ class MLCacheController extends AbstractController
 		$jsonLearners = '';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+            $dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+            $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+            $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
 
 			if (isset($_GET['ccache']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
-				$query = "DELETE FROM summaries";
+				$query = "DELETE FROM aloja_ml.summaries";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing summaries from DB');
 
-				$query = "DELETE FROM minconfigs_centers";
+				$query = "DELETE FROM aloja_ml.minconfigs_centers";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing centers from DB');
 
-				$query = "DELETE FROM minconfigs_props";
+				$query = "DELETE FROM aloja_ml.minconfigs_props";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing props from DB');
 
-				$query = "DELETE FROM minconfigs";
-				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing minconfigs from DB');
+				$query = "DELETE FROM aloja_ml.minconfigs";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing aloja_ml.minconfigs from DB');
 
-				$query = "DELETE FROM resolutions";
+				$query = "DELETE FROM aloja_ml.resolutions";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing resolutions from DB');
 
-				$query = "DELETE FROM trees";
+				$query = "DELETE FROM aloja_ml.trees";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing trees from DB');
 
-				$query = "DELETE FROM learners";
+				$query = "DELETE FROM aloja_ml.learners";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing learners from DB');
 
-				$query = "DELETE FROM model_storage";
+				$query = "DELETE FROM aloja_ml.model_storage";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing file models from DB');
+
+				$query = "DELETE FROM aloja_ml.precisions";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing precisions from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
@@ -51,10 +55,10 @@ class MLCacheController extends AbstractController
 
 			if (isset($_GET['rml']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
-				$query = "DELETE FROM learners WHERE id_learner='".$_GET['rml']."'";
+				$query = "DELETE FROM aloja_ml.learners WHERE id_learner='".$_GET['rml']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a learner from DB');
 
-				$query = "DELETE FROM model_storage WHERE id_hash='".$_GET['rml']."' AND type='learner'";
+				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rml']."' AND type='learner'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rml'].'*';
@@ -63,7 +67,7 @@ class MLCacheController extends AbstractController
 
 			if (isset($_GET['rmm']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
-				$query = "DELETE FROM minconfigs WHERE id_minconfigs='".$_GET['rmm']."'";
+				$query = "DELETE FROM aloja_ml.minconfigs WHERE id_minconfigs='".$_GET['rmm']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a minconfig from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
@@ -72,7 +76,7 @@ class MLCacheController extends AbstractController
 
 			if (isset($_GET['rmr']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
-				$query = "DELETE FROM resolutions WHERE id_resolution='".$_GET['rmr']."'";
+				$query = "DELETE FROM aloja_ml.resolutions WHERE id_resolution='".$_GET['rmr']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a resolution from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmr'].'*';
@@ -81,7 +85,7 @@ class MLCacheController extends AbstractController
 
 			if (isset($_GET['rms']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
-				$query = "DELETE FROM summaries WHERE id_summaries='".$_GET['rms']."'";
+				$query = "DELETE FROM aloja_ml.summaries WHERE id_summaries='".$_GET['rms']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a summary from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rms'].'*';
@@ -90,7 +94,7 @@ class MLCacheController extends AbstractController
 
 			if (isset($_GET['rmp']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
-				$query = "DELETE FROM precisions WHERE id_precision='".$_GET['rmp']."'";
+				$query = "DELETE FROM aloja_ml.precisions WHERE id_precision='".$_GET['rmp']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a precision from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmp'].'*';
@@ -104,13 +108,13 @@ class MLCacheController extends AbstractController
 						FROM (	SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
 								l.creation_time AS creation_time, l.model AS model,
 								COUNT(p.id_prediction) AS num_preds
-							FROM learners AS l LEFT JOIN predictions AS p ON l.id_learner = p.id_learner
+							FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner
 							GROUP BY l.id_learner
-						) AS j LEFT JOIN minconfigs AS m ON j.id_learner = m.id_learner
+						) AS j LEFT JOIN aloja_ml.minconfigs AS m ON j.id_learner = m.id_learner
 						GROUP BY j.id_learner
-					) AS s LEFT JOIN resolutions AS r ON s.id_learner = r.id_learner
+					) AS s LEFT JOIN aloja_ml.resolutions AS r ON s.id_learner = r.id_learner
 					GROUP BY s.id_learner
-				) AS v LEFT JOIN trees AS t ON v.id_learner = t.id_learner
+				) AS v LEFT JOIN aloja_ml.trees AS t ON v.id_learner = t.id_learner
 				GROUP BY v.id_learner
 				";
 			$rows = $dbml->query($query);
@@ -126,10 +130,10 @@ class MLCacheController extends AbstractController
 			$query="SELECT mj.*, COUNT(mc.sid_minconfigs_centers) AS num_centers
 				FROM (	SELECT DISTINCT m.id_minconfigs AS id_minconfigs, m.model AS model, m.is_new as is_new,
 						m.creation_time AS creation_time, COUNT(mp.sid_minconfigs_props) AS num_props, l.algorithm
-					FROM minconfigs AS m LEFT JOIN minconfigs_props AS mp ON m.id_minconfigs = mp.id_minconfigs, learners AS l
+					FROM aloja_ml.minconfigs AS m LEFT JOIN aloja_ml.minconfigs_props AS mp ON m.id_minconfigs = mp.id_minconfigs, aloja_ml.learners AS l
 					WHERE l.id_learner = m.id_learner
 					GROUP BY m.id_minconfigs
-				) AS mj LEFT JOIN minconfigs_centers AS mc ON mj.id_minconfigs = mc.id_minconfigs
+				) AS mj LEFT JOIN aloja_ml.minconfigs_centers AS mc ON mj.id_minconfigs = mc.id_minconfigs
 				GROUP BY mj.id_minconfigs
 				";
 			$rows = $dbml->query($query);
@@ -143,7 +147,7 @@ class MLCacheController extends AbstractController
 
 			// Compilation of Resolutions on Cache
 			$query="SELECT DISTINCT id_resolution, id_learner, model, creation_time, sigma, count(*) AS instances
-				FROM resolutions
+				FROM aloja_ml.resolutions
 				GROUP BY id_resolution
 				";
 			$rows = $dbml->query($query);
@@ -157,7 +161,7 @@ class MLCacheController extends AbstractController
 
 			// Compilation of Summaries on Cache
 			$query="SELECT DISTINCT id_summaries, model, creation_time
-				FROM summaries
+				FROM aloja_ml.summaries
 				";
 			$rows = $dbml->query($query);
 			$jsonSummaries = '[';
@@ -170,7 +174,7 @@ class MLCacheController extends AbstractController
 
 			// Compilation of Precisions on Cache
 			$query="SELECT id_precision, model, creation_time
-				FROM precisions
+				FROM aloja_ml.precisions
 				GROUP BY id_precision
 				";
 			$rows = $dbml->query($query);

@@ -56,7 +56,7 @@ class DefaultController extends AbstractController
             $where_configs = '';
             $concat_config = "";
 
-            $datefrom = Utils::read_params('datefrom',$where_configs);;
+            $datefrom = Utils::read_params('datefrom',$where_configs);
             $dateto	= Utils::read_params('dateto',$where_configs);
             $benchs         = Utils::read_params('benchs',$where_configs);
             $nets           = Utils::read_params('nets',$where_configs);
@@ -97,8 +97,8 @@ class DefaultController extends AbstractController
             $order_conf = 'LENGTH(conf), conf';
 
             //get configs first (categories)
-            $query = "SELECT count(*) num, concat($concat_config) conf from execs e
-                      JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs
+            $query = "SELECT count(*) num, concat($concat_config) conf from aloja2.execs e
+                      JOIN aloja2.clusters  c USING (id_cluster) WHERE 1 $filter_execs $where_configs
                       GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
                       ;";
 
@@ -112,7 +112,7 @@ class DefaultController extends AbstractController
             }
 
             //get the result rows
-            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
+            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM aloja2.execs e WHERE bench = e.bench $filter_execs $where_configs) P50_ALL_exe_time,
             $query = "SELECT #count(*),
             		  e.id_exec,
                       concat($concat_config) conf, bench,
@@ -122,11 +122,11 @@ class DefaultController extends AbstractController
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
                       #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
-                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $where_configs) AVG_ALL_exe_time,
-                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $where_configs) MAX_ALL_exe_time,
-                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
+                      (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $where_configs) AVG_ALL_exe_time,
+                      #(select MAX(exe_time) FROM aloja2.execs WHERE bench = e.bench $where_configs) MAX_ALL_exe_time,
+                      #(select MIN(exe_time) FROM aloja2.execs WHERE bench = e.bench $where_configs) MIN_ALL_exe_time,
                       'none'
-                      from execs e JOIN clusters USING (id_cluster)
+                      from aloja2.execs e JOIN aloja2.clusters  USING (id_cluster)
                       WHERE 1 $filter_execs $where_configs
                       GROUP BY conf, bench order by bench, $order_conf;";
 
@@ -237,19 +237,20 @@ class DefaultController extends AbstractController
         	$preset = Utils::initDefaultPreset($dbUtils, 'Benchmark Executions');
         $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
-        $datefrom = Utils::read_params('datefrom',$where_configs);
-        $dateto	= Utils::read_params('dateto',$where_configs);
-        $benchs         = Utils::read_params('benchs',$where_configs);
-        $nets           = Utils::read_params('nets',$where_configs);
-        $disks          = Utils::read_params('disks',$where_configs);
-        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs);
-        $comps          = Utils::read_params('comps',$where_configs);
-        $id_clusters    = Utils::read_params('id_clusters',$where_configs);
-        $mapss          = Utils::read_params('mapss',$where_configs);
-        $replications   = Utils::read_params('replications',$where_configs);
-        $iosfs          = Utils::read_params('iosfs',$where_configs);
-        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs);
-        $money 			= Utils::read_params('money',$where_configs);
+
+        $datefrom = Utils::read_params('datefrom',$where_configs, false );
+        $dateto	= Utils::read_params('dateto',$where_configs, false );
+        $benchs         = Utils::read_params('benchs',$where_configs, false );
+        $nets           = Utils::read_params('nets',$where_configs, false );
+        $disks          = Utils::read_params('disks',$where_configs, false );
+        $blk_sizes      = Utils::read_params('blk_sizes',$where_configs, false );
+        $comps          = Utils::read_params('comps',$where_configs, false );
+        $id_clusters    = Utils::read_params('id_clusters',$where_configs, false );
+        $mapss          = Utils::read_params('mapss',$where_configs, false );
+        $replications   = Utils::read_params('replications',$where_configs, false );
+        $iosfs          = Utils::read_params('iosfs',$where_configs, false );
+        $iofilebufs     = Utils::read_params('iofilebufs',$where_configs, false );
+        $money 			= Utils::read_params('money',$where_configsm, false );
         $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
         $benchtype = Utils::read_params ( 'bench_types', $where_configs );
         $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -408,6 +409,7 @@ class DefaultController extends AbstractController
             $replications = Utils::read_params('replications', $where_configs);
             $iosfs = Utils::read_params('iosfs', $where_configs);
             $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $money = Utils::read_params ( 'money', $where_configs, false );
             $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
             $benchtype = Utils::read_params ( 'bench_types', $where_configs );
             $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -436,7 +438,7 @@ class DefaultController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs ORDER BY rand() LIMIT 500";
+            $execs = "SELECT e.*, c.* FROM aloja2.execs e JOIN aloja2.clusters  c USING (id_cluster) WHERE 1 $filter_execs $bench_where $where_configs ORDER BY rand() LIMIT 500";
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -488,10 +490,10 @@ class DefaultController extends AbstractController
 
             $seriesData .= "{
             name: '" . $exec['exec'] . "',
-                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]]},";
+                data: [[" . round($exeTimeStd, 3) . ", " . round($costTimeStd, 3) . "]], idexec: ${exec['id_exec']}},";
         }
 
-        $clusters = $dbUtils->get_rows("SELECT * FROM clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM execs e WHERE 1 $filter_execs);");
+        $clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM aloja2.execs e WHERE 1 $filter_execs);");
 
         echo $this->container->getTwig()->render('perf_by_cost/perf_by_cost.html.twig', array(
             'selected' => 'Cost Evaluation',
@@ -531,7 +533,7 @@ class DefaultController extends AbstractController
         	'preset' => $preset,
             'selPreset' => $selPreset,
             'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-//        	'money' => $money,
+        	'money' => $money,
             'options' => Utils::getFilterOptions($dbUtils),
             'clusters' => $clusters,
             // 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
@@ -591,14 +593,14 @@ class DefaultController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-                $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
+                $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from aloja2.execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
 
                 $selected_hosts = array();
                 foreach($selectedHosts as $host) {
                     array_push($selected_hosts, $host['host_name']);
                 }
             } elseif ($hosts == 'Master') {
-                $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
+                $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from aloja2.execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
 
                 $selected_hosts = array();
                 foreach($selectedHosts as $host) {
@@ -662,7 +664,7 @@ class DefaultController extends AbstractController
                     'job_status' => array(
                         'metric'    => "ALL",
                         'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,
-                        maps map,shuffle,merge,reduce,waste FROM JOB_status
+                        maps map,shuffle,merge,reduce,waste FROM aloja_logs.JOB_status
                         WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, time;",
                         'fields'    => array('map', 'shuffle', 'reduce', 'waste', 'merge'),
                         'title'     => "Job execution history $exec_title ",
@@ -674,7 +676,7 @@ class DefaultController extends AbstractController
                     'cpu' => array(
                         'metric'    => "CPU",
                         'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%user`) `%user`, $aggr(`%system`) `%system`, $aggr(`%steal`) `%steal`, $aggr(`%iowait`)
-                        `%iowait`, $aggr(`%nice`) `%nice` FROM SAR_cpu $where $group_by;",
+                        `%iowait`, $aggr(`%nice`) `%nice` FROM aloja_logs.SAR_cpu $where $group_by;",
                         'fields'    => array('%user', '%system', '%steal', '%iowait', '%nice'),
                         'title'     => "CPU Utilization ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Utilization '."($aggr_text, $hosts)",
@@ -685,7 +687,7 @@ class DefaultController extends AbstractController
                     'load' => array(
                         'metric'    => "CPU",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
-                        FROM SAR_load $where $group_by;",
+                        FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
                         'title'     => "CPU Load Average ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Load Average '."($aggr_text, $hosts)",
@@ -696,7 +698,7 @@ class DefaultController extends AbstractController
                     'load_queues' => array(
                         'metric'    => "CPU",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`runq-sz`) `runq-sz`, $aggr(`blocked`) `blocked`
-                        FROM SAR_load $where $group_by;",
+                        FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('runq-sz', 'blocked'),
                         'title'     => "CPU Queues ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Queues '."($aggr_text, $hosts)",
@@ -706,7 +708,7 @@ class DefaultController extends AbstractController
                     ),
                     'load_tasks' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM SAR_load $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('plist-sz'),
                         'title'     => "Number of tasks for CPUs ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Number of tasks for CPUs '."($aggr_text, $hosts)",
@@ -716,7 +718,7 @@ class DefaultController extends AbstractController
                     ),
                     'switches' => array(
                         'metric'    => "CPU",
-                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM SAR_switches $where $group_by;",
+                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM aloja_logs.SAR_switches $where $group_by;",
                         'fields'    => array('proc/s', 'cswch/s'),
                         'title'     => "CPU Context Switches ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Context Switches'." ($aggr_text, $hosts)",
@@ -726,7 +728,7 @@ class DefaultController extends AbstractController
                     ),
                     'interrupts' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM SAR_interrupts $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM aloja_logs.SAR_interrupts $where $group_by;",
                         'fields'    => array('intr/s'),
                         'title'     => "CPU Interrupts ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Interrupts '."($aggr_text, $hosts)",
@@ -737,7 +739,7 @@ class DefaultController extends AbstractController
                     'memory_util' => array(
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbmemfree)*1024 kbmemfree, $aggr(kbmemused)*1024 kbmemused
-                        FROM SAR_memory_util $where $group_by;",
+                        FROM aloja_logs.SAR_memory_util $where $group_by;",
                         'fields'    => array('kbmemfree', 'kbmemused'),
                         'title'     => "Memory Utilization ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Utilization'." ($aggr_text, $hosts)",
@@ -749,7 +751,7 @@ class DefaultController extends AbstractController
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbbuffers)*1024 kbbuffers,  $aggr(kbcommit)*1024 kbcommit, $aggr(kbcached)*1024 kbcached,
                         $aggr(kbactive)*1024 kbactive, $aggr(kbinact)*1024 kbinact
-                        FROM SAR_memory_util $where $group_by;",
+                        FROM aloja_logs.SAR_memory_util $where $group_by;",
                         'fields'    => array('kbcached', 'kbbuffers', 'kbinact', 'kbcommit',  'kbactive'), //
                         'title'     => "Memory Utilization Details ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Utilization Details'." ($aggr_text, $hosts)",
@@ -758,7 +760,7 @@ class DefaultController extends AbstractController
                         'negative'  => false,
                     ),
                     //            'memory_util3' => array(
-                    //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
+                    //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM aloja_logs.SAR_memory_util $where $group_by;",
                     //                'fields'    => array('%memused', '%commit',),
                     //                'title'     => "Memory Utilization % ($aggr_text, $hosts) $exec_title ",
                     //                'percentage'=> true,
@@ -768,7 +770,7 @@ class DefaultController extends AbstractController
                     'memory' => array(
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
-                    FROM SAR_memory $where $group_by;",
+                    FROM aloja_logs.SAR_memory $where $group_by;",
                         'fields'    => array('frmpg/s','bufpg/s','campg/s'),
                         'title'     => "Memory Stats ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Memory Stats'." ($aggr_text, $hosts)",
@@ -779,7 +781,7 @@ class DefaultController extends AbstractController
                     'io_pagging_disk' => array(
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
-                                    FROM SAR_io_paging $where $group_by;",
+                                    FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('pgpgin/s', 'pgpgout/s'),
                         'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging IN/OUT to disk'." ($aggr_text, $hosts)",
@@ -791,7 +793,7 @@ class DefaultController extends AbstractController
                         'metric'    => "Memory",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
                                 $aggr(`pgscank/s`) `pgscank/s`, $aggr(`pgscand/s`) `pgscand/s`, $aggr(`pgsteal/s`) `pgsteal/s`
-                                    FROM SAR_io_paging $where $group_by;",
+                                    FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
                         'title'     => "I/O Paging ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging'." ($aggr_text, $hosts)",
@@ -801,7 +803,7 @@ class DefaultController extends AbstractController
                     ),
                     'io_pagging_vmeff' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM SAR_io_paging $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('%vmeff'),
                         'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging %vmeff'." ($aggr_text, $hosts)",
@@ -812,7 +814,7 @@ class DefaultController extends AbstractController
                     'io_transactions' => array(
                         'metric'    => "Disk",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
-                                                        FROM SAR_io_rate $where $group_by;",
+                                                        FROM aloja_logs.SAR_io_rate $where $group_by;",
                         'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
                         'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Transactions/s'." ($aggr_text, $hosts)",
@@ -823,7 +825,7 @@ class DefaultController extends AbstractController
                     'io_bytes' => array(
                         'metric'    => "Disk",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
-                                            FROM SAR_io_rate $where $group_by;",
+                                            FROM aloja_logs.SAR_io_rate $where $group_by;",
                         'fields'    => array('KB_read/s', 'KB_wrtn/s'),
                         'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'KB R/W'." ($aggr_text, $hosts)",
@@ -848,7 +850,7 @@ class DefaultController extends AbstractController
                     //                                max(`await`) `await`,
 //                                max(`svctm`) `svctm`,
                     //                                max(`%util`) `%util`
-                    //                                from SAR_block_devices d WHERE id_exec = '$exec'
+                    //                                FROM aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                     //                                GROUP BY date, host
                     //                            ) t $where $group_by;",
                     //                'fields'    => array('avgrq-sz', 'avgqu-sz', 'await', 'svctm', '%util'),
@@ -865,7 +867,7 @@ class DefaultController extends AbstractController
                 id_exec, host, date,
                 sum(`%util`) `%util_SUM`,
                     max(`%util`) `%util_MAX`
-                    from SAR_block_devices d WHERE id_exec = '$exec'
+                    FROM aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                     GROUP BY date, host
                 ) t $where $group_by;",
                         'fields'    => array('%util_SUM', '%util_MAX'),
@@ -883,7 +885,7 @@ class DefaultController extends AbstractController
                     id_exec, host, date,
                     sum(`await`) `await_SUM`,
                     max(`await`) `await_MAX`
-                        from SAR_block_devices d WHERE id_exec = '$exec'
+                        FROM aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                         GROUP BY date, host
                             ) t $where $group_by;",
                         'fields'    => array('await_SUM', 'await_MAX'),
@@ -901,7 +903,7 @@ class DefaultController extends AbstractController
                                         id_exec, host, date,
                                         sum(`svctm`) `svctm_SUM`,
                                             max(`svctm`) `svctm_MAX`
-                                            from SAR_block_devices d WHERE id_exec = '$exec'
+                                            FROM aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                                             GROUP BY date, host
                                         ) t $where $group_by;",
                         'fields'    => array('svctm_SUM', 'svctm_MAX'),
@@ -919,7 +921,7 @@ class DefaultController extends AbstractController
                                         id_exec, host, date,
                                         max(`avgrq-sz`) `avgrq-sz`,
                                         max(`avgqu-sz`) `avgqu-sz`
-                                        from SAR_block_devices d WHERE id_exec = '$exec'
+                                        FROM aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                                         GROUP BY date, host
                                     ) t $where $group_by;",
                         'fields'    => array('avg-req-size', 'avg-queue-size'),
@@ -932,7 +934,7 @@ class DefaultController extends AbstractController
                     'vmstats_io' => array(
                         'metric'    => "Disk",
                         'query' => "SELECT time, $aggr(`bi`)/(1024) `KB_IN`, $aggr(`bo`)/(1024) `KB_OUT`
-            FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+            FROM aloja_logs.VMSTATS $where_VMSTATS $group_by_vmstats;",
                         'fields'    => array('KB_IN', 'KB_OUT'),
                         'title'     => "VMSTATS KB I/O ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS KB I/O'." ($aggr_text, $hosts)",
@@ -942,7 +944,7 @@ class DefaultController extends AbstractController
                     ),
                     'vmstats_rb' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+                        'query' => "SELECT time, $aggr(`r`) `runnable procs`, $aggr(`b`) `sleep procs` FROM aloja_logs.VMSTATS $where_VMSTATS $group_by_vmstats;",
                         'fields'    => array('runnable procs', 'sleep procs'),
                         'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
@@ -956,7 +958,7 @@ class DefaultController extends AbstractController
                     $aggr(`cache`) `cache`,
                         $aggr(`free`) `free`,
                         $aggr(`swpd`) `swpd`
-                        FROM VMSTATS $where_VMSTATS $group_by_vmstats;",
+                        FROM aloja_logs.VMSTATS $where_VMSTATS $group_by_vmstats;",
                         'fields'    => array('buff', 'cache', 'free', 'swpd'),
                         'title'     => "VMSTATS Processes (r-b) ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'VMSTATS Processes (r-b)'." ($aggr_text, $hosts)",
@@ -967,7 +969,7 @@ class DefaultController extends AbstractController
                     'net_devices_kbs' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
-                        FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                        FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_NET', 'txMB/s_NET'),
                         'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'MB/s received and transmitted'." ($aggr_text, $hosts)",
@@ -978,7 +980,7 @@ class DefaultController extends AbstractController
                     'net_devices_kbs_local' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
-                        FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                        FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_LOCAL', 'txMB/s_LOCAL'),
                         'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'MB/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
@@ -989,7 +991,7 @@ class DefaultController extends AbstractController
                     'net_devices_pcks' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
-                                            FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                                            FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
                         'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
@@ -1000,7 +1002,7 @@ class DefaultController extends AbstractController
                     'net_devices_pcks_local' => array(
                         'metric'    => "Network",
                         'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
-                                            FROM SAR_net_devices $where AND IFACE not IN ('') $group_by;",
+                                            FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
                         'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Packets/s received and transmitted LOCAL'." ($aggr_text, $hosts)",
@@ -1016,7 +1018,7 @@ class DefaultController extends AbstractController
                                                     $aggr(`rawsck`) `rawsck`,
                                                     $aggr(`ip-frag`) `ip-frag`,
                                                     $aggr(`tcp-tw`) `tcp-time-wait`
-                                                    FROM SAR_net_sockets $where $group_by;",
+                                                    FROM aloja_logs.SAR_net_sockets $where $group_by;",
                         'fields'    => array('totsck', 'tcpsck', 'udpsck', 'rawsck', 'ip-frag', 'tcp-time-wait'),
                         'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Packets/s received and transmitted'." ($aggr_text, $hosts)",
@@ -1035,7 +1037,7 @@ class DefaultController extends AbstractController
                                                                 $aggr(`rxfram/s`) `rxfram/s`,
                                                                 $aggr(`rxfifo/s`) `rxfifo/s`,
                                                                 $aggr(`txfifo/s`) `txfifo/s`
-                                                                FROM SAR_net_errors $where $group_by;",
+                                                                FROM aloja_logs.SAR_net_errors $where $group_by;",
                         'fields'    => array('rxerr/s', 'txerr/s', 'coll/s', 'rxdrop/s', 'txdrop/s', 'txcarr/s', 'rxfram/s', 'rxfifo/s', 'txfifo/s'),
                         'title'     => "Network errors ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Network errors'." ($aggr_text, $hosts)",
@@ -1048,7 +1050,7 @@ class DefaultController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                                                             $aggr(`bytes_in`)/(1024*1024) `MB_in`,
                                                                                 $aggr(`bytes_out`)/(1024*1024) `MB_out`
-                                                                                FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
+                                                                                FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                         'fields'    => array('MB_in', 'MB_out'),
                         'title'     => "BW Monitor NG Total Bytes IN/OUT ($aggr_text, $hosts) $exec_title",
                         'group_title' => 'BW Monitor NG Total Bytes IN/OUT'." ($aggr_text, $hosts)",
@@ -1061,7 +1063,7 @@ class DefaultController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                                                                         $aggr(`packets_in`) `packets_in`,
                                                                                         $aggr(`packets_out`) `packets_out`
-                                                                                            FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
+                                                                                            FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                         'fields'    => array('packets_in', 'packets_out'),
                         'title'     => "BW Monitor NG Total packets IN/OUT ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'BW Monitor NG Total packets IN/OUT'." ($aggr_text, $hosts)",
@@ -1074,7 +1076,7 @@ class DefaultController extends AbstractController
                         'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
                                             $aggr(`errors_in`) `errors_in`,
                                             $aggr(`errors_out`) `errors_out`
-                                            FROM BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
+                                            FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
                         'fields'    => array('errors_in', 'errors_out'),
                         'title'     => "BW Monitor NG Total errors IN/OUT ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'BW Monitor NG Total errors IN/OUT'." ($aggr_text, $hosts)",
@@ -1178,7 +1180,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN JOB_details USING (id_exec) WHERE valid = 1");
             $preset = null;
             if(sizeof($_GET) <= 1)
             	$preset = Utils::initDefaultPreset($db, 'Best configuration');
@@ -1202,7 +1204,7 @@ class DefaultController extends AbstractController
                 $type = 'SUMMARY';
             }
 
-            $join = "JOIN execs e using (id_exec) WHERE JOBNAME NOT IN
+            $join = "JOIN aloja2.execs e using (id_exec) WHERE JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
@@ -1213,7 +1215,7 @@ class DefaultController extends AbstractController
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'MAP') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `Launched map tasks`,
@@ -1225,7 +1227,7 @@ class DefaultController extends AbstractController
                 `Map input bytes`,
                 `Map output bytes`,
                 `Map output materialized bytes`
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'REDUCE') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -1236,7 +1238,7 @@ class DefaultController extends AbstractController
                 `Reduce shuffle bytes`,
                 `Combine input records`,
                 `Combine output records`
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'FILE-IO') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME,
@@ -1249,16 +1251,16 @@ class DefaultController extends AbstractController
                 `HDFS_BYTES_READ`,
                 `Bytes Read`,
                 `Bytes Written`
-                FROM JOB_details c $join";
+                FROM aloja2.JOB_details c $join";
             } elseif ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.* FROM aloja2.JOB_details c $join";
             } elseif ($type == 'TASKS') {
-                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM JOB_tasks c
+                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM aloja_logs.JOB_tasks c
                 JOIN JOB_details j USING(id_exec, JOBID) $join ";
-                #$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+                #$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM aloja_logs.JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");
                 #TODO cache this result into a temp table
-//                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM JOB_tasks limit 10000) t");
-//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1 LIMIT 5000;");
+//                $taskStatusOptions = $db->get_rows("select distinct(TASK_TYPE) from (SELECT TASK_TYPE FROM aloja_logs.JOB_tasks limit 10000) t");
+//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM aloja_logs.JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1 LIMIT 5000;");
 
 //                $discreteOptions['TASK_STATUS'][] = 'All';
 //                $discreteOptions['TASK_TYPE'][] = 'All';
@@ -1451,8 +1453,8 @@ class DefaultController extends AbstractController
 
             // get the result rows
             $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
-    		from execs e
-    		join clusters c USING (id_cluster)
+    		from aloja2.execs e
+    		join aloja2.clusters  c USING (id_cluster)
     		WHERE 1 $filter_execs $where_configs
     		GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
     		ORDER BY $order_type ASC;";
@@ -1623,12 +1625,12 @@ class DefaultController extends AbstractController
 // 			else if($paramEval == 'iosf')
 // 				$paramOptions = array(5,10,20,50);
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters  c USING (id_cluster) WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
 
             // get the result rows
             $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
                 "exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-                "from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $where_configs".
+                "from aloja2.execs e JOIN aloja2.clusters  c USING (id_cluster) WHERE 1 $filter_execs $where_configs".
                 "GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
 
             $rows = $db->get_rows ( $query );
@@ -1736,7 +1738,7 @@ class DefaultController extends AbstractController
         $filter_execs = DBUtils::getFilterExecs();
 
         $db = $this->container->getDBUtils();
-        $clusters = $db->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT distinct(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+        $clusters = $db->get_rows("SELECT * FROM aloja2.clusters c WHERE id_cluster IN (SELECT distinct(id_cluster) FROM aloja2.execs e WHERE 1 $filter_execs);");
 
         echo $this->container->getTwig()->render('clusters/clusters.html.twig', array(
             'selected' => 'Clusters',
@@ -1760,13 +1762,13 @@ class DefaultController extends AbstractController
         if (strlen($jobid) == 0 || $jobid === "random") {
             $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
             $db = $this->container->getDBUtils();
-            $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                #ORDER BY t.`JOBID` DESC
+            $query = '
+                SELECT DISTINCT(t.JOBID)
+                FROM aloja_logs.JOB_tasks t
+                #ORDER BY t.JOBID DESC
                 LIMIT 100
-            ;";
-            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
+            ;';
+            $jobid = $db->get_rows($query)[rand(0,count($jobid))]['JOBID'];
         }
 
         echo $this->container->getTwig()->render('dbscan/dbscan.html.twig',
@@ -1818,9 +1820,9 @@ class DefaultController extends AbstractController
             $_GET['NO_CACHE'] = 1;  // Disable cache, otherwise random will not work
             $db = $this->container->getDBUtils();
             $query = "
-                SELECT DISTINCT(t.`JOBID`)
-                FROM `JOB_tasks` t
-                #ORDER BY t.`JOBID` DESC
+                SELECT DISTINCT(t.JOBID)
+                FROM aloja_logs.JOB_tasks t
+                #ORDER BY t.JOBID DESC
                 LIMIT 100
             ;";
             $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
@@ -1872,7 +1874,7 @@ class DefaultController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
+            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN HDI_JOB_details USING (id_exec) WHERE valid = 1");
 
             $discreteOptions = array();
             $discreteOptions['bench'][] = 'All';
@@ -1892,7 +1894,7 @@ class DefaultController extends AbstractController
                 $type = 'SUMMARY';
             }
 
-            $join = "JOIN execs e using (id_exec) WHERE job_name NOT IN
+            $join = "JOIN aloja2.execs e using (id_exec) WHERE job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links')".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
@@ -1904,7 +1906,7 @@ class DefaultController extends AbstractController
             if ($type == 'SUMMARY') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == "MAP") {
                 $query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
@@ -1914,7 +1916,7 @@ class DefaultController extends AbstractController
     			`MAP_OUTPUT_RECORDS`,
     			`MAP_OUTPUT_BYTES`,
     			`MAP_OUTPUT_MATERIALIZED_BYTES`
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'REDUCE') {
                 $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -1940,13 +1942,13 @@ class DefaultController extends AbstractController
     			`BYTES_WRITTEN`
     			FROM HDI_JOB_details c $join";
             } else if ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM HDI_JOB_details c $join";
+                $query = "SELECT e.bench, exe_time, c.* FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == "TASKS") {
-                $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM HDI_JOB_tasks c
+                $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM aloja_logs.HDI_JOB_tasks c
     			JOIN HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
-//                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
-//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM HDI_JOB_tasks JOIN execs USING (id_exec) WHERE valid = 1");
+//                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM aloja_logs.HDI_JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");
+//                $typeOptions = $db->get_rows("SELECT DISTINCT TASK_TYPE FROM aloja_logs.HDI_JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");
 //
 //                $discreteOptions['TASK_STATUS'][] = 'All';
 //                $discreteOptions['TASK_TYPE'][] = 'All';
@@ -1981,7 +1983,7 @@ class DefaultController extends AbstractController
 
         echo $this->container->getTwig()->render('counters/hdp2counters.html.twig',
             array('selected' => 'Hadoop 2 Job Counters',
-                'theaders' => $show_in_result_counters,
+                'theaders' => (isset($show_in_result_counters) ? $show_in_result_counters:array()),
                 //'table_fields' => $table_fields,
                 'message' => $message,
                 'title' => 'Hadoop Jobs and Tasks Execution Counters',
@@ -2022,6 +2024,7 @@ class DefaultController extends AbstractController
         $replications = Utils::read_params('replications', $where_configs);
         $iosfs = Utils::read_params('iosfs', $where_configs);
         $iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+        $money = Utils::read_params ( 'money', $where_configs, false );
         $datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
         $benchtype = Utils::read_params ( 'bench_types', $where_configs );
         $vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -2047,8 +2050,8 @@ class DefaultController extends AbstractController
             $bench_where = " AND bench = '$bench'";
         }
 
-        $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN clusters c USING (id_cluster)
-        		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs JOIN clusters USING(id_cluster)
+        $query = "SELECT t.scount as count, e.*, c.* from aloja2.execs e JOIN aloja2.clusters  c USING (id_cluster)
+        		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM aloja2.execs JOIN aloja2.clusters USING(id_cluster)
         					 WHERE  1 $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC) 
         		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $bench_where $where_configs GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
         
@@ -2122,6 +2125,7 @@ class DefaultController extends AbstractController
     			'replications' => $replications,
     			'iosfs' => $iosfs,
     			'iofilebufs' => $iofilebufs,
+                'money' => $money,
     			'datanodess' => $datanodes,
     			'bench_types' => $benchtype,
     			'vm_sizes' => $vm_sizes,
@@ -2180,6 +2184,7 @@ class DefaultController extends AbstractController
     		$replications = Utils::read_params('replications', $where_configs);
     		$iosfs = Utils::read_params('iosfs', $where_configs);
     		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $money = Utils::read_params ( 'money', $where_configs, false );
     		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
     		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
     		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -2210,8 +2215,8 @@ class DefaultController extends AbstractController
     		$sumCount = 0;
     
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
-    		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+    		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster)
         					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
@@ -2269,7 +2274,7 @@ class DefaultController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+    	$clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM aloja2.execs e WHERE 1 $filter_execs);");
     
     	//Sorting clusters by size
     	usort($execs, function($a,$b) {
@@ -2314,7 +2319,7 @@ class DefaultController extends AbstractController
     			'preset' => $preset,
                 'selPreset' => $selPreset,
     			'title' => 'Normalized Cost by Performance Evaluation of Hadoop Executions',
-    			//        	'money' => $money,
+    			'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
     			// 'execs' => (isset($execs) && $execs ) ? make_execs($execs) : 'random=1'
@@ -2357,6 +2362,7 @@ class DefaultController extends AbstractController
     		$replications = Utils::read_params('replications', $where_configs);
     		$iosfs = Utils::read_params('iosfs', $where_configs);
     		$iofilebufs = Utils::read_params('iofilebufs', $where_configs);
+            $money = Utils::read_params ( 'money', $where_configs, false );
     		$datanodes = Utils::read_params ( 'datanodess', $where_configs, false );
     		$benchtype = Utils::read_params ( 'bench_types', $where_configs );
     		$vm_sizes = Utils::read_params ( 'vm_sizes', $where_configs, false );
@@ -2387,8 +2393,8 @@ class DefaultController extends AbstractController
     		$sumCount = 0;
     		
     		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
-    		  FROM execs e JOIN clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM execs e JOIN clusters c USING(id_cluster)
+    		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster)
         					 WHERE  1 $filter_execs $bench_where $where_configs GROUP BY name,net,disk ORDER BY name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $bench_where $where_configs 
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
@@ -2483,7 +2489,7 @@ class DefaultController extends AbstractController
         },";
     	}
     
-    	$clusters = $dbUtils->get_rows("SELECT * FROM clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM execs e WHERE 1 $filter_execs);");
+    	$clusters = $dbUtils->get_rows("SELECT * FROM aloja2.clusters c WHERE id_cluster IN (SELECT DISTINCT(id_cluster) FROM aloja2.execs e WHERE 1 $filter_execs);");
 
     	//Sorting clusters by size
     	usort($bestExecs, function($a,$b) {
@@ -2526,7 +2532,7 @@ class DefaultController extends AbstractController
     			'minexetime' => $minexetime,
     			'maxexetime' => $maxexetime,
     			'bestExecs' => $bestExecs,
-    			//        	'money' => $money,
+    			'money' => $money,
     			'options' => Utils::getFilterOptions($dbUtils),
     			'clusters' => $clusters,
     			'preset' => $preset,
@@ -2590,8 +2596,8 @@ class DefaultController extends AbstractController
             $selectedString = implode(',',Utils::getStandardGroupBy($selectedGroups));
 
             $query = "SELECT ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size,(e.exe_time * (c.cost_hour / 3600)) as cost, e.*, c.*".
-                " FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN (
-                    SELECT ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size
+                " FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) INNER JOIN (
+                    SELECT ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from aloja2.execs e2 JOIN aloja2.clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY ".str_replace("execTable","e2",str_replace("clusterTable","c2",$selectedString)).",c2.vm_size
                 ) t ON";
 
             $it = 0;
@@ -2608,7 +2614,7 @@ class DefaultController extends AbstractController
             $query .= " AND t.vmsize = c.vm_size WHERE 1 GROUP BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size ORDER BY ".str_replace("execTable","e",str_replace("clusterTable","c",$selectedString)).",c.vm_size DESC;";
             $execs = $dbUtils->get_rows($query);
 */
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM execs e JOIN clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from aloja2.execs e2 JOIN aloja2.clusters c2 USING (id_cluster) WHERE 1 $where_configs GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();
