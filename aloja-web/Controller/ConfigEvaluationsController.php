@@ -181,12 +181,15 @@ class ConfigEvaluationsController extends AbstractController
         } catch ( \Exception $e ) {
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
+        $clusters = $db->get_rows("SELECT * FROM aloja2.clusters WHERE id_cluster IN (SELECT DISTINCT id_cluster FROM aloja2.execs e WHERE 1 $filterExecs);");
 
         return $this->render ( 'configEvaluationViews/bestconfig.html.twig', array (
             'title' => 'Best Run Configuration',
             'bestexec' => $bestexec,
             'cluster' => $cluster,
-            'order_type' => $order_type
+            'order_type' => $order_type,
+            'clusters' => $clusters,
+            'clusterCosts' => $clusterCosts,
         ));
     }
 
