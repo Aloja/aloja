@@ -39,7 +39,7 @@ class MLPredictionController extends AbstractController
 
 			$params_additional = array();
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params_additional[$p]); }
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
 
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
@@ -121,7 +121,7 @@ class MLPredictionController extends AbstractController
 				if (!$is_cached) 
 				{
 					// register model to DB
-					$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm,dataslice)";
+					$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice)";
 					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."');";
 
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');

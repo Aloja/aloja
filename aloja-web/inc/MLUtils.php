@@ -32,7 +32,11 @@ class MLUtils
 		foreach ($param_names_additional as $p)
 		{
 			if (empty($params_additional[$p])) $slice_info = $slice_info.'*,';
-			else $slice_info = $slice_info.$params_additional[$p].',';
+			else
+			{
+				if (is_array($params_additional[$p])) $slice_info = $slice_info.implode(",",$params_additional[$p]).',';
+				else $slice_info = $slice_info.strval($params_additional[$p]).',';
+			}
 		}
 		$slice_info = substr($slice_info,0,-1).']';
 
