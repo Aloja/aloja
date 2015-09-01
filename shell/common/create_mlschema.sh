@@ -146,6 +146,7 @@ CREATE TABLE IF NOT EXISTS summaries (
   id_summaries varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL,
   summary longtext NOT NULL,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_summaries),
@@ -185,6 +186,7 @@ $MYSQL "ALTER TABLE $DBML.summaries MODIFY summary longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD bench_type varchar(255);"
 $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 
 
 #$MYSQL "ALTER TABLE learners MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"

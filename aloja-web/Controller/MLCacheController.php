@@ -106,7 +106,7 @@ class MLCacheController extends AbstractController
 				FROM (	SELECT s.*, COUNT(r.id_resolution) AS num_resolutions
 					FROM (	SELECT j.*, COUNT(m.id_minconfigs) AS num_minconfigs
 						FROM (	SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
-								l.creation_time AS creation_time, l.model AS model,
+								l.creation_time AS creation_time, l.model AS model, l.dataslice AS advanced,
 								COUNT(p.id_prediction) AS num_preds
 							FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner
 							GROUP BY l.id_learner
@@ -121,10 +121,10 @@ class MLCacheController extends AbstractController
 			$jsonLearners = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','<a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
+				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','<a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
 			}
 			$jsonLearners = $jsonLearners.']';
-			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Actions'}]";
+			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Actions'}]";
 
 			// Compilation of Minconfs on Cache
 			$query="SELECT mj.*, COUNT(mc.sid_minconfigs_centers) AS num_centers
@@ -160,20 +160,20 @@ class MLCacheController extends AbstractController
 			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
 
 			// Compilation of Summaries on Cache
-			$query="SELECT DISTINCT id_summaries, model, creation_time
+			$query="SELECT DISTINCT id_summaries, model, dataslice, creation_time
 				FROM aloja_ml.summaries
 				";
 			$rows = $dbml->query($query);
 			$jsonSummaries = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonSummaries = $jsonSummaries.(($jsonSummaries=='[')?'':',')."['".$row['id_summaries']."','".$row['model']."','".$row['creation_time']."','<a href=\'/mlclearcache?rms=".$row['id_summaries']."\'>Remove</a>']";
+				$jsonSummaries = $jsonSummaries.(($jsonSummaries=='[')?'':',')."['".$row['id_summaries']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','<a href=\'/mlclearcache?rms=".$row['id_summaries']."\'>Remove</a>']";
 			}
 			$jsonSummaries = $jsonSummaries.']';
-			$jsonSummariesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Creation'},{'title':'Actions'}]";
+			$jsonSummariesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 
 			// Compilation of Precisions on Cache
-			$query="SELECT id_precision, model, creation_time
+			$query="SELECT id_precision, model, dataslice, creation_time
 				FROM aloja_ml.precisions
 				GROUP BY id_precision
 				";
@@ -181,10 +181,10 @@ class MLCacheController extends AbstractController
 			$jsonPrecisions = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonPrecisions = $jsonPrecisions.(($jsonPrecisions=='[')?'':',')."['".$row['id_precision']."','".$row['model']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmp=".$row['id_precision']."\'>Remove</a>']";
+				$jsonPrecisions = $jsonPrecisions.(($jsonPrecisions=='[')?'':',')."['".$row['id_precision']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmp=".$row['id_precision']."\'>Remove</a>']";
 			}
 			$jsonPrecisions = $jsonPrecisions.']';
-			$jsonPrecisionsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Creation'},{'title':'Actions'}]";
+			$jsonPrecisionsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 
 			$dbml = null;
 		}
