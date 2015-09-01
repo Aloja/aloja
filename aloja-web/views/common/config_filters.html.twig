@@ -156,7 +156,7 @@
 		<div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
 			<div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
 				<div class="panel-heading" role="tab" id="headingBasicFilters">
-					<i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#basicFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+					<i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#basicFilters" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
 					<h4 class="panel-title">
 						<a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="basicFilters">
 						Basic filters
@@ -468,7 +468,6 @@
 					<div class="panel-body">
 						<div class="row">
 							<div class="col-md-6" id="mldiv">
-								<!-- Fuck this shit -->
 								{% if selected in ['mlfindattributes','mlparameval','mloutliers','mlcrossvar3dfa'] %}
 								Model to use: <select class='form-control' name='current_model' id='select-model'>
 								{% for ftsh in models_id %}
@@ -545,8 +544,8 @@
 						<input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter<br />
 						<input type="checkbox" name="filters[]" value="prepares" {% if filters is defined and 'prepares' in filters %}checked{% endif %}> Include prepares<br />
 						<input type="checkbox" name="filters[]" value="perfdetails" {% if filters is defined and 'perfdetails' in filters %}checked{% endif %}>Only execs with perf details<br />
-		{#				<input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
-		{#				<input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
+{#						<input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
+{#						<input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
 						<input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
 						<input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
 						<div class="row">

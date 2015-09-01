@@ -42,6 +42,10 @@ class MLOutliersController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+
 			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
@@ -50,6 +54,7 @@ class MLOutliersController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
 			// model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
@@ -78,7 +83,7 @@ class MLOutliersController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model.'-'.$sigma_param.'-outliers';
+				$config = $instance.'-'.$current_model.'-'.$sigma_param.' '.$slice_info.'-outliers';
 
 				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
@@ -101,7 +106,7 @@ class MLOutliersController extends AbstractController
 					$names = array_values($header_names);
 
 					// dump the result to csv
-					$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
+					$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 				    	$rows = $db->get_rows($query);
 					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -250,46 +255,32 @@ class MLOutliersController extends AbstractController
 
 			$dbml = null;
 		}
-		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig',
-			array(
-				'selected' => 'mloutliers',
-				'jsonData' => $jsonData,
-				'jsonWarns' => $jsonWarns,
-				'jsonOuts' => $jsonOuts,
-				'jsonHeader' => $jsonHeader,
-				'jsonTable' => $jsonTable,
-				'max_p' => min(array($max_x,$max_y)),
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'must_wait' => $must_wait,
-				'models' => $model_html,
-				'models_id' => $possible_models_id,
-				'other_models_id' => $other_models,
-				'current_model' => $current_model,
-				'resolution_id' => md5($config),
-				'sigma' => $sigma_param,
-				'message' => $message,
-				'instance' => $instance,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
+		$return_params = array(
+			'selected' => 'mloutliers',
+			'jsonData' => $jsonData,
+			'jsonWarns' => $jsonWarns,
+			'jsonOuts' => $jsonOuts,
+			'jsonHeader' => $jsonHeader,
+			'jsonTable' => $jsonTable,
+			'max_p' => min(array($max_x,$max_y)),
+			'must_wait' => $must_wait,
+			'models' => $model_html,
+			'models_id' => $possible_models_id,
+			'other_models_id' => $other_models,
+			'current_model' => $current_model,
+			'resolution_id' => md5($config),
+			'slice_info' => $slice_info,
+			'sigma' => $sigma_param,
+			'message' => $message,
+			'instance' => $instance,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
 		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig', $return_params);
 	}
 }
 ?>

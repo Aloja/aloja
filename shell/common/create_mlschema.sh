@@ -164,6 +164,7 @@ CREATE TABLE IF NOT EXISTS precisions (
   id_precision varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL,
   diversity longtext NOT NULL,
   precisions longtext NOT NULL,
   discvar varchar(255) NOT NULL,
@@ -183,6 +184,7 @@ $MYSQL "ALTER TABLE $DBML.summaries MODIFY model longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries MODIFY summary longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD bench_type varchar(255);"
 $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 
 
 #$MYSQL "ALTER TABLE learners MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"

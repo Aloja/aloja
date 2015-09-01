@@ -37,6 +37,10 @@ class MLPrecisionController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -44,8 +48,9 @@ class MLPrecisionController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true,$db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
-			$config = $model_info."-precision";
+			$config = $model_info.' '.$slice_info."-precision";
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
 			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.precisions WHERE id_precision = '".md5($config)."'");
@@ -70,7 +75,7 @@ class MLPrecisionController extends AbstractController
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -99,7 +104,7 @@ class MLPrecisionController extends AbstractController
 			{
 				$token = 0;
 				$token_i = 0;
-				$query = "INSERT IGNORE INTO aloja_ml.precisions (id_precision,model,instance,diversity,precisions,discvar) VALUES ";
+				$query = "INSERT IGNORE INTO aloja_ml.precisions (id_precision,model,instance,dataslice,diversity,precisions,discvar) VALUES ";
 				foreach ($eval_names as $name)
 				{
 					$treated_line_d = "";
@@ -127,7 +132,7 @@ class MLPrecisionController extends AbstractController
 					fclose($handle);
 
 					if ($token > 0) { $query = $query.","; } $token = 1;
-					$query = $query."('".md5($config)."','".substr($model_info,1)."','".$instance."','".$treated_line_d."','".$treated_line_p."','".$name."') ";
+					$query = $query."('".md5($config)."','".substr($model_info,1)."','".$instance."','".$slice_info."','".$treated_line_d."','".$treated_line_p."','".$name."') ";
 
 					$token_i = 1;
 				}
@@ -159,7 +164,7 @@ class MLPrecisionController extends AbstractController
 				$diversity = array();
 				$precisions = array();
 
-				$query = "SELECT id_precision,model,instance,diversity,precisions,discvar FROM aloja_ml.precisions WHERE id_precision = '".md5($config)."'";
+				$query = "SELECT id_precision,model,instance,dataslice,diversity,precisions,discvar FROM aloja_ml.precisions WHERE id_precision = '".md5($config)."'";
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{
@@ -193,41 +198,27 @@ class MLPrecisionController extends AbstractController
 			$must_wait = 'NO';
 			$dbml = null;
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlprecision.html.twig',
-			array(
-				'selected' => 'mlprecision',
-				'discvars' => $jsonDiscvars,
-				'diversity' => $jsonDiversity,
-				'precisions' => $jsonPrecisions,
-				'diversityHeader' => $jsonHeaderDiv,
-				'precisionHeader' => $jsonPrecisionHeader,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'must_wait' => $must_wait,
-				'instance' => $instance,
-				'model_info' => $model_info,
-				'id_precision' => md5($config),
-				'error_stats' => $error_stats,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
+		$return_params = array(
+			'selected' => 'mlprecision',
+			'discvars' => $jsonDiscvars,
+			'diversity' => $jsonDiversity,
+			'precisions' => $jsonPrecisions,
+			'diversityHeader' => $jsonHeaderDiv,
+			'precisionHeader' => $jsonPrecisionHeader,
+			'must_wait' => $must_wait,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'id_precision' => md5($config),
+			'error_stats' => $error_stats,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
 		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlprecision.html.twig', $return_params);
 	}
 }
 ?>

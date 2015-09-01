@@ -268,49 +268,33 @@ class MLFindAttributesController extends AbstractController
 			$dbml = null;
 			if (isset($_GET['pass'])) { return "-2"; }
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
-			array(
-				'selected' => 'mlfindattributes',
-				'instance' => $instance,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'jsonData' => $jsonData,
-				'jsonHeader' => $jsonHeader,
-				'models' => $model_html,
-				'models_id' => $possible_models_id,
-				'other_models_id' => $other_models,
-				'current_model' => $current_model,
-				'message' => $message,
-				'mae' => $mae,
-				'rae' => $rae,
-				'must_wait' => $must_wait,
-				'instance' => $instance,
-				'instances' => implode("<br/>",$instances),
-				'model_info' => $model_info,
-				'id_findattr' => md5($config),
-				'unseen' => $unseen,
-				'tree' => (isset($_GET['tree'])?"true":"false"),
-				'tree_descriptor' => $tree_descriptor,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
+		$return_params = array(
+			'selected' => 'mlfindattributes',
+			'instance' => $instance,
+			'jsonData' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'models' => $model_html,
+			'models_id' => $possible_models_id,
+			'other_models_id' => $other_models,
+			'current_model' => $current_model,
+			'message' => $message,
+			'mae' => $mae,
+			'rae' => $rae,
+			'must_wait' => $must_wait,
+			'instance' => $instance,
+			'instances' => implode("<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",$instances),
+			'model_info' => $model_info,
+			'id_findattr' => md5($config),
+			'unseen' => $unseen,
+			'tree' => (isset($_GET['tree'])?"true":"false"),
+			'tree_descriptor' => $tree_descriptor,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
 		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig', $return_params);
 	}
 
 	public function mlattributestreeAction()

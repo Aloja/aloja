@@ -26,7 +26,7 @@
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -41,8 +41,6 @@
 		document.getElementById('submit').id = 'submitForm';
 		$('#submitForm').attr('value', 'Learn Model');
 		$("#submitForm").html('Learn Model');
-
-		//$('#headingAdvancedFilters').parent().hide();
 
 		if ("{{must_wait}}"== "NO")
 		{
