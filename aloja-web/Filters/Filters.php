@@ -39,7 +39,7 @@ class Filters
          *
          */
         $this->filters = array(
-            'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:'),
+            'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:',),
             'datasize' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Datasize: ',
                 'beautifier' => function($value) {
                   if($value == null)
@@ -47,7 +47,7 @@ class Filters
                   else
                       return $value;
                 }),
-            'bench_type' => array('table' => 'execs', 'default' => array('HiBench','HiBench3','HiBench3HDI'), 'type' => 'selectMultiple', 'label' => 'Bench suite:'),
+            'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectOne', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);
@@ -70,8 +70,9 @@ class Filters
                             return $cluster['name'];
                     }
                 },
-                'queryChoices' => function() {
-                    return "select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC";
+                'generateChoices' => function() {
+                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+                    $this->filters['id_cluster']['choices'] = $choices;
                 }),
             'maps' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Maps:',
                 'beautifier' => function($value) {
@@ -116,7 +117,7 @@ class Filters
         $this->aliasesTables = array('execs' => '','clusters' => '');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
-        $this->filterGroups = array('basic' => array('money','bench','datasize','bench_type','id_cluster','net','disk'),
+        $this->filterGroups = array('basic' => array('money','bench','bench_type','datasize','id_cluster','net','disk'),
             'hardware' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
             'hadoop' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'));
     }
@@ -141,8 +142,8 @@ class Filters
         foreach($this->filters as $filterName => $definition) {
             $type = (isset($definition['type'])) ? $definition['type'] : 'null';
             if($type == 'selectOne' || $type == 'selectMultiple') {
-                if (isset($definition['queryChoices'])) {
-                    $queryChoices = $definition['queryChoices']();
+                if (isset($definition['generateChoices'])) {
+                    $definition['generateChoices']();
                 } else {
                     $fromClause = "aloja2.execs";
                     if ($definition['table'] == 'clusters') {
@@ -150,8 +151,8 @@ class Filters
                     }
                     $field = isset($definition['field']) ? $definition['field'] : $filterName;
                     $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs() . " ORDER BY $field ASC";
+                    $this->filters[$filterName]['choices'] = $this->dbConnection->get_rows($queryChoices);
                 }
-                $this->filters[$filterName]['choices'] = $this->dbConnection->get_rows($queryChoices);
             }
         }
     }
@@ -272,7 +273,6 @@ class Filters
         $this->additionalFilters['presets']['currentChoice'] = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
         $this->additionalFilters['presets']['choices'] = $this->dbConnection->get_rows("
           SELECT * FROM aloja2.filter_presets WHERE selected_tool = '$screenName' ORDER BY short_name DESC");
-
     }
 
     private function initDefaultPreset($screen) {

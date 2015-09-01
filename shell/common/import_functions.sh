@@ -148,6 +148,24 @@ update ignore aloja2.execs set filter = 1 where bench IN ('prep_terasort-t','ter
 
 #Wrong imports filter
 update ignore aloja2.execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL) and valid = 1 and filter = 0;
+
+##Datasize
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='1TB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='1000000000000';
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='300GB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='300000000000';
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='100GB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='100000000000';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) set e.datasize='1TB' WHERE e.bench = 'terasort' AND d.WASB_BYTES_WRITTEN='1000000000000';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) set e.datasize='100GB' WHERE e.bench = 'terasort' AND d.WASB_BYTES_WRITTEN='100000000000';
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='10KB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='10000';
+
+update ignore aloja2.execs e set e.datasize = '32GB/Dn' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
+update ignore aloja2.execs e set e.datasize = '128GB' where e.bench='wordcount' and e.bench_type='HiBench3HDI';
+
+update ignore aloja2.execs e set e.datasize='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
+update ignore aloja2.execs e set e.datasize='Default' where e.datasize IS NULL;
+
+update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
+update ignore aloja2.execs set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%';
+update ignore aloja2.execs set valid = 1 WHERE datasize = '1TB' AND bench = 'terasort' AND exe_time > 200;
 "
 
 #update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
@@ -185,21 +203,6 @@ update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = '
 
 update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
 
-update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='1TB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='1000000000000';
-update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='300GB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='300000000000';
-update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='100GB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='100000000000';
-update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) set e.datasize='1TB' WHERE e.bench = 'terasort' AND d.WASB_BYTES_WRITTEN='1000000000000';
-update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) set e.datasize='100GB' WHERE e.bench = 'terasort' AND d.WASB_BYTES_WRITTEN='100000000000';
-update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) set e.datasize='10KB' WHERE e.bench = 'terasort' AND d.HDFS_BYTES_WRITTEN='10000';
-
-update ignore aloja2.execs e set e.datasize = '32GB/Dn' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
-update ignore aloja2.execs e set e.datasize = '128GB' where e.bench='wordcount' and e.bench_type='HiBench3HDI';
-
-update ignore aloja2.execs e set e.datasize='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
-update ignore aloja2.execs e set e.datasize='Default' where e.datasize IS NULL;
-
-update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
-update ignore aloja2.execs set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%';
 
 "
 

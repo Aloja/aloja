@@ -361,11 +361,12 @@
 		   });
 
 			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
+			showCorrectBenchs(datasizesInfo);
 			showCorrectBenchDatasizes(datasizesInfo);
 			$("input[name='bench[]'], select[name='bench[]']").change(function() {
 				showCorrectBenchDatasizes(datasizesInfo);
 			});
-			$("input[name='bench_type[]']").change(function() {
+			$("select[name='bench_type[]']").change(function() {
 				showCorrectBenchs(datasizesInfo);
 				showCorrectBenchDatasizes(datasizesInfo);
 			});

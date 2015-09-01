@@ -30,16 +30,13 @@ function setUrlQuery(query, extra_parameters_string) {
 
 function showCorrectBenchDatasizes(benchSizes) {
 	var selDatasizes = new Array();
-	var selBenchSuites = new Array();
+	var selBenchSuites = new Array($("select[name='bench_type[]']").val());
 	var selBenchs = new Array();
 	$("input[name='datasize[]'").each(function() {
 		if($(this).prop('checked'))
 			selDatasizes.push($(this).val());
 	});
-	$("input[name='bench_type[]'").each(function() {
-		if($(this).prop('checked'))
-			selBenchSuites.push($(this).val());
-	});
+
 	$("input[name='bench[]'").each(function() {
 		if($(this).prop('checked'))
 			selBenchs.push($(this).val());
@@ -73,6 +70,7 @@ function showCorrectBenchDatasizes(benchSizes) {
 function showCorrectBenchs(benchSizes) {
 	var availBenchs = new Array();
 	var reselect = false;
+	/** Bench type as select multiple
 	$("input[name='bench_type[]'").each(function() {
 		if($(this).prop('checked')) {
 			var suite = $(this).val();
@@ -81,10 +79,15 @@ function showCorrectBenchs(benchSizes) {
 			});
 		}
 	});
+	 */
+	var selBenchSuite = $("select[name='bench_type[]'").val();
+	$.each(benchSizes[selBenchSuite],function(bench, datasizes) {
+		availBenchs.push(bench);
+	});
 
 	if($("input[name='bench[]']").length > 0) {
 		$("input[name='bench[]']").each(function(index,bench) {
-			if(availBenchs.indexOf(bench) == -1 ) {
+			if(availBenchs.indexOf($(this).val()) == -1 ) {
 				if($(this).prop('checked')) {
 					$(this).prop('checked', false);
 					reselect = true;
