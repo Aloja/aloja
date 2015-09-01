@@ -15,11 +15,6 @@ server {
     autoindex on;
   }
 
-  location /slides {
-    alias /var/presentations/aloja-web;
-    index template.html;
-  }
-
   location ~ \.php$ {
 #    try_files $uri =404;
     try_files $uri /index.php?c=404&q=$uri&$args;
