@@ -67,6 +67,45 @@ function showCorrectBenchDatasizes(benchSizes) {
 	});
 }
 
+function showCorrectBenchScaleFactors(scaleFactors) {
+	var selScaleFactors = new Array();
+	var selBenchSuites = new Array($("select[name='bench_type[]']").val());
+	var selBenchs = new Array();
+	$("input[name='scale_factor[]'").each(function() {
+		if($(this).prop('checked'))
+			selScaleFactors.push($(this).val());
+	});
+
+	$("input[name='bench[]'").each(function() {
+		if($(this).prop('checked'))
+			selBenchs.push($(this).val());
+	});
+
+	//Then bench is select one
+	if(selBenchs.length == 0) {
+		selBenchs.push($("select[name='bench[]']").find(":selected").text());
+	}
+
+	$("input[name='scale_factor[]']").each(function() {
+		$(this).parent().hide();
+		$(this).prop('checked',false);
+	});
+
+	$.each(selBenchSuites, function(index, suite) {
+		if(scaleFactors[suite] != undefined) {
+			$.each(selBenchs, function (index2, bench) {
+				if(scaleFactors[suite][bench] != undefined) {
+					$.each(scaleFactors[suite][bench], function (index3, scaleFactor) {
+						$("input[name='scale_factor[]'][value='" + scaleFactor + "']").parent().show();
+						if(selScaleFactors.indexOf(scaleFactor) > -1)
+							$("input[name='scale_factor[]'][value='" + scaleFactor + "']").prop('checked',true);
+					});
+				}
+			});
+		}
+	});
+}
+
 function showCorrectBenchs(benchSizes) {
 	var availBenchs = new Array();
 	var reselect = false;

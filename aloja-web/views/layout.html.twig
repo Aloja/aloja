@@ -361,14 +361,18 @@
 		   });
 
 			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
+			var scaleFactorsInfo = jQuery.parseJSON('{{ additionalFilters['scaleFactorsInfo'] | raw }}');
 			showCorrectBenchs(datasizesInfo);
 			showCorrectBenchDatasizes(datasizesInfo);
+			showCorrectBenchScaleFactors(scaleFactorsInfo);
 			$("input[name='bench[]'], select[name='bench[]']").change(function() {
 				showCorrectBenchDatasizes(datasizesInfo);
+				showCorrectBenchScaleFactors(scaleFactorsInfo);
 			});
 			$("select[name='bench_type[]']").change(function() {
 				showCorrectBenchs(datasizesInfo);
 				showCorrectBenchDatasizes(datasizesInfo);
+				showCorrectBenchScaleFactors(scaleFactorsInfo);
 			});
 		  });
 	</script>

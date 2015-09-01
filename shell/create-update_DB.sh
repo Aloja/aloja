@@ -44,10 +44,10 @@ for clusterConfigFile in $configFolderPath/cluster_* ; do
 done
 
 #update filters in the whole DB (slow)
-if [ "$DONT_UPDATE_FILTERS" ] ; then
-  logger "Skipping updating filters for the whole DB to save time or for vagrant VM"
-else
+#if [ "$DONT_UPDATE_FILTERS" ] ; then
+#  logger "Skipping updating filters for the whole DB to save time or for vagrant VM"
+#else
   logger "Updating VALID and FILTER fields (probably will take a while...)"
-  $MYSQL "$(get_filter_sql)"
-fi
+#  $MYSQL "$(get_filter_sql)"
+#fi
 

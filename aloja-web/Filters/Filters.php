@@ -40,13 +40,28 @@ class Filters
          */
         $this->filters = array(
             'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:',),
-            'datasize' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Datasize: ',
+            'datasize' => array('database' => 'aloja2', 'table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Datasize: ',
                 'beautifier' => function($value) {
-                  if($value == null)
-                      return 'Default';
-                  else
-                      return $value;
-                }),
+                  $nDigits = strlen((string)$value);
+                  $return = '';
+                  if($nDigits >= 4) {
+                      if($nDigits >= 8) {
+                          if($nDigits >= 10) {
+                             if($nDigits >= 13) {
+                                 $return =  ceil(($value/1000000000000)) . ' TB';
+                             } else
+                                 $return =  ceil(($value/1000000000)) . ' GB';
+                          } else
+                              $return = ceil(($value/1000000)) . ' MB';
+                      } else
+                          $return = ceil(($value/1000)) . ' KB';
+                  } else
+                      $return = $value . ' B';
+
+                  return $return;
+                },
+                'parseFunction' => 'parseDatasize'),
+            'scale_factor' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Scale factor: '),
             'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectOne', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
@@ -117,9 +132,24 @@ class Filters
         $this->aliasesTables = array('execs' => '','clusters' => '');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
-        $this->filterGroups = array('basic' => array('money','bench','bench_type','datasize','id_cluster','net','disk'),
+        $this->filterGroups = array('basic' => array('money','bench','bench_type','datasize','scale_factor','id_cluster','net','disk'),
             'hardware' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
             'hadoop' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'));
+    }
+
+    private function parseDatasize()
+    {
+        $values = Utils::get_GET_intArray('datasize');
+        $this->filters['datasize']['currentChoice'] = $values;
+        foreach ($values as $value) {
+            $definition = $this->filters['datasize'];
+            $DBreference = ($definition['table'] != 'mixed') ? "${definition['table']}Alias." : '';
+            $DBreference .= (isset($definition['field'])) ? $definition['field'] : 'datasize';
+            $errorMargin = $this->getErrorMargin($value);
+            $maxValue = $value + $errorMargin;
+            $minValue = $value - $errorMargin;
+            $this->whereClause .= " AND $DBreference >= $minValue AND $DBreference <= $maxValue";
+        }
     }
 
     public function getWhereClause($aliasesToReplace = array()) {
@@ -160,7 +190,7 @@ class Filters
     private function parseFilters() {
         foreach($this->filters as $filterName => $definition) {
             if(isset($definition['parseFunction'])) {
-                $this->$definition['parseFunction']();
+                call_user_func(array($this,$definition['parseFunction']));
             } else {
                 $DBreference = ($definition['table'] != 'mixed') ? "${definition['table']}Alias." : '';
                 $DBreference .= (isset($definition['field'])) ? $definition['field'] : $filterName;
@@ -326,10 +356,64 @@ class Filters
         //Getting option to tell JS what to filter on rendering
         $benchsDatasize = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,datasize FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,datasize ORDER BY bench ASC ");
         $dataBenchs = array();
+        $availDatasizes = array();
         foreach($benchsDatasize as $row) {
-            $dataBenchs[$row['bench_type']][$row['bench']][] = $row['datasize'];
+            $datasize = $this->roundDatasize($row['datasize']);
+            if(!isset($availDatasizes[$row['bench_type']]) ||
+                !isset($availDatasizes[$row['bench_type']][$row['bench']]) ||
+                !in_array($datasize, $availDatasizes[$row['bench_type']][$row['bench']])) {
+                    $dataBenchs[$row['bench_type']][$row['bench']][] = $row['datasize'];
+                    $availDatasizes[$row['bench_type']][$row['bench']][] = $datasize;
+            }
         }
 
         $this->additionalFilters['datasizesInfo'] = json_encode($dataBenchs);
+
+        //Getting scale factors per bench
+        $scaleFactors = array();
+        $benchsScaleFactors = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,scale_factor FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,datasize ORDER BY bench ASC ");
+        foreach($benchsScaleFactors as $row) {
+            $scaleFactor = $row['scale_factor'];
+            $scaleFactors[$row['bench_type']][$row['bench']][] = $scaleFactor;
+        }
+
+        $this->additionalFilters['scaleFactorsInfo'] = json_encode($scaleFactors);
+    }
+
+    private function roundDatasize($value) {
+        $nDigits = strlen((string)$value);
+        $return = '';
+        if($nDigits >= 4) {
+            if($nDigits >= 8) {
+                if($nDigits >= 10) {
+                    if($nDigits >= 13) {
+                        $return =  ceil(($value/1000000000000));
+                    } else
+                        $return =  ceil(($value/1000000000));
+                } else
+                    $return = ceil(($value/1000000));
+            } else
+                $return = ceil(($value/1000));
+        } else
+            $return = $value;
+
+        return $return;
+    }
+
+    private function getErrorMargin($value) {
+        $nDigits = strlen((string)$value);
+        if($nDigits >= 4) {
+            if($nDigits >= 8) {
+                if($nDigits >= 10) {
+                    if($nDigits >= 13) {
+                        return 1000000000000;
+                    } else
+                        return 1000000000;
+                } else
+                    return 1000000;
+            } else
+                return 1000;
+        } else
+            return 1;
     }
 }

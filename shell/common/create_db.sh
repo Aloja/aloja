@@ -25,14 +25,15 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`iofilebuf\` int(11) DEFAULT NULL,
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
-  hadoop_version varchar(127) default NULL,
+  \`hadoop_version\` varchar(127) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
   \`valid\` int DEFAULT 0,
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
- \`perf_details\` int DEFAULT 0,
- \`exec_type\` varchar(255) DEFAULT 'default',
- \`datasize\` varchar(255) DEFAULT NULL,
+  \`perf_details\` int DEFAULT 0,
+  \`exec_type\` varchar(255) DEFAULT 'default',
+  \`datasize\` int(11) DEFAULT NULL,
+  \`scale_factor\` varchar(255) DEFAULT 'N/A',
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
@@ -991,7 +992,10 @@ $MYSQL "alter table execs
     add column exec_type varchar(255) default 'default';"
 
 $MYSQL "alter table execs
-    add column datasize varchar(255) default NULL;"
+    add column datasize int(11) default NULL;"
+
+$MYSQL "alter table execs
+    add column scale_factor varchar(255) default NULL;"
 
 
 ############################################33
