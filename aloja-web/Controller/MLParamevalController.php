@@ -35,6 +35,9 @@ class MLParamevalController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
 
 			$money		= Utils::read_params ( 'money', $where_configs );
 			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
@@ -110,6 +113,7 @@ class MLParamevalController extends AbstractController
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
 			$instances = MLUtils::generateInstances($param_names, $params, true, $db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
 			// model for filling
 			$possible_models = $possible_models_id = array();
@@ -127,7 +131,7 @@ class MLParamevalController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model."-parameval";
+				$config = $instance.'-'.$current_model.' '.$slice_info."-parameval";
 
 				$query_cache = "SELECT count(*) as total FROM aloja_ml.trees WHERE id_learner = '".$current_model."' AND model = '".$model_info."'";
 				$is_cached_mysql = $dbml->query($query_cache);
@@ -241,44 +245,33 @@ class MLParamevalController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 
 			$series = $jsonHeader = $colors = '[]';
-			$instance = $current_model = '';
+			$instance = $current_model = $slice_info = '';
 			$possible_models = $possible_models_id = array();
 			$must_wait = 'NO';
 		}
-		echo $this->container->getTwig ()->render ('mltemplate/mlparameval.html.twig', array (
-				'selected' => 'mlparameval',
-				'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
-				'categories' => $categories,
-				'series' => $series,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'money' => $money,
-				'paramEval' => $paramEval,
-				'instance' => $instance,
-				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => $possible_models_id,
-				'current_model' => $current_model,
-				'gammacolors' => $colors,
-				'must_wait' => $must_wait,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-		) );
+		$return_params = array(
+			'selected' => 'mlparameval',
+			'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
+			'categories' => $categories,
+			'series' => $series,
+			'money' => $money,
+			'paramEval' => $paramEval,
+			'instance' => $instance,
+			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+			'models_id' => $possible_models_id,
+			'current_model' => $current_model,
+			'gammacolors' => $colors,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'must_wait' => $must_wait,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
+		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlparameval.html.twig', $return_params);
 	}
 }
 ?>

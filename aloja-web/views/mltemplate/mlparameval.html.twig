@@ -19,8 +19,6 @@
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
 
-		$('#headingAdvancedFilters').parent().hide();
-
 		$('select[name="parameval"]').change(function()
 		{
 			var name = $(this).val()+'s[]';
@@ -33,27 +31,14 @@
 		if ("{{must_wait}}" == "NO")
 		{
 			$('#chart').highcharts({
-				chart: {
-					type: 'column'
-				},
-				title: {
-					text: '{{ getParamevalTitleName(paramEval) }} evaluation'
-				},
-				credits: {
-					enabled: false
-				},
+				chart: { type: 'column' },
+				title: { text: '{{ getParamevalTitleName(paramEval) }} evaluation' },
+				credits: { enabled: false },
 				xAxis: {
 					categories: [{{ categories | raw}}],
-					title: {
-						text: '{{ getParamevalTitleName(paramEval) }}'
-					}
+					title: { text: '{{ getParamevalTitleName(paramEval) }}' }
 				},
-				yAxis: {
-					min: 0,
-					title: {
-						text: 'Execution time'
-					}
-				},
+				yAxis: { min: 0, title: { text: 'Execution time' } },
 				tooltip: {
 					headerFormat: '<table>',
 					pointFormat:	'<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
@@ -63,12 +48,7 @@
 					shared: true,
 					useHTML: true
 				},
-				plotOptions: {
-					column: {
-						pointPadding: 0.2,
-						borderWidth: 0
-					}
-				},
+				plotOptions: { column: { pointPadding: 0.2, borderWidth: 0 } },
 				series: {{ series | raw }},
 				colors: {{ gammacolors | raw }}
 			});
@@ -139,6 +119,8 @@
 							<ul>
 							<li>Model cache ID: {{current_model|raw}}</li>
 							<li>Instance: {{instance|raw}}</li>
+	 						<li>Model Info: {{model_info|raw}}</li>
+							<li>Slice Info: {{slice_info|raw}}</li>
 							</ul>
 						</p>
 					</div>
@@ -146,7 +128,7 @@
 			</div>
 		</div>
 		<div style="float: right; width: 30%;">
-		{% include 'mltemplate/config_filters_legacy.html.twig' %}
+		{% include 'common/config_filters.html.twig' %}
 		</div>
 	</div>
 	<div style="clear: both;"></div>

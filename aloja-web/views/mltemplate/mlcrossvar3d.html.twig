@@ -44,6 +44,7 @@
 						<ul>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Slice Info: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -51,7 +52,7 @@
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -64,7 +65,6 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#headingAdvancedFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 

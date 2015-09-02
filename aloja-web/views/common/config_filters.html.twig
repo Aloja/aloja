@@ -476,7 +476,7 @@
 								{% if selected == 'mlcrossvar3dfa' %}
 								<option value='' {% if  '' == current_model %}SELECTED{% endif %}>Aggregation of Models</option>
 								{% endif %}
-								<option value='' {% if  '' == current_model %}SELECTED{% endif %}>--- Other models ---</option>				
+								<option value='' {% if  '' == current_model and selected != 'mlcrossvar3dfa' %}SELECTED{% endif %}>--- Other models ---</option>				
 								{% for ftsh in other_models_id %}
 								<option value='{{ftsh}}' {% if  ftsh == current_model %}SELECTED{% endif %}>{{ftsh}}</option>
 								{% endfor %}

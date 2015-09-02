@@ -34,6 +34,10 @@ class MLCrossvarController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'exe_time';
 
@@ -45,6 +49,7 @@ class MLCrossvarController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
 			$rows = null;
 			if ($cross_var1 != 'pred_time' && $cross_var2 != 'pred_time')
@@ -52,7 +57,7 @@ class MLCrossvarController extends AbstractController
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2
 					FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
-					WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
+					WHERE hadoop_version IS NOT NULL".$where_configs."
 					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
@@ -93,7 +98,7 @@ class MLCrossvarController extends AbstractController
 					$query="SELECT ".$var1." as V1, ".$var2." as V2
 						FROM (	SELECT ".$other_var.", e.id_exec
 							FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
-							WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
+							WHERE hadoop_version IS NOT NULL".$where_configs."
 						) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec
 						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 			  	  	$rows = $db->get_rows ( $query );
@@ -155,40 +160,26 @@ class MLCrossvarController extends AbstractController
 			$categories1 = $categories2 = '';
 			$must_wait = "NO";
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlcrossvar.html.twig',
-			array(
-				'selected' => 'mlcrossvar',
-				'jsonData' => $jsonData,
-				'variable1' => $cross_var1,
-				'variable2' => $cross_var2,
-				'categories1' => $categories1,
-				'categories2' => $categories2,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'message' => $message,
-				'instance' => $instance,
-				'model_info' => $model_info,
-				'must_wait' => $must_wait,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
-		);	
+		$return_params = array(
+			'selected' => 'mlcrossvar',
+			'jsonData' => $jsonData,
+			'variable1' => $cross_var1,
+			'variable2' => $cross_var2,
+			'categories1' => $categories1,
+			'categories2' => $categories2,
+			'message' => $message,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'must_wait' => $must_wait,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
+		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlcrossvar.html.twig', $return_params);
 	}
 
 	public function mlcrossvar3dAction()
@@ -217,6 +208,10 @@ class MLCrossvarController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 			$cross_var3 = 'exe_time';
@@ -229,6 +224,7 @@ class MLCrossvarController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
 			$rows = null;
 			if ($cross_var1 != 'pred_time' && $cross_var2 != 'pred_time')
@@ -236,7 +232,7 @@ class MLCrossvarController extends AbstractController
 				// Get stuff from the DB
 				$query="SELECT ".$cross_var1." as V1,".$cross_var2." as V2,".$cross_var3." as V3
 					FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
-					WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
+					WHERE hadoop_version IS NOT NULL".$where_configs."
 					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
@@ -279,7 +275,7 @@ class MLCrossvarController extends AbstractController
 					$query="SELECT ".$var1." as V1, ".$var2." as V2,".$cross_var3." as V3
 						FROM (	SELECT ".$other_var.", e.id_exec
 							FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
-							WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs."
+							WHERE hadoop_version IS NOT NULL".$where_configs."
 						) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec
 						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 			  	  	$rows = $db->get_rows ( $query );
@@ -351,43 +347,29 @@ class MLCrossvarController extends AbstractController
 			$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 			$must_wait = "NO";
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3d.html.twig',
-			array(
-				'selected' => 'mlcrossvar3d',
-				'jsonData' => $jsonData,
-				'variable1' => $cross_var1,
-				'variable2' => $cross_var2,
-				'categories1' => $categories1,
-				'categories2' => $categories2,
-				'maxx' => $maxx, 'minx' => $minx,
-				'maxy' => $maxy, 'miny' => $miny,
-				'maxz' => $maxz, 'minz' => $minz,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'message' => $message,
-				'instance' => $instance,
-				'model_info' => $model_info,
-				'must_wait' => $must_wait,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
-		);	
+		$return_params = array(
+			'selected' => 'mlcrossvar3d',
+			'jsonData' => $jsonData,
+			'variable1' => $cross_var1,
+			'variable2' => $cross_var2,
+			'categories1' => $categories1,
+			'categories2' => $categories2,
+			'maxx' => $maxx, 'minx' => $minx,
+			'maxy' => $maxy, 'miny' => $miny,
+			'maxz' => $maxz, 'minz' => $minz,
+			'message' => $message,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'must_wait' => $must_wait,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
+		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3d.html.twig', $return_params);	
 	}
 
 	public function mlcrossvar3dfaAction()
@@ -420,6 +402,10 @@ class MLCrossvarController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
 			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
 
@@ -432,6 +418,7 @@ class MLCrossvarController extends AbstractController
 			// compose instance
 			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
+			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
@@ -539,46 +526,32 @@ class MLCrossvarController extends AbstractController
 			$dbml = null;
 			$possible_models = $possible_models_id = array();
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3dfa.html.twig',
-			array(
-				'selected' => 'mlcrossvar3dfa',
-				'jsonData' => $jsonData,
-				'variable1' => $cross_var1,
-				'variable2' => $cross_var2,
-				'categories1' => $categories1,
-				'categories2' => $categories2,
-				'maxx' => $maxx, 'minx' => $minx,
-				'maxy' => $maxy, 'miny' => $miny,
-				'maxz' => $maxz, 'minz' => $minz,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'message' => $message,
-				'instance' => $instance,
-				'model_info' => $model_info,
-				'current_model' => $current_model,
-				'unseen' => $unseen,
-				'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
-				'models_id' => $possible_models_id,
-				'must_wait' => $must_wait,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
-		);	
+		$return_params = array(
+			'selected' => 'mlcrossvar3dfa',
+			'jsonData' => $jsonData,
+			'variable1' => $cross_var1,
+			'variable2' => $cross_var2,
+			'categories1' => $categories1,
+			'categories2' => $categories2,
+			'maxx' => $maxx, 'minx' => $minx,
+			'maxy' => $maxy, 'miny' => $miny,
+			'maxz' => $maxz, 'minz' => $minz,
+			'message' => $message,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'current_model' => $current_model,
+			'unseen' => $unseen,
+			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
+			'models_id' => $possible_models_id,
+			'must_wait' => $must_wait,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
+		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mlcrossvar3dfa.html.twig', $return_params);
 	}
 }
