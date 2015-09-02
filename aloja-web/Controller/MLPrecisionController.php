@@ -21,7 +21,7 @@ class MLPrecisionController extends AbstractController
 
 		    	$db = $this->container->getDBUtils();
 		    	
-		    $where_configs = "";
+		    	$where_configs = "";
 
 			$dump = null;
 			$pass = null;
@@ -40,7 +40,7 @@ class MLPrecisionController extends AbstractController
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_os'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p])) sort($params[$p]);
 
@@ -200,6 +200,7 @@ class MLPrecisionController extends AbstractController
 			$must_wait = 'NO';
 			$dbml = null;
 		}
+
 		$return_params = array(
 			'discvars' => $jsonDiscvars,
 			'diversity' => $jsonDiversity,
@@ -211,11 +212,8 @@ class MLPrecisionController extends AbstractController
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'id_precision' => md5($config),
-			'error_stats' => $error_stats,
+			'error_stats' => $error_stats
 		);
-		//foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		//foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
 		return $this->render('mltemplate/mlprecision.html.twig', $return_params);
 	}
 }
