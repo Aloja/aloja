@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS minconfigs (
   id_learner varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL DEFAULT '',
   is_new int(1) NOT NULL DEFAULT 0,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_minconfigs),
@@ -187,6 +188,7 @@ $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD bench_type varchar(255);"
 $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 
 
 #$MYSQL "ALTER TABLE learners MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
