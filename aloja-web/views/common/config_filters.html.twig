@@ -44,48 +44,15 @@
       <div id="{{ name }}" class="panel-collapse collapse {% if loop.first %}in{% endif %} filtersTab" role="tabpanel" aria-labelledby="heading{{ name }}">
         <div class="panel-body">
           {{ include('common/render_filter.html.twig', {'filterGroup': filterGroup['filters'], 'filters': filters}) }}
+          {# needed for grouping filters, TODO: do it in a better way #}
+          {% if name == 'advanced' %}
+              <input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
+          {% endif %}
         </div>
       </div>
     </div>
   {% endfor %}
-  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
-    <div class="panel-heading" role="tab" id="headingAdvancedFilters">
-      <i id="advancedFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-        <h4 class="panel-title">
-          <a data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" aria-expanded="true" aria-controls="advancedFilters">
-            Advanced filters
-          </a>
-        </h4>
-    </div>
-    <div id="advancedFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingAdvancedFilters">
-      <div class="panel-body">
-        <input type="checkbox" name="execsfilters[]" value="valid" {% if 'valid' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Only valid execs<br />
-        <input type="checkbox" name="execsfilters[]" value="filter" {% if 'filter' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Filter<br />
-        <input type="checkbox" name="execsfilters[]" value="prepares" {% if 'prepares' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Include prepares<br />
-        <input type="checkbox" name="execsfilters[]" value="perfdetails" {% if 'perfdetails' in filters['execsfilters']['currentChoice'] %}checked{% endif %}>Only execs with perf details<br />
-{#         <input type="checkbox" name="execsfilters[]" value="outliers" {% if 'outliers' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Show outliers<br />#}
-{#         <input type="checkbox" name="execsfilters[]" value="warnings" style="margin-left: 1em;" {% if 'warnings' in filters['execsfilters']['currentChoice'] %}checked{% endif %}> Show warnings#}
-        <input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
-		  <div class="row">
-			<div class="col-md-6">
-              {{ filters['datefrom']['label'] }} <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ filters['datefrom']['currentChoice'] }}" />
-			</div>
-			<div class="col-md-6">
-              {{ filters['dateto']['label'] }} <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ filters['dateto']['currentChoice'] }}" />
-			</div>
-		</div>
-		<div class="row">
-			<div class="col-md-6">
-			  {{ filters['minexetime']['label'] }} <input type="text" name="minexetime" class="form-control" value="{{ filters['minexetime']['currentChoice'] }}" />
-			</div>
-			<div class="col-md-6">
-              {{ filters['maxexetime']['label'] }} <input type="text" name="maxexetime" class="form-control" value="{{ filters['maxexetime']['currentChoice'] }}" />
-			</div>
-		</div>
-      </div>
-    </div>
-  </div>
-  </div>
+ </div>
 </div>
 </form>
 
