@@ -336,6 +336,7 @@ sudo /usr/bin/hca_self_test.ofed
         logger "INFO: Updating /etc/network/interfaces with IP_suffix: $IP_suffix"
         vm_update_template "/etc/network/interfaces" "
 #IB Interface
+auto ib0
 iface ib0 inet static
 address 10.0.1.$IP_suffix
 netmask 255.255.0.0" "secured_file"
