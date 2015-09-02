@@ -30,7 +30,7 @@ class Filters
          * Array with filter => filter specific settings
          *
          * Specific settings is an array with
-         * types: inputText, inputNumber[{le,ge}], inputDate[{le,ge}], selectOne, selectMultiple, hidden
+         * types: inputText, inputNumber[{le,ge}], inputDate[{le,ge}], selectOne, selectMultiple, checkbox[Negated]
          * default: null (any), array(values)
          * table: associated DB table name
          * parseFunction: function to parse special filter, for filters that need a lot of customization
@@ -125,9 +125,22 @@ class Filters
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
             'money' => array('table' => 'mixed', 'field' => '(clustersAlias.cost_hour/3600)*execsAlias.exe_time',
                     'default' => null, 'type' => 'inputNumberle','label' => 'Max cost (US$):'),
-            'execsfilters' => array('table' => 'execs', 'field' => array('valid','filter','perf_details'), 'default' => array('valid','filter'),
-                'parseFunction' => 'parseAdvancedFilters', 'labels' => array('valid' => 'Only valid execs',
-                    'filter' => 'Filter', 'prepares' => 'Include prepares', 'perfdetails' => 'Only execs with perf details'))
+            'valid' => array('table' => 'execs', 'field' => 'valid', 'type' => 'checkbox', 'default' => 1, 'label' => 'Only valid execs'),
+            'filter' => array('table' => 'execs', 'field' => 'filter', 'type' => 'checkboxNegated', 'default' => 1, 'label' => 'Filter'),
+            'prepares' => array('table' => 'execs', 'type' => 'checkbox', 'default' => 0, 'label' => 'Include prepares',
+                'parseFunction' => function() {
+                    $whereClause = "";
+                    $values = 0;
+                    if(isset($_GET['prepares'])) {
+                        $values = 1;
+                    } else {
+                        $values = 0;
+                        $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
+                    }
+
+                    return array('currentChoice' => $values, 'whereClause' => $whereClause);
+                }),
+            'perf_details' => array('table' => 'execs', 'type' => 'checkbox', 'default' => 0, 'label' => 'Only execs with perf details'),
         );
 
         $this->aliasesTables = array('execs' => '','clusters' => '');
@@ -141,7 +154,11 @@ class Filters
                 'filters' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS')),
             'hadoop' => array(
                 'label' => 'Hadoop',
-                'filters' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'))
+                'filters' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version')),
+            'advanced' => array(
+                'label' => 'Advanced filters',
+                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime')
+            )
         );
     }
 
@@ -202,16 +219,26 @@ class Filters
     private function parseFilters() {
         foreach($this->filters as $filterName => $definition) {
             if(isset($definition['parseFunction'])) {
-                if(is_callable($definition['parseFunction']))
-                    call_user_func($definition['parseFunction']);
-                else
+                if(is_callable($definition['parseFunction'])) {
+                    $parser = call_user_func($definition['parseFunction']);
+                    $this->whereClause .= " ${parser['whereClause']} ";
+                    $this->filters[$filterName]['currentChoice'] = $parser['currentChoice'];
+                } else
                     call_user_func(array($this,$definition['parseFunction']));
             } else {
                 $DBreference = ($definition['table'] != 'mixed') ? "${definition['table']}Alias." : '';
                 $DBreference .= (isset($definition['field'])) ? $definition['field'] : $filterName;
 
                 $values = null;
-                if (isset($_GET[$filterName])) {
+                if($definition['type'] == 'checkbox' ||
+                    $definition['type'] == 'checkboxNegated') {
+                    if(isset($_GET[$filterName])) {
+                        $values = 1;
+                    } else if($this->formIsSubmitted()) {
+                        $values = 0;
+                    } else
+                        $values = isset($definition['default']) ? $definition['default'] : 0;
+                }  else if (isset($_GET[$filterName])) {
                     $values = $_GET[$filterName];
                     if(is_array($values)) {
                         array_walk($values, function (&$item) {
@@ -242,6 +269,11 @@ class Filters
                         $this->whereClause .= " AND $DBreference <= '$values'";
                     } else if ($type == "inputDatege") {
                         $this->whereClause .= " AND $DBreference >= '$values'";
+                    } else if($type == 'checkbox' || $type == 'checkboxNegated') {
+                        if($type == 'checkboxNegated')
+                            $values = ($values == 0) ? 1 : 0;
+
+                        $this->whereClause .= " AND $DBreference = $values";
                     }
                 }
             }

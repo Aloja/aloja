@@ -133,7 +133,10 @@ class ConfigEvaluationsController extends AbstractController
                 'generateChoices' => function() {
                     return array('exe_time','cost');
                 },
-                'parseFunction' => function() { return 0; },
+                'parseFunction' => function() {
+                    $ordertype = isset($_GET['ordertype']) ? $_GET['ordertype'] : 'cost';
+                    return array('currentChoice' => $ordertype, 'whereClause' => "");
+                },
                 'beautifier' => function($value) {
                    if($value == 'exe_time')
                        return 'Execution time';
@@ -151,11 +154,9 @@ class ConfigEvaluationsController extends AbstractController
         try {
             $whereClause = $this->filters->getWhereClause();
 
-            $order_type = Utils::get_GET_stringArray ( 'ordertype' )[0];
+            $order_type = Utils::get_GET_string ( 'ordertype' );
             if (! $order_type)
                 $order_type = 'exe_time';
-            $this->filters->changeCurrentChoice('ordertype', array($order_type));
-
 
             $filterExecs = DBUtils::getFilterExecs();
 
