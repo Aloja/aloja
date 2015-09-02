@@ -131,7 +131,7 @@ class ConfigEvaluationsController extends AbstractController
 
             'ordertype' => array('default' => array('cost'), 'type' => 'selectOne', 'label' => 'Best config by:',
                 'generateChoices' => function() {
-                    return array(array('ordertype' => 'exe_time'),array('ordertype' => 'cost'));
+                    return array('exe_time','cost');
                 },
                 'parseFunction' => function() { return 0; },
                 'beautifier' => function($value) {
@@ -238,17 +238,17 @@ class ConfigEvaluationsController extends AbstractController
             $paramOptions = array();
             foreach($options as $option) {
                 if($paramEval == 'id_cluster')
-                    $paramOptions[] = $option['name'];
+                    $paramOptions[] = Utils::getClusterName($option,$db);
                 else if($paramEval == 'comp')
-                    $paramOptions[] = Utils::getCompressionName($option[$paramEval]);
+                    $paramOptions[] = Utils::getCompressionName($option);
                 else if($paramEval == 'net')
-                    $paramOptions[] = Utils::getNetworkName($option[$paramEval]);
+                    $paramOptions[] = Utils::getNetworkName($option);
                 else if($paramEval == 'disk')
-                    $paramOptions[] = Utils::getDisksName($option[$paramEval]);
+                    $paramOptions[] = Utils::getDisksName($option);
                 else if($paramEval == 'vm_ram')
-                    $paramOptions[] = Utils::getBeautyRam($option['vm_RAM']);
+                    $paramOptions[] = Utils::getBeautyRam($option);
                 else
-                    $paramOptions[] = $option[$paramEval];
+                    $paramOptions[] = $option;
             }
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");

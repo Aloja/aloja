@@ -78,16 +78,17 @@ class Filters
             }),
             'id_cluster' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Clusters (CL):',
                 'beautifier' => function($value) {
-                    //Not nice, but saves multiple queries to DB
-                    $clusters = $this->filters['id_cluster']['choices'];
-                    foreach($clusters as $cluster) {
-                        if($cluster['id_cluster'] == $value)
-                            return $cluster['name'];
-                    }
+                    return $this->filters['id_cluster']['namesClusters'][$value];
                 },
                 'generateChoices' => function() {
                     $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
-                    return $choices;
+                    $returnChoices = array();
+                    foreach($choices as $choice) {
+                        $returnChoices[] = $choice['id_cluster'];
+                        //Not nice, but saves multiple queries to DB in the beautifier
+                        $this->filters['id_cluster']['namesClusters'][$choice['id_cluster']] = $choice['name'];
+                    }
+                    return $returnChoices;
                 }),
             'maps' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Maps:',
                 'beautifier' => function($value) {
@@ -141,7 +142,7 @@ class Filters
             'hadoop' => array(
                 'label' => 'Hadoop',
                 'filters' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'))
-            );
+        );
     }
 
     private function parseDatasize()
@@ -189,7 +190,10 @@ class Filters
                     }
                     $field = isset($definition['field']) ? $definition['field'] : $filterName;
                     $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs() . " ORDER BY $field ASC";
-                    $this->filters[$filterName]['choices'] = $this->dbConnection->get_rows($queryChoices);
+                    $choices = $this->dbConnection->get_rows($queryChoices);
+                    foreach($choices as $choice) {
+                        $this->filters[$filterName]['choices'][] = $choice[$field];
+                    }
                 }
             }
         }
@@ -431,5 +435,9 @@ class Filters
 
     public function changeCurrentChoice($filterName,$choice) {
         $this->filters[$filterName]['currentChoice'] = $choice;
+    }
+
+    public function addFilterGroup($filterGroupArray) {
+        array_push($this->filterGroups,$filterGroupArray);
     }
 }

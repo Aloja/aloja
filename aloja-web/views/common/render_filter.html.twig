@@ -15,9 +15,9 @@
         {{ filter['label'] }}&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
         <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
             <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
-            {% for selopt in filter['choices'] %}
+            {% for choice in filter['choices'] %}
                 <span id="container{{ filterName }}">
-                    <input type="checkbox" name="{{ filterName }}[]" value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}checked{% endif %}>&nbsp;{{ beautify(filter,selopt[filterName]) }}<br />
+                    <input type="checkbox" name="{{ filterName }}[]" value="{{ choice }}" {% if choice in filter['currentChoice'] %}checked{% endif %}>&nbsp;{{ beautify(filter,choice) }}<br />
                 </span>
             {% endfor %}
             </div>
@@ -25,8 +25,8 @@
     {% elseif filter['type'] == 'selectOne' %}
         {{ filter['label'] }}<br />
         <select class="form-control" name="{{ filterName }}[]">
-            {% for selopt in filter['choices'] %}
-                <option value="{{ selopt[filterName] }}" {% if selopt[filterName] in filter['currentChoice'] %}selected="selected"{% endif %}>{{ beautify(filter,selopt[filterName]) }}</option>
+            {% for choice in filter['choices'] %}
+                <option value="{{ choice }}" {% if choice in filter['currentChoice'] %}selected="selected"{% endif %}>{{ beautify(filter,choice) }}</option>
             {% endfor %}
         </select>
     {% elseif filter['type'] starts with 'inputNumber' %}
