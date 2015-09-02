@@ -485,7 +485,8 @@ class Filters
     public function getFilterChoices() {
         $options = array();
         foreach($this->filters as $filterName => $value) {
-            $options[$filterName] = $value['choices'];
+            if($value['type'] == 'selectMultiple' || $value['type'] == 'selectOne')
+                $options[$filterName] = $value['choices'];
         }
 
         return $options;
