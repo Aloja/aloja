@@ -440,4 +440,22 @@ class Filters
     public function addFilterGroup($filterGroupArray) {
         array_push($this->filterGroups,$filterGroupArray);
     }
+
+    public function getFiltersSelectedChoices($filtersArray) {
+        $values = array();
+        foreach($filtersArray as $filterName) {
+            $values[$filterName] = $this->filters[$filterName]['currentChoice'];
+        }
+
+        return $values;
+    }
+
+    public function getFilterChoices() {
+        $options = array();
+        foreach($this->filters as $filterName => $value) {
+            $options[$filterName] = $value['choices'];
+        }
+
+        return $options;
+    }
 }
