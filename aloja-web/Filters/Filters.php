@@ -87,7 +87,7 @@ class Filters
                 },
                 'generateChoices' => function() {
                     $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
-                    $this->filters['id_cluster']['choices'] = $choices;
+                    return $choices;
                 }),
             'maps' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Maps:',
                 'beautifier' => function($value) {
@@ -132,9 +132,16 @@ class Filters
         $this->aliasesTables = array('execs' => '','clusters' => '');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
-        $this->filterGroups = array('basic' => array('money','bench','bench_type','datasize','scale_factor','id_cluster','net','disk'),
-            'hardware' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
-            'hadoop' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'));
+        $this->filterGroups = array('basic' => array(
+                'label' => 'Basic filters',
+                'filters' => array('money','bench','bench_type','datasize','scale_factor','id_cluster','net','disk')),
+            'hardware' => array(
+                'label' => 'Hardware',
+                'filters' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS')),
+            'hadoop' => array(
+                'label' => 'Hadoop',
+                'filters' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'))
+            );
     }
 
     private function parseDatasize()
@@ -173,7 +180,8 @@ class Filters
             $type = (isset($definition['type'])) ? $definition['type'] : 'null';
             if($type == 'selectOne' || $type == 'selectMultiple') {
                 if (isset($definition['generateChoices'])) {
-                    $definition['generateChoices']();
+                    $choices = $definition['generateChoices']();
+                    $this->filters[$filterName]['choices'] = $choices;
                 } else {
                     $fromClause = "aloja2.execs";
                     if ($definition['table'] == 'clusters') {
@@ -190,7 +198,10 @@ class Filters
     private function parseFilters() {
         foreach($this->filters as $filterName => $definition) {
             if(isset($definition['parseFunction'])) {
-                call_user_func(array($this,$definition['parseFunction']));
+                if(is_callable($definition['parseFunction']))
+                    call_user_func($definition['parseFunction']);
+                else
+                    call_user_func(array($this,$definition['parseFunction']));
             } else {
                 $DBreference = ($definition['table'] != 'mixed') ? "${definition['table']}Alias." : '';
                 $DBreference .= (isset($definition['field'])) ? $definition['field'] : $filterName;
@@ -279,7 +290,8 @@ class Filters
             } else {
                 //Add new filter
                 $this->filters[$index] = $options;
-                array_push($this->filterGroups['basic'],$index);
+                $filterGroup = (isset($options['filterGroup'])) ? $options['filterGroup'] : 'basic';
+                array_unshift($this->filterGroups[$filterGroup]['filters'],$index);
             }
         }
 
@@ -415,5 +427,9 @@ class Filters
                 return 1000;
         } else
             return 1;
+    }
+
+    public function changeCurrentChoice($filterName,$choice) {
+        $this->filters[$filterName]['currentChoice'] = $choice;
     }
 }

@@ -31,76 +31,31 @@
 			</div>
     </div>
   <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
-  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
-    <div class="panel-heading" role="tab" id="headingBasicFilters">
-      <i id="basicFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#basicFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-      <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#basicFilters" aria-expanded="true" aria-controls="basicFilters">
-          Basic filters
-        </a>
-      </h4>
-    </div>
-    <div id="basicFilters" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBasicFilters">
-      <div class="panel-body">
-        {% if selected == 'Parameter Evaluation' %}
-          <div class="row">
-            <div class="col-md-6">
-              Minimum executions:<input type="number" step="1" class="form-control" name="minexecs" {% if minexecs is defined and minexecs != null %}value="{{ minexecs }}"{% endif %}/>
-            </div>
-          </div>
-        {% endif %}
-        {% if selected == 'Best configuration' %}
-          <div class="row">
-            <div class="col-md-6">
-              Best config by:<select class="form-control" name="ordertype">
-                <option value="cost" {% if order_type == 'cost' %}selected="selected"{% endif %}>Cost-effectiveness</option>
-                <option value="exe_time" {% if order_type == 'exe_time' %}selected="selected"{% endif %}>Execution time</option>
-              </select>
-            </div>
-          </div>
-        {% endif %}
-		  {{ include('common/render_filter.html.twig', {'filterGroup': filterGroups['basic'], 'filters': filters}) }}
+  {% for name,filterGroup in filterGroups %}
+    <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+      <div class="panel-heading" role="tab" id="heading{{ name }}">
+        <i id="{{ name }}Glyphon" data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" aria-expanded="true" aria-controls="{{ name }}">
+            {{ filterGroup['label'] }}
+          </a>
+        </h4>
+      </div>
+      <div id="{{ name }}" class="panel-collapse collapse {% if loop.first %}in{% endif %} filtersTab" role="tabpanel" aria-labelledby="heading{{ name }}">
+        <div class="panel-body">
+          {{ include('common/render_filter.html.twig', {'filterGroup': filterGroup['filters'], 'filters': filters}) }}
+        </div>
       </div>
     </div>
-  </div>
-  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
-    <div class="panel-heading" role="tab" id="headingHardwareFilters">
-      <i id="hardwareFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hardwareFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-      <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#hardwareFilters" aria-expanded="true" aria-controls="hardwareFilters">
-          Hardware
-        </a>
-      </h4>
-    </div>
-    <div id="hardwareFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingHardwareFilters">
-      <div class="panel-body">
-		  {{ include('common/render_filter.html.twig', {'filterGroup': filterGroups['hardware'], 'filters': filters}) }}
-      </div>
-    </div>
-  </div>
-  <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
-    <div class="panel-heading" role="tab" id="headingHadoopFilters">
-      <i id="hadoopFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-      <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#hadoopFilters" aria-expanded="true" aria-controls="hadoopFilters">
-          Hadoop configurations
-        </a>
-      </h4>
-    </div>
-    <div id="hadoopFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingHadoopFilters">
-      <div class="panel-body">
-		  {{ include('common/render_filter.html.twig', {'filterGroup': filterGroups['hadoop'], 'filters': filters}) }}
-      </div>
-    </div>
-  </div>
+  {% endfor %}
   <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
     <div class="panel-heading" role="tab" id="headingAdvancedFilters">
       <i id="advancedFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-      <h4 class="panel-title">
-        <a data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" aria-expanded="true" aria-controls="advancedFilters">
-          Advanced filters
-        </a>
-      </h4>
+        <h4 class="panel-title">
+          <a data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" aria-expanded="true" aria-controls="advancedFilters">
+            Advanced filters
+          </a>
+        </h4>
     </div>
     <div id="advancedFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingAdvancedFilters">
       <div class="panel-body">

@@ -127,8 +127,23 @@ class ConfigEvaluationsController extends AbstractController
         $db = $this->container->getDBUtils ();
         $this->buildFilters(array('bench' =>
             array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:'))
+                'type' => 'selectOne', 'label' => 'Benchmark:'),
+
+            'ordertype' => array('default' => array('cost'), 'type' => 'selectOne', 'label' => 'Best config by:',
+                'generateChoices' => function() {
+                    return array(array('ordertype' => 'exe_time'),array('ordertype' => 'cost'));
+                },
+                'parseFunction' => function() { return 0; },
+                'beautifier' => function($value) {
+                   if($value == 'exe_time')
+                       return 'Execution time';
+                    else
+                       return 'Cost-effectiveness';
+                },
+                'filterGroup' => 'basic'
+            ))
         );
+
         $clusterCosts = Utils::generateCostsFilters($db);
 
         $bestexec = '';
@@ -136,9 +151,11 @@ class ConfigEvaluationsController extends AbstractController
         try {
             $whereClause = $this->filters->getWhereClause();
 
-            $order_type = Utils::get_GET_string ( 'ordertype' );
+            $order_type = Utils::get_GET_stringArray ( 'ordertype' )[0];
             if (! $order_type)
-                $order_type = 'e.exe_time';
+                $order_type = 'exe_time';
+            $this->filters->changeCurrentChoice('ordertype', array($order_type));
+
 
             $filterExecs = DBUtils::getFilterExecs();
 
@@ -195,7 +212,12 @@ class ConfigEvaluationsController extends AbstractController
 
     public function paramEvaluationAction() {
         $db = $this->container->getDBUtils ();
-        $this->buildFilters();
+        $this->buildFilters(array(
+                'minexecs' => array('default' => null, 'type' => 'inputNumber', 'label' => 'Minimum executions:',
+                    'parseFunction' => function() { return 0; },
+                    'filterGroup' => 'basic'
+                ))
+        );
         $whereClause = $this->filters->getWhereClause();
 
         $categories = '';
@@ -204,6 +226,8 @@ class ConfigEvaluationsController extends AbstractController
 
             $paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
             $minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
+            $this->filters->changeCurrentChoice('minexecs',($minExecs == -1) ? null : $minExecs);
+
             $minExecsFilter = "";
             if($minExecs > 0)
                 $minExecsFilter = "HAVING COUNT(*) > $minExecs";
