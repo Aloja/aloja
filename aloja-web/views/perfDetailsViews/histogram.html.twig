@@ -60,7 +60,7 @@
 		    requestData();
 		    function requestData() {
 			    $.ajax({
-			        url: "{{ path('histogramhdidata', {'id_exec': idExec}) }}",
+			        url: "{{ path('histogramdata', {'id_exec': idExec}) }}",
 			        type: "GET",
 			        dataType: "json",
 			        success: function(dades) {
@@ -210,7 +210,7 @@
 
 				// Launch ajax request
 				$.ajax({
-					url: "{{ path('histogramhditasksdata') }}",
+					url: "{{ path('histogramtasksdata') }}",
 					data: {
 						jobid: jobid,
 						metric: metric.val(),
@@ -364,6 +364,12 @@
 	<button type="button" name="accumulated" class="btn btn-default" data-toggle="button">Accumulate metric</button>
 	<button type="button" name="divided" class="btn btn-default" data-toggle="button">Divided by duration</button>
   </form>
+	<br />
+	{% if idExec is not null %}
+		<div style="text-align: center;">
+			<p>Execution selected: <a href="{{ path('perfcharts', {'execs[]': idExec}) }}">{{ exec['bench'] }}</a> on cluster with {{ getDisksName(exec['disk']) }} and {{ exec['net'] }} network on {{ exec['datanodes'] }} datanodes cluster of {{ exec['vm_size'] }} {{ exec['vm_OS'] }} VMs with {{ exec['vm_RAM'] | number_format(0,'.',',') }}GB of RAM</p>
+		</div>
+	{% endif %}
 	<div id="chart" style="clear: both;"></div>
 	<div id="chart_column"></div>
 {% endblock %}

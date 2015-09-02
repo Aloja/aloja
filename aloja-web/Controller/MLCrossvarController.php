@@ -32,10 +32,20 @@ class MLCrossvarController extends AbstractController
 
 			$params = array();
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+
+
+
+			foreach ($param_names as $p) {
+					$params[$p] = Utils::read_params($p,$where_configs);
+					sort($params[$p]);
+			}
+
+
 
 			$params_additional = array();
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+
+
 			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
 
 			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';

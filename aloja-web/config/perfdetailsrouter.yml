@@ -1,0 +1,30 @@
+perfcharts:
+    pattern: "/perfcharts"
+    legacy: "/charts1.php"
+    controller: "alojaweb\\Controller\\PerfDetailsController::performanceChartsAction"
+    screenName: "Performance charts"
+
+metrics:
+    pattern: "/metrics"
+    controller: "alojaweb\\Controller\\PerfDetailsController::performanceMetricsAction"
+    screenName: "Performance Metrics"
+
+histogram:
+    pattern: "/histogram"
+    controller: "alojaweb\\Controller\\PerfDetailsController::histogramAction"
+    screenName: "Histogram"
+
+dbscan:
+    pattern: "/dbscan"
+    controller: "alojaweb\\Controller\\PerfDetailsController::dbscanAction"
+    screenName: "DBSCAN"
+
+dbscanexecs:
+    pattern: "/dbscanexecs"
+    controller: "alojaweb\\Controller\\PerfDetailsController::dbscanexecsAction"
+    screenName: "DBSCANexecs"
+
+histogramhdi:
+    pattern: "/histogramhdi"
+    controller: "alojaweb\\Controller\\PerfDetailsController::histogramHDIAction"
+    screenName: "Histogram HDP2"

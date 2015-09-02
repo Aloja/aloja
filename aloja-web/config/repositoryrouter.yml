@@ -1,0 +1,16 @@
+benchexecutions:
+    pattern: "/benchexecs"
+    legacy: "/datatable.php"
+    controller: "alojaweb\\Controller\\RepositoryController::benchExecutionsAction"
+    screenName: "Benchmark Executions"
+
+counters:
+    pattern: "/counters"
+    legacy: "/counters.php"
+    controller: "alojaweb\\Controller\\RepositoryController::countersAction"
+    screenName: "Hadoop Job Counters"
+
+hdp2counters:
+    pattern: "/hdp2counters"
+    controller: "alojaweb\\Controller\\RepositoryController::hdp2CountersAction"
+    screenName: "Hadoop 2 Job Counters"

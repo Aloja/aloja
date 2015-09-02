@@ -42,7 +42,7 @@
 	<div id="container"> <!-- container -->
 		<img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg" >
 		<table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
-			<tr>
+			<tr style="line-height: 35px;">
 				<td valign="bottom">
 					<span style="font-size: 1.5em; color: #4E6CA3;">
 						<strong>{{ title|default('ALOJA, Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
@@ -50,12 +50,10 @@
 				</td>
 				<td align="right">
 					<a target="blank" href="http://www.bscmsrc.eu/">
-						{#<img src="img/bsc-msrc_logo.png" style="margin-bottom: 6px;">#}
-						<img src="img/bsc-logo_trans.png" style="" width="270">
+						<img src="img/bsc-logo_trans.png" style="margin-bottom: 9px;" width="270">
 					</a>
 				</td>
 			</tr>
-			<tr><td style="height: 10px;"></td><td></td></tr>
 		</table>
 		<div class="modal fade" id="welcomeModal">
 			<div class="modal-dialog">
@@ -110,7 +108,7 @@
 			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Benchmark Repository <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-				<li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions',  {'type': 'DETAIL'}) }}">Browse Executions</a></li>
+				<li {% if selected is defined and selected == 'Benchmark Executions' %}class="active"{% endif %}><a class="navlink" href="{{ path('benchexecutions',  {'pageTab': 'DETAIL'}) }}">Browse Executions</a></li>
 				<li {% if selected is defined and selected == 'Hadoop Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('counters') }}">Hadoop1 Job Counters</a></li>
 				<li {% if selected is defined and selected == 'Hadoop 2 Job Counters' %}class="active"{% endif %}><a class="navlink" href="{{ path('hdp2counters') }}">Hadoop2 Job Counters</a></li>
 				<li class="divider"></li>
@@ -146,11 +144,13 @@
 			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Performance Details<span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-				<li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
-				<li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
-				<li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
-				{% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
-		          </ul>
+					<li {% if selected is defined and selected == 'Performance charts' %}class="active"{% endif %}><a class="navlink" href="{{ path('perfcharts') }}?{% if make_execs is not defined or make_execs == ''%}random=1{% else %}{{ make_execs | raw }}{% endif %}">Performance Charts</a></li>
+					<li {% if selected is defined and selected == 'Performance Metrics' %}class="active"{% endif %}><a class="navlink" href="{{ path('metrics') }}">Performance Metrics</a></li>
+					<li {% if selected is defined and selected == 'DBSCAN' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscan', {'jobid': 'random'}) }}">DBSCAN</a></li>
+					{% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
+					  <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}><a class="navlink" href="{{ path('histogram') }}">Hadoop 1 histograms</a></li>
+					  <li {% if selected is defined and selected == 'Histogram HDP2' %}class="active"{% endif %}><a class="navlink" href="{{ path('histogramhdi') }}">Hadoop 2 histograms</a></li>
+				  </ul>
 			</li>
 			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Prediction Tools<span class="caret"></span></a>
@@ -212,11 +212,9 @@
 	<div id="copyright">
 		<a target="blank" href="http://www.bsc.es/"><img height="44" width="163" src="img/bsc-logo.jpg" alt="BSC logo" style="margin-right: 525px;"/></a>
 	        <a target="blank" href="http://research.microsoft.com/"><img height="35" src="img/msr-logo.jpg" alt="MSR logo" class="logo" /></a>
-		&nbsp;&nbsp;
 		<a target="blank" href="http://cordis.europa.eu/fp7/"><img width="80" src="img/FP7genRGB.gif" alt="FP7 logo" class="logo" /></a>
 		<div class="content">
 			<p>Contact us at: <a href="mailto:hadoop@bsc.es">hadoop@bsc.es</a>
-			&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
 			</p>
 			<p>Copyright {{ "now"|date("Y") }} © bscmsrc.eu All Rights Reserved. <a id="legal" href="http://www.bscmsrc.eu/legal-notice">Legal Notice</a></p>
 		</div>
@@ -241,6 +239,14 @@
 					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
             });
 
+			$("#showFilters").click(function() {
+				$("#filtersTab").slideToggle(400, function() {
+				  if($("#filtersTab").is(':visible')) {
+				    $("#showFilters").text('Hide filters');
+				  } else
+				    $("#showFilters").text('Show filters');
+				});
+			});
 			$(".datepicker").each(function() {
 				$(this).datepicker({
 					autoclose: true,
@@ -249,7 +255,7 @@
 			});
 
 			$("form[name='configFilters'] input").change(function() {
-				if($(this).attr('name') != 'filters[]') {
+				if($(this).attr('name') != 'execsfilters[]') {
 					if($(this).val() == "None") {
 						if($(this).attr('checked')) {
 							$(this).parent().find('input').each(function() {
@@ -273,15 +279,6 @@
 						}
 					}
 				}
-			});
-
-			$("input[name='filters[]']").change(function() {
-				var ids = $("input[name='filters[]']:checked");
-				if(ids.length == 0) {
-				   $("#allunchecked").val("allunchecked");
-				}
-				else
-				   $("#allunchecked").val("");
 			});
 
 			$("select[name='presets']").change(function() { 
@@ -362,6 +359,21 @@
 
 				$("input[name='selected-groups']").attr('value',selected.join());
 		   });
+
+			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
+			var scaleFactorsInfo = jQuery.parseJSON('{{ additionalFilters['scaleFactorsInfo'] | raw }}');
+			showCorrectBenchs(datasizesInfo);
+			showCorrectBenchDatasizes(datasizesInfo);
+			showCorrectBenchScaleFactors(scaleFactorsInfo);
+			$("input[name='bench[]'], select[name='bench[]']").change(function() {
+				showCorrectBenchDatasizes(datasizesInfo);
+				showCorrectBenchScaleFactors(scaleFactorsInfo);
+			});
+			$("select[name='bench_type[]']").change(function() {
+				showCorrectBenchs(datasizesInfo);
+				showCorrectBenchDatasizes(datasizesInfo);
+				showCorrectBenchScaleFactors(scaleFactorsInfo);
+			});
 		  });
 	</script>
 	{% endblock %}

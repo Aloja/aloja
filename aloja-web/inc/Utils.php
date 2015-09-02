@@ -2,6 +2,8 @@
 
 namespace alojaweb\inc;
 
+use alojaweb\Container;
+
 class Utils
 {
     public function __construct()
@@ -44,139 +46,6 @@ class Utils
     	}
     	
     	return $concatConfig;
-    }
-
-    public static function getStandardGroupBy($selectedGroups)
-    {
-        $execsGroup = array('id_cluster','net','disk','bench_type','exec_type','hadoop_version','maps','comp','replication','blk_size','iosf','iofilebuf');
-
-        foreach($selectedGroups as &$group) {
-            if(in_array($group,$execsGroup))
-                $group = "execTable.$group";
-            else
-                $group = "clusterTable.$group";
-        }
-
-        return $selectedGroups;
-    }
-
-    public static function read_params($item_name, &$where_configs, $setDefaultValues = true, $table_name = null)
-    {
-    	if($item_name == 'money' && isset($_GET['money'])) {
-    		$money = $_GET['money'];
-    		if($money != '') {
-    			$where_configs .= ' AND (exe_time/3600)*(cost_hour) <= '.$_GET['money'];
-    		}
-    		return $_GET['money'];
-    	}
-    	    	
-    	if($item_name == 'datefrom' && isset($_GET['datefrom'])) {
-    		$datefrom = $_GET['datefrom'];
-    		if($datefrom != '') {
-    			$where_configs .= " AND start_time >= '$datefrom'";
-    		}
-    		return $datefrom;
-    	} else if($item_name == 'datefrom')
-    		return "";
-    	
-    	if($item_name == 'dateto' && isset($_GET['dateto'])) {
-    		$dateto = $_GET['dateto'];
-    		if($dateto != '') {
-    			$where_configs .= " AND end_time <= '$dateto'";
-    		}
-    		return $dateto;
-    	} else if($item_name == 'dateto')
-    		return "";
-    	
-    	if($item_name == "filters") {
-    		$includePrepares = false;
-    		if(isset($_GET['filters'])) {
-    			$filters = $_GET['filters'];
-    			if(in_array("valid",$filters))
-    				$where_configs .= ' AND valid = 1 ';
-    			if(in_array("prepares",$filters))
-    				$includePrepares = true;
-    			if(in_array("perfdetails",$filters))
-    				$where_configs .= ' AND perf_details = 1 ';
-    			
-    			if(in_array("outliers", $filters)) {
-    				if(in_array("warnings", $filters))
-    					$where_configs .= " AND outlier IN (0,1,2) ";
-    				else
-    					$where_configs .= " AND outlier IN (0,1) ";
-    			}
-
-                $where_configs .= (in_array("filters",$filters)) ? ' AND filter = 0 ' : '';
-
-    			
-    		} else if(!isset($_GET['allunchecked']) || $_GET['allunchecked'] == '') {
-    			$_GET['filters'][] = 'valid';
-    			$_GET['filters'][] = 'filters';
-    			
-    			$where_configs .= ' AND valid = 1 AND filter = 0 ';
-    		}
-    		
-    		if(!$includePrepares)
-    			$where_configs .= "AND bench not like 'prep_%' AND bench_type not like 'HDI-prep%'";
-    		
-    		if(isset($_GET['filters']))
-    			return $_GET['filters'];
-    		else
-    			return "";
-    	}
-    	
-    	if($item_name == "minexetime") {
-    		$minexetime = (isset($_GET["minexetime"])) ? $_GET["minexetime"] : 50;
-	    		
-	    	if($minexetime != null)
-	    		$where_configs .= " AND exe_time >= $minexetime ";
-	    		
-	    	return $minexetime;
-    	}
-    	
-    	if($item_name == "maxexetime") {
-    		if(isset($_GET["maxexetime"])) {
-	    		$maxexetime = $_GET["maxexetime"];
-	    		
-	    		if($maxexetime != null)
-	    			$where_configs .= " AND exe_time <= $maxexetime ";
-	    		
-	    		return $maxexetime;
-    		} else
-    			return "";
-    	}
-    	
-        $single_item_name = substr($item_name, 0, -1);
-        
-        if (isset($_GET[$item_name])) {
-            $items = $_GET[$item_name];
-         	$items = Utils::delete_none($items);
-        } else if($setDefaultValues) {
-            if ($item_name == 'benchs') {
-                $items = array('terasort', 'wordcount', 'sort');
-            } elseif ($item_name == 'nets') {
-                $items = array();
-            } elseif ($item_name == 'bench_types') {
-            	$items = array('HiBench','HiBench3','HiBench3HDI');
-            } else {
-                $items = array();
-            }
-        } else
-        	$items = array();
-
-        if ($items) {
-            if ($table_name !== null) {
-                $single_item_name = $table_name.'.`'.$single_item_name.'`';
-            }
-
-            $where_configs .=
-            ' AND '.
-            $single_item_name. //remove trailing 's'
-            ' IN ("'.join('","', $items).'")';
-
-        }
-
-        return $items;
     }
 
     public static function generateJSONTable($csv, $show_in_result, $precision = null, $type = null)
@@ -243,21 +112,34 @@ class Utils
             $jsonData[] = $jsonRow;
             $i++;
         }
-
-        return json_encode(array('aaData' => $jsonData));
+        return $jsonData;
+        //return json_encode(array('aaData' => $jsonData));
     }
 
-    public static function get_GET_execs()
+    public static function get_GET_intArray($param)
     {
-        $execs = array();
-        if (isset($_GET['execs'])) {
-            $execs_tmp = array_unique($_GET['execs']);
-            foreach ($execs_tmp as $exec) {
-                $execs[] = filter_var($exec, FILTER_SANITIZE_NUMBER_INT);
+        $paramArray = array();
+        if (isset($_GET[$param])) {
+            $paramArray = array_unique($_GET[$param]);
+            foreach ($paramArray as $value) {
+                $value = filter_var($value, FILTER_SANITIZE_NUMBER_INT);
             }
         }
 
-        return $execs;
+        return $paramArray;
+    }
+
+    public static function get_GET_stringArray($param)
+    {
+        $paramArray = array();
+        if (isset($_GET[$param])) {
+            $paramArray = array_unique($_GET[$param]);
+            foreach ($paramArray as &$value) {
+                $value = filter_var($value, FILTER_SANITIZE_STRING);
+            }
+        }
+
+        return $paramArray;
     }
 
     public static function get_GET_string($param)
@@ -481,7 +363,7 @@ class Utils
 
     public static function getClusterName($clusterCode, $db)
     {
-        $clusterName = $db->get_rows("SELECT name FROM aloja2.clusters WHERE id_cluster=$clusterCode");
+        $clusterName = $db->get_rows("SELECT CONCAT_WS('/',LPAD(id_cluster,2,0),vm_size,CONCAT(datanodes,'Dn')) as name FROM aloja2.clusters WHERE id_cluster=$clusterCode");
 
         return $clusterName[0]['name'];
     }
@@ -531,13 +413,13 @@ class Utils
     
     public static function makeExecInfoBeauty(&$execInfo)
     {
-    	if(key_exists('comp',$execInfo))
+    	if(array_key_exists('comp',$execInfo))
     		$execInfo['comp'] = self::getCompressionName($execInfo['comp']);
     	
-    	if(key_exists('net',$execInfo))
+    	if(array_key_exists('net',$execInfo))
     		$execInfo['net'] = self::getNetworkName($execInfo['net']);
     	
-    	if(key_exists('disk',$execInfo))
+    	if(array_key_exists('disk',$execInfo))
     		$execInfo['disk'] = self::getDisksName($execInfo['disk']);
     }
     
@@ -585,7 +467,12 @@ class Utils
     	return $options;
     }
     
-    public static function getExecutionCost($exec, $costHour, $costRemote, $costSSD, $costIB) { 
+    public static function getExecutionCost($exec, $clusterCosts) {
+
+        $costHour = $clusterCosts['costsHour'][$exec['id_cluster']];
+        $costRemote = $clusterCosts['costsRemote'][$exec['id_cluster']];
+        $costSSD = $clusterCosts['costsSSD'][$exec['id_cluster']];
+        $costIB = $clusterCosts['costsIB'][$exec['id_cluster']];
 
     	$num_remotes = 0;
     	/** calculate remote */
@@ -669,5 +556,39 @@ class Utils
     	}
     	 
     	return $return;
+    }
+
+    public static function generateCostsFilters($dbConnection) {
+        $clustersInfo = $dbConnection->get_rows("SELECT id_cluster,cost_hour,cost_remote,cost_IB,cost_SSD FROM clusters");
+        foreach ($clustersInfo as $row) {
+            $costsHour[$row['id_cluster']] = $row['cost_hour'];
+            $costsRemote[$row['id_cluster']] = $row['cost_remote'];
+            $costsSSD[$row['id_cluster']] = $row['cost_IB'];
+            $costsIB[$row['id_cluster']] = $row['cost_SSD'];
+        }
+
+        //If form submitted, get given values and change those
+        if(isset($_GET['cost_hour'])) {
+            foreach(Utils::get_GET_intArray('cost_hour') as $idCluster => $value) {
+                $costsHour[$idCluster] = $value;
+            }
+
+            foreach(Utils::get_GET_intArray('cost_remote') as $idCluster => $value) {
+                $costsRemote[$idCluster] = $value;
+            }
+
+            foreach(Utils::get_GET_intArray('cost_IB') as $idCluster => $value) {
+                $costsSSD[$idCluster] = $value;
+            }
+
+            foreach(Utils::get_GET_intArray('cost_SSD') as $idCluster => $value) {
+                $costsIB[$idCluster] = $value;
+            }
+        }
+
+        return array('costsHour' => $costsHour,
+            'costsRemote' => $costsRemote,
+            'costsSSD' => $costsSSD,
+            'costsIB' => $costsIB);
     }
 }
