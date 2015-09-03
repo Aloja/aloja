@@ -305,7 +305,7 @@ initialize() {
 # TODO cleanup
 initialize_node_names() {
   #For infiniband tests
-  if [ "${NET}" == "IB" ] ; then
+  if [ "$NET" == "IB" ] ; then
     IFACE="ib0"
     master_name="$(get_master_name_IB)"
     node_names="$(get_node_names_IB)"
