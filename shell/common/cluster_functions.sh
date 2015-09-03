@@ -791,7 +791,8 @@ cluster_initialize_disks() {
 }
 
 vm_mount_disks() {
-  if check_bootstraped "vm_mount_disks" ""; then
+  local bootstrap_file="${FUNCNAME[0]}"
+  if check_bootstraped "$bootstrap_file" ""; then
 
     make_fstab
 
@@ -801,16 +802,15 @@ vm_mount_disks() {
     local error
 
     vm_execute "$create_string"
-    error=$?    
 
-    if [ $error -eq 0 ] ; then
+    #TODO make this test more roboust and to test all the mounts
+    local test_action="$(vm_execute "lsblk |grep '/scratch/attached' && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
-      check_bootstraped "vm_mount_disks" "set"
+      check_bootstraped "$bootstrap_file" "set"
     else
       logger "ERROR mounting disks for $vm_name. Test output: $test_action"
-      exit 1
     fi
-
   else
     logger "Disks already mounted for VM $vm_name "
   fi
@@ -1056,8 +1056,9 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../run_benchs.sh ../shell ../aloja-deploy ../aloja-tools ../aloja-bench" "$homePrefixAloja/$userAloja/share"
-  #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
+  vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
