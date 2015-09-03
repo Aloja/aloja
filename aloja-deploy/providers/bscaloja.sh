@@ -177,23 +177,30 @@ server {
   #keepalive_timeout ;
 
   #avoid caches
-  sendfile off;
   expires off;
 
   # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
   reset_timedout_connection on;
 
-  #perf optimizations
-  tcp_nodelay on;
-
   gzip on;
+  gzip_static on;
   gzip_comp_level 2;
   gzip_proxied any;
-  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_vary on;
+  gzip_min_length 512;
+  gzip_buffers 16 8k;
+  gzip_http_version 1.1;
   gzip_disable "msie6";
+
+  types {
+    application/x-font-ttf                  ttf;
+    font/opentype                           ott;
+    application/font-woff                   woff;
+  }
+
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss text/x-component application/javascript application/rss+xml font/truetype application/x-font-ttf font/opentype;
+
 }'
 
 }
-
-
 

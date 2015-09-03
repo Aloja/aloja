@@ -14,11 +14,6 @@ server {
     autoindex on;
   }
 
-  location /slides {
-    alias /var/presentations/aloja-web;
-    index template.html;
-  }
-
   location ~ \.php$ {
 #    try_files $uri =404;
     try_files $uri /index.php?c=404&q=$uri&$args;
@@ -59,6 +54,9 @@ server {
 get_php_conf(){
   echo -e '
 memory_limit = 1024M
+allow_url_fopen = Off
+allow_url_include = Off
+max_execution_time = 600
 xdebug.default_enable = 0
 xdebug.remote_enable = 0
 opcache.enable=1

@@ -178,7 +178,7 @@ Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;"
 
-    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql"
+    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql percona-toolkit"
 
     #test
     local test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
@@ -339,6 +339,7 @@ sudo /usr/bin/hca_self_test.ofed
         logger "INFO: Updating /etc/network/interfaces with IP_suffix: $IP_suffix"
         vm_update_template "/etc/network/interfaces" "
 #IB Interface
+auto ib0
 iface ib0 inet static
 address 10.0.1.$IP_suffix
 netmask 255.255.0.0" "secured_file"
@@ -562,7 +563,6 @@ sudo rm $libtiff_file"
 
       logger "INFO: Installing R dependencies (JAVA)"
       install_packages "libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk"
-      vm_execute "sudo R CMD javareconf"
 
       logger "INFO: Installing R core and available packages in repo"
       local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-bitops r-cran-boot r-cran-class r-cran-cluster"
@@ -571,8 +571,11 @@ sudo rm $libtiff_file"
       R_packages="$R_packages r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-evaluate"
       R_packages="$R_packages r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer"
       R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
+      R_packages="$R_packages r-cran-rms r-cran-ggplot2"
 
       install_packages "$R_packages"
+
+      vm_execute "sudo R CMD javareconf"
 #
 #      logger "INFO: Downloading precompiled R binary updates (to save time)"
 #      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
@@ -591,13 +594,13 @@ sudo rm $libtiff_file"
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
 install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 EOF
 
@@ -786,11 +789,15 @@ install_ganglia_gmond(){
   fi
 }
 
-# $1 cluster name
+# $1 cluster name, $2 receiver node (optional, defaults to $1-00)
 config_ganglia_gmond(){
 
   local bootstrap_file="${FUNCNAME[0]}"
   local result mcastif
+
+  local node0
+
+  [ "$2" != "" ] && node0=${2} || node0="${1}-00"
 
   if check_bootstraped "$bootstrap_file" ""; then
 
@@ -803,7 +810,7 @@ config_ganglia_gmond(){
     vm_execute "
 
     # create conf from template
-    awk -v clustername='$1' -v node0='${1}-00' '
+    awk -v clustername='$1' -v node0='${node0}' '
 
     { sub(/%%%CLUSTERNAME%%%/, clustername)
       sub(/%%%NODE0%%%/, node0)
