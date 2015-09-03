@@ -1,5 +1,8 @@
 #TPC-H BENCHMARK SPECIFIC FUNCTIONS
 
+##Default 1TB
+[ ! "$TPCH_SCALE_FACTOR" ] && TPCH_SCALE_FACTOR=1000
+
 execute_TPCH(){
   restart_hadoop
 
@@ -27,7 +30,7 @@ execute_TPCH(){
 
     #deleting old history files
     logger "INFO: delete old history files"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_H_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
 
     logger " STARTING $query"
 
@@ -75,7 +78,7 @@ generate_TPCH_data() {
   #save the data
   if [ "$SAVE_BENCH" == "1" ] ; then
     logger "INFO: Saving TPCH_DATA to: $BENCH_SAVE_PREPARE_LOCATION"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_H_DIR/bin/hdfs dfs -get -ignoreCrc $TPCH_DATA_DIR $BENCH_SAVE_PREPARE_LOCATION"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -get -ignoreCrc $TPCH_DATA_DIR $BENCH_SAVE_PREPARE_LOCATION"
   fi
 
   local end_exec=`timestamp`

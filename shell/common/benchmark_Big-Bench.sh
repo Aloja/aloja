@@ -21,11 +21,11 @@ benchmark_run() {
 
   #need to send all the environment variables over SSH
   EXP="export BIG_BENCH_JAVA=$JAVA_HOME/bin/java && \
-export BIG_BENCH_HADOOP_CONF=$BENCH_H_DIR/etc/hadoop && \
-export BIG_BENCH_HADOOP_LIBS_NATIVE=$BENCH_H_DIR/lib/native && \
+export BIG_BENCH_HADOOP_CONF=$BENCH_HADOOP_DIR/etc/hadoop && \
+export BIG_BENCH_HADOOP_LIBS_NATIVE=$BENCH_HADOOP_DIR/lib/native && \
 export BIG_BENCH_LOGS_DIR=$HDD/logs && \
 export JAVA_HOME=$JAVA_HOME && \
-export PATH=\"$BENCH_H_DIR/bin:$MAHOUT_PATH/bin:$PATH\" && \
+export PATH=\"$BENCH_HADOOP_DIR/bin:$MAHOUT_PATH/bin:$PATH\" && \
 export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
 "
 

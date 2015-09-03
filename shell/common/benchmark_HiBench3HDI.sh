@@ -81,3 +81,7 @@ benchmark_hibench_config_wordcount() {
   export NUM_MAPS=16
   export NUM_REDS=48
 }
+
+benchmark_hibench_config_hivebench() {
+  :
+}

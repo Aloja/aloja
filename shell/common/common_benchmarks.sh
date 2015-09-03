@@ -29,7 +29,6 @@ $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-z <block size in bytes>]
 [-s (save prepare)]
 [-N (don't delete files)]
-[-H hadoop version <hadoop1|hadoop2>]
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
 
@@ -43,7 +42,7 @@ get_options() {
 
   OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
-  while getopts "h?:C:b:r:n:d:m:i:p:l:I:c:z:H:sN:D:t" opt; do
+  while getopts "h?:C:b:r:n:d:m:i:p:l:I:c:z:sN:D:t" opt; do
       case "$opt" in
       h|\?)
         usage
@@ -61,7 +60,7 @@ get_options() {
         ;;
       b)
         BENCH=$OPTARG
-        [ "$BENCH" == "HiBench" ] || [ "$BENCH" == "HiBench-10" ] || [ "$BENCH" == "HiBench-min" ] || [ "$BENCH" == "HiBench-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
+        [ "$BENCH" == "HiBench2" ] || [ "$BENCH" == "HiBench2-min" ] || [ "$BENCH" == "HiBench2-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
         ;;
       r)
         REPLICATION=$OPTARG
@@ -120,10 +119,6 @@ get_options() {
         LIMIT_DATA_NODES=$OPTARG
         echo "LIMIT_DATA_NODES $LIMIT_DATA_NODES"
         ;;
-      H)
-        HADOOP_VERSION=$OPTARG
-        [ "$HADOOP_VERSION" == "hadoop1" ] || [ "$HADOOP_VERSION" == "hadoop2" ] || usage
-        ;;
       e)
           INSTRUMENTATION=1
         ;;
@@ -154,12 +149,14 @@ test_in_cluster() {
   local hostname="$1"
   local coincides=1 #return code when not found
 
-  if [ "$nodeNames" ] ; then
-    for node in $nodeNames ; do #pad the sequence with 0s
+  local node_names="$(get_node_names)"
+
+  if [ "$node_names" ] ; then
+    for node in $node_names ; do #pad the sequence with 0s
       [[ "$hostname" == "$node"* ]] && coincides=0
     done
   else
-    die "\$nodeNames var is not defined for cluster $clusterName"
+    die "Cannot determine nodeNames for cluster $clusterName"
   fi
 
   return $coincides
@@ -354,11 +351,34 @@ test_nodes() {
 
   [ ! "$severity" ] && severity="ERROR"
 
-  local node_output="$($DSH "$condition && echo '$testKey' " 2>&1)"
+  local node_output="$($DSH "$condition && echo '$testKey'"|sort 2>&1)"
   local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
   local num_nodes="$(get_num_nodes)"
   if (( num_OK != num_nodes )) ; then
-    logger "${severity}: Cannot execute: $condition in all nodes. Num OK: $num_OK Num KO: $num_nodes
+    logger "${severity}: Cannot execute: $condition in all nodes. Num OK: $num_OK Num KO: $((num_nodes - num_OK))
+DEBUG Output:
+$node_output"
+    return 1
+  else
+    # all is good
+    return 0
+  fi
+}
+
+# Tests cluster nodes for NOT HAVING a defined condition
+# $1 condition string
+# $2 severity of error
+test_nodes_inverse() {
+  local condition="$1"
+  local severity="$2"
+
+  [ ! "$severity" ] && severity="ERROR"
+
+  local node_output="$($DSH "$condition && echo '$testKey'"|sort 2>&1)"
+  local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
+  local num_nodes="$(get_num_nodes)"
+  if (( num_OK > 0 )) ; then
+    logger "${severity}: Found condition: $condition in nodes. Num OK: $num_OK Num KO: $((num_nodes - num_OK))
 DEBUG Output:
 $node_output"
     return 1
@@ -376,6 +396,13 @@ test_nodes_connection() {
   else
     die "Cannot connect via SSH to all nodes"
   fi
+}
+
+# Sends kill signal to processes listening in a particular port for the whole cluster
+# $1 TCP port
+kill_on_port() {
+ local port="$1"
+ test_nodes "fuser -k -n tcp $port"
 }
 
 # Tries to mount shared folder
@@ -436,8 +463,8 @@ set_job_config() {
   logger "STARTING RUN $JOB_NAME"
   logger "INFO: Job path: $JOB_PATH"
   logger "INFO: Conf: $CONF"
-  logger "INFO: Benchmark: $BENCH_HIB_DIR"
-  logger "INFO: Benchs to execute: $LIST_BENCHS"
+  logger "INFO: Benchmark Suite: $BENCH"
+  logger "INFO: Benchmarks to execute: $LIST_BENCHS"
   logger "DEBUG: DSH: $DSH\n"
   #logger "INFO: DSH_C: $DSH_C"
   #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
@@ -506,7 +533,7 @@ mkdir -p '$(get_base_tarballs_path)' && wget --progress=dot -e dotbytes=10M '${B
 if [ ! -d '$(get_local_apps_path)/$required_file' ] ; then
   mkdir -p '$(get_local_apps_path)/';
   cd '$(get_local_apps_path)/';
-  echo 'INFO: need to uncompress $(get_base_tarballs_path)/$base_name';
+  echo 'DEBUG: need to uncompress $(get_base_tarballs_path)/$base_name';
   if [[ '$base_name' == *'.tar.gz' ]] ; then
     tar -xzf '$(get_base_tarballs_path)/$base_name';
   elif [[ '$base_name' == *'.tar.bz2' ]] ; then
@@ -575,7 +602,7 @@ check_aplic_updates() {
   #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
   #  logger "INFO: Generating source dirs"
   #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
-  #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${BENCH_HADOOP_VERSION};
+  #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${HADOOP_VERSION};
   #elsefi
   #  logger "INFO: Source dirs up to date"
   #fi
@@ -678,7 +705,7 @@ stop_monit(){
       logger "INFO: Stoping monit (in case necesary)"
       for perf_mon in $BENCH_PERF_MONITORS ; do
         local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
-        $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null |tee -a $LOG_PATH &
+        $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
       done
       #logger "DEBUG: perf monitors ready"
     fi
@@ -729,7 +756,6 @@ test_directory_not_exists() {
   fi
 }
 
-
 # Sets the aloja-bench folder ready for benchmarking
 # $1 disk
 prepare_folder(){
@@ -740,12 +766,22 @@ prepare_folder(){
 
   if [ "$DELETE_HDFS" == "1" ] ; then
     logger "INFO: INFO: Deleting previous run files of disk config: $disk in: $(get_aloja_dir "$PORT_PREFIX")"
+    local all_disks_cmd
     for disk_tmp in $disks ; do
       local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
       $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path"
+
       #check if we had problems deleting a folder
-      test_directory_not_exists "$disk_full_path"
+      #test_directory_not_exists "$disk_full_path"
+      all_disks_cmd+="[ ! -d '$disk_full_path' ] && "
     done
+
+    if ! test_nodes "${all_disks_cmd:0:(-3)}" "ERROR" ; then
+      die "Cannot delete directory(ies)"
+    else
+      logger "DEBUG: Previous files succesfully deleted"
+    fi
+
   else
     logger "INFO: INFO: Deleting only the log dir"
     for disk_tmp in $disks ; do
@@ -760,7 +796,18 @@ prepare_folder(){
 
   logger "INFO: Creating bench main dir at: $HDD (and tmp dir: $HDD_TMP)"
 
+  # Creating the main dir
   $DSH "mkdir -p $HDD $HDD_TMP"
+  # Testing the main dir
+
+  if ! test_nodes "[ -d '$HDD' ] && [ -d '$HDD_TMP' ] " "ERROR" ; then
+    die "Cannot create base directories: $HDD $HDD_TMP
+DEBUG: ls -lah $HDD $HDD_TMP
+$($DSH "ls -lah '$HDD/../'; ls -lah '$HDD_TMP/../' " )
+"
+  else
+    logger "DEBUG: Base dirs created successfully"
+  fi
 
   # specify which binaries to use for monitoring
   set_monit_binaries

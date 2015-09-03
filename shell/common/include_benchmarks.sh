@@ -8,9 +8,6 @@ if [ ! "$ALOJA_REPO_PATH" ] || [ -z "$testKey" ] ; then
   exit 1
 fi
 
-logger "DEBUG: Loading $ALOJA_REPO_PATH/shell/common/common.sh" #actually already loaded it
-
-
 #GLOBAL ASSOCIATIVE ARRAYS declared globally here due to multi bash version issues
 # Arrays for times
 declare -g -A EXEC_TIME
@@ -66,8 +63,10 @@ securedProviderFile="$ALOJA_REPO_PATH/secure/${defaultProvider}_settings.conf"
 
 if [ -f "$securedProviderFile" ] ; then
   source_file "$securedProviderFile"
+elif [ -f "$ALOJA_REPO_PATH/secure/provider_defaults.conf" ] ; then
+  source_file "$ALOJA_REPO_PATH/secure/provider_defaults.conf"
 else
-  logger "INFO: no secured accounts file present"
+  die "No provider and accounts defaults present.  Check your secure directory"
 fi
 
 source_file "$ALOJA_REPO_PATH/shell/conf/benchmarks_defaults.conf"

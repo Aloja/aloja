@@ -13,6 +13,7 @@ testKey="###OK###"
 
 [ ! "$PARENT_PID" ] && PARENT_PID=$$ #for killing the process from subshells
 EXTRA_TRAP_CMDS="" #add to this global extra commands for the trap cleanup (e.g., stop services)
+DONT_RETRY_TRAP="" #prevent trap loops
 
 #common funtions
 
@@ -20,7 +21,8 @@ EXTRA_TRAP_CMDS="" #add to this global extra commands for the trap cleanup (e.g.
 logger() {
   local log_file="aloja-deploy.log"
   local dateTime="$(date +%Y%m%d_%H%M%S)"
-  local vm_info=""
+  local vm_info
+  local to_stderr
 
   if [ "$vm_name" ] ; then
     local vm_info=" $vm_name"
@@ -90,8 +92,9 @@ log_all_output() {
 #log and die, $1 message
 die() {
   logger "ERROR: $1" >&2 #>&2 to print the output
-  kill -s TERM $PARENT_PID
-  echo "FATAL ERROR: should not be here"
+  kill -s TERM "$PARENT_PID"
+  sleep 1 # to allow time for the kill
+  echo "FATAL ERROR: should not be here. Exit" >2
   exit 1 #should not arrive here, but...
 }
 
@@ -100,6 +103,11 @@ die() {
 setup_traps(){
   local extra_cmds="$1"
   local trap_cmds="
+((DONT_RETRY_TRAP++))
+if (( DONT_RETRY_TRAP > 1 )) ; then
+  echo 'In a trap loop. Exit' >2 ;
+  exit 1;
+fi
 logger 'WARNING: TRAP received signal $signal for process $$. Cleaning up before exit...';
 $extra_cmds
 extra_traps;
@@ -112,8 +120,8 @@ if (( "$(echo -e "$jobs_to_kill" |wc -l)" > 1 )) ; then
 else
   logger "DEBUG: No processes left, exiting";
 fi
+echo -e "\n\n" #to prevent buffering
 exit 1;
-echo -e "" #to get the promnt back
 '
 
   # First clear other possible traps
@@ -127,9 +135,9 @@ echo -e "" #to get the promnt back
 
 # Executes the list of traps added during execution if any
 extra_traps() {
-  if [ "$$EXTRA_TRAP_CMDS" ] ; then
+  if [ "$EXTRA_TRAP_CMDS" ] ; then
     logger "DEBUG: Executing: $EXTRA_TRAP_CMDS"
-    $($EXTRA_TRAP_CMDS)
+    eval $EXTRA_TRAP_CMDS
   fi
 }
 

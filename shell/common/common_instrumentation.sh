@@ -7,7 +7,7 @@ instrumentation_set_perms() {
 }
 
 stop_sniffer(){
-  $DSH "killall sniffer" 2> /dev/null |tee -a $LOG_PATH
+  $DSH "killall sniffer" 2> /dev/null
 }
 
 instrumentation_post_process() {
