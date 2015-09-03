@@ -175,7 +175,7 @@ Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;"
 
-    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql"
+    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql percona-toolkit"
 
     #test
     local test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
