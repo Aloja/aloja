@@ -43,8 +43,8 @@ class MLMinconfigsController extends AbstractController
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted, $db); // Used only as indicator in the WEB
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted, $db);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
 
 			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R').' minconfs';
 			$learn_options = 'saveall='.md5($config);

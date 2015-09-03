@@ -54,7 +54,7 @@ class MLFindAttributesController extends AbstractController
 
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);			
+			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
 			$instances = MLUtils::generateInstances($param_names, $params, $unseen, $db);
 
 			// Model for filling

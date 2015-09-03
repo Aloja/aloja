@@ -56,9 +56,9 @@ class MLNewconfigsController extends AbstractController
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
 			unset($params['id_clusters']); // Exclude the param from now on
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator in the WEB
 
 			$config = $model_info.' '.$learn_param.' newminconfs';
 

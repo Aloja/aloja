@@ -52,9 +52,9 @@ class MLOutliersController extends AbstractController
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			// model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);

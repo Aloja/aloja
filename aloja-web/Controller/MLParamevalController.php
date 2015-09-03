@@ -110,10 +110,10 @@ class MLParamevalController extends AbstractController
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
-			$instances = MLUtils::generateInstances($param_names, $params, true, $db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
+			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, true);
 
 			// model for filling
 			$possible_models = $possible_models_id = array();
