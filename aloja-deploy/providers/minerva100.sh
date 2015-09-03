@@ -118,7 +118,9 @@ vm_final_bootstrap() {
 
   logger "INFO: making sure minerva-100 config is up to date"
   vm_execute "
-sudo apt-get -y purge hadoop
+sudo apt-get -y --force remove hadoop puppet;
+sudo apt-get -y --force remove libvirt-bin libvirt0;
+sudo apt-get -y autoremove;
 "
 
 #logger "INFO: Recreating /etc/hosts with IB names for $(get_vm_IB_hostname $vm_name)"
@@ -281,6 +283,7 @@ config_ganglia_gmond(){
 
 }
 
+get_nginx_conf(){
 
 echo -e '
 server {
@@ -342,6 +345,7 @@ server {
   gzip_disable "msie6";
 }'
 
+}
 
 #$1 env (prod, dev)
 get_mysqld_conf(){
