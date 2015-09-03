@@ -12,6 +12,7 @@ insert_DB(){
     echo "Loading $2 into $1"
 head -n3 "$2"
 
+#tx levels READ UNCOMMITTED READ-COMMITTED
     $MYSQL "
     SET time_zone = '+00:00';
     SET tx_isolation = 'READ-COMMITTED';
