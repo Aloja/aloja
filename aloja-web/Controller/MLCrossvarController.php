@@ -256,7 +256,7 @@ class MLCrossvarController extends AbstractController
 		{
 			$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
+		    $where_configs = '';
 		    	
 		        $preset = null;
 			if (count($_GET) <= 1
@@ -264,20 +264,81 @@ class MLCrossvarController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
 			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))		
 			{
-				$preset = Utils::initDefaultPreset($db, 'mlcrossvar3d');		
+				unset($_GET['current_model']);
+				unset($_GET['variable1']);
+				unset($_GET['variable2']);
 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			$this->buildFilters(array(
+				'variable2' => array(
+					'type' => 'selectOne', 'default' => array('net'), 'table' => 'execs',
+					'label' => 'Variable 2: ',
+					'generateChoices' => function() {
+						return array('bench','net','disk','maps','iosf','replication',
+							'iofilebuf','comp','blk_size','id_cluster','datanodes',
+							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
+					},
+					'beautifier' => function($value) {
+						$labels = array('bench' => 'Benchmark','net' => 'Network','disk' => 'Disk',
+							'maps' => 'Maps', 'iosf' => 'I/O Sort Factor','replication' => 'Replication',
+							'iofilebuf' => 'I/O File Buffer','comp' => 'Compression','blk_size' => 'Block size',
+							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
+							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
+							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
+							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps');
+
+						return $labels[$value];
+					},
+					'parseFunction' => function() {
+						$value = isset($_GET['variable2']) ? $_GET['variable2'] : 'exe_time';
+						return array('currentChoice' => $value, 'whereClause' => "");
+					},
+				),
+				'variable1' => array(
+					'type' => 'selectOne', 'default' => array('maps'), 'table' => 'execs',
+					'label' => 'Variable 1: ',
+					'generateChoices' => function() {
+						return array('bench','net','disk','maps','iosf','replication',
+							'iofilebuf','comp','blk_size','id_cluster','datanodes',
+							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
+					},
+					'beautifier' => function($value) {
+						$labels = array('bench' => 'Benchmark','net' => 'Network','disk' => 'Disk',
+							'maps' => 'Maps', 'iosf' => 'I/O Sort Factor','replication' => 'Replication',
+							'iofilebuf' => 'I/O File Buffer','comp' => 'Compression','blk_size' => 'Block size',
+							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
+							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
+							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
+							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
+						);
+
+						return $labels[$value];
+					},
+					'parseFunction' => function() {
+						$value = isset($_GET['variable1']) ? $_GET['variable1'] : 'maps';
+						return array('currentChoice' => $value, 'whereClause' => "");
+					},
+				)
+			));
+
+			$where_configs = $this->filters->getWhereClause();
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$cross_var1 = (array_key_exists('variable1',$_GET))?$_GET['variable1']:'maps';
-			$cross_var2 = (array_key_exists('variable2',$_GET))?$_GET['variable2']:'net';
+			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2'));
+			$cross_var1 = $variables['variable1'][0];
+			$cross_var2 = $variables['variable2'][0];
 			$cross_var3 = 'exe_time';
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);
