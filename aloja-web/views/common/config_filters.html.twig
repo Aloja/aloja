@@ -34,7 +34,7 @@
   {% for name,filterGroup in filterGroups %}
     <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
       <div class="panel-heading" role="tab" id="heading{{ name }}">
-        <i id="{{ name }}Glyphon" data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+        <i id="{{ name }}Glyphon" data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" class="indicator glyphicon {% if loop.index0 == 0 %}glyphicon-chevron-up{% else %}glyphicon-chevron-down{% endif %} pull-right"></i>
         <h4 class="panel-title">
           <a data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" aria-expanded="true" aria-controls="{{ name }}">
             {{ filterGroup['label'] }}
