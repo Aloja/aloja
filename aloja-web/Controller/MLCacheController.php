@@ -15,9 +15,9 @@ class MLCacheController extends AbstractController
 		$jsonLearners = '';
 		try
 		{
-            $dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-            $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-            $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 
 			if (isset($_GET['ccache']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
@@ -193,9 +193,9 @@ class MLCacheController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$output = array();
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlclearcache.html.twig',
+
+		return $this->render('mltemplate/mlclearcache.html.twig',
 			array(
-				'selected' => 'mlclearcache',
 				'learners' => $jsonLearners,
 				'header_learners' => $jsonLearningHeader,
 				'minconfs' => $jsonMinconfs,
