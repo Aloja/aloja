@@ -560,7 +560,6 @@ sudo rm $libtiff_file"
 
       logger "INFO: Installing R dependencies (JAVA)"
       install_packages "libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk"
-      vm_execute "sudo R CMD javareconf"
 
       logger "INFO: Installing R core and available packages in repo"
       local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-bitops r-cran-boot r-cran-class r-cran-cluster"
@@ -569,8 +568,11 @@ sudo rm $libtiff_file"
       R_packages="$R_packages r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-evaluate"
       R_packages="$R_packages r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer"
       R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
+      R_packages="$R_packages r-cran-rms r-cran-ggplot2"
 
       install_packages "$R_packages"
+
+      vm_execute "sudo R CMD javareconf"
 #
 #      logger "INFO: Downloading precompiled R binary updates (to save time)"
 #      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
@@ -589,13 +591,13 @@ sudo rm $libtiff_file"
 cat <<- EOF > /tmp/packages.r
 #!/usr/bin/env Rscript
 
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 # For all Ubuntu releases until 14.04
 install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
 
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
 
 EOF
 
