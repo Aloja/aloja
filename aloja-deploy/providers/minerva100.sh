@@ -118,8 +118,13 @@ vm_final_bootstrap() {
 
   logger "INFO: making sure minerva-100 config is up to date"
   vm_execute "
-sudo apt-get -y purge hadoop
+sudo apt-get -y --force remove hadoop puppet;
+sudo apt-get -y --force remove libvirt-bin libvirt0;
+sudo apt-get -y autoremove;
 "
+
+#logger "INFO: Recreating /etc/hosts with IB names for $(get_vm_IB_hostname $vm_name)"
+#vm_update_template "/etc/hosts" "$(get_IB_hostnames)" "secured_file"
 
 
 }
@@ -132,7 +137,31 @@ get_vm_IB_hostname() {
 
 get_IB_hostnames() {
 
+  # Also getting regular node names because of DNS failures in minerva
+  #a ip addr|grep inet|grep 172|awk '{print $3 "\t" $1}'
+  
   echo -e "
+#regular hostname  
+#172.20.12.1 minerva-102.mnv minerva-101
+#172.20.12.2 minerva-102.mnv minerva-102
+#172.20.12.3 minerva-103.mnv minerva-103
+#172.20.12.4 minerva-104.mnv minerva-104
+#172.20.12.5 minerva-105.mnv minerva-105
+#172.20.12.6 minerva-106.mnv minerva-106
+#172.20.12.7 minerva-107.mnv minerva-107
+#172.20.12.8 minerva-108.mnv minerva-108
+#172.20.12.9 minerva-109.mnv minerva-109
+#172.20.12.10  minerva-110.mnv minerva-110
+#172.20.12.11  minerva-111.mnv minerva-111
+#172.20.12.12  minerva-112.mnv minerva-112
+#172.20.12.13  minerva-13.mnv  minerva-113
+#172.20.12.14  minerva-14.mnv  minerva-114
+#172.20.12.15  minerva-115.mnv minerva-115
+#172.20.12.16  minerva-116.mnv minerva-116
+#172.20.12.17  minerva-117.mnv minerva-117
+#172.20.12.18  minerva-118.mnv minerva-118
+  
+#IB hostname  
 10.0.1.1	minerva-ib-101
 10.0.1.2	minerva-ib-102
 10.0.1.3	minerva-ib-103
@@ -254,6 +283,7 @@ config_ganglia_gmond(){
 
 }
 
+get_nginx_conf(){
 
 echo -e '
 server {
@@ -315,6 +345,7 @@ server {
   gzip_disable "msie6";
 }'
 
+}
 
 #$1 env (prod, dev)
 get_mysqld_conf(){
