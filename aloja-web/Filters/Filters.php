@@ -357,7 +357,7 @@ class Filters
         if(sizeof($_GET) <= 1)
             $this->initDefaultPreset($screenName);
 
-        $this->additionalFilters['presets']['currentChoice'] = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+        $this->additionalFilters['presets']['currentChoice'] = (isset($_GET['presets'])) ? $_GET['presets'] : $this->additionalFilters['presets']['default'];
         $this->additionalFilters['presets']['choices'] = $this->dbConnection->get_rows("
           SELECT * FROM aloja2.filter_presets WHERE selected_tool = '$screenName' ORDER BY short_name DESC");
     }
@@ -386,7 +386,8 @@ class Filters
                 else
                     $_GET[$filterName] = $filterValue;
             }
-        }
+        } else
+            $this->additionalFilters['presets']['default'] = 'none';
     }
 
     public function buildGroupFilters($defaultGroups = array('disk')) {
