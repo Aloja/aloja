@@ -11,42 +11,65 @@
 		<hr />
 	</div>
 	<div id="dataframe" style="float: left; width: 68%;">
-	<style>
-		.benchtable
-		{
-			border: solid 1px;
-		}
+		<style>
+			.benchtable
+			{
+				border: solid 1px;
+			}
 
-		.summarytable
-		{
-			border-spacing: 10px;
-			border-collapse: separate;
-			display: inline-block;
-			vertical-align: top;
-		}
+			.summarytable
+			{
+				border-spacing: 10px;
+				border-collapse: separate;
+				display: inline-block;
+				vertical-align: top;
+			}
 
-		.level
-		{
-			font-weight:bold;
-		}
+			.level
+			{
+				font-weight:bold;
+			}
 
-		.levelhead
-		{
-			width: 100%;
-			color: #FFF;
-			background-color: #AAA;
-			padding: 5px;
-			font-weight:bold;
-		}
+			.levelhead
+			{
+				width: 100%;
+				color: #FFF;
+				background-color: #AAA;
+				padding: 5px;
+				font-weight:bold;
+			}
 
-		.summarytable table
-		{
-			width: 100%;
-			border-spacing: 10px;
-			border-collapse: separate;
-		}
-	</style>
+			.summarytable table
+			{
+				width: 100%;
+				border-spacing: 10px;
+				border-collapse: separate;
+			}
+		</style>
 		{{displaydata | raw}}
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
+		</div>
 	</div>
 	<div style="float: right; width: 30%;">
 	{% include 'common/config_filters.html.twig' %}

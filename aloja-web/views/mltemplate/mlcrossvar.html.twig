@@ -44,7 +44,7 @@
 						<ul>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
-						<li>Slice Info: {{slice_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -70,67 +70,37 @@
 		if ("{{must_wait}}"== "NO")
 		{
 			$('#chart').highcharts( {
-	    		        chart: {
-	    		            type: 'scatter',
-	    		            zoomType: 'xy'
-	    		        },
-	    		        title: {
-	    		            text: 'Variable comparison'
-	    		        },
-	    		        subtitle: {
-	    		            text: '{{variable1}} vs {{variable2}}'
-	    		        },
+	    		        chart: { type: 'scatter', zoomType: 'xy' },
+	    		        title: { text: 'Variable comparison' },
+	    		        subtitle: { text: '{{variable1}} vs {{variable2}}' },
 				xAxis: {
-					title: {
-						enabled: true,
-						text: '{{variable2}}'
-					},
+					title: { enabled: true, text: '{{variable2}}' },
 					startOnTick: true,
 					endOnTick: false,
 					categories: {{categories2 | raw}}
 	    		        },
 	    		        yAxis: {
-					title: {
-						enabled: true,
-						text: '{{variable1}}'
-					},
+					title: { enabled: true, text: '{{variable1}}' },
 					startOnTick: true,
 					endOnTick: false,
 					categories: {{categories1 | raw}}
 	    		        },
-				credits: {
-					enabled: false
-				    },
+				credits: { enabled: false },
 	    		        plotOptions: {
-				    series: {
-					turboThreshold: 5000
-				    },
+				    series: { turboThreshold: 5000 },
 	    		            scatter: {
 	    		                marker: {
 	    		                    radius: 5,
-	    		                    states: {
-	    		                        hover: {
-	    		                            enabled: true,
-	    		                            lineColor: 'rgb(100,100,100)'
-	    		                        }
-	    		                    }
+	    		                    states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } }
 	    		                },
-	    		                states: {
-	    		                    hover: {
-	    		                        marker: {
-	    		                            enabled: false
-	    		                        }
-	    		                    }
-	    		                },
+	    		                states: { hover: { marker: { enabled: false } } },
 	    		                tooltip: {
 	    		                    headerFormat: '',
 	    		                    pointFormat: '{point.name}'
 	    		                }
 	    		            }
 	    		        },
-	    		        series: [
-					{name: 'Observations (Run Experiments)', data: {{ jsonData | raw }}},
-				]
+	    		        series: [{name: 'Observations (Run Experiments)', data: {{ jsonData | raw }}}]
 			});
 		} else {
 			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
