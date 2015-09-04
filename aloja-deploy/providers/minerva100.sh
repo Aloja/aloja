@@ -336,6 +336,9 @@ log-slave-updates               = 1
 enforce-gtid-consistency        = 1
 explicit_defaults_for_timestamp = 1
 
+binlog_format = mixed
+server_id = 1
+
 log_bin         = /scratch/attached/1/mysql/binlogs/mysql-binlog
 
 

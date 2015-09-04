@@ -177,6 +177,12 @@ sudo apt-get update;"
 
     install_packages "percona-server-server percona-xtrabackup qpress php5-mysql percona-toolkit"
 
+    # create binlog and relaylog dirs
+    vm_execute "
+sudo mkdir -p '${datadir}/binlogs' '${datadir}/relaylogs';
+sudo chowm -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
+"
+
     #test
     local test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
 
