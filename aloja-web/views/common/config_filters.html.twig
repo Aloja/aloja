@@ -34,14 +34,14 @@
   {% for name,filterGroup in filterGroups %}
     <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
       <div class="panel-heading" role="tab" id="heading{{ name }}">
-        <i id="{{ name }}Glyphon" data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" class="indicator glyphicon {% if loop.index0 == 0 %}glyphicon-chevron-up{% else %}glyphicon-chevron-down{% endif %} pull-right"></i>
+        <i id="{{ name }}Glyphon" data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" class="indicator glyphicon {% if filterGroup['tabOpenDefault'] %}glyphicon-chevron-up{% else %}glyphicon-chevron-down{% endif %} pull-right"></i>
         <h4 class="panel-title">
           <a data-toggle="collapse" data-parent="#accordion" href="#{{ name }}" aria-expanded="true" aria-controls="{{ name }}">
             {{ filterGroup['label'] }}
           </a>
         </h4>
       </div>
-      <div id="{{ name }}" class="panel-collapse collapse {% if loop.first %}in{% endif %} filtersTab" role="tabpanel" aria-labelledby="heading{{ name }}">
+      <div id="{{ name }}" class="panel-collapse collapse {% if filterGroup['tabOpenDefault'] %}in{% endif %} filtersTab" role="tabpanel" aria-labelledby="heading{{ name }}">
         <div class="panel-body">
           {{ include('common/render_filter.html.twig', {'filterGroup': filterGroup['filters'], 'filters': filters}) }}
           {# needed for grouping filters, TODO: do it in a better way #}

@@ -20,32 +20,53 @@ class MLSummariesController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
-		    	
-		        $preset = null;
-			if (count($_GET) <= 1)
-			{
-				$preset = Utils::initDefaultPreset($db, 'mlsummaries');
- 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+		    $this->buildFilters(array('feature' => array(
+				'type' => 'selectOne',
+				'default' => array('joined'),
+				'label' => 'Separate by: ',
+				'generateChoices' => function() {
+					return array('joined','Benchmark','Net',
+						'Disk','Maps','IO.SFac',
+						'Rep','IO.FBuf','Comp',
+						'Blk.size','Cluster'
+					);
+				},
+				'beautifier' => function($value) {
+					$labels = array('joined' => 'None','Benchmark' => 'Benchmarks',
+						'Net' => 'Networks', 'Disk' => 'Disks','Maps' => 'Maps',
+						'IO.SFac' => 'IO Sort Factor', 'Rep' => 'Replication',
+						'Rep' => 'Replication','IO.FBuf' => 'IO File Buffer',
+						'Comp' => 'Compressions', 'Blk.size' => 'Block sizes',
+						'Cluster' => 'Clusters'
+					);
+					return $labels[$value];
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['feature']) ? $_GET['feature'] : array('joined');
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			)));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true)));
 
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$where_configs = $this->filters->getWhereClause();
 
-			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
+
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
-			$separate_feat = 'joined';
-			if (array_key_exists('feature',$_GET)) $separate_feat = $_GET['feature'];
+			$feature = $this->filters->getFiltersSelectedChoices(array('feature'));
+			$separate_feat = $feature['feature'];
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true,$db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true,$db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$separate_feat.' '.$slice_info.' SUMMARY';
 
@@ -120,19 +141,15 @@ class MLSummariesController extends AbstractController
 			$displaydata = $separate_feat = '';
 		}
 		$return_params = array(
-			'selected' => 'mlsummaries',
 			'displaydata' => $displaydata,
 			'feature' => $separate_feat,
 			'slice_info' => $slice_info,
 			'message' => $message,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
 		foreach ($param_names as $p) $return_params[$p] = $params[$p];
 		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
 
-		echo $this->container->getTwig()->render('mltemplate/mlsummaries.html.twig', $return_params);
+		return $this->render('mltemplate/mlsummaries.html.twig', $return_params);
 	}
 }
 ?>

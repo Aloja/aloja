@@ -64,4 +64,11 @@ class AbstractController
         }
         $this->filters->buildGroupFilters();
     }
+
+    public function buildFilterGroups($customFilterGroups) {
+        if($this->filters == null)
+            throw new \Exception('Filters not built!');
+
+        $this->filters->buildFilterGroups($customFilterGroups);
+    }
 }

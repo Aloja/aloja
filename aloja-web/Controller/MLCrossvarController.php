@@ -100,14 +100,14 @@ class MLCrossvarController extends AbstractController
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
-			foreach ($param_names as $p) if (!is_null($params[$p])) sort($params[$p]);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
 			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2'));
-			$cross_var1 = $variables['variable1'][0];
-			$cross_var2 = $variables['variable2'][0];
+			$cross_var1 = $variables['variable1'];
+			$cross_var2 = $variables['variable2'];
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
@@ -330,15 +330,15 @@ class MLCrossvarController extends AbstractController
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
-			foreach ($param_names as $p) if (!is_null($params[$p])) sort($params[$p]);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
 			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2'));
-			$cross_var1 = $variables['variable1'][0];
-			$cross_var2 = $variables['variable2'][0];
+			$cross_var1 = $variables['variable1'];
+			$cross_var2 = $variables['variable2'];
 			$cross_var3 = 'exe_time';
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);

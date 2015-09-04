@@ -148,16 +148,20 @@ class Filters
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
         $this->filterGroups = array('basic' => array(
                 'label' => 'Basic filters',
-                'filters' => array('money','bench','bench_type','datasize','scale_factor','id_cluster','net','disk')),
+                'filters' => array('money','bench','bench_type','datasize','scale_factor','id_cluster','net','disk'),
+                'tabOpenDefault' => true),
             'hardware' => array(
                 'label' => 'Hardware',
-                'filters' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS')),
+                'filters' => array('datanodes','vm_size','vm_cores','vm_RAM','type','provider','vm_OS'),
+                'tabOpenDefault' => false),
             'hadoop' => array(
                 'label' => 'Hadoop',
-                'filters' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version')),
+                'filters' => array('maps','comp','replication','blk_size','iosf','iofilebuf','hadoop_version'),
+                'tabOpenDefault' => false),
             'advanced' => array(
                 'label' => 'Advanced filters',
-                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime')
+                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime'),
+                'tabOpenDefault' => false
             )
         );
     }
@@ -327,6 +331,11 @@ class Filters
                 //Add new filter
                 $this->filters[$index] = $options;
                 $filterGroup = (isset($options['filterGroup'])) ? $options['filterGroup'] : 'basic';
+                if(!isset($this->filterGroups[$filterGroup])) {
+                    $this->filterGroups[$filterGroup]['filters'] = array();
+                    $this->filterGroups[$filterGroup]['tabOpenDefault'] = false;
+                }
+
                 array_unshift($this->filterGroups[$filterGroup]['filters'],$index);
             }
         }
@@ -477,6 +486,10 @@ class Filters
         $values = array();
         foreach($filtersArray as $filterName) {
             $values[$filterName] = $this->filters[$filterName]['currentChoice'];
+
+            //If select one get only the first one
+            if($this->filters[$filterName]['type'] == 'selectOne')
+                $values[$filterName] = $values[$filterName][0];
         }
 
         return $values;
@@ -490,5 +503,13 @@ class Filters
         }
 
         return $options;
+    }
+
+    public function buildFilterGroups($filterGroups) {
+        foreach($filterGroups as $filterGroup => $options) {
+            foreach($options as $optionKey => $option) {
+                $this->filterGroups[$filterGroup][$optionKey] = $option;
+            }
+        }
     }
 }
