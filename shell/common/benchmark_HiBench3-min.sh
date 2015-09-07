@@ -51,3 +51,10 @@ benchmark_hibench_config_wordcount() {
   export NUM_MAPS=4
   export NUM_REDS=4
 }
+
+benchmark_hibench_config_hivebench() {
+  export USERVISITS=1000000 #1MB-rangings
+  export PAGES=120000
+  export NUM_MAPS=1
+  export NUM_REDS=1
+}

@@ -9,8 +9,8 @@ benchmark_config() {
 }
 
 format_nodes() {
-   $DSH_MASTER "yes Y | hadoop namenode -format" 2>&1 |tee -a $LOG_PATH
-   $DSH_MASTER "yes Y | hadoop datanode -format" 2>&1 |tee -a $LOG_PATH	
+   $DSH_MASTER "yes Y | hadoop namenode -format"
+   $DSH_MASTER "yes Y | hadoop datanode -format"
 }
 
 benchmark_run() {
@@ -80,4 +80,8 @@ benchmark_hibench_config_wordcount() {
   export DATASIZE="$dataSize"
   export NUM_MAPS=16
   export NUM_REDS=48
+}
+
+benchmark_hibench_config_hivebench() {
+  :
 }

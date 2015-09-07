@@ -1,17 +1,22 @@
+benchmark_requires() {
+  : # Empty
+}
+
 benchmark_config() {
   : # Empty
 }
 
 benchmark_run() {
-  loggerb "Executing sleep in all nodes"
+  logger "INFO: Executing sleep in all nodes"
 
   restart_monit
 
+  # Taking a nap for 5 seconds
   for sleep_iterator in {1..5} ; do
-    loggerb "Sleeping zzZZZzzz $sleep_iterator"
+    logger "INFO: Sleeping zzZZZzzz $sleep_iterator"
     $DSH "sleep 1"
   done
-  loggerb "DONE executing sleep"
+  logger "INFO: DONE executing sleep"
 }
 
 benchmark_teardown() {

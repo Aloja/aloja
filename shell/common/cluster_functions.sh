@@ -1,15 +1,15 @@
-#Check that CONF_DIR is correctly set before starting
-[ -z "$CONF_DIR" ] || [ ! -f "$CONF_DIR/provider_functions.sh" ] && {
-  echo "ERROR: CONF_DIR not set correctly. CONF_DIR=$CONF_DIR" ; exit 1;
-}
+# Common functions for cluster and VM management
+
+# Check that $ALOJA_REPO_PATH is correctly set before starting
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../.."
 
 #source includes
-#logger "DEBUG: loading $CONF_DIR/provider_functions.sh"
-source "$CONF_DIR/provider_functions.sh"
-#logger "DEBUG: loading $CONF_DIR/install_functions.sh"
-source "$CONF_DIR/install_functions.sh"
-#logger "DEBUG: loading $CONF_DIR/config_functions.sh"
-source "$CONF_DIR/config_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/provider_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/provider_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/install_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/config_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/config_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -84,7 +84,7 @@ vm_create_connect() {
     #wait for ssh to be ready
     wait_vm_ssh_ready
 
-  #make sure the correct number of disks is innitialized
+  #make sure the correct number of disks is initialized
   elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
@@ -128,6 +128,10 @@ vm_provision() {
 }
 
 vm_finalize() {
+  if [ "$type" == "cluster" ] ; then
+      cluster_create_local_conf
+  fi
+
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
@@ -246,7 +250,8 @@ check_sshpass() {
     logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
     sudo apt-get install -y sshpass
     if ! which sshpass > /dev/null; then
-      die "sshpass could not be installed or not found"
+      logger "ERROR: sshpass could not be installed or not found"
+      exit 1
     fi
   fi
 }
@@ -361,7 +366,10 @@ get_master_name() {
       break #just return one
     done
   else #generate them from standard naming
-    local master_name="${clusterName}-00"
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local master_name="${clusterName}-${vm_id}"
+      break #just return one
+    done
   fi
   echo "$master_name"
 }
@@ -618,8 +626,9 @@ vm_set_ssh() {
     fi
 
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > $homePrefixAloja/$userAloja/.ssh/config;
-                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+
+    vm_update_template "$homePrefixAloja/$userAloja/.ssh/config" "$(get_ssh_config)" ""
 
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
@@ -782,7 +791,8 @@ cluster_initialize_disks() {
 }
 
 vm_mount_disks() {
-  if check_bootstraped "vm_mount_disks" ""; then
+  local bootstrap_file="${FUNCNAME[0]}"
+  if check_bootstraped "$bootstrap_file" ""; then
 
     make_fstab
 
@@ -792,16 +802,15 @@ vm_mount_disks() {
     local error
 
     vm_execute "$create_string"
-    error=$?    
 
-    if [ $error -eq 0 ] ; then
+    #TODO make this test more roboust and to test all the mounts
+    local test_action="$(vm_execute "lsblk |grep '/scratch/attached' && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
-      check_bootstraped "vm_mount_disks" "set"
+      check_bootstraped "$bootstrap_file" "set"
     else
       logger "ERROR mounting disks for $vm_name. Test output: $test_action"
-      exit 1
     fi
-
   else
     logger "Disks already mounted for VM $vm_name "
   fi
@@ -966,14 +975,14 @@ vm_set_master_forer() {
 
     logger "Generating jobs (forer)"
 
-    if [ -f "$CONF_DIR/../forer_$clusterName.sh" ] ; then
+    if [ -f "$ALOJA_REPO_PATH/shell/forer_$clusterName.sh" ] ; then
       logger " synching forer files"
-      vm_rsync "$CONF_DIR/../" "$homePrefixAloja/$userAloja/share/shell/"
+      vm_rsync "$ALOJA_REPO_PATH/shell/" "$homePrefixAloja/$userAloja/share/shell/"
 
       logger " executing forer_$clusterName.sh"
       vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
     else
-      logger " executing forer_az.sh $CONF_DIR/../forer_$clusterName.sh"
+      logger " executing forer_az.sh $ALOJA_REPO_PATH/shell/forer_$clusterName.sh"
       vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_az.sh $clusterName"
     fi
 
@@ -1047,8 +1056,9 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench" "$homePrefixAloja/$userAloja/share"
-  #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
+  vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
@@ -1078,10 +1088,10 @@ vm_rsync_public() {
 
   logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
 
-  if [ -d "$CONF_DIR/../../blobs" ] ; then
-    vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+  if [ -d "$ALOJA_REPO_PATH/blobs" ] ; then
+    vm_rsync "$ALOJA_REPO_PATH/blobs/{aplic2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
   else
-    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $CONF_DIR/../../blobs"
+    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $ALOJA_REPO_PATH/blobs"
   fi
 }
 
@@ -1190,4 +1200,15 @@ vm_update_hosts_file() {
 
   #vm_execute "$hosts_file_command"
   vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
+}
+
+cluster_create_local_conf() {
+  logger "INFO: Creating or updating local cluster config file"
+  local cluster_conf="
+# Cluster config, file is to be sourced by benchmarking scripts
+clusterID='$clusterID'
+clusterName='$clusterName'
+numberOfNodes='$numberOfNodes'
+"
+  vm_update_host_template "$homePrefixAloja/$userAloja/aloja_cluster.conf" "$cluster_conf"
 }

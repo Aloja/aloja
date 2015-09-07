@@ -1,90 +1,96 @@
-#common initialization, non-executable, must be sourced
-self_name="$(basename $0)"
+# File to handle the include files (sources) necessary for benchmarking
 
-#1) load common functions and global variables
-CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
-source "$CONF_DIR/common.sh"
-#test variables
-[ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
-
-###################
-
-#test and load cluster config
-clusterConfigFile="cluster_${clusterName}.conf"
-
-configFolderPath="$CONF_DIR/../conf"
-
-[ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
-
-#load cluster or node config
-logger "INFO: loading $configFolderPath/$clusterConfigFile"
-source "$configFolderPath/$clusterConfigFile"
-
-logger "INFO: loading benchmarks_defaults.conf"
-source "$CONF_DIR/../conf/benchmarks_defaults.conf"
-
-## load defaultProvider
-#if [ -z $2 ]; then
-#  securedProviderFile="$CONF_DIR/../../secure/${defaultProvider}_settings.conf"
-##load user specified provider conf file
-#elif [ -z $3 ]; then
-#  securedProviderFile="$CONF_DIR/../../secure/${2}_settings.conf"
-##load user specified conf file
-#else
-#	securedProviderFile="$CONF_DIR/../../secure/$3"
-#fi
-#
-##check for secured conf file
-#if [ ! -f "$securedProviderFile" ]; then
-#  echo "WARNING: Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
-#  #exit
-#else
-#  #load non versioned conf first (order is important for overrides)
-#  logger "INFO: loading $securedProviderFile"
-#  source "$securedProviderFile"
-#fi
-
-#source "$configFolderPath/$clusterConfigFile"
-
-logger "Starting ALOJA deploy tools for Provider: $default_provider"
-
-source "$CONF_DIR/cluster_functions.sh"
-
-if [ ! -z "defaultProvider" ] ; then
-  providerFunctionsFile="$CONF_DIR/../../aloja-deploy/providers/${defaultProvider}.sh"
-else
-  providerFunctionsFile="$CONF_DIR/../../aloja-deploy/providers/${2}.sh"
-fi
-
-#check if provider file exists
-if [ ! -f "$providerFunctionsFile" ] ; then
-  echo "ERROR: cannot find providers function file in $providerFunctionsFile"
+# 1.) Load base files
+source "$ALOJA_REPO_PATH/shell/common/common.sh"
+#Check if we can continue
+if [ ! "$ALOJA_REPO_PATH" ] || [ -z "$testKey" ] ; then
+  echo "ERROR: Cannot source files. Exiting...";
   exit 1
 fi
 
-#if [ "$2" == "rackspace" ] || [ "$2" == "openstack" ] ; then
-#
-#  #check if azure command is installed
-#  if ! nova --version 2>&1 > /dev/null ; then
-#    echo "ERROR: nova command not instaled. Run: sudo pip install install rackspace-novaclient"
-#    exit 1
-#  fi
-#
-#elif [ "$2" == "azure" ] ; then
-#  #check if azure command is installed
-#  if ! azure --version 2>&1 > /dev/null ; then
-#    echo "azure command not instaled. Run: sudo npm install azure-cli"
-#    exit 1
-#  fi
-#fi
+#GLOBAL ASSOCIATIVE ARRAYS declared globally here due to multi bash version issues
+# Arrays for times
+declare -g -A EXEC_TIME
+declare -g -A EXEC_START
+declare -g -A EXEC_END
 
-logger "INFO: loading $providerFunctionsFile"
-source "$providerFunctionsFile"
+# Associative array for downloading apps and configs
+# Format $BENCH_REQUIRED_FILES["Folder Name after uncompress"]="URL to download tarball"
+declare -g -A BENCH_REQUIRED_FILES
 
-#bencmark sources
-logger "INFO: loading $CONF_DIR/common_benchmarks.sh"
-source "$CONF_DIR/common_benchmarks.sh"
+# Associative array for default disk paths
+declare -g -A BENCH_DISKS
 
-logger "INFO: loading $CONF_DIR/benchmark_${BENCH}.sh"
-source "$CONF_DIR/benchmark_${BENCH}.sh"
+#make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
+setup_traps
+
+source_file "$ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
+
+# 2.) Load cluster configs
+
+# Attempt first to load local cluster config if defined
+if [[ -z "$clusterName" &&  -f ~/aloja_cluster.conf ]] ; then
+  source_file ~/aloja_cluster.conf  #here we don't have globals loaded yet
+fi
+
+# Check command line options
+get_options "$@"
+
+# Test and load cluster config
+if [ "${clusterName}" ] ; then
+  clusterConfigFile="cluster_${clusterName}.conf"
+else
+  logger "ERROR: cluster not specified"
+  usage #here it will exit
+fi
+
+if [ ! -f "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile" ] ; then
+  logger "ERROR: cannot find clusterConfigFile at: $ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"
+  usage #here it will exit
+fi
+
+# Load cluster config
+source_file "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"
+
+# Load instrumentation functions if requested
+if [ "$INSTRUMENTATION" ] ; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_instrumentation.sh"
+fi
+
+# Load defaultProvider
+logger "DEBUG: attempting to load secured account configs if present"
+securedProviderFile="$ALOJA_REPO_PATH/secure/${defaultProvider}_settings.conf"
+
+if [ -f "$securedProviderFile" ] ; then
+  source_file "$securedProviderFile"
+elif [ -f "$ALOJA_REPO_PATH/secure/provider_defaults.conf" ] ; then
+  source_file "$ALOJA_REPO_PATH/secure/provider_defaults.conf"
+else
+  die "No provider and accounts defaults present.  Check your secure directory"
+fi
+
+source_file "$ALOJA_REPO_PATH/shell/conf/benchmarks_defaults.conf"
+
+
+logger "Starting ALOJA benchmarking tools for Provider: $defaultProvider"
+
+source_file "$ALOJA_REPO_PATH/shell/common/cluster_functions.sh"
+
+if [ ! -z "defaultProvider" ] ; then
+  providerFunctionsFile="$ALOJA_REPO_PATH/aloja-deploy/providers/${defaultProvider}.sh"
+else
+  providerFunctionsFile="$ALOJA_REPO_PATH/aloja-deploy/providers/${2}.sh"
+fi
+
+# Check if provider file exists
+[ ! -f "$providerFunctionsFile" ] && die "ERROR: cannot find providers function file in $providerFunctionsFile"
+
+source_file "$providerFunctionsFile"
+
+# Selected Bencmark specific source_files and overrides
+
+source_file "$ALOJA_REPO_PATH/shell/common/benchmark_${BENCH}.sh"
+
+# Re-load cluster or node config
+logger "DEBUG: Re-loading $ALOJA_REPO_PATH/shell/conf/$clusterConfigFile for overrides"
+source_file "$ALOJA_REPO_PATH/shell/conf/$clusterConfigFile"

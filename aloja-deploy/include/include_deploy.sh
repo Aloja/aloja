@@ -22,9 +22,7 @@ source "$CONF_DIR/common.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
-trap 'echo "RUNNING TRAP "; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit 1;' SIGINT SIGTERM #EXIT
-PARENT_PID=$$ #for killing the process from subshells
-
+setup_traps
 
 logger "Starting ALOJA deploy tools"
 
@@ -37,7 +35,7 @@ configFolderPath="$ROOT_DIR_INCLUDE/shell/conf"
 [ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config
-logger "INFO: Loading $clusterConfigFile"
+logger "DEBUG: Loading $clusterConfigFile"
 source "$configFolderPath/$clusterConfigFile"
 
 #3) Load the secured provider settings
@@ -78,7 +76,7 @@ fi
 
 
 #load non versioned conf first (order is important for overrides)
-logger "INFO: Loading $securedProviderFile"
+logger "DEBUG: Loading $securedProviderFile"
 source "$securedProviderFile"
 
 logger " for Provider: $cloud_provider"
@@ -91,7 +89,7 @@ source "$configFolderPath/$clusterConfigFile"
 
 #4) Load the common cluster functions
 
-#logger "INFO: Loading $CONF_DIR/cluster_functions.sh"
+#logger "DEBUG: Loading $CONF_DIR/cluster_functions.sh"
 source "$CONF_DIR/cluster_functions.sh"
 
 
@@ -127,5 +125,5 @@ elif [ "$defaultProvider" == "azure" ] ; then
   fi
 fi
 
-#logger "INFO: Loading $providerFunctionsFile"
+#logger "DEBUG: Loading $providerFunctionsFile"
 source "$providerFunctionsFile"
