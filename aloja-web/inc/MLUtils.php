@@ -17,11 +17,12 @@ class MLUtils
 		{
 			if (array_key_exists($p,$filter_options))
 				$paramAllOptions[$p] = $filter_options[$p];
-			if ($condition) {
-				if(!empty($params[$p]) && is_array($params[$p]))
+			if ($condition)
+			{
+				if (!empty($params[$p]) && is_array($params[$p]))
 					$model_info .= ' '.$p.' ("'.implode('","',$params[$p]).'")';
-				else if(!empty($params[$p]))
-					$model_info .= ' '.$p.' '.$params[$p];
+				else if (!empty($params[$p]))
+					$model_info .= ' '.$p.' ("'.$params[$p].'")';
 				else
 					$model_info .= ' '.$p.' ("*")';
 			} else
@@ -58,12 +59,15 @@ class MLUtils
 			$tokens[$p] = '';
 			if ($condition && empty($params[$p]))
 				$tokens[$p] = '*';
-			elseif (!$condition && empty($params[$p])) {
+			elseif (!$condition && empty($params[$p]))
 				foreach ($paramAllOptions[$p] as $par)
 					$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par;
-			} else if(is_array($params[$p])) {
-				foreach ($params[$p] as $par)
-					$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par;
+			else
+			{
+				if (is_array($params[$p]))
+					foreach ($params[$p] as $par)
+						$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par;
+				else $tokens[$p] = $params[$p];
 			}
 			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 		}

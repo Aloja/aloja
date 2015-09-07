@@ -12,22 +12,19 @@ class MLCrossvarController extends AbstractController
 	public function mlcrossvarAction()
 	{
 		$jsonData = array();
-		$message = $instance = '';
+		$instance = '';
 		$must_wait = 'NO';
 		try
 		{
 			$db = $this->container->getDBUtils();
 		    	
-		    $where_configs = '';
+			$where_configs = '';
+			$current_model = null; // FIXME - Only used when parameter "pred_time" is variable1 or variable2 (not available in filters...)
 
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
-			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
-			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))
+			if (array_key_exists('current_model',$_GET))
 			{
+				$current_model = $_GET["current_model"];
 				unset($_GET["current_model"]);
-				unset($_GET["variable2"]);
-				unset($_GET["variable1"]);
 			}
 			$this->buildFilters(array(
 				'variable2' => array(
@@ -137,6 +134,7 @@ class MLCrossvarController extends AbstractController
 
 				// Call to MLTemplates, to fetch/learn model
 				$_GET['pass'] = 1;
+				$_GET["current_model"] = $current_model;
 				$mltc1 = new MLTemplatesController();
 				$mltc1->container = $this->container;
 				$ret_learn = $mltc1->mlpredictionAction();
@@ -149,10 +147,7 @@ class MLCrossvarController extends AbstractController
 				}
 				else if ($ret_learn == -1)
 				{
-					$must_wait = "NO";
-					$jsonData = '[]';
-					$categories1 = $categories2 = "''";
-					$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]";
+					throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
 				}
 				else
 				{
@@ -234,41 +229,32 @@ class MLCrossvarController extends AbstractController
 			'variable2' => $cross_var2,
 			'categories1' => $categories1,
 			'categories2' => $categories2,
-			'message' => $message,
 			'instance' => $instance,
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'must_wait' => $must_wait,
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
 		return $this->render('mltemplate/mlcrossvar.html.twig', $return_params);
 	}
 
 	public function mlcrossvar3dAction()
 	{
 		$jsonData = array();
-		$message = $instance = '';
+		$cross_var1 = $cross_var2 = $instance = '';
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
 		try
 		{
 			$db = $this->container->getDBUtils();
 		    	
-		    $where_configs = '';
-		    	
-		        $preset = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
-			|| (count($_GET) == 3 && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET))
-			|| (count($_GET) == 4 && array_key_exists('current_model',$_GET) && array_key_exists('variable1',$_GET) && array_key_exists('variable2',$_GET)))		
-			{
-				unset($_GET['current_model']);
-				unset($_GET['variable1']);
-				unset($_GET['variable2']);
-			}
+			$where_configs = '';
+			$current_model = null; // FIXME - Only used when parameter "pred_time" is variable1 or variable2 (not available in filters...)
 
+			if (array_key_exists('current_model',$_GET))
+			{
+				$current_model = $_GET["current_model"];
+				unset($_GET["current_model"]);
+			}
 			$this->buildFilters(array(
 				'variable2' => array(
 					'type' => 'selectOne', 'default' => array('net'), 'table' => 'execs',
@@ -328,7 +314,7 @@ class MLCrossvarController extends AbstractController
 			$where_configs = $this->filters->getWhereClause();
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -369,6 +355,7 @@ class MLCrossvarController extends AbstractController
 
 				// Call to MLTemplates, to fetch/learn model
 				$_GET['pass'] = 1;
+				$_GET["current_model"] = $current_model;
 				$mltc1 = new MLTemplatesController();
 				$mltc1->container = $this->container;
 				$ret_learn = $mltc1->mlpredictionAction();
@@ -381,10 +368,7 @@ class MLCrossvarController extends AbstractController
 				}
 				else if ($ret_data == -1)
 				{
-					$must_wait = "NO";
-					$jsonData = '[]';
-					$categories1 = $categories2 = "''";
-					$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]";
+					throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
 				}
 				else
 				{
@@ -467,9 +451,7 @@ class MLCrossvarController extends AbstractController
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = '[]';
-			$cross_var1 = $cross_var2 = '';
 			$categories1 = $categories2 = '';
-			$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 			$must_wait = "NO";
 		}
 		$return_params = array(
@@ -481,19 +463,15 @@ class MLCrossvarController extends AbstractController
 			'maxx' => $maxx, 'minx' => $minx,
 			'maxy' => $maxy, 'miny' => $miny,
 			'maxz' => $maxz, 'minz' => $minz,
-			'message' => $message,
 			'instance' => $instance,
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
-			'must_wait' => $must_wait,
+			'must_wait' => $must_wait
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
 		return $this->render('mltemplate/mlcrossvar3d.html.twig', $return_params);
 	}
 
-	public function mlcrossvar3dfaAction()
+	public function mlcrossvar3dfaAction() // FIXME - Must change filter stuff
 	{
 		$jsonData = array();
 		$message = $instance = $possible_models_id = '';
@@ -656,7 +634,6 @@ class MLCrossvarController extends AbstractController
 			'maxx' => $maxx, 'minx' => $minx,
 			'maxy' => $maxy, 'miny' => $miny,
 			'maxz' => $maxz, 'minz' => $minz,
-			'message' => $message,
 			'instance' => $instance,
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,

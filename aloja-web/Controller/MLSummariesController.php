@@ -11,7 +11,7 @@ class MLSummariesController extends AbstractController
 {
 	public function mlsummariesAction()
 	{
-		$displaydata = $message = '';
+		$displaydata = $separate_feat = $instance = $model_info = $slice_info = '';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -20,7 +20,7 @@ class MLSummariesController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    $this->buildFilters(array('feature' => array(
+			$this->buildFilters(array('feature' => array(
 				'type' => 'selectOne',
 				'default' => array('joined'),
 				'label' => 'Separate by: ',
@@ -50,6 +50,7 @@ class MLSummariesController extends AbstractController
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true)));
 
 			$where_configs = $this->filters->getWhereClause();
+			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
@@ -57,8 +58,6 @@ class MLSummariesController extends AbstractController
 
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
-
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			$feature = $this->filters->getFiltersSelectedChoices(array('feature'));
 			$separate_feat = $feature['feature'];
@@ -91,7 +90,6 @@ class MLSummariesController extends AbstractController
 				// dump the result to csv
 			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
-
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
@@ -138,13 +136,13 @@ class MLSummariesController extends AbstractController
 		catch(\Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-			$displaydata = $separate_feat = '';
 		}
 		$return_params = array(
 			'displaydata' => $displaydata,
 			'feature' => $separate_feat,
-			'slice_info' => $slice_info,
-			'message' => $message,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info
 		);
 		foreach ($param_names as $p) $return_params[$p] = $params[$p];
 		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
