@@ -489,7 +489,8 @@ class Filters
             $values[$filterName] = $this->filters[$filterName]['currentChoice'];
 
             //If select one get only the first one
-            if($this->filters[$filterName]['type'] == 'selectOne')
+            if($this->filters[$filterName]['type'] == 'selectOne' &&
+                is_array($this->filters[$filterName]['currentChoice']))
                 $values[$filterName] = $values[$filterName][0];
         }
 
@@ -512,5 +513,10 @@ class Filters
                 $this->filterGroups[$filterGroup][$optionKey] = $option;
             }
         }
+    }
+
+    public function setCurrentChoices($filter,$choices) {
+        if(isset($this->filters[$filter]))
+            $this->filters[$filter]['choices'] = $choices;
     }
 }

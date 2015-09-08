@@ -4,7 +4,7 @@
     {% set filter = filters[currFilter] %}
     {% set filterName = currFilter %}
     {% if filter['type'] == 'checkbox' or filter['type'] == 'checkboxNegated' %}
-        <input type="checkbox" name="{{ filterName }}" value="{{ filterName }}" {% if filter['currentChoice'] == 1 %}checked{% endif %}> {{ filter['label'] }}<br />
+        <input type="checkbox" name="{{ filterName }}" value="{{ filterName }}" {% if filter['currentChoice'] == 1 %}checked{% endif %}> {{ filter['label'] | raw }}<br />
     {% else %}
         {% if (loopIndex % 2) == 0 %}
             {% if loopIndex != 0 %}

@@ -591,4 +591,23 @@ class Utils
             'costsSSD' => $costsSSD,
             'costsIB' => $costsIB);
     }
+
+    public static function multi_implode($array, $glue) {
+        $ret = '';
+
+        if(!is_array($array))
+            return $ret;
+
+        foreach ($array as $item) {
+            if (is_array($item)) {
+                $ret .= Utils::multi_implode($item, $glue) . $glue;
+            } else {
+                $ret .= $item . $glue;
+            }
+        }
+
+        $ret = substr($ret, 0, 0-strlen($glue));
+
+        return $ret;
+    }
 }

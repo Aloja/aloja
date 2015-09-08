@@ -26,7 +26,7 @@ class MLUtils
 				else
 					$model_info .= ' '.$p.' ("*")';
 			} else
-				$model_info = $model_info.((empty($params[$p]))?' '.$p.' ("'.implode('","',$paramAllOptions[$p]).'")':' '.$p.' ("'.implode('","',$params[$p]).'")');
+				$model_info = $model_info.((empty($params[$p]))?' '.$p.' ("'.Utils::multi_implode($paramAllOptions[$p],'","').'")':' '.$p.' ("'.Utils::multi_implode($params[$p],'","').'")');
 		}
 		return $model_info;
 	}
@@ -74,7 +74,7 @@ class MLUtils
 		return $instance;
 	}
 
-	public static function generateInstances(\alojaweb\Filters\Filter $filters, $param_names, $params, $generalize)
+	public static function generateInstances(\alojaweb\Filters\Filters $filters, $param_names, $params, $generalize, $db = null)
 	{
 		$filter_options = $filters->getFilterChoices();
 
@@ -124,7 +124,8 @@ class MLUtils
 				}
 			}
 			if ($remove_if_no_props) continue;
-			$cl_characteristics = "Cl".implode(",",$cluster_descriptor[$cl]);
+
+			$cl_characteristics = "Cl".Utils::multi_implode($cluster_descriptor[$cl],',');
 
 			$instance = '';
 			foreach ($param_names as $p) 
@@ -139,7 +140,7 @@ class MLUtils
 					$tokens[$p] = '';
 					if ($generalize && empty($params[$p])) { $tokens[$p] = '*'; }
 					elseif (!$generalize && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-					else { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					elseif(is_array($params[$p])) { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
 					$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 				}
 				else

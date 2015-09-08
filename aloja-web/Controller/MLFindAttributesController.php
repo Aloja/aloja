@@ -23,8 +23,6 @@ class MLFindAttributesController extends AbstractController
 		    	$db = $this->container->getDBUtils();
 
 		    	$where_configs = '';
-		    	
-		        $preset = null;
 
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET))
@@ -36,13 +34,42 @@ class MLFindAttributesController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("pass",$_GET) && array_key_exists("current_model",$_GET)))
 			{
-				$preset = Utils::initDefaultPreset($db, 'mlfindattributes');		
+				unset($_GET["dump"]);
+				unset($_GET["pass"]);
+				unset($_GET["tree"]);
+				unset($_GET["current_model"]);
 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+
+			$this->buildFilters(array('current_model' => array(
+				'type' => 'selectOne',
+				'default' => null,
+				'label' => 'Model tu use: ',
+				'generateChoices' => function() {
+					return array();
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			), 'unseen' => array(
+				'type' => 'checkbox',
+				'default' => 1,
+				'label' => 'Predict with unseen atributes &#9888;',
+				'parseFunction' => function() {
+					$choice = (isset($_GET['unseen']) && !isset($_GET['unseen'])) ? 0 : 1;
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning')
+			));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true,
+				'filters' => array('current_model','unseen'))));
+
+			$where_configs = $this->filters->getWhereClause();
+
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
@@ -53,15 +80,18 @@ class MLFindAttributesController extends AbstractController
 			$mae = $rae = 0;
 
 			// compose instance
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
-			$instances = MLUtils::generateInstances($param_names, $params, $unseen, $db);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
+			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen,$db);
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
 			$current_model = "";
-			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
+			if (array_key_exists('current_model',$_GET)
+				&& !is_null($possible_models_id)
+				&& in_array($_GET['current_model'],$possible_models_id))
+				$current_model = $_GET['current_model'];
 
 			// Other models for filling
 			$where_models = '';
@@ -268,8 +298,10 @@ class MLFindAttributesController extends AbstractController
 			$dbml = null;
 			if (isset($_GET['pass'])) { return "-2"; }
 		}
+
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+
 		$return_params = array(
-			'selected' => 'mlfindattributes',
 			'instance' => $instance,
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
@@ -288,13 +320,10 @@ class MLFindAttributesController extends AbstractController
 			'unseen' => $unseen,
 			'tree' => (isset($_GET['tree'])?"true":"false"),
 			'tree_descriptor' => $tree_descriptor,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
 		foreach ($param_names as $p) $return_params[$p] = $params[$p];
 
-		echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig', $return_params);
+		return $this->render('mltemplate/mlfindattributes.html.twig', $return_params);
 	}
 
 	public function mlattributestreeAction()
