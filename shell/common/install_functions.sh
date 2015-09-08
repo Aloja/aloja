@@ -539,20 +539,6 @@ install_R() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-	## For Ubuntu 12.04
-#	add-apt-repository 'deb http://cran.es.r-project.org/bin/linux/ubuntu precise/'
-#	apt-get update
-#	apt-get install "openjdk-7-jre-lib" "openjdk-7-jre-headless" "openjdk-7-jdk" "r-base" "r-base-core" "r-base-dev" "r-base-html" \
-#	"r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" \
-#	"r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" \
-#	"r-cran-survival" "r-recommended" "r-cran-colorspace" "r-cran-getopt" "r-cran-rcolorbrewer" "r-cran-rcpp" "libcurl4-openssl-dev" \
-#	"libxml2-dev" "gsettings-desktop-schemas" -y --force-yes
-
-# Only for Ubuntu 12.04
-#install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.r-project.org",
-#dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
-
-
     if [[ "$vmOSType" == "Ubuntu" && "$vmOSTypeVersion" == "14.04" ]] ; then
 
       logger "INFO: Installing R packages for Ubuntu 14 from repo"
@@ -582,37 +568,35 @@ sudo rm $libtiff_file"
       install_packages "$R_packages"
 
       vm_execute "sudo R CMD javareconf"
-#
-#      logger "INFO: Downloading precompiled R binary updates (to save time)"
-#      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
-#      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
-#
-#      logger "INFO: Uncompressing and copying files"
-#      vm_execute "
-#cd /tmp;
-#tar -xjf '$R_file';
-#sudo cp -rf 'R' /usr/lib/
-#rm -rf '$R_file' 'R';
-#"
 
-      logger "INFO: Updating package (will take a while if changes are found)"
+      logger "INFO: Downloading precompiled R binary updates (to save time)"
+      local R_file="R-x86_64-3.2-packages.tar.gz"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
+
+      logger "INFO: Uncompressing and copying files"
       vm_execute "
-cat <<- EOF > /tmp/packages.r
-#!/usr/bin/env Rscript
-
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-
-# For all Ubuntu releases until 14.04
-install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
-
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-
-EOF
-
-sudo chmod a+x /tmp/packages.r
-sudo /tmp/packages.r
+tar -xjf -C '$HOME' '/tmp/$R_file';
+rm -rf '/tmp/$R_file';
 "
+
+#      logger "INFO: Updating package (will take a while if changes are found)"
+#      vm_execute "
+#cat <<- EOF > /tmp/packages.r
+##!/usr/bin/env Rscript
+#
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#
+## For all Ubuntu releases until 14.04
+#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
+#'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+#
+##update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#
+#EOF
+#
+#sudo chmod a+x /tmp/packages.r
+#sudo /tmp/packages.r
+#"
 
       local test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
 
