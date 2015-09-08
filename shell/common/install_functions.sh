@@ -575,7 +575,7 @@ sudo rm $libtiff_file"
 
       logger "INFO: Uncompressing and copying files"
       vm_execute "
-tar -xjf -C '$HOME' '/tmp/$R_file';
+tar -C ~$(get_ssh_user) -xf '/tmp/$R_file';
 rm -rf '/tmp/$R_file';
 "
 
@@ -944,16 +944,36 @@ install_ganglia_web(){
 
     vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
 
-    vm_execute "
-    cd /tmp || exit 1;
-    tar -xf $tarball || exit 1;
-    sudo mv $gdir ganglia || exit 1;
-    sudo rm -rf /var/www/ganglia || exit 1;
-    sudo mv ganglia /var/www/ || exit 1;
-    sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
-    sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
-    sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+    if [ -d '/vagrant' ]; then
+  
+      local user=$(get_ssh_user)
+
+      # install under /home/vagrant, create symlink in /var/www to avoid cluttering repo due to shared folders
+      vm_execute "
+      cd /tmp || exit 1;
+      tar -xf $tarball || exit 1;
+      mv $gdir ganglia || exit 1;
+      rm -rf ~${user}/ganglia || exit 1;
+      mv ganglia ~${user}/ || exit 1;
+      mkdir -p ~${user}/ganglia/dwoo/{compiled,cache} || exit 1;
+      sudo chmod -R ugo+rwx ~${user}/ganglia/dwoo/{compiled,cache} || exit 1;
+      mv /tmp/ganglia_conf.php.t ~${user}/ganglia/conf.php || exit 1;
+      sudo ln -s ~${user}/ganglia/ /var/www/ganglia;      
 "
+    else
+      # normal case
+      vm_execute "
+      cd /tmp || exit 1;
+      tar -xf $tarball || exit 1;
+      sudo mv $gdir ganglia || exit 1;
+      sudo rm -rf /var/www/ganglia || exit 1;
+      sudo mv ganglia /var/www/ || exit 1;
+      sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
+      sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
+      sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+"
+
+    fi
 
     if [ $? -ne 0 ]; then
       die "Error installing ganglia-web"
