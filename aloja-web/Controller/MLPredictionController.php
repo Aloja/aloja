@@ -19,39 +19,71 @@ class MLPredictionController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
-		    	$db = $this->container->getDBUtils();
-		    	
-		    	$where_configs = '';
+		    $db = $this->container->getDBUtils();
 
-		        $preset = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
 			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
-				$preset = Utils::initDefaultPreset($db, 'mlprediction');
+				unset($_GET["dump"]);
+				unset($_GET["pass"]);
  			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-		    	
+
+			$this->buildFilters(array('learn' => array(
+				'type' => 'selectOne',
+				'default' => array('regtree'),
+				'label' => 'Learning method: ',
+				'generateChoices' => function() {
+					return array('regtree','nneighbours','nnet','polyreg');
+				},
+				'beautifier' => function($value) {
+					$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
+						'nnet' => 'NNets','polyreg' => 'PolyReg-3');
+					return $labels[$value];
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['learn']) ? $_GET['learn'] : array('regtree');
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			), 'umodel' => array(
+				'type' => 'checkbox',
+				'default' => 1,
+				'label' => 'Unrestricted to new values',
+				'parseFunction' => function() {
+					$choice = (isset($_GET['submit']) && !isset($_GET['umodel'])) ? 0 : 1;
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning')
+			));
+
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true,
+				'filters' => array('learn','umodel'))));
+
+			$where_configs = $this->filters->getWhereClause();
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
+			$learnParams = $this->filters->getFiltersSelectedChoices(array('learn','umodel'));
+			$learn_param = $learnParams['learn'];
+			$unrestricted = ($learnParams['umodel']) ? true : false;
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted,$db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unrestricted);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unrestricted);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R').' '.$slice_info;
 			$learn_options = 'saveall='.md5($config);
@@ -231,7 +263,6 @@ class MLPredictionController extends AbstractController
 		}
 
 		$return_params = array(
-			'selected' => 'mlprediction',
 			'jsonExecs' => json_encode($jsonExecs),
 			'max_p' => min(array($max_x,$max_y)),
 			'unrestricted' => $unrestricted,
@@ -242,14 +273,11 @@ class MLPredictionController extends AbstractController
 			'slice_info' => $slice_info,
 			'id_learner' => md5($config),
 			'error_stats' => $error_stats,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
 		foreach ($param_names as $p) $return_params[$p] = $params[$p];
 		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
 
-		echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig', $return_params);
+		return $this->render('mltemplate/mlprediction.html.twig', $return_params);
 	}
 }
 ?>
