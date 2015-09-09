@@ -84,10 +84,9 @@
 				</div>
 				<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
 					<div class="panel-body">
-						<form>
-							<div style="width: 20%; margin: 0 auto; float: center">
+							<div style="width: 20%; margin: 0 auto; float: center;">
 								Parameter to evaluate:
-								<select class="form-control" name="parameval">
+								<select form="configFilters" class="form-control" name="parameval">
 									<option value="maps" {% if paramEval == 'maps' %}selected="selected"{% endif %}>Maps</option>
 									<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
 									<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
@@ -99,7 +98,6 @@
 									<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
 								</select>
 							</div>
-						</form>
 						<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
 					</div>
 				</div>
