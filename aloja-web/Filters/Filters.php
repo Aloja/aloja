@@ -135,7 +135,7 @@ class Filters
                         $values = 1;
                     } else {
                         $values = $this->filters['prepares']['default'];
-                        $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
+			if (!$values) $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
                     return array('currentChoice' => $values, 'whereClause' => $whereClause);

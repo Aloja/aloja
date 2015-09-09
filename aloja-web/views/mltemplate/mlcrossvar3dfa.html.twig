@@ -82,6 +82,8 @@
 	{
 		document.getElementById('submit').id = 'submitForm';
 
+		$('#headingadvanced').parent().hide();
+
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{must_wait}}"== "NO")
