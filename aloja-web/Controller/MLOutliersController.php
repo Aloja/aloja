@@ -16,6 +16,7 @@ class MLOutliersController extends AbstractController
 		$possible_models = $possible_models_id = $other_models = array();
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
+		$config = '';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -24,9 +25,8 @@ class MLOutliersController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
+		    $where_configs = '';
 
-		        $preset = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))
@@ -34,19 +34,51 @@ class MLOutliersController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 3 && array_key_exists('register',$_GET) && array_key_exists('current_model',$_GET)))
 			{
-				$preset = Utils::initDefaultPreset($db, 'mloutliers');
+				unset($_GET["dump"]);
+				unset($_GET["register"]);
 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			$this->buildFilters(
+				array('current_model' => array(
+					'type' => 'selectOne',
+					'default' => null,
+					'label' => 'Model tu use: ',
+					'generateChoices' => function() {
+						return array();
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning',
+				),
+				'sigma' => array(
+					'type' => 'inputNumber',
+					'default' => 1,
+					'label' => 'Sigmas: ',
+					'parseFunction' => function() {
+						$choice = isset($_GET['sigma']) ? $_GET['sigma'] : 1;
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'max' => 3,
+					'min' => 1,
+					'filterGroup' => 'MLearning'
+				))
+			);
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true,
+				'filters' => array('current_model','sigma'))));
+			$where_configs = $this->filters->getWhereclause();
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
+			$sigma_param = $this->filters->getFiltersSelectedChoices(array('sigma'))['sigma'];
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -59,8 +91,7 @@ class MLOutliersController extends AbstractController
 			// model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
-			$current_model = "";
-			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
+			$current_model = $this->filters->getFiltersSelectedChoices(array('current_model'))['current_model'];
 
 			// Other models for filling
 			$where_models = '';
@@ -254,9 +285,10 @@ class MLOutliersController extends AbstractController
 			$model = '';
 
 			$dbml = null;
+			$config = '';
 		}
+
 		$return_params = array(
-			'selected' => 'mloutliers',
 			'jsonData' => $jsonData,
 			'jsonWarns' => $jsonWarns,
 			'jsonOuts' => $jsonOuts,
@@ -273,14 +305,13 @@ class MLOutliersController extends AbstractController
 			'sigma' => $sigma_param,
 			'message' => $message,
 			'instance' => $instance,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
 		foreach ($param_names as $p) $return_params[$p] = $params[$p];
 		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
 
-		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig', $return_params);
+		$this->filters->setCurrentChoices('current_model',$possible_models_id);
+
+		return $this->render('mltemplate/mloutliers.html.twig', $return_params);
 	}
 }
 ?>
