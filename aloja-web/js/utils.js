@@ -15,6 +15,13 @@ function isNumber(n) {
 	return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
+if (typeof String.prototype.startsWith != 'function') {
+	// see below for better implementation!
+	String.prototype.startsWith = function (str){
+		return this.indexOf(str) === 0;
+	};
+}
+
 /**
  * Modifies the current url changing the query parameters to the ones present
  * in the passed map
@@ -109,19 +116,11 @@ function showCorrectBenchScaleFactors(scaleFactors) {
 function showCorrectBenchs(benchSizes) {
 	var availBenchs = new Array();
 	var reselect = false;
-	/** Bench type as select multiple
-	$("input[name='bench_type[]'").each(function() {
-		if($(this).prop('checked')) {
-			var suite = $(this).val();
-			$.each(benchSizes[suite],function(bench, datasizes) {
-				availBenchs.push(bench);
-			});
-		}
-	});
-	 */
+	var includePrepares = $("input[type='checkbox'][name='prepares']:checked").length > 0;
 	var selBenchSuite = $("select[name='bench_type[]'").val();
 	$.each(benchSizes[selBenchSuite],function(bench, datasizes) {
-		availBenchs.push(bench);
+		if((bench.startsWith("prep_") && includePrepares) || !bench.startsWith("prep_" ))
+			availBenchs.push(bench);
 	});
 
 	if($("input[name='bench[]']").length > 0) {

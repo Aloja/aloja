@@ -134,7 +134,7 @@ class Filters
                     if(isset($_GET['prepares'])) {
                         $values = 1;
                     } else {
-                        $values = 0;
+                        $values = $this->filters['prepares']['default'];
                         $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
