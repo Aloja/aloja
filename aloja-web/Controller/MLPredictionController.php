@@ -78,7 +78,6 @@ class MLPredictionController extends AbstractController
 			$learn_param = $learnParams['learn'];
 			$unrestricted = ($learnParams['umodel']) ? true : false;
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 

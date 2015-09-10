@@ -484,7 +484,7 @@ class MLCrossvarController extends AbstractController
 	public function mlcrossvar3dfaAction() // FIXME - Must change filter stuff
 	{
 		$jsonData = $possible_models = array();
-		$message = $instance = $possible_models_id = '';
+		$message = $instance = $possible_models_id = $other_models = '';
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
 		try
@@ -611,9 +611,17 @@ class MLCrossvarController extends AbstractController
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
-
 			$current_model = "";
 			if (in_array($param_current_model,$possible_models_id)) $current_model = $param_current_model;
+
+			// Other models for filling
+			$where_models = '';
+			if (!empty($possible_models_id))
+			{
+				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
+			}
+			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
 			// Call to MLFindAttributes, to fetch data
 			$_GET['pass'] = 2;
@@ -723,7 +731,7 @@ class MLCrossvarController extends AbstractController
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 			'must_wait' => $must_wait,
 		);
-		$this->filters->setCurrentChoices('current_model',$current_model);
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
 		$this->filters->setCurrentChoices('variable1',$cross_var1);
 		$this->filters->setCurrentChoices('variable2',$cross_var2);
 		return $this->render('mltemplate/mlcrossvar3dfa.html.twig', $return_params);

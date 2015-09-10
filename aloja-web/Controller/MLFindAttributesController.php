@@ -66,8 +66,6 @@ class MLFindAttributesController extends AbstractController
 			)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
-
-		    	$where_configs = '';
 			$where_configs = $this->filters->getWhereClause();
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
@@ -283,7 +281,8 @@ class MLFindAttributesController extends AbstractController
 			}
 			else
 			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
+	 			$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
+				$must_wait = 'NO';
 				if (isset($dump)) { echo "-1"; exit(0); }
 				if (isset($pass)) { return "-1"; }
 			}
@@ -300,8 +299,6 @@ class MLFindAttributesController extends AbstractController
 			$dbml = null;
 			if (isset($pass)) { return "-2"; }
 		}
-
-		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
 
 		$return_params = array(
 			'instance' => $instance,
@@ -322,6 +319,7 @@ class MLFindAttributesController extends AbstractController
 			'unseen' => $unseen,
 			'tree_descriptor' => $tree_descriptor,
 		);
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
 		return $this->render('mltemplate/mlfindattributes.html.twig', $return_params);
 	}
 }
