@@ -19,14 +19,6 @@
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
 
-		$('select[name="parameval"]').change(function()
-		{
-			var name = $(this).val()+'s[]';
-			$('select[name="'+name+'"]').val('None');
-			var configForm = document.getElementsByName('configFilters');
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
-			$(this).parents('form').submit();
-		});
 
 		if ("{{must_wait}}" == "NO")
 		{
@@ -97,6 +89,7 @@
 									<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
 									<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
 								</select>
+								<button form="configFilters" type="submit" class="btn btn-info">Update</button>
 							</div>
 						<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
 					</div>

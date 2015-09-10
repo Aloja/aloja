@@ -11,7 +11,7 @@ class MLParamevalController extends AbstractController
 {
 	public function mlparamEvaluationAction()
 	{
-		$rows = $categories = $series = $instance = $model_info = $config = '';
+		$rows = $categories = $series = $instance = $model_info = $config = $current_model = $slice_info = '';
 		$arrayBenchs_pred = $possible_models = $possible_models_id = $other_models = array();
 		$jsonData = $jsonHeader = "[]";
 		$must_wait = 'NO';
@@ -25,7 +25,7 @@ class MLParamevalController extends AbstractController
 
 			if (array_key_exists('parameval',$_GET))
 			{
-				$parameval = $_GET["parameval"];
+				$paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
 				unset($_GET["parameval"]);
 			}
 
@@ -72,8 +72,6 @@ class MLParamevalController extends AbstractController
 			$param_current_model = $param_variables['current_model'];
 			$minExecs = $param_variables['minExecs'];
 
-			$paramEval = (isset($parameval) && $parameval != '') ? $parameval : 'maps';
-
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
@@ -86,20 +84,21 @@ class MLParamevalController extends AbstractController
 			$paramOptions = array();
 			foreach($options[$paramEval] as $option)
 			{
-				if($paramEval == 'id_cluster') $paramOptions[] = $this->filters['id_cluster']['namesClusters'][$option];
-				else if($paramEval == 'comp') $paramOptions[] = Utils::getCompressionName($option);
-				else if($paramEval == 'net') $paramOptions[] = Utils::getNetworkName($option);
-				else if($paramEval == 'disk') $paramOptions[] = Utils::getDisksName($option);
+				if ($paramEval == 'comp') $paramOptions[] = Utils::getCompressionName($option);
+				else if ($paramEval == 'net') $paramOptions[] = Utils::getNetworkName($option);
+				else if ($paramEval == 'disk') $paramOptions[] = Utils::getDisksName($option);
 				else $paramOptions[] = $option;
 			}
 
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
+			$param_eval_query = ($paramEval == 'id_cluster')? 'e.id_cluster' : $paramEval;
+
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $param_eval_query, bench order by $param_eval_query");
 
 			// get the result rows
-			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
+			$query = "SELECT count(*) as count, $param_eval_query, e.id_exec, exec as conf, bench, ".
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
 				"from aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs".
-				"GROUP BY $paramEval,bench $minExecsFilter order by bench,$paramEval";
+				"GROUP BY $param_eval_query,bench $minExecsFilter order by bench,$param_eval_query";
 			$rows = $db->get_rows ( $query );
 			if (!$rows) throw new \Exception ( "No results for query!" );
 
@@ -119,7 +118,6 @@ class MLParamevalController extends AbstractController
 			foreach($rows as $row)
 			{
 				if($paramEval == 'comp') $row[$paramEval] = Utils::getCompressionName($row['comp']);
-				else if($paramEval == 'id_cluster') $row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
 				else if($paramEval == 'net') $row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk') $row[$paramEval] = Utils::getDisksName($row['disk']);
 				else if($paramEval == 'iofilebuf') $row[$paramEval] /= 1024;
@@ -200,9 +198,9 @@ class MLParamevalController extends AbstractController
 				{
 					$must_wait = 'NO';
 
-					$query = "SELECT count(*) as count, $paramEval, bench, exe_time, avg(pred_time) avg_pred_time, min(pred_time) min_pred_time ".
+					$query = "SELECT count(*) as count, $param_eval_query, bench, exe_time, avg(pred_time) avg_pred_time, min(pred_time) min_pred_time ".
 						"FROM aloja_ml.predictions e WHERE e.id_learner = '".$current_model."' $filter_execs $where_configs".
-						"GROUP BY $paramEval, bench $minExecsFilter order by bench, $paramEval";
+						"GROUP BY $param_eval_query, bench $minExecsFilter order by bench,$param_eval_query";
 					$result = $dbml->query($query);
 					
 					// Initialize array
