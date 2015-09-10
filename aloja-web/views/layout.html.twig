@@ -361,21 +361,27 @@
 		   });
 
 			{% if additionalFilters is defined %}
-
-				var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
-				var scaleFactorsInfo = jQuery.parseJSON('{{ additionalFilters['scaleFactorsInfo'] | raw }}');
+			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
+			var scaleFactorsInfo = jQuery.parseJSON('{{ additionalFilters['scaleFactorsInfo'] | raw }}');
+			var providerClusters = jQuery.parseJSON('{{ additionalFilters['providerClusters'] | raw }}');
+			  console.log(providerClusters);
+			showCorrectClusters(providerClusters);
+			showCorrectBenchs(datasizesInfo);
+			showCorrectBenchDatasizes(datasizesInfo);
+			showCorrectBenchScaleFactors(scaleFactorsInfo);
+			$("input[name='bench[]'], select[name='bench[]']").change(function() {
+				showCorrectBenchDatasizes(datasizesInfo);
+				showCorrectBenchScaleFactors(scaleFactorsInfo);
+			});
+			$("select[name='bench_type[]'],input[name='prepares']").change(function() {
 				showCorrectBenchs(datasizesInfo);
 				showCorrectBenchDatasizes(datasizesInfo);
 				showCorrectBenchScaleFactors(scaleFactorsInfo);
-				$("input[name='bench[]'], select[name='bench[]']").change(function() {
-					showCorrectBenchDatasizes(datasizesInfo);
-					showCorrectBenchScaleFactors(scaleFactorsInfo);
-				});
-				$("select[name='bench_type[]']").change(function() {
-					showCorrectBenchs(datasizesInfo);
-					showCorrectBenchDatasizes(datasizesInfo);
-					showCorrectBenchScaleFactors(scaleFactorsInfo);
-				});
+			});
+
+			$("input[name='provider[]']").change(function() {
+				showCorrectClusters(providerClusters);
+			});
 			{% endif %}
 		  });
 	</script>

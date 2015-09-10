@@ -15,6 +15,13 @@ function isNumber(n) {
 	return !isNaN(parseFloat(n)) && isFinite(n);
 }
 
+if (typeof String.prototype.startsWith != 'function') {
+	// see below for better implementation!
+	String.prototype.startsWith = function (str){
+		return this.indexOf(str) === 0;
+	};
+}
+
 /**
  * Modifies the current url changing the query parameters to the ones present
  * in the passed map
@@ -109,19 +116,11 @@ function showCorrectBenchScaleFactors(scaleFactors) {
 function showCorrectBenchs(benchSizes) {
 	var availBenchs = new Array();
 	var reselect = false;
-	/** Bench type as select multiple
-	$("input[name='bench_type[]'").each(function() {
-		if($(this).prop('checked')) {
-			var suite = $(this).val();
-			$.each(benchSizes[suite],function(bench, datasizes) {
-				availBenchs.push(bench);
-			});
-		}
-	});
-	 */
+	var includePrepares = $("input[type='checkbox'][name='prepares']:checked").length > 0;
 	var selBenchSuite = $("select[name='bench_type[]'").val();
 	$.each(benchSizes[selBenchSuite],function(bench, datasizes) {
-		availBenchs.push(bench);
+		if((bench.startsWith("prep_") && includePrepares) || !bench.startsWith("prep_" ))
+			availBenchs.push(bench);
 	});
 
 	if($("input[name='bench[]']").length > 0) {
@@ -153,6 +152,37 @@ function showCorrectBenchs(benchSizes) {
 
 			if(reselect) {
 				$("select[name='bench[]'] option:visible").first().prop('selected',true);
+			}
+		});
+	}
+}
+
+function showCorrectClusters(providerClusters) {
+	var availClusters = new Array();
+	var providersSelected = $("input[name='provider[]']:checked").length;
+	if(providersSelected > 0) {
+		$("input[name='provider[]']").each(function () {
+			if($(this).is(':checked')) {
+				$.each(providerClusters[$(this).val()], function (index2, clusterId) {
+					availClusters.push(clusterId);
+				});
+			}
+		});
+
+		$("input[name='id_cluster[]']").each(function () {
+			if (availClusters.indexOf($(this).val()) == -1) {
+				if ($(this).is(':checked'))
+					$(this).attr('checked', false);
+
+				$(this).parent().hide();
+			} else {
+				$(this).parent().show();
+			}
+		});
+	} else {
+		$("input[name='id_cluster[]']").each(function () {
+			if(!$(this).parent().is(':visible')) {
+				$(this).parent().show();
 			}
 		});
 	}
