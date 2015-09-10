@@ -154,7 +154,7 @@ server {
     }
   }
 
-  location /public {
+  location = /public {
     alias /scratch/attached/1/public;
     autoindex on;
   }

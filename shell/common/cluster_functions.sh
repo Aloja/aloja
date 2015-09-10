@@ -330,20 +330,29 @@ vm_connect() {
 
 #$1 source files $2 destination $3 extra options $4 use password
 vm_local_scp() {
+
+  local src
+
   logger "SCPing files"
 
   set_shh_proxy
 
+  if [ -d '/vagrant' ]; then
+    src=/vagrant/aloja-deploy/$1
+  else
+    src=$1
+  fi
+
   #Use SSH keys
   if [ -z "$4" ] ; then
     #eval is for parameter expansion
-    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
    logger "password"
     check_sshpass
 
-    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
