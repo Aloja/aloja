@@ -95,7 +95,7 @@ class MLCrossvarController extends AbstractController
 
 			$where_configs = $this->filters->getWhereClause();
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -234,6 +234,8 @@ class MLCrossvarController extends AbstractController
 			'slice_info' => $slice_info,
 			'must_wait' => $must_wait,
 		);
+		$this->filters->setCurrentChoices('variable1',$cross_var1);
+		$this->filters->setCurrentChoices('variable2',$cross_var2);
 		return $this->render('mltemplate/mlcrossvar.html.twig', $return_params);
 	}
 
@@ -308,13 +310,19 @@ class MLCrossvarController extends AbstractController
 						$value = isset($_GET['variable1']) ? $_GET['variable1'] : 'maps';
 						return array('currentChoice' => $value, 'whereClause' => "");
 					},
+				), 'valid' => array(
+					'default' => 0
+				), 'filter' => array(
+					'default' => 0
+				), 'prepares' => array(
+					'default' => 1
 				)
 			));
 
 			$where_configs = $this->filters->getWhereClause();
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -468,13 +476,15 @@ class MLCrossvarController extends AbstractController
 			'slice_info' => $slice_info,
 			'must_wait' => $must_wait
 		);
+		$this->filters->setCurrentChoices('variable1',$cross_var1);
+		$this->filters->setCurrentChoices('variable2',$cross_var2);
 		return $this->render('mltemplate/mlcrossvar3d.html.twig', $return_params);
 	}
 
 	public function mlcrossvar3dfaAction() // FIXME - Must change filter stuff
 	{
-		$jsonData = array();
-		$message = $instance = $possible_models_id = '';
+		$jsonData = $possible_models = array();
+		$message = $instance = $possible_models_id = $other_models = '';
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
 		try
@@ -560,15 +570,23 @@ class MLCrossvarController extends AbstractController
 						$choice = (isset($_GET['unseen']) && !isset($_GET['unseen'])) ? 0 : 1;
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
-					'filterGroup' => 'MLearning')
+					'filterGroup' => 'MLearning'
+				), 'minexetime' => array(
+					'default' => 0
+				), 'valid' => array(
+					'default' => 0
+				), 'filter' => array(
+					'default' => 0
+				), 'prepares' => array(
+					'default' => 1
+				)
 			));
-			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true,
-				'filters' => array('current_model','unseen'))));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
 
 			$where_configs = $this->filters->getWhereClause();
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -579,6 +597,8 @@ class MLCrossvarController extends AbstractController
 			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2','current_model','unseen'));
 			$cross_var1 = $variables['variable1'];
 			$cross_var2 = $variables['variable2'];
+			$param_current_model = ($variables['current_model'] != null) ? $variables['current_model'] : "";
+			$unseen = ($variables['unseen']) ? true : false;
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
@@ -591,11 +611,20 @@ class MLCrossvarController extends AbstractController
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
+			$current_model = "";
+			if (in_array($param_current_model,$possible_models_id)) $current_model = $param_current_model;
 
-			$current_model = ($variables['current_model'] != null) ? $variables['current_model'] : "";
+			// Other models for filling
+			$where_models = '';
+			if (!empty($possible_models_id))
+			{
+				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
+			}
+			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
 			// Call to MLFindAttributes, to fetch data
-			$_GET['pass'] = 1;
+			$_GET['pass'] = 2;
 			$mlfa1 = new MLFindAttributesController();
 			$mlfa1->container = $this->container;
 			$ret_data = $mlfa1->mlfindattributesAction();
@@ -609,10 +638,7 @@ class MLCrossvarController extends AbstractController
 			}
 			else if ($ret_data == -1)
 			{
-				$must_wait = "NO";
-				$jsonData = '[]';
-				$categories1 = $categories2 = "''";
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]";
+				throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
 			}
 			else
 			{
@@ -626,7 +652,7 @@ class MLCrossvarController extends AbstractController
 				if (is_null($rows)) throw new \Exception('No data matches with your critteria.');
 			}
 
-			if (!is_null($rows) && $must_wait == "NO")
+			if ($must_wait == "NO")
 			{
 				$map_var1 = $map_var2 = array();
 				$count_var1 = $count_var2 = 0;
@@ -690,10 +716,10 @@ class MLCrossvarController extends AbstractController
 			$possible_models = $possible_models_id = array();
 		}
 
-		if(is_null($possible_models)) $possible_models = array();
-
 		$return_params = array(
 			'jsonData' => $jsonData,
+			'variable1' => $cross_var1,
+			'variable2' => $cross_var2,
 			'categories1' => $categories1,
 			'categories2' => $categories2,
 			'maxx' => $maxx, 'minx' => $minx,
@@ -705,11 +731,9 @@ class MLCrossvarController extends AbstractController
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 			'must_wait' => $must_wait,
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
-		$this->filters->setCurrentChoices('current_model',$possible_models_id);
-
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+		$this->filters->setCurrentChoices('variable1',$cross_var1);
+		$this->filters->setCurrentChoices('variable2',$cross_var2);
 		return $this->render('mltemplate/mlcrossvar3dfa.html.twig', $return_params);
 	}
 }

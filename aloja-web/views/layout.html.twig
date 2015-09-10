@@ -230,160 +230,157 @@
 	<script type="text/javascript" src="js/URI.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
-		  $(document).ready(function() {
-			$(".filtersTab").on('shown.bs.collapse hidden.bs.collapse', function() {
-				var element = $(this).parent().find(".indicator").first();
-				if(element.hasClass("glyphicon-chevron-down"))
-					element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
-				else if(element.hasClass("glyphicon-chevron-up"))
-					element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
-            });
+	$(document).ready(function() {
+		$(".filtersTab").on('shown.bs.collapse hidden.bs.collapse', function() {
+			var element = $(this).parent().find(".indicator").first();
+			if(element.hasClass("glyphicon-chevron-down"))
+				element.removeClass("glyphicon-chevron-down").addClass("glyphicon-chevron-up");
+			else if(element.hasClass("glyphicon-chevron-up"))
+				element.removeClass("glyphicon-chevron-up").addClass("glyphicon-chevron-down");
+		});
 
-			$("#showFilters").click(function() {
-				$("#filtersTab").slideToggle(400, function() {
-				  if($("#filtersTab").is(':visible')) {
-				    $("#showFilters").text('Hide filters');
-				  } else
+		$("#showFilters").click(function() {
+			$("#filtersTab").slideToggle(400, function() {
+				if ($("#filtersTab").is(':visible'))
+					$("#showFilters").text('Hide filters');
+				else
 				    $("#showFilters").text('Show filters');
-				});
 			});
-			$(".datepicker").each(function() {
-				$(this).datepicker({
-					autoclose: true,
-					format: 'yyyy/mm/dd'
-				});
+		});
+		$(".datepicker").each(function() {
+			$(this).datepicker({
+				autoclose: true,
+				format: 'yyyy/mm/dd'
 			});
+		});
 
-			$("form[name='configFilters'] input").change(function() {
-				if($(this).attr('name') != 'execsfilters[]') {
-					if($(this).val() == "None") {
-						if($(this).attr('checked')) {
-							$(this).parent().find('input').each(function() {
-								if($(this).val() != "None")
-									$(this).removeAttr('checked');
-							});
-						} else if($(this).parent().find('input:checked').length == 0)
-							$(this).attr('checked');
-						else {
-							$(this).parent().find('input').each(function() {
-								if($(this).val() != "None")
-									$(this).removeAttr('checked');
-							});
-						}
-					}
-
-					if($(this).parent().parent().attr('id') == "advancedFilters") {
-						var length = $(this).parent().find('input:checked').length;
-						if(length > 1) {
-							$(this).parent().find("input[value='None']").removeAttr('checked');
-						}
+		$("form[name='configFilters'] input").change(function() {
+			if($(this).attr('name') != 'execsfilters[]') {
+				if($(this).val() == "None") {
+					if($(this).attr('checked')) {
+						$(this).parent().find('input').each(function() {
+							if($(this).val() != "None")
+								$(this).removeAttr('checked');
+						});
+					} else if($(this).parent().find('input:checked').length == 0)
+						$(this).attr('checked');
+					else {
+						$(this).parent().find('input').each(function() {
+							if($(this).val() != "None")
+								$(this).removeAttr('checked');
+						});
 					}
 				}
-			});
 
-			$("select[name='presets']").change(function() { 
-			    var url = $(this).find("option:selected").first().attr('url');
-			    if (url == "") {
-					//Clear form
-					$("input[type='checkbox']").each(function () {
-						$(this).prop('checked', false);
-					});
-
-				} else {
-					var filters = url.split("?")[1];
-					filters = filters.split("&");
-
-					//Clear form
-					$("input[type='checkbox']").each(function () {
-						$(this).prop('checked', false);
-					});
-
-					//$("form[name='configFilters']").trigger('reset');
-					for (i = 0; i < filters.length; ++i) {
-						var split = filters[i].split("=");
-						var filterName = split[0]
-						var filterValue = split[1];
-						if (filterValue != "" && filterValue != null) {
-							if (filterName[filterName.length - 1] == ']')
-								$("input[name='" + filterName + "'][value='" + filterValue + "']").prop('checked', true);
-							else
-								$("input[name='" + filterName + "']").val(filterValue);
-							$("select[name='" + filterName + "']").val(filterValue);
-						}
+				if($(this).parent().parent().attr('id') == "advancedFilters") {
+					var length = $(this).parent().find('input:checked').length;
+					if(length > 1) {
+						$(this).parent().find("input[value='None']").removeAttr('checked');
 					}
 				}
+			}
+		});
+
+		$("select[name='presets']").change(function() { 
+		    var url = $(this).find("option:selected").first().attr('url');
+		    if (url == "") {
+				//Clear form
+				$("input[type='checkbox']").each(function () {
+					$(this).prop('checked', false);
+				});
+
+			} else {
+				var filters = url.split("?")[1];
+				filters = filters.split("&");
+
+				//Clear form
+				$("input[type='checkbox']").each(function () {
+					$(this).prop('checked', false);
+				});
+
+				//$("form[name='configFilters']").trigger('reset');
+				for (i = 0; i < filters.length; ++i) {
+					var split = filters[i].split("=");
+					var filterName = split[0]
+					var filterValue = split[1];
+					if (filterValue != "" && filterValue != null) {
+						if (filterName[filterName.length - 1] == ']')
+							$("input[name='" + filterName + "'][value='" + filterValue + "']").prop('checked', true);
+						else
+							$("input[name='" + filterName + "']").val(filterValue);
+						$("select[name='" + filterName + "']").val(filterValue);
+					}
+				}
+			}
+		});
+
+		$("span.selectAll").click(function() { 
+			$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
+		});
+
+		$("span.deselectAll").click(function() { 
+			$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
+		});
+
+		function getCookie(cname) {
+			var name = cname + "=";
+			var ca = document.cookie.split(';');
+			for(var i=0; i<ca.length; i++) {
+			  var c = ca[i].trim();
+			  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
+			}
+			return "";
+		}
+
+		if(getCookie('rememberme') != "true") {
+			document.cookie="rememberme=true";
+			$("#welcomeModal").modal({
+				show: true,
+			  	backdrop: 'static'
 			});
+		}
 
-			$("span.selectAll").click(function() { 
-				$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
-			});
-
-			$("span.deselectAll").click(function() { 
-				$(this).parent().find('.panel-body').first().find('input').removeAttr('checked');
-			});
-
-            function getCookie(cname) {
-           		var name = cname + "=";
-          		var ca = document.cookie.split(';');
-          		for(var i=0; i<ca.length; i++) {
-          		  var c = ca[i].trim();
-          		  if (c.indexOf(name) == 0) return c.substring(name.length,c.length);
-          		}
-          		return "";
-          	}
-
-            if(getCookie('rememberme') != "true") {
-        		document.cookie="rememberme=true";
-        		$("#welcomeModal").modal({
-        			show: true,
-        		  	backdrop: 'static'
-        		});
-        	}
-
-        	$(".tooltip2").each(function() {
+		$(".tooltip2").each(function() {
 				$(this).tooltip();
-            });
+		});
 
         	if($('.dropdown li.active').length > 0) {
         		$('.dropdown li.active').parent().parent().closest('li.dropdown').addClass('active');
         	}
 
         	$(".addgroup").click(function() {
-            	if($(this).hasClass("active"))
-                	$(this).removeClass("active");
-            	else
-					$(this).addClass("active");
+
+		    	if($(this).hasClass("active"))
+		        	$(this).removeClass("active");
+		    	else
+				$(this).addClass("active");
 
 				var selected = new Array();
 				$(".addgroup.active").each(function() { selected[selected.length] = $(this).attr('value'); });
-
-				$("input[name='selected-groups']").attr('value',selected.join());
-		   });
+			});
 
 			{% if additionalFilters is defined %}
-			var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
-			var scaleFactorsInfo = jQuery.parseJSON('{{ additionalFilters['scaleFactorsInfo'] | raw }}');
-			var providerClusters = jQuery.parseJSON('{{ additionalFilters['providerClusters'] | raw }}');
-			  console.log(providerClusters);
-			showCorrectClusters(providerClusters);
-			showCorrectBenchs(datasizesInfo);
-			showCorrectBenchDatasizes(datasizesInfo);
-			showCorrectBenchScaleFactors(scaleFactorsInfo);
-			$("input[name='bench[]'], select[name='bench[]']").change(function() {
-				showCorrectBenchDatasizes(datasizesInfo);
-				showCorrectBenchScaleFactors(scaleFactorsInfo);
-			});
-			$("select[name='bench_type[]'],input[name='prepares']").change(function() {
+				var datasizesInfo = jQuery.parseJSON('{{ additionalFilters['datasizesInfo'] | raw }}');
+				var scaleFactorsInfo = jQuery.parseJSON('{{ additionalFilters['scaleFactorsInfo'] | raw }}');
+				var providerClusters = jQuery.parseJSON('{{ additionalFilters['providerClusters'] | raw }}');
+				showCorrectClusters(providerClusters);
 				showCorrectBenchs(datasizesInfo);
 				showCorrectBenchDatasizes(datasizesInfo);
 				showCorrectBenchScaleFactors(scaleFactorsInfo);
-			});
-
-			$("input[name='provider[]']").change(function() {
-				showCorrectClusters(providerClusters);
-			});
+				$("input[name='bench[]'], select[name='bench[]']").change(function() {
+					showCorrectBenchDatasizes(datasizesInfo);
+					showCorrectBenchScaleFactors(scaleFactorsInfo);
+				});
+				$("select[name='bench_type[]'],input[name='prepares']").change(function() {
+					showCorrectBenchs(datasizesInfo);
+					showCorrectBenchDatasizes(datasizesInfo);
+					showCorrectBenchScaleFactors(scaleFactorsInfo);
+				});
+				$("input[name='provider[]']").change(function() {
+					showCorrectClusters(providerClusters);
+				});
 			{% endif %}
-		  });
+	});
 	</script>
 	{% endblock %}
 </body>

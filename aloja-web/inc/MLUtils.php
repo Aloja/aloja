@@ -57,16 +57,17 @@ class MLUtils
 			if (array_key_exists($p,$filter_options)) $paramAllOptions[$p] = $filter_options[$p];
 
 			$tokens[$p] = '';
-			if ($condition && empty($params[$p]))
-				$tokens[$p] = '*';
+			if ($condition && empty($params[$p])) { $tokens[$p] = '*'; }
 			elseif (!$condition && empty($params[$p]))
+			{
 				foreach ($paramAllOptions[$p] as $par)
-					$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par;
+					$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comp')?'Cmp':'').(($p=='id_cluster')?'Cl':'').$par;
+			}
 			else
 			{
 				if (is_array($params[$p]))
 					foreach ($params[$p] as $par)
-						$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par;
+						$tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comp')?'Cmp':'').(($p=='id_cluster')?'Cl':'').$par;
 				else $tokens[$p] = $params[$p];
 			}
 			$instance = $instance.(($instance=='')?'':',').$tokens[$p];
@@ -82,7 +83,7 @@ class MLUtils
 
 		// Get info from clusters (Part of header_names!)
 		$cluster_header_names = array(
-			'id_cluster' => 'Cluster','name' => 'Cl.Name','datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores',
+			'id_cluster' => 'Cluster','datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores',
 			'vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type'
 		);
 		$cluster_descriptor = array();
@@ -98,15 +99,15 @@ class MLUtils
 		}
 
 		// If "No Clusters" -> All clusters
-		if (empty($params['id_clusters']))
+		if (empty($params['id_cluster']))
 		{
-			$params['id_clusters'] = array();
-			$paramAllOptions['id_clusters'] = $filter_options['id_cluster'];
-			foreach ($paramAllOptions['id_clusters'] as $par) $params['id_clusters'][] = $par;
+			$params['id_cluster'] = array();
+			$paramAllOptions['id_cluster'] = $filter_options['id_cluster'];
+			foreach ($paramAllOptions['id_cluster'] as $par) $params['id_cluster'][] = $par;
 		}
 
 		// For each cluster selected, launch an instance...
-		foreach ($params['id_clusters'] as $cl) 
+		foreach ($params['id_cluster'] as $cl) 
 		{
 			// Reduce the instance to the HW filter override, or even remove instance if no HW coincides
 			$remove_if_no_props = FALSE;
@@ -131,16 +132,23 @@ class MLUtils
 			foreach ($param_names as $p) 
 			{
 				// Ignore for now. Will be used at each cluster characteristics
-				if (array_key_exists($p,$cluster_header_names) && $p != "id_clusters") continue;
+				if (array_key_exists($p,$cluster_header_names) && $p != "id_cluster") continue;
 
-				if ($p != "id_clusters")
+				if ($p != "id_cluster")
 				{
 					if (array_key_exists($p,$filter_options)) $paramAllOptions[$p] = $filter_options[$p];
 
 					$tokens[$p] = '';
-					if ($generalize && empty($params[$p])) { $tokens[$p] = '*'; }
-					elseif (!$generalize && empty($params[$p]))  { foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
-					elseif(is_array($params[$p])) { foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comps')?'Cmp':'').(($p=='id_clusters')?'Cl':'').$par; }
+					if ($generalize && empty($params[$p]))
+						$tokens[$p] = '*';
+					elseif (!$generalize && empty($params[$p])) 
+						foreach ($paramAllOptions[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comp')?'Cmp':'').(($p=='id_cluster')?'Cl':'').$par;
+					else
+					{
+						if (is_array($params[$p]))
+							foreach ($params[$p] as $par) $tokens[$p] = $tokens[$p].(($tokens[$p] != '')?'|':'').(($p=='comp')?'Cmp':'').(($p=='id_cluster')?'Cl':'').$par;
+						else $tokens[$p] = $params[$p];
+					}
 					$instance = $instance.(($instance=='')?'':',').$tokens[$p];
 				}
 				else
