@@ -539,20 +539,6 @@ install_R() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-	## For Ubuntu 12.04
-#	add-apt-repository 'deb http://cran.es.r-project.org/bin/linux/ubuntu precise/'
-#	apt-get update
-#	apt-get install "openjdk-7-jre-lib" "openjdk-7-jre-headless" "openjdk-7-jdk" "r-base" "r-base-core" "r-base-dev" "r-base-html" \
-#	"r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" \
-#	"r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" \
-#	"r-cran-survival" "r-recommended" "r-cran-colorspace" "r-cran-getopt" "r-cran-rcolorbrewer" "r-cran-rcpp" "libcurl4-openssl-dev" \
-#	"libxml2-dev" "gsettings-desktop-schemas" -y --force-yes
-
-# Only for Ubuntu 12.04
-#install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.r-project.org",
-#dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
-
-
     if [[ "$vmOSType" == "Ubuntu" && "$vmOSTypeVersion" == "14.04" ]] ; then
 
       logger "INFO: Installing R packages for Ubuntu 14 from repo"
@@ -582,37 +568,35 @@ sudo rm $libtiff_file"
       install_packages "$R_packages"
 
       vm_execute "sudo R CMD javareconf"
-#
-#      logger "INFO: Downloading precompiled R binary updates (to save time)"
-#      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
-#      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
-#
-#      logger "INFO: Uncompressing and copying files"
-#      vm_execute "
-#cd /tmp;
-#tar -xjf '$R_file';
-#sudo cp -rf 'R' /usr/lib/
-#rm -rf '$R_file' 'R';
-#"
 
-      logger "INFO: Updating package (will take a while if changes are found)"
+      logger "INFO: Downloading precompiled R binary updates (to save time)"
+      local R_file="R-x86_64-3.2-packages.tar.gz"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
+
+      logger "INFO: Uncompressing and copying files"
       vm_execute "
-cat <<- EOF > /tmp/packages.r
-#!/usr/bin/env Rscript
-
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-
-# For all Ubuntu releases until 14.04
-install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
-
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-
-EOF
-
-sudo chmod a+x /tmp/packages.r
-sudo /tmp/packages.r
+tar -C ~$(get_ssh_user) -xf '/tmp/$R_file';
+rm -rf '/tmp/$R_file';
 "
+
+#      logger "INFO: Updating package (will take a while if changes are found)"
+#      vm_execute "
+#cat <<- EOF > /tmp/packages.r
+##!/usr/bin/env Rscript
+#
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#
+## For all Ubuntu releases until 14.04
+#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
+#'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+#
+##update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#
+#EOF
+#
+#sudo chmod a+x /tmp/packages.r
+#sudo /tmp/packages.r
+#"
 
       local test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
 
@@ -960,16 +944,36 @@ install_ganglia_web(){
 
     vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
 
-    vm_execute "
-    cd /tmp || exit 1;
-    tar -xf $tarball || exit 1;
-    sudo mv $gdir ganglia || exit 1;
-    sudo rm -rf /var/www/ganglia || exit 1;
-    sudo mv ganglia /var/www/ || exit 1;
-    sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
-    sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
-    sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+    if [ -d '/vagrant' ]; then
+  
+      local user=$(get_ssh_user)
+
+      # install under /home/vagrant, create symlink in /var/www to avoid cluttering repo due to shared folders
+      vm_execute "
+      cd /tmp || exit 1;
+      tar -xf $tarball || exit 1;
+      mv $gdir ganglia || exit 1;
+      rm -rf ~${user}/ganglia || exit 1;
+      mv ganglia ~${user}/ || exit 1;
+      mkdir -p ~${user}/ganglia/dwoo/{compiled,cache} || exit 1;
+      sudo chmod -R ugo+rwx ~${user}/ganglia/dwoo/{compiled,cache} || exit 1;
+      mv /tmp/ganglia_conf.php.t ~${user}/ganglia/conf.php || exit 1;
+      sudo ln -s ~${user}/ganglia/ /var/www/ganglia;      
 "
+    else
+      # normal case
+      vm_execute "
+      cd /tmp || exit 1;
+      tar -xf $tarball || exit 1;
+      sudo mv $gdir ganglia || exit 1;
+      sudo rm -rf /var/www/ganglia || exit 1;
+      sudo mv ganglia /var/www/ || exit 1;
+      sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
+      sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
+      sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+"
+
+    fi
 
     if [ $? -ne 0 ]; then
       die "Error installing ganglia-web"
