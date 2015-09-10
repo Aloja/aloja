@@ -156,3 +156,34 @@ function showCorrectBenchs(benchSizes) {
 		});
 	}
 }
+
+function showCorrectClusters(providerClusters) {
+	var availClusters = new Array();
+	var providersSelected = $("input[name='provider[]']:checked").length;
+	if(providersSelected > 0) {
+		$("input[name='provider[]']").each(function () {
+			if($(this).is(':checked')) {
+				$.each(providerClusters[$(this).val()], function (index2, clusterId) {
+					availClusters.push(clusterId);
+				});
+			}
+		});
+
+		$("input[name='id_cluster[]']").each(function () {
+			if (availClusters.indexOf($(this).val()) == -1) {
+				if ($(this).is(':checked'))
+					$(this).attr('checked', false);
+
+				$(this).parent().hide();
+			} else {
+				$(this).parent().show();
+			}
+		});
+	} else {
+		$("input[name='id_cluster[]']").each(function () {
+			if(!$(this).parent().is(':visible')) {
+				$(this).parent().show();
+			}
+		});
+	}
+}

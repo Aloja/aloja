@@ -81,7 +81,7 @@ class Filters
                     return $this->filters['id_cluster']['namesClusters'][$value];
                 },
                 'generateChoices' => function() {
-                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
                     $returnChoices = array();
                     foreach($choices as $choice) {
                         $returnChoices[] = $choice['id_cluster'];
@@ -135,7 +135,8 @@ class Filters
                         $values = 1;
                     } else {
                         $values = $this->filters['prepares']['default'];
-                        $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
+                        if(!$values)
+                            $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
                     return array('currentChoice' => $values, 'whereClause' => $whereClause);
@@ -427,6 +428,15 @@ class Filters
         }
 
         $this->additionalFilters['scaleFactorsInfo'] = json_encode($scaleFactors);
+
+        //Getting providers / clusters
+        $providerClusters = array();
+        $clusters = $this->dbConnection->get_rows("SELECT provider,id_cluster FROM aloja2.clusters ORDER BY provider DESC ");
+        foreach($clusters as $row) {
+            $providerClusters[$row['provider']][] = $row['id_cluster'];
+        }
+
+        $this->additionalFilters['providerClusters'] = json_encode($providerClusters);
     }
 
     private function roundDatasize($value) {
