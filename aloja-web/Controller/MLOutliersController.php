@@ -12,7 +12,7 @@ class MLOutliersController extends AbstractController
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
-		$message = $instance = $jsonHeader = $jsonTable = $model_html = $config = '';
+		$message = $instance = $jsonHeader = $jsonTable = $model_html = $config = $model_info = '';
 		$possible_models = $possible_models_id = $other_models = array();
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
