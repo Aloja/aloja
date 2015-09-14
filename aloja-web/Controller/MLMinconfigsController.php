@@ -53,8 +53,6 @@ class MLMinconfigsController extends AbstractController
 
 			$where_configs = $this->filters->getWhereClause();
 
-
-
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);

@@ -9,6 +9,50 @@ use alojaweb\inc\MLUtils;
 
 class MLNewconfigsController extends AbstractController
 {
+	public function read_params($item_name)
+	{
+		if (isset($_GET[$item_name]))
+		{
+			$items = $_GET[$item_name];
+			if (($key = array_search('None', $items)) !== false) unset ($items[$key]);
+		}
+		else $items = array();
+	
+		return $items;
+	}
+
+	public function add_where_configs($item_name, &$where_configs)
+	{
+		$items = MLNewconfigsController::read_params($item_name);
+		if ($items) $where_configs .= ' AND '.$item_name.' IN ("'.join('","', $items).'")';
+		return;	
+	}
+
+	public function getFilterOptions($dbUtils)
+	{
+		$options['bench'] = $dbUtils->get_rows("SELECT DISTINCT bench FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench ASC");
+		$options['net'] = $dbUtils->get_rows("SELECT DISTINCT net FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY net ASC");
+		$options['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
+		$options['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
+		$options['comp'] = $dbUtils->get_rows("SELECT DISTINCT comp FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
+		$options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name from aloja2.execs e JOIN aloja2.clusters c using (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+		$options['maps'] = $dbUtils->get_rows("SELECT DISTINCT maps FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
+		$options['replication'] = $dbUtils->get_rows("SELECT DISTINCT replication FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
+		$options['iosf'] = $dbUtils->get_rows("SELECT DISTINCT iosf FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
+		$options['iofilebuf'] = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
+		$options['datanodes'] = $dbUtils->get_rows("SELECT DISTINCT datanodes FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
+		$options['benchtype'] = $dbUtils->get_rows("SELECT DISTINCT bench_type FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY bench_type ASC");
+		$options['vm_size'] = $dbUtils->get_rows("SELECT DISTINCT vm_size FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_size ASC");
+		$options['vm_cores'] = $dbUtils->get_rows("SELECT DISTINCT vm_cores FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_cores ASC");
+		$options['vm_RAM'] = $dbUtils->get_rows("SELECT DISTINCT vm_RAM FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_RAM ASC");
+		$options['hadoop_version'] = $dbUtils->get_rows("SELECT DISTINCT hadoop_version FROM aloja2.execs e WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY hadoop_version ASC");
+		$options['type'] = $dbUtils->get_rows("SELECT DISTINCT type FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY type ASC");
+		$options['presets'] = $dbUtils->get_rows("SELECT * FROM aloja2.filter_presets ORDER BY short_name DESC");
+		$options['provider'] = $dbUtils->get_rows("SELECT DISTINCT provider FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY provider DESC;");
+		$options['vm_OS'] = $dbUtils->get_rows("SELECT DISTINCT vm_OS FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY vm_OS DESC;");
+		return $options;
+	}
+
 	public function mlnewconfigsAction()
 	{
 		$jsonData = array();
@@ -20,45 +64,73 @@ class MLNewconfigsController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
-		    	
 		    	$where_configs = '';
 
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes',
-						'bench_types','datanodess','headnodess','vm_OSs','vm_coress','vm_RAMs','vm_sizes','hadoop_versions','types'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
-
+			// Where_Configs and Manual Presets
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
 			{
-				$where_configs = '';
-				$params['benchs'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
-				$params['disks'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
-				$params['iofilebufs'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
-				$params['comps'] = array('0'); $where_configs .= ' AND comp IN ("0")';
-				$params['replications'] = array('1'); $where_configs .= ' AND replication IN ("1")';
-				//$params['hadoop_versions'] = array('1','1.03'); $where_configs .= ' AND hadoop_version IN ("1","1.03")';
-				//$params['bench_types'] = array('HiBench'); $where_configs .= ' AND bench_type = "HiBench"';
-				$params['datanodess'] = array('3');// $where_configs .= ' AND datanodes = 3';
-				$params['headnodess'] = array('1');// $where_configs .= ' AND headnodes = 1';
-				$params['vm_OSs'] = array('linux');// $where_configs .= ' AND vm_OS = "linux"';				
-				$params['vm_sizes'] = array('SYS-6027R-72RF');// $where_configs .= ' AND vm_size = "SYS-6027R-72RF"';
-				$params['vm_coress'] = array('12');// $where_configs .= ' AND vm_cores = 12';
-				$params['vm_RAMs'] = array('128');// $where_configs .= ' AND vm_RAM = 128';
+				$_GET['id_cluster'] = $params['id_cluster'] = array('3','5','8'); $where_configs .= ' AND id_cluster IN (3,5,8)';
+				//$_GET['bench'] = $params['bench'] = array('terasort'); $where_configs .= ' AND bench IN ("terasort")';
+				//$_GET['disk'] = $params['disk'] = array('HDD','SSD'); $where_configs .= ' AND disk IN ("HDD","SSD")';
+				$_GET['blk_size'] = $params['blk_size'] = array('64','128','256'); $where_configs .= ' AND blk_size IN ("64","128","256")';
+				$_GET['iofilebuf'] = $params['iofilebuf'] = array('32768','65536','131072'); $where_configs .= ' AND iofilebuf IN ("32768","65536","131072")';
+				$_GET['comp'] = $params['comp'] = array('0'); $where_configs .= ' AND comp IN ("0")';
+				$_GET['replication'] = $params['replication'] = array('1'); $where_configs .= ' AND replication IN ("1")';
+				//$_GET['hadoop_version'] = $params['hadoop_version'] = array('1','1.03','2'); $where_configs .= ' AND hadoop_version IN ("1","1.03","2")';
+				//$_GET['bench_type'] = $params['bench_type'] = array('HiBench'); $where_configs .= ' AND bench_type IN ("HiBench")';
 
-				$params['types'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
+				$_GET['datanodes'] = $params['datanodes'] = array('3');// $where_configs .= ' AND datanodes = 3';
+				$_GET['vm_OS'] = $params['vm_OS'] = array('linux');// $where_configs .= ' AND vm_OS = "linux"';				
+				$_GET['vm_size'] = $params['vm_size'] = array('SYS-6027R-72RF');// $where_configs .= ' AND vm_size = "SYS-6027R-72RF"';
+				$_GET['vm_cores'] = $params['vm_cores'] = array('12');// $where_configs .= ' AND vm_cores = 12';
+				$_GET['vm_RAM'] = $params['vm_RAM'] = array('128');// $where_configs .= ' AND vm_RAM = 128';
+				$_GET['type'] = $params['type'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
+				$_GET['provider'] = $params['provider'] = array('on-premise');// $where_configs .= ' AND provider = "on-premise"';
 			}
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$params['id_clusters'] = Utils::read_params('id_clusters',$where_configs,FALSE); // This is excluded from all the process, except the initial DB query
+			else
+			{
+				$param_names_whereconfig = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','bench_type','hadoop_version');
+				foreach ($param_names_whereconfig as $p) MLNewconfigsController::add_where_configs($p,$where_configs);
+			}
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
-			$where_configs = str_replace("`id_cluster`","e.`id_cluster`",$where_configs);
+			// Real fetching of parameters
+			$params = array();
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			foreach ($param_names as $p) { $params[$p] = MLNewconfigsController::read_params($p); sort($params[$p]); }
+
+			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
+			$param_id_cluster = $params['id_cluster']; unset($params['id_cluster']); // Exclude the param from now on
+
+			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
+			// Semi-Dummy Filters (For ModelInfo and SimpleInstance)
+			$this->buildFilters(array('learn' => array(
+				'type' => 'selectOne',
+				'default' => array('regtree'),
+				'label' => 'Learning method: ',
+				'generateChoices' => function() {
+					return array('regtree','nneighbours','nnet','polyreg');
+				},
+				'beautifier' => function($value) {
+					$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
+						'nnet' => 'NNets','polyreg' => 'PolyReg-3');
+					return $labels[$value];
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['learn']) ? $_GET['learn'] : array('regtree');
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			)
+			));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn'))));
+
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
-			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
-			unset($params['id_clusters']); // Exclude the param from now on
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true, true);
+			$param_names_aux = array_diff($param_names, array('id_cluster'));
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names_aux, $params, true, true);
 
 			$config = $model_info.' '.$learn_param.' newminconfs';
 
@@ -86,16 +158,15 @@ class MLNewconfigsController extends AbstractController
 				// get headers for csv
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','bench_type' => 'Bench.Type',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','vm_size' => 'VM.Size','hadoop_version' => 'Hadoop.Version',
-					'type' => 'Type'
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size',
+					'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size',
+					'type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version'
 				);
-
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND bench NOT LIKE 'prep_%' AND e.exe_time > 100".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -110,10 +181,10 @@ class MLNewconfigsController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/query; touch '.md5($config).'.lock');
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Bench.Type,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Bench.Type,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':prange=\'0,10000\':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Bench.Type,Datanodes,Headnodes,VM.OS,VM.Cores,VM.RAM,VM.Size,Hadoop.Version,Type\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version\' >/dev/null 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >debug4.tmp 2>&1 &';
 				exec($command);
 
 				sleep(2);
@@ -344,43 +415,26 @@ class MLNewconfigsController extends AbstractController
 			$max_x = $max_y = 0;
 			$must_wait = 'NO';
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlnewconfigs.html.twig',
-			array(
-				'selected' => 'mlnewconfigs',
-				'jsonData' => $jsonData,
-				'jsonHeader' => $jsonHeader,
-				'configs' => $configs,
-				'max_p' => min(array($max_x,$max_y)),
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'headnodess' => $params['headnodess'],				
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_OSs' => $params['vm_OSs'],				
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'types' => $params['types'],
-				'message' => $message,
-				'instance' => $instance,
-				'id_newconf' => md5($config),
-				'id_newconf_first' => md5($config.'F'),
-				'id_newconf_dataset' => md5($config.'D'),
-				'id_newconf_model' => md5($config.'M'),
-				'id_newconf_result' => md5($config.'R'),
-				'model_info' => $model_info,
-				'learn' => $learn_param,
-				'must_wait' => $must_wait,
-				'options' => Utils::getFilterOptions($db)
-			)
-		);	
+
+		$params['id_cluster'] = $param_id_cluster;
+		$return_params = array(
+			'selected' => 'mlnewconfigs',
+			'jsonData' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'configs' => $configs,
+			'max_p' => min(array($max_x,$max_y)),
+			'instance' => $instance,
+			'id_newconf' => md5($config),
+			'id_newconf_first' => md5($config.'F'),
+			'id_newconf_dataset' => md5($config.'D'),
+			'id_newconf_model' => md5($config.'M'),
+			'id_newconf_result' => md5($config.'R'),
+			'model_info' => $model_info,
+			'learn' => $learn_param,
+			'must_wait' => $must_wait,
+			'options' => MLNewconfigsController::getFilterOptions($db)
+		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		echo $this->container->getTwig()->render('mltemplate/mlnewconfigs.html.twig', $return_params);	
 	}
 }
