@@ -2,7 +2,7 @@
 
 vm_initial_bootstrap() {
 
-  bootstrap_file="Initial_Bootstrap"
+  bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Bootstraping $vm_name "
@@ -11,10 +11,8 @@ vm_initial_bootstrap() {
     vm_set_ssh "use_password"
 
     test_action="$(vm_execute " ls && echo '$testKey'")"
-    #in case we get a welcome banner we need to grep
-    test_action="$(echo -e "$test_action"|grep "$testKey")"
 
-    if [ ! -z "$test_action" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else

@@ -73,7 +73,7 @@
 						<input type="checkbox" name="displayobs" value="observed" onchange="updateobs(this)"> Display Observed
 						</div>
 					</td></tr></table>
-					<div id="chart" style="float: left; width: 65%; margin: 0 auto;"></div>
+					<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
 				</div>
 			</div>
 
@@ -117,7 +117,7 @@
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'common/config_filters.html.twig' %}
+	{% include 'mltemplate/config_filters_legacy.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -255,6 +255,8 @@
 
 	function drawchart (levels,variable1,jsonChartSeries,jsonAvgSeries,jsonChartObsSeries,jsonAvgObsSeries)
 	{
+		if (!$('#chart').is(":visible")) $('#chart').width("65%"); else $('#chart').width("100%");
+
 		$('#chart').highcharts( {
     		        chart: { type: 'scatter', zoomType: 'xy' },
     		        title: { text: 'Configurations by Attribute' },
@@ -292,6 +294,8 @@
 	{
 		var jsondata = "{{ jsonData | raw }}";
 		var jsonheader = '{{ jsonHeader | raw }}';
+
+		if (!$('#chart').is(":visible")) $('#chart').width("65%"); else $('#chart').width("100%");
 
 		var chart = $('#chart').highcharts();
 		while (chart.series.length > 0) chart.series[0].remove(true);

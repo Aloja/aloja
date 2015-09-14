@@ -106,8 +106,8 @@ class DBUtils
 // #AND bench not like 'prep_%'
 // #AND bench_type not like 'HDI-prep%'
 // #AND exe_time between 200 and 15000
-// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from JOB_status where id_exec is not null))
-// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) from SAR_cpu where id_exec is not null))
+// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null))
+// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) FROM aloja_logs.SAR_cpu where id_exec is not null))
 // ";
 //AND valid = 1
     }
@@ -117,8 +117,8 @@ class DBUtils
         if($filter_execs === null)
             $filter_execs = DBUtils::getFilterExecs();
 
-        $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM execs e
-        join clusters c USING (id_cluster)
+        $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM aloja2.execs e
+        JOIN aloja2.clusters c USING (id_cluster)
         WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0 $filter_execs;";
 
         return $this->get_rows($query);
@@ -155,7 +155,7 @@ class DBUtils
 
     public function get_hosts($clusters)
     {
-        $query = 'SELECT * FROM hosts WHERE id_cluster IN ("'.join('","', $clusters).'");';
+        $query = 'SELECT * FROM aloja2.hosts WHERE id_cluster IN ("'.join('","', $clusters).'");';
 
         return $this->get_rows($query);
     }
@@ -215,7 +215,7 @@ class DBUtils
                 t.`TASKID` as TASK_ID,
                 ".$query_select1('t')." as TASK_VALUE_X,
                 ".$query_select2('t')." as TASK_VALUE_Y
-            FROM `JOB_tasks` t
+            FROM aloja_logs.JOB_tasks t
             WHERE t.`JOBID` = :jobid
             ".$task_type_select('t')."
             ORDER BY t.`TASKID`
@@ -270,7 +270,7 @@ class DBUtils
         // Check if clusters already exist for this jobid
         $query = "
             SELECT COUNT(*) as COUNT
-            FROM `JOB_dbscan`
+            FROM aloja2.JOB_dbscan
             WHERE
                 `bench` = :bench AND
                 `job_offset` = :job_offset AND
@@ -369,7 +369,7 @@ class DBUtils
                 d.`id_exec` = s.`id_exec`
                 ".$task_type_select('s')."
 
-            LEFT OUTER JOIN `JOB_tasks` t
+            LEFT OUTER JOIN aloja_logs.JOB_tasks t
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."

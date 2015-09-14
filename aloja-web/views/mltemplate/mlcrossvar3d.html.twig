@@ -51,7 +51,7 @@
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'common/config_filters.html.twig' %}
+	{% include 'mltemplate/config_filters_legacy.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -133,7 +133,7 @@
 				tooltip: {
 					formatter: function(chart) {
 						var p = this.point;
-						return p.name + '<br />{{variable2}}: ' +  Math.round(p.x) + ', {{variable1}}: ' + Math.round(p.y) + ', exe_time: ' + -1 * Math.round(p.z);
+						return p.name + '<br />{{variable2}}: ' +  Math.round(p.x) + ', {{variable1}}: ' + Math.round(p.y) + ', exe_time: ' + Math.round(p.z);
 					}
     		                },
 				title: {
@@ -159,7 +159,8 @@
 					title: {
 						enabled: true,
 						text: 'exe_time'
-					}
+					},
+					reversed: true
 				},
 				xAxis: {
 					max: {{maxx}},

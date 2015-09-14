@@ -69,7 +69,7 @@ importHDIJobs() {
 			
 			get_hdi_exec_params "$folder" "`$CUR_DIR/../aloja-tools/jq -r '.JOB_ID' globals.out`"  	        
 			
-			insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version,exec_type)
+			insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,valid,hadoop_version,exec_type)
 		             VALUES ($id_exec, $cluster, \"$exec\", \"$jobName\",$totalTime,\"$startTime\",\"$finishTime\",\"$net\",\"$disk\",\"$benchType\",$maps,$iosf,$replication,$iofilebuf,$compressCodec,$blocksize,\"n/a\",$valid,2,\"$exec_type\")
 		             ON DUPLICATE KEY UPDATE
 		                  start_time='$startTime',

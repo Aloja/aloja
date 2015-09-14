@@ -13,13 +13,14 @@ class MLOutliersController extends AbstractController
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
 		$message = $instance = $jsonHeader = $jsonTable = $model_html = '';
+		$possible_models = $possible_models_id = $other_models = array();
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
 		    	
@@ -33,7 +34,7 @@ class MLOutliersController extends AbstractController
 			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET))
 			|| (count($_GET) == 3 && array_key_exists('register',$_GET) && array_key_exists('current_model',$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mloutliers');
+				$preset = Utils::initDefaultPreset($db, 'mloutliers');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
@@ -56,25 +57,30 @@ class MLOutliersController extends AbstractController
 			$current_model = "";
 			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
 
+			// Other models for filling
+			$where_models = '';
 			if (!empty($possible_models_id))
 			{
-				$other_models = array();
-				$result = $dbml->query("SELECT id_learner FROM learners WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')");
-				foreach ($result as $row) $other_models[] = $row['id_learner'];
+				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
+			}
+			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
-				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM learners");
+			if (!empty($possible_models_id))
+			{
+				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
 
 				if ($current_model == "")
 				{
-					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM predictions p, learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
+					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, p.id_learner FROM aloja_ml.predictions p, aloja_ml.learners l WHERE l.id_learner = p.id_learner AND p.id_learner IN ('".implode("','",$possible_models_id)."') AND predict_code > 0 ORDER BY MAE LIMIT 1";
 					$result = $dbml->query($query);
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
 				$config = $instance.'-'.$current_model.'-'.$sigma_param.'-outliers';
 
-				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM resolutions WHERE id_resolution = '".md5($config)."'");
+				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['total'] > 0);
 
@@ -95,7 +101,7 @@ class MLOutliersController extends AbstractController
 					$names = array_values($header_names);
 
 					// dump the result to csv
-					$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
+					$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
 				    	$rows = $db->get_rows($query);
 					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -109,7 +115,7 @@ class MLOutliersController extends AbstractController
 					}
 
 					// Retrieve file model from DB
-					$query = "SELECT file FROM model_storage WHERE id_hash='".$current_model."' AND type='learner';";
+					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";
 					$result = $dbml->query($query);
 					$row = $result->fetch();
 					$content = $row['file'];
@@ -133,7 +139,7 @@ class MLOutliersController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 
 						$token = 0;
-						$query = "REPLACE INTO resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
+						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
@@ -156,7 +162,7 @@ class MLOutliersController extends AbstractController
 					$content = addslashes($content);
 					fclose($fp);
 
-					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','resolution','".$content."');";
+					$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file) VALUES ('".md5($config)."','resolution','".$content."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file resolution into DB');
 
 					// Remove temporary files
@@ -175,7 +181,7 @@ class MLOutliersController extends AbstractController
 				{
 					$must_wait = 'NO';
 
-					$query = "SELECT predicted, observed, outlier_code, id_exec, instance FROM resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000"; // FIXME - CLUMSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+					$query = "SELECT predicted, observed, outlier_code, id_exec, instance FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000"; // FIXME - CLUMSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 					$result = $dbml->query($query);
 
 					foreach ($result as $row)
@@ -189,7 +195,7 @@ class MLOutliersController extends AbstractController
 						$jsonTable .= (($jsonTable=='')?'':',').'["'.(($row['outlier_code'] == 0)?'Legitimate':(($row['outlier_code'] == 1)?'Warning':'Outlier')).'","'.$row['predicted'].'","'.$row['observed'].'","'.str_replace(",","\",\"",$row['instance']).'","'.$row['id_exec'].'"]';						
 					}
 
-					$query_var = "SELECT MAX(predicted) as max_x, MAX(observed) as max_y FROM resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000";
+					$query_var = "SELECT MAX(predicted) as max_x, MAX(observed) as max_y FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000";
 					$result = $dbml->query($query_var);
 					$row = $result->fetch();
 					$max_x = $row['max_x'];
@@ -220,12 +226,12 @@ class MLOutliersController extends AbstractController
 					if (isset($_GET['register']))
 					{
 						// Update the predictions table
-						$query_var =   "UPDATE predictions as p, resolutions as r
+						$query_var =   "UPDATE aloja_ml.predictions as p, aloja_ml.resolutions as r
 								SET p.outlier = r.outlier_code
 								WHERE r.id_exec = p.id_exec
 									AND r.id_resolution = '".md5($config)."'
 									AND p.id_learner = '".$current_model."'";
-						if ($dbml->query($query_var) === FALSE) throw new \Exception('Error when updating predictions in DB');
+						if ($dbml->query($query_var) === FALSE) throw new \Exception('Error when updating aloja_ml.predictions in DB');
 					}
 				}
 			}
@@ -241,7 +247,7 @@ class MLOutliersController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$model = '';
-			$possible_models_id = $possible_models = $other_models = array();
+
 			$dbml = null;
 		}
 		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig',

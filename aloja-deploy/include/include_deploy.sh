@@ -6,7 +6,6 @@ self_name="$(basename $0)"
 [ -z $1 ] && { echo "Usage: $self_name ${type}_name [If no default provider then: <provider:azure|openstack|rackspace|on-premise|carma|vagrant>]  [Optional non-default conf_file]"; exit 1;}
 
 #0) find the directory root
-#/vagrant/shell/common/../../aloja-deploy/providers/
 
 if [ -d  "/vagrant" ] ; then
   ROOT_DIR_INCLUDE="/vagrant"
@@ -23,8 +22,7 @@ source "$CONF_DIR/common.sh"
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
 
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
-trap 'echo "RUNNING TRAP "; sleep 1 && [ $(jobs -p) ] && kill $(jobs -p); exit;' SIGINT SIGTERM #EXIT
-
+setup_traps
 
 logger "Starting ALOJA deploy tools"
 
@@ -37,7 +35,7 @@ configFolderPath="$ROOT_DIR_INCLUDE/shell/conf"
 [ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config
-logger "INFO: Loading $clusterConfigFile"
+logger "DEBUG: Loading $clusterConfigFile"
 source "$configFolderPath/$clusterConfigFile"
 
 #3) Load the secured provider settings
@@ -53,32 +51,32 @@ else
 	securedProviderFile="$ROOT_DIR_INCLUDE/secure/$3"
 fi
 
-#check for secured conf file
-if [ ! -f "$securedProviderFile" ]; then
-  logger "WARNING: SECURED Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
-
-  #try non secured files (in git)
-  # load defaultProvider
-  if [ -z $2 ]; then
-    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${defaultProvider}_settings.conf"
-  #load user specified provider conf file
-  elif [ -z $3 ]; then
-    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${2}_settings.conf"
-  #load user specified conf file
-  else
-    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/$3"
-  fi
-
-  if [ ! -f "$securedProviderFile" ]; then
-    logger "ERROR: either secured or non-secured provider config files exists.  Exiting... DEBUG data: file=$securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
-    exit 1
-  fi
-
-fi
+##OLD for loading unsecured files
+#if [ ! -f "$securedProviderFile" ]; then
+#  logger "WARNING: SECURED Conf file $securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
+#
+#  #try non secured files (in git)
+#  # load defaultProvider
+#  if [ -z $2 ]; then
+#    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${defaultProvider}_settings.conf"
+#  #load user specified provider conf file
+#  elif [ -z $3 ]; then
+#    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/${2}_settings.conf"
+#  #load user specified conf file
+#  else
+#    securedProviderFile="$ROOT_DIR_INCLUDE/aloja-deploy/providers/$3"
+#  fi
+#
+#  if [ ! -f "$securedProviderFile" ]; then
+#    logger "ERROR: either secured or non-secured provider config files exists.  Exiting... DEBUG data: file=$securedProviderFile doesn't exists! defaultProvider=$defaultProvider"
+#    exit 1
+#  fi
+#
+#fi
 
 
 #load non versioned conf first (order is important for overrides)
-logger "INFO: Loading $securedProviderFile"
+logger "DEBUG: Loading $securedProviderFile"
 source "$securedProviderFile"
 
 logger " for Provider: $cloud_provider"
@@ -89,10 +87,9 @@ logger " for Provider: $cloud_provider"
 source "$configFolderPath/$clusterConfigFile"
 
 
-
 #4) Load the common cluster functions
 
-#logger "INFO: Loading $CONF_DIR/cluster_functions.sh"
+#logger "DEBUG: Loading $CONF_DIR/cluster_functions.sh"
 source "$CONF_DIR/cluster_functions.sh"
 
 
@@ -106,7 +103,6 @@ else
 fi
 
 
-
 #check if provider file exists
 if [ ! -f "$providerFunctionsFile" ] ; then
   echo "ERROR: cannot find providers function file in $providerFunctionsFile"
@@ -117,7 +113,7 @@ if [ "$defaultProvider" == "rackspace" ] || [ "$defaultProvider" == "openstack" 
 
   #check if azure command is installed
   if ! nova --version 2>&1 > /dev/null ; then
-    echo -e "ERROR: nova command not instaled. Run:\nrun apt-get install install python-pip;\nsudo pip install rackspace-novaclient"
+    echo -e "ERROR: nova command not instaled, you can use the vagrant VM. Or run:\nrun apt-get install install python-pip;\nsudo pip install rackspace-novaclient"
     exit 1
   fi
 
@@ -129,5 +125,5 @@ elif [ "$defaultProvider" == "azure" ] ; then
   fi
 fi
 
-#logger "INFO: Loading $providerFunctionsFile"
+#logger "DEBUG: Loading $providerFunctionsFile"
 source "$providerFunctionsFile"

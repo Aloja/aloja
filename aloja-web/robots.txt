@@ -1,3 +1,5 @@
 # robots enabled
 # User-agent: *
 # Disallow: /
+Disallow: /ganglia*
+Disallow: /mlminconfigs*

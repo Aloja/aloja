@@ -14,9 +14,9 @@ class MLDataCollapseController extends AbstractController
 	{
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
 		    	
@@ -26,7 +26,7 @@ class MLDataCollapseController extends AbstractController
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET)))
 			{
-				$preset = Utils::setDefaultPreset($db, 'mldatacollapse');
+				$preset = Utils::initDefaultPreset($db, 'mldatacollapse');
 			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 
@@ -92,7 +92,7 @@ class MLDataCollapseController extends AbstractController
 				$dims1_concat = $dims1_concat.(($dims1_concat=='')?'':',":",').array_search($d1value, $header_names);
 			}
 
-			$query = "SELECT distinct bench FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." ORDER BY bench;";
+			$query = "SELECT distinct bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." ORDER BY bench;";
 			$rows = $db->get_rows($query);
 			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -107,7 +107,7 @@ class MLDataCollapseController extends AbstractController
 			$jsonHeader = $jsonHeader.']';
 
 
-			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
+			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
 			$rows = $db->get_rows($query);
 			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 

@@ -92,7 +92,7 @@ class AlojaTwigExtension extends Twig_Extension
                 }
             }
 
-            //remove first directory to fix "redirection" in hadoop.bsc.es
+            //remove first directory to fix "redirection" in aloja.bsc.es
             if (strpos($url, '.php')) {
                 $url = substr($url, strpos($url, basename($url)));
             }

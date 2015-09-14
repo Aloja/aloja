@@ -198,6 +198,18 @@
 	    </script>
     {% endblock %}
     {% block content %}
+             <div id="intro_text">
+            This tool shows a <a href="https://en.wikipedia.org/wiki/Standard_score" target="_blank">standarized</a> (normalized)
+            view of each cluster hardware (HW) configuration.  This includes number of nodes, disks config, network used, etc.
+            The Y-axis represents the execution cost and the X-axis the execution time.
+            </br>
+            Point (0,0) represents the best value, while (1,1) the worst execution.
+            </br>
+            You can hover with the mouse over each point to see the execution details,
+            and change the selection (data slice) with the filter.
+            </div>
+            </br></br>
+
            <div id="navigation">
 				<div style="float: left; margin: 0 auto; margin-left: 10%; ">
 	               <div id="chart" style="width: 800px; height: 800px;"></div>

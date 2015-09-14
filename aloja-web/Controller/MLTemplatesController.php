@@ -15,9 +15,9 @@ class MLTemplatesController extends AbstractController
 		$instance = $error_stats = '';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain_ml'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
 		    	
@@ -29,7 +29,7 @@ class MLTemplatesController extends AbstractController
 			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
-				$preset = Utils::setDefaultPreset($db, 'mlprediction');
+				$preset = Utils::initDefaultPreset($db, 'mlprediction');
  			}
 		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
 		    	
@@ -58,7 +58,7 @@ class MLTemplatesController extends AbstractController
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
-			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.learners WHERE id_learner = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
@@ -78,7 +78,7 @@ class MLTemplatesController extends AbstractController
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query = "SELECT ".implode(",",$headers)." FROM execs e LEFT JOIN clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";"; // FIXME - RACKSPACE (removed the hadoop_version condition...)
+			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -86,7 +86,6 @@ class MLTemplatesController extends AbstractController
 				fputcsv($fp, $names,',','"');
 			    	foreach($rows as $row)
 				{
-					if ($row['hadoop_version'] == '') $row['hadoop_version'] = '1'; // FIXME - RACKSPACE (convert null hadoop_version to '1')
 					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
 					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
 					fputcsv($fp, array_values($row),',','"');
@@ -110,14 +109,14 @@ class MLTemplatesController extends AbstractController
 			}
 			else
 			{
-				$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM learners WHERE id_learner = '".md5($config)."'");
+				$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.learners WHERE id_learner = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['num'] > 0);
 
 				if (!$is_cached) 
 				{
 					// register model to DB
-					$query = "INSERT IGNORE INTO learners (id_learner,instance,model,algorithm)";
+					$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm)";
 					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
 
@@ -129,7 +128,7 @@ class MLTemplatesController extends AbstractController
 							$header = fgetcsv($handle, 1000, ",");
 
 							$token = 0; $insertions = 0;
-							$query = "INSERT IGNORE INTO predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
 								$specific_instance = implode(",",array_slice($data, 2, 21));
@@ -138,7 +137,7 @@ class MLTemplatesController extends AbstractController
 								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
 								$specific_data = str_replace(",","','",$specific_data);
 
-								$query_var = "SELECT count(*) as num FROM predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
+								$query_var = "SELECT count(*) as num FROM aloja_ml.predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
 								$result = $dbml->query($query_var);
 								$row = $result->fetch();
 						
@@ -165,7 +164,7 @@ class MLTemplatesController extends AbstractController
 					$content = addslashes($content);
 					fclose($fp);
 
-					$query = "INSERT INTO model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
+					$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
 
 					// Remove temporal files
@@ -179,7 +178,7 @@ class MLTemplatesController extends AbstractController
 				$max_x = $max_y = 0;
 				$error_stats = '';
 
-				$query = "SELECT exe_time, pred_time, instance FROM predictions WHERE id_learner='".md5($config)."' AND exe_time > 100 LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
+				$query = "SELECT exe_time, pred_time, instance FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND exe_time > 100 LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{
@@ -192,7 +191,7 @@ class MLTemplatesController extends AbstractController
 					$count++;
 				}
 
-				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 AND exe_time > 100 GROUP BY predict_code";
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 AND exe_time > 100 GROUP BY predict_code";
 				$result = $dbml->query($query);
 				foreach ($result as $row)
 				{

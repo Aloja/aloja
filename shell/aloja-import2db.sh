@@ -7,11 +7,11 @@ source "$CUR_DIR/common/include_import.sh"
 source "$CUR_DIR/common/import_functions.sh"
 
 
-[ -z "$INSERT_DB" ]         && INSERT_DB="1" #if to dump CSV into the DB
-[ -z "$REDO_ALL" ]          && REDO_ALL="1" #if to redo folders that have source files and IDs in DB
-[ -z "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
-[ -z "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
-[ -z "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
+[ ! "$INSERT_DB" ]         && INSERT_DB="1" #if to dump CSV into the DB
+[ ! "$REDO_ALL" ]          && REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+[ ! "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
+[ ! "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+[ ! "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
 
 #in case we only want to insert the data for the execs table (much faster)
 if [ "$1" ] ; then
@@ -59,8 +59,7 @@ for folder in 201* ; do
 	    cd "$folder"
 	
 	    #get all executions details
-	    exec_params=""
-	    get_exec_params "log_${folder}.log" "$folder"
+	    exec_params="$(get_exec_params "log_${folder}.log" "$folder")"
 	
 	    if [[ -z $exec_params ]] ; then
 	      logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
@@ -136,7 +135,7 @@ for folder in 201* ; do
 	        if [[ ! -z $exec_values ]] ; then
 	          folder_OK="$(( folder_OK + 1 ))"
 	
-	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
+	          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
 	                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
 	                  ON DUPLICATE KEY UPDATE
 	                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
@@ -151,14 +150,14 @@ for folder in 201* ; do
 				  else
 				  	get_xml_exec_params "history"
 				  fi
-				  update="UPDATE execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
+				  update="UPDATE aloja2.execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
 				  logger "updating exec params from execution conf: $update"
 				  $MYSQL "$update"
 			  fi
 	        elif [ "$bench_folder" == "SCWC" ] ; then
 	          logger "Processing SCWC"
 	
-	          insert="INSERT INTO execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+	          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
 	                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
 	                  ;"
 	                  #ON DUPLICATE KEY UPDATE

@@ -3,14 +3,17 @@
 
 # Check bash version >= 4
 if (( BASH_VERSINFO[0] < 4 )) ; then
-  echo -e "ERROR: bash 4 or newer is required"
+  echo -e "ERROR: bash 4 or newer is required to run ALOJA.  If not present, you can run it from the vagrant box"
   exit 1
 fi
 
 #common variables
 startTime="$(date +%s)"
-
 testKey="###OK###"
+
+[ ! "$PARENT_PID" ] && PARENT_PID=$$ #for killing the process from subshells
+EXTRA_TRAP_CMDS="" #add to this global extra commands for the trap cleanup (e.g., stop services)
+DONT_RETRY_TRAP="" #prevent trap loops
 
 #common funtions
 
@@ -18,18 +21,156 @@ testKey="###OK###"
 logger() {
   local log_file="aloja-deploy.log"
   local dateTime="$(date +%Y%m%d_%H%M%S)"
-  if [ ! -z "$vm_name" ] ; then
+  local vm_info
+  local to_stderr
+
+  if [ "$vm_name" ] ; then
     local vm_info=" $vm_name"
+  fi
+
+  local output=""
+
+  # Colorize when on interactive TERM TODO implement better
+  if [[ -t 1 || "$ALOJA_FORCE_COLORS" ]] ; then
+    local reset="$(tput sgr0)"
+    local red="$(tput setaf 1)"
+    local green="$(tput setaf 2)"
+    local yellow="$(tput setaf 3)"
+    local cyan="$(tput setaf 6)"
+    local white="$(tput setaf 7)"
+
+    if [[ "$1 " == "DEBUG:"* ]] ; then
+      output="${cyan}$dateTime $$${vm_info}: $1${reset}"
+    elif [[ "$1 " == "INFO:"* ]] ; then
+      output="${green}$dateTime $$${vm_info}: $1${reset}"
+    elif [[ "$1 " == "WARNING:"* ]] ; then
+      output="${yellow}$dateTime $$${vm_info}: $1${reset}"
+    elif [[ "$1 " == "ERROR:"* ]] ; then
+      output="${red}$dateTime $$${vm_info}: $1${reset}"
+    else
+      output="${white}$dateTime $$${vm_info}: $1${reset}"
+    fi
+  # non-interactive (no colors)
   else
-    local vm_info=""
+    output="$dateTime $$${vm_info}: $1"
   fi
 
   if [ -z "$3" ] ; then
-    echo -e "$dateTime $$${vm_info}: $1"
+    echo -e "$output"
   else
-    echo -e "$dateTime $$${vm_info}: $1" >> $log_file
+    echo -e "$output" >> $log_file
   fi
 }
+
+# [dangerous] Function that automatically logs all script output to file
+# and strerr also to it's own file (if any)
+# NOTE: some lines might be out of order and need to press a key to exit
+# NOTE2: when starting the subprocess we loose the 'trap' so we need to set it (and update it if necessary)
+# $1 file_name
+log_all_output() {
+  local file_name="$1"
+
+  # Restore exec in case we are updating or it has been modified before
+  exec &>/dev/tty
+
+  if [ "$ALOJA_FORCE_COLORS" ] ; then
+    local strip_colors="sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g'"
+    exec 1> >(setup_traps && tee -a >(eval $strip_colors >> "$file_name.log") ) \
+         2> >(tee -a >(eval $strip_colors >> "$file_name.log") | \
+              tee -a >(eval $strip_colors >> "$file_name.err") >&2)
+  else
+    exec 1> >(setup_traps && tee -a  "$file_name.log") \
+         2> >(tee -a "$file_name.err" | tee -a "$file_name.log" >&2)
+  fi
+
+  #exec > >(tee -a "$file_name.log") 2>&1
+  #touch "$file_name.log" "$file_name.err"
+  #chmod 777 "$file_name.log" "$file_name.err"
+  #stdbuf -i0 -o0 -e0 #avoid buffering
+}
+
+#log and die, $1 message
+die() {
+  logger "ERROR: $1" >&2 #>&2 to print the output
+  kill -s TERM "$PARENT_PID"
+  sleep 1 # to allow time for the kill
+  echo "FATAL ERROR: should not be here. Exit" >2
+  exit 1 #should not arrive here, but...
+}
+
+# Set the cleanup process on abanormal exit
+# $1 extra commands to add
+setup_traps(){
+  local extra_cmds="$1"
+  local trap_cmds="
+((DONT_RETRY_TRAP++))
+if (( DONT_RETRY_TRAP > 1 )) ; then
+  echo 'In a trap loop. Exit' >2 ;
+  exit 1;
+fi
+logger 'WARNING: TRAP received signal $signal for process $$. Cleaning up before exit...';
+$extra_cmds
+extra_traps;
+"
+  trap_cmds+='
+jobs_to_kill="$(jobs -p)";
+if (( "$(echo -e "$jobs_to_kill" |wc -l)" > 1 )) ; then
+  logger "DEBUG: Attempting to kill -9 remaining process(es): $jobs_to_kill";
+  kill -9 $jobs_to_kill;
+else
+  logger "DEBUG: No processes left, exiting";
+fi
+echo -e "\n\n" #to prevent buffering
+exit 1;
+'
+
+  # First clear other possible traps
+  trap - SIGINT SIGTERM SIGKILL EXIT
+
+  # Create independent traps to know the signal
+  for signal in SIGINT SIGTERM SIGKILL ; do
+    trap "$trap_cmds" $signal
+  done
+}
+
+# Executes the list of traps added during execution if any
+extra_traps() {
+  if [ "$EXTRA_TRAP_CMDS" ] ; then
+    logger "DEBUG: Executing: $EXTRA_TRAP_CMDS"
+    eval $EXTRA_TRAP_CMDS
+  fi
+}
+
+# Updates the abnormal exit cleanup process with more commands to execute
+# $1 extra commands
+# $2 update the logger's traps too (optional)
+update_traps(){
+  local extra_cmds="$1"
+  local update_logger="$2"
+
+  # Update the globals so that they are not deleted if the function is called again
+  EXTRA_TRAP_CMDS+="$extra_cmds"
+
+  # Setup the traps again
+  setup_traps
+  [ "$update_logger" ] && log_all_output "$JOB_PATH/${0##*/}"
+}
+
+# Sources file and prints a log message
+# with the intent to centralize and control sources
+# NOTE: declares in sources will not work as they will be local to the function
+# $1 file to source
+source_file() {
+  local file="$1"
+  if [ -f "$file" ] ; then
+    logger "DEBUG: Loading ${file##*/}"
+    source "$file"
+  else
+    die "Cannot source ${file##*/}. Not found in path: $file"
+  fi
+}
+#already loaded this file, but since we didn't had the logger we print it now
+logger "DEBUG: Loading ${BASH_SOURCE##*/}"
 
 #trasposes new lines to selected string
 #$1 string to traspose $2 traspose
@@ -43,6 +184,13 @@ nl2char() {
 char2char() {
   local tmp="$(echo -e "$1"|tr "$2" "$3")"
   echo -e "${tmp}"
+}
+
+# Removes duplicate lines
+# $1 string with possibly duplicate lines
+remove_duplicate_lines() {
+  local string="$1"
+  echo -e "$(echo -e "$string"|sort -u)"
 }
 
 #$1 list $2 element
@@ -140,4 +288,12 @@ cache_get() {
   else
       : #logger "DEBUG: Cache file not found $cacheFileName Last modified: $lastModified" "" "log to file"
   fi
+}
+
+# Save env and global vars to file
+# $1 file path
+save_env() {
+  local path="$1"
+  # save all exept for passwords
+  ( set -o posix ; set ) | grep -i -v "password" > "$path"
 }

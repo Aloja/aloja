@@ -2,6 +2,7 @@
 
 #### start $cloud_provider customizations
 
+# $1 vm name
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
@@ -137,22 +138,49 @@ number_of_attached_disks() {
 
 #$1 vm_name $2 disk size in MB $3 disk number
 vm_attach_new_disk() {
-  logger " Attaching a new disk #$3 to VM $1 of size ${2}MB"
+  logger " Attaching a new disk #$3 to VM $1 of size ${2}GB"
   azure vm disk attach-new "$1" "$2" -s "$subscriptionID"
 }
 
 #Azure uses a different key
 get_ssh_key() {
- echo "../secure/keys/myPrivateKey.key"
+ echo "$ALOJA_SSH_KEY"
 }
 
 get_ssh_host() {
  echo "${dnsName}.cloudapp.net"
 }
 
+#azure special case for ssh ids
+get_vm_ssh_port() {
+  local node_ssh_port=''
+
+  if [ "$type" == "node" ] ; then
+      local node_ssh_port="$vm_ssh_port" #for Azure nodes
+  else #cluster auto id
+    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+      local vm_name_tmp="${clusterName}-${vm_id}"
+      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
+
+      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+        local node_ssh_port="2${clusterID}${vm_id}"
+        break #just return one
+      fi
+    done
+  fi
+
+  echo "$node_ssh_port"
+}
+
 #construct the port number from vm_name
 get_ssh_port() {
-  echo "$(get_vm_ssh_port)"
+  local vm_ssh_port_tmp="$(get_vm_ssh_port)" #default port for the vagrant vm
+
+  if [ "$vm_ssh_port_tmp" ] ; then
+    echo "$vm_ssh_port_tmp"
+  else
+    die "cannot get SSH port for VM $vm_name"
+  fi
 }
 
 #$1 $endpoints list $2 end1 $3 end2
