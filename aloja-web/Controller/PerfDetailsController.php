@@ -13,6 +13,9 @@ class PerfDetailsController extends AbstractController
         $exec_rows = null;
         $id_exec_rows = null;
         $dbUtil = $this->container->getDBUtils();
+        $this->buildFilters(array('perf_details' => array('default' => 1)));
+        $charts = array();
+        $clusters = array();
 
         try {
             //TODO fix, initialize variables
@@ -20,6 +23,16 @@ class PerfDetailsController extends AbstractController
 
             //check the URL
             $execs = Utils::get_GET_intArray('execs');
+            if(empty($execs)) {
+                $whereClause = $this->filters->getWhereClause();
+                $query = "SELECT id_exec FROM execs WHERE 1 ". DBUtils::getFilterExecs()."$whereClause ";
+                $query .= (isset($_GET['random'])) ? '' : 'LIMIT 1';
+                $idExecs = $dbUtil->get_rows($query);
+                if(isset($_GET['random']))
+                    $execs = array($idExecs[rand(0,sizeof($idExecs)-1)]['id_exec']);
+                else
+                    $execs[] = $idExecs[0]['id_exec'];
+            }
 
             if (Utils::get_GET_string('random') && !$execs) {
                 $keys = array_keys($exec_rows);
@@ -598,7 +611,10 @@ class PerfDetailsController extends AbstractController
             }
 
         } catch (\Exception $e) {
-            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+            if(empty($execs))
+                $this->container->getTwig()->addGlobal('message',"No results for query!\n");
+            else
+                $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
         $chartsJS = '';
