@@ -90,7 +90,7 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-        return " AND e.id_cluster IN (select id_cluster from clusters c where provider != 'rackspace' and id_cluster != '35') " ;
+        return " AND e.id_cluster NOT IN (select id_cluster from clusters c where id_cluster = '35' OR provider = 'rackspace' OR  provider = 'rackspacecbd') " ;
 
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
             return " " ;
