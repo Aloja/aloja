@@ -21,36 +21,61 @@ class MLMinconfigsController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
-		    	
-		        $preset = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('learn',$_GET)))
-			{
-				$preset = Utils::initDefaultPreset($db, 'mlminconfigs');
-			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+			$this->buildFilters(array('learn' => array(
+				'type' => 'selectOne',
+				'default' => array('regtree'),
+				'label' => 'Learning method: ',
+				'generateChoices' => function() {
+					return array('regtree','nneighbours','nnet','polyreg');
+				},
+				'beautifier' => function($value) {
+					$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
+						'nnet' => 'NNets','polyreg' => 'PolyReg-3');
+					return $labels[$value];
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['learn']) ? $_GET['learn'] : array('regtree');
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			), 'umodel' => array(
+				'type' => 'checkbox',
+				'default' => 1,
+				'label' => 'Unrestricted to new values',
+				'parseFunction' => function() {
+					$choice = (isset($_GET['submit']) && !isset($_GET['umodel'])) ? 0 : 1;
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning')
+			));
+
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn','umodel'))));
+
+			$where_configs = $this->filters->getWhereClause();
+
+
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
+			$learnParams = $this->filters->getFiltersSelectedChoices(array('learn','umodel'));
+			$learn_param = $learnParams['learn'];
+			$unrestricted = ($learnParams['umodel']) ? true : false;
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
 
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted, true); // Used only as indicator in the WEB
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted, true);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unrestricted, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unrestricted, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R').' '.$slice_info.' minconfs';
 			$learn_options = 'saveall='.md5($config);
@@ -79,15 +104,15 @@ class MLMinconfigsController extends AbstractController
 				// get headers for csv
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size',
+					'type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version'
 				);
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE bench_type = 'HiBench' AND bench NOT LIKE 'prep_%' AND hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -136,10 +161,10 @@ class MLMinconfigsController extends AbstractController
 							$header = fgetcsv($handle, 1000, ",");
 
 							$token = 0;
-							$query = "INSERT INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
-								$specific_instance = implode(",",array_slice($data, 2, 20));
+								$specific_instance = implode(",",array_slice($data, 2, 21));
 								$specific_data = implode(",",$data);
 								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
@@ -242,7 +267,7 @@ class MLMinconfigsController extends AbstractController
 					$content = addslashes($content);
 					fclose($fp);
 
-					$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file) VALUES ('".md5($config.'R')."','minconf','".$content."');";
+					$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file,reference) VALUES ('".md5($config.'R')."','minconf','".$content."','".md5($config)."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file minconf into DB');
 
 					// Remove temporal files
@@ -312,22 +337,13 @@ class MLMinconfigsController extends AbstractController
 			'jsonHeader' => $jsonHeader,
 			'configs' => $configs,
 			'max_p' => min(array($max_x,$max_y)),
-			'message' => $message,
 			'instance' => $instance,
 			'id_learner' => md5($config),
 			'id_minconf' => md5($config.'R'),
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
-			'unrestricted' => $unrestricted,
-			'learn' => $learn_param,
-			'must_wait' => $must_wait,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
+			'must_wait' => $must_wait
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
-		echo $this->container->getTwig()->render('mltemplate/mlminconfigs.html.twig', $return_params);	
+		return $this->render('mltemplate/mlminconfigs.html.twig', $return_params);
 	}
 }

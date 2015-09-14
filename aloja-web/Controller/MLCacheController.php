@@ -70,6 +70,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.minconfigs WHERE id_minconfigs='".$_GET['rmm']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a minconfig from DB');
 
+				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rmm']."' AND type='minconf'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
 				$output[] = shell_exec($command);
  			}
