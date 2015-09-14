@@ -90,14 +90,14 @@ class DBUtils
 
     public static function getFilterExecs()
     {
-        return " AND e.id_cluster IN (select id_cluster from clusters c where provider != 'rackspace' and id_cluster != '35') " ;
+        return " AND e.id_cluster NOT IN (select id_cluster from clusters c where provider='select all' ) " ;
 
-        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
-            return " " ;
-        } else {
-            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33) ";
-            //return " AND c.provider != 'rackspace' ";
-        }
+//        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
+//            return " " ;
+//        } else {
+//            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33) ";
+//            //return " AND c.provider != 'rackspace' ";
+//        }
 
 //         return "
 // #AND (bench_type = 'HiBench' OR bench_type = 'HDI')
