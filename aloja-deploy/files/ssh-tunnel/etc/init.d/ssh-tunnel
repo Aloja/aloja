@@ -1,0 +1,21 @@
+#!/bin/sh
+# ------------------------------------------------------------------------
+# vim: set expandtab tabstop=4 shiftwidth=4 softtabstop=4 textwidth=75   :
+# ------------------------------------------------------------------------
+# This file is an example how the ssh-tunnel utility could get invoked   :
+# via initrd(8) during the system boot process.                          :
+# It has been tested by the author (actually it's under heavy use) on    :
+# Debian 6.x "Squeeze" and Ubuntu 12.04 "Precise Pangolin" sytems        :
+# ------------------------------------------------------------------------
+### BEGIN INIT INFO
+# Provides:             ssh-tunnel
+# Required-Start:       $remote_fs $syslog
+# Required-Stop:        $remote_fs $syslog
+# Default-Start:        2 3 4 5
+# Default-Stop:         0 1 6
+# Short-Description:    Create SSH tunnels at boot time
+# Description:          The ssh-tunnel init script creates an SSH tunnel
+#                       according to the configuration in /etc/ssh/tunnel/
+### END INIT INFO
+exec /usr/local/bin/ssh-tunnel "$@"
+

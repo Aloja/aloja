@@ -1,15 +1,15 @@
-#Check that CONF_DIR is correctly set before starting
-[ -z "$CONF_DIR" ] || [ ! -f "$CONF_DIR/provider_functions.sh" ] && {
-  echo "ERROR: CONF_DIR not set correctly. CONF_DIR=$CONF_DIR" ; exit 1;
-}
+# Common functions for cluster and VM management
+
+# Check that $ALOJA_REPO_PATH is correctly set before starting
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../.."
 
 #source includes
-#logger "DEBUG: loading $CONF_DIR/provider_functions.sh"
-source "$CONF_DIR/provider_functions.sh"
-#logger "DEBUG: loading $CONF_DIR/install_functions.sh"
-source "$CONF_DIR/install_functions.sh"
-#logger "DEBUG: loading $CONF_DIR/config_functions.sh"
-source "$CONF_DIR/config_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/provider_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/provider_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/install_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
+#logger "DEBUG: loading $ALOJA_REPO_PATH/shell/common/config_functions.sh"
+source "$ALOJA_REPO_PATH/shell/common/config_functions.sh"
 
 #test variables
 [ -z "$testKey" ] && { logger "testKey not set! Exiting"; exit 1; }
@@ -84,7 +84,7 @@ vm_create_connect() {
     #wait for ssh to be ready
     wait_vm_ssh_ready
 
-  #make sure the correct number of disks is innitialized
+  #make sure the correct number of disks is initialized
   elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
@@ -128,6 +128,10 @@ vm_provision() {
 }
 
 vm_finalize() {
+  if [ "$type" == "cluster" ] ; then
+      cluster_create_local_conf
+  fi
+
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
   [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
@@ -255,16 +259,16 @@ check_sshpass() {
 #$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
-  #logger "Executing in VM $vm_name command(s): $1"
-  #logger "DEBUG: executing as $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port) command:\n $1" "" "log to file"
 
   set_shh_proxy
 
   local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
   local result
 
+  #logger "DEBUG: vm_execute: ssh -i $(get_ssh_key) $(eval echo $sshOptions) -o PasswordAuthentication=no -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)" "" "log to file"
+
   #Use SSH keys
-  if [ -z "$3" ] && [ -z "${requireRootFirst[$vm_name]}" ] && [ "${needPasswordPre}" != "1" ]; then
+  if [ -z "$3" ] && [ "${needPasswordPre}" != "1" ]; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
     if [ -z "$2" ] ; then
@@ -278,7 +282,6 @@ vm_execute() {
   #Use password
   else
     check_sshpass
-
     if [ -z "$2" ] ; then
       echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
       result=$?
@@ -327,20 +330,29 @@ vm_connect() {
 
 #$1 source files $2 destination $3 extra options $4 use password
 vm_local_scp() {
+
+  local src
+
   logger "SCPing files"
 
   set_shh_proxy
 
+  if [ -d '/vagrant' ]; then
+    src=/vagrant/aloja-deploy/$1
+  else
+    src=$1
+  fi
+
   #Use SSH keys
   if [ -z "$4" ] ; then
     #eval is for parameter expansion
-    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
    logger "password"
     check_sshpass
 
-    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -552,7 +564,7 @@ wait_vm_ready() {
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
-  logger "Checking SSH status of VM $vm_name"
+  logger "INFO: Checking SSH status of VM $vm_name: $(get_ssh_user)@$(get_ssh_host):$(get_ssh_port)"
 
   waitStartTime="$(date +%s)"
   for tries in {1..300}; do
@@ -611,8 +623,8 @@ vm_test_initiallize_disks() {
 
 #$1 use password based auth
 vm_set_ssh() {
+  local bootstrap_file="${FUNCNAME[0]}"
 
-  local bootstrap_file="vm_set_ssh"
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting SSH keys to VM $vm_name "
 
@@ -623,16 +635,17 @@ vm_set_ssh() {
     fi
 
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
-                echo -e \"Host *\n\t   StrictHostKeyChecking no\nUserKnownHostsFile=/dev/null\nLogLevel=quiet\" > $homePrefixAloja/$userAloja/.ssh/config;
-                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+
+    vm_update_template "$homePrefixAloja/$userAloja/.ssh/config" "$(get_ssh_config)" ""
 
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa")"
+    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
     #logger "TEST SSH $test_set_ssh"
 
-    if [ ! -z "$test_set_ssh" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -676,7 +689,8 @@ vm_check_attach_disks() {
 
 
 vm_set_dsh() {
-  local bootstrap_file="vm_set_dsh"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Setting up DSH for VM $vm_name "
 
@@ -687,7 +701,7 @@ vm_set_dsh() {
     vm_update_template "$homePrefixAloja/$userAloja/.dsh/group/s" "$slave_names" ""
 
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.dsh/group/a ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -700,10 +714,10 @@ vm_set_dsh() {
 }
 
 vm_set_dot_files() {
-  local function_name="Dotfiles"
-  local bootstrap_file="vm_set_dot_files"
+  local bootstrap_file="${FUNCNAME[0]}"
+
   if check_bootstraped "$bootstrap_file" ""; then
-    logger "Setting up $function_name for VM $vm_name "
+    logger "Setting up $bootstrap_file for VM $vm_name "
 
     vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
@@ -717,15 +731,15 @@ defscrollback 99999
 startup_message off" ""
 
     test_action="$(vm_execute " [ \"\$\(grep 'dsh -g' $homePrefixAloja/$userAloja/.bashrc\)\" ] && echo '$testKey'")"
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
-      logger "ERROR setting $function_name for $vm_name. Test output: $test_action"
+      logger "ERROR setting $bootstrap_file for $vm_name. Test output: $test_action"
     fi
 
   else
-    logger "$function_name already configured"
+    logger "$bootstrap_file already configured"
   fi
 }
 
@@ -764,7 +778,7 @@ vm_initialize_disks() {
 
 cluster_initialize_disks() {
 
-  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_initialize_disks"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   local create_string="$(get_initizalize_disks)"
 
@@ -786,7 +800,8 @@ cluster_initialize_disks() {
 }
 
 vm_mount_disks() {
-  if check_bootstraped "vm_mount_disks" ""; then
+  local bootstrap_file="${FUNCNAME[0]}"
+  if check_bootstraped "$bootstrap_file" ""; then
 
     make_fstab
 
@@ -796,16 +811,15 @@ vm_mount_disks() {
     local error
 
     vm_execute "$create_string"
-    error=$?    
 
-    if [ $error -eq 0 ] ; then
+    #TODO make this test more roboust and to test all the mounts
+    local test_action="$(vm_execute "lsblk |grep '/scratch/attached' && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
-      check_bootstraped "vm_mount_disks" "set"
+      check_bootstraped "$bootstrap_file" "set"
     else
       logger "ERROR mounting disks for $vm_name. Test output: $test_action"
-      exit 1
     fi
-
   else
     logger "Disks already mounted for VM $vm_name "
   fi
@@ -813,7 +827,7 @@ vm_mount_disks() {
 
 cluster_mount_disks() {
 
-  local bootstrap_file="$homePrefixAloja/$userAloja/bootstrap_cluster_mount_disk"
+  local bootstrap_file="${FUNCNAME[0]}"
 
 #UUID=8ba50808-9dc7-4d4d-b87a-52c2340ec372	/	 ext4	defaults,discard	0 0
 #/dev/sdb1	/mnt	auto	defaults,nobootwait,comment=cloudconfig	0	2
@@ -970,14 +984,14 @@ vm_set_master_forer() {
 
     logger "Generating jobs (forer)"
 
-    if [ -f "$CONF_DIR/../forer_$clusterName.sh" ] ; then
+    if [ -f "$ALOJA_REPO_PATH/shell/forer_$clusterName.sh" ] ; then
       logger " synching forer files"
-      vm_rsync "$CONF_DIR/../" "$homePrefixAloja/$userAloja/share/shell/"
+      vm_rsync "$ALOJA_REPO_PATH/shell/" "$homePrefixAloja/$userAloja/share/shell/"
 
       logger " executing forer_$clusterName.sh"
       vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_$clusterName.sh $clusterName"
     else
-      logger " executing forer_az.sh $CONF_DIR/../forer_$clusterName.sh"
+      logger " executing forer_az.sh $ALOJA_REPO_PATH/shell/forer_$clusterName.sh"
       vm_execute_master "bash $homePrefixAloja/$userAloja/share/shell/forer_az.sh $clusterName"
     fi
 
@@ -1051,8 +1065,9 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench" "$homePrefixAloja/$userAloja/share"
-  #vm_rsync "../secure" "$homePrefixAloja/$userAloja/share" "--copy-links"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
+  vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 
   logger "Checking if aplic exits to redownload or rsync for changes"
   test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
@@ -1061,7 +1076,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
 
   if [ -z "$test_action" ] ; then
     logger "Downloading aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; wget -nv $ALOJA_PUBLIC_HTTP/aplic.tar.bz2"
+    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
 
     logger "Uncompressing aplic"
     vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
@@ -1082,10 +1097,10 @@ vm_rsync_public() {
 
   logger "INFO: rsynching the Web /public dir for VM $vm_name at $share_disk_path"
 
-  if [ -d "$CONF_DIR/../../blobs" ] ; then
-    vm_rsync "$CONF_DIR/../../blobs/{aplic,aplic.tar.bz2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
+  if [ -d "$ALOJA_REPO_PATH/blobs" ] ; then
+    vm_rsync "$ALOJA_REPO_PATH/blobs/{aplic2,boxes,DB_dumps,files}" "$share_disk_path/" "--copy-links"
   else
-    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $CONF_DIR/../../blobs"
+    logger "WARNING: blobs dir does not exists, not synching. DEBUG: path $ALOJA_REPO_PATH/blobs"
   fi
 }
 
@@ -1194,4 +1209,15 @@ vm_update_hosts_file() {
 
   #vm_execute "$hosts_file_command"
   vm_update_host_template "/etc/hosts" "$hosts_file" "secured_file"
+}
+
+cluster_create_local_conf() {
+  logger "INFO: Creating or updating local cluster config file"
+  local cluster_conf="
+# Cluster config, file is to be sourced by benchmarking scripts
+clusterID='$clusterID'
+clusterName='$clusterName'
+numberOfNodes='$numberOfNodes'
+"
+  vm_update_host_template "$homePrefixAloja/$userAloja/aloja_cluster.conf" "$cluster_conf"
 }
