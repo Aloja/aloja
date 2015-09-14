@@ -19,39 +19,72 @@ class MLPredictionController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
-		    	$db = $this->container->getDBUtils();
-		    	
-		    	$where_configs = '';
+			$db = $this->container->getDBUtils();
 
-		        $preset = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
-			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
- 			{
-				$preset = Utils::initDefaultPreset($db, 'mlprediction');
- 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-		    	
+			if (array_key_exists('dump',$_GET))
+			{
+				$dump = $_GET["dump"];
+				unset($_GET["dump"]);
+			}
+
+			if (array_key_exists('pass',$_GET))
+			{
+				$pass = $_GET["pass"];
+				unset($_GET["pass"]);
+			}
+
+			$this->buildFilters(array('learn' => array(
+				'type' => 'selectOne',
+				'default' => array('regtree'),
+				'label' => 'Learning method: ',
+				'generateChoices' => function() {
+					return array('regtree','nneighbours','nnet','polyreg');
+				},
+				'beautifier' => function($value) {
+					$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
+						'nnet' => 'NNets','polyreg' => 'PolyReg-3');
+					return $labels[$value];
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['learn']) ? $_GET['learn'] : array('regtree');
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			), 'umodel' => array(
+				'type' => 'checkbox',
+				'default' => 1,
+				'label' => 'Unrestricted to new values',
+				'parseFunction' => function() {
+					$choice = (isset($_GET['submit']) && !isset($_GET['umodel'])) ? 0 : 1;
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning')
+			));
+
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn','umodel'))));
+
+			$where_configs = $this->filters->getWhereClause();
+
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
-			$unrestricted = (array_key_exists('umodel',$_GET) && $_GET['umodel'] == 1);
+			$learnParams = $this->filters->getFiltersSelectedChoices(array('learn','umodel'));
+			$learn_param = $learnParams['learn'];
+			$unrestricted = ($learnParams['umodel']) ? true : false;
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unrestricted,$db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unrestricted,$db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unrestricted);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unrestricted);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$learn_param.' '.(($unrestricted)?'U':'R').' '.$slice_info;
 			$learn_options = 'saveall='.md5($config);
@@ -75,9 +108,9 @@ class MLPredictionController extends AbstractController
 				// get headers for csv
 				$header_names = array(
 					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version'
+					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
+					'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size',
+					'type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version'
 				);
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
@@ -109,8 +142,8 @@ class MLPredictionController extends AbstractController
 				$jsonExecs = "[]";
 				$must_wait = "YES";
 				$max_x = $max_y = 0;
-				if (isset($_GET['dump'])) { echo "1"; exit(0); }
-				if (isset($_GET['pass'])) { return 1; }
+				if (isset($dump)) { echo "1"; exit(0); }
+				if (isset($pass)) { return 1; }
 			}
 			else
 			{
@@ -134,7 +167,7 @@ class MLPredictionController extends AbstractController
 							$header = fgetcsv($handle, 1000, ",");
 
 							$token = 0; $insertions = 0;
-							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 							{
 								$specific_instance = implode(",",array_slice($data, 2, 21));
@@ -204,14 +237,14 @@ class MLPredictionController extends AbstractController
 					$error_stats = $error_stats.'Dataset: '.(($row['predict_code']==1)?'tr':(($row['predict_code']==2)?'tv':'tt')).' => MAE: '.$row['MAE'].' RAE: '.$row['RAE'].'<br/>';
 				}
 
-				if (isset($_GET['dump']))
+				if (isset($dump))
 				{
 					$data = json_encode($jsonExecs);
 					echo "Observed, Predicted, Execution\n";
 					echo str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
 					exit(0);
 				}
-				if (isset($_GET['pass']))
+				if (isset($pass))
 				{
 					$data = json_encode($jsonExecs);
 					$retval = "Observed, Predicted, Execution\n";
@@ -231,7 +264,6 @@ class MLPredictionController extends AbstractController
 		}
 
 		$return_params = array(
-			'selected' => 'mlprediction',
 			'jsonExecs' => json_encode($jsonExecs),
 			'max_p' => min(array($max_x,$max_y)),
 			'unrestricted' => $unrestricted,
@@ -242,14 +274,8 @@ class MLPredictionController extends AbstractController
 			'slice_info' => $slice_info,
 			'id_learner' => md5($config),
 			'error_stats' => $error_stats,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
-		echo $this->container->getTwig()->render('mltemplate/mlprediction.html.twig', $return_params);
+		return $this->render('mltemplate/mlprediction.html.twig', $return_params);
 	}
 }
 ?>

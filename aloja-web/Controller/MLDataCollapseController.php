@@ -51,9 +51,9 @@ class MLDataCollapseController extends AbstractController
 			$dims2 = "Benchmark";
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 			
 			// select model for filling 
 			$possible_models = $possible_models_id = array();

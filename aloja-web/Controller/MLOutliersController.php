@@ -12,7 +12,7 @@ class MLOutliersController extends AbstractController
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
-		$message = $instance = $jsonHeader = $jsonTable = $model_html = '';
+		$message = $instance = $jsonHeader = $jsonTable = $model_html = $config = $model_info = '';
 		$possible_models = $possible_models_id = $other_models = array();
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
@@ -24,43 +24,80 @@ class MLOutliersController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
-
-		        $preset = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET))
-			|| (count($_GET) == 2 && array_key_exists('dump',$_GET))
-			|| (count($_GET) == 2 && array_key_exists('register',$_GET))
-			|| (count($_GET) == 3 && array_key_exists('dump',$_GET) && array_key_exists('current_model',$_GET))
-			|| (count($_GET) == 3 && array_key_exists('register',$_GET) && array_key_exists('current_model',$_GET)))
+			if (array_key_exists('dump',$_GET))
 			{
-				$preset = Utils::initDefaultPreset($db, 'mloutliers');
+				$dump = $_GET["dump"];
+				unset($_GET["dump"]);
 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			if (array_key_exists('register',$_GET))
+			{
+				$register = $_GET["register"];
+				unset($_GET["register"]);
+			}
+
+			$this->buildFilters(
+				array('current_model' => array(
+					'type' => 'selectOne',
+					'default' => null,
+					'label' => 'Model tu use: ',
+					'generateChoices' => function() {
+						return array();
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning',
+				),
+				'sigma' => array(
+					'type' => 'inputNumber',
+					'default' => 1,
+					'label' => 'Sigmas: ',
+					'parseFunction' => function() {
+						$choice = isset($_GET['sigma']) ? $_GET['sigma'] : 1;
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'max' => 3,
+					'min' => 1,
+					'filterGroup' => 'MLearning'
+				), 'minexetime' => array(
+					'default' => 0
+				), 'valid' => array(
+					'default' => 0
+				), 'filter' => array(
+					'default' => 0
+				), 'prepares' => array(
+					'default' => 1
+				)
+			));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','sigma'))));
+			$where_configs = $this->filters->getWhereclause();
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$sigma_param = (array_key_exists('sigma',$_GET))?(int)$_GET['sigma']:1;
+			$param_variables = $this->filters->getFiltersSelectedChoices(array('current_model','sigma'));
+			$param_current_model = $param_variables['current_model'];
+			$sigma_param = $param_variables['sigma'];
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db); // Used only as indicator for WEB
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			// model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
-
-			$current_model = "";
-			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
+			$current_model = '';
+			if (!is_null($possible_models_id) && in_array($param_current_model,$possible_models_id)) $current_model = $param_current_model;
 
 			// Other models for filling
 			$where_models = '';
@@ -98,8 +135,8 @@ class MLOutliersController extends AbstractController
 					// get headers for csv
 					$header_names = array(
 						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-						'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
+						'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
 						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
 					);
 					$headers = array_keys($header_names);
@@ -180,7 +217,7 @@ class MLOutliersController extends AbstractController
 				{
 					$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 					$must_wait = 'YES';
-					if (isset($_GET['dump'])) { echo "1"; exit(0); }
+					if (isset($dump)) { echo "1"; exit(0); }
 				}
 				else
 				{
@@ -206,7 +243,7 @@ class MLOutliersController extends AbstractController
 					$max_x = $row['max_x'];
 					$max_y = $row['max_y'];
 
-					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','ID');
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','ID');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -218,7 +255,7 @@ class MLOutliersController extends AbstractController
 					$jsonTable = '['.$jsonTable.']';
 
 					// Dump case
-					if (isset($_GET['dump']))
+					if (isset($dump))
 					{
 						echo str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
 						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonOuts);
@@ -228,7 +265,7 @@ class MLOutliersController extends AbstractController
 					}
 
 					// Register case
-					if (isset($_GET['register']))
+					if (isset($register))
 					{
 						// Update the predictions table
 						$query_var =   "UPDATE aloja_ml.predictions as p, aloja_ml.resolutions as r
@@ -240,23 +277,19 @@ class MLOutliersController extends AbstractController
 					}
 				}
 			}
-			else
-			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
-				$must_wait = "NO";
-			}
+			else throw new \Exception('There are no prediction models trained for such parameters. Train at least one model in "ML Prediction" section.');
+
 			$dbml = null;
 		}
 		catch(\Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
-			$model = '';
-
+			$must_wait = "NO";
 			$dbml = null;
 		}
+
 		$return_params = array(
-			'selected' => 'mloutliers',
 			'jsonData' => $jsonData,
 			'jsonWarns' => $jsonWarns,
 			'jsonOuts' => $jsonOuts,
@@ -269,18 +302,14 @@ class MLOutliersController extends AbstractController
 			'other_models_id' => $other_models,
 			'current_model' => $current_model,
 			'resolution_id' => md5($config),
+			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'sigma' => $sigma_param,
 			'message' => $message,
 			'instance' => $instance,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
-		echo $this->container->getTwig()->render('mltemplate/mloutliers.html.twig', $return_params);
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+		return $this->render('mltemplate/mloutliers.html.twig', $return_params);
 	}
 }
 ?>

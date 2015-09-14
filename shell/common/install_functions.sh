@@ -82,6 +82,9 @@ aloja_wget() {
   local wget_command="wget --progress=dot -e dotbytes=10M $URL"
   [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
 
+  #make sure we delete the file in case of an error, wget writes an emtpy file
+  wget_command="$wget_command || rm $out_file_name"
+
   vm_execute "$wget_command" #--no-verbose
 
   return $?
@@ -175,7 +178,13 @@ Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;"
 
-    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql"
+    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql percona-toolkit"
+
+    # create binlog and relaylog dirs
+    vm_execute "
+sudo mkdir -p '${datadir}/binlogs' '${datadir}/relaylogs';
+sudo chowm -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
+"
 
     #test
     local test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"
@@ -336,6 +345,7 @@ sudo /usr/bin/hca_self_test.ofed
         logger "INFO: Updating /etc/network/interfaces with IP_suffix: $IP_suffix"
         vm_update_template "/etc/network/interfaces" "
 #IB Interface
+auto ib0
 iface ib0 inet static
 address 10.0.1.$IP_suffix
 netmask 255.255.0.0" "secured_file"
@@ -529,20 +539,6 @@ install_R() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
-	## For Ubuntu 12.04
-#	add-apt-repository 'deb http://cran.es.r-project.org/bin/linux/ubuntu precise/'
-#	apt-get update
-#	apt-get install "openjdk-7-jre-lib" "openjdk-7-jre-headless" "openjdk-7-jdk" "r-base" "r-base-core" "r-base-dev" "r-base-html" \
-#	"r-cran-bitops" "r-cran-boot" "r-cran-class" "r-cran-cluster" "r-cran-codetools" "r-cran-foreign" "r-cran-kernsmooth" \
-#	"r-cran-lattice" "r-cran-mass" "r-cran-matrix" "r-cran-mgcv" "r-cran-nlme" "r-cran-nnet" "r-cran-rpart" "r-cran-spatial" \
-#	"r-cran-survival" "r-recommended" "r-cran-colorspace" "r-cran-getopt" "r-cran-rcolorbrewer" "r-cran-rcpp" "libcurl4-openssl-dev" \
-#	"libxml2-dev" "gsettings-desktop-schemas" -y --force-yes
-
-# Only for Ubuntu 12.04
-#install.packages(c("rjson","evaluate","labeling","memoise","munsell","stringr","rJava"),repos="http://cran.r-project.org",
-#dependencies=TRUE,quiet=TRUE); # Installed on Update: RCurl, plyr, dichromat, devtools, digest, reshape, scales
-
-
     if [[ "$vmOSType" == "Ubuntu" && "$vmOSTypeVersion" == "14.04" ]] ; then
 
       logger "INFO: Installing R packages for Ubuntu 14 from repo"
@@ -559,7 +555,6 @@ sudo rm $libtiff_file"
 
       logger "INFO: Installing R dependencies (JAVA)"
       install_packages "libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk"
-      vm_execute "sudo R CMD javareconf"
 
       logger "INFO: Installing R core and available packages in repo"
       local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-bitops r-cran-boot r-cran-class r-cran-cluster"
@@ -568,39 +563,40 @@ sudo rm $libtiff_file"
       R_packages="$R_packages r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-evaluate"
       R_packages="$R_packages r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer"
       R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
+      R_packages="$R_packages r-cran-rms r-cran-ggplot2"
 
       install_packages "$R_packages"
-#
-#      logger "INFO: Downloading precompiled R binary updates (to save time)"
-#      local R_file="R_Ubuntu-14.04_20150813.tar.bz2"
-#      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
-#
-#      logger "INFO: Uncompressing and copying files"
-#      vm_execute "
-#cd /tmp;
-#tar -xjf '$R_file';
-#sudo cp -rf 'R' /usr/lib/
-#rm -rf '$R_file' 'R';
-#"
 
-      logger "INFO: Updating package (will take a while if changes are found)"
+      vm_execute "sudo R CMD javareconf"
+
+      logger "INFO: Downloading precompiled R binary updates (to save time)"
+      local R_file="R-x86_64-3.2-packages.tar.gz"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
+
+      logger "INFO: Uncompressing and copying files"
       vm_execute "
-cat <<- EOF > /tmp/packages.r
-#!/usr/bin/env Rscript
-
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-
-# For all Ubuntu releases until 14.04
-install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-'RWeka','RWekajars','ggplot2','rms','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
-
-update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-
-EOF
-
-sudo chmod a+x /tmp/packages.r
-sudo /tmp/packages.r
+tar -C ~$(get_ssh_user) -xf '/tmp/$R_file';
+rm -rf '/tmp/$R_file';
 "
+
+#      logger "INFO: Updating package (will take a while if changes are found)"
+#      vm_execute "
+#cat <<- EOF > /tmp/packages.r
+##!/usr/bin/env Rscript
+#
+#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#
+## For all Ubuntu releases until 14.04
+#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
+#'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
+#
+##update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
+#
+#EOF
+#
+#sudo chmod a+x /tmp/packages.r
+#sudo /tmp/packages.r
+#"
 
       local test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
 
@@ -783,11 +779,15 @@ install_ganglia_gmond(){
   fi
 }
 
-# $1 cluster name
+# $1 cluster name, $2 receiver node (optional, defaults to $1-00)
 config_ganglia_gmond(){
 
   local bootstrap_file="${FUNCNAME[0]}"
   local result mcastif
+
+  local node0
+
+  [ "$2" != "" ] && node0=${2} || node0="${1}-00"
 
   if check_bootstraped "$bootstrap_file" ""; then
 
@@ -800,7 +800,7 @@ config_ganglia_gmond(){
     vm_execute "
 
     # create conf from template
-    awk -v clustername='$1' -v node0='${1}-00' '
+    awk -v clustername='$1' -v node0='${node0}' '
 
     { sub(/%%%CLUSTERNAME%%%/, clustername)
       sub(/%%%NODE0%%%/, node0)
@@ -944,16 +944,36 @@ install_ganglia_web(){
 
     vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
 
-    vm_execute "
-    cd /tmp || exit 1;
-    tar -xf $tarball || exit 1;
-    sudo mv $gdir ganglia || exit 1;
-    sudo rm -rf /var/www/ganglia || exit 1;
-    sudo mv ganglia /var/www/ || exit 1;
-    sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
-    sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
-    sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+    if [ -d '/vagrant' ]; then
+  
+      local user=$(get_ssh_user)
+
+      # install under /home/vagrant, create symlink in /var/www to avoid cluttering repo due to shared folders
+      vm_execute "
+      cd /tmp || exit 1;
+      tar -xf $tarball || exit 1;
+      mv $gdir ganglia || exit 1;
+      rm -rf ~${user}/ganglia || exit 1;
+      mv ganglia ~${user}/ || exit 1;
+      mkdir -p ~${user}/ganglia/dwoo/{compiled,cache} || exit 1;
+      sudo chmod -R ugo+rwx ~${user}/ganglia/dwoo/{compiled,cache} || exit 1;
+      mv /tmp/ganglia_conf.php.t ~${user}/ganglia/conf.php || exit 1;
+      sudo ln -s ~${user}/ganglia/ /var/www/ganglia;      
 "
+    else
+      # normal case
+      vm_execute "
+      cd /tmp || exit 1;
+      tar -xf $tarball || exit 1;
+      sudo mv $gdir ganglia || exit 1;
+      sudo rm -rf /var/www/ganglia || exit 1;
+      sudo mv ganglia /var/www/ || exit 1;
+      sudo mkdir -p /var/www/ganglia/dwoo/{compiled,cache} || exit 1;
+      sudo mv /tmp/ganglia_conf.php.t /var/www/ganglia/conf.php || exit 1;
+      sudo chown -R www-data:www-data /var/www/ganglia || exit 1;
+"
+
+    fi
 
     if [ $? -ne 0 ]; then
       die "Error installing ganglia-web"

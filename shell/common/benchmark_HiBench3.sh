@@ -5,7 +5,7 @@ source "$CONF_DIR/common_hadoop.sh"
 
 
 benchmark_config() {
-  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
+  prepare_hadoop_config "$NET" "$DISK" "$BENCH"
 }
 
 benchmark_run() {

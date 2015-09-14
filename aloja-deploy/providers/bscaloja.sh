@@ -154,7 +154,7 @@ server {
     }
   }
 
-  location /public {
+  location = /public {
     alias /scratch/attached/1/public;
     autoindex on;
   }
@@ -201,6 +201,47 @@ server {
   gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss text/x-component application/javascript application/rss+xml font/truetype application/x-font-ttf font/opentype;
 
 }'
+
+}
+
+#$1 env (prod, dev)
+get_mysqld_conf(){
+
+  echo -e "
+[mysqld]
+
+bind-address=0.0.0.0
+skip-external-locking
+key_buffer_size		= 512M
+tmp_table_size		= 128M
+query_cache_limit	= 128M
+query_cache_size  = 512M
+
+log_bin         = /scratch/attached/1/mysql/binlogs/mysql-binlog
+
+gtid_mode       = ON
+log-slave-updates = 1
+enforce-gtid-consistency = 1
+explicit_defaults_for_timestamp = 1
+binlog_format = mixed
+server_id = 2
+read_only = 1
+relay_log       = /scratch/attached/1/mysql/relaylogs/mysql-relay-bin
+
+
+# Set Base Innodb Specific settings here
+innodb_autoinc_lock_mode=0
+innodb_flush_method		= O_DIRECT
+innodb_file_per_table		= 1
+innodb_file_format		= barracuda
+innodb_max_dirty_pages_pct 	= 90
+innodb_lock_wait_timeout 	= 60
+innodb_flush_log_at_trx_commit 	= 2
+innodb_additional_mem_pool_size = 512M
+innodb_buffer_pool_size 	= 2048M
+innodb_thread_concurrency 	= 16
+
+"
 
 }
 

@@ -19,14 +19,6 @@
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
 
-		$('select[name="parameval"]').change(function()
-		{
-			var name = $(this).val()+'s[]';
-			$('select[name="'+name+'"]').val('None');
-			var configForm = document.getElementsByName('configFilters');
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
-			$(this).parents('form').submit();
-		});
 
 		if ("{{must_wait}}" == "NO")
 		{
@@ -84,10 +76,9 @@
 				</div>
 				<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
 					<div class="panel-body">
-						<form>
-							<div style="width: 20%; margin: 0 auto; float: center">
+							<div style="width: 20%; margin: 0 auto; float: center;">
 								Parameter to evaluate:
-								<select class="form-control" name="parameval">
+								<select form="configFilters" class="form-control" name="parameval">
 									<option value="maps" {% if paramEval == 'maps' %}selected="selected"{% endif %}>Maps</option>
 									<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
 									<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
@@ -98,8 +89,8 @@
 									<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
 									<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
 								</select>
+								<button form="configFilters" type="submit" class="btn btn-info">Update</button>
 							</div>
-						</form>
 						<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
 					</div>
 				</div>
@@ -120,7 +111,7 @@
 							<li>Model cache ID: {{current_model|raw}}</li>
 							<li>Instance: {{instance|raw}}</li>
 	 						<li>Model Info: {{model_info|raw}}</li>
-							<li>Slice Info: {{slice_info|raw}}</li>
+							<li>Advanced Filters: {{slice_info|raw}}</li>
 							</ul>
 						</p>
 					</div>

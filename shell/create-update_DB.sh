@@ -31,7 +31,7 @@ logger "Updating aloja2.clusters  and hosts"
 for clusterConfigFile in $configFolderPath/cluster_* ; do
 
   id_cluster="${clusterConfigFile:(-7):2}"
-  logger "INFO: loading $clusterConfigFile with ID $id_cluster"
+  logger "DEBUG: Loading $clusterConfigFile with ID $id_cluster"
 
   #TODO this check wont work for old folders with numeric values at the end, need another strategy
   #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
@@ -44,10 +44,10 @@ for clusterConfigFile in $configFolderPath/cluster_* ; do
 done
 
 #update filters in the whole DB (slow)
-if [ "$DONT_UPDATE_FILTERS" ] ; then
-  logger "Skipping updating filters for the whole DB to save time or for vagrant VM"
-else
+#if [ "$DONT_UPDATE_FILTERS" ] ; then
+#  logger "Skipping updating filters for the whole DB to save time or for vagrant VM"
+#else
   logger "Updating VALID and FILTER fields (probably will take a while...)"
-  $MYSQL "$(get_filter_sql)"
-fi
+#  $MYSQL "$(get_filter_sql)"
+#fi
 

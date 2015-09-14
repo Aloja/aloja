@@ -1,0 +1,59 @@
+benchdata:
+    pattern: "/benchdata"
+    controller: "alojaweb\\Controller\\RestController::benchExecutionsDataAction"
+    screenName: "Benchmark Executions Data"
+
+countersdata:
+    pattern: "/countersdata"
+    controller: "alojaweb\\Controller\\RestController::countersDataAction"
+    screenName: "Hadoop Job Counters Data"
+
+export2prv:
+    pattern: "/export2prv"
+    controller: "alojaweb\\Controller\\RestController::export2prvAction"
+    screenName: "export2prv"
+
+metricsdata:
+    pattern: "/metricsdata"
+    controller: "alojaweb\\Controller\\RestController::metricsDataAction"
+    screenName: "Performance Metrics Data"
+
+histogramdata:
+    pattern: "/histogramdata"
+    controller: "alojaweb\\Controller\\RestController::histogramDataAction"
+    screenName: "Histogram Data"
+
+histogramtasksdata:
+    pattern: "/histogramtasksdata"
+    controller: "alojaweb\\Controller\\RestController::histogramTasksDataAction"
+    screenName: "Histogram Tasks Data"
+
+bestconfigdata:
+    pattern: "/bestconfigdata"
+    controller: "alojaweb\\Controller\\RestController::bestConfigDataAction"
+    screenName: "Best Configuration Data"
+
+dbscandata:
+    pattern: "/dbscandata"
+    controller: "alojaweb\\Controller\\RestController::dbscanDataAction"
+    screenName: "DBSCAN Data"
+
+dbscanexecsdata:
+    pattern: "/dbscanexecsdata"
+    controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
+    screenName: "DBSCANexecs Data"
+
+hdp2countersdata:
+    pattern: "/hdpcountersdata"
+    controller: "alojaweb\\Controller\\RestController::hdp2countersDataAction"
+    screenName: "Hadoop Job Counters"
+
+histogramhdidata:
+    pattern: "/histogramhdidata"
+    controller: "alojaweb\\Controller\\RestController::histogramHDIDataAction"
+    screenName: "Histogram"
+
+histogramhditasksdata:
+    pattern: "/histogramhditasksdata"
+    controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"
+    screenName: "Histogram"

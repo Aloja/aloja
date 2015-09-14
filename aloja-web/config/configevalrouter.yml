@@ -1,0 +1,15 @@
+configimprovement:
+    pattern: "/configimprovement"
+    legacy: "/config_improvement.php"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::configImprovementAction"
+    screenName: "Config Improvement"
+
+bestconfig:
+    pattern: "/bestconfig"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::bestConfigAction"
+    screenName: "Best configuration"
+
+parameval:
+    pattern: "/parameval"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::paramEvaluationAction"
+    screenName: "Parameter Evaluation"

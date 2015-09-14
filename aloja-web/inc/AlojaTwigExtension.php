@@ -34,6 +34,7 @@ class AlojaTwigExtension extends Twig_Extension
         		'getArrayIndex' => new Twig_Function_Method($this, 'getArrayIndex'),
         		'getParamevalTitleName' => new Twig_Function_Method($this, 'getParamevalTitleName'),
         		'getDisksName' => new Twig_Function_Method($this, 'getDisksName'),
+                'beautify' => new Twig_Function_Method($this, 'beautify')
         );
     }
 
@@ -196,5 +197,12 @@ class AlojaTwigExtension extends Twig_Extension
     public function getDisksName($diskName)
     {
     	return Utils::getDisksName($diskName);
+    }
+
+    public function beautify($filter,$value) {
+        if(array_key_exists('beautifier',$filter)) {
+            return $filter['beautifier']($value);
+        } else
+            return $value;
     }
 }

@@ -164,6 +164,25 @@ if [ ! -d '/var/www/aloja-web' ] ; then
 fi"
 }
 
+vagrant_link_share(){
+  logger "INFO: Making sure ~/share is linked in the vagrant VM"
+  vm_execute "
+if [ ! -L '/home/vagrant/share' ] ; then
+  sudo ln -fs /vagrant/blobs /home/vagrant/share;
+  touch /home/vagrant/share/safe_store;
+fi"
+
+  if [ "$type" == "cluster" ] ; then
+    logger "INFO: Making sure we have scratch folders for bench runs"
+    vm_execute "
+if [ ! -d '/scratch' ] ; then
+  sudo mkdir -p /scratch/{local,ssd} /scratch/attached/{1..3};
+  sudo chown -R $userAloja: /scratch;
+fi
+"
+  fi
+}
+
 make_hosts_file() {
 
   local hosts_file="$VAGRANT_WEB_IP\taloja-web"
@@ -195,6 +214,7 @@ vm_final_bootstrap() {
 
   #currently is run everytime it is executed
   vm_update_hosts_file
+  vagrant_link_share
 }
 
 

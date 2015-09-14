@@ -12,6 +12,7 @@ insert_DB(){
     echo "Loading $2 into $1"
 head -n3 "$2"
 
+#tx levels READ UNCOMMITTED READ-COMMITTED
     $MYSQL "
     SET time_zone = '+00:00';
     SET tx_isolation = 'READ-COMMITTED';
@@ -125,28 +126,46 @@ update ignore aloja2.clusters  SET vm_size='A4' where vm_size IN ('extralarge', 
 update ignore aloja2.clusters  SET vm_size='D4' where vm_size IN ('Standard_D4');
 
 ##HDInsight filters
-update aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 0 where type != 'PaaS' AND exec LIKE '%hdi%';
-update aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
-update aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
-update aloja2.execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
-update aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
-update aloja2.execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
-update aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
-update aloja2.execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 0 where type != 'PaaS' AND exec LIKE '%hdi%';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
+update ignore aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
 
-update aloja2.execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
 
-update aloja2.execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe_time > 1100 AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set filter = 1 where id_cluster = 23 AND bench = 'terasort' AND exe_time > 1100 AND YEAR(start_time) = '2014';
 
-update aloja2.execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
+update ignore aloja2.execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
 
-update aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
-update aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
-update aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
-update aloja2.execs JOIN aloja2.clusters using (id_cluster) set filter = 1 where type = 'PaaS' and provider = 'hdinsight' and exe_time < 100;
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set filter = 1 where type = 'PaaS' and provider = 'hdinsight' and exe_time < 100;
+update ignore aloja2.execs set filter = 1 where bench IN ('prep_terasort-t','terasort-t','prep_wordcount,terasort','wordcount,terasort');
 
 #Wrong imports filter
-update aloja2.execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL) and valid = 1 and filter = 0;
+update ignore aloja2.execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL) and valid = 1 and filter = 0;
+
+##Datasize and scale factor
+update ignore aloja2.execs set datasize = NULL;
+update ignore aloja2.execs set scale_factor = 'N/A';
+
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_READ where c.type != 'PaaS' and bench != 'terasort';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_READ where c.type = 'PaaS' and bench != 'terasort';
+
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_WRITTEN where c.type != 'PaaS' and bench = 'terasort';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_WRITTEN where c.type = 'PaaS' and bench = 'terasort';
+
+update ignore aloja2.execs e set e.scale_factor = '32GB/Dn' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
+
+update ignore aloja2.execs e set e.scale_factor='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
+
+update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
+update ignore aloja2.execs set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%';
 "
 
 #update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
@@ -183,6 +202,8 @@ update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = '
 );
 
 update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
+
+
 "
 
 #update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
@@ -194,11 +215,54 @@ update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0)
 
 }
 
+# Gets the configuration for the benchmark for both legacy format (from folder name)
+# $1 log_file path
+legacy_get_exec_params() {
+  #here get the zabbix URL to parse filtering prepares and other benchmarks
+  #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
+  local exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
+  awk -v exec=$2 ' \
+  { pri_bar = (index($1,"/")+1); \
+  conf = substr($1, 0, (pri_bar-2));\
+  pri_mas = (index($5,">")-7);\
+  time_pos = (index($5,"&stime=")+7);\
+  split(exec, parts,"_"); \
+  bench = substr($5,(pri_mas+8));\
+  zt = substr($5,(time_pos),14);\
+  \
+  if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
+  print \
+  "\"" bench "\",\"" \
+  $(NF-1) "\",\"" \
+  strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
+  strftime("%F %H:%M:%S", $3, 1) "\",\""\
+  parts[4]"\",\"" \
+  parts[5]"\",\"" \
+  substr(parts[6],2)"\",\"" \
+  substr(parts[7],2)"\",\"" \
+  substr(parts[8],2)"\",\"" \
+  substr(parts[9],2)"\",\"" \
+  substr(parts[10],2)"\",\"" \
+  substr(parts[11],2)"\",\"" \
+  substr(parts[12],2) "\",\"" \
+  substr($5,7,(pri_mas-1)) "\"" \
+  } \
+  ' )"
 
+  echo -e "$exec_params"
+}
+
+# Gets the configuration for the benchmark
+# for both legacy format (from folder name)
+# and newer, from config.sh
+# $1 log_file path
+# $2 name
 get_exec_params() {
 
   local log_file="$1"
   local name="$2"
+
+  local exec_params
 
   # output format:
   # "wordcount","2286","2015-03-17 20:47:41","2015-03-17 21:25:47","ETH","RL3","","4","10","1","65536","0","64","http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20150317214741&period=2286"
@@ -206,36 +270,7 @@ get_exec_params() {
 
   # different parsers for legacy-style and new-style configs
   if [ "${name:15:6}" == "_conf_" ]; then
-    #here get the zabbix URL to parse filtering prepares and other benchmarks
-    #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
-    exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
-    awk -v exec=$2 ' \
-    { pri_bar = (index($1,"/")+1); \
-    conf = substr($1, 0, (pri_bar-2));\
-    pri_mas = (index($5,">")-7);\
-    time_pos = (index($5,"&stime=")+7);\
-    split(exec, parts,"_"); \
-    bench = substr($5,(pri_mas+8));\
-    zt = substr($5,(time_pos),14);\
-    \
-    if ( $(NF-1) ~  /^[0-9]*$/ && $(NF-1) > 1)\
-    print \
-    "\"" bench "\",\"" \
-    $(NF-1) "\",\"" \
-    strftime("%F %H:%M:%S", ($3-$(NF-1)), 1) "\",\""\
-    strftime("%F %H:%M:%S", $3, 1) "\",\""\
-    parts[4]"\",\"" \
-    parts[5]"\",\"" \
-    substr(parts[6],2)"\",\"" \
-    substr(parts[7],2)"\",\"" \
-    substr(parts[8],2)"\",\"" \
-    substr(parts[9],2)"\",\"" \
-    substr(parts[10],2)"\",\"" \
-    substr(parts[11],2)"\",\"" \
-    substr(parts[12],2) "\",\"" \
-    substr($5,7,(pri_mas-1)) "\"" \
-    } \
-    ' )"
+    exec_params="$(legacy_get_exec_params "$log_file")"
   else
 
     local job=""
@@ -296,11 +331,12 @@ get_exec_params() {
 
   fi
 
+  echo -e "$exec_params"
+
 #echo -e "$1\n$exec_params"
 
   # Time from Zabbix format
   # substr(zt,0,4) "-" substr(zt,5,2) "-" substr(zt,7,2) " " substr(zt,9,2) ":" substr(zt,11,2) ":" substr(zt,13,2) "\",\"" \
-
 }
 
 extract_config_var() {

@@ -21,34 +21,36 @@ class MLPrecisionController extends AbstractController
 
 		    	$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
+		    	$where_configs = "";
 
-		        $preset = null;
+			$dump = null;
+			$pass = null;
 			if (count($_GET) <= 1
 			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
 			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
 			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
  			{
-				$preset = Utils::initDefaultPreset($db, 'mlprecision');
+				$pass = (isset($_GET["pass"])) ? $_GET["pass"] : null;
+				$dump =  (isset($_GET["dump"])) ? $_GET["dump"] : null;
+				unset($_GET["pass"]);
+				unset($_GET["dump"]);
  			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
-
-			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
-
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$this->buildFilters();
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
+
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
+
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true,$db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$slice_info."-precision";
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
@@ -198,8 +200,8 @@ class MLPrecisionController extends AbstractController
 			$must_wait = 'NO';
 			$dbml = null;
 		}
+
 		$return_params = array(
-			'selected' => 'mlprecision',
 			'discvars' => $jsonDiscvars,
 			'diversity' => $jsonDiversity,
 			'precisions' => $jsonPrecisions,
@@ -210,15 +212,9 @@ class MLPrecisionController extends AbstractController
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'id_precision' => md5($config),
-			'error_stats' => $error_stats,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
+			'error_stats' => $error_stats
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
-		echo $this->container->getTwig()->render('mltemplate/mlprecision.html.twig', $return_params);
+		return $this->render('mltemplate/mlprecision.html.twig', $return_params);
 	}
 }
 ?>

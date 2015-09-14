@@ -11,68 +11,97 @@ class MLParamevalController extends AbstractController
 {
 	public function mlparamEvaluationAction()
 	{
-		$rows = $categories = $series = '';
+		$rows = $categories = $series = $instance = $model_info = $config = $current_model = $slice_info = '';
+		$arrayBenchs_pred = $possible_models = $possible_models_id = $other_models = array();
+		$jsonData = $jsonHeader = "[]";
 		$must_wait = 'NO';
-		try {
+		try
+		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
 
-			$where_configs = '';
-
-		        $preset = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists('parameval',$_GET))
-			|| (count($_GET) == 2 && array_key_exists('current_model',$_GET)))
+			if (array_key_exists('parameval',$_GET))
 			{
-				$preset = Utils::initDefaultPreset($db, 'mlparameval');
+				$paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
+				unset($_GET["parameval"]);
 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+
+			$this->buildFilters(array(
+				'current_model' => array(
+					'type' => 'selectOne',
+					'default' => null,
+					'label' => 'Model tu use: ',
+					'generateChoices' => function() {
+						return array();
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
+				), 'minExecs' => array('default' => 0, 'type' => 'inputNumber', 'label' => 'Minimum executions:',
+					'parseFunction' => function() { return 0; },
+					'filterGroup' => 'basic'
+				), 'minexetime' => array(
+					'default' => 0
+				), 'valid' => array(
+					'default' => 0
+				), 'filter' => array(
+					'default' => 0
+				), 'prepares' => array(
+					'default' => 0
+				)
+			));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model'))));
+
+			$where_configs = $this->filters->getWhereClause();
 
 			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
 			$params_additional = array();
-			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
-			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$money		= Utils::read_params ( 'money', $where_configs );
-			$paramEval	= (isset($_GET['parameval']) && $_GET['parameval'] != '') ? $_GET['parameval'] : 'maps';
-			$minExecs	= (isset($_GET['minexecs'])) ? $_GET['minexecs'] : -1;
-			$minExecsFilter = "";
+			$param_variables = $this->filters->getFiltersSelectedChoices(array('current_model','minExecs'));
+			$param_current_model = $param_variables['current_model'];
+			$minExecs = $param_variables['minExecs'];
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
-			if($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
+			$minExecsFilter = "";
+			if ($minExecs > 0) $minExecsFilter = "HAVING COUNT(*) > $minExecs";
 			
 			$filter_execs = DBUtils::getFilterExecs();
 
-			$options = Utils::getFilterOptions($db);
+			$options = $this->filters->getFilterChoices();
 			$paramOptions = array();
 			foreach($options[$paramEval] as $option)
 			{
-				if($paramEval == 'id_cluster') $paramOptions[] = $option['name'];
-				else if($paramEval == 'comp') $paramOptions[] = Utils::getCompressionName($option[$paramEval]);
-				else if($paramEval == 'net') $paramOptions[] = Utils::getNetworkName($option[$paramEval]);
-				else if($paramEval == 'disk') $paramOptions[] = Utils::getDisksName($option[$paramEval]);
-				else $paramOptions[] = $option[$paramEval];
+				if ($paramEval == 'comp') $paramOptions[] = Utils::getCompressionName($option);
+				else if ($paramEval == 'net') $paramOptions[] = Utils::getNetworkName($option);
+				else if ($paramEval == 'disk') $paramOptions[] = Utils::getDisksName($option);
+				else $paramOptions[] = $option;
 			}
 
-			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $paramEval, bench order by $paramEval");
-						
+			$param_eval_query = ($paramEval == 'id_cluster')? 'e.id_cluster' : $paramEval;
+
+			$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs GROUP BY $param_eval_query, bench order by $param_eval_query");
+
 			// get the result rows
-			$query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
+			$query = "SELECT count(*) as count, $param_eval_query, e.id_exec, exec as conf, bench, ".
 				"exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
 				"from aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE 1 $filter_execs $where_configs".
-				"GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
+				"GROUP BY $param_eval_query,bench $minExecsFilter order by bench,$param_eval_query";
 			$rows = $db->get_rows ( $query );
 			if (!$rows) throw new \Exception ( "No results for query!" );
-	
+
 			$arrayBenchs = array();
 			foreach ( $paramOptions as $param )
 			{
@@ -89,7 +118,6 @@ class MLParamevalController extends AbstractController
 			foreach($rows as $row)
 			{
 				if($paramEval == 'comp') $row[$paramEval] = Utils::getCompressionName($row['comp']);
-				else if($paramEval == 'id_cluster') $row[$paramEval] = Utils::getClusterName($row[$paramEval],$db);
 				else if($paramEval == 'net') $row[$paramEval] = Utils::getNetworkName($row['net']);
 				else if($paramEval == 'disk') $row[$paramEval] = Utils::getDisksName($row['disk']);
 				else if($paramEval == 'iofilebuf') $row[$paramEval] /= 1024;
@@ -102,25 +130,29 @@ class MLParamevalController extends AbstractController
 			// Add predictions to the series
 			// ----------------------------------------------------
 
-			$jsonData = $jsonHeader = "[]";
-			$instance = "";
-			$arrayBenchs_pred = array();
+			$param_variables = $this->filters->getFiltersSelectedChoices(array('current_model'));
+			$param_current_model = $param_variables['current_model'];
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true, $db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true, $db);
-			$instances = MLUtils::generateInstances($param_names, $params, true, $db);
-			$slice_info = MLUtils::generateDatasliceInfo($param_names_additional, $params_additional);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			// model for filling
-			$possible_models = $possible_models_id = array();
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
+			$current_model = '';
+			if (!is_null($possible_models_id) && in_array($param_current_model,$possible_models_id)) $current_model = $param_current_model;
 
-			$current_model = "";
-			if (array_key_exists('current_model',$_GET) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
+			// Other models for filling
+			$where_models = '';
+			if (!empty($possible_models_id))
+			{
+				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
+			}
+			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
+			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
 			if (!empty($possible_models_id))
 			{
@@ -166,9 +198,9 @@ class MLParamevalController extends AbstractController
 				{
 					$must_wait = 'NO';
 
-					$query = "SELECT count(*) as count, $paramEval, bench, exe_time, avg(pred_time) avg_pred_time, min(pred_time) min_pred_time ".
+					$query = "SELECT count(*) as count, $param_eval_query, bench, exe_time, avg(pred_time) avg_pred_time, min(pred_time) min_pred_time ".
 						"FROM aloja_ml.predictions e WHERE e.id_learner = '".$current_model."' $filter_execs $where_configs".
-						"GROUP BY $paramEval, bench $minExecsFilter order by bench, $paramEval";
+						"GROUP BY $param_eval_query, bench $minExecsFilter order by bench,$param_eval_query";
 					$result = $dbml->query($query);
 					
 					// Initialize array
@@ -241,20 +273,17 @@ class MLParamevalController extends AbstractController
 			if (!empty($arrayBenchs_pred)) $colors = "['#7cb5ec','#9cd5fc','#434348','#636368','#90ed7d','#b0fd9d','#f7a35c','#f7c37c','#8085e9','#a0a5f9','#f15c80','#f17ca0','#e4d354','#f4f374','#8085e8','#a0a5f8','#8d4653','#ad6673','#91e8e1','#b1f8f1']";
 			else $colors = "['#7cb5ec','#434348','#90ed7d','#f7a35c','#8085e9','#f15c80','#e4d354','#8085e8','#8d4653','#91e8e1']";
 
-		} catch ( \Exception $e ) {
+		}
+		catch ( \Exception $e )
+		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-
 			$series = $jsonHeader = $colors = '[]';
-			$instance = $current_model = $slice_info = '';
-			$possible_models = $possible_models_id = array();
 			$must_wait = 'NO';
 		}
 		$return_params = array(
-			'selected' => 'mlparameval',
 			'title' => 'Improvement of Hadoop Execution by SW and HW Configurations',
 			'categories' => $categories,
 			'series' => $series,
-			'money' => $money,
 			'paramEval' => $paramEval,
 			'instance' => $instance,
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
@@ -264,14 +293,9 @@ class MLParamevalController extends AbstractController
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'must_wait' => $must_wait,
-			'preset' => $preset,
-			'selPreset' => $selPreset,
-			'options' => Utils::getFilterOptions($db)
 		);
-		foreach ($param_names as $p) $return_params[$p] = $params[$p];
-		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
-
-		echo $this->container->getTwig()->render('mltemplate/mlparameval.html.twig', $return_params);
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+		return $this->render('mltemplate/mlparameval.html.twig', $return_params);
 	}
 }
 ?>
