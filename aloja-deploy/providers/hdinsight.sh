@@ -126,7 +126,7 @@ vm_final_bootstrap() {
  logger "Configuring nodes..."
 #vm_set_ssh
  vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo headnode0 >> machines"
- vm_execute "sudo DEBIAN_FRONTEND=noninteractive apt-get install sshpass dsh pssh git -y -qqq"
+ install_packages "sshpass dsh pssh git"
  if [ ! -z $2 ]; then
   vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
  else

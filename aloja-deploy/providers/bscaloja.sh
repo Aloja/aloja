@@ -66,7 +66,7 @@ sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc
 "
     test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -86,7 +86,7 @@ get_vm_id() {
 
 vm_create_RAID0() {
 
-  local bootstrap_file="vm_create_RAID0"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -113,7 +113,7 @@ sudo chown -R pristine: /scratch/attached/1;
 
     test_action="$(vm_execute " [ \"\$(sudo mdadm --examine /dev/sdb1 |grep 'Raid Devices : $num_drives')\" ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
@@ -131,10 +131,9 @@ get_nginx_conf(){
 
 echo -e '
 server {
-  listen 80;
-  server_name _;
-  root /var/www/aloja-web/;
+  listen 80 default_server;
 
+  root /var/www/aloja-web/;
   index index.html index.php;
   autoindex on;
 
@@ -144,13 +143,19 @@ server {
     autoindex on;
   }
 
-  location /slides {
-    alias /var/presentations/aloja-web;
-    index template.html;
+  location /ganglia {
+
+    root /var/www/;
+
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
   }
 
-  location /public {
-    alias /scratch/attached/1/public;
+  location ~ ^/public/(.*) {
+    alias /scratch/attached/1/public/$1;
     autoindex on;
   }
 
@@ -160,7 +165,7 @@ server {
     fastcgi_pass unix:/var/run/php5-fpm.sock;
     fastcgi_index index.php;
     include fastcgi_params;
-    #fastcgi_read_timeout 600; # Set fairly high for debugging
+    fastcgi_read_timeout 600; # Set fairly high for debugging
     fastcgi_intercept_errors on;
   }
 
@@ -172,23 +177,71 @@ server {
   #keepalive_timeout ;
 
   #avoid caches
-  sendfile off;
   expires off;
 
   # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
   reset_timedout_connection on;
 
-  #perf optimizations
-  tcp_nodelay on;
-
   gzip on;
+  gzip_static on;
   gzip_comp_level 2;
   gzip_proxied any;
-  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_vary on;
+  gzip_min_length 512;
+  gzip_buffers 16 8k;
+  gzip_http_version 1.1;
   gzip_disable "msie6";
+
+  types {
+    application/x-font-ttf                  ttf;
+    font/opentype                           ott;
+    application/font-woff                   woff;
+  }
+
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss text/x-component application/javascript application/rss+xml font/truetype application/x-font-ttf font/opentype;
+
 }'
 
 }
 
+#$1 env (prod, dev)
+get_mysqld_conf(){
 
+  echo -e "
+[mysqld]
+
+bind-address=0.0.0.0
+skip-external-locking
+key_buffer_size		= 512M
+tmp_table_size		= 128M
+query_cache_limit	= 128M
+query_cache_size  = 512M
+
+log_bin         = /scratch/attached/1/mysql/binlogs/mysql-binlog
+
+gtid_mode       = ON
+log-slave-updates = 1
+enforce-gtid-consistency = 1
+explicit_defaults_for_timestamp = 1
+binlog_format = mixed
+server_id = 2
+read_only = 1
+relay_log       = /scratch/attached/1/mysql/relaylogs/mysql-relay-bin
+
+
+# Set Base Innodb Specific settings here
+innodb_autoinc_lock_mode=0
+innodb_flush_method		= O_DIRECT
+innodb_file_per_table		= 1
+innodb_file_format		= barracuda
+innodb_max_dirty_pages_pct 	= 90
+innodb_lock_wait_timeout 	= 60
+innodb_flush_log_at_trx_commit 	= 2
+innodb_additional_mem_pool_size = 512M
+innodb_buffer_pool_size 	= 2048M
+innodb_thread_concurrency 	= 16
+
+"
+
+}
 

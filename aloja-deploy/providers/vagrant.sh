@@ -88,7 +88,7 @@ node_start() {
     logger "INFO: Starting vagrant VM $1"
     cd $CONF_DIR/../../; vagrant up "$1"; cd -;
   else
-    die "ERROR: cannot start vagrant VM $1 from inside the VM"
+    die "cannot start vagrant VM $1 from inside the VM"
   fi
 }
 
@@ -97,7 +97,7 @@ vm_get_status(){
   if ! inside_vagrant ; then
     echo "$(vagrant global-status |grep " $1 "|cut -d " " -f 5 )"
   else
-    die "ERROR: cannot start vagrant VM $1 from inside the VM"
+    die "cannot start vagrant VM $1 from inside the VM"
   fi
 }
 
@@ -164,6 +164,25 @@ if [ ! -d '/var/www/aloja-web' ] ; then
 fi"
 }
 
+vagrant_link_share(){
+  logger "INFO: Making sure ~/share is linked in the vagrant VM"
+  vm_execute "
+if [ ! -L '/home/vagrant/share' ] ; then
+  sudo ln -fs /vagrant/blobs /home/vagrant/share;
+  touch /home/vagrant/share/safe_store;
+fi"
+
+  if [ "$type" == "cluster" ] ; then
+    logger "INFO: Making sure we have scratch folders for bench runs"
+    vm_execute "
+if [ ! -d '/scratch' ] ; then
+  sudo mkdir -p /scratch/{local,ssd} /scratch/attached/{1..3};
+  sudo chown -R $userAloja: /scratch;
+fi
+"
+  fi
+}
+
 make_hosts_file() {
 
   local hosts_file="$VAGRANT_WEB_IP\taloja-web"
@@ -195,6 +214,7 @@ vm_final_bootstrap() {
 
   #currently is run everytime it is executed
   vm_update_hosts_file
+  vagrant_link_share
 }
 
 
@@ -212,4 +232,68 @@ cluster_final_boostrap() {
   : #not necessary for vagrant (yet)
 }
 
+
+# for bscaloja, has a special /public dir
+get_nginx_conf(){
+
+echo -e '
+server {
+  listen 80 default_server;
+
+  root /var/www/aloja-web/;
+  index index.html index.php;
+  autoindex on;
+
+  location / {
+    index index.php;
+    try_files $uri $uri/ /index.php?q=$uri&$args;
+    autoindex on;
+  }
+
+  location /ganglia {
+
+    root /var/www/;
+
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
+  }
+
+  location ~ \.php$ {
+#    try_files $uri =404;
+    try_files $uri /index.php?c=404&q=$uri&$args;
+    fastcgi_pass unix:/var/run/php5-fpm.sock;
+    fastcgi_index index.php;
+    include fastcgi_params;
+    fastcgi_read_timeout 600; # Set fairly high for debugging
+    fastcgi_intercept_errors on;
+  }
+
+  error_page 404 /index.php?c=404&q=$uri&$args;
+
+  include /etc/nginx/mime.types;
+  default_type application/octet-stream;
+
+  #keepalive_timeout ;
+
+  #avoid caches
+  sendfile off;
+  expires off;
+
+  # allow the server to close the connection after a client stops responding. Frees up socket-associated memory.
+  reset_timedout_connection on;
+
+  #perf optimizations
+  tcp_nodelay on;
+
+  gzip on;
+  gzip_comp_level 2;
+  gzip_proxied any;
+  gzip_types text/plain text/css text/javascript application/json application/x-javascript text/xml application/xml application/xml+rss;
+  gzip_disable "msie6";
+}'
+
+}
 

@@ -132,7 +132,7 @@ get_ssh_user() {
 
 vm_initial_bootstrap() {
 
-  local bootstrap_file="Initial_Bootstrap"
+  local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Bootstraping $vm_name "
@@ -166,7 +166,7 @@ ufw disable;
 
     test_action="$(vm_execute " [ -d $homePrefixAloja/$userAloja/.ssh ] && echo '$testKey'")"
 
-    if [ "$test_action" == "$testKey" ] ; then
+    if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else

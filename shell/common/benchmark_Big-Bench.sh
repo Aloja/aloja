@@ -17,30 +17,30 @@ benchmark_run() {
 
   local start_exec=`timestamp`
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
-  loggerb "# EXECUTING ${BENCH}"
+  logger "INFO:# EXECUTING ${BENCH}"
 
   #need to send all the environment variables over SSH
   EXP="export BIG_BENCH_JAVA=$JAVA_HOME/bin/java && \
-export BIG_BENCH_HADOOP_CONF=$BENCH_H_DIR/etc/hadoop && \
-export BIG_BENCH_HADOOP_LIBS_NATIVE=$BENCH_H_DIR/lib/native && \
+export BIG_BENCH_HADOOP_CONF=$BENCH_HADOOP_DIR/etc/hadoop && \
+export BIG_BENCH_HADOOP_LIBS_NATIVE=$BENCH_HADOOP_DIR/lib/native && \
 export BIG_BENCH_LOGS_DIR=$HDD/logs && \
 export JAVA_HOME=$JAVA_HOME && \
-export PATH=\"$BENCH_H_DIR/bin:$MAHOUT_PATH/bin:$PATH\" && \
+export PATH=\"$BENCH_HADOOP_DIR/bin:$MAHOUT_PATH/bin:$PATH\" && \
 export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
 "
 
-  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench runBenchmark -m 2 -f 1 -s 2" 2>&1 |tee -a $LOG_PATH
+  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench runBenchmark -m 2 -f 1 -s 2"
 
-  # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench dataGen -m 2 -f 1 -b" 2>&1 |tee -a $LOG_PATH
-  # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench populateMetastore -b" 2>&1 |tee -a $LOG_PATH
-  # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench runQuery -q 5 -b" 2>&1 |tee -a $LOG_PATH
+  # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench dataGen -m 2 -f 1 -b"
+  # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench populateMetastore -b"
+  # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench runQuery -q 5 -b"
 
   local end_exec=`timestamp`
 
-  loggerb "# DONE EXECUTING ${BENCH}"
+  logger "INFO:# DONE EXECUTING ${BENCH}"
 
   local total_secs=`calc_exec_time $start_exec $end_exec`
-  echo "end total sec $total_secs" 2>&1 |tee -a $LOG_PATH
+  echo "end total sec $total_secs"
 
   # Save execution information in an array to allow import later
   EXEC_TIME[${BENCH}]="$total_secs"
@@ -48,7 +48,7 @@ export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
   EXEC_END[${BENCH}]="$end_exec"
 
   url="http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=${start_date}&period=${total_secs}"
-  echo "SENDING: hibench.runs $end_exec <a href='$url'>${BENCH} $CONF</a> <strong>Time:</strong> $total_secs s." 2>&1 |tee -a $LOG_PATH
+  echo "SENDING: hibench.runs $end_exec <a href='$url'>${BENCH} $CONF</a> <strong>Time:</strong> $total_secs s."
   zabbix_sender "hibench.runs $end_exec <a href='$url'>${BENCH} $CONF</a> <strong>Time:</strong> $total_secs s."
 
   stop_monit
