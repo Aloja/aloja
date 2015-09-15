@@ -709,31 +709,33 @@ install_sharelatex() {
     install_repo "ppa:chris-lea/node.js" "no update"
     install_repo "ppa:chris-lea/redis-server"
 
-    install_packages "nodejs redis-server git build-essential curl python-software-properties zlib1g-dev zip unzip"
+    install_packages "nodejs redis-server git build-essential curl python-software-properties zlib1g-dev zip unzip aspell"
 
-    vm_execute "sudo npm install -g grunt-cli
+    logger "INFO: Installing dependencies"
+    vm_execute "
+sudo npm install -g grunt-cli
 sudo npm install -g node-gyp
 
 #We recommend you have the append only option enabled so redis persists to disk. If you do not have this enabled a restart may mean you loose some document updates.
 #appendonly yes
 
-
 sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 7F0CEB10
 echo 'deb http://downloads-distro.mongodb.org/repo/ubuntu-upstart dist 10gen' | sudo tee /etc/apt/sources.list.d/mongodb.list
 sudo apt-get update
 sudo apt-get install -y mongodb-org
-
-sudo apt-get install aspell
+"
 
 #There are lots of additional dictionaries available, which can be listed with:
 #apt-cache search aspell | grep aspell
 
+    logger "INFO: installing texlive"
+    vm_execute "
 wget --progress=dot http://mirror.ctan.org/systems/texlive/tlnet/install-tl-unx.tar.gz
 tar -xvf install-tl-unx.tar.gz
 cd install-tl-*
-sudo ./install-tl
+echo I| sudo ./install-tl
 
-export PATH=/usr/local/texlive/2014/bin/x86_64-linux:$PATH
+export PATH=/usr/local/texlive/2015/bin/x86_64-linux:$PATH
 
 #TEXDIR='/usr/local/texlive/2014'
 #export PATH=$TEXDIR/bin/i386-linux:$PATH    # for 32-bit installation
@@ -742,17 +744,21 @@ export PATH=/usr/local/texlive/2014/bin/x86_64-linux:$PATH
 #export MANPATH=$MANPATH:$TEXDIR/texmf-dist/doc/man
 
 sudo tlmgr install latexmk
+"
 
+    logger "INFO: Installing sharelatex"
+    vm_execute "
 git clone https://github.com/sharelatex/sharelatex.git
 cd sharelatex
-npm install
-grunt install
+sudo npm install
+sudo grunt install
 
-#grunt check --force
-
-grunt run:all
-
+sudo grunt check --force
+sudo grunt run:all
 "
+
+    logger "INFO: ShareLaTeX should now be running at http://$vm_name:3000"
+
     local test_action="$(vm_execute " [ \"\$\(which sharelatex)\" ] && echo '$testKey'")"
 
     if [[ "$test_action" == *"$testKey"* ]] ; then
