@@ -64,58 +64,84 @@ opcache.enable=1
 
 }
 
-#$1 env (prod, dev)
+# $1 env (prod, dev)
+# $2 binlog_location
+# $3 relaylog_location
+# $4 role (master, slave)
+# $5 server_id
+
 get_mysqld_conf(){
-  if [ "$1" == "dev" ] ; then
-    #dev, for vagrant
-    echo -e "
-[mysqld]
 
-bind-address=0.0.0.0
-skip-external-locking
-key_buffer_size		= 64M
-tmp_table_size		= 32M
-query_cache_limit	= 3M
-query_cache_size  = 32M
+  local env=$1
+  local binlog_location=$2
+  local relaylog_location=$3
+  local role=$4
+  local server_id=$5
 
-# Set Base Innodb Specific settings here
-innodb_autoinc_lock_mode=0
-innodb_flush_method		= O_DIRECT
-innodb_file_per_table		= 1
-innodb_file_format		= barracuda
-innodb_max_dirty_pages_pct 	= 90
-innodb_lock_wait_timeout 	= 20
-innodb_flush_log_at_trx_commit 	= 2
-innodb_additional_mem_pool_size = 16M
-innodb_buffer_pool_size 	= 128M
-innodb_thread_concurrency 	= 8
-"
+  if [ "${env}" == "dev" ]; then
+    key_buffer_size=64M
+    tmp_table_size=32M
+    query_cache_limit=3M
+    query_cache_size=32M
+    innodb_lock_wait_timeout=20
+    innodb_additional_mem_pool_size=16M
+    innodb_buffer_pool_size=128M
+    innodb_thread_concurrency=8
   else
-  #prod
+    key_buffer_size=512M
+    tmp_table_size=128M
+    query_cache_limit=128M
+    query_cache_size=512M
+    innodb_lock_wait_timeout=60
+    innodb_additional_mem_pool_size=512M
+    innodb_buffer_pool_size=2048M
+    innodb_thread_concurrency=16
+  fi
+
   echo -e "
 [mysqld]
 
 bind-address=0.0.0.0
 skip-external-locking
-key_buffer_size		= 512M
-tmp_table_size		= 128M
-query_cache_limit	= 128M
-query_cache_size  = 512M
+key_buffer_size		= ${key_buffer_size}
+tmp_table_size		= ${tmp_table_size}
+query_cache_limit	= ${query_cache_limit}
+query_cache_size        = ${query_cache_size}
 
+gtid_mode       = ON
+log-slave-updates = 1
+enforce-gtid-consistency = 1
+explicit_defaults_for_timestamp = 1
+binlog_format = mixed
+
+server_id       = ${server_id}
+
+log_bin         = ${binlog_location}
+relay_log       = ${relaylog_location}
+"
+
+  if [ "$role" != "master" ]; then
+    echo -e "
+read_only = 1
+"
+  fi
+  
+
+  echo -e "
 # Set Base Innodb Specific settings here
 innodb_autoinc_lock_mode=0
 innodb_flush_method		= O_DIRECT
 innodb_file_per_table		= 1
 innodb_file_format		= barracuda
 innodb_max_dirty_pages_pct 	= 90
-innodb_lock_wait_timeout 	= 60
+innodb_lock_wait_timeout 	= ${innodb_lock_wait_timeout}
 innodb_flush_log_at_trx_commit 	= 2
-innodb_additional_mem_pool_size = 512M
-innodb_buffer_pool_size 	= 2048M
-innodb_thread_concurrency 	= 16
+innodb_additional_mem_pool_size = ${innodb_additional_mem_pool_size}
+innodb_buffer_pool_size 	= ${innodb_buffer_pool_size}
+innodb_thread_concurrency 	= ${innodb_thread_concurrency}
 "
-  fi
 }
+
 
 get_ssh_config() {
   echo -e "
