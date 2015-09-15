@@ -217,9 +217,50 @@ class ConfigEvaluationsController extends AbstractController
                 'minexecs' => array('default' => null, 'type' => 'inputNumber', 'label' => 'Minimum executions:',
                     'parseFunction' => function() { return 0; },
                     'filterGroup' => 'basic'
-                ))
-        );
+                ),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
         $whereClause = $this->filters->getWhereClause();
+
+	$model_html = '';
+	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
         $categories = '';
         $series = '';
@@ -252,28 +293,61 @@ class ConfigEvaluationsController extends AbstractController
                     $paramOptions[] = $option;
             }
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
+		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
 
-            // get the result rows
-            $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
-                "exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-                "from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause".
-                "GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
-            $rows = $db->get_rows ( $query );
+		// get the result rows
+		if ($params['uobsr'] == 1 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "
+				SELECT COUNT(*) AS count, u1.$paramEval, u1.bench, avg(u1.exe_time) avg_exe_time, min(u1.exe_time) min_exe_time
+				FROM (
+					(SELECT $paramEval, e.id_exec, exec, bench, exe_time
+					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					WHERE 1 $filter_execs $whereClause)
+					UNION
+					(SELECT $paramEval, p.id_exec, exec, bench, pred_time as exe_time
+					FROM aloja_ml.predictions AS p
+					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."')
+				) AS u1
+				GROUP BY u1.$paramEval, u1.bench $minExecsFilter ORDER BY u1.bench, u1.$paramEval;
+			";
+		}
+		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+		{
+			$whereClause = str_replace("exe_time","pred_time",$whereClause);
+			$whereClause = str_replace("start_time","creation_time",$whereClause);
+			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(pred_time) avg_exe_time, min(pred_time) min_exe_time 
+				  FROM aloja_ml.predictions AS e
+				  WHERE 1 $filter_execs $whereClause AND id_learner = '".$params['current_model']."'
+				  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+		}
+		else
+		{
+			if ($params['uobsr'] == 0 && $params['upred'] == 0)
+				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
+			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time
+				  FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+				  WHERE 1 $filter_execs $whereClause
+				  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+		}
+		$rows = $db->get_rows ( $query );
 
-            if (!$rows) {
-                throw new \Exception ( "No results for query!" );
-            }
+		if (!$rows) {
+			throw new \Exception ( "No results for query!" );
+		}
 
-            $categories = '';
-            $arrayBenchs = array();
-            foreach ( $paramOptions as $param ) {
-                $categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
-                foreach($benchOptions as $bench) {
-                    $arrayBenchs[$bench['bench']][$param] = null;
-                }
-            }
+		$categories = '';
+		$arrayBenchs = array();
+		foreach ( $paramOptions as $param ) {
+			$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
+			foreach($benchOptions as $bench) {
+				$arrayBenchs[$bench['bench']][$param] = null;
+			}
+		}
 
             $series = array();
             foreach($rows as $row) {
@@ -307,7 +381,8 @@ class ConfigEvaluationsController extends AbstractController
             'minexecs' => $minExecs,
             'categories' => $categories,
             'series' => $series,
-            'paramEval' => $paramEval
+            'paramEval' => $paramEval,
+	    'models' => $model_html
         ) );
     }
 }
