@@ -341,6 +341,13 @@ class Filters
             }
         }
 
+        //Init default filters
+        if(!$this->formIsSubmitted()) {
+            foreach ($this->filters as $filterName => $filter) {
+                if (!isset($_GET[$filterName]) && $filter['default'] != null)
+                    $_GET[$filterName] = $filter['default'];
+            }
+        }
         $this->parseFilters();
         $this->generateFilterChoices();
         $this->processExtraData();
