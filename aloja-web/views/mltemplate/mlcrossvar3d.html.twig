@@ -45,7 +45,7 @@
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
 						<li>Advanced Filters: {{slice_info|raw}}</li>
-						<li>Selected Variables: {{variable1}} - {{variable2}}</li>
+						<li>Selected Variables: {{variable1}} - {{variable2}} - {{variable3}}</li>
 						</ul>
 					</p>
 				</div>
@@ -120,7 +120,7 @@
 					}
     		                },
 				title: { text: 'Variable comparison (Now in 3D!)' },
-				subtitle: { text: '{{variable1}} vs {{variable2}} vs exe_time' },
+				subtitle: { text: '{{variable1}} vs {{variable2}} vs {{variable3}}' },
 				yAxis: {
 					max: {{maxy}},
 					min: {{miny}},
@@ -132,7 +132,7 @@
 					max: {{maxz}},
 					min: {{minz}},
 					gridLineWidth: 1,
-					title: { enabled: true, text: 'exe_time' },
+					title: { enabled: true, text: '{{variable3}}' },
 					reversed: true
 				},
 				xAxis: {
