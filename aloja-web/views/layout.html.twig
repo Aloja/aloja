@@ -301,7 +301,7 @@
 				//$("form[name='configFilters']").trigger('reset');
 				for (i = 0; i < filters.length; ++i) {
 					var split = filters[i].split("=");
-					var filterName = split[0]
+					var filterName = split[0];
 					var filterValue = split[1];
 					if (filterValue != "" && filterValue != null) {
 						if (filterName[filterName.length - 1] == ']')
@@ -357,6 +357,8 @@
 
 				var selected = new Array();
 				$(".addgroup.active").each(function() { selected[selected.length] = $(this).attr('value'); });
+
+				$("input[name='selected-groups']").attr('value',selected.join());
 			});
 
 			{% if additionalFilters is defined %}
