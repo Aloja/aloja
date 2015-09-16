@@ -213,14 +213,14 @@ get_extra_mount_disks() {
 
 #for Infiniband on clusters that support it
 get_node_names_IB() {
-  if [ "$clusterName" == "minerva100-10-18-21" ] || [ "$clusterName" == "minerva100-02-18-22" ] ; then
-    #logger "INFO: generating host name for IB"
+#  if [ "$clusterName" == "minerva100-10-18-21" ] || [ "$clusterName" == "minerva100-02-18-22" ] ; then
+    #logger "INFO: generating host names for IB"
     local nodes="$(get_node_names)"
     echo -e "$(convert_regular2IB_hostnames "$nodes")"
-  else
-    #logger "WARN: Special hosts for InfiniBand not defined, using regular hostsnames"
-    echo -e "$(get_node_names)"
-  fi
+#  else
+#    #logger "WARN: Special hosts for InfiniBand not defined, using regular hostsnames"
+#    echo -e "$(get_node_names)"
+#  fi
 }
 
 #for Infiniband on clusters that support it
