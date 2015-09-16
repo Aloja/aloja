@@ -97,10 +97,39 @@ class MLCrossvarController extends AbstractController
 					'default' => 0
 				), 'prepares' => array(
 					'default' => 1
+				), 'current_model' => array(
+					'type' => 'selectOne',
+					'default' => null,
+					'label' => 'Reference Model (\'Pred.Time\'): ',
+					'generateChoices' => function() {
+						$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+						$db = $this->container->getDBUtils();
+						$retval = $db->get_rows ($query);
+						return array_column($retval,"id_learner");
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
+				),
+				'umods' => array(
+					'type' => 'checkbox',
+					'default' => 1,
+					'label' => 'Use data from all models (\'Pred.Time\')',
+					'parseFunction' => function() {
+						$choice = (!isset($_GET['umods'])) ? 0 : 1;
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
 				)
 			));
-
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods'))));
 			$where_configs = $this->filters->getWhereClause();
+
+			$model_html = '';
+			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+			foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
@@ -109,9 +138,11 @@ class MLCrossvarController extends AbstractController
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2'));
+			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2','current_model','umods'));
 			$cross_var1 = $variables['variable1'];
 			$cross_var2 = $variables['variable2'];
+			$current_model = $variables['current_model'];
+			$param_allmodels = $variables['umods'];
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
@@ -136,40 +167,43 @@ class MLCrossvarController extends AbstractController
 			}
 			else
 			{
-				// Call to MLPrediction, to fetch/learn model
-				$_GET['pass'] = 1;
-				$_GET["learn"] = $learn;
-				$mltc1 = new MLPredictionController();
-				$mltc1->container = $this->container;
-				$ret_learn = $mltc1->mlpredictionAction();
-
-				if ($ret_learn == 1)
+/*				if ($param_allmodels == 0)
 				{
-					$must_wait = "YES";
-					throw new \Exception(); // Legal Exception to escape until finished
-				}
-				else if ($ret_learn == -1)
-				{
-					throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
-				}
-				else
-				{
-					$other_var = $cross_var1;
-					if ($cross_var1 == 'pred_time') $other_var = $cross_var2;
-					$other_var = str_replace("id_cluster","e.id_cluster",$other_var);
+					//TODO - The data-slice should be predicted with the selected model, the stored, and then recovered
 
-					if ($cross_var1 == 'pred_time') { $var1 = 'p.'.$cross_var1; $var2 = 's.'.$cross_var2; }
-					else { $var1 = 's.'.$cross_var1; $var2 = 'p.'.$cross_var2; }
+					// Call to MLPrediction, to fetch/learn model
+					$_GET['pass'] = 1;
+					$_GET["learn"] = $learn;
+					$mltc1 = new MLPredictionController();
+					$mltc1->container = $this->container;
+					$ret_learn = $mltc1->mlpredictionAction();
 
-					$query="SELECT ".$var1." as V1, ".$var2." as V2
-						FROM (	SELECT ".$other_var.", e.id_exec
-							FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
-							WHERE hadoop_version IS NOT NULL".$where_configs."
-						) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec
-						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
-			  	  	$rows = $db->get_rows ( $query );
-					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+					if ($ret_learn == 1)
+					{
+						$must_wait = "YES";
+						throw new \Exception(); // Legal Exception to escape until finished
+					}
+					else if ($ret_learn == -1)
+					{
+						throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
+					}
 				}
+*/
+				$other_var = $cross_var1;
+				if ($cross_var1 == 'pred_time') { $other_var = $cross_var2; $var1 = 'p.pred_time'; $var2 = 's.'.$cross_var2; }
+				else { $var1 = 's.'.$cross_var1; $var2 = 'p.'.$cross_var2; }
+				$other_var = str_replace("id_cluster","e.id_cluster",$other_var);
+
+				$where_configsML = ($param_allmodels == 0)?"WHERE p.id_learner = '".$current_model."'":'';
+
+				$query="SELECT ".$var1." as V1, ".$var2." as V2
+					FROM (	SELECT ".$other_var.", e.id_exec
+						FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
+						WHERE hadoop_version IS NOT NULL".$where_configs."
+					) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec ".$where_configsML."
+					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+		  	  	$rows = $db->get_rows ( $query );
+				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 			}
 
 			// Show results
@@ -318,7 +352,17 @@ class MLCrossvarController extends AbstractController
 						return array_column($retval,"id_learner");
 					},
 					'parseFunction' => function() {
-						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("AAAAA");
+						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
+				),
+				'umods' => array(
+					'type' => 'checkbox',
+					'default' => 1,
+					'label' => 'Use data from all models (\'Pred.Time\')',
+					'parseFunction' => function() {
+						$choice = (!isset($_GET['umods'])) ? 0 : 1;
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
 					'filterGroup' => 'MLearning'
@@ -326,7 +370,7 @@ class MLCrossvarController extends AbstractController
 				'upred' => array(
 					'type' => 'checkbox',
 					'default' => 0,
-					'label' => 'Use predicted time instead of execution time',
+					'label' => 'Use predictions instead of observations',
 					'parseFunction' => function() {
 						$choice = (!isset($_GET['upred'])) ? 0 : 1;
 						return array('whereClause' => '', 'currentChoice' => $choice);
@@ -334,7 +378,7 @@ class MLCrossvarController extends AbstractController
 					'filterGroup' => 'MLearning'
 				)
 			));
-			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred'))));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods','upred'))));
 			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
@@ -350,11 +394,12 @@ class MLCrossvarController extends AbstractController
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2','current_model','upred'));
+			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2','current_model','upred','umods'));
 			$cross_var1 = $variables['variable1'];
 			$cross_var2 = $variables['variable2'];
 			$current_model = $variables['current_model'];
 			$param_predict = $variables['upred'];
+			$param_allmodels = $variables['umods'];
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
@@ -395,43 +440,45 @@ class MLCrossvarController extends AbstractController
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 			}
-			else //FIXME - Instances should be predicted using a selected model, instead of creating a new model for them...
+			else
 			{
-				// Call to MLTemplates, to fetch/learn model
-				$_GET['pass'] = 1;
-				$_GET["current_model"] = $current_model;
-				$mltc1 = new MLPredictionController();
-				$mltc1->container = $this->container;
-				$ret_learn = $mltc1->mlpredictionAction();
-
-				if ($ret_learn == 1)
+/*				if ($param_allmodels == 0)
 				{
-					$must_wait = "YES";
-					throw new \Exception(); // Legal Exception to escape until finished
-				}
-				else if ($ret_learn == -1)
-				{
-					throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
-				}
-				else
-				{
-					$other_var = $cross_var1;
-					if ($cross_var1 == 'pred_time') $other_var = $cross_var2;
-					$other_var = str_replace("id_cluster","e.id_cluster",$other_var);
+					//TODO - The data-slice should be predicted with the selected model, the stored, and then recovered
 
-					if ($cross_var1 == 'pred_time') { $var1 = 'p.'.$cross_var1; $var2 = 's.'.$cross_var2; }
-					else { $var1 = 's.'.$cross_var1; $var2 = 'p.'.$cross_var2; }
+					// Call to MLTemplates, to fetch/learn model
+					$_GET['pass'] = 1;
+					$_GET["current_model"] = $current_model;
+					$mltc1 = new MLPredictionController();
+					$mltc1->container = $this->container;
+					$ret_learn = $mltc1->mlpredictionAction();
 
-					// Get stuff from the DB
-					$query="SELECT ".$var1." as V1, ".$var2." as V2, exe_time as V3
-						FROM (	SELECT ".$other_var.", e.id_exec
-							FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
-							WHERE hadoop_version IS NOT NULL".$where_configs."
-						) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec
-						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
-			  	  	$rows = $db->get_rows ( $query );
-					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+					if ($ret_learn == 1)
+					{
+						$must_wait = "YES";
+						throw new \Exception(); // Legal Exception to escape until finished
+					}
+					else if ($ret_learn == -1)
+					{
+						throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
+					}
 				}
+*/
+				$other_var = $cross_var1;
+				if ($cross_var1 == 'pred_time') { $other_var = $cross_var2; $var1 = 'p.pred_time'; $var2 = 's.'.$cross_var2; }
+				else { $var1 = 's.'.$cross_var1; $var2 = 'p.pred_time'; }
+				$other_var = str_replace("id_cluster","e.id_cluster",$other_var);
+
+				$where_configsML = ($param_allmodels == 0)?"WHERE p.id_learner = '".$current_model."'":'';
+
+				$query="SELECT ".$var1." as V1, ".$var2." as V2, exe_time as V3
+					FROM (	SELECT ".$other_var.", e.id_exec
+						FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja2.JOB_details j ON e.id_exec = j.id_exec
+						WHERE hadoop_version IS NOT NULL".$where_configs."
+					) AS s LEFT JOIN aloja_ml.predictions AS p ON s.id_exec = p.id_exec ".$where_configsML."
+					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+		  	  	$rows = $db->get_rows ( $query );
+				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 			}
 
 			// Show the results
@@ -641,8 +688,7 @@ class MLCrossvarController extends AbstractController
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
-			$current_model = "";
-			if (in_array($param_current_model,$possible_models_id)) $current_model = $param_current_model;
+			$current_model = (in_array($param_current_model,$possible_models_id))?$param_current_model:'';
 
 			// Other models for filling
 			$where_models = '';
