@@ -39,20 +39,29 @@ function showCorrectBenchDatasizes(benchSizes) {
 	var selDatasizes = new Array();
 	var selBenchSuites = new Array($("select[name='bench_type[]']").val());
 	var selBenchs = new Array();
+	if($("input[name='bench[]']").length > 0) {
+		$("input[name='bench[]']").each(function() {
+			if($(this).prop('checked'))
+				selBenchs.push($(this).val());
+		});
+
+		if(selBenchs.length == 0) {
+			$("input[name='bench[]']").each(function() {
+				var isVisible = $(this).parent().css('display');
+				var value = $(this).val();
+				if(isVisible != "none") {
+					selBenchs.push(value);
+				}
+			});
+		}
+	} else {
+		selBenchs.push($("select[name='bench[]']").find(":selected").text());
+	}
+
 	$("input[name='datasize[]'").each(function() {
 		if($(this).prop('checked'))
 			selDatasizes.push($(this).val());
 	});
-
-	$("input[name='bench[]'").each(function() {
-		if($(this).prop('checked'))
-			selBenchs.push($(this).val());
-	});
-
-	//Then bench is select one
-	if(selBenchs.length == 0) {
-		selBenchs.push($("select[name='bench[]']").find(":selected").text());
-	}
 
 	$("input[name='datasize[]']").each(function() {
 		$(this).parent().hide();
@@ -78,20 +87,29 @@ function showCorrectBenchScaleFactors(scaleFactors) {
 	var selScaleFactors = new Array();
 	var selBenchSuites = new Array($("select[name='bench_type[]']").val());
 	var selBenchs = new Array();
+	if($("input[name='bench[]']").length > 0) {
+		$("input[name='bench[]']").each(function() {
+			if($(this).prop('checked'))
+				selBenchs.push($(this).val());
+		});
+
+		if(selBenchs.length == 0) {
+			$("input[name='bench[]']").each(function() {
+				var isVisible = $(this).parent().css('display');
+				var value = $(this).val();
+				if(isVisible != "none") {
+					selBenchs.push(value);
+				}
+			});
+		}
+	} else {
+		selBenchs.push($("select[name='bench[]']").find(":selected").text());
+	}
+
 	$("input[name='scale_factor[]'").each(function() {
 		if($(this).prop('checked'))
 			selScaleFactors.push($(this).val());
 	});
-
-	$("input[name='bench[]'").each(function() {
-		if($(this).prop('checked'))
-			selBenchs.push($(this).val());
-	});
-
-	//Then bench is select one
-	if(selBenchs.length == 0) {
-		selBenchs.push($("select[name='bench[]']").find(":selected").text());
-	}
 
 	$("input[name='scale_factor[]']").each(function() {
 		$(this).parent().hide();
