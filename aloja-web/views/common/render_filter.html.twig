@@ -20,9 +20,11 @@
             <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
                 <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
                 {% for choice in filter['choices'] %}
+                  {% if choice != null %}
                     <span id="container{{ filterName }}">
                         <input type="checkbox" name="{{ filterName }}[]" value="{{ choice }}" {% if choice in filter['currentChoice'] %}checked{% endif %}>&nbsp;{{ beautify(filter,choice) }}<br />
                     </span>
+                  {% endif %}
                 {% endfor %}
                 </div>
             </div>
