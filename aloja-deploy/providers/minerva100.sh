@@ -300,6 +300,11 @@ server {
     autoindex on;
   }
 
+  location /slides {
+    alias /var/www/aloja-web/presentations/aloja-web;
+    index template.html;
+  }
+
   location /ganglia {
 
     root /var/www/;
