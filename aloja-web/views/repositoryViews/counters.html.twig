@@ -1,0 +1,38 @@
+{% extends "layout.html.twig" %}
+{% use "common/datatables.html.twig" %}
+{% block stylesheet %}
+	{{ parent() }}
+	{% block stylesheetdatatables %}{{ parent() }}{% endblock %}
+{% endblock %}
+    {% block content %}
+        <div id="navigation" style="text-align: center;">
+	        <h2 class="compare body">
+	            <strong>Job counter types:</strong>
+	            <a href="{{ modifyUrl({'pageTab': 'SUMMARY'}) }}"><span {% if type == 'SUMMARY' %}style="font-weight: bold;"{% endif %}>SUMMARY</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'MAP'}) }}"><span {% if type == 'MAP' %}style="font-weight: bold;"{% endif %}>MAP</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'REDUCE'}) }}"><span {% if type == 'REDUCE' %}style="font-weight: bold;"{% endif %}>REDUCE</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'FILE-IO'}) }}"><span {% if type == 'FILE-IO' %}style="font-weight: bold;"{% endif %}>FILE-IO</span></a>
+	            <a href="{{ modifyUrl({'pageTab': 'DETAIL'}) }}"><span {% if type == 'DETAIL' %}style="font-weight: bold;"{% endif %}>DETAIL</span></a>
+	            {% if execs is defined %}
+	            <a href="{{ modifyUrl({'pageTab': 'TASKS'}) }}"><span {% if type == 'TASKS' %}style="font-weight: bold;"{% endif %}>JOB/S TASKS</span></a>
+	            {% endif %}
+	        </h2>
+	    </div>
+	     <div style="text-align: center; margin-bottom: .5em;">
+        	 <button id="showFilters" class="btn btn-info">Show filters</button>
+         </div>
+         <div id="filtersTab" style="display: none;">
+        	{% include "common/config_filters.html.twig" %}
+         </div>
+	    Click on a <strong>Job Name</strong> to see it's tasks and history </br>
+
+     {% block datatablescontent %}{{ parent() }}{% endblock %}
+    <div id="chart"></div>
+
+</div>
+{% endblock %}
+{% block javascript %}
+    {{ parent() }}
+    <script type="text/javascript" language="javascript" src="js/utils.js"></script>
+      {% block javascriptdatatables %}{{ parent() }}{% endblock %}
+    {% endblock %}

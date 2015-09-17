@@ -19,41 +19,18 @@
 		var series_raw = '{{series | raw}}';
 		if (series_raw.indexOf('_pred') == -1) $("#footer").hide();
 
-		$('#headingAdvancedFilters').parent().hide();
-
-		$('select[name="parameval"]').change(function()
-		{
-			var name = $(this).val()+'s[]';
-			$('select[name="'+name+'"]').val('None');
-			var configForm = document.getElementsByName('configFilters');
-			configForm.innerHTML = configForm.innerHTML + "<input type='hidden' name='parameval' value='" + $(this).val() + "'></input>";
-			$(this).parents('form').submit();
-		});
 
 		if ("{{must_wait}}" == "NO")
 		{
 			$('#chart').highcharts({
-				chart: {
-					type: 'column'
-				},
-				title: {
-					text: '{{ getParamevalTitleName(paramEval) }} evaluation'
-				},
-				credits: {
-					enabled: false
-				},
+				chart: { type: 'column' },
+				title: { text: '{{ getParamevalTitleName(paramEval) }} evaluation' },
+				credits: { enabled: false },
 				xAxis: {
 					categories: [{{ categories | raw}}],
-					title: {
-						text: '{{ getParamevalTitleName(paramEval) }}'
-					}
+					title: { text: '{{ getParamevalTitleName(paramEval) }}' }
 				},
-				yAxis: {
-					min: 0,
-					title: {
-						text: 'Execution time'
-					}
-				},
+				yAxis: { min: 0, title: { text: 'Execution time' } },
 				tooltip: {
 					headerFormat: '<table>',
 					pointFormat:	'<tr><td style="color:{series.color};padding:0">{series.name}: </td>' +
@@ -63,12 +40,7 @@
 					shared: true,
 					useHTML: true
 				},
-				plotOptions: {
-					column: {
-						pointPadding: 0.2,
-						borderWidth: 0
-					}
-				},
+				plotOptions: { column: { pointPadding: 0.2, borderWidth: 0 } },
 				series: {{ series | raw }},
 				colors: {{ gammacolors | raw }}
 			});
@@ -104,10 +76,9 @@
 				</div>
 				<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
 					<div class="panel-body">
-						<form>
-							<div style="width: 20%; margin: 0 auto; float: center">
+							<div style="width: 20%; margin: 0 auto; float: center;">
 								Parameter to evaluate:
-								<select class="form-control" name="parameval">
+								<select form="configFilters" class="form-control" name="parameval">
 									<option value="maps" {% if paramEval == 'maps' %}selected="selected"{% endif %}>Maps</option>
 									<option value="comp" {% if paramEval == 'comp' %}selected="selected"{% endif %}>Compression</option>
 									<option value="id_cluster" {% if paramEval == 'id_cluster' %}selected="selected"{% endif %}>Clusters</option>
@@ -118,8 +89,8 @@
 									<option value="blk_size" {% if paramEval == 'blk_size' %}selected="selected"{% endif %}> Block size</option>
 									<option value="iosf" {% if paramEval == 'iosf' %}selected="selected"{% endif %}> I/O Sort Factor</option>
 								</select>
+								<button form="configFilters" type="submit" class="btn btn-info">Update</button>
 							</div>
-						</form>
 						<div id="chart" style="float: left; width: 100%; margin: 0 auto;"></div>
 					</div>
 				</div>
@@ -139,6 +110,8 @@
 							<ul>
 							<li>Model cache ID: {{current_model|raw}}</li>
 							<li>Instance: {{instance|raw}}</li>
+	 						<li>Model Info: {{model_info|raw}}</li>
+							<li>Advanced Filters: {{slice_info|raw}}</li>
 							</ul>
 						</p>
 					</div>
@@ -146,7 +119,7 @@
 			</div>
 		</div>
 		<div style="float: right; width: 30%;">
-		{% include 'mltemplate/config_filters_legacy.html.twig' %}
+		{% include 'common/config_filters.html.twig' %}
 		</div>
 	</div>
 	<div style="clear: both;"></div>

@@ -1,0 +1,25 @@
+costperfeval:
+    pattern: "/costperfeval"
+    legacy: "/perf_by_cost.php"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::costPerfEvaluationAction"
+    screenName: "Cost Evaluation"
+
+clustercosteffectiveness:
+    pattern: "/clustercosteffectiveness"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::clusterCostEffectivenessAction"
+    screenName: "Cost-Effectiveness of clusters"
+
+costperfclustereval:
+    pattern: "/costperfclustereval"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::costPerfClusterEvaluationAction"
+    screenName: "Clusters Cost Evaluation"
+
+bestcostperfclustereval:
+    pattern: "/bestcostperfclustereval"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::BestCostPerfClusterEvaluationAction"
+    screenName: "Best Clusters Cost Evaluation"
+
+nodeseval:
+    pattern: "/nodeseval"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::NodesEvaluationAction"
+    screenName: "Number of Nodes Evaluation"

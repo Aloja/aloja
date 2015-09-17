@@ -7,16 +7,25 @@ benchmark_config() {
 }
 
 benchmark_run() {
-  logger "INFO: Executing sleep in all nodes"
+  logger "INFO: Executing $BENCH in all nodes"
 
   restart_monit
+  set_bench_start "$BENCH"
+
+  ################# START BENCHMARK CUSTOM CODE HERE ####################
 
   # Taking a nap for 5 seconds
   for sleep_iterator in {1..5} ; do
     logger "INFO: Sleeping zzZZZzzz $sleep_iterator"
     $DSH "sleep 1"
   done
-  logger "INFO: DONE executing sleep"
+
+  ################# END BENCHMARK CUSTOM CODE HERE   ####################
+
+  set_bench_end "$BENCH"
+  stop_monit
+
+  logger "INFO: DONE executing $BENCH"
 }
 
 benchmark_teardown() {

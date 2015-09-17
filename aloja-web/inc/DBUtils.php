@@ -62,9 +62,9 @@ class DBUtils
 
         //check for cache first
         if ($use_cache &&
-                file_exists($file_path) &&
-                ($rows = file_get_contents($file_path)) &&
-                ($rows = unserialize(gzuncompress($rows)))
+            file_exists($file_path) &&
+            ($rows = file_get_contents($file_path)) &&
+            ($rows = unserialize(gzuncompress($rows)))
         ) {
             $this->container['log']->addDebug('CACHED: '.$sql);
         } else {
@@ -88,26 +88,27 @@ class DBUtils
         return $rows;
     }
 
-    public static function getFilterExecs()
+    public function executeQuery($sql, $params = array()) {
+        try {
+            $this->container['log']->addDebug('Executing query: '.$sql);
+            $sth = $this->dbConn->prepare($sql);
+            $sth->execute($params);
+        } catch (Exception $e) {
+            throw new \Exception($e->getMessage(). " SQL: $sql");
+        }
+
+        return true;
+    }
+
+    public static function getFilterExecs($execsAlias = "e")
     {
-        return " AND e.id_cluster NOT IN (select id_cluster from clusters c where provider='select all' ) " ;
+        return " AND 1=1" ;
 
-//        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
-//            return " " ;
-//        } else {
-//            return " AND e.id_cluster NOT IN (06, 16, 19, 30, 31, 33) ";
-//            //return " AND c.provider != 'rackspace' ";
-//        }
-
-//         return "
-// #AND (bench_type = 'HiBench' OR bench_type = 'HDI')
-// #AND bench not like 'prep_%'
-// #AND bench_type not like 'HDI-prep%'
-// #AND exe_time between 200 and 15000
-// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null))
-// #AND (bench_type = 'HDI' OR id_exec IN (select distinct (id_exec) FROM aloja_logs.SAR_cpu where id_exec is not null))
-// ";
-//AND valid = 1
+        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
+            return " " ;
+        } else {
+            return " AND $execsAlias.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
+        }
     }
 
     public function get_execs($filter_execs = null)
@@ -315,8 +316,8 @@ class DBUtils
                 e.`bench`,
                 e.`id_exec`
             FROM
-                `JOB_details` d,
-                `execs` e
+                `aloja_logs.JOB_details` d,
+                `aloja2.execs` e
             WHERE
                 e.`id_exec` = d.`id_exec` AND
                 d.`JOBID` = :jobid
@@ -354,12 +355,12 @@ class DBUtils
                 e.`bench`,
                 d.`id_exec`,
                 d.`JOBID` as jobid
-            FROM `JOB_details` d
+            FROM `aloja_logs.JOB_details` d
 
-            JOIN `execs` e
+            JOIN `aloja2.execs` e
             ON e.`id_exec` = d.`id_exec`
-
-            LEFT OUTER JOIN `JOB_dbscan` s
+            INNER JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster
+            LEFT OUTER JOIN `aloja2.JOB_dbscan` s
             ON
                 e.`bench` = s.`bench` AND
                 s.`metric_x` = :metric_x AND
@@ -371,15 +372,15 @@ class DBUtils
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."
-                $where_configs
-
             WHERE e.`bench` = :bench
             AND d.`JOBID` LIKE :job_offset
             AND s.`id` IS null
             AND t.`JOBID` IS NOT null
+            $where_configs
             GROUP BY e.`bench`, d.`id_exec`, d.`JOBID`
             ORDER BY d.`id_exec`
         ;";
+
         $query_params = array(
             ":bench" => $bench,
             ":job_offset" => "%_$job_offset",
@@ -419,7 +420,7 @@ class DBUtils
         $query_values = implode(', ', array_fill(0, count($clusters), '('.str_pad('', (count($columns)*2)-1, '?,').')'));
         $query = "
             INSERT INTO
-                `JOB_dbscan` (".implode(',', $columns).")
+                `aloja2.JOB_dbscan` (".implode(',', $columns).")
             VALUES
                 $query_values
         ;";

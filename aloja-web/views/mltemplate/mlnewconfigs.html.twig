@@ -85,7 +85,7 @@
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% set select_multiple_benchs = false %}
+	{% set select_multiple_benchs = true %}
 	{% include 'mltemplate/custom_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
@@ -105,70 +105,37 @@
 	$(document).ready(function()
 	{
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
+		$('#headingadvanced').parent().hide();
 
 		if ("{{must_wait}}"== "NO")
 		{
 			$('#chart').highcharts( {
-	    		        chart: {
-	    		            type: 'column',
-	    		            zoomType: 'xy'
-	    		        },
-	    		        title: {
-	    		            text: 'Recommended Configurations for a New Cluster'
-	    		        },
-	    		        subtitle: {
-	    		            text: 'Progression of executions added to reconstruct the model'
-	    		        },
+	    		        chart: { type: 'column', zoomType: 'xy' },
+	    		        title: { text: 'Recommended Configurations for a New Cluster' },
+	    		        subtitle: { text: 'Progression of executions added to reconstruct the model' },
 	    		        xAxis: {
-	    		            title: {
-	    		                enabled: true,
-	    		                text: 'Number of Experiments'
-	    		            },
+	    		            title: { enabled: true, text: 'Number of Experiments' },
 	    		            startOnTick: true,
 	    		            endOnTick: true,
 	    		            showLastLabel: true
 	    		        },
 	    		        yAxis: {
-	    		            title: {
-	    		                text: 'Indicative Relative Absolute Error (s)'
-	    		            }
+	    		            title: { text: 'Indicative Relative Absolute Error (s)' }
 	    		        },
-			        credits: {
-					enabled: false
-				    },
+			        credits: { enabled: false },
 	    		        plotOptions: {
-				    series: {
-					turboThreshold: 5000
-				    },
+				    series: { turboThreshold: 5000 },
 	    		            scatter: {
 	    		                marker: {
 	    		                    radius: 5,
-	    		                    states: {
-	    		                        hover: {
-	    		                            enabled: true,
-	    		                            lineColor: 'rgb(100,100,100)'
-	    		                        }
-	    		                    }
+	    		                    states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } }
 	    		                },
-	    		                states: {
-	    		                    hover: {
-	    		                        marker: {
-	    		                            enabled: false
-	    		                        }
-	    		                    }
-	    		                },
-	    		                tooltip: {
-	    		                    headerFormat: '',
-	    		                    pointFormat: '<b>{point.name}</b> <br/> {point.x} s, {point.y} s'
-	    		                }
+	    		                states: { hover: { marker: { enabled: false } } },
+	    		                tooltip: { headerFormat: '', pointFormat: '<b>{point.name}</b> <br/> {point.x} s, {point.y} s' }
 	    		            }
 	    		        },
-				legend: {
-					enabled: false
-				},
-	    		        series: [
-					{color: '#AAF', data: {{ jsonData | raw }}},
-				]
+				legend: { enabled: false },
+	    		        series: [{color: '#AAF', data: {{ jsonData | raw }}}]
 			});
 
 			var configs = {{ configs | raw }};

@@ -38,12 +38,11 @@ benchmark_config
 start_time=$(date '+%s')
 
 ########################################################
-logger  "INFO: Starting runing $BENCH benchmark"
+logger  "INFO: Starting $BENCH benchmark"
 
 # Benchmark stages
-benchmark_run
 
-stop_monit
+benchmark_run
 
 benchmark_teardown
 

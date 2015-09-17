@@ -77,6 +77,7 @@
 						<li>MinConf cache ID: {{id_minconf|raw}}</li>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -85,7 +86,7 @@
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -104,73 +105,39 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#headingAdvancedFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		if ("{{must_wait}}"== "NO")
 		{
 			$('#chart').highcharts( {
-	    		        chart: {
-	    		            type: 'column',
-	    		            zoomType: 'xy'
-	    		        },
-	    		        title: {
-	    		            text: 'Recomended Configurations'
-	    		        },
-	    		        subtitle: {
-	    		            text: 'Progression of executions added to reconstruct the model'
-	    		        },
+	    		        chart: { type: 'column', zoomType: 'xy' },
+	    		        title: { text: 'Recomended Configurations' },
+	    		        subtitle: { text: 'Progression of executions added to reconstruct the model' },
 	    		        xAxis: {
-	    		            title: {
-	    		                enabled: true,
-	    		                text: 'Number of Experiments'
-	    		            },
+	    		            title: { enabled: true, text: 'Number of Experiments' },
 	    		            startOnTick: true,
 	    		            endOnTick: true,
 	    		            showLastLabel: true
 	    		        },
-	    		        yAxis: {
-	    		            title: {
-	    		                text: 'Relative Absolute Error (s)'
-	    		            }
-	    		        },
-			        credits: {
-					enabled: false
-				    },
+	    		        yAxis: { title: { text: 'Relative Absolute Error (s)' } },
+			        credits: { enabled: false },
 	    		        plotOptions: {
-				    series: {
-					turboThreshold: 5000
-				    },
+				    series: { turboThreshold: 5000 },
 	    		            scatter: {
 	    		                marker: {
 	    		                    radius: 5,
-	    		                    states: {
-	    		                        hover: {
-	    		                            enabled: true,
-	    		                            lineColor: 'rgb(100,100,100)'
-	    		                        }
-	    		                    }
+	    		                    states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } }
 	    		                },
-	    		                states: {
-	    		                    hover: {
-	    		                        marker: {
-	    		                            enabled: false
-	    		                        }
-	    		                    }
-	    		                },
+	    		                states: { hover: { marker: { enabled: false } } },
 	    		                tooltip: {
 	    		                    headerFormat: '',
 	    		                    pointFormat: '<b>{point.name}</b> <br/> {point.x} s, {point.y} s'
 	    		                }
 	    		            }
 	    		        },
-				legend: {
-					enabled: false
-				},
-	    		        series: [
-					{color: '#AAF', data: {{ jsonData | raw }}},
-				]
+				legend: { enabled: false },
+	    		        series: [{color: '#AAF', data: {{ jsonData | raw }}}]
 			});
 
 			var configs = {{ configs | raw }};
