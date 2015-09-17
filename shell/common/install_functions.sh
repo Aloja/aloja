@@ -133,10 +133,26 @@ vm_install_extra_packages() {
     fi
 }
 
-#$1 datadir (optional, if not uses default) $2 prod (default) or dev
+# $1 datadir (mandatory, set empty to use default)
+# $2 prod (default) or dev
+
+# $3 binlog_location, use $datadir/binlogs/mysql-binlog if empty
+# $4 relaylog_location, use $datadir/relaylogs/mysql-relay-bin if empty
+# $5 role (master, slave, if empty defaults to master)
+# $6 server_id (optional if master, mandatory if slave, defaults to 1 if empty)
+
 install_percona() {
 
   local bootstrap_file="${FUNCNAME[0]}"
+
+  local datadir env binlog_location relaylog_location role server_id
+
+  [ "$1" != "" ] && datadir=$1 || datadir=/var/lib/mysql
+  [ "$2" != "" ] && env=$2 || env=prod
+  [ "$3" != "" ] && binlog_location=$3 || binlog_location=${datadir}/binlogs/mysql-binlog
+  [ "$4" != "" ] && relaylog_location=$3 || relaylog_location=${datadir}/relaylogs/mysql-relay-bin
+  [ "$5" != "" ] && role=$5 || role=master
+  [ "$6" != "" ] && server_id=$6 || server_id=1
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -158,7 +174,7 @@ sudo apt-get autoremove -y;
 sudo mkdir -p /etc/mysql/conf.d;
   "
 
-    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "$2")
+    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}")
 $datadir" "secured"
 
     logger "INFO: Installing Percona"

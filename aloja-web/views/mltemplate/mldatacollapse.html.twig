@@ -63,6 +63,7 @@
 						<ul>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Slice Info: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -71,7 +72,7 @@
 	</div>
 	{% endblock %}
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<!--Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>-->
@@ -103,7 +104,6 @@
 		$('#submitForm').attr('value', 'Collapse Data');
 		$("#submitForm").html('Collapse Data');
 		$('#machineLearningFilter').parent().hide();
-		$('#headingAdvancedFilters').parent().hide();
 
 		var test = {{ jsonColor | raw }};
 

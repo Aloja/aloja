@@ -25,13 +25,15 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   \`iofilebuf\` int(11) DEFAULT NULL,
   \`comp\` int(11) DEFAULT NULL,
   \`blk_size\` int(11) DEFAULT NULL,
-  hadoop_version varchar(127) default NULL,
+  \`hadoop_version\` varchar(127) default NULL,
   \`zabbix_link\` varchar(255) DEFAULT NULL,
   \`valid\` int DEFAULT 0,
   \`filter\` int DEFAULT 0,
   \`outlier\` int DEFAULT 0,
- \`perf_details\` int DEFAULT 0,
- \`exec_type\` varchar(255) DEFAULT 'default',
+  \`perf_details\` int DEFAULT 0,
+  \`exec_type\` varchar(255) DEFAULT 'default',
+  \`datasize\` int(11) DEFAULT NULL,
+  \`scale_factor\` varchar(255) DEFAULT 'N/A',
   PRIMARY KEY (\`id_exec\`),
   UNIQUE KEY \`exec_UNIQUE\` (\`exec\`),
   KEY \`idx_bench\` (\`bench\`),
@@ -260,6 +262,214 @@ CREATE TABLE IF NOT EXISTS \`JOB_dbscan\` (
   PRIMARY KEY (\`id\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+
+CREATE TABLE IF NOT EXISTS \`precal_cpu_metrics\` (
+  \`id_exec\` int(11) NOT NULL,
+  \`avg%user\` decimal(20,3) DEFAULT NULL,
+  \`max%user\` decimal(20,3) DEFAULT NULL,
+  \`min%user\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%user\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%user\` decimal(20,3) DEFAULT NULL,
+  \`avg%nice\` decimal(20,3) DEFAULT NULL,
+  \`max%nice\` decimal(20,3) DEFAULT NULL,
+  \`min%nice\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%nice\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%nice\` decimal(20,3) DEFAULT NULL,
+
+  \`avg%system\` decimal(20,3) DEFAULT NULL,
+  \`max%system\` decimal(20,3) DEFAULT NULL,
+  \`min%system\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%system\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%system\` decimal(20,3) DEFAULT NULL,
+
+  \`avg%iowait\` decimal(20,3) DEFAULT NULL,
+  \`max%iowait\` decimal(20,3) DEFAULT NULL,
+  \`min%iowait\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%iowait\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%iowait\` decimal(20,3) DEFAULT NULL,
+
+  \`avg%steal\` decimal(20,3) DEFAULT NULL,
+  \`max%steal\` decimal(20,3) DEFAULT NULL,
+  \`min%steal\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%steal\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%steal\` decimal(20,3) DEFAULT NULL,
+
+  \`avg%idle\` decimal(20,3) DEFAULT NULL,
+  \`max%idle\` decimal(20,3) DEFAULT NULL,
+  \`min%idle\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%idle\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%idle\` decimal(20,3) DEFAULT NULL,
+  PRIMARY KEY (\`id_exec\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS \`precal_disk_metrics\` (
+  \`id_exec\` int(11) NOT NULL,
+  \`DEV\` varchar(255) DEFAULT NULL,
+  \`avgtps\` decimal(20,3) DEFAULT NULL,
+  \`maxtps\` decimal(20,3) DEFAULT NULL,
+  \`mintps\` decimal(20,3) DEFAULT NULL,
+  \`avgrd_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`maxrd_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`minrd_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poprd_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poprd_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`sumrd_sec/s\` decimal(20,3) DEFAULT NULL,
+  
+  
+  \`avgwr_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`maxwr_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`minwr_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popwr_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`var_popwr_sec/s\` decimal(20,3) DEFAULT NULL,
+  \`sumwr_sec/s\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgrq_sz\` decimal(20,3) DEFAULT NULL,
+  \`maxrq_sz\` decimal(20,3) DEFAULT NULL,
+  \`minrq_sz\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poprq_sz\` decimal(20,3) DEFAULT NULL,
+  \`var_poprq_sz\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgqu_sz\` decimal(20,3) DEFAULT NULL,
+  \`maxqu_sz\` decimal(20,3) DEFAULT NULL,
+  \`minqu_sz\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popqu_sz\` decimal(20,3) DEFAULT NULL,
+  \`var_popqu_sz\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgawait\` decimal(20,3) DEFAULT NULL,
+  \`maxawait\` decimal(20,3) DEFAULT NULL,
+  \`minawait\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popawait\` decimal(20,3) DEFAULT NULL,
+  \`var_popawait\` decimal(20,3) DEFAULT NULL,
+  
+  \`avg%util\` decimal(20,3) DEFAULT NULL,
+  \`max%util\` decimal(20,3) DEFAULT NULL,
+  \`min%util\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%util\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%util\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgsvctm\` decimal(20,3) DEFAULT NULL,
+  \`maxsvctm\` decimal(20,3) DEFAULT NULL,
+  \`minsvctm\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popsvctm\` decimal(20,3) DEFAULT NULL,
+  \`var_popsvctm\` decimal(20,3) DEFAULT NULL,
+
+  PRIMARY KEY (\`id_exec\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS \`precal_memory_metrics\` (
+  \`id_exec\` int(11) NOT NULL,
+  \`DEV\` varchar(255) DEFAULT NULL,
+  \`avgkbmemfree\` decimal(20,3) DEFAULT NULL,
+  \`maxkbmemfree\` decimal(20,3) DEFAULT NULL,
+  \`minkbmemfree\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbmemfree\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbmemfree\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgkbmemused\` decimal(20,3) DEFAULT NULL,
+  \`maxkbmemused\` decimal(20,3) DEFAULT NULL,
+  \`minkbmemused\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbmemused\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbmemused\` decimal(20,3) DEFAULT NULL,
+  
+  \`avg%memused\` decimal(20,3) DEFAULT NULL,
+  \`max%memused\` decimal(20,3) DEFAULT NULL,
+  \`min%memused\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%memused\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%memused\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgkbbuffers\` decimal(20,3) DEFAULT NULL,
+  \`maxkbbuffers\` decimal(20,3) DEFAULT NULL,
+  \`minkbbuffers\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbbuffers\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbbuffers\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgkbcached\` decimal(20,3) DEFAULT NULL,
+  \`maxkbcached\` decimal(20,3) DEFAULT NULL,
+  \`minkbcached\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbcached\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbcached\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgkbcommit\` decimal(20,3) DEFAULT NULL,
+  \`maxkbcommit\` decimal(20,3) DEFAULT NULL,
+  \`minkbcommit\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbcommit\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbcommit\` decimal(20,3) DEFAULT NULL,
+  
+  \`avg%commit\` decimal(20,3) DEFAULT NULL,
+  \`max%commit\` decimal(20,3) DEFAULT NULL,
+  \`min%commit\` decimal(20,3) DEFAULT NULL,
+  \`stddev_pop%commit\` decimal(20,3) DEFAULT NULL,
+  \`var_pop%commit\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgkbactive\` decimal(20,3) DEFAULT NULL,
+  \`maxkbactive\` decimal(20,3) DEFAULT NULL,
+  \`minkbactive\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbactive\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbactive\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgkbinact\` decimal(20,3) DEFAULT NULL,
+  \`maxkbinact\` decimal(20,3) DEFAULT NULL,
+  \`minkbinact\` decimal(20,3) DEFAULT NULL,
+  \`stddev_popkbinact\` decimal(20,3) DEFAULT NULL,
+  \`var_popkbinact\` decimal(20,3) DEFAULT NULL,
+
+  PRIMARY KEY (\`id_exec\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS \`precal_network_metrics\` (
+  \`id_exec\` int(11) NOT NULL,
+  \`IFACE\` varchar(255) DEFAULT NULL,
+  \`avgrxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`maxrxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`minrxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poprxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poprxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`sumrxpck/s\` decimal(20,3) DEFAULT NULL,
+  
+  \`avgtxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`maxtxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`mintxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poptxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poptxpck/s\` decimal(20,3) DEFAULT NULL,
+  \`sumtxpck/s\` decimal(20,3) DEFAULT NULL,
+
+  \`avgrxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`maxrxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`minrxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poprxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poprxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`sumrxkB/s\` decimal(20,3) DEFAULT NULL,
+
+  \`avgtxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`maxtxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`mintxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poptxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poptxkB/s\` decimal(20,3) DEFAULT NULL,
+  \`sumtxkB/s\` decimal(20,3) DEFAULT NULL,
+
+  \`avgrxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`maxrxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`minrxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poprxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poprxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`sumrxcmp/s\` decimal(20,3) DEFAULT NULL,
+
+  \`avgtxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`maxtxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`mintxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poptxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poptxcmp/s\` decimal(20,3) DEFAULT NULL,
+  \`sumtxcmp/s\` decimal(20,3) DEFAULT NULL,
+
+  \`avgrxmcst/s\` decimal(20,3) DEFAULT NULL,
+  \`maxrxmcst/s\` decimal(20,3) DEFAULT NULL,
+  \`minrxmcst/s\` decimal(20,3) DEFAULT NULL,
+  \`stddev_poprxmcst/s\` decimal(20,3) DEFAULT NULL,
+  \`var_poprxmcst/s\` decimal(20,3) DEFAULT NULL,
+  \`sumrxmcst/s\` decimal(20,3) DEFAULT NULL,
+
+  PRIMARY KEY (\`id_exec\`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
 ####################################################
@@ -780,6 +990,12 @@ $MYSQL "alter table hosts
 
 $MYSQL "alter table execs
     add column exec_type varchar(255) default 'default';"
+
+$MYSQL "alter table execs
+    add column datasize int(11) default NULL;"
+
+$MYSQL "alter table execs
+    add column scale_factor varchar(255) default NULL;"
 
 
 ############################################33

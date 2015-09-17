@@ -34,6 +34,10 @@ class MLDataCollapseController extends AbstractController
 			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valids','filters'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = Utils::read_params($p,$where_configs,FALSE); }
+
 			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
@@ -47,8 +51,9 @@ class MLDataCollapseController extends AbstractController
 			$dims2 = "Benchmark";
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 			
 			// select model for filling 
 			$possible_models = $possible_models_id = array();
@@ -65,12 +70,10 @@ class MLDataCollapseController extends AbstractController
 				$current_model = $row['id_learner'];
 			}
 */
-			$config = $instance.'-'.$current_model;
-
 			$learning_model = '';
 			if ($current_model != '' && file_exists(getcwd().'/cache/query/'.$current_model.'-object.rds')) $learning_model = ':model_name='.$current_model.':inst_general="'.$instance.'"';
  
-			$config = $dims1.'-'.$dims2.'-'.$current_model.'-'.$model_info;
+			$config = $dims1.'-'.$dims2.'-'.$current_model.'-'.$model_info.'-'.$slice_info;
 
 			// get headers for csv
 			$header_names = array(
@@ -92,7 +95,7 @@ class MLDataCollapseController extends AbstractController
 				$dims1_concat = $dims1_concat.(($dims1_concat=='')?'':',":",').array_search($d1value, $header_names);
 			}
 
-			$query = "SELECT distinct bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." ORDER BY bench;";
+			$query = "SELECT distinct bench FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs." ORDER BY bench;";
 			$rows = $db->get_rows($query);
 			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -107,7 +110,7 @@ class MLDataCollapseController extends AbstractController
 			$jsonHeader = $jsonHeader.']';
 
 
-			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100 AND hadoop_version IS NOT NULL".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
+			$query = "SELECT CONCAT(".$dims1_concat.") as dim1, bench, avg(exe_time) as avg_exe_time FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs." GROUP BY bench,".$dims1_query." ORDER BY dim1,bench;";
 			$rows = $db->get_rows($query);
 			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -156,38 +159,24 @@ class MLDataCollapseController extends AbstractController
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
 			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 		}
-		echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig',
-			array(
-				'selected' => 'mldatacollapse',
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'jsonEncoded' => $jsonData,
-				'jsonHeader' => $jsonHeader,
-				'jsonColumns' => $jsonColumns,
-				'jsonColor' => $jsonColor,
-				'instance' => $instance,
-				'instance' => $instance,
-				'model_info' => $model_info,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
+		$return_params = array(
+			'selected' => 'mldatacollapse',
+			'jsonEncoded' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'jsonColumns' => $jsonColumns,
+			'jsonColor' => $jsonColor,
+			'instance' => $instance,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'preset' => $preset,
+			'selPreset' => $selPreset,
+			'options' => Utils::getFilterOptions($db)
 		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		echo $this->container->getTwig()->render('mltemplate/mldatacollapse.html.twig', $return_params);
 	}
 }
 ?>

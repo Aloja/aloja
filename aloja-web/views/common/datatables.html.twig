@@ -289,21 +289,10 @@
 
 
 
-            {% if selected == 'Benchmark Executions' %}
-	          /*  var queryDict = {};
-			    var newQuery = {};
-		            location.search.substr(1).split("&").forEach(function(item) {queryDict[item.split("=")[0]] = item.split("=")[1]});
-			   
-			    for(key in queryDict) {
-					newKey = key.replace("%5B","[").replace("%5D","]");
-					newQuery[newKey] = queryDict[key];
-			    }
-			    newQuery['type'] = '{{ type }}';
-		 	    queryDict = {};*/
-				var newQuery = location.search;
-
-		 	    var clustersInfo = {{ clustersInfo | raw }};
-		    {% endif %}
+			var newQuery = location.search;
+			{% if selected == 'Benchmark Executions' %}
+		 		var clustersInfo = {{ clustersInfo | raw }};
+		 	{% endif %}
 
 		    var type = '{{ type }}';
 		    var offset = 0;
@@ -320,7 +309,7 @@
                 "oSearch": {"bCaseInsensitive":false, "sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
-                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata', {'type': type}) }}{%else %}{{ path('benchdata') }}{% endif %}"{% if selected == 'Benchmark Executions' %}+newQuery{% endif %},
+                "sAjaxSource": "{% if selected == 'Hadoop Job Counters' %}{{ path('countersdata') }}{% elseif selected == 'Hadoop 2 Job Counters' %}{{ path('hdp2countersdata') }}{% elseif selected == 'Performance Metrics' %}{{ path('metricsdata') }}{%else %}{{ path('benchdata') }}{% endif %}"+newQuery,
                 //Trick to allow ajax cache
                 "fnServerData": function ( sSource, aoData, fnCallback, oSettings ) {
                     oSettings.jqXHR = $.ajax( {
@@ -328,7 +317,9 @@
                       "method": "GET",
                       "url": sSource,
                       {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %} 
-                      "data": {'execs': buildExecParams, 'type': '{{ type }}'},
+                      "data": {'execs': buildExecParams, 'pageTab': '{{ type }}'},
+                      {% elseif selected == 'Performance Metrics' %}
+                      "data": {'pageTab': '{{ type }}'},
                       {% endif %}
                       "success": fnCallback,
 						"error": function( e, settings, techNote, message ) {
@@ -392,26 +383,28 @@
                 },
                 "fnRowCallback": function( nRow, aData, iDisplayIndex ) {
                     $('td', nRow).each(function(index, value) {
-                        //Correction because first row doesn't really exist
-                        if(index > 0)
-                            index += 1;
+						//Correction because first row doesn't really exist
+						if (index > 0)
+							index += 1;
 
-                    	var headTitle = $("#benchmarks thead tr:first-child th:nth-child("+index+")").text();
-                     {% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
-                       	if(headTitle == 'JOBID')
-							{% if hdp2 is defined %}
-								$(this).html('<a href="{{ path('hdp2counters') }}?execs[]=' + aData[0] + '&jobid='+ aData[2] +'&type=TASKS" target="_blank">' + aData[2] + '</a>');
-							{% else %}
-								$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&jobid='+ aData[2] +'&type=TASKS" target="_blank">' + aData[2] + '</a>');
-							{% endif %}
-						else if(headTitle == 'CHARTS')
-                            $(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> {% if not PROD %}<a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>{% endif %}');
-                    	else if(headTitle == '')
-                            $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
-                     {% elseif selected == 'Benchmark Executions' %}
-                       	if(headTitle == 'Benchmark')
-        					$(this).html('<a href="{{ path('perfcharts') }}?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
-                    	else if(headTitle == '')
+						var headTitle = $("#benchmarks thead tr:first-child th:nth-child(" + index + ")").text();
+						{% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
+						if (headTitle == 'JOBID' && aData[aData.length-1] == 1)
+								{% if hdp2 is defined %}
+							$(this).html('<a href="{{ path('hdp2counters') }}?execs[]=' + aData[0] + '&jobid=' + aData[2] + '&pageTab=TASKS" target="_blank">' + aData[2] + '</a>');
+						{% else %}
+						$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '&jobid=' + aData[2] + '&pageTab=TASKS" target="_blank">' + aData[2] + '</a>');
+						{% endif %}
+						else
+						if (headTitle == 'CHARTS')
+							$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '" target="_blank" title="Histogram">H</a> <a href="{{ path('dbscan') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCAN">DB</a> {% if not PROD %}<a href="{{ path('dbscanexecs') }}?jobid=' + aData[2] + '" target="_blank" title="DBSCANexecs">DBe</a>{% endif %}');
+						else if (headTitle == '')
+							$(this).html('<input type="checkbox" name="execs[]" value="' + aData[0] + '">');
+						{% elseif selected == 'Benchmark Executions' %}
+						if (headTitle == 'Benchmark') {
+							if (aData[aData.length-1] == 1)
+								$(this).html('<a href="{{ path('perfcharts') }}?execs[]=' + aData[0] + '" target="_blank">' + aData[2] + '</a>');
+						} else if(headTitle == '')
                             $(this).html('<input type="checkbox" name="execs[]" value="'+ aData[0] + '">');
                     	else if(headTitle == 'Net') {
         					var tooltip = '';

@@ -1,0 +1,47 @@
+{# Required variables: filterGroup, filters, filterName #}
+{% set loopIndex = 0 %}
+{% for currFilter in filterGroup %}
+    {% set filter = filters[currFilter] %}
+    {% set filterName = currFilter %}
+    {% if filter['type'] == 'checkbox' or filter['type'] == 'checkboxNegated' %}
+        <input type="checkbox" name="{{ filterName }}" value="{{ filterName }}" {% if filter['currentChoice'] == 1 %}checked{% endif %} {{ addHtmlAttributes(filter) | raw }}> {{ filter['label'] | raw }}<br />
+    {% else %}
+        {% if (loopIndex % 2) == 0 %}
+            {% if loopIndex != 0 %}
+               </div>
+            {% endif %}
+            <div class="row">
+        {% endif %}
+        <div class="col-md-6">
+        {% if filterName == 'emptySpace' %}
+            &nbsp;
+        {% elseif filter['type'] == 'selectMultiple' %}
+            {{ filter['label'] }}&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+            <div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+                <div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+                {% for choice in filter['choices'] %}
+                  {% if choice != null %}
+                    <span id="container{{ filterName }}">
+                        <input type="checkbox" name="{{ filterName }}[]" value="{{ choice }}" {% if choice in filter['currentChoice'] %}checked{% endif %} {{ addHtmlAttributes(filter) | raw }}>&nbsp;{{ beautify(filter,choice) }}<br />
+                    </span>
+                  {% endif %}
+                {% endfor %}
+                </div>
+            </div>
+        {% elseif filter['type'] == 'selectOne' %}
+            {{ filter['label'] }}<br />
+            <select class="form-control" name="{{ filterName }}[]" {{ addHtmlAttributes(filter) | raw }}>
+                {% for choice in filter['choices'] %}
+                    <option value="{{ choice }}" {% if choice in filter['currentChoice'] %}selected="selected"{% endif %}>{{ beautify(filter,choice) }}</option>
+                {% endfor %}
+            </select>
+        {% elseif filter['type'] starts with 'inputNumber' %}
+            {{ filter['label'] }}<input type="number" step="any" {% if filter['max'] is defined %}max="{{ filter['max'] }}"{% endif %} {% if filter['min'] is defined %}min="{{ filter['min'] }}"{% endif %} class="form-control" name="{{ filterName }}" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) | raw }}"{% endif %} {{ addHtmlAttributes(filter) }}/>
+        {% elseif filter['type'] starts with 'inputDate' %}
+            {{ filter['label'] }}<input type="text"  class="datepicker form-control" data-date-format="yyyy/mm/dd"  name="{{ filterName }}" {% if filter['currentChoice'] != null %}value="{{ beautify(filter,filter['currentChoice']) }}"{% endif %} {{ addHtmlAttributes(filter) | raw }}/>
+        {% endif %}
+        </div>
+        {% set loopIndex = loopIndex + 1 %}
+    {% endif %}
+{% endfor %}
+</div>

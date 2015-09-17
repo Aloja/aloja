@@ -1,196 +1,33 @@
+imports:
+    - { resource: restrouter.yml }
+    - { resource: costperfevalrouter.yml }
+    - { resource: configevalrouter.yml }
+    - { resource: perfdetailsrouter.yml }
+    - { resource: repositoryrouter.yml }
+    - { resource: restrouter.yml }
+    - { resource: mlrouter.yml }
+
 index:
     pattern: "/"
     controller: "alojaweb\\Controller\\DefaultController::indexAction"
-
-configimprovement:
-    pattern: "/configimprovement"
-    legacy: "/config_improvement.php"
-    controller: "alojaweb\\Controller\\DefaultController::configImprovementAction"
-
-benchexecutions:
-    pattern: "/benchexecs"
-    legacy: "/datatable.php"
-    controller: "alojaweb\\Controller\\DefaultController::benchExecutionsAction"
-
-benchdata:
-    pattern: "/benchdata"
-    controller: "alojaweb\\Controller\\RestController::benchExecutionsDataAction"
-
-costperfeval:
-    pattern: "/costperfeval"
-    legacy: "/perf_by_cost.php"
-    controller: "alojaweb\\Controller\\DefaultController::costPerfEvaluationAction"
-
-perfcharts:
-    pattern: "/perfcharts"
-    legacy: "/charts1.php"
-    controller: "alojaweb\\Controller\\DefaultController::performanceChartsAction"
-
-counters:
-    pattern: "/counters"
-    legacy: "/counters.php"
-    controller: "alojaweb\\Controller\\DefaultController::countersAction"
-
-countersdata:
-    pattern: "/countersdata"
-    controller: "alojaweb\\Controller\\RestController::countersDataAction"
-
-export2prv:
-    pattern: "/export2prv"
-    controller: "alojaweb\\Controller\\RestController::export2prvAction"
-    
-metrics:
-    pattern: "/metrics"
-    controller: "alojaweb\\Controller\\DefaultController::performanceTableAction"
-    
-metricsdata:
-    pattern: "/metricsdata"
-    controller: "alojaweb\\Controller\\RestController::metricsDataAction"
-    
-histogram:
-    pattern: "/histogram"
-    controller: "alojaweb\\Controller\\DefaultController::histogramAction"
-    
-histogramdata:
-    pattern: "/histogramdata"
-    controller: "alojaweb\\Controller\\RestController::histogramDataAction"
-
-histogramtasksdata:
-    pattern: "/histogramtasksdata"
-    controller: "alojaweb\\Controller\\RestController::histogramTasksDataAction"
-
-bestconfig:
-    pattern: "/bestconfig"
-    controller: "alojaweb\\Controller\\DefaultController::bestConfigAction"
-    
-bestconfigdata:
-    pattern: "/bestconfigdata"
-    controller: "alojaweb\\Controller\\DefaultController::bestConfigDataAction"
-    
-parameval:
-    pattern: "/parameval"
-    controller: "alojaweb\\Controller\\DefaultController::paramEvaluationAction"
+    screenName: "About"
     
 publications:
     pattern: "/publications"
     controller: "alojaweb\\Controller\\DefaultController::publicationsAction"
+    screenName: "Publications"
     
 team:
     pattern: "/team"
     controller: "alojaweb\\Controller\\DefaultController::teamAction"
+    screenName: "Team"
     
 clusters:
     pattern: "/clusters"
     controller: "alojaweb\\Controller\\DefaultController::clustersAction"
+    screenName: "Clusters"
     
 clustercosts:
     pattern: "/clustercosts"
     controller: "alojaweb\\Controller\\DefaultController::clusterCostsAction"
-
-dbscan:
-    pattern: "/dbscan"
-    controller: "alojaweb\\Controller\\DefaultController::dbscanAction"
-
-dbscandata:
-    pattern: "/dbscandata"
-    controller: "alojaweb\\Controller\\RestController::dbscanDataAction"
-
-dbscanexecs:
-    pattern: "/dbscanexecs"
-    controller: "alojaweb\\Controller\\DefaultController::dbscanexecsAction"
-
-dbscanexecsdata:
-    pattern: "/dbscanexecsdata"
-    controller: "alojaweb\\Controller\\RestController::dbscanexecsDataAction"
-
-hdp2counters:
-    pattern: "/hdp2counters"
-    controller: "alojaweb\\Controller\\DefaultController::hdp2CountersAction"
-    
-hdp2countersdata:
-    pattern: "/hdpcountersdata"
-    controller: "alojaweb\\Controller\\RestController::hdp2countersDataAction"
-   
-histogramhdi:
-    pattern: "/histogramhdi"
-    controller: "alojaweb\\Controller\\DefaultController::histogramHDIAction"
-     
-histogramhdidata:
-    pattern: "/histogramhdidata"
-    controller: "alojaweb\\Controller\\RestController::histogramHDIDataAction"
-    
-histogramhditasksdata:
-    pattern: "/histogramhditasksdata"
-    controller: "alojaweb\\Controller\\RestController::histogramHDITasksDataAction"
-    
-clustercosteffectiveness:
-    pattern: "/clustercosteffectiveness"
-    controller: "alojaweb\\Controller\\DefaultController::clusterCostEffectivenessAction"
-
-costperfclustereval:
-    pattern: "/costperfclustereval"
-    controller: "alojaweb\\Controller\\DefaultController::costPerfClusterEvaluationAction"
-    
-bestcostperfclustereval:
-    pattern: "/bestcostperfclustereval"
-    controller: "alojaweb\\Controller\\DefaultController::BestCostPerfClusterEvaluationAction"
-
-nodeseval:
-    pattern: "/nodeseval"
-    controller: "alojaweb\\Controller\\DefaultController::NodesEvaluationAction"
-
-mlprediction:
-    pattern: "/mlprediction"
-    controller: "alojaweb\\Controller\\MLTemplatesController::mlpredictionAction"
-
-mldatacollapse:
-    pattern: "/mldatacollapse"
-    controller: "alojaweb\\Controller\\MLDataCollapseController::mldatacollapseAction"
-
-mlfindattributes:
-    pattern: "/mlfindattributes"
-    controller: "alojaweb\\Controller\\MLFindAttributesController::mlfindattributesAction"
-
-mlattributestree:
-    pattern: "/mlattributestree"
-    controller: "alojaweb\\Controller\\MLFindAttributesController::mlattributestreeAction"
-
-mlclearcache:
-    pattern: "/mlclearcache"
-    controller: "alojaweb\\Controller\\MLCacheController::mlclearcacheAction"
-
-mlparameval:
-    pattern: "/mlparameval"
-    controller: "alojaweb\\Controller\\MLParamevalController::mlparamEvaluationAction"
-
-mloutliers:
-    pattern: "/mloutliers"
-    controller: "alojaweb\\Controller\\MLOutliersController::mloutliersAction"
-
-mlcrossvar:
-    pattern: "/mlcrossvar"
-    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvarAction"
-
-mlsummaries:
-    pattern: "/mlsummaries"
-    controller: "alojaweb\\Controller\\MLSummariesController::mlsummariesAction"
-
-mlcrossvar3d:
-    pattern: "/mlcrossvar3d"
-    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dAction"
-
-mlcrossvar3dfa:
-    pattern: "/mlcrossvar3dfa"
-    controller: "alojaweb\\Controller\\MLCrossvarController::mlcrossvar3dfaAction"
-
-mlminconfigs:
-    pattern: "/mlminconfigs"
-    controller: "alojaweb\\Controller\\MLMinconfigsController::mlminconfigsAction"
-
-mlnewconfigs:
-    pattern: "/mlnewconfigs"
-    controller: "alojaweb\\Controller\\MLNewconfigsController::mlnewconfigsAction"
-
-mlprecision:
-    pattern: "/mlprecision"
-    controller: "alojaweb\\Controller\\MLPrecisionController::mlprecisionAction"
+    screenName: "Clusters Costs"

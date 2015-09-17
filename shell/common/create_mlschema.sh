@@ -101,6 +101,7 @@ CREATE TABLE IF NOT EXISTS minconfigs (
   id_learner varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL DEFAULT '',
   is_new int(1) NOT NULL DEFAULT 0,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_minconfigs),
@@ -146,6 +147,7 @@ CREATE TABLE IF NOT EXISTS summaries (
   id_summaries varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL,
   summary longtext NOT NULL,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_summaries),
@@ -164,6 +166,7 @@ CREATE TABLE IF NOT EXISTS precisions (
   id_precision varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL,
   diversity longtext NOT NULL,
   precisions longtext NOT NULL,
   discvar varchar(255) NOT NULL,
@@ -183,6 +186,9 @@ $MYSQL "ALTER TABLE $DBML.summaries MODIFY model longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries MODIFY summary longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD bench_type varchar(255);"
 $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
+$MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 
 
 #$MYSQL "ALTER TABLE learners MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
@@ -194,4 +200,5 @@ $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 #$MYSQL "ALTER TABLE minconfigs_centers MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
 #$MYSQL "ALTER TABLE summaries MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
 #$MYSQL "ALTER TABLE model_storage MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
+
 

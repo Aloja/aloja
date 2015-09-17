@@ -117,7 +117,7 @@
 	</div>
 	<div style="float: right; width: 30%;">
 	{% set select_multiple_benchs = false %}
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -339,7 +339,7 @@
 
 		if (jsondata == '[]') $("#footer").hide();
 
-		$('#headingAdvancedFilters').parent().hide();
+		$('#headingadvanced').parent().hide();
 
 		if ("{{must_wait}}" == "NO")
 		{
@@ -356,8 +356,8 @@
 				"columns": jsonObjHeader,
 				"columnDefs" : [
 					{"targets" : -1, "render" : function (data) { return Math.round(data); }},
-					{"targets" : 22, "render" : function (data) { return Math.max(data,100); }},
-					{"targets" : [11,12,13,14,15,16,17,18,19], "visible": false}
+					{"targets" : 20, "render" : function (data) { return Math.max(data,100); }},
+					{"targets" : [11,12,13,14,15,16,17], "visible": false}
 				]
 			});
 			$(window).bind('resize', function () {
@@ -365,10 +365,6 @@
 			});           
 			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
 
-			if ({{ tree }})	{
-				$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
-				$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
-			}
 			$('#waitdiv').hide();
 		}
 		else

@@ -22,29 +22,59 @@ class MLFindAttributesController extends AbstractController
 
 		    	$db = $this->container->getDBUtils();
 
-		    	$where_configs = '';
-		    	
-		        $preset = null;
-
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists("current_model",$_GET))
-			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
-			|| (count($_GET) == 2 && array_key_exists("tree",$_GET))
-			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("current_model",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("tree",$_GET) && array_key_exists("current_model",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("pass",$_GET) && array_key_exists("current_model",$_GET)))
+			if (array_key_exists('dump',$_GET))
 			{
-				$preset = Utils::initDefaultPreset($db, 'mlfindattributes');		
+				$dump = $_GET["dump"];
+				unset($_GET["dump"]);
 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
-		    	
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
 
-			$unseen = (array_key_exists('unseen',$_GET) && $_GET['unseen'] == 1);
+			if (array_key_exists('pass',$_GET))
+			{
+				$pass = $_GET["pass"];
+				unset($_GET["pass"]);
+			}
+
+			$this->buildFilters(array('current_model' => array(
+				'type' => 'selectOne',
+				'default' => null,
+				'label' => 'Model tu use: ',
+				'generateChoices' => function() {
+					return array();
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			), 'unseen' => array(
+				'type' => 'checkbox',
+				'default' => 1,
+				'label' => 'Predict with unseen atributes &#9888;',
+				'parseFunction' => function() {
+					$choice = (isset($_GET['unseen']) && !isset($_GET['unseen'])) ? 0 : 1;
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			), 'minexetime' => array(
+				'default' => 0
+			), 'valid' => array(
+				'default' => 0
+			), 'filter' => array(
+				'default' => 0
+			), 'prepares' => array(
+				'default' => 1
+			)
+			));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
+			$where_configs = $this->filters->getWhereClause();
+
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
+
+			$learnParams = $this->filters->getFiltersSelectedChoices(array('current_model','unseen'));
+			$param_current_model = $learnParams['current_model'];
+			$unseen = ($learnParams['unseen']) ? true : false;
 
 			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -53,15 +83,15 @@ class MLFindAttributesController extends AbstractController
 			$mae = $rae = 0;
 
 			// compose instance
-			$model_info = MLUtils::generateModelInfo($param_names, $params, $unseen, $db);
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, $unseen, $db);			
-			$instances = MLUtils::generateInstances($param_names, $params, $unseen, $db);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
+			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen,$db);
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
 
-			$current_model = "";
-			if (array_key_exists('current_model',$_GET) && !is_null($possible_models_id) && in_array($_GET['current_model'],$possible_models_id)) $current_model = $_GET['current_model'];
+			$current_model = '';
+			if (!is_null($possible_models_id) && in_array($param_current_model,$possible_models_id)) $current_model = $param_current_model;
 
 			// Other models for filling
 			$where_models = '';
@@ -124,7 +154,7 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
@@ -160,7 +190,7 @@ class MLFindAttributesController extends AbstractController
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,name,datanodes,headnodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
 								$token = 0;
 								$token_i = 0;
 							}
@@ -192,15 +222,15 @@ class MLFindAttributesController extends AbstractController
 				{
 					$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 					$must_wait = 'YES';
-					if (isset($_GET['dump'])) { $dbml = null; echo "1"; exit(0); }
-					if (isset($_GET['pass'])) { $dbml = null; return "1"; }
+					if (isset($dump)) { $dbml = null; echo "1"; exit(0); }
+					if (isset($pass)) { $dbml = null; return "1"; }
 				}
 				else
 				{
-					if (isset($_GET['pass']) && $_GET['pass'] == 2) { $dbml = null; return "2"; }
+					if (isset($pass) && $pass == 2) { $dbml = null; return "2"; }
 
 					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
+					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -225,7 +255,7 @@ class MLFindAttributesController extends AbstractController
 					$rae = $row['RAE'];
 
 					// Dump case
-					if (isset($_GET['dump']))
+					if (isset($dump))
 					{
 						echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
 						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
@@ -233,7 +263,7 @@ class MLFindAttributesController extends AbstractController
 						$dbml = null;
 						exit(0);
 					}
-					if (isset($_GET['pass']) && $_GET['pass'] == 1)
+					if (isset($pass) && $pass == 1)
 					{
 						$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
 						$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
@@ -251,9 +281,10 @@ class MLFindAttributesController extends AbstractController
 			}
 			else
 			{
-				$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
-				if (isset($_GET['dump'])) { echo "-1"; exit(0); }
-				if (isset($_GET['pass'])) { return "-1"; }
+	 			$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
+				$must_wait = 'NO';
+				if (isset($dump)) { echo "-1"; exit(0); }
+				if (isset($pass)) { return "-1"; }
 			}
 			$dbml = null;
 		}
@@ -266,57 +297,30 @@ class MLFindAttributesController extends AbstractController
 			$mae = $rae = 0;
 
 			$dbml = null;
-			if (isset($_GET['pass'])) { return "-2"; }
+			if (isset($pass)) { return "-2"; }
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlfindattributes.html.twig',
-			array(
-				'selected' => 'mlfindattributes',
-				'instance' => $instance,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'jsonData' => $jsonData,
-				'jsonHeader' => $jsonHeader,
-				'models' => $model_html,
-				'models_id' => $possible_models_id,
-				'other_models_id' => $other_models,
-				'current_model' => $current_model,
-				'message' => $message,
-				'mae' => $mae,
-				'rae' => $rae,
-				'must_wait' => $must_wait,
-				'instance' => $instance,
-				'instances' => implode("<br/>",$instances),
-				'model_info' => $model_info,
-				'id_findattr' => md5($config),
-				'unseen' => $unseen,
-				'tree' => (isset($_GET['tree'])?"true":"false"),
-				'tree_descriptor' => $tree_descriptor,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
-		);
-	}
 
-	public function mlattributestreeAction()
-	{
-		$_GET['tree'] = 1;
-		$this->mlfindattributesAction();
+		$return_params = array(
+			'instance' => $instance,
+			'jsonData' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'models' => $model_html,
+			'models_id' => $possible_models_id,
+			'other_models_id' => $other_models,
+			'current_model' => $current_model,
+			'message' => $message,
+			'mae' => $mae,
+			'rae' => $rae,
+			'must_wait' => $must_wait,
+			'instance' => $instance,
+			'instances' => implode("<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",$instances),
+			'model_info' => $model_info,
+			'id_findattr' => md5($config),
+			'unseen' => $unseen,
+			'tree_descriptor' => $tree_descriptor,
+		);
+		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+		return $this->render('mltemplate/mlfindattributes.html.twig', $return_params);
 	}
 }
 ?>
