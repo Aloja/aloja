@@ -107,6 +107,7 @@
 						<li>Search cache ID: {{id_precision|raw}}</li>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -115,7 +116,7 @@
 	</div>
 
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -367,8 +368,6 @@
 		$("#submitForm").html('Check Values');
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
-
-		$('#headingAdvancedFilters').parent().hide();
 
 		if ("{{must_wait}}"== "NO")
 		{

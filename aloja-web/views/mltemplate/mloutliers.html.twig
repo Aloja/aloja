@@ -82,6 +82,8 @@
 							<li>Model cache ID: {{current_model|raw}}</li>
 							<li>Resolution cache ID: {{resolution_id|raw}}</li>
 							<li>Instance: {{instance|raw}}</li>
+							<li>Model Info: {{model_info|raw}}</li>
+							<li>Advanced Filters: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -90,7 +92,7 @@
 	</div>
 
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -126,7 +128,6 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#headingAdvancedFilters').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 		if ('{{jsonData | raw}}' == '[]' && '{{jsonWarns | raw}}' == '[]' && '{{jsonOuts | raw}}' == '[]') $("#footer").hide();
@@ -145,16 +146,9 @@
 			$('#options').show();
 
 			$('#chart').highcharts( {
-	    		        chart: {
-	    		            type: 'scatter',
-	    		            zoomType: 'xy'
-	    		        },
-	    		        title: {
-	    		            text: 'Outlier Detection'
-	    		        },
-	    		        subtitle: {
-	    		            text: 'Model vs Observation'
-	    		        },
+	    		        chart: { type: 'scatter', zoomType: 'xy' },
+	    		        title: { text: 'Outlier Detection' },
+	    		        subtitle: { text: 'Model vs Observation' },
 	    		        xAxis: {
 	    		            title: {
 	    		                enabled: true,
@@ -164,39 +158,17 @@
 	    		            endOnTick: true,
 	    		            showLastLabel: true
 	    		        },
-	    		        yAxis: {
-	    		            title: {
-	    		                text: 'Observed Execution Time (s)'
-	    		            }
-	    		        },
-			        credits: {
-					enabled: false
-				    },
+	    		        yAxis: { title: { text: 'Observed Execution Time (s)' } },
+			        credits: { enabled: false },
 	    		        plotOptions: {
-				    series: {
-					turboThreshold: 5000
-				    },
+				    series: { turboThreshold: 5000 },
 	    		            scatter: {
 	    		                marker: {
 	    		                    radius: 5,
-	    		                    states: {
-	    		                        hover: {
-	    		                            enabled: true,
-	    		                            lineColor: 'rgb(100,100,100)'
-	    		                        }
-	    		                    }
+	    		                    states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } }
 	    		                },
-	    		                states: {
-	    		                    hover: {
-	    		                        marker: {
-	    		                            enabled: false
-	    		                        }
-	    		                    }
-	    		                },
-	    		                tooltip: {
-	    		                    headerFormat: '',
-	    		                    pointFormat: '<b>{point.name}</b> <br/> {point.x} s, {point.y} s'
-	    		                }
+	    		                states: { hover: { marker: { enabled: false } } },
+	    		                tooltip: { headerFormat: '', pointFormat: '<b>{point.name}</b> <br/> {point.x} s, {point.y} s' }
 	    		            }
 	    		        },
 	    		        series: [

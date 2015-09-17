@@ -45,6 +45,7 @@
 						<li>Model cache ID: {% if current_model != '' %}{{current_model|raw}}{% else %}Aggregation{% endif %}</li>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Slice Info: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -52,7 +53,7 @@
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 	<hr />
@@ -80,7 +81,8 @@
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-		$('#headingAdvancedFilters').parent().hide();
+
+		$('#headingadvanced').parent().hide();
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
@@ -91,15 +93,8 @@
 				// Give the points a 3D feel by adding a radial gradient
 				Highcharts.getOptions().colors = $.map(Highcharts.getOptions().colors, function (color) {
 				return {
-				    radialGradient: {
-					cx: 0.4,
-					cy: 0.3,
-					r: 0.5
-				    },
-				    stops: [
-					[0, color],
-					[1, Highcharts.Color(color).brighten(-0.2).get('rgb')]
-				    ]
+				    radialGradient: { cx: 0.4, cy: 0.3, r: 0.5 },
+				    stops: [[0, color],[1, Highcharts.Color(color).brighten(-0.2).get('rgb')]]
 				};
 				});
 
@@ -115,7 +110,6 @@
 					beta: 30,
 					depth: 750,
 					viewDistance: 1,
-
 					frame: {
 					    bottom: { size: 1, color: 'rgba(0,0,0,0.02)' },
 					    back: { size: 1, color: 'rgba(0,0,0,0.04)' },
@@ -124,26 +118,13 @@
 				    }
 				},
 				plotOptions: {
-					series: {
-						turboThreshold: 5000
-					},
+					series: { turboThreshold: 5000 },
 					scatter: {
 						marker: {
 		    		                    radius: 5,
-		    		                    states: {
-		    		                        hover: {
-		    		                            enabled: true,
-		    		                            lineColor: 'rgb(100,100,100)'
-		    		                        }
-		    		                    }
+		    		                    states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } }
 		    		                },
-		    		                states: {
-		    		                    hover: {
-		    		                        marker: {
-		    		                            enabled: false
-		    		                        }
-		    		                    }
-		    		                },
+		    		                states: { hover: { marker: { enabled: false } } },
 					}
 				},
 				tooltip: {
@@ -152,48 +133,31 @@
 						return p.name + '<br />{{variable2}}: ' +  Math.round(p.x) + ', {{variable1}}: ' + Math.round(p.y) + ', exe_time: ' + Math.round(p.z);
 					}
     		                },
-				title: {
-				    text: 'Variable comparison against Predicted Time'
-				},
-				subtitle: {
-				    text: '{{variable1}} vs {{variable2}} vs pred_time'
-				},
+				title: { text: 'Variable comparison against Predicted Time' },
+				subtitle: { text: '{{variable1}} vs {{variable2}} vs pred_time' },
 				yAxis: {
 					max: {{maxy}},
 					min: {{miny}},
 					gridLineWidth: 1,
-					title: {
-						enabled: true,
-						text: '{{variable1}}'
-					},
+					title: { enabled: true, text: '{{variable1}}' },
 					categories: {{categories1 | raw}}
 				},
 				zAxis: {
 					max: {{maxz}},
 					min: {{minz}},
 					gridLineWidth: 1,
-					title: {
-						enabled: true,
-						text: 'pred_time'
-					},
+					title: { enabled: true, text: 'pred_time' },
 					reversed: true
 				},
 				xAxis: {
 					max: {{maxx}},
 					min: {{minx}},
 					gridLineWidth: 1,
-					title: {
-						enabled: true,
-						text: '{{variable2}}'
-					},
+					title: { enabled: true, text: '{{variable2}}' },
 					categories: {{categories2 | raw}}
 				},
-				legend: {
-				    enabled: false
-				},
-			        series: [
-					{name: 'Predictions (Full Space of Possibilities)', data: {{ jsonData | raw }}}
-				]
+				legend: { enabled: false },
+			        series: [ {name: 'Predictions (Full Space of Possibilities)', data: {{ jsonData | raw }}} ]
 				});
 
 

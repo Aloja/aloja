@@ -3,7 +3,7 @@ casper.test.begin("Job counters tests", function(test) {
 		  this.echo(msg);
 	 });
 		
-   casper.start('http://localhost:8080/counters?type=SUMMARY', function() {
+   casper.start('http://localhost:8080/counters?pageTab=SUMMARY', function() {
 	test.assertExists("#benchmarks", "Counters table created");
 	test.assertEval(function() {
 		return $("#benchmarks td").length > 1;

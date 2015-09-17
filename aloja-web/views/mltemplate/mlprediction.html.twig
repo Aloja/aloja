@@ -20,12 +20,13 @@
 				<li>Model cache ID: {{id_learner|raw}}</li>
 				<li>Instance: {{instance|raw}}</li>
 				<li>Model Info: {{model_info|raw}}</li>
+				<li>Advanced Filters: {{slice_info|raw}}</li>
 				</ul>
 			</p>
 		</div>
 	</div>
 	<div style="float: right; width: 30%;">
-	{% include 'mltemplate/config_filters_legacy.html.twig' %}
+	{% include 'common/config_filters.html.twig' %}
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -41,65 +42,28 @@
 		$('#submitForm').attr('value', 'Learn Model');
 		$("#submitForm").html('Learn Model');
 
-		$('#headingAdvancedFilters').parent().hide();
-
 		if ("{{must_wait}}"== "NO")
 		{
 			$('#controls').show();
 
 			$('#chart').highcharts( {
-	    		        chart: {
-	    		            type: 'scatter',
-	    		            zoomType: 'xy'
-	    		        },
-	    		        title: {
-	    		            text: 'Predicted Exec.Time vs Real Exec.Time'
-	    		        },
-	    		        subtitle: {
-	    		            text: 'Predictions'
-	    		        },
+	    		        chart: { type: 'scatter', zoomType: 'xy' },
+	    		        title: { text: 'Predicted Exec.Time vs Real Exec.Time' },
+	    		        subtitle: { text: 'Predictions' },
 	    		        xAxis: {
-	    		            title: {
-	    		                enabled: true,
-	    		                text: 'Predicted Execution Time (s)'
-	    		            },
+	    		            title: { enabled: true, text: 'Predicted Execution Time (s)' },
 	    		            startOnTick: true,
 	    		            endOnTick: true,
 	    		            showLastLabel: true
 	    		        },
-	    		        yAxis: {
-	    		            title: {
-	    		                text: 'Real Execution Time (s)'
-	    		            }
-	    		        },
-			        credits: {
-					enabled: false
-				    },
+	    		        yAxis: { title: { text: 'Real Execution Time (s)' } },
+			        credits: { enabled: false },
 	    		        plotOptions: {
-				    series: {
-					turboThreshold: 5000
-				    },
+				    series: { turboThreshold: 5000 },
 	    		            scatter: {
-	    		                marker: {
-	    		                    radius: 5,
-	    		                    states: {
-	    		                        hover: {
-	    		                            enabled: true,
-	    		                            lineColor: 'rgb(100,100,100)'
-	    		                        }
-	    		                    }
-	    		                },
-	    		                states: {
-	    		                    hover: {
-	    		                        marker: {
-	    		                            enabled: false
-	    		                        }
-	    		                    }
-	    		                },
-	    		                tooltip: {
-	    		                    headerFormat: '',
-	    		                    pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s'
-	    		                }
+	    		                marker: { radius: 5, states: { hover: { enabled: true, lineColor: 'rgb(100,100,100)' } } },
+	    		                states: { hover: { marker: { enabled: false } } },
+	    		                tooltip: { headerFormat: '', pointFormat: '<b>{point.mydata}</b> <br/> {point.x} s, {point.y} s' }
 	    		            }
 	    		        },
 	    		        series: [

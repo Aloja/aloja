@@ -38,7 +38,7 @@ while true ; do
     sudo git reset --hard HEAD;
     sudo git pull --no-edit origin "$repo";
     #sudo rm -rf /var/www/aloja-web/cache/{query,twig}/* /tmp/CACHE_* /tmp/twig/*;
-    sudo rm -rf /var/www/aloja-web/cache/twig/* /tmp/twig/*;
+    sudo rm -rf /var/www/aloja-web/cache/twig/*;
     sudo service php5-fpm restart;
     sudo /etc/init.d/nginx restart;
   else

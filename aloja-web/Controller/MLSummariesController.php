@@ -11,7 +11,7 @@ class MLSummariesController extends AbstractController
 {
 	public function mlsummariesAction()
 	{
-		$displaydata = $message = '';
+		$displaydata = $separate_feat = $instance = $model_info = $slice_info = '';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -20,29 +20,54 @@ class MLSummariesController extends AbstractController
 
 			$db = $this->container->getDBUtils();
 		    	
-		    	$where_configs = '';
-		    	
-		        $preset = null;
-			if (count($_GET) <= 1)
-			{
-				$preset = Utils::initDefaultPreset($db, 'mlsummaries');
- 			}
-		        $selPreset = (isset($_GET['presets'])) ? $_GET['presets'] : "none";
+			$this->buildFilters(array('feature' => array(
+				'type' => 'selectOne',
+				'default' => array('joined'),
+				'label' => 'Separate by: ',
+				'generateChoices' => function() {
+					return array('joined','Benchmark','Net',
+						'Disk','Maps','IO.SFac',
+						'Rep','IO.FBuf','Comp',
+						'Blk.size','Cluster'
+					);
+				},
+				'beautifier' => function($value) {
+					$labels = array('joined' => 'None','Benchmark' => 'Benchmarks',
+						'Net' => 'Networks', 'Disk' => 'Disks','Maps' => 'Maps',
+						'IO.SFac' => 'IO Sort Factor', 'Rep' => 'Replication',
+						'Rep' => 'Replication','IO.FBuf' => 'IO File Buffer',
+						'Comp' => 'Compressions', 'Blk.size' => 'Block sizes',
+						'Cluster' => 'Clusters'
+					);
+					return $labels[$value];
+				},
+				'parseFunction' => function() {
+					$choice = isset($_GET['feature']) ? $_GET['feature'] : array('joined');
+					return array('whereClause' => '', 'currentChoice' => $choice);
+				},
+				'filterGroup' => 'MLearning'
+			)));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true)));
 
-			$params = array();
-			$param_names = array('benchs','nets','disks','mapss','iosfs','replications','iofilebufs','comps','blk_sizes','id_clusters','datanodess','bench_types','vm_sizes','vm_coress','vm_RAMs','types','hadoop_versions'); // Order is important
-			foreach ($param_names as $p) { $params[$p] = Utils::read_params($p,$where_configs,FALSE); sort($params[$p]); }
-
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
-			$separate_feat = 'joined';
-			if (array_key_exists('feature',$_GET)) $separate_feat = $_GET['feature'];
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
+
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
+
+			$feature = $this->filters->getFiltersSelectedChoices(array('feature'));
+			$separate_feat = $feature['feature'];
 
 			// compose instance
-			$instance = MLUtils::generateSimpleInstance($param_names, $params, true,$db);
-			$model_info = MLUtils::generateModelInfo($param_names, $params, true,$db);
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, true);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
-			$config = $model_info.' '.$separate_feat.' SUMMARY';
+			$config = $model_info.' '.$separate_feat.' '.$slice_info.' SUMMARY';
 
 			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
 
@@ -63,9 +88,8 @@ class MLSummariesController extends AbstractController
 				$names = array_values($header_names);
 
 				// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE e.valid = TRUE AND e.exe_time > 100".$where_configs.";";
+			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
-
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
@@ -94,8 +118,8 @@ class MLSummariesController extends AbstractController
 					$displaydata = str_replace('\'','\\\'',$displaydata);
 
 					// register model to DB
-					$query = "INSERT INTO summaries (id_summaries,instance,model,summary)";
-					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$displaydata."');";
+					$query = "INSERT INTO aloja_ml.summaries (id_summaries,instance,model,dataslice,summary)";
+					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$slice_info."','".$displaydata."');";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
 				}
 
@@ -105,43 +129,25 @@ class MLSummariesController extends AbstractController
 			}
 
 			// Read results of the DB
-			$is_cached_mysql = $dbml->query("SELECT summary FROM summaries WHERE id_summaries = '".md5($config)."' LIMIT 1");
+			$is_cached_mysql = $dbml->query("SELECT summary FROM aloja_ml.summaries WHERE id_summaries = '".md5($config)."' LIMIT 1");
 			$tmp_result = $is_cached_mysql->fetch();
 			$displaydata = $tmp_result['summary'];
 		}
 		catch(\Exception $e)
 		{
 			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-			$displaydata = $separate_feat = '';
 		}
-		echo $this->container->getTwig()->render('mltemplate/mlsummaries.html.twig',
-			array(
-				'selected' => 'mlsummaries',
-				'displaydata' => $displaydata,
-				'benchs' => $params['benchs'],
-				'nets' => $params['nets'],
-				'disks' => $params['disks'],
-				'blk_sizes' => $params['blk_sizes'],
-				'comps' => $params['comps'],
-				'id_clusters' => $params['id_clusters'],
-				'mapss' => $params['mapss'],
-				'replications' => $params['replications'],
-				'iosfs' => $params['iosfs'],
-				'iofilebufs' => $params['iofilebufs'],
-				'datanodess' => $params['datanodess'],
-				'bench_types' => $params['bench_types'],
-				'vm_sizes' => $params['vm_sizes'],
-				'vm_coress' => $params['vm_coress'],
-				'vm_RAMs' => $params['vm_RAMs'],
-				'types' => $params['types'],
-				'hadoop_versions' => $params['hadoop_versions'],
-				'feature' => $separate_feat,
-				'message' => $message,
-				'preset' => $preset,
-				'selPreset' => $selPreset,
-				'options' => Utils::getFilterOptions($db)
-			)
-		);	
+		$return_params = array(
+			'displaydata' => $displaydata,
+			'feature' => $separate_feat,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info
+		);
+		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
+
+		return $this->render('mltemplate/mlsummaries.html.twig', $return_params);
 	}
 }
 ?>

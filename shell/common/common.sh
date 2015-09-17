@@ -295,5 +295,5 @@ cache_get() {
 save_env() {
   local path="$1"
   # save all exept for passwords
-  ( set -o posix ; set ) | grep -i -v "password" > "$path"
+  ( set -o posix ; set ) | grep -i -v "password" | grep -i -v "SSH" > "$path"
 }

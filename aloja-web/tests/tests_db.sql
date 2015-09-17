@@ -1,6 +1,6 @@
--- MySQL dump 10.13  Distrib 5.5.41, for debian-linux-gnu (x86_64)
+-- MySQL dump 10.13  Distrib 5.5.37, for debian-linux-gnu (x86_64)
 --
--- Host: 127.0.0.1    Database: aloja2_test
+-- Host: localhost    Database: aloja2_test
 -- ------------------------------------------------------
 -- Server version	5.5.37-0ubuntu0.12.04.1
 
@@ -174,7 +174,7 @@ CREATE TABLE `HDI_JOB_details` (
   UNIQUE KEY `job_id_uq` (`JOB_ID`),
   KEY `id_exec` (`id_exec`),
   CONSTRAINT `HDI_JOB_details_ibfk_1` FOREIGN KEY (`id_exec`) REFERENCES `execs` (`id_exec`) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -994,7 +994,7 @@ CREATE TABLE `clusters` (
 
 LOCK TABLES `clusters` WRITE;
 /*!40000 ALTER TABLE `clusters` DISABLE KEYS */;
-INSERT INTO `clusters` VALUES (1,'Local 1',12.000,'Colocated','http://aloja.bsc.es/?page_id=51',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'Azure Linux',7.000,'IaaS Cloud','http://www.windowsazure.com/en-us/pricing/calculator/',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
+INSERT INTO `clusters` VALUES (1,'Local 1',12.000,'Colocated','http://hadoop.bsc.es/?page_id=51',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL),(2,'Azure Linux',7.000,'IaaS Cloud','http://www.windowsazure.com/en-us/pricing/calculator/',NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL);
 /*!40000 ALTER TABLE `clusters` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1028,6 +1028,7 @@ CREATE TABLE `execs` (
   `filter` int(11) DEFAULT '0',
   `outlier` int(11) DEFAULT '0',
   `exec_type` varchar(255) DEFAULT 'default',
+  `perf_details` int(11) DEFAULT '0',
   PRIMARY KEY (`id_exec`),
   UNIQUE KEY `exec_UNIQUE` (`exec`),
   KEY `idx_bench` (`bench`),
@@ -1042,7 +1043,7 @@ CREATE TABLE `execs` (
 
 LOCK TABLES `execs` WRITE;
 /*!40000 ALTER TABLE `execs` DISABLE KEYS */;
-INSERT INTO `execs` VALUES (1,1,'20140129_055025_conf_IB_HDD_b_m12_i20_r1_I32768_c0_z256/bayes','bayes',1159.000,'2014-01-29 05:53:50','2014-01-29 06:13:09','IB','HDD','HiBench',12,20,1,32768,0,256,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140129065350&period=1159',1,NULL,0,0,'default'),(2,1,'20140212_173426_conf_ETH_HDD_b_m12_i10_r3_I4096_c0_z128/pagerank','wordcount',2454.000,'2014-02-12 17:44:33','2014-02-12 18:25:27','ETH','HDD','HiBench',12,10,3,4096,0,128,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140212184433&period=2454',1,NULL,0,0,'default'),(3,1,'20140224_164712_conf_ETH_HDD_b_m12_i10_r1_I65536_c0_z32/pagerank','pagerank',2146.000,'2014-02-24 16:54:33','2014-02-24 17:30:19','ETH','HDD','HiBench',12,10,1,65536,0,32,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140224175433&period=2146',1,NULL,0,0,'default'),(4,1,'20140302_180247_conf_IB_SSD_b_m12_i10_r1_I65536_c2_z256/pagerank','pagerank',1883.000,'2014-03-02 18:09:20','2014-03-02 18:40:43','IB','SSD','HiBench',12,10,1,65536,2,256,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140302190920&period=1883',1,NULL,0,0,'default'),(5,1,'20140302_225333_conf_IB_SSD_b_m12_i10_r1_I65536_c3_z32/sort','sort',585.000,'2014-03-02 22:56:56','2014-03-02 23:06:41','IB','SSD','HiBench',12,10,1,65536,3,32,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140302235656&period=585',1,NULL,0,0,'default'),(6,1,'20140303_034028_conf_IB_SSD_b_m12_i10_r1_I65536_c3_z128/sort','sort',502.000,'2014-03-03 03:43:48','2014-03-03 03:52:10','IB','SSD','HiBench',12,10,1,65536,3,128,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140303044348&period=502',1,NULL,0,0,'default'),(7,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/bayes','bayes',1158.000,'2014-06-18 17:34:30','2014-06-18 17:53:48','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618173430&period=1158',1,NULL,0,0,'default'),(8,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/dfsioe_read','dfsioe_read',3294.000,'2014-06-18 17:59:42','2014-06-18 18:54:36','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618175942&period=3294',1,NULL,0,0,'default'),(9,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/dfsioe_write','dfsioe_write',432.000,'2014-06-18 18:55:47','2014-06-18 19:02:59','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618185547&period=432',1,NULL,0,0,'default'),(10,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/kmeans','kmeans',1236.000,'2014-06-18 16:31:21','2014-06-18 16:51:57','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618163122&period=1236',1,NULL,0,0,'default');
+INSERT INTO `execs` VALUES (1,1,'20140129_055025_conf_IB_HDD_b_m12_i20_r1_I32768_c0_z256/bayes','bayes',1159.000,'2014-01-29 05:53:50','2014-01-29 06:13:09','IB','HDD','HiBench',12,20,1,32768,0,256,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140129065350&period=1159',1,NULL,0,0,'default',0),(2,1,'20140212_173426_conf_ETH_HDD_b_m12_i10_r3_I4096_c0_z128/pagerank','wordcount',2454.000,'2014-02-12 17:44:33','2014-02-12 18:25:27','ETH','HDD','HiBench',12,10,3,4096,0,128,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140212184433&period=2454',1,NULL,0,0,'default',0),(3,1,'20140224_164712_conf_ETH_HDD_b_m12_i10_r1_I65536_c0_z32/pagerank','pagerank',2146.000,'2014-02-24 16:54:33','2014-02-24 17:30:19','ETH','HDD','HiBench',12,10,1,65536,0,32,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140224175433&period=2146',1,NULL,0,0,'default',0),(4,1,'20140302_180247_conf_IB_SSD_b_m12_i10_r1_I65536_c2_z256/pagerank','pagerank',1883.000,'2014-03-02 18:09:20','2014-03-02 18:40:43','IB','SSD','HiBench',12,10,1,65536,2,256,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140302190920&period=1883',1,NULL,0,0,'default',0),(5,1,'20140302_225333_conf_IB_SSD_b_m12_i10_r1_I65536_c3_z32/sort','sort',585.000,'2014-03-02 22:56:56','2014-03-02 23:06:41','IB','SSD','HiBench',12,10,1,65536,3,32,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140302235656&period=585',1,NULL,0,0,'default',0),(6,1,'20140303_034028_conf_IB_SSD_b_m12_i10_r1_I65536_c3_z128/sort','sort',502.000,'2014-03-03 03:43:48','2014-03-03 03:52:10','IB','SSD','HiBench',12,10,1,65536,3,128,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140303044348&period=502',1,NULL,0,0,'default',0),(7,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/bayes','bayes',1158.000,'2014-06-18 17:34:30','2014-06-18 17:53:48','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618173430&period=1158',1,NULL,0,0,'default',0),(8,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/dfsioe_read','dfsioe_read',3294.000,'2014-06-18 17:59:42','2014-06-18 18:54:36','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618175942&period=3294',1,NULL,0,0,'default',0),(9,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/dfsioe_write','dfsioe_write',432.000,'2014-06-18 18:55:47','2014-06-18 19:02:59','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618185547&period=432',1,NULL,0,0,'default',0),(10,1,'20140618_153713_conf_ETH_SSD_b_m12_i10_r1_I65536_c0_z64/kmeans','kmeans',1236.000,'2014-06-18 16:31:21','2014-06-18 16:51:57','ETH','SSD','HiBench',12,10,1,65536,0,64,'http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=20140618163122&period=1236',1,NULL,0,0,'default',0);
 /*!40000 ALTER TABLE `execs` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1077,10 +1078,31 @@ INSERT INTO `execs_conf_parameters` VALUES (1,7,'job_201406181732_0011','fs.s3n.
 UNLOCK TABLES;
 
 --
--- Table structure for table `filters_presets`
+-- Table structure for table `filter_presets`
 --
-CREATE TABLE filter_presets(id INT(11) NOT NULL AUTO_INCREMENT, short_name VARCHAR(255) NOT NULL, selected_tool varchar(255) NOT NULL, URL longtext NOT NULL, default_preset int(1) NOT NULL DEFAULT 0, description longtext, PRIMARY KEY (id)) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+DROP TABLE IF EXISTS `filter_presets`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `filter_presets` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `short_name` varchar(255) NOT NULL,
+  `selected_tool` varchar(255) NOT NULL,
+  `URL` longtext NOT NULL,
+  `default_preset` int(1) NOT NULL DEFAULT '0',
+  `description` longtext,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `filter_presets`
+--
+
+LOCK TABLES `filter_presets` WRITE;
+/*!40000 ALTER TABLE `filter_presets` DISABLE KEYS */;
+/*!40000 ALTER TABLE `filter_presets` ENABLE KEYS */;
+UNLOCK TABLES;
 
 --
 -- Table structure for table `hosts`
@@ -1117,4 +1139,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2015-02-16 11:35:48
+-- Dump completed on 2015-08-13 12:00:41
