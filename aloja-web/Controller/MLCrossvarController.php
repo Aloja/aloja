@@ -58,7 +58,8 @@ class MLCrossvarController extends AbstractController
 					'parseFunction' => function() {
 						$value = isset($_GET['variable2']) ? $_GET['variable2'] : 'exe_time';
 						return array('currentChoice' => $value, 'whereClause' => "");
-					}
+					},
+					'htmlAttributes' => array('onchange="varchange()"','id="crossvar2"')
 				),
 				'variable1' => array(
 					'type' => 'selectOne', 'default' => array('maps'), 'table' => 'execs',
@@ -91,6 +92,7 @@ class MLCrossvarController extends AbstractController
 						$value = isset($_GET['variable1']) ? $_GET['variable1'] : 'maps';
 						return array('currentChoice' => $value, 'whereClause' => "");
 					},
+					'htmlAttributes' => array('onchange="varchange()"','id="crossvar1"')
 				), 'valid' => array(
 					'default' => 0
 				), 'filter' => array(
@@ -100,7 +102,7 @@ class MLCrossvarController extends AbstractController
 				), 'current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,
-					'label' => 'Reference Model (\'Pred.Time\'): ',
+					'label' => 'Reference Model: ',
 					'generateChoices' => function() {
 						$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
 						$db = $this->container->getDBUtils();
@@ -111,17 +113,19 @@ class MLCrossvarController extends AbstractController
 						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
-					'filterGroup' => 'MLearning'
+					'filterGroup' => 'MLearning',
+					'htmlAttributes' => array('id="selectcurrentmodel"','title="Only enabled for \'Prediction Time\' variable without \'Use all models\'"')
 				),
 				'umods' => array(
 					'type' => 'checkbox',
 					'default' => 1,
-					'label' => 'Use data from all models (\'Pred.Time\')',
+					'label' => 'Use data from all models',
 					'parseFunction' => function() {
 						$choice = (!isset($_GET['umods'])) ? 0 : 1;
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
-					'filterGroup' => 'MLearning'
+					'filterGroup' => 'MLearning',
+					'htmlAttributes' => array('id="checkumods"','onchange="selectmod_enabler()"','title="Only enabled for \'Prediction Time\' variable"')
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods'))));
@@ -312,6 +316,7 @@ class MLCrossvarController extends AbstractController
 						$value = isset($_GET['variable2']) ? $_GET['variable2'] : 'exe_time';
 						return array('currentChoice' => $value, 'whereClause' => "");
 					},
+					'htmlAttributes' => array('onchange="varchange()"','id="crossvar2"')
 				),
 				'variable1' => array(
 					'type' => 'selectOne', 'default' => array('maps'), 'table' => 'execs',
@@ -339,6 +344,7 @@ class MLCrossvarController extends AbstractController
 						$value = isset($_GET['variable1']) ? $_GET['variable1'] : 'maps';
 						return array('currentChoice' => $value, 'whereClause' => "");
 					},
+					'htmlAttributes' => array('onchange="varchange()"','id="crossvar1"')
 				), 'valid' => array(
 					'default' => 0
 				), 'filter' => array(
@@ -359,17 +365,19 @@ class MLCrossvarController extends AbstractController
 						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
-					'filterGroup' => 'MLearning'
+					'filterGroup' => 'MLearning',
+					'htmlAttributes' => array('id="selectcurrentmodel"','title="Only enabled for \'Prediction Time\' variable without \'Use all models\', or with \'Use predictions instead of observations\'"')
 				),
 				'umods' => array(
 					'type' => 'checkbox',
 					'default' => 1,
-					'label' => 'Use data from all models (\'Pred.Time\')',
+					'label' => 'Use data from all models',
 					'parseFunction' => function() {
 						$choice = (!isset($_GET['umods'])) ? 0 : 1;
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
-					'filterGroup' => 'MLearning'
+					'filterGroup' => 'MLearning',
+					'htmlAttributes' => array('id="checkumods"','onchange="selectmod_enabler()"','title="Only enabled for \'Prediction Time\' variable"')
 				),
 				'upred' => array(
 					'type' => 'checkbox',
@@ -379,7 +387,8 @@ class MLCrossvarController extends AbstractController
 						$choice = (!isset($_GET['upred'])) ? 0 : 1;
 						return array('whereClause' => '', 'currentChoice' => $choice);
 					},
-					'filterGroup' => 'MLearning'
+					'filterGroup' => 'MLearning',
+					'htmlAttributes' => array('id="checkupred"','onchange="selectmod_enabler()"')
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods','upred'))));
