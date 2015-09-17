@@ -181,11 +181,11 @@ class MLCrossvarController extends AbstractController
 					if ($ret_learn == 1)
 					{
 						$must_wait = "YES";
-						throw new \Exception(); // Legal Exception to escape until finished
+						throw new \Exception("WAIT");
 					}
 					else if ($ret_learn == -1)
 					{
-						throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
+						throw new \Exception("There was an error when creating a model for [".$instance."]");
 					}
 				}
 */
@@ -250,7 +250,10 @@ class MLCrossvarController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			//if ($e->getMessage () != "WAIT")
+			//{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			//}
 			$jsonData = '[]';
 		}
 		$return_params = array(
@@ -263,6 +266,7 @@ class MLCrossvarController extends AbstractController
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'must_wait' => $must_wait,
+			'models' => $model_html
 		);
 		return $this->render('mltemplate/mlcrossvar.html.twig', $return_params);
 	}
@@ -456,11 +460,11 @@ class MLCrossvarController extends AbstractController
 					if ($ret_learn == 1)
 					{
 						$must_wait = "YES";
-						throw new \Exception(); // Legal Exception to escape until finished
+						throw new \Exception("WAIT");
 					}
 					else if ($ret_learn == -1)
 					{
-						throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
+						throw new \Exception("There was an error when creating a model for [".$instance."]");
 					}
 				}
 */
@@ -534,9 +538,11 @@ class MLCrossvarController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			//if ($e->getMessage () != "WAIT")
+			//{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			//}
 			$jsonData = '[]';
-			$categories1 = $categories2 = '';
 		}
 		$dbml = null;
 		$return_params = array(
@@ -552,15 +558,16 @@ class MLCrossvarController extends AbstractController
 			'instance' => $instance,
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
-			'must_wait' => $must_wait
+			'must_wait' => $must_wait,
+			'models' => $model_html
 		);
 		return $this->render('mltemplate/mlcrossvar3d.html.twig', $return_params);
 	}
 
 	public function mlcrossvar3dfaAction()
 	{
-		$jsonData = $possible_models = $possible_models_id = array();
-		$message = $instance = $possible_models_id = $other_models = '';
+		$jsonData = $possible_models = $possible_models_id = $other_models = array();
+		$message = $instance = $possible_models_id = '';
 		$categories1 = $categories2 = "''";
 		$maxx = $minx = $maxy = $miny = $maxz = $minz = 0;
 		$must_wait = 'NO';
@@ -659,8 +666,11 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
-
 			$where_configs = $this->filters->getWhereClause();
+
+			$model_html = '';
+			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+			foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
@@ -674,7 +684,8 @@ class MLCrossvarController extends AbstractController
 			$variables = $this->filters->getFiltersSelectedChoices(array('variable1','variable2','current_model','unseen'));
 			$cross_var1 = $variables['variable1'];
 			$cross_var2 = $variables['variable2'];
-			$param_current_model = ($variables['current_model'] != null) ? $variables['current_model'] : "";
+
+			$param_current_model = $variables['current_model'];
 			$unseen = ($variables['unseen']) ? true : false;
 
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -692,39 +703,61 @@ class MLCrossvarController extends AbstractController
 
 			// Other models for filling
 			$where_models = '';
-			if (!empty($possible_models_id))
-			{
-				$where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
-			}
+			if (!empty($possible_models_id)) $where_models = " WHERE id_learner NOT IN ('".implode("','",$possible_models_id)."')";
 			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
-			// Call to MLFindAttributes, to fetch data
-			$_GET['pass'] = 2;
-			$mlfa1 = new MLFindAttributesController();
-			$mlfa1->container = $this->container;
-			$ret_data = $mlfa1->mlfindattributesAction();
+			// Call to MLPrediction, to create a model
+			if (empty($possible_models_id))
+			{
+				$_GET['pass'] = 1;
+				$mltc1 = new MLPredictionController(); // FIXME - Choose the default modeling algorithm
+				$mltc1->container = $this->container;
+				$ret_learn = $mltc1->mlpredictionAction();
 
-			$rows = null;
-			if ($ret_data == 1)
-			{
-				$must_wait = "YES";
-				throw new \Exception(); // Legal Exception to escape until finished
+				$rows = null;
+				if ($ret_data == 1)
+				{
+					$must_wait = "YES";
+					throw new \Exception("WAIT");
+				}
+				else if ($ret_data == -1)
+				{
+					throw new \Exception("There was an error when creating a model for [".$instance."]");
+				}
 			}
-			else if ($ret_data == -1)
+
+			// Call to MLFindAttributes, to generate data
+			if ($current_model != '')
 			{
-				throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section. [".$instance."]");
+				$_GET['pass'] = 2;
+				$mlfa1 = new MLFindAttributesController();
+				$mlfa1->container = $this->container;
+				$ret_data = $mlfa1->mlfindattributesAction();
+
+				$rows = null;
+				if ($ret_data == 1)
+				{
+					$must_wait = "YES";
+					throw new \Exception("WAIT");
+				}
+				else if ($ret_data == -1)
+				{
+					throw new \Exception("There was an error when creating predictions for [".$instance."]");
+				}
 			}
-			else
+
+			// Get stuff from the DB
+			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
+				FROM aloja_ml.predictions as p
+				WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
+				GROUP BY p.instance
+				ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
+	  	  	$rows = $db->get_rows($query);
+			if (empty($rows))
 			{
-				// Get stuff from the DB
-				$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
-					FROM aloja_ml.predictions as p
-					WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
-					GROUP BY p.instance
-					ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
-				$rows = $dbml->query($query);
-				if (is_null($rows)) throw new \Exception('No data matches with your critteria.');
+				if ($current_model == '') throw new \Exception('No data matches with your critteria. Try to select a specific model to generate data.');
+				else throw new \Exception('No data matches with your critteria.');
 			}
 
 			// Show the results
@@ -778,7 +811,10 @@ class MLCrossvarController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			if ($e->getMessage () != "WAIT")
+			{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			}
 			$jsonData = '[]';
 		}
 		$dbml = null;
@@ -796,8 +832,11 @@ class MLCrossvarController extends AbstractController
 			'slice_info' => $slice_info,
 			'models' => '<li>'.implode('</li><li>',$possible_models).'</li>',
 			'must_wait' => $must_wait,
+			'models' => $model_html,
+			'current_model' => $current_model
 		);
-		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+		$this->filters->setCurrentChoices('current_model',array_merge(array("Aggregation of Models"),$possible_models_id,((!empty($other_models))?array('---Other models---'):array()),$other_models));
+
 		return $this->render('mltemplate/mlcrossvar3dfa.html.twig', $return_params);
 	}
 }
