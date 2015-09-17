@@ -12,6 +12,7 @@ fi
 # Arrays for times
 declare -g -A EXEC_TIME
 declare -g -A EXEC_START
+declare -g -A EXEC_START_DATE
 declare -g -A EXEC_END
 
 # Associative array for downloading apps and configs
