@@ -115,7 +115,10 @@ class Filters
             'vm_cores' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'VM cores:'),
             'vm_RAM' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'VM RAM:',
                 'beautifier' => function($value) {
-                   return number_format($value,0) . ' GB';
+                    if(($value*10)%10 != 0) {
+                        return number_format($value,1) . ' GB';
+                    } else
+                       return number_format($value,0) . ' GB';
                 }),
             'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Cluster type:'),
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Hadoop version:'),

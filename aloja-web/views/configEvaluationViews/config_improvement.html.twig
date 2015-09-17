@@ -15,11 +15,11 @@
 	var chart = new Highcharts.Chart({
 		chart: {
 			type: 'bar',
-			renderTo: 'chart',
+			renderTo: 'chart'
 		},
 		title: {
 			text: 'Average speedup by config group to average execution time by benchmark',
-			align: 'center',
+			align: 'center'
 		},
 		subtitle: {
 			text: 'From {{ count }} distinct executions'
@@ -27,7 +27,7 @@
 		xAxis: {
 			categories: [{{ categories|raw }}],
 			title: {
-				text: 'Configuration group',
+				text: 'Configuration group'
 			}
 		},
 		yAxis: {
@@ -86,9 +86,9 @@
 			backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
 			shadow: true,
 			title: {
-				text: ':: Drag Legend ::',
+				text: ':: Drag Legend ::'
 			},
-			draggable: true,
+			draggable: true
 		},
 		credits: {
 			enabled: false
