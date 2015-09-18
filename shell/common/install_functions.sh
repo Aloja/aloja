@@ -141,6 +141,8 @@ vm_install_extra_packages() {
 # $5 role (master, slave, if empty defaults to master)
 # $6 server_id (optional if master, mandatory if slave, defaults to 1 if empty)
 
+# ... extra key=value options
+
 install_percona() {
 
   local bootstrap_file="${FUNCNAME[0]}"
@@ -154,14 +156,10 @@ install_percona() {
   [ "$5" != "" ] && role=$5 || role=master
   [ "$6" != "" ] && server_id=$6 || server_id=1
 
+  shift 6
+
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
-
-    if [ "$1" ] ; then
-      local datadir="datadir=$1"
-    else
-      local datadir=""
-    fi
 
     logger "Installing Percona server"
 
@@ -174,8 +172,8 @@ sudo apt-get autoremove -y;
 sudo mkdir -p /etc/mysql/conf.d;
   "
 
-    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}")
-$datadir" "secured"
+    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}" "$@")
+datadir=${datadir}" "secured"
 
     logger "INFO: Installing Percona"
 
@@ -194,12 +192,12 @@ Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;"
 
-    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql percona-toolkit"
+    install_packages "percona-server-server-5.6 percona-xtrabackup qpress php5-mysql percona-toolkit"
 
     # create binlog and relaylog dirs
     vm_execute "
 sudo mkdir -p '${datadir}/binlogs' '${datadir}/relaylogs';
-sudo chowm -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
+sudo chown -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
 "
 
     #test
