@@ -267,9 +267,11 @@ bash $(get_repo_path)/shell/create-update_DB.sh
 
 # executes create-update DB script
 update_ALOJA_DB () {
-  logger "Updating DB..."
+  logger "INFO: Updating DB..."
   local result="$(vm_execute "$(get_repo_path)/shell/create-update_DB.sh 2>&1 /dev/null")"  #hide update output
-  logger "Updating DB ready"
+  logger "INFO: Updating DB ready"
+  logger "INFO: Clear twig (PHP) templates"
+  vm_execute "sudo rm -rf /var/www/aloja-web/cache/twig/*;"
 }
 
 # OLD install DB function, enable manually
