@@ -1045,6 +1045,43 @@ $MYSQL "update aloja2.execs set bench='terasort' where bench='TeraSort' and id_c
 update aloja2.execs set bench='prep_wordcount' where bench='random-text-writer' and id_cluster IN (20,23,24,25);
 update aloja2.execs set bench='prep_terasort' where bench='TeraGen' and id_cluster IN (20,23,24,25);"
 
+#azure VMs
+$MYSQL "
+update ignore aloja2.clusters  SET vm_size='A3' where vm_size IN ('large', 'Large');
+update ignore aloja2.clusters  SET vm_size='A2' where vm_size IN ('medium', 'Medium');
+update ignore aloja2.clusters  SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
+update ignore aloja2.clusters  SET vm_size='D4' where vm_size IN ('Standard_D4');"
+
+
+#Change bench suite names
+$MYSQL "
+update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
+update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%' OR (bench_type = 'HiBench3HDI' AND vm_OS = 'linux');
+update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = 'MapReduce-Examples' where bench_type = 'HiBench3HDI' AND vm_OS = 'windows';
+"
+
+##Datasize and scale factor
+$MYSQL "
+update ignore aloja2.execs set datasize = NULL;
+update ignore aloja2.execs set scale_factor = 'N/A';
+
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_READ where c.type != 'PaaS' and bench != 'terasort';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_READ where c.type = 'PaaS' and bench != 'terasort';
+
+update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_WRITTEN where c.type != 'PaaS' and bench = 'terasort';
+update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_WRITTEN where c.type = 'PaaS' and bench = 'terasort';
+
+update ignore aloja2.execs e set e.scale_factor = '32GB/Dn' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
+
+update ignore aloja2.execs e set e.scale_factor='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
+"
+
+##HDInsight filters
+$MYSQL "
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
+update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
+"
 
 #Rackspace cloud
 #$MYSQL "

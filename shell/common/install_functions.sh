@@ -821,7 +821,7 @@ config_ganglia_gmond(){
 
     logger "INFO: Configuring ganglia-monitor (gmond)"
 
-    vm_local_scp files/gmond.conf.t /tmp/ "" ""
+    vm_local_scp "$ALOJA_REPO_PATH/aloja-deploy/files/gmond.conf.t" "/tmp/" "" ""
 
     vm_execute "
 
@@ -901,7 +901,7 @@ config_ganglia_gmetad(){
       sep=%
     done
 
-    vm_local_scp files/gmetad.conf.t /tmp/ "" ""
+    vm_local_scp "$ALOJA_REPO_PATH/aloja-deploy/files/gmetad.conf.t" "/tmp/" "" ""
 
     vm_execute "
 
@@ -968,7 +968,7 @@ install_ganglia_web(){
     install_packages "php5-gd rrdtool" || die "Error installing ganglia-web"
     aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball" || die "Error installing ganglia-web"
 
-    vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
+    vm_local_scp "$ALOJA_REPO_PATH/aloja-deploy/files/ganglia_conf.php.t" "/tmp/" "" ""
 
     if [ -d '/vagrant' ]; then
   
