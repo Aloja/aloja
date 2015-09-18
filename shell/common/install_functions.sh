@@ -198,6 +198,10 @@ sudo apt-get update;"
     vm_execute "
 sudo mkdir -p '${datadir}/binlogs' '${datadir}/relaylogs';
 sudo chown -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
+
+sudo mysql -e \"GRANT ALL PRIVILEGES ON *.* TO '${userDbAloja}'@'%' IDENTIFIED BY '${passwordDbAloja}';\"
+sudo mysql -e \"REVOKE SUPER ON *.* FROM '${userDbAloja}'@'%';\"
+
 "
 
     #test
