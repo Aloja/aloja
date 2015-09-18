@@ -15,9 +15,8 @@ benchmark_run() {
 
   restart_monit
 
-  local start_exec=`timestamp`
+  local start_exec="$(timestamp)"
   local start_date=$(date --date='+1 hour' '+%Y%m%d%H%M%S')
-  logger "INFO:# EXECUTING ${BENCH}"
 
   #need to send all the environment variables over SSH
   EXP="export BIG_BENCH_JAVA=$JAVA_HOME/bin/java && \
@@ -35,11 +34,9 @@ export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
   # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench populateMetastore -b"
   # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench runQuery -q 5 -b"
 
-  local end_exec=`timestamp`
+  local end_exec="$(timestamp)"
 
-  logger "INFO:# DONE EXECUTING ${BENCH}"
-
-  local total_secs=`calc_exec_time $start_exec $end_exec`
+  local total_secs="$(calc_exec_time $start_exec $end_exec)"
   echo "end total sec $total_secs"
 
   # Save execution information in an array to allow import later

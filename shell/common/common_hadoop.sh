@@ -1,4 +1,6 @@
 #HADOOP SPECIFIC FUNCTIONS
+source_file "$ALOJA_REPO_PATH/shell/common/common_java.sh"
+set_java_requires
 
 get_hadoop_config_folder() {
   echo "hadoop1_conf_template"
@@ -35,6 +37,24 @@ export HADOOP_YARN_HOME='$HADOOP_HOME';
   fi
 
   echo -e "$to_export"
+}
+
+# Get the list of slaves
+# TODO should be improved to include master node as worker node if necessary
+# $1 list of nodes
+# $2 master name
+get_hadoop_slaves() {
+  local all_nodes="$1"
+  local master_name="$2"
+  local only_slaves
+
+  if [ "$all_nodes" ] && [ "$master_name" ] ; then
+    only_slaves="$(echo -e "$all_nodes"|grep -v "$master_name")"
+  else
+    die "Empty list of nodes supplied"
+  fi
+
+  echo -e "$only_slaves"
 }
 
 # Sets a coma separeted list of disks for the hadoop conf file
@@ -246,7 +266,7 @@ export LC_ALL=en_US.UTF-8;
 
   # Get the values
   subs=$(get_substitutions)
-  slaves="$(get_slaves_names)"
+  slaves="$(get_hadoop_slaves "$node_names" "$master_name")"
 
   $DSH "
 $export_perl
@@ -504,11 +524,11 @@ $(get_hadoop_exports)"
     hadoop_exports="$(get_hadoop_exports)"
   fi
 
-logger "DEBUG: $hadoop_exports"
+  logger "DEBUG: $hadoop_exports"
 
   $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${prefix}${bench} %e' $cmd"
 
-  local end_exec=`timestamp`
+  local end_exec="$(timestamp)"
 
   local total_secs=`calc_exec_time $start_exec $end_exec`
   logger "DONE RUNNING $bench Total time: ${total_secs}secs."
@@ -550,6 +570,35 @@ logger "DEBUG: $hadoop_exports"
   fi
 
   save_hadoop "${3}${1}"
+}
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+
+execute_hadoop_new(){
+  local bench="$1"
+  local cmd="$2"
+
+  local hadoop_exports
+  local hadoop_cmd
+
+  #TODO refactor
+  if [ "$EXECUTE_HIBENCH" ] ; then
+    hadoop_exports="$(get_HiBench_exports)
+$(get_hadoop_exports)"
+  else
+    hadoop_exports="$(get_hadoop_exports)"
+  fi
+  logger "DEBUG: $hadoop_exports"
+
+  hadoop_cmd="$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop $cmd"
+
+  $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${bench} %e' $hadoop_cmd"
+
+  save_disk_usage "AFTER"
+
+  save_hadoop "$bench"
 }
 
 execute_hdi_hadoop() {
