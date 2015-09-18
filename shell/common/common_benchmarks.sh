@@ -1,5 +1,7 @@
 # Helper functions for running benchmarks
 
+# Enabled benchmarks
+[ ! "$BENCH_SUITES" ] && BENCH_SUITES="sleep HiBench2 HiBench2-min WordCount" #space separted list of enabled benchmark suites
 
 # prints usage and exits
 usage() {
@@ -19,7 +21,7 @@ ${white}Usage:
 $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-n net <IB|ETH>]
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
-[-b benchmark <-min|-10>]
+[-b benchmark <HiBench2|HiBench2-min>]
 [-r replicaton <positive int>]
 [-m max mappers and reducers <positive int>]
 [-i io factor <positive int>] [-p port prefix <3|4|5>]
@@ -32,7 +34,7 @@ $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
 
-${cyan}example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b _min -I 4096 -l wordcount -c 1
+${cyan}example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b HiBench2-min -I 4096 -l wordcount -c 1
 $reset"
   exit 1;
 }
@@ -60,7 +62,11 @@ get_options() {
         ;;
       b)
         BENCH=$OPTARG
-        [ "$BENCH" == "HiBench2" ] || [ "$BENCH" == "HiBench2-min" ] || [ "$BENCH" == "HiBench2-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
+        #[ "$BENCH" == "HiBench2" ] || [ "$BENCH" == "HiBench2-min" ] || [ "$BENCH" == "HiBench2-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
+        if ! inList "$BENCH_SUITES" "$BENCH" ; then
+          logger "ERROR: supplied benchmark $BENCH not enabled in list: $BENCH_SUITES"
+          usage
+        fi
         ;;
       r)
         REPLICATION=$OPTARG
@@ -306,7 +312,7 @@ initialize() {
 initialize_node_names() {
   #For infiniband tests
   if [ "$NET" == "IB" ] ; then
-    IFACE="ib0"
+    [ ! "$defaultProvider" == "vagrant" ] && IFACE="ib0" #vagrant we use for testing IB config
     master_name="$(get_master_name_IB)"
     node_names="$(get_node_names_IB)"
   else
@@ -351,12 +357,15 @@ test_nodes() {
 
   [ ! "$severity" ] && severity="ERROR"
 
-  local node_output="$($DSH "$condition && echo '$testKey'"|sort 2>&1)"
+  local node_output="$($DSH "$condition && echo '$testKey' 2>&1"|sort )"
   local num_OK="$(echo -e "$node_output"|grep "$testKey"|wc -l)"
+
+  local KO_output="$(echo -e "$node_output"|grep -v "$testKey")"
+
   local num_nodes="$(get_num_nodes)"
   if (( num_OK != num_nodes )) ; then
     logger "${severity}: Cannot execute: $condition in all nodes. Num OK: $num_OK Num KO: $((num_nodes - num_OK))
-DEBUG Output:
+DEBUG output:
 $node_output"
     return 1
   else
@@ -716,10 +725,16 @@ stop_monit(){
 
 save_bench() {
   logger "INFO: Saving benchmark $1"
+
+  # TODO make sure the dir is created previously (sleep bench case)
+  $DSH "mkdir -p $JOB_PATH/$1;"
+
+  # Save the perf mon logs
   $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
- if [ "$clusterType" == "PaaS" ]; then
-	hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$1"
- fi
+
+  if [ "$clusterType" == "PaaS" ]; then
+    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$1"
+  fi
   #we cannot move hadoop files
   #take into account naming *.date when changing dates
   #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
@@ -819,7 +834,7 @@ set_omm_killer() {
   #pgrep apache2 |sudo xargs -I %PID sh -c 'echo 10 > /proc/%PID/oom_adj'
 }
 
-function timestamp() {
+timestamp() {
   sec=`date +%s`
   nanosec=`date +%N`
   tmp=`expr $sec \* 1000 `
@@ -827,8 +842,37 @@ function timestamp() {
   echo `expr $tmp + $msec`
 }
 
-function calc_exec_time() {
+calc_exec_time() {
   awk "BEGIN {printf \"%.3f\n\", ($2-$1)/1000}"
+}
+
+# Starts the timer for measuring benchmark time
+# $1 bench name
+set_bench_start() {
+  local bench_name="$1"
+  if [ "$bench_name" ] ; then
+    EXEC_START["$bench_name"]="$(timestamp)"
+    EXEC_START_DATE["$bench_name"]="$(date --date='+1 hour' '+%Y%m%d%H%M%S')"
+  else
+    die "Empty benchmark name supplied"
+  fi
+}
+
+# Starts the timer for measuring benchmark time
+# $1 bench name
+set_bench_end() {
+  local end_exec="$(timestamp)"
+  local bench_name="$1"
+
+  if [ "$bench_name" ] && [ "${EXEC_START["$bench_name"]}" ] ; then
+    local start_exec="${EXEC_START["$bench_name"]}"
+    local total_secs="$(calc_exec_time $start_exec $end_exec)"
+
+    EXEC_TIME["$bench_name"]="$total_secs"
+    EXEC_END["$bench_name"]="$end_exec"
+  else
+    die "Empty benchmark name supplied or empty EXEC_START[$bench_name]"
+  fi
 }
 
 save_disk_usage() {

@@ -33,13 +33,6 @@ vm_final_bootstrap() {
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chmod 1777 /mr-history\""
 }
 
-#$1 cluster name
-node_delete() {
-	hdi_cluster_check_delete $1
-	azure hdinsight cluster delete "$1" "South Central US" "$vmType"
-	ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
-}
-
 get_slaves_names() {
     local nodes=$numberOfNodes
     local node_names

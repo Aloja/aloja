@@ -118,8 +118,8 @@ vm_final_bootstrap() {
 
   logger "INFO: making sure minerva-100 config is up to date"
   vm_execute "
-sudo apt-get -y --force remove hadoop puppet;
-sudo apt-get -y --force remove libvirt-bin libvirt0;
+sudo apt-get -y remove hadoop puppet;
+sudo apt-get -y remove libvirt-bin libvirt0;
 sudo apt-get -y autoremove;
 "
 
@@ -225,14 +225,14 @@ get_node_names_IB() {
 
 #for Infiniband on clusters that support it
 get_master_name_IB() {
-  if [ "$clusterName" == "minerva100-10-18-21" ] || [ "$clusterName" == "minerva100-02-18-22" ]  ; then
+#  if [ "$clusterName" == "minerva100-10-18-21" ] || [ "$clusterName" == "minerva100-02-18-22" ]  ; then
     #logger "INFO: generating host name for IB"
     local nodes="$(get_master_name)"
     echo -e "$(convert_regular2IB_hostnames "$nodes")"
-  else
-    #logger "WARN: Special master name for InfiniBand not defined, using regular"
-    echo "$(get_master_name)"
-  fi
+#  else
+#    #logger "WARN: Special master name for InfiniBand not defined, using regular"
+#    echo "$(get_master_name)"
+#  fi
 }
 
 #$1 host list
