@@ -313,6 +313,11 @@
 				}
 			}
 		});
+		$("form[name='configFilters'] input").change(function() {
+			if($(this).attr('name') != 'presets') {
+				$("select[name='presets']").val("none");
+			}
+		});
 
 		$("span.selectAll").click(function() { 
 			$(this).parent().find('.panel-body').first().find('input').prop('checked',true);
