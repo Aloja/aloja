@@ -164,8 +164,10 @@ update ignore aloja2.execs e set e.scale_factor = '32GB/Dn' where e.bench='wordc
 
 update ignore aloja2.execs e set e.scale_factor='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
 
+#Change bench suite names
 update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
-update ignore aloja2.execs set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%';
+update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%' OR (bench_type = 'HiBench3HDI' AND vm_OS = 'linux');
+update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = 'MapReduce-Examples' where bench_type = 'HiBench3HDI' AND vm_OS = 'windows';
 "
 
 #update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (

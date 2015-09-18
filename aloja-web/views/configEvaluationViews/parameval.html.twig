@@ -4,6 +4,14 @@
 	<script type="text/javascript" src="js/highcharts/js/highcharts.js"></script>
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
     <script>
+    function toggle(divid, textid)
+    {
+	var ele = document.getElementById(divid);
+	var text = document.getElementById(textid);
+	if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+	else { ele.style.display = "block"; text.innerHTML = "hide"; }
+    }
+
     $(function () {
         $('select[name="parameval"]').change(function() {
 			var name = $(this).val()+'s[]';
@@ -85,6 +93,16 @@
 			<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left;"></div>
 			<div style="width: 30%; float: right;">
 				{% include 'common/config_filters.html.twig' %}
+			</div>
+			<div style="clear: both;"></div>
+			<hr />
+			<div id="options">
+				Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+				<div id="footer" style="display: none; float: left; width: 100%;">	
+					<div style="float: left; width: 70%;">
+						<ul>{{models | raw}}</ul>
+					</div>
+				</div>
 			</div>
 		</div>
 	{% endblock %}

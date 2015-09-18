@@ -12,61 +12,185 @@ class ConfigEvaluationsController extends AbstractController
     {
         $db = $this->container->getDBUtils();
 
-        $this->buildFilters();
-        $this->buildGroupFilters();
+	$this->buildFilters(array(
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
+	$this->buildGroupFilters(); // FIXME - WHY?! ALSO NO DEFAULTS ON CHECKBOX?!
         $whereClause = $this->filters->getWhereClause();
-       
+
+	$model_html = '';
+	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
+
         $rows_config = '';
         try {
            	$concat_config = Utils::getConfig($this->filters->getGroupFilters());
 
-            $filter_execs = DBUtils::getFilterExecs();
-            $order_conf = 'LENGTH(conf), conf';
+		$filter_execs = DBUtils::getFilterExecs();
+		$order_conf = 'LENGTH(conf), conf';
 
-            //get configs first (categories)
-            $query = "SELECT count(*) num, concat($concat_config) conf from aloja2.execs e
-                      JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause
-                      GROUP BY conf ORDER BY $order_conf #AVG(exe_time)
-                      ;";
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
-            $rows_config = $db->get_rows($query);
+		//get configs first (categories)
+		if ($params['uobsr'] == 1 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "
+				SELECT SUM(u1.num) AS num, u1.conf as conf
+				FROM (				
+					(SELECT COUNT(*) AS num, CONCAT($concat_config) conf
+					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					WHERE 1 $filter_execs $whereClause
+					GROUP BY conf ORDER BY $order_conf)
+					UNION
+					(SELECT COUNT(*) AS num, CONCAT($concat_config) conf 
+					FROM aloja_ml.predictions AS p
+					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
+					GROUP BY conf ORDER BY $order_conf)
+				) AS u1
+				GROUP BY conf ORDER BY $order_conf
+			";
+		}
+		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "SELECT COUNT(*) num, CONCAT($concat_config) conf 
+				FROM aloja_ml.predictions AS e
+				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
+				GROUP BY conf ORDER BY $order_conf";
+		}
+		else
+		{
+			$query = "SELECT COUNT(*) num, CONCAT($concat_config) conf
+				FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+				WHERE 1 $filter_execs $whereClause
+				GROUP BY conf ORDER BY $order_conf #AVG(exe_time)";
+		}
+		$rows_config = $db->get_rows($query);
 
-            $height = 600;
+		$height = 600;
 
-            if (count($rows_config) > 4) {
-                $num_configs = count($rows_config);
-                $height = round($height + (10*($num_configs-4)));
-            }
+		if (count($rows_config) > 4) {
+			$num_configs = count($rows_config);
+			$height = round($height + (10*($num_configs-4)));
+		}
 
-            //get the result rows
-            //#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $whereClause) P50_ALL_exe_time,
-            $query = "SELECT #count(*),
-            		  e.id_exec,
-                      concat($concat_config) conf, bench,
-                      avg(exe_time) AVG_exe_time,
-                      #max(exe_time) MAX_exe_time,
-                      min(exe_time) MIN_exe_time,
-                      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
-                      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
-                      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
-                      (select AVG(exe_time) FROM execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
-                      #(select MAX(exe_time) FROM execs WHERE bench = e.bench $whereClause) MAX_ALL_exe_time,
-                      #(select MIN(exe_time) FROM execs WHERE bench = e.bench $whereClause) MIN_ALL_exe_time,
-                      'none'
-                      from aloja2.execs e JOIN aloja2.clusters USING (id_cluster)
-                      WHERE 1 $filter_execs $whereClause
-                      GROUP BY conf, bench order by bench, $order_conf;";
+		//get the result rows
+		if ($params['uobsr'] == 1 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
 
-            $rows = $db->get_rows($query);
+			$query = "
+				SELECT u1.id_exec AS id_exec, u1.conf AS conf, u1.bench AS bench, AVG(u1.exe_time) AVG_exe_time, MAX(u1.exe_time) MAX_exe_time, MIN(u1.exe_time) MIN_exe_time,
+				(
+					SELECT AVG(u2.exe_time)
+					FROM (
+						(SELECT exe_time, bench as b1
+						FROM aloja2.execs
+						WHERE 1 $whereClause)
+						UNION
+						(SELECT pred_time AS exe_time, bench as b1
+						FROM aloja_ml.predictions
+						WHERE 1 $whereClauseML AND id_learner = '".$params['current_model']."')
+					) as u2
+					WHERE bench = b1
+				) AVG_ALL_exe_time,'none'
+				FROM (
+					(SELECT id_exec, concat($concat_config) conf, bench, exe_time
+					FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster)
+					WHERE 1 $whereClause)
+					UNION
+					(SELECT id_exec, CONCAT($concat_config) conf, bench, pred_time AS exe_time
+					FROM aloja_ml.predictions AS p
+					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."')
+				) AS u1
+				GROUP BY conf, bench ORDER BY bench, $order_conf
+			";
+		}
+		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "
+				SELECT id_exec, CONCAT($concat_config) conf, bench, AVG(pred_time) AVG_exe_time, max(pred_time) MAX_exe_time, min(pred_time) MIN_exe_time,
+				(
+					SELECT AVG(pred_time)
+					FROM aloja_ml.predictions
+					WHERE bench = p.bench $whereClauseML AND id_learner = '".$params['current_model']."'
+				) AVG_ALL_exe_time, 'none'
+				FROM aloja_ml.predictions AS p
+				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
+				GROUP BY conf, bench ORDER BY bench, $order_conf
+			";
+		}
+		else
+		{
+			if ($params['uobsr'] == 0 && $params['upred'] == 0)
+				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
 
-            if ($rows) {
-                //print_r($rows);
-            } else {
-                throw new \Exception("No results for query!");
-            }
+			//#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $whereClause) P50_ALL_exe_time,
+			$query = "SELECT #count(*),
+			      e.id_exec,
+			      concat($concat_config) conf, bench,
+			      avg(exe_time) AVG_exe_time,
+			      #max(exe_time) MAX_exe_time,
+			      min(exe_time) MIN_exe_time,
+			      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
+			      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
+			      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
+			      (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
+			      #(select MAX(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) MAX_ALL_exe_time,
+			      #(select MIN(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) MIN_ALL_exe_time,
+			      'none'
+			      from aloja2.execs e JOIN aloja2.clusters USING (id_cluster)
+			      WHERE 1 $filter_execs $whereClause
+			      GROUP BY conf, bench order by bench, $order_conf";
+		}
+		$rows = $db->get_rows($query);
+
+		if (!$rows) throw new \Exception("No results for query!");
 
         } catch (\Exception $e) {
-            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
         $categories = '';
@@ -119,83 +243,165 @@ class ConfigEvaluationsController extends AbstractController
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
+		'models' => $model_html
             )
         );
     }
 
-    public function bestConfigAction() {
+    public function bestConfigAction()
+    {
         $db = $this->container->getDBUtils ();
-        $this->buildFilters(array('bench' =>
-            array('default' => array('terasort'),
-                'type' => 'selectOne', 'label' => 'Benchmark:'),
+        $this->buildFilters(array(
+		'bench' => array(
+			'default' => array('terasort'),
+			'type' => 'selectOne', 'label' => 'Benchmark:'
+		),
+		'ordertype' => array(
+			'default' => array('cost'),
+			'type' => 'selectOne',
+			'label' => 'Best config by:',
+			'generateChoices' => function() {
+			    return array('exe_time','cost');
+			},
+			'parseFunction' => function() {
+			    $ordertype = isset($_GET['ordertype']) ? $_GET['ordertype'] : 'cost';
+			    return array('currentChoice' => $ordertype, 'whereClause' => "");
+			},
+			'beautifier' => function($value) {
+			   if($value == 'exe_time')
+			       return 'Execution time';
+			    else
+			       return 'Cost-effectiveness';
+			},
+			'filterGroup' => 'basic'
+		),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
+        $whereClause = $this->filters->getWhereClause();
 
-            'ordertype' => array('default' => array('cost'), 'type' => 'selectOne', 'label' => 'Best config by:',
-                'generateChoices' => function() {
-                    return array('exe_time','cost');
-                },
-                'parseFunction' => function() {
-                    $ordertype = isset($_GET['ordertype']) ? $_GET['ordertype'] : 'cost';
-                    return array('currentChoice' => $ordertype, 'whereClause' => "");
-                },
-                'beautifier' => function($value) {
-                   if($value == 'exe_time')
-                       return 'Execution time';
-                    else
-                       return 'Cost-effectiveness';
-                },
-                'filterGroup' => 'basic'
-            ))
-        );
+	$model_html = '';
+	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
         $clusterCosts = Utils::generateCostsFilters($db);
 
         $bestexec = '';
         $cluster = '';
         try {
-            $whereClause = $this->filters->getWhereClause();
+		$order_type = Utils::get_GET_string ( 'ordertype' );
+		if (! $order_type)
+		$order_type = 'exe_time';
 
-            $order_type = Utils::get_GET_string ( 'ordertype' );
-            if (! $order_type)
-                $order_type = 'exe_time';
+		$filterExecs = DBUtils::getFilterExecs();
 
-            $filterExecs = DBUtils::getFilterExecs();
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
-            // get the result rows
-            $query = "SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
-    		FROM aloja2.execs e
-    		join aloja2.clusters c USING (id_cluster)
-    		WHERE 1 $filterExecs $whereClause
-    		GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
-    		ORDER BY $order_type ASC;";
+		// get the result rows
+		if ($params['uobsr'] == 1 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "
+				(SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
+				FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+				WHERE 1 $filterExecs $whereClause
+				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version)
+				UNION
+				(SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,e.bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
+				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
+				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['current_model']."'
+				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version)
+				ORDER BY $order_type ASC
+			";
+		}
+		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "
+				SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,e.bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
+				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
+				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['current_model']."'
+				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
+				ORDER BY $order_type ASC
+			";
+		}
+		else
+		{
+			if ($params['uobsr'] == 0 && $params['upred'] == 0)
+				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
 
-        //    $this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
-            $rows = $db->get_rows ( $query );
+			$query = "
+				SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
+				FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+				WHERE 1 $filterExecs $whereClause
+				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
+				ORDER BY $order_type ASC
+			";
+		}
 
-            if (! $rows) {
-                throw new \Exception ( "No results for query!" );
-            }
+//		$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
+		$rows = $db->get_rows ( $query );
+
+		if (!$rows) throw new \Exception ( "No results for query!" );
             
-            $minCost = -1;
-            $minCostIdx = 0;
+		$minCost = -1;
+		$minCostIdx = 0;
             
-            if ($rows) {
-            	$bestexec = $rows[0];
-            	if($order_type == 'cost') {
-	            	foreach($rows as $key => &$exec) {
-	            		$cost = Utils::getExecutionCost($exec,$clusterCosts);
-                        if(($cost < $minCost) || $minCost == -1) {
-	            			$minCost = $cost;
-	            			$minCostIdx = $key;
-	            		}
-                        $exec['cost'] = $cost;
-	            	}
-	            	$bestexec = $rows[$minCostIdx];
-            	} else
-                    $bestexec['cost'] = Utils::getExecutionCost($bestexec,$clusterCosts);
+		if ($rows) {
+			$bestexec = $rows[0];
+			if($order_type == 'cost') {
+			    	foreach($rows as $key => &$exec) {
+			    		$cost = Utils::getExecutionCost($exec,$clusterCosts);
+					if(($cost < $minCost) || $minCost == -1) {
+			    			$minCost = $cost;
+			    			$minCostIdx = $key;
+			    		}
+					$exec['cost'] = $cost;
+			    	}
+			    	$bestexec = $rows[$minCostIdx];
+			} else
+			    $bestexec['cost'] = Utils::getExecutionCost($bestexec,$clusterCosts);
 
-                $cluster=$bestexec['name'];
-                Utils::makeExecInfoBeauty($bestexec);
-            }
+			$cluster=$bestexec['name'];
+			Utils::makeExecInfoBeauty($bestexec);
+		}
         } catch ( \Exception $e ) {
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
@@ -208,6 +414,7 @@ class ConfigEvaluationsController extends AbstractController
             'order_type' => $order_type,
             'clusters' => $clusters,
             'clusterCosts' => $clusterCosts,
+	    'models' => $model_html
         ));
     }
 
@@ -217,63 +424,137 @@ class ConfigEvaluationsController extends AbstractController
                 'minexecs' => array('default' => null, 'type' => 'inputNumber', 'label' => 'Minimum executions:',
                     'parseFunction' => function() { return 0; },
                     'filterGroup' => 'basic'
-                ))
-        );
+                ),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
         $whereClause = $this->filters->getWhereClause();
+
+	$model_html = '';
+	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
         $categories = '';
         $series = '';
         try {
 
-            $paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
-            $minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
-            $this->filters->changeCurrentChoice('minexecs',($minExecs == -1) ? null : $minExecs);
+		$paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
+		$minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
+		$this->filters->changeCurrentChoice('minexecs',($minExecs == -1) ? null : $minExecs);
 
-            $minExecsFilter = "";
-            if($minExecs > 0)
-                $minExecsFilter = "HAVING COUNT(*) > $minExecs";
+		$minExecsFilter = "";
+		if($minExecs > 0)
+		$minExecsFilter = "HAVING COUNT(*) > $minExecs";
 
-            $filter_execs = DBUtils::getFilterExecs();
+		$filter_execs = DBUtils::getFilterExecs();
 
-            $options = $this->filters->getFiltersArray()[$paramEval]['choices'];
-            $paramOptions = array();
-            foreach($options as $option) {
-                if($paramEval == 'id_cluster')
-                    $paramOptions[] = Utils::getClusterName($option,$db);
-                else if($paramEval == 'comp')
-                    $paramOptions[] = Utils::getCompressionName($option);
-                else if($paramEval == 'net')
-                    $paramOptions[] = Utils::getNetworkName($option);
-                else if($paramEval == 'disk')
-                    $paramOptions[] = Utils::getDisksName($option);
-                else if($paramEval == 'vm_ram')
-                    $paramOptions[] = Utils::getBeautyRam($option);
-                else
-                    $paramOptions[] = $option;
-            }
+		$options = $this->filters->getFiltersArray()[$paramEval]['choices'];
+		$paramOptions = array();
+		foreach($options as $option) {
+		if($paramEval == 'id_cluster')
+		    $paramOptions[] = Utils::getClusterName($option,$db);
+		else if($paramEval == 'comp')
+		    $paramOptions[] = Utils::getCompressionName($option);
+		else if($paramEval == 'net')
+		    $paramOptions[] = Utils::getNetworkName($option);
+		else if($paramEval == 'disk')
+		    $paramOptions[] = Utils::getDisksName($option);
+		else if($paramEval == 'vm_ram')
+		    $paramOptions[] = Utils::getBeautyRam($option);
+		else
+		    $paramOptions[] = $option;
+		}
 
-            $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
+		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
 
-            // get the result rows
-            $query = "SELECT count(*) as count, $paramEval, e.id_exec, exec as conf, bench, ".
-                "exe_time, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time ".
-                "from execs e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause".
-                "GROUP BY $paramEval, bench $minExecsFilter order by bench,$paramEval";
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
-            $rows = $db->get_rows ( $query );
+		// get the result rows
+		if ($params['uobsr'] == 1 && $params['upred'] == 1)
+		{
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+			$query = "
+				SELECT COUNT(*) AS count, u1.$paramEval as $paramEval, u1.bench as bench, avg(u1.exe_time) avg_exe_time, min(u1.exe_time) min_exe_time
+				FROM (
+					(SELECT $paramEval, e.id_exec, exec, bench, exe_time
+					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					WHERE 1 $filter_execs $whereClause)
+					UNION
+					(SELECT $paramEval, p.id_exec, exec, bench, pred_time as exe_time
+					FROM aloja_ml.predictions AS p
+					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."')
+				) AS u1
+				GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval;
+			";
+		}
+		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+		{
+			$whereClause = str_replace("exe_time","pred_time",$whereClause);
+			$whereClause = str_replace("start_time","creation_time",$whereClause);
+			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(pred_time) avg_exe_time, min(pred_time) min_exe_time 
+				  FROM aloja_ml.predictions AS e
+				  WHERE 1 $filter_execs $whereClause AND id_learner = '".$params['current_model']."'
+				  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+		}
+		else
+		{
+			if ($params['uobsr'] == 0 && $params['upred'] == 0)
+				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
+			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time
+				  FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+				  WHERE 1 $filter_execs $whereClause
+				  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+		}
+		$rows = $db->get_rows ( $query );
 
-            if (!$rows) {
-                throw new \Exception ( "No results for query!" );
-            }
+		if (!$rows) {
+			throw new \Exception ( "No results for query!" );
+		}
 
-            $categories = '';
-            $arrayBenchs = array();
-            foreach ( $paramOptions as $param ) {
-                $categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
-                foreach($benchOptions as $bench) {
-                    $arrayBenchs[$bench['bench']][$param] = null;
-                }
-            }
+		$categories = '';
+		$arrayBenchs = array();
+		foreach ( $paramOptions as $param ) {
+			$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
+			foreach($benchOptions as $bench) {
+				$arrayBenchs[$bench['bench']][$param] = null;
+			}
+		}
 
             $series = array();
             foreach($rows as $row) {
@@ -307,7 +588,8 @@ class ConfigEvaluationsController extends AbstractController
             'minexecs' => $minExecs,
             'categories' => $categories,
             'series' => $series,
-            'paramEval' => $paramEval
+            'paramEval' => $paramEval,
+	    'models' => $model_html
         ) );
     }
 }

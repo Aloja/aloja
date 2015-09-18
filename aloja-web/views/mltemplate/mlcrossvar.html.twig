@@ -45,6 +45,7 @@
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
 						<li>Advanced Filters: {{slice_info|raw}}</li>
+						<li>Selected Variables: {{variable1}} - {{variable2}}</li>
 						</ul>
 					</p>
 				</div>
@@ -61,11 +62,25 @@
 	<script type="text/javascript" src="js/highcharts/js/highcharts-more.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
+	function selectmod_enabler()
+	{
+		$("#selectcurrentmodel").prop("disabled", $("#checkumods").is(':checked') || $("#checkumods").prop("disabled"));
+	}
+
+	function varchange()
+	{
+		var var1 = $("#crossvar1").children("option").filter(":selected").val();
+		var var2 = $("#crossvar2").children("option").filter(":selected").val();
+
+		$("#checkumods").prop("disabled",!(var1 == 'pred_time' || var2 == 'pred_time'));
+		selectmod_enabler();
+	}
+
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
+		varchange();
 
 		if ("{{must_wait}}"== "NO")
 		{
