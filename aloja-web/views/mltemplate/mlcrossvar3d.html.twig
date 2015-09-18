@@ -45,7 +45,7 @@
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
 						<li>Advanced Filters: {{slice_info|raw}}</li>
-						<li>Selected Variables: {{variable1}} - {{variable2}}</li>
+						<li>Selected Variables: {{variable1}} - {{variable2}} - {{variable3}}</li>
 						</ul>
 					</p>
 				</div>
@@ -63,11 +63,26 @@
 	<script src="http://code.highcharts.com/modules/exporting.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
+	function selectmod_enabler()
+	{
+		$("#selectcurrentmodel").prop("disabled", ($("#checkumods").is(':checked') || $("#checkumods").prop("disabled")) && (!$("#checkupred").is(':checked') || $("#checkupred").prop("disabled")));
+	}
+
+	function varchange()
+	{
+		var var1 = $("#crossvar1").children("option").filter(":selected").val();
+		var var2 = $("#crossvar2").children("option").filter(":selected").val();
+
+		$("#checkumods").prop("disabled",!(var1 == 'pred_time' || var2 == 'pred_time'));
+		$("#checkupred").prop("disabled",(var1 == 'pred_time' || var2 == 'pred_time'));
+		selectmod_enabler();
+	}
+
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
-
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
+		varchange();
 
 		if ("{{must_wait}}"== "NO")
 		{
@@ -120,7 +135,7 @@
 					}
     		                },
 				title: { text: 'Variable comparison (Now in 3D!)' },
-				subtitle: { text: '{{variable1}} vs {{variable2}} vs exe_time' },
+				subtitle: { text: '{{variable1}} vs {{variable2}} vs {{variable3}}' },
 				yAxis: {
 					max: {{maxy}},
 					min: {{miny}},
@@ -132,7 +147,7 @@
 					max: {{maxz}},
 					min: {{minz}},
 					gridLineWidth: 1,
-					title: { enabled: true, text: 'exe_time' },
+					title: { enabled: true, text: '{{variable3}}' },
 					reversed: true
 				},
 				xAxis: {
