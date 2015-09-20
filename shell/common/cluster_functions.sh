@@ -331,17 +331,11 @@ vm_connect() {
 #$1 source files $2 destination $3 extra options $4 use password
 vm_local_scp() {
 
-  local src
+  local src="$1"
 
   logger "SCPing files"
 
   set_shh_proxy
-
-  if [ -d '/vagrant' ]; then
-    src=/vagrant/aloja-deploy/$1
-  else
-    src=$1
-  fi
 
   #Use SSH keys
   if [ -z "$4" ] ; then
