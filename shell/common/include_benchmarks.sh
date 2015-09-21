@@ -90,7 +90,7 @@ source_file "$providerFunctionsFile"
 
 # Selected Bencmark specific source_files and overrides
 
-source_file "$ALOJA_REPO_PATH/shell/common/benchmark_${BENCH}.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/benchmark_${BENCH_SUITE}.sh"
 
 # Re-load cluster or node config
 logger "DEBUG: Re-loading $ALOJA_REPO_PATH/shell/conf/$clusterConfigFile for overrides"

@@ -13,8 +13,8 @@ benchmark_config() {
   export HIVE_HOME="${TPCH_B_DIR}/${HIVE_VERSION}"
   [ ! "$TPCH_SETTINGS_FILE_NAME" ] && export TPCH_SETTINGS_FILE_NAME="tpch.settings"
   [ ! "$TPCH_DATA_DIR" ] && export TPCH_DATA_DIR=/tpch/tpch-generate
-  BENCH_SAVE_PREPARE_LOCATION="${BENCH_DEFAULT_SCRATCH}${TPCH_DATA_DIR}"
-  prepare_hadoop_config ${NET} ${DISK} ${BENCH}
+  BENCH_SAVE_PREPARE_LOCATION="${BENCH_LOCAL_DIR}${TPCH_DATA_DIR}"
+  prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
   prepare_hive_config
 }
 

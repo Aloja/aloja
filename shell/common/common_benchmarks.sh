@@ -1,7 +1,13 @@
 # Helper functions for running benchmarks
 
 # Enabled benchmarks
-[ ! "$BENCH_SUITES" ] && BENCH_SUITES="sleep HiBench2 HiBench2-min WordCount" #space separted list of enabled benchmark suites
+[ ! "$BENCH_SUITES" ] && BENCH_SUITES="sleep HiBench2 HiBench2-min HiBench2-1TB Hecuba-WordCount HiBench3 HiBench3-min" #space separted list of enabled benchmark suites
+
+# Outputs a list of defined benchmark suites
+#get_bench_suites() {
+#$ALOJA_REPO_PATH/shell/common/
+#
+#}
 
 # prints usage and exits
 usage() {
@@ -21,7 +27,7 @@ ${white}Usage:
 $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-n net <IB|ETH>]
 [-d disk <SSD|HDD|RL{1,2,3}|R{1,2,3}>]
-[-b benchmark <HiBench2|HiBench2-min>]
+[-b \"benchmark suite\" <$BENCH_SUITES>]
 [-r replicaton <positive int>]
 [-m max mappers and reducers <positive int>]
 [-i io factor <positive int>] [-p port prefix <3|4|5>]
@@ -61,10 +67,10 @@ get_options() {
         defaultDisk=0
         ;;
       b)
-        BENCH=$OPTARG
-        #[ "$BENCH" == "HiBench2" ] || [ "$BENCH" == "HiBench2-min" ] || [ "$BENCH" == "HiBench2-1TB" ] || [ "$BENCH" == "HiBench3" ] || [ "$BENCH" == "HiBench3HDI" ] || [ "$BENCH" == "HiBench3-min" ] || [ "$BENCH" == "sleep" ] || [ "$BENCH" == "Big-Bench" ] || [ "$BENCH" == "TPCH" ] || usage
-        if ! inList "$BENCH_SUITES" "$BENCH" ; then
-          logger "ERROR: supplied benchmark $BENCH not enabled in list: $BENCH_SUITES"
+        BENCH_SUITE=$OPTARG
+        #[ "$BENCH_SUITE" == "HiBench2" ] || [ "$BENCH_SUITE" == "HiBench2-min" ] || [ "$BENCH_SUITE" == "HiBench2-1TB" ] || [ "$BENCH_SUITE" == "HiBench3" ] || [ "$BENCH_SUITE" == "HiBench3HDI" ] || [ "$BENCH_SUITE" == "HiBench3-min" ] || [ "$BENCH_SUITE" == "sleep" ] || [ "$BENCH_SUITE" == "Big-Bench" ] || [ "$BENCH_SUITE" == "TPCH" ] || usage
+        if ! inList "$BENCH_SUITES" "$BENCH_SUITE" ; then
+          logger "ERROR: supplied benchmark $BENCH_SUITE not enabled in list: $BENCH_SUITE_SUITES"
           usage
         fi
         ;;
@@ -107,7 +113,7 @@ get_options() {
         fi
         ;;
       l)
-        LIST_BENCHS=$OPTARG
+        BENCH_LIST=$OPTARG
         ;;
       z)
         BLOCK_SIZE=$OPTARG
@@ -252,10 +258,24 @@ get_initial_disk() {
   echo -e "$dir"
 }
 
+# Check if the supplied list of variables are not null
+# $1 variable or list of vars
+test_variable_set() {
+  local variables="$1"
+  for variable in $variables ; do
+    if [ ! "${!variable}" ] ; then
+      die "Required variable $variable is null, please check the config"
+    fi
+  done
+}
+
 # Performs some basic validations
 # $1 DISK
 validate() {
   local disk="$1"
+
+  # First check if some required variables are set
+  test_variable_set "BENCH_LOCAL_DIR BENCH_SHARE_DIR"
 
   if [ "$clusterType" != "PaaS" ]; then
     # Check whether we are in the right cluster
@@ -455,10 +475,10 @@ test_share_dir() {
 # TODO cleanup
 set_job_config() {
   # Output directory name
-  CONF="${NET}_${DISK}_b${BENCH}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+  CONF="${NET}_${DISK}_b${BENCH_SUITE}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
   JOB_NAME="$(get_date_folder)_$CONF"
 
-  JOB_PATH="$BENCH_BASE_DIR/jobs_$clusterName/$JOB_NAME"
+  JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
   LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
   LOG="2>&1 |tee -a $LOG_PATH"
 
@@ -472,8 +492,8 @@ set_job_config() {
   logger "STARTING RUN $JOB_NAME"
   logger "INFO: Job path: $JOB_PATH"
   logger "INFO: Conf: $CONF"
-  logger "INFO: Benchmark Suite: $BENCH"
-  logger "INFO: Benchmarks to execute: $LIST_BENCHS"
+  logger "INFO: Benchmark Suite: $BENCH_SUITE"
+  logger "INFO: Benchmarks to execute: $BENCH_LIST"
   logger "DEBUG: DSH: $DSH\n"
   #logger "INFO: DSH_C: $DSH_C"
   #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
@@ -504,15 +524,15 @@ get_local_configs_path() {
 }
 
 get_base_apps_path() {
-  echo -e "$BENCH_BASE_DIR/$(get_apps_path)"
+  echo -e "$BENCH_SHARE_DIR/$(get_apps_path)"
 }
 
 get_base_tarballs_path() {
-  echo -e "$BENCH_BASE_DIR/aplic2/tarballs"
+  echo -e "$BENCH_SHARE_DIR/aplic2/tarballs"
 }
 
 get_base_configs_path() {
-  echo -e "$BENCH_BASE_DIR/aplic2/configs"
+  echo -e "$BENCH_SHARE_DIR/aplic2/configs"
 }
 
 # Installs binaries and configs
@@ -584,33 +604,33 @@ install_files() {
 
 check_aplic_updates() {
   #only copy files if version has changed (to save time)
-  logger "INFO: Checking if to generate source dirs $BENCH_BASE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
+  logger "INFO: Checking if to generate source dirs $BENCH_SHARE_DIR/aplic/aplic_version == $BENCH_SOURCE_DIR/aplic_version"
   for node in $node_names ; do
     logger "INFO:  for host $node"
-    if [ "$(ssh "$node" "[ "\$\(cat $BENCH_BASE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+    if [ "$(ssh "$node" "[ "\$\(cat $BENCH_SHARE_DIR/aplic/aplic_version\)" == "\$\(cat $BENCH_SOURCE_DIR/aplic_version 2\> /dev/null \)" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
       logger "INFO: At least host $node did not have source dirs. Generating source dirs for ALL hosts"
 
-      if [ ! "$(ssh "$node" "[ -d \"$BENCH_BASE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
+      if [ ! "$(ssh "$node" "[ -d \"$BENCH_SHARE_DIR/aplic\" ] && echo 'OK' || echo 'KO'" )" != "OK" ] ; then
         #logger "Downloading initial aplic dir from dropbox"
         #$DSH "wget -nv https://www.dropbox.com/s/ywxqsfs784sk3e4/aplic.tar.bz2?dl=1 -O $BASE_DIR/aplic.tar.bz2"
 
-        $DSH "rsync -aur --force $BENCH_BASE_DIR/aplic.tar.bz2 /tmp/"
+        $DSH "rsync -aur --force $BENCH_SHARE_DIR/aplic.tar.bz2 /tmp/"
 
         logger "INFO: Uncompressing aplic"
         $DSH  "mkdir -p $BENCH_SOURCE_DIR/; cd $BENCH_SOURCE_DIR/../; tar -C $BENCH_SOURCE_DIR/../ -jxf /tmp/aplic.tar.bz2; "  #rm aplic.tar.bz2;
       fi
 
       logger "Rsynching files"
-      $DSH "mkdir -p $BENCH_SOURCE_DIR; rsync -aur --force $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
+      $DSH "mkdir -p $BENCH_SOURCE_DIR; rsync -aur --force $BENCH_SHARE_DIR/aplic/* $BENCH_SOURCE_DIR/"
       break #dont need to check after one is missing
     else
       logger "INFO:  Host $node up to date"
     fi
   done
 
-  #if [ "$(cat $BENCH_BASE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
+  #if [ "$(cat $BENCH_SHARE_DIR/aplic/aplic_version)" != "$(cat $BENCH_SOURCE_DIR/aplic_version)" ] ; then
   #  logger "INFO: Generating source dirs"
-  #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_BASE_DIR/aplic/* $BENCH_SOURCE_DIR/"
+  #  $DSH "mkdir -p $BENCH_SOURCE_DIR; cp -ru $BENCH_SHARE_DIR/aplic/* $BENCH_SOURCE_DIR/"
   #  #$DSH "cp -ru $BENCH_SOURCE_DIR/${HADOOP_VERSION}-home $BENCH_SOURCE_DIR/${HADOOP_VERSION}" #rm -rf $BENCH_SOURCE_DIR/${HADOOP_VERSION};
   #elsefi
   #  logger "INFO: Source dirs up to date"
@@ -850,6 +870,9 @@ calc_exec_time() {
 # $1 bench name
 set_bench_start() {
   local bench_name="$1"
+
+  BENCH_TIME="" #reset global variable
+
   if [ "$bench_name" ] ; then
     EXEC_START["$bench_name"]="$(timestamp)"
     EXEC_START_DATE["$bench_name"]="$(date --date='+1 hour' '+%Y%m%d%H%M%S')"
@@ -865,13 +888,38 @@ set_bench_end() {
   local bench_name="$1"
 
   if [ "$bench_name" ] && [ "${EXEC_START["$bench_name"]}" ] ; then
-    local start_exec="${EXEC_START["$bench_name"]}"
-    local total_secs="$(calc_exec_time $start_exec $end_exec)"
+    # Test if we already have the accurate time calculated, if not calculate it
+    if [ ! "$BENCH_TIME" ] ; then
+      local start_exec="${EXEC_START["$bench_name"]}"
+      local total_secs="$(calc_exec_time $start_exec $end_exec)"
+      EXEC_TIME["$bench_name"]="$total_secs"
+    else
+      EXEC_TIME["$bench_name"]="$BENCH_TIME"
+    fi
 
-    EXEC_TIME["$bench_name"]="$total_secs"
     EXEC_END["$bench_name"]="$end_exec"
   else
     die "Empty benchmark name supplied or empty EXEC_START[$bench_name]"
+  fi
+}
+
+# Runs the given command wrapped "in time"
+# Creates a file descriptor to return output in realtime as well as keeping it
+# in a var to extract its time
+# $1 the command
+# $2 set bench time
+time_cmd_master() {
+  local cmd="$1"
+  local set_bench_time="$2"
+
+  exec 9>&2 # Create a new file descriptor
+  local cmd_output="$($DSH_MASTER "/usr/bin/time -f 'Bench time ${bench} %e' bash -c '$cmd'" 2>&1 |tee >(cat - >&9))"
+  9>&- # Close the file descriptor
+
+  # Set the accurate time to the global var
+  if [ "$set_bench_time" ] ; then
+    BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
+    logger "DEBUG: BENCH_TIME=$BENCH_TIME"
   fi
 }
 

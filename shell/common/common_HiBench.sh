@@ -2,11 +2,11 @@
 
 # Returns a list of required files
 set_HiBench_requires() {
-  if [[ "$BENCH" == HiBench* ]]; then
-    if [[ "$BENCH" == HiBench2* ]]; then
+  if [[ "$BENCH_SUITE" == HiBench* ]]; then
+    if [[ "$BENCH_SUITE" == HiBench2* ]]; then
       BENCH_REQUIRED_FILES["HiBench2"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/HiBench2.tar.gz"
     fi
-    if [[ "$BENCH" == HiBench3* ]]; then
+    if [[ "$BENCH_SUITE" == HiBench3* ]]; then
       BENCH_REQUIRED_FILES["HiBench3"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/HiBench3.tar.gz"
     fi
   else
@@ -44,17 +44,17 @@ get_bench_name(){
 
 # TODO old code to be refactored
 initialize_HiBench_vars() {
-  if [[ "$BENCH" == HiBench* ]]; then
+  if [[ "$BENCH_SUITE" == HiBench* ]]; then
     EXECUTE_HIBENCH="true"
 
-    if [[ "$BENCH" == HiBench* ]]; then
+    if [[ "$BENCH_SUITE" == HiBench* ]]; then
       BENCH_HIB_DIR="$(get_local_apps_path)/HiBench2"
     fi
-    if [[ "$BENCH" == HiBench3* ]]; then
+    if [[ "$BENCH_SUITE" == HiBench3* ]]; then
       BENCH_HIB_DIR="$(get_local_apps_path)/HiBench3"
     fi
   else
-    die "Error in $BENCH"
+    die "Error in $BENCH_SUITE"
   fi
 }
 
@@ -115,7 +115,7 @@ export NUM_ITERATIONS=$NUM_ITERATIONS;
 }
 execute_HiBench(){
   restart_hadoop
-  for bench in $LIST_BENCHS ; do
+  for bench in $BENCH_LIST ; do
 
     #Delete previous data
     #$DSH_MASTER "$BENCH_HADOOP_DIR/bin/hadoop fs -rmr /HiBench"
@@ -192,7 +192,7 @@ execute_HiBench(){
 }
 
 execute_HDI_HiBench(){
-  for bench in $(echo "$LIST_BENCHS") ; do
+  for bench in $(echo "$BENCH_LIST") ; do
     #Delete previous data
     echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
 

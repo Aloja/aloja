@@ -7,10 +7,10 @@ benchmark_config() {
 }
 
 benchmark_run() {
-  logger "INFO: Executing $BENCH in all nodes"
+  logger "INFO: Executing $BENCH_SUITE in all nodes"
 
   restart_monit
-  set_bench_start "$BENCH"
+  set_bench_start "$BENCH_SUITE"
 
   ################# START BENCHMARK CUSTOM CODE HERE ####################
 
@@ -22,10 +22,10 @@ benchmark_run() {
 
   ################# END BENCHMARK CUSTOM CODE HERE   ####################
 
-  set_bench_end "$BENCH"
+  set_bench_end "$BENCH_SUITE"
   stop_monit
 
-  logger "INFO: DONE executing $BENCH"
+  logger "INFO: DONE executing $BENCH_SUITE"
 }
 
 benchmark_teardown() {
@@ -33,7 +33,7 @@ benchmark_teardown() {
 }
 
 benchmark_save() {
-  save_bench "$BENCH"
+  save_bench "$BENCH_SUITE"
 }
 
 benchmark_cleanup() {

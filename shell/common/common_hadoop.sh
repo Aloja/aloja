@@ -13,7 +13,11 @@ $(get_hadoop_config_folder)"
 
 # Sets the required files to download/copy
 set_hadoop_requires() {
-  BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION-bin.tar.gz"
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION.tar.gz"
+  else
+    BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION-bin.tar.gz"
+  fi
   #also set the config here
   set_hadoop_config_folder
 }
@@ -108,8 +112,8 @@ initialize_hadoop_vars() {
   fi
 
 #logger "INFO: DEBUG: userAloja=$userAloja
-#DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
-#BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
+#DEBUG: BENCH_SHARE_DIR=$BENCH_SHARE_DIR
+#BENCH_LOCAL_DIR=$BENCH_LOCAL_DIR
 #BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
 #BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
 #HADOOP_VERSION=$HADOOP_VERSION
@@ -248,7 +252,7 @@ s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
 s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$REDUCES_MB,g;
-s,##BENCH_DEFAULT_SCRATCH##,$BENCH_DEFAULT_SCRATCH,g;
+s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 EOF
 }
@@ -572,14 +576,8 @@ $(get_hadoop_exports)"
   save_hadoop "${3}${1}"
 }
 
-# Performs the actual benchmark execution
-# $1 benchmark name
-# $2 command
-
-execute_hadoop_new(){
-  local bench="$1"
-  local cmd="$2"
-
+# Returns the the path to the hadoop binary with the proper exports
+get_hadoop_cmd() {
   local hadoop_exports
   local hadoop_cmd
 
@@ -590,11 +588,28 @@ $(get_hadoop_exports)"
   else
     hadoop_exports="$(get_hadoop_exports)"
   fi
-  logger "DEBUG: $hadoop_exports"
 
-  hadoop_cmd="$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop $cmd"
+  hadoop_cmd="$hadoop_exports $BENCH_HADOOP_DIR/bin/hadoop"
 
-  $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${bench} %e' $hadoop_cmd"
+  echo -e "$hadoop_cmd"
+}
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_hadoop_new(){
+  local bench="$1"
+  local cmd="$2"
+  local time_exec="$3"
+
+  local hadoop_cmd="$(get_hadoop_cmd) $cmd"
+
+  logger "DEBUG: Hadoop command:$hadoop_cmd"
+
+  [ "$time_exec" ] && set_bench_start "$bench"
+  time_cmd_master "$hadoop_cmd" "$time_exec"
+  [ "$time_exec" ] && set_bench_end "$bench"
 
   save_disk_usage "AFTER"
 

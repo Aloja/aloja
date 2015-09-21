@@ -636,7 +636,7 @@ vm_set_ssh() {
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
+    local test_action="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
     #logger "TEST SSH $test_set_ssh"
 
     if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -1063,21 +1063,22 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
   vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
   vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 
-  logger "Checking if aplic exits to redownload or rsync for changes"
-  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
-  #in case we get a welcome banner we need to grep
-  test_action="$(echo -e "$test_action"|grep "$testKey")"
-
-  if [ -z "$test_action" ] ; then
-    logger "Downloading aplic"
-    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
-
-    logger "Uncompressing aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
-  fi
-
-  logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
+# Uncomment to sync deprecated aplic dir
+#  logger "Checking if aplic exits to redownload or rsync for changes"
+#  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
+#  #in case we get a welcome banner we need to grep
+#  test_action="$(echo -e "$test_action"|grep "$testKey")"
+#
+#  if [ -z "$test_action" ] ; then
+#    logger "Downloading aplic"
+#    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
+#
+#    logger "Uncompressing aplic"
+#    vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
+#  fi
+#
+#  logger "RSynching aplic for possible updates"
+#  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
 }
 
 #[$1 share location]
