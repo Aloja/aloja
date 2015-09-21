@@ -473,88 +473,99 @@ class ConfigEvaluationsController extends AbstractController
         $series = '';
         try {
 
-		$paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
-		$minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
-		$this->filters->changeCurrentChoice('minexecs',($minExecs == -1) ? null : $minExecs);
+			$paramEval = (isset($_GET['parameval']) && Utils::get_GET_string('parameval') != '') ? Utils::get_GET_string('parameval') : 'maps';
+			$minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
+			$this->filters->changeCurrentChoice('minexecs',($minExecs == -1) ? null : $minExecs);
 
-		$minExecsFilter = "";
-		if($minExecs > 0)
-		$minExecsFilter = "HAVING COUNT(*) > $minExecs";
+			$minExecsFilter = "";
+			if($minExecs > 0)
+			$minExecsFilter = "HAVING COUNT(*) > $minExecs";
 
-		$filter_execs = DBUtils::getFilterExecs();
+			$filter_execs = DBUtils::getFilterExecs();
 
-		$options = $this->filters->getFiltersArray()[$paramEval]['choices'];
-		$paramOptions = array();
-		foreach($options as $option) {
-		if($paramEval == 'id_cluster')
-		    $paramOptions[] = Utils::getClusterName($option,$db);
-		else if($paramEval == 'comp')
-		    $paramOptions[] = Utils::getCompressionName($option);
-		else if($paramEval == 'net')
-		    $paramOptions[] = Utils::getNetworkName($option);
-		else if($paramEval == 'disk')
-		    $paramOptions[] = Utils::getDisksName($option);
-		else if($paramEval == 'vm_ram')
-		    $paramOptions[] = Utils::getBeautyRam($option);
-		else
-		    $paramOptions[] = $option;
-		}
+			$options = $this->filters->getFiltersArray()[$paramEval]['choices'];
 
-		$benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval");
+			$benchOptions = "SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval";
 
-		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
+			$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
-		// get the result rows
-		if ($params['uobsr'] == 1 && $params['upred'] == 1)
-		{
 			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
 			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
-			$query = "
-				SELECT COUNT(*) AS count, u1.$paramEval as $paramEval, u1.bench as bench, avg(u1.exe_time) avg_exe_time, min(u1.exe_time) min_exe_time
-				FROM (
-					(SELECT $paramEval, e.id_exec, exec, bench, exe_time
-					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
-					WHERE 1 $filter_execs $whereClause)
-					UNION
-					(SELECT $paramEval, p.id_exec, exec, bench, pred_time as exe_time
-					FROM aloja_ml.predictions AS p
-					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."')
-				) AS u1
-				GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval;
-			";
-		}
-		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
-		{
-			$whereClause = str_replace("exe_time","pred_time",$whereClause);
-			$whereClause = str_replace("start_time","creation_time",$whereClause);
-			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(pred_time) avg_exe_time, min(pred_time) min_exe_time 
-				  FROM aloja_ml.predictions AS e
-				  WHERE 1 $filter_execs $whereClause AND id_learner = '".$params['current_model']."'
-				  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
-		}
-		else
-		{
-			if ($params['uobsr'] == 0 && $params['upred'] == 0)
-				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
+
 			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time
-				  FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
-				  WHERE 1 $filter_execs $whereClause
-				  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
-		}
-		$rows = $db->get_rows ( $query );
+					  FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					  WHERE 1 $filter_execs $whereClause
+					  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
 
-		if (!$rows) {
-			throw new \Exception ( "No results for query!" );
-		}
+			$queryPredictions = "
+					SELECT COUNT(*) AS count, $paramEval, CONCAT('pred_',bench) as bench, avg(pred_time) as avg_exe_time, min(pred_time) as min_exe_time
+						FROM aloja_ml.predictions AS e
+						WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
+						GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
 
-		$categories = '';
-		$arrayBenchs = array();
-		foreach ( $paramOptions as $param ) {
-			$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
-			foreach($benchOptions as $bench) {
-				$arrayBenchs[$bench['bench']][$param] = null;
+
+			// get the result rows
+			if ($params['uobsr'] == 1 && $params['upred'] == 1)
+			{
+				$query = "($query) UNION ($queryPredictions)";
+				$benchOptions = "SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench
+								 UNION
+								 (SELECT DISTINCT CONCAT('pred_', bench) as bench FROM aloja_ml.predictions AS e
+								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
+								 GROUP BY $paramEval, bench $minExecsFilter)
+								 ORDER BY bench";
+				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."' ORDER BY $paramEval";
+				$optionsPredictions = $db->get_rows($optionsPredictions);
+				foreach($optionsPredictions as $predOption)
+					$options[] = $predOption[$paramEval];
 			}
-		}
+			else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+			{
+				$query = $queryPredictions;
+				$benchOptions = "SELECT DISTINCT CONCAT('pred_', bench) as bench FROM aloja_ml.predictions AS e
+								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
+								 GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+
+				$options = array();
+				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."' ORDER BY $paramEval";
+				$optionsPredictions = $db->get_rows($optionsPredictions);
+				foreach($optionsPredictions as $predOption)
+					$options[] = $predOption[$paramEval];
+			}
+			else if ($params['uobsr'] == 0 && $params['upred'] == 0)
+				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
+
+			$rows = $db->get_rows($query);
+			$benchOptions = $db->get_rows($benchOptions);
+
+			if (!$rows) {
+				throw new \Exception ( "No results for query!" );
+			}
+
+			$paramOptions = array();
+			foreach($options as $option) {
+				if($paramEval == 'id_cluster')
+					$paramOptions[] = Utils::getClusterName($option,$db);
+				else if($paramEval == 'comp')
+					$paramOptions[] = Utils::getCompressionName($option);
+				else if($paramEval == 'net')
+					$paramOptions[] = Utils::getNetworkName($option);
+				else if($paramEval == 'disk')
+					$paramOptions[] = Utils::getDisksName($option);
+				else if($paramEval == 'vm_ram')
+					$paramOptions[] = Utils::getBeautyRam($option);
+				else
+					$paramOptions[] = $option;
+			}
+
+			$categories = '';
+			$arrayBenchs = array();
+			foreach ( $paramOptions as $param ) {
+				$categories .= "'$param".Utils::getParamevalUnit($paramEval)."',";
+				foreach($benchOptions as $bench) {
+					$arrayBenchs[$bench['bench']][$param] = null;
+				}
+			}
 
             $series = array();
             foreach($rows as $row) {
