@@ -17,7 +17,18 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-# see http://andre.frimberger.de/index.php/linux/reading-ssh-password-from-stdin-the-openssh-5-6p1-compatible-way/
+########################################################################
+#
+# Original at:
+#
+# http://andre.frimberger.de/index.php/linux/reading-ssh-password-from-stdin-the-openssh-5-6p1-compatible-way/
+#
+# Adapted for aloja to take first argument as password instead of stdin, so it's possible
+# to do things like 
+#
+# echo 'some fancy command' | $0 "$password" ssh ....
+#
+# otherwise it wouldn't be possible to use stdin to pass commands.
 
  
 if [ -n "$SSH_ASKPASS_TMPFILE" ]; then
