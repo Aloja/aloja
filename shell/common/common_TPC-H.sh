@@ -14,14 +14,14 @@ execute_TPCH(){
     logger "INFO: Reusing previous RUN TPCH data"
   fi
 
-  if [ "$LIST_BENCHS" == "all" ]; then
-     LIST_BENCHS=""
+  if [ "$BENCH_LIST" == "all" ]; then
+     BENCH_LIST=""
      for number in $(seq 1 22) ; do
-        LIST_BENCHS="${LIST_BENCHS} query${number}"
+        BENCH_LIST="${BENCH_LIST} query${number}"
      done
   fi
 
-  for query in $(echo "$LIST_BENCHS") ; do
+  for query in $(echo "$BENCH_LIST") ; do
     # Check if there is a custom config for this bench, and call it
     if type "benchmark_TPCH_config_${query}" &>/dev/null
     then

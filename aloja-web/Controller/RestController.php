@@ -268,13 +268,13 @@ class RestController extends AbstractController
             $full_name = "$dir/$zip_file";
 
             //check if it needs to be created
-            if (!(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
+            if (true || !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
                 $query = 'SELECT
                     concat(
                     "2:",
-                    substring(host, -1),
+                    id_host,
                     ":1:",
-                    substring(host, -1),
+                    id_host,
                     ":1:",
                     (unix_timestamp(date) -
                     (select unix_timestamp(min(date)) FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
@@ -284,7 +284,10 @@ class RestController extends AbstractController
                     ":2004:",round(AVG(`%iowait`)),
                     ":2005:",round(AVG(`%nice`))
                     ) prv
-                    FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"
+                    FROM aloja_logs.SAR_cpu s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
+                    WHERE id_exec = "'.$id_exec.'"
                     GROUP BY date, host ORDER by date, host;';
 
                 $prv_rows = $dbUtils->get_rows($query);
@@ -325,33 +328,47 @@ class RestController extends AbstractController
 
                 $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$end[5].":4(1,1,1,1):1:4(1:1,1:2,1:3,1:4),0";
 
-                $row_file =
-                'LEVEL CPU SIZE 4
-CPU-MASTER
-CPU-SLV1
-CPU-SLV2
-CPU-SLV3
+                //create the Row file according to the cluster size
+                $query = 'SELECT id_host, host_name, role
+                            FROM aloja2.execs e
+                            JOIN aloja2.hosts h USING(id_cluster)
+                            WHERE id_exec = "'.$id_exec.'" order by role;';
+                $hosts_rows = $dbUtils->get_rows($query);
+                if (!isset($hosts_rows)) throw new \Exception('No data returned to create the Row file!');
 
-LEVEL APPL SIZE 1
-'.$exec_name.'
+                $row_size = count($hosts_rows);
 
-TASK LEVEL SIZE 4
-JT+NN
-TT1+DN1
-TT2+DN2
-TT3+DN3
+                $row_file = "LEVEL CPU SIZE $row_size";
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    $row_file .= "\nCPU_{$prv_row['role']}_{$prv_row['host_name']}";
+                }
 
-LEVEL NODE SIZE 4
-MASTER-NODE
-SLAVE-NODE-1
-SLAVE-NODE-2
-SLAVE-NODE-3
+                $row_file .= "\n\nLEVEL APPL SIZE 1
+$exec_name
 
-LEVEL THREAD SIZE 4
-THREAD-JT+NN
-THREAD-TT1+DN1
-THREAD-TT2+DN2
-THREAD-TT3+DN3';
+TASK LEVEL SIZE $row_size";
+
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nJT+NN_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nTT+DN_{$prv_row['host_name']}";
+                    }
+                }
+                $row_file .= "\n\nLEVEL NODE SIZE $row_size";
+
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    $row_file .="\n".strtoupper($prv_row['role'])."_{$prv_row['host_name']}";
+                }
+
+                $row_file .="\n\nLEVEL THREAD SIZE $row_size";
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nTHREAD-JT+NN_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nTHREAD-TT+DN_{$prv_row['host_name']}";
+                    }
+                }
 
                 $pcf_file =
                 'DEFAULT_OPTIONS
