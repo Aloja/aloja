@@ -9,7 +9,6 @@ use alojaweb\inc\MLUtils;
 
 class MLCrossvarController extends AbstractController
 {
-
 	public function mlcrossvarAction()
 	{
 		$jsonData = array();
