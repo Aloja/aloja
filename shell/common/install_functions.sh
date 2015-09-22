@@ -837,7 +837,7 @@ config_ganglia_gmond(){
     # copy conf to destination
     sudo cp /tmp/gmond.conf /etc/ganglia
 
-    sudo /etc/init.d/ganglia-monitor restart"
+    sudo service ganglia-monitor restart"
 
     result=$?
 

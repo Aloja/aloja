@@ -92,6 +92,11 @@ vm_create_connect() {
   [ ! -z "$endpoints" ] && vm_endpoints_create
 }
 
+# by default we install ganglia
+must_install_ganglia(){
+  echo 1
+}
+
 #requires $vm_name and $type to be set
 #$1 use password
 vm_provision() {
@@ -105,6 +110,11 @@ vm_provision() {
     vm_set_ssh
   fi
   vm_install_base_packages
+
+  if [ "$type" == "cluster" ] ; then
+    [ "$(must_install_ganglia)" = "1" ] && install_ganglia_gmond
+    config_ganglia_gmond "$clusterName"
+  fi
 
   if [ -z "$noSudo" ] ; then
     vm_initialize_disks #cluster is in parallel later
@@ -124,7 +134,7 @@ vm_provision() {
 
   logger "Provisioning for VM $vm_name ready, finalizing deployment"
   #check if extra commands are specified once VMs are provisioned
-  vm_finalize &
+  vm_finalize
 }
 
 vm_finalize() {
