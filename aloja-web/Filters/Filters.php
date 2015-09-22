@@ -145,6 +145,41 @@ class Filters
                     return array('currentChoice' => $values, 'whereClause' => $whereClause);
                 }),
             'perf_details' => array('table' => 'execs', 'type' => 'checkbox', 'default' => 0, 'label' => 'Only execs with perf details'),
+            'prediction_model' => array(
+                'type' => 'selectOne',
+                'default' => null,
+                'label' => 'Reference Model: ',
+                'generateChoices' => function() {
+                    $query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+                    $retval = $this->dbConnection->get_rows ($query);
+                    return array_column($retval,"id_learner");
+                },
+                'parseFunction' => function() {
+                    $choice = isset($_GET['prediction_model']) ? Utils::get_GET_stringArray('prediction_model') : array("");
+                    return array('whereClause' => '', 'currentChoice' => $choice);
+                },
+                'filterGroup' => 'MLearning'
+            ),
+            'upred' => array(
+                'type' => 'checkbox',
+                'default' => 0,
+                'label' => 'Use predictions',
+                'parseFunction' => function() {
+                    $choice = (!isset($_GET['upred'])) ? 0 : 1;
+                    return array('whereClause' => '', 'currentChoice' => $choice);
+                },
+                'filterGroup' => 'MLearning'
+            ),
+            'uobsr' => array(
+                'type' => 'checkbox',
+                'default' => 1,
+                'label' => 'Use observations',
+                'parseFunction' => function() {
+                    $choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+                    return array('whereClause' => '', 'currentChoice' => $choice);
+                },
+                'filterGroup' => 'MLearning'
+            )
         );
 
         $this->aliasesTables = array('execs' => '','clusters' => '');
@@ -166,8 +201,63 @@ class Filters
                 'label' => 'Advanced filters',
                 'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime'),
                 'tabOpenDefault' => false
+            ),
+            'MLearning' => array(
+                'label' => 'Machine Learning',
+                'filters' => array('prediction_model','upred','uobsr'),
+                'tabOpenDefault' => true
             )
         );
+    }
+
+    public function addOverrideFilters($filters) {
+        foreach($filters as $filterName => $definition) {
+            if(isset($this->filters[$filterName])) {
+                foreach($definition as $option => $value) {
+                    $this->filters[$filterName][$option] = $value;
+                }
+            } else
+                $this->filters[$filterName] = $definition;
+        }
+    }
+
+    //$filters: array of filter names
+    public function removeFilters($filters) {
+        foreach($filters as $filterName) {
+            if(isset($this->filters[$filterName]))
+                unset($this->filters[$filterName]);
+        }
+    }
+
+    public function removeFilterGroup($groupName) {
+        if(isset($this->filterGroups[$groupName])) {
+            unset($this->filterGroups[$groupName]);
+        }
+    }
+
+    public function removeFiltersFromGroup($groupName, $filters) {
+        if(isset($this->filterGroups[$groupName])) {
+            foreach($filters as $filter) {
+                if(($key = array_search($filter, $this->filterGroups[$groupName]['filters'])) !== false)
+                    unset($this->filterGroups[$groupName]['filters'][$key]);
+            }
+        }
+    }
+
+    public function addFiltersInGroup($groupName, $filters) {
+        foreach($filters as $filter) {
+            if(!in_array($filter,$this->filterGroups[$groupName]['filters']))
+                $this->filterGroups[$groupName]['filters'][] = $filter;
+        }
+    }
+
+    //Add or modify filter groups
+    public function overrideFilterGroups($filterGroups) {
+        foreach($filterGroups as $filterGroup => $options) {
+            foreach($options as $optionKey => $option) {
+                $this->filterGroups[$filterGroup][$optionKey] = $option;
+            }
+        }
     }
 
     private function parseDatasize()
@@ -326,6 +416,7 @@ class Filters
 
         $this->readPresets($screenName);
 
+        //This filters override code is left here for backward compatibility
         foreach($customFilters as $index => $options) {
             //Modify existing filter
             if(array_key_exists($index,$this->filters)) {
@@ -525,14 +616,6 @@ class Filters
         }
 
         return $options;
-    }
-
-    public function buildFilterGroups($filterGroups) {
-        foreach($filterGroups as $filterGroup => $options) {
-            foreach($options as $optionKey => $option) {
-                $this->filterGroups[$filterGroup][$optionKey] = $option;
-            }
-        }
     }
 
     public function setCurrentChoices($filter,$choices) {
