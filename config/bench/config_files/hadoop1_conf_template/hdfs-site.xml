@@ -1,0 +1,73 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+<property>
+  <name>dfs.name.dir</name>
+  <value>##HDFS_NDIR##</value>
+</property>
+
+<property>
+  <name>dfs.data.dir</name>
+  <value>##HDFS_DDIR##</value>
+</property>
+
+<property>
+  <name>dfs.replication</name>
+  <value>##REPLICATION##</value>
+</property>
+
+<property>
+  <name>slave.host.name</name>
+  <value>##HOST##</value>
+</property>
+<property>
+  <name>dfs.datanode.hostname</name>
+  <value>##HOST##</value>
+</property>
+<property>
+  <name>dfs.block.size</name>
+  <value>##BLOCK_SIZE##</value>
+</property>
+
+<property>
+  <name>dfs.datanode.address</name>
+  <value>##HOST##:##PORT_PREFIX##0010</value>
+</property>
+
+<property>
+  <name>dfs.datanode.ipc.address</name>
+  <value>##HOST##:##PORT_PREFIX##0020</value>
+</property>
+
+<property>
+  <name>dfs.http.address</name>
+  <value>##NAMENODE##:##PORT_PREFIX##0070</value>
+</property>
+
+<property>
+  <name>dfs.datanode.http.address</name>
+  <value>##HOST##:##PORT_PREFIX##0075</value>
+</property>
+
+<property>
+  <name>dfs.secondary.http.address</name>
+  <value>##NAMENODE##:##PORT_PREFIX##0090</value>
+</property>
+
+<property>
+  <name>dfs.backup.http.address</name>
+  <value>##NAMENODE##:##PORT_PREFIX##0105</value>
+</property>
+
+<!-- For infiniBand -->
+<property>
+  <name>dfs.datanode.dns.interface</name>
+  <value>##IFACE##</value>
+</property>
+
+
+</configuration>
