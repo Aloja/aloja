@@ -28,8 +28,6 @@ BENCH_LIST="Hecuba-WordCount"
   for bench in $BENCH_LIST ; do
 
     # Prepare
-    restart_monit
-    set_bench_start "${bench}_prepare"
 
     # Check if the file exists
     local test_action="$($DSH_MASTER "[ -f '$INPUT_FILE' ] && echo '$testKey'")"
@@ -38,20 +36,17 @@ BENCH_LIST="Hecuba-WordCount"
       logger "INFO: deleting previous inputs (if any)"
       execute_hadoop_new "${bench}_prepare" "fs -rmr $in_dir"
       logger "INFO: Loading $INPUT_FILE into Hadoop"
-      execute_hadoop_new "${bench}_prepare" "fs -put '$INPUT_FILE' $in_dir"
+      execute_hadoop_new "${bench}_prepare" "fs -put '$INPUT_FILE' $in_dir" "time"
     else
       die "File $INPUT_FILE could not be found in master node"
     fi
-    set_bench_end "${bench}_prepare"
-    stop_monit
+
 
     # Run
     for run_number in $(seq 1 "$NUM_RUNS") ; do
       logger "INFO: making sure output dir is empty first"
       execute_hadoop_new "${bench}_${run_number}" "fs -rmr $out_dir"
-      restart_monit
       execute_hadoop_new "${bench}_${run_number}" "jar $job" "time"
-      stop_monit
     done
 
   done

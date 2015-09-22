@@ -1,13 +1,20 @@
 # Helper functions for running benchmarks
 
-# Enabled benchmarks
-[ ! "$BENCH_SUITES" ] && BENCH_SUITES="sleep HiBench2 HiBench2-min HiBench2-1TB Hecuba-WordCount HiBench3 HiBench3-min" #space separted list of enabled benchmark suites
+# Outputs a list of defined benchmark suites separated by spaces
+get_bench_suites() {
+  local defined_benchs=""
+  # Search for benchmark suite definition files
+  for bench_file in $ALOJA_REPO_PATH/shell/common/benchmark_*.sh ; do
+    local base_name="${bench_file##*/benchmark_}"
+    defined_benchs+="${base_name:0:(-3)} "
+  done
 
-# Outputs a list of defined benchmark suites
-#get_bench_suites() {
-#$ALOJA_REPO_PATH/shell/common/
-#
-#}
+  #echo -e "sleep HiBench2 HiBench2-min HiBench2-1TB Hecuba-WordCount HiBench3 HiBench3-min"
+  echo -e "${defined_benchs:0:(-1)}" #remove trailing space
+}
+
+# Enabled benchmarks
+[ ! "$BENCH_SUITES" ] && BENCH_SUITES="$(get_bench_suites)"
 
 # prints usage and exits
 usage() {
@@ -532,7 +539,7 @@ get_base_tarballs_path() {
 }
 
 get_base_configs_path() {
-  echo -e "$BENCH_SHARE_DIR/aplic2/configs"
+  echo -e "$ALOJA_REPO_PATH/config/bench/config_files"
 }
 
 # Installs binaries and configs

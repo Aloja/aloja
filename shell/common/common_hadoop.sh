@@ -3,7 +3,12 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_java.sh"
 set_java_requires
 
 get_hadoop_config_folder() {
-  echo "hadoop1_conf_template"
+  local
+  if [ "$HADOOP_EXTRA_JARS" == "AOP4Hadoop" ] ; then
+    echo "hadoop1_AOP_conf_template"
+  else
+    echo "hadoop1_conf_template"
+  fi
 }
 
 set_hadoop_config_folder() {
@@ -18,6 +23,11 @@ set_hadoop_requires() {
   else
     BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION-bin.tar.gz"
   fi
+
+  if [ "$HADOOP_EXTRA_JARS" ] ; then
+    BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
+  fi
+
   #also set the config here
   set_hadoop_config_folder
 }
@@ -35,8 +45,16 @@ $(get_java_exports)
 
   # For v2 only
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    export="$to_export
+    to_export="$to_export
 export HADOOP_YARN_HOME='$HADOOP_HOME';
+"
+  fi
+
+  if [ "$HADOOP_EXTRA_JARS" ] ; then
+    to_export="$to_export
+export HADOOP_USER_CLASSPATH_FIRST=true;
+# Right now jar files are hard-coded
+export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.5.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;
 "
   fi
 
@@ -607,13 +625,20 @@ execute_hadoop_new(){
 
   logger "DEBUG: Hadoop command:$hadoop_cmd"
 
-  [ "$time_exec" ] && set_bench_start "$bench"
+  if [ "$time_exec" ] ; then
+    restart_monit
+    set_bench_start "$bench"
+  fi
+
+  # Run the command and time it
   time_cmd_master "$hadoop_cmd" "$time_exec"
-  [ "$time_exec" ] && set_bench_end "$bench"
 
-  save_disk_usage "AFTER"
-
-  save_hadoop "$bench"
+  if [ "$time_exec" ] ; then
+    set_bench_end "$bench"
+    stop_monit
+    save_disk_usage "AFTER"
+    save_hadoop "$bench"
+  fi
 }
 
 execute_hdi_hadoop() {
@@ -703,11 +728,8 @@ save_hadoop() {
   logger "INFO: Saving benchmark $1"
   $DSH "mkdir -p $JOB_PATH/$1"
   $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
-  #we cannot move hadoop files
-  #take into account naming *.date when changing dates
-  #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
-  #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
 
+  # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
@@ -721,7 +743,11 @@ save_hadoop() {
 	    hdfs dfs -expunge
     fi
   else
-    $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/ 2> /dev/null"
+    #we cannot move hadoop files
+    #take into account naming *.date when changing dates
+    #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
+    #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
+    $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/ 2> /dev/null"
   fi
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
