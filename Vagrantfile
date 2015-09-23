@@ -101,6 +101,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       v.memory = vm_mem   #change as needed
       v.cpus = vm_cpus    #change as needed
+
+      # Force to use hosts DNS
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     end
 
     # #for Docker (optional, but faster on Linux)
@@ -175,6 +178,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
         v.name = "vagrant-99-" + num.to_s.rjust(2, '0')
         v.memory = vmRAM #change as needed
         v.cpus = vmCPUS  #change as needed
+        # Force to use hosts DNS
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end
     end
   end
