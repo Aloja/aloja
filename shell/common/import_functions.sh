@@ -77,6 +77,14 @@ import_from_folder() {
   delete_untars "$BASE_DIR/$folder"
 
   [ "$reload_caches" ] && refresh_web_caches "aloja-web"
+
+  # Construct the helper URL
+  if [ "$id_execs" ] ; then
+    for id_exec in ${id_execs[@]} ; do
+      query_string+="&execs[]=$id_exec"
+    done
+    logger "INFO: URL of perf charts http://localhost:8080/perfcharts?${query_string:1}&detail=1"
+  fi
 }
 
 
@@ -231,7 +239,7 @@ import_folder() {
                     scale_factor=VALUES(scale_factor);"
           fi
 
-          logger "DEBUG: $insert"
+          #logger "DEBUG: $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_version" == "2" ]; then
@@ -267,7 +275,11 @@ import_folder() {
         #get Job XML configuration if needed
         #get_job_confs
 
+        # Get the DB id for the exec
         id_exec="$(get_id_exec "$exec")"
+
+        # Save the different id_execs to construc the URL at the end
+        id_execs+=("$id_exec")
 
         logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 
@@ -394,14 +406,14 @@ get_filter_sql() {
 #filter, execs that don't have any Hadoop details
 
 update ignore aloja2.execs SET filter = 0;
-update ignore aloja2.execs SET filter = 1 where bench like 'HiBench%' AND id_exec  NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null);
+update ignore aloja2.execs SET filter = 1 where (bench like 'HiBench%' OR bench = 'Hadoop-Examples') AND id_exec  NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null);
 
 #perf_detail, aloja2.execs without perf counters
 
 update ignore aloja2.execs SET perf_details = 0;
 update ignore aloja2.execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec is not null);
 
-#valid, set everything as valid, exept the ones that do not match the following rules
+#valid, set everything as valid, except the ones that do not match the following rules
 update ignore aloja2.execs SET valid = 1;
 update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
@@ -409,7 +421,7 @@ update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench 
     tmp_table
 );
 
-update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
+update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' and e2.bench NOT IN ('teragen','randomtextwriter') GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
 
 ##HDInsight filters
 update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 0 where type != 'PaaS' AND exec LIKE '%hdi%';
@@ -448,15 +460,15 @@ get_filter_sql_exec() {
 
 #filter, execs that don't have any Hadoop details
 
-update ignore aloja2.execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
-update ignore aloja2.execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec = '$1' AND id_exec is not null);
+update ignore aloja2.execs SET filter = 0 where id_exec = '$1' AND (bench like 'HiBench%' OR bench = 'Hadoop-Examples') ;
+update ignore aloja2.execs SET filter = 1 where id_exec = '$1' AND (bench like 'HiBench%' OR bench = 'Hadoop-Examples') AND id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec = '$1' AND id_exec is not null);
 
 #perf_detail, aloja2.execs without perf counters
 
 update ignore aloja2.execs SET perf_details = 0 where id_exec = '$1';
 update ignore aloja2.execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec = '$1' AND id_exec is not null);
 
-#valid, set everything as valid, exept the ones that do not match the following rules
+#valid, set everything as valid, except the ones that do not match the following rules
 update ignore aloja2.execs SET valid = 1 where id_exec = '$1' ;
 update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
@@ -464,7 +476,7 @@ update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = '
     tmp_table
 );
 
-update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
+update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' and e2.bench NOT IN ('teragen','randomtextwriter') GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
 
 
 "
@@ -1079,19 +1091,19 @@ refresh_web_caches() {
   hit_page "http://$host_name/dbscan?NO_CACHE=1"
   hit_page "http://$host_name/dbscanexecs?NO_CACHE=1"
 
-  hit_page "http://$host_name/"
-  hit_page "http://$host_name/benchdata"
-  hit_page "http://$host_name/counters"
-  hit_page "http://$host_name/benchexecs"
-  hit_page "http://$host_name/bestconfig"
-  hit_page "http://$host_name/configimprovement"
-  hit_page "http://$host_name/parameval"
-  hit_page "http://$host_name/costperfeval"
-  hit_page "http://$host_name/perfcharts?random=1"
-  hit_page "http://$host_name/metrics"
-  hit_page "http://$host_name/metrics?type=MEMORY"
-  hit_page "http://$host_name/metrics?type=DISK"
-  hit_page "http://$host_name/metrics?type=NETWORK"
-  hit_page "http://$host_name/dbscan"
-  hit_page "http://$host_name/dbscanexecs"
+#  hit_page "http://$host_name/"
+#  hit_page "http://$host_name/benchdata"
+#  hit_page "http://$host_name/counters"
+#  hit_page "http://$host_name/benchexecs"
+#  hit_page "http://$host_name/bestconfig"
+#  hit_page "http://$host_name/configimprovement"
+#  hit_page "http://$host_name/parameval"
+#  hit_page "http://$host_name/costperfeval"
+#  #hit_page "http://$host_name/perfcharts?random=1"
+#  hit_page "http://$host_name/metrics"
+#  hit_page "http://$host_name/metrics?type=MEMORY"
+#  hit_page "http://$host_name/metrics?type=DISK"
+#  hit_page "http://$host_name/metrics?type=NETWORK"
+#  hit_page "http://$host_name/dbscan"
+#  hit_page "http://$host_name/dbscanexecs"
 }
