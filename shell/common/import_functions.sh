@@ -242,7 +242,7 @@ import_folder() {
           #logger "DEBUG: $insert"
           $MYSQL "$insert"
 
-          if [ "$hadoop_version" == "2" ]; then
+          if [ "$hadoop_major_version" == "2" ]; then
               if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
                 get_xml_exec_params "mr-history"
               else
@@ -286,7 +286,7 @@ import_folder() {
         if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 
           #if dir does not exists or need to insert in DB
-          if [ "$hadoop_version" != "2" ]; then
+          if [ "$hadoop_major_version" != "2" ]; then
         if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
         extract_hadoop_jobs
         fi
@@ -295,7 +295,7 @@ import_folder() {
           #DB inserting scripts
           if [ "$INSERT_DB" == "1" ] ; then
             #start with Hadoop's
-            if [ "$hadoop_version" != "2" ]; then
+            if [ "$hadoop_major_version" != "2" ]; then
              import_hadoop_jobs
             else
               extract_import_hadoop2_jobs
@@ -576,7 +576,7 @@ get_exec_params() {
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
-    hadoop_version="$(get_hadoop_major_version "$hadoop_version")"
+    hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
 
     # Remove "hadoop" string from version: "hadoop2" -> "2"
     #hadoop_version="${hadoop_version//hadoop}"
