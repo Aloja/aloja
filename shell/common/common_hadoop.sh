@@ -51,9 +51,9 @@ export HADOOP_YARN_HOME='$HADOOP_HOME';
   fi
 
   if [ "$HADOOP_EXTRA_JARS" ] ; then
+    # Right now jar files are hard-coded
     to_export="$to_export
 export HADOOP_USER_CLASSPATH_FIRST=true;
-# Right now jar files are hard-coded
 export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.5.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;
 "
   fi

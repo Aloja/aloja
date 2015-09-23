@@ -53,7 +53,7 @@ import_from_folder() {
 
   [ ! -d "$BASE_DIR/$folder" ] && die "Cannot find $BASE_DIR/$folder folder. Exit..."
 
-  logger "Importing data from from $BASE_DIR  -- $folder"
+  logger "INFO: Importing data from from $BASE_DIR/$folder"
 
   INSERT_DB="1" #if to dump CSV into the DB
   REDO_ALL="1" #if to redo folders that have source files and IDs in DB
@@ -99,7 +99,7 @@ import_folder() {
   folder_time="$(date --utc --date "${folder:0:8}" +%s)"
 
   if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
-    logger "Entering folder\t$folder"
+    logger "INFO: Entering folder\t$folder"
     cd "$folder"
 
     #get all executions details
@@ -137,7 +137,6 @@ import_folder() {
     fi
 
     for bzip_file in *.tar.bz2 ; do
-
       bench_folder="${bzip_file%%.*}"
 
       #skip conf folders
@@ -168,7 +167,7 @@ import_folder() {
           clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
           source $clusterConfigFile
 
-          echo "ID cluster $id_cluster CFF $clusterConfigFile"
+          logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
 
           #TODO this check wont work for old folders with numeric values at the end, need another strategy
           #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
@@ -178,18 +177,61 @@ import_folder() {
             id_cluster="1"
           fi
         fi
-        logger "DEBUG: Cluster $id_cluster"
 
         if [ "$exec_values" ] ; then
           folder_OK="$(( folder_OK + 1 ))"
 
-          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
+          # Legacy config, taken from folder and log
+          if [ "${name:15:6}" == "_conf_" ]; then
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
                   VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
                   ON DUPLICATE KEY UPDATE
-                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
-                  end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
-          logger "DEBUG: $insert"
+                    id_cluster=VALUES(id_cluster),
+                    exec=VALUES(exec),
+                    bench=VALUES(bench),
+                    exe_time=VALUES(exe_time),
+                    start_time=VALUES(start_time),
+                    end_time=VALUES(end_time),
+                    net=VALUES(net),
+                    disk=VALUES(disk),
+                    bench_type=VALUES(bench_type),
+                    maps=VALUES(maps),
+                    iosf=VALUES(iosf),
+                    replication=VALUES(replication),
+                    iofilebuf=VALUES(iofilebuf),
+                    comp=VALUES(comp),
+                    blk_size=VALUES(blk_size),
+                    zabbix_link=VALUES(zabbix_link),
+                    hadoop_version=VALUES(hadoop_version),
+                    exec_type=VALUES(exec_type);"
+          # New style, with more db fields
+          else
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor)
+                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
+                  ON DUPLICATE KEY UPDATE
+                    id_cluster=VALUES(id_cluster),
+                    exec=VALUES(exec),
+                    bench=VALUES(bench),
+                    exe_time=VALUES(exe_time),
+                    start_time=VALUES(start_time),
+                    end_time=VALUES(end_time),
+                    net=VALUES(net),
+                    disk=VALUES(disk),
+                    bench_type=VALUES(bench_type),
+                    maps=VALUES(maps),
+                    iosf=VALUES(iosf),
+                    replication=VALUES(replication),
+                    iofilebuf=VALUES(iofilebuf),
+                    comp=VALUES(comp),
+                    blk_size=VALUES(blk_size),
+                    zabbix_link=VALUES(zabbix_link),
+                    hadoop_version=VALUES(hadoop_version),
+                    exec_type=VALUES(exec_type),
+                    datasize=VALUES(datasize),
+                    scale_factor=VALUES(scale_factor);"
+          fi
 
+          logger "DEBUG: $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_version" == "2" ]; then
@@ -203,6 +245,7 @@ import_folder() {
             $MYSQL "$update"
           fi
 
+        # An example of how to imput values to de DB in another way
         elif [ "$bench_folder" == "SCWC" ] ; then
           logger "DEBUG: Processing SCWC"
 
@@ -258,6 +301,8 @@ import_folder() {
         cd ..; logger "INFO: Leaving folder $bench_folder\n"
 
         #update DB filters
+        logger "INFO: checking if run was valid"
+        #logger "DEBUG: $(get_filter_sql_exec "$id_exec")"
         $MYSQL "$(get_filter_sql_exec "$id_exec")"
 
       else
@@ -497,7 +542,11 @@ get_exec_params() {
     local end_time=""
     local net=$(extract_config_var "NET")
     local disk=$(extract_config_var "DISK")
-    local bench=$(extract_config_var "BENCH")
+    local bench=$(extract_config_var "BENCH_SUITE")
+
+    # if not found, try previous name
+    [ ! "$bench" ] && local bench=$(extract_config_var "BENCH")
+
     local maps=$(extract_config_var "MAX_MAPS")
     local iosf=$(extract_config_var "IO_FACTOR")
     local replication=$(extract_config_var "REPLICATION")
@@ -505,6 +554,8 @@ get_exec_params() {
     local comp=$(extract_config_var "COMPRESS_TYPE")
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     local exec_type=$(extract_config_var "EXEC_TYPE")
+    local datasize=$(extract_config_var "ALOJA_DATA_SIZE")
+    local scale_factor=$(extract_config_var "ALOJA_SCALE_FACTOR")
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
       exec_type="default"
@@ -546,7 +597,7 @@ get_exec_params() {
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
     done
 
   fi
@@ -785,29 +836,36 @@ import_hadoop_jobs() {
   for csv_file in *.csv ; do
     if [[ $(head $csv_file |wc -l) > 1 ]] ; then
       #get the job name and counter type from csv file name
-      separator_pos=$(echo "$csv_file" | awk '{ print index($1,".")}')
-      job_name="${csv_file:0:$(($separator_pos - 1))}"
-      counter="${csv_file:$separator_pos:-4}"
-      table_name="JOB_${counter}"
+      local separator_pos=$(echo "$csv_file" | awk '{ print index($1,".")}')
+      local job_name="${csv_file:0:$(($separator_pos - 1))}"
+      local counter="${csv_file:$separator_pos:-4}"
+      local table_name="JOB_${counter}"
+
+      if [[ "$table_name" == "JOB_status" || "$table_name" == "JOB_tasks" ]] ; then
+        table_name="aloja_logs.$table_name"
+      else
+        table_name="aloja2.$table_name"
+      fi
+
       logger "INFO: Inserting into DB $csv_file TN $table_name"
       #add host and missing data to csv
       awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp_${csv_file}.csv
 
       if [ "$PARALLEL_INSERTS" ] ; then
-        insert_DB "${table_name}" "tmp_${csv_file}.csv" "" "," &
+        insert_DB "$table_name" "tmp_${csv_file}.csv" "" "," &
       else
-        insert_DB "${table_name}" "tmp_${csv_file}.csv" "" ","
+        insert_DB "$table_name" "tmp_${csv_file}.csv" "" ","
       fi
 
       local data_OK="1"
     else
-      logger "ERROR: File $csv_file is INVALID\n$(cat $csv_file)"
+      logger "ERROR: Hadoop file $csv_file is INVALID\n$(cat $csv_file)"
     fi
   done
 
   [ "$data_OK" ] && folder_OK="$(( folder_OK + data_OK ))"
 
-  cd ..; logger "\n"
+  cd ..;
 }
 
 import_sar_files() {
@@ -815,7 +873,7 @@ import_sar_files() {
     if [[ $(head $sar_file |wc -l) > 1 ]] ; then
 
       for table_name in "SAR_cpu" "SAR_io_paging" "SAR_interrupts" "SAR_load" "SAR_memory_util" "SAR_memory" "SAR_swap" "SAR_swap_util" "SAR_switches" "SAR_block_devices" "SAR_net_devices" "SAR_io_rate" "SAR_net_errors" "SAR_net_sockets"; do
-        sar_command=""
+        local sar_command=""
         if [ "$table_name" == "SAR_cpu" ] ; then
           sar_command="-u"
         elif [ "$table_name" == "SAR_io_paging" ] ; then
@@ -847,7 +905,7 @@ import_sar_files() {
         fi
 
         if [ "$sar_command" != "" ] ; then
-          csv_name="$sar_file.$table_name.csv"
+          local csv_name="$sar_file.$table_name.csv"
           $sadf -d "$sar_file" -- $sar_command |\
           sed 's/ UTC//g' | \
           awk "NR == 1 {sub(\"timestamp\", \"date\", \$2); sub(\"hostname\", \"host\", \$2); \
@@ -866,7 +924,7 @@ import_sar_files() {
         fi
       done
     else
-      logger "ERROR: File $sar_file is INVALID"
+      logger "ERROR: sar File $sar_file is INVALID"
     fi
   done
 
@@ -890,7 +948,7 @@ import_vmstats_files() {
       fi
 
     else
-      logger "DEBUG: File $vmstats_file is INVALID"
+      logger "DEBUG: vmstats File $vmstats_file is INVALID"
     fi
   done
 }
@@ -907,15 +965,13 @@ import_AOP4Hadoop_files() {
       logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
       awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$3","$4","$5","$6","$7}' "$AOP_file_name" > "$tmp_file"
       insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
-    else
-      logger "ERROR: File $vmstats_file is INVALID"
     fi
   fi
 }
 
 import_bwm_files() {
-  for bwm_file in bwm-*.log ; do
-    if [[ $(head $bwm_file |wc -l) > 1 ]] ; then
+  for bwm_file in bwm-*.log ; do 2> /dev/null
+    if [ -f "$bwm_file" ] && [[ $(head $bwm_file |wc -l) > 1 ]] ; then
       #get host name from file name
       hostn="${bwm_file:4:-4}"
       #there are two formats, 9 and 15 fields
@@ -939,7 +995,7 @@ import_bwm_files() {
       fi
 
     else
-      logger "DEBUG: File $bwm_file is INVALID"
+      logger "DEBUG: bwm File $bwm_file is INVALID"
     fi
   done
 }
@@ -954,7 +1010,7 @@ delete_untars() {
       folder_name="${tarball:0:(-8)}"
       #echo "Found $tarball Folder $folder_name"
       if [ -d "$folder_name" ] ; then
-        logger "INFO: Deleting $folder_name"
+        logger "INFO: Deleting untarred $folder_name folder"
         rm -rf $folder_name
       fi
     done
