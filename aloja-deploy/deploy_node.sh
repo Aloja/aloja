@@ -12,7 +12,7 @@ fi
 source "$deploy_include_path"
 
 
-vm_create_node
+vm_create_node $needPasswordPre
 
 wait #wait for the provisioning to be ready
 

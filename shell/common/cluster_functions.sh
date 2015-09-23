@@ -35,6 +35,8 @@ vm_check_create() {
 #requires $vm_name and $type to be set
 vm_create_node() {
 
+  local needSshPw=$1
+
   if [ "$defaultProvider" == "hdinsight" ]; then
     vm_name="$clusterName"
     status=$(hdi_cluster_check_create "$clusterName")
@@ -55,9 +57,9 @@ vm_create_node() {
     #boostrap and provision VM with base packages in parallel
 
     if [ -z "$noParallelProvision" ] && [ "$type" != "node" ] ; then
-      vm_provision & #in parallel
+      vm_provision $needSshPw & #in parallel
     else
-      vm_provision
+      vm_provision $needSshPw
     fi
 
   elif [ "$vmType" == 'windows' ] ; then
@@ -109,18 +111,20 @@ vm_provision() {
   else
     vm_set_ssh
   fi
-  vm_install_base_packages
-
-  if [ "$type" == "cluster" ] ; then
-    [ "$(must_install_ganglia)" = "1" ] && install_ganglia_gmond
-    config_ganglia_gmond "$clusterName"
-  fi
 
   if [ -z "$noSudo" ] ; then
+
+    vm_install_base_packages
+
+    if [ "$type" == "cluster" ] ; then
+      [ "$(must_install_ganglia)" = "1" ] && install_ganglia_gmond
+      config_ganglia_gmond "$clusterName"
+    fi
+
     vm_initialize_disks #cluster is in parallel later
     vm_mount_disks
   else
-    logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
+    logger "WARNING: Skipping package installation and disk mount due to sudo not being present or disabled for VM $vm_name"
   fi
 
   vm_set_dot_files &
@@ -222,7 +226,7 @@ get_ssh_port() {
   if [ "$vm_ssh_port_tmp" ] ; then
     echo "$vm_ssh_port_tmp"
   else
-    die "EEROR: cannot get SSH port for VM $vm_name"
+    die "ERROR: cannot get SSH port for VM $vm_name"
   fi
 }
 
@@ -255,20 +259,11 @@ check_sudo() {
   fi
 }
 
-check_sshpass() {
-  if ! which sshpass > /dev/null; then
-    logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
-    sudo apt-get install -y sshpass
-    if ! which sshpass > /dev/null; then
-      logger "ERROR: sshpass could not be installed or not found"
-      exit 1
-    fi
-  fi
-}
-
 #$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
+
+  local sshpass=files/sshpass.sh
 
   set_shh_proxy
 
@@ -291,12 +286,11 @@ vm_execute() {
     #chmod 0644 $(get_ssh_key)
   #Use password
   else
-    check_sshpass
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" | "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
       result=$?
     else
-      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" | "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
       result=$?
     fi
   fi
@@ -315,6 +309,7 @@ set_shh_proxy() {
 #interactive ssh, $1 use password
 vm_connect() {
 
+  local sshpass=files/sshpass.sh
   set_shh_proxy
 
   local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
@@ -332,15 +327,15 @@ vm_connect() {
     #chmod 0644 $(get_ssh_key)
   #Use password
   else
-    check_sshpass
     logger "Connecting to VM $vm_name (using PASS), with details: ssh  $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
 #$1 source files $2 destination $3 extra options $4 use password
 vm_local_scp() {
 
+  local sshpass=files/sshpass.sh
   local src="$1"
 
   logger "SCPing files"
@@ -353,10 +348,8 @@ vm_local_scp() {
     scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
-   logger "password"
-    check_sshpass
-
-    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    logger "password"
+    "$sshpass" "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
