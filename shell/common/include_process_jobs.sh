@@ -1,6 +1,7 @@
 BASE_DIR=$(pwd)
 
 source "$CUR_DIR/common/common.sh"
+source "$CUR_DIR/common/import_functions.sh"
 
 #set the path or use the default
 if [ "$1" ] ; then

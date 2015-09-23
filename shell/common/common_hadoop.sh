@@ -296,6 +296,8 @@ $export_perl
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/core-site.xml;
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hdfs-site.xml;
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/mapred-site.xml
+/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics2.properties
+
 echo -e '$master_name' > $HADOOP_CONF_DIR/masters;
 echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;"
 
@@ -337,16 +339,23 @@ cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
 }
 
 # Returns if Hadoop v1 or v2
+# $1 the hadoop string (optional, if not uses $HADOOP_VERSION)
 get_hadoop_major_version() {
+  if [ "$1" ] ; then
+    local hadoop_string="$1"
+  else
+    local hadoop_string="$HADOOP_VERSION"
+  fi
+
   local major_version
   if [ "$clusterType" == "PaaS" ]; then
     major_version="2"
-  elif [[ "$HADOOP_VERSION" == *"p-1"* ]] ; then
+  elif [[ "$hadoop_string" == *"p-1"* ]] ; then
     major_version="1"
-  elif [[ "$HADOOP_VERSION" == *"p-2"* ]] ; then
+  elif [[ "$hadoop_string" == *"p-2"* ]] ; then
     major_version="2"
   else
-    die "Cannot determine Hadoop major version.  Supplied version $HADOOP_VERSION"
+    die "Cannot determine Hadoop major version.  Supplied version $hadoop_string"
   fi
 
   echo -e "$major_version"

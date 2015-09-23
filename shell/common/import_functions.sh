@@ -5,14 +5,13 @@ CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 #CREATE TABLE AND LOAD VALUES FROM CSV FILE
 # $1 TABLE NAME $2 PATH TO CSV FILE $3 DROP THE DB FIRST $4 DELIMITER $5 DB
 insert_DB(){
-
-  echo "Inserting into DB $sar_file TN $1"
+  logger "INFO: Inserting into DB $sar_file TN $1"
 
   if [[ $(head "$2"|wc -l) > 1 ]] ; then
-    echo "Loading $2 into $1"
-head -n3 "$2"
+    logger "DEBUG: Loading $2 into $1"
+    logger "DEBUG: File header:\n$(head -n3 "$2")"
 
-#tx levels READ UNCOMMITTED READ-COMMITTED
+    #tx levels READ UNCOMMITTED READ-COMMITTED
     $MYSQL "
     SET time_zone = '+00:00';
     SET tx_isolation = 'READ-COMMITTED';
@@ -21,13 +20,262 @@ head -n3 "$2"
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
     FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
     IGNORE 1 LINES;"
-    echo -e "Loaded $2 into $1\n"
-
+    logger "DEBUG: Loaded $2 into $1\n"
   else
-    echo "EMPTY CSV FILE FOR $csv_name $(cat $csv_name)"
+    logger "WARNING: empty CSV file $csv_name $(cat $csv_name)"
   fi
 
-  rm $2
+  # Delete the temporary file
+  rm "$2"
+}
+
+# Transition function to be able to import an especific folder
+# $1 folder to import
+# $2 reload caches
+import_from_folder() {
+  local folder="$1"
+  local reload_caches="$2"
+
+  # Remove trailing slash if any
+  [ "${folder:(-1)}" == "/" ] && folder="${folder:0:(-1)}"
+
+  # Test for full or relative path
+  if [ "${folder:0:1}" == "/" ] ; then
+    BASE_DIR="${folder%/*}"
+    folder="${folder##*/}"
+  # if not, check if we have a cluster defined (eg from benchs)
+  elif [ "$clusterName" ] ; then
+    BASE_DIR="$BENCH_SHARE_DIR/jobs_${clusterName}"
+  # use the current path
+  else
+    BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  fi
+
+  [ ! -d "$BASE_DIR/$folder" ] && die "Cannot find $BASE_DIR/$folder folder. Exit..."
+
+  logger "Importing data from from $BASE_DIR  -- $folder"
+
+  INSERT_DB="1" #if to dump CSV into the DB
+  REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+  REDO_UNTARS="" #if to redo the untars for folders that have it
+  PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+  MOVE_TO_DONE="" #if set moves completed folders to DONE
+
+  sadf="/usr/bin/sadf"
+
+  source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
+  #install_packages "mysql-client" "update"
+  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
+  MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
+  DB="aloja2"
+  MYSQL_CREATE="sudo mysql $MYSQL_ARGS -e " #do not include DB name in case it doesn't exist yet
+  MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
+
+  # Finally, run the command
+  import_folder "$folder"
+  logger "INFO: clearing unzipped files"
+  delete_untars "$BASE_DIR/$folder"
+
+  [ "$reload_caches" ] && refresh_web_caches "aloja-web"
+}
+
+
+# Imports the given folder into ALOJA-WEB
+# TODO old code moved here need refactoring
+# $1 folder to import
+import_folder() {
+  local folder="$1"
+
+  #filter folders by date
+  min_date="20120101"
+  min_time="$(date --utc --date "$min_date" +%s)"
+
+	[ "$folder" ] || die "Empty folder supplied to import_folder()"
+
+  folder_OK="0"
+  cd "$BASE_DIR" #make sure we come back to the starting folder
+  logger "INFO: Iterating folder\t$folder CP: $(pwd)"
+
+  folder_time="$(date --utc --date "${folder:0:8}" +%s)"
+
+  if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
+    logger "Entering folder\t$folder"
+    cd "$folder"
+
+    #get all executions details
+    exec_params="$(get_exec_params "log_${folder}.log" "$folder")"
+
+    if [[ -z $exec_params ]] ; then
+      logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
+      cd ..
+
+      #move folder to failed dir
+      if [ "$MOVE_TO_DONE" ] ; then
+        delete_untars "$BASE_DIR/$folder"
+        move2done "$folder" "$folder_OK"
+      fi
+
+      continue
+    else
+      logger "DEBUG: Exec params:\n$exec_params"
+    fi
+
+
+    # First untar prep folders (if any). Needed to fill conf parameters table, excluding prep jobs
+    # NOTE: this is for legacy HiBench
+    if ls prep_*.tar.bz2 1> /dev/null 2>&1; then
+      logger "INFO: Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
+      for bzip_file in prep_*.tar.bz2 ; do
+        bench_folder="${bzip_file%%.*}"
+        if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
+          logger "INFO: Untaring $bzip_file"
+          tar -xjf "$bzip_file"
+        fi
+      done
+    else
+      logger "INFO: No prep_* bench folder found (LEGACY)"
+    fi
+
+    for bzip_file in *.tar.bz2 ; do
+
+      bench_folder="${bzip_file%%.*}"
+
+      #skip conf folders
+      [ "$bench_folder" == "host_conf" ] && continue
+
+      if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
+        logger "INFO: Untaring $bzip_file in $(pwd)"
+        logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
+        tar -xjf "$bzip_file"
+      fi
+
+      if [ -d "$bench_folder" ] ; then
+
+        logger "INFO: Entering $bench_folder"
+        cd "$bench_folder"
+
+        exec="${folder}/${bench_folder}"
+
+        #insert config and get ID_exec
+        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
+
+        if [[  $folder == *_az ]] ; then
+          id_cluster="2"
+        else
+
+          id_cluster="${folder:(-2):2}"
+
+          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+          source $clusterConfigFile
+
+          echo "ID cluster $id_cluster CFF $clusterConfigFile"
+
+          #TODO this check wont work for old folders with numeric values at the end, need another strategy
+          #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
+          if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
+            $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
+          else
+            id_cluster="1"
+          fi
+        fi
+        logger "DEBUG: Cluster $id_cluster"
+
+        if [ "$exec_values" ] ; then
+          folder_OK="$(( folder_OK + 1 ))"
+
+          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
+                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
+                  ON DUPLICATE KEY UPDATE
+                  start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
+                  end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')';"
+          logger "DEBUG: $insert"
+
+          $MYSQL "$insert"
+
+          if [ "$hadoop_version" == "2" ]; then
+              if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
+                get_xml_exec_params "mr-history"
+              else
+                get_xml_exec_params "history"
+              fi
+            update="UPDATE aloja2.execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
+            logger "DEBUG: updating exec params from execution conf: $update"
+            $MYSQL "$update"
+          fi
+
+        elif [ "$bench_folder" == "SCWC" ] ; then
+          logger "DEBUG: Processing SCWC"
+
+          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+                  ;"
+                  #ON DUPLICATE KEY UPDATE
+                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
+                  #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
+          logger "INFO: $insert"
+
+          $MYSQL "$insert"
+
+        else
+          logger "ERROR: cannot find bench $bench_folder execution details in log"
+          #continue
+        fi
+
+        #get Job XML configuration if needed
+        #get_job_confs
+
+        id_exec="$(get_id_exec "$exec")"
+
+        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
+
+        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
+
+          #if dir does not exists or need to insert in DB
+          if [ "$hadoop_version" != "2" ]; then
+        if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
+        extract_hadoop_jobs
+        fi
+          fi
+
+          #DB inserting scripts
+          if [ "$INSERT_DB" == "1" ] ; then
+            #start with Hadoop's
+            if [ "$hadoop_version" != "2" ]; then
+             import_hadoop_jobs
+            else
+              extract_import_hadoop2_jobs
+            fi
+            import_AOP4Hadoop_files
+            wait
+            import_sar_files
+            wait
+            import_vmstats_files
+            wait
+            import_bwm_files
+            wait
+          fi
+        fi
+        cd ..; logger "INFO: Leaving folder $bench_folder\n"
+
+        #update DB filters
+        $MYSQL "$(get_filter_sql_exec "$id_exec")"
+
+      else
+        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
+      fi
+    done #end for bzip file
+    cd ..; logger "INFO: Leaving folder $folder\n"
+
+    if [ "$MOVE_TO_DONE" ] ; then
+      delete_untars "$BASE_DIR/$folder"
+      move2done "$folder" "$folder_OK"
+    fi
+
+  else
+    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
+    [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
+  fi
+
 }
 
 
@@ -83,11 +331,11 @@ move2done() {
     mkdir -p "$BASE_DIR/DONE"
     mkdir -p $BASE_DIR/FAIL/{0..3}
     if (( "$2" >= 3 )) ; then
-      logger "OK=$2 Moving folder $1 to DONE"
+      logger "DEBUG: OK=$2 Moving folder $1 to DONE"
       cp -ru "$BASE_DIR/$1" "$BASE_DIR/DONE/"
       rm -rf "$BASE_DIR/$1"
     else
-      logger "OK=$2 Moving $1 to FAIL/$2 for manual check"
+      logger "DEBUG: OK=$2 Moving $1 to FAIL/$2 for manual check"
       cp -ru "$BASE_DIR/$1" "$BASE_DIR/FAIL/$2/"
       rm -rf "$BASE_DIR/$1"
     fi
@@ -265,8 +513,10 @@ get_exec_params() {
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
+    hadoop_version="$(get_hadoop_major_version "$hadoop_version")"
+
     # Remove "hadoop" string from version: "hadoop2" -> "2"
-    hadoop_version="${hadoop_version//hadoop}"
+    #hadoop_version="${hadoop_version//hadoop}"
 
     # load arrays
     local temp_array
@@ -354,7 +604,7 @@ get_job_confs() {
   id_exec_conf_params=""
   get_id_exec_conf_params "$exec"
 
-  logger "Attempting to get XML configuration for ID get_id_exec_conf_params"
+  logger "INFO: Attempting to get XML configuration for ID get_id_exec_conf_params"
   if [[ ! -z "$id_exec_conf_params" ]] ; then
     jobconfs=""
     #get Haddop conf files which are NOT jobs of prep
@@ -372,7 +622,7 @@ get_job_confs() {
       jobconfs=$(grep -v -f file2.tmp file.tmp)
       rm file.tmp file2.tmp
     else
-      logger "Not prep folder, considering all confs belonging to exec"
+      logger "INFO: Not prep folder, considering all confs belonging to exec"
       jobconfs=$(find "./history/done" -type f -name "job*.xml");
     fi
 
@@ -427,7 +677,7 @@ import_hadoop2_jhist() {
 		        ON DUPLICATE KEY UPDATE
 		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
 		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
-    logger "$insert"
+    logger "DEBUG: $insert"
 
 	$MYSQL "$insert"
 
@@ -457,7 +707,7 @@ import_hadoop2_jhist() {
 			insert="INSERT INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 
-			logger "$insert"
+			logger "DEBUG: $insert"
 			$MYSQL "$insert"
 
 			normalStartTime=`expr $taskStartTime - $startTimeTS`
@@ -486,7 +736,7 @@ import_hadoop2_jhist() {
 					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
-			logger "$insert"
+			logger "DEBUG: $insert"
 			$MYSQL "$insert"
 		done
 	fi
@@ -512,7 +762,7 @@ extract_hadoop_jobs() {
   #get the Hadoop job logs
   job_files=$(find "./history" -type f -name "job*"|grep -v ".xml")
 
-  logger "Generating Hadoop Job CSVs for $bench_folder"
+  logger "INFO: Generating Hadoop Job CSVs for $bench_folder"
   rm -rf "hadoop_job"
   mkdir -p "hadoop_job"
 
@@ -521,10 +771,10 @@ extract_hadoop_jobs() {
     job_name="${job_file##*/}"
     job_name="${job_name:0:21}"
 
-    logger "Processing Job $job_name File $job_file"
+    logger "INFO: Processing Job $job_name File $job_file"
 
-    logger "Extrating Job history details for $job_file"
-    python2.7 "$CUR_DIR/job_history.py" -j "hadoop_job/${job_name}.details.csv" -d "hadoop_job/${job_name}.status.csv" -t "hadoop_job/${job_name}.tasks.csv" -i "$job_file"
+    logger "INFO: Extrating Job history details for $job_file"
+    python2.7 "$ALOJA_REPO_PATH/shell/job_history.py" -j "hadoop_job/${job_name}.details.csv" -d "hadoop_job/${job_name}.status.csv" -t "hadoop_job/${job_name}.tasks.csv" -i "$job_file"
 
   done
 }
@@ -539,7 +789,7 @@ import_hadoop_jobs() {
       job_name="${csv_file:0:$(($separator_pos - 1))}"
       counter="${csv_file:$separator_pos:-4}"
       table_name="JOB_${counter}"
-      logger "Inserting into DB $csv_file TN $table_name"
+      logger "INFO: Inserting into DB $csv_file TN $table_name"
       #add host and missing data to csv
       awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp_${csv_file}.csv
 
@@ -551,7 +801,7 @@ import_hadoop_jobs() {
 
       local data_OK="1"
     else
-      logger "File $csv_file is INVALID\n$(cat $csv_file)"
+      logger "ERROR: File $csv_file is INVALID\n$(cat $csv_file)"
     fi
   done
 
@@ -624,12 +874,12 @@ import_sar_files() {
 }
 
 import_vmstats_files() {
-  for vmstats_file in [vmstat-]*.log ; do
+  for vmstats_file in vmstat-*.log ; do
     if [[ $(head $vmstats_file |wc -l) -gt 1 ]] ; then
       #get host name from file name
       hostn="${vmstats_file:7:-4}"
       table_name="VMSTATS"
-      logger "Inserting into DB $vmstats_file TN $table_name"
+      logger "INFO: Inserting into DB $vmstats_file TN $table_name"
 
       tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp_${vmstats_file}.csv
 
@@ -640,19 +890,37 @@ import_vmstats_files() {
       fi
 
     else
-      logger "ERROR: File $vmstats_file is INVALID"
+      logger "DEBUG: File $vmstats_file is INVALID"
     fi
   done
 }
 
+# Imports log generated by AOP4Hadoop (if any)
+# More info at: https://github.com/Aloja/AOP4Hadoop
+import_AOP4Hadoop_files() {
+  local AOP_file_name="aloja.log"
+  local tmp_file="tmp_${AOP_file_name}.csv"
+
+  if [ -f "$AOP_file_name" ] ; then
+    if [[ $(head $AOP_file_name |wc -l) -gt 1 ]] ; then
+      table_name="AOP4Hadoop"
+      logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
+      awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$3","$4","$5","$6","$7}' "$AOP_file_name" > "$tmp_file"
+      insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
+    else
+      logger "ERROR: File $vmstats_file is INVALID"
+    fi
+  fi
+}
+
 import_bwm_files() {
-  for bwm_file in [bwm-]*.log ; do
+  for bwm_file in bwm-*.log ; do
     if [[ $(head $bwm_file |wc -l) > 1 ]] ; then
       #get host name from file name
       hostn="${bwm_file:4:-4}"
       #there are two formats, 9 and 15 fields
       bwm_format="$(head -n 1 "$bwm_file" |grep -o ';'|wc -l)"
-      logger "BWM format $bwm_format"
+      logger "INFO: BWM format $bwm_format"
       head -n3 "$bwm_file"
       if [[ $bwm_format -gt 9 ]] ; then
         table_name="BWM2"
@@ -662,7 +930,7 @@ import_bwm_files() {
         cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;unix_timestamp;iface_name;bytes_out;bytes_in;bytes_total;packets_out;packets_in;packets_total;errors_out;errors_in\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp_${bwm_file}.csv
       fi
 
-      logger "Inserting into DB $bwm_file TN $table_name"
+      logger "INFO: Inserting into DB $bwm_file TN $table_name"
 
       if [ "$PARALLEL_INSERTS" ] ; then
         insert_DB "aloja_logs.${table_name}" "tmp_${bwm_file}.csv" "" ";" &
@@ -671,7 +939,7 @@ import_bwm_files() {
       fi
 
     else
-      logger "File $bwm_file is INVALID"
+      logger "DEBUG: File $bwm_file is INVALID"
     fi
   done
 }
@@ -686,7 +954,7 @@ delete_untars() {
       folder_name="${tarball:0:(-8)}"
       #echo "Found $tarball Folder $folder_name"
       if [ -d "$folder_name" ] ; then
-        logger "Deleting $folder_name"
+        logger "INFO: Deleting $folder_name"
         rm -rf $folder_name
       fi
     done
@@ -722,4 +990,52 @@ get_xml_exec_params() {
 	fi
 
 	blocksize=`expr $blocksize / 1000000`
+}
+
+
+# Just opens the specified web for cache generation
+# $1 url
+hit_page() {
+  wget -O /dev/null "$1"
+  #-o /dev/null
+}
+
+# $1 host name
+refresh_web_caches() {
+  local host_name="$1"
+  
+  [ "$host_name" ] || die "No hostname supplied"
+
+  logger "INFO: Re-generating basic caches..."
+  hit_page "http://$host_name/?NO_CACHE=1"
+  hit_page "http://$host_name/benchdata?NO_CACHE=1"
+  hit_page "http://$host_name/counters?NO_CACHE=1"
+  hit_page "http://$host_name/benchexecs?NO_CACHE=1"
+  hit_page "http://$host_name/bestconfig?NO_CACHE=1"
+  hit_page "http://$host_name/configimprovement?NO_CACHE=1"
+  hit_page "http://$host_name/parameval?NO_CACHE=1"
+  hit_page "http://$host_name/costperfeval?NO_CACHE=1"
+  #hit_page "http://$host_name/perfcharts?random=1&NO_CACHE=1"
+  hit_page "http://$host_name/metrics?NO_CACHE=1"
+  hit_page "http://$host_name/metrics?type=MEMORY&NO_CACHE=1"
+  hit_page "http://$host_name/metrics?type=DISK&NO_CACHE=1"
+  hit_page "http://$host_name/metrics?type=NETWORK&NO_CACHE=1"
+  hit_page "http://$host_name/dbscan?NO_CACHE=1"
+  hit_page "http://$host_name/dbscanexecs?NO_CACHE=1"
+
+  hit_page "http://$host_name/"
+  hit_page "http://$host_name/benchdata"
+  hit_page "http://$host_name/counters"
+  hit_page "http://$host_name/benchexecs"
+  hit_page "http://$host_name/bestconfig"
+  hit_page "http://$host_name/configimprovement"
+  hit_page "http://$host_name/parameval"
+  hit_page "http://$host_name/costperfeval"
+  hit_page "http://$host_name/perfcharts?random=1"
+  hit_page "http://$host_name/metrics"
+  hit_page "http://$host_name/metrics?type=MEMORY"
+  hit_page "http://$host_name/metrics?type=DISK"
+  hit_page "http://$host_name/metrics?type=NETWORK"
+  hit_page "http://$host_name/dbscan"
+  hit_page "http://$host_name/dbscanexecs"
 }

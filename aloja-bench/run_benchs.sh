@@ -4,7 +4,7 @@
 # NOTE: you need to have your cluster configured first
 # for usage execute run_benchs.sh -h
 
-# 1.) load cluster config and common functions
+# Load cluster config and common functions
 
 [ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 CONF_DIR="$ALOJA_REPO_PATH/shell/conf" #TODO remove when migrated to use ALOJA_REPO_PATH
@@ -59,11 +59,18 @@ benchmark_cleanup
 # Save env vars and globals
 save_env "$JOB_PATH/config.sh"
 
-# Execute post-process of traces
+# Execute post-process of traces if enabled (https://github.com/Aloja/hadoop-instrumentation)
 if [ "$INSTRUMENTATION" == "1" ] ; then
   instrumentation_post_process
 fi
 
+if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
+  logger "INFO: Auto importing run to ALOJA-WEB"
+  source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
+
+  import_from_folder "$JOB_NAME" "reload_caches"
+  logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
+fi
+
 logger "INFO: Size and path: $(du -h $JOB_PATH|tail -n 1)"
 logger "All done, took $(getElapsedTime startTime) seconds"
-
