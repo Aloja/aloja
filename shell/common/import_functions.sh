@@ -63,8 +63,11 @@ import_from_folder() {
 
   sadf="/usr/bin/sadf"
 
-  source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
-  #install_packages "mysql-client" "update"
+  if ! which mysql ; then
+    source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
+    install_packages "mysql-client" "update"
+  fi
+
   MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
   MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
   DB="aloja2"
