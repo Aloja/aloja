@@ -373,36 +373,40 @@ class ConfigEvaluationsController extends AbstractController
 
 			$options = $this->filters->getFiltersArray()[$paramEval]['choices'];
 
-			$benchOptions = "SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval";
+			$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY e.$paramEval, e.bench order by e.$paramEval";
 
 			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
 
 			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
 			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
 
-			$query = "SELECT COUNT(*) AS count, $paramEval, bench, avg(exe_time) avg_exe_time, min(exe_time) min_exe_time
+			$query = "SELECT COUNT(*) AS count, e.$paramEval, e.bench, avg(e.exe_time) avg_exe_time, min(e.exe_time) min_exe_time
 					  FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					  LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
 					  WHERE 1 $filter_execs $whereClause
-					  GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+					  GROUP BY e.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, e.$paramEval";
 
 			$queryPredictions = "
-					SELECT COUNT(*) AS count, $paramEval, CONCAT('pred_',bench) as bench, avg(pred_time) as avg_exe_time, min(pred_time) as min_exe_time
+					SELECT COUNT(*) AS count, e.$paramEval, CONCAT('pred_',e.bench) as bench,
+						avg(e.pred_time) as avg_exe_time, min(e.pred_time) as min_exe_time
 						FROM aloja_ml.predictions AS e
-						WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-						GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+						JOIN clusters c USING (id_cluster)
+						WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+						GROUP BY e.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, e.$paramEval";
 
 
 			// get the result rows
 			if ($params['uobsr'] == 1 && $params['upred'] == 1)
 			{
 				$query = "($query) UNION ($queryPredictions)";
-				$benchOptions = "SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench
+				$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY e.$paramEval, e.bench
 								 UNION
-								 (SELECT DISTINCT CONCAT('pred_', bench) as bench FROM aloja_ml.predictions AS e
-								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-								 GROUP BY $paramEval, bench $minExecsFilter)
+								 (SELECT DISTINCT CONCAT('pred_', e.bench) as bench FROM aloja_ml.predictions AS e
+								  JOIN clusters c USING (id_cluster)
+								 WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+								 GROUP BY e.$paramEval, e.bench $minExecsFilter)
 								 ORDER BY bench";
-				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."' ORDER BY $paramEval";
+				$optionsPredictions = "SELECT DISTINCT e.$paramEval FROM aloja_ml.predictions AS e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."' ORDER BY e.$paramEval";
 				$optionsPredictions = $db->get_rows($optionsPredictions);
 				foreach($optionsPredictions as $predOption)
 					$options[] = $predOption[$paramEval];
@@ -410,12 +414,13 @@ class ConfigEvaluationsController extends AbstractController
 			else if ($params['uobsr'] == 0 && $params['upred'] == 1)
 			{
 				$query = $queryPredictions;
-				$benchOptions = "SELECT DISTINCT CONCAT('pred_', bench) as bench FROM aloja_ml.predictions AS e
-								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-								 GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
+				$benchOptions = "SELECT DISTINCT CONCAT('pred_', e.bench) as bench FROM aloja_ml.predictions AS e
+ 								 JOIN clusters c USING (id_cluster)
+								 WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+								 GROUP BY e.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, e.$paramEval";
 
 				$options = array();
-				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."' ORDER BY $paramEval";
+				$optionsPredictions = "SELECT DISTINCT e.$paramEval FROM aloja_ml.predictions AS e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."' ORDER BY e.$paramEval";
 				$optionsPredictions = $db->get_rows($optionsPredictions);
 				foreach($optionsPredictions as $predOption)
 					$options[] = $predOption[$paramEval];

@@ -179,10 +179,41 @@ class Filters
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
+            ),
+            'warning' => array('field' => 'outlier', 'table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show warnings',
+                'parseFunction' => function() {
+                    $learner = $this->filters['prediction_model']['currentChoice'];
+                    $whereClause = "";
+                    $values = isset($_GET['warning']) ? 1 : 0;
+                    if(!isset($_GET['outlier']) && !empty($learner))
+                        $whereClause = " AND (ml_predictionsAlias.outlier <= $values OR ml_predictionsAlias.outlier IS NULL) ".
+                        "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
+
+                    return array('currentChoice' => $values, 'whereClause' => $whereClause);
+                },
+                'filterGroup' => 'MLearning'
+            ),
+            'outlier' => array('table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show outliers',
+                'parseFunction' => function() {
+                    $learner = $this->filters['prediction_model']['currentChoice'];
+                    $whereClause = "";
+                    $values = isset($_GET['outlier']) ? 2 : 0;
+                    if(!$values && isset($_GET['warning']))
+                        $values = 1;
+
+                    if($values && !empty($learner)) {
+                        $whereClause = " AND (ml_predictionsAlias.outlier <= $values OR ml_predictionsAlias.outlier IS NULL) ".
+                            "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
+                        $values = 1;
+                    }
+
+                    return array('currentChoice' => $values, 'whereClause' => $whereClause);
+                },
+                'filterGroup' => 'MLearning'
             )
         );
 
-        $this->aliasesTables = array('execs' => '','clusters' => '');
+        $this->aliasesTables = array('execs' => 'e','clusters' => 'c', 'ml_predictions' => 'p');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
         $this->filterGroups = array('basic' => array(
@@ -204,7 +235,7 @@ class Filters
             ),
             'MLearning' => array(
                 'label' => 'Machine Learning',
-                'filters' => array('prediction_model','upred','uobsr'),
+                'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
                 'tabOpenDefault' => true
             )
         );
@@ -281,7 +312,7 @@ class Filters
             if(array_key_exists($table, $aliasesToReplace)) {
                 $whereClause = str_replace("${table}Alias.",$aliasesToReplace[$table].'.',$whereClause);
             } else {
-                $whereClause = str_replace("${table}Alias.",$alias,$whereClause);
+                $whereClause = str_replace("${table}Alias.",$alias.'.',$whereClause);
             }
         }
         return $whereClause;
