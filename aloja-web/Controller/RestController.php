@@ -268,7 +268,7 @@ class RestController extends AbstractController
             $full_name = "$dir/$zip_file";
 
             //check if it needs to be created
-            if (true || !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
+            if (true ) {  //Caching of file disabled !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
                 $query = 'SELECT
                     concat(
                     "2:",
@@ -326,8 +326,6 @@ class RestController extends AbstractController
                 $end = end($prv_rows)['prv'];
                 $end = explode(':', $end);
 
-                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$end[5].":4(1,1,1,1):1:4(1:1,1:2,1:3,1:4),0";
-
                 //create the Row file according to the cluster size
                 $query = 'SELECT id_host, host_name, role
                             FROM aloja2.execs e
@@ -337,6 +335,20 @@ class RestController extends AbstractController
                 if (!isset($hosts_rows)) throw new \Exception('No data returned to create the Row file!');
 
                 $row_size = count($hosts_rows);
+
+                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$end[5].":$row_size(";
+                for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
+                    $header .= "1,";
+                }
+                $header = substr($header,0,-1); //remove trailing ,
+
+                $header .="):1:$row_size("; #1:1,1:2,1:3,1:4
+                for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
+                    $header .= "1:$node_number,";
+                }
+                $header = substr($header,0,-1); //remove trailing ,
+
+                $header .= "),0";
 
                 $row_file = "LEVEL CPU SIZE $row_size";
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {

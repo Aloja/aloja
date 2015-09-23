@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   KEY \`idx_perf_details\` (\`perf_details\`)
 ) ENGINE=InnoDB;
 
-
 create table if not exists hosts (
   id_host int(11) NOT NULL AUTO_INCREMENT,
   host_name varchar(127) NOT NULL,
@@ -919,6 +918,20 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS AOP4Hadoop (
+  id_AOP4Hadoop int(11) NOT NULL AUTO_INCREMENT,
+  id_exec int(11) NOT NULL,
+  date datetime DEFAULT NULL,
+  mili_secs int(11) DEFAULT NULL,
+  host_name varchar(127) DEFAULT NULL,
+  PID int(11) DEFAULT NULL,
+  moment varchar(127) DEFAULT NULL,
+  event varchar(127) DEFAULT NULL,
+  extra1 varchar(255) DEFAULT NULL,
+  PRIMARY KEY (id_AOP4Hadoop),
+  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event),
+  KEY index2 (id_exec)
+) ENGINE=InnoDB;
 "
 
 ####################################################
