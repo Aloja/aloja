@@ -4,6 +4,7 @@ namespace alojaweb\Filters;
 
 use \alojaweb\inc\DBUtils;
 use \alojaweb\inc\Utils;
+use \alojaweb\Container\Container;
 
 class Filters
 {
@@ -24,6 +25,7 @@ class Filters
 
     public function __construct(\alojaweb\inc\DBUtils $dbConnection) {
         $this->dbConnection = $dbConnection;
+        $container = new Container();
 
         /* In this array there are the filter names with its default options
          * that will be overwritten by the given custom defaults and options if given
@@ -62,7 +64,7 @@ class Filters
                 },
                 'parseFunction' => 'parseDatasize'),
             'scale_factor' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Scale factor: '),
-            'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectOne', 'label' => 'Bench suite:'),
+            'bench_type' => array('table' => 'execs', 'default' => ($container->in_dev() ? array():array('HiBench', 'Hadoop-Examples')), 'type' => 'selectOne', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);
@@ -122,7 +124,7 @@ class Filters
                 }),
             'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Cluster type:'),
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Hadoop version:'),
-            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => 50, 'type' => 'inputNumberge','label' => 'Min exec time:'),
+            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => ($container->in_dev() ? 1:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
             'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle','label' => 'Max exec time:'),
             'datefrom' => array('table' => 'execs', 'field' => 'start_time', 'default' => null, 'type' => 'inputDatege','label' => 'Date from:'),
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
@@ -132,13 +134,14 @@ class Filters
             'filter' => array('table' => 'execs', 'field' => 'filter', 'type' => 'checkboxNegated', 'default' => 1, 'label' => 'Filter'),
             'prepares' => array('table' => 'execs', 'type' => 'checkbox', 'default' => 0, 'label' => 'Include prepares',
                 'parseFunction' => function() {
+                    $container = new Container();
                     $whereClause = "";
                     $values = 0;
                     if(isset($_GET['prepares'])) {
                         $values = 1;
                     } else {
                         $values = $this->filters['prepares']['default'];
-                        if(!$values)
+                        if(!$values && !$container->in_dev())
                             $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
