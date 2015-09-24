@@ -400,10 +400,7 @@ vm_install_webserver() {
 
   local bootstrap_file="${FUNCNAME[0]}"
 
-  # besides the bootstrap file we check that dir exits, because it is not cotained in the vagrant VM (it is in the repo path)
-  local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
-
-  if [[ "$test_action" != *"$testKey"* ]] || check_bootstraped "$bootstrap_file" "" ; then
+  if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
 
     #TODO: remove php5-xdebug for prod servers
@@ -449,7 +446,10 @@ install_PHP_vendors() {
 
   local bootstrap_file="${FUNCNAME[0]}"
 
-  if check_bootstraped "$bootstrap_file" ""; then
+  # besides the bootstrap file we check that dir exits, because it is not cotained in the vagrant VM (it is in the repo path)
+  local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+  if [[ "$test_action" != *"$testKey"* ]] || check_bootstraped "$bootstrap_file" "" ; then
     logger "Executing $bootstrap_file"
 
     logger "INFO: Checking if to download vendor files"
