@@ -215,16 +215,7 @@ vm_final_bootstrap() {
   #currently is run everytime it is executed
   vm_update_hosts_file
   vagrant_link_share
-
-  #temporary
-  if [ "$vm_name" == "aloja-web" ] ; then
-    vm_execute "
-sudo mysql -e \"GRANT ALL PRIVILEGES ON *.* TO '${userDbAloja}'@'%' IDENTIFIED BY '${passwordDbAloja}';\"
-sudo mysql -e \"REVOKE SUPER ON *.* FROM '${userDbAloja}'@'%';\"
-"
-  fi
 }
-
 
 vm_initialize_disks() {
   : #not needed

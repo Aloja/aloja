@@ -459,7 +459,7 @@ install_PHP_vendors() {
     if [[ "$test_action" != *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
 
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150924.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
 
       vm_execute "
 cd /tmp;
