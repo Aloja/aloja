@@ -4,20 +4,12 @@
 <!-- Put site-specific property overrides in this file. -->
 
 <configuration>
-     <property>
-         <name>fs.default.name</name>
-         <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020</value>
-     </property>
+<property>
+ <name>fs.default.name</name>
+ <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020</value>
+</property>
 <property>
   <name>hadoop.tmp.dir</name>
   <value>##TMP_DIR##</value>
 </property>
-
-
-<!--
-<property>
-  <name>hadoop.security.authentication</name>
-  <value>simple</value>
-</property>
--->
 </configuration>
