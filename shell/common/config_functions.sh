@@ -179,6 +179,7 @@ Host *
   GSSAPIAuthentication=no
   ServerAliveInterval=30
   ServerAliveCountMax=3
+  connectTimeout=10
 "
 # Other possible options to test
 #  ControlPersist=600 #this one is causing problems for some reason
