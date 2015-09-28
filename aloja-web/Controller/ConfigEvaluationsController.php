@@ -256,50 +256,40 @@ class ConfigEvaluationsController extends AbstractController
 		$filterExecs = DBUtils::getFilterExecs();
 
 		$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+		$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+		$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+
+		$queryObserved = "
+				SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
+				FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+				LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
+				WHERE 1 $filterExecs $whereClause
+				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
+				ORDER BY $order_type ASC
+			";
+
+		$queryPredictions = "SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,CONCAT('Predicted ',e.bench) as bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
+				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
+				WHERE 1 $filterExecs ".str_replace("p.","e.",$whereClauseML)." AND id_learner = '".$params['prediction_model']."'
+				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version";
+
+		$query = $queryObserved;
 
 		// get the result rows
 		if ($params['uobsr'] == 1 && $params['upred'] == 1)
 		{
-			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
-			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+
 			$query = "
-				(SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
-				FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
-				WHERE 1 $filterExecs $whereClause
-				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version)
+				($queryObserved)
 				UNION
-				(SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,e.bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
-				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
-				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version)
+				($queryPredictions)
 				ORDER BY $order_type ASC
 			";
 		}
 		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
-		{
-			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
-			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
-			$query = "
-				SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,e.bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
-				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
-				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
-				ORDER BY $order_type ASC
-			";
-		}
-		else
-		{
-			if ($params['uobsr'] == 0 && $params['upred'] == 0)
-				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
-
-			$query = "
-				SELECT (e.exe_time/3600)*c.cost_hour as cost, e.id_exec,e.exec,e.bench,e.exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version, c.*
-				FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
-				WHERE 1 $filterExecs $whereClause
-				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
-				ORDER BY $order_type ASC
-			";
-		}
+			$query = $queryPredictions;
+		else if ($params['uobsr'] == 0 && $params['upred'] == 0)
+			$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
 
 //		$this->getContainer ()->getLog ()->addInfo ( 'BestConfig query: ' . $query );
 		$rows = $db->get_rows ( $query );
@@ -365,6 +355,12 @@ class ConfigEvaluationsController extends AbstractController
 			$minExecs = (isset($_GET['minexecs'])) ? Utils::get_GET_int('minexecs') : -1;
 			$this->filters->changeCurrentChoice('minexecs',($minExecs == -1) ? null : $minExecs);
 
+			$shortAliasParamEval = array('maps' => 'e', 'comp' => 'e', 'id_cluster' => 'c',
+				'net' => 'e', 'disk' => 'e','replication' => 'e',
+				'iofilebuf' => 'e', 'blk_size' => 'e', 'iosf' => 'e', 'vm_size' => 'c',
+				'vm_cores' => 'c', 'vm_ram' => 'c', 'datanodes' => 'c', 'hadoop_version' => 'e',
+				'type' => 'c');
+
 			$minExecsFilter = "";
 			if($minExecs > 0)
 			$minExecsFilter = "HAVING COUNT(*) > $minExecs";
@@ -373,40 +369,40 @@ class ConfigEvaluationsController extends AbstractController
 
 			$options = $this->filters->getFiltersArray()[$paramEval]['choices'];
 
-			$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY e.$paramEval, e.bench order by e.$paramEval";
+			$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench order by ${shortAliasParamEval[$paramEval]}.$paramEval";
 
 			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
 
 			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
 			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
 
-			$query = "SELECT COUNT(*) AS count, e.$paramEval, e.bench, avg(e.exe_time) avg_exe_time, min(e.exe_time) min_exe_time
+			$query = "SELECT COUNT(*) AS count, ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench, avg(e.exe_time) avg_exe_time, min(e.exe_time) min_exe_time
 					  FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
 					  LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
 					  WHERE 1 $filter_execs $whereClause
-					  GROUP BY e.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, e.$paramEval";
+					  GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, ${shortAliasParamEval[$paramEval]}.$paramEval";
 
 			$queryPredictions = "
-					SELECT COUNT(*) AS count, e.$paramEval, CONCAT('pred_',e.bench) as bench,
+					SELECT COUNT(*) AS count, ${shortAliasParamEval[$paramEval]}.$paramEval, CONCAT('pred_',e.bench) as bench,
 						avg(e.pred_time) as avg_exe_time, min(e.pred_time) as min_exe_time
 						FROM aloja_ml.predictions AS e
 						JOIN clusters c USING (id_cluster)
 						WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
-						GROUP BY e.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, e.$paramEval";
+						GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, ${shortAliasParamEval[$paramEval]}.$paramEval";
 
 
 			// get the result rows
 			if ($params['uobsr'] == 1 && $params['upred'] == 1)
 			{
 				$query = "($query) UNION ($queryPredictions)";
-				$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY e.$paramEval, e.bench
+				$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench
 								 UNION
 								 (SELECT DISTINCT CONCAT('pred_', e.bench) as bench FROM aloja_ml.predictions AS e
 								  JOIN clusters c USING (id_cluster)
 								 WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
-								 GROUP BY e.$paramEval, e.bench $minExecsFilter)
+								 GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench $minExecsFilter)
 								 ORDER BY bench";
-				$optionsPredictions = "SELECT DISTINCT e.$paramEval FROM aloja_ml.predictions AS e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."' ORDER BY e.$paramEval";
+				$optionsPredictions = "SELECT DISTINCT ${shortAliasParamEval[$paramEval]}.$paramEval FROM aloja_ml.predictions AS e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."' ORDER BY ${shortAliasParamEval[$paramEval]}.$paramEval";
 				$optionsPredictions = $db->get_rows($optionsPredictions);
 				foreach($optionsPredictions as $predOption)
 					$options[] = $predOption[$paramEval];
@@ -417,10 +413,10 @@ class ConfigEvaluationsController extends AbstractController
 				$benchOptions = "SELECT DISTINCT CONCAT('pred_', e.bench) as bench FROM aloja_ml.predictions AS e
  								 JOIN clusters c USING (id_cluster)
 								 WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
-								 GROUP BY e.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, e.$paramEval";
+								 GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench $minExecsFilter ORDER BY e.bench, ${shortAliasParamEval[$paramEval]}.$paramEval";
 
 				$options = array();
-				$optionsPredictions = "SELECT DISTINCT e.$paramEval FROM aloja_ml.predictions AS e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."' ORDER BY e.$paramEval";
+				$optionsPredictions = "SELECT DISTINCT ${shortAliasParamEval[$paramEval]}.$paramEval FROM aloja_ml.predictions AS e JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."' ORDER BY ${shortAliasParamEval[$paramEval]}.$paramEval";
 				$optionsPredictions = $db->get_rows($optionsPredictions);
 				foreach($optionsPredictions as $predOption)
 					$options[] = $predOption[$paramEval];

@@ -185,9 +185,9 @@ class Filters
                     $learner = $this->filters['prediction_model']['currentChoice'];
                     $whereClause = "";
                     $values = isset($_GET['warning']) ? 1 : 0;
-                    if(!isset($_GET['outlier']) && !empty($learner))
+                    if($values && !empty($learner))
                         $whereClause = " AND (ml_predictionsAlias.outlier <= $values OR ml_predictionsAlias.outlier IS NULL) ".
-                        "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
+                            "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
 
                     return array('currentChoice' => $values, 'whereClause' => $whereClause);
                 },
@@ -198,13 +198,14 @@ class Filters
                     $learner = $this->filters['prediction_model']['currentChoice'];
                     $whereClause = "";
                     $values = isset($_GET['outlier']) ? 2 : 0;
-                    if(!$values && isset($_GET['warning']))
-                        $values = 1;
 
                     if($values && !empty($learner)) {
-                        $whereClause = " AND (ml_predictionsAlias.outlier <= $values OR ml_predictionsAlias.outlier IS NULL) ".
+                        $whereClause = " AND (ml_predictionsAlias.outlier <= 2 OR ml_predictionsAlias.outlier IS NULL) ".
                             "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
                         $values = 1;
+                    } else if(!empty($learner) && !isset($_GET['warning'])) {
+                        $whereClause = " AND (ml_predictionsAlias.outlier = 0 OR ml_predictionsAlias.outlier IS NULL) ".
+                            "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
                     }
 
                     return array('currentChoice' => $values, 'whereClause' => $whereClause);
