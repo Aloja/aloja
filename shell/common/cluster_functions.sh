@@ -634,6 +634,9 @@ vm_set_ssh() {
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
 
+    # Install extra pub keys for login if defined
+    [ "$extraPublicKeys" ] && vm_execute "echo -e '${extraPublicKeys}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+
     vm_update_template "$homePrefixAloja/$userAloja/.ssh/config" "$(get_ssh_config)" ""
 
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
