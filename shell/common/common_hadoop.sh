@@ -67,6 +67,24 @@ export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.
   echo -e "$to_export\n"
 }
 
+# Function to return job specific config
+# rr in the case of PaaS where we cannot change the server config
+get_hadoop_job_config() {
+  local job_config="$BENCH_EXTRA_CONFIG"
+
+  # For v2 only
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    job_config+=" -D mapreduce.job.maps $MAX_MAPS"
+    job_config+=" -D mapreduce.job.reduces $MAX_MAPS"
+  else
+    job_config+=" -D mapred.map.tasks $MAX_MAPS"
+    job_config+=" -D mapred.reduce.tasks $MAX_MAPS"
+  fi
+
+  echo -e "$job_config"
+}
+
+
 # Get the list of slaves
 # TODO should be improved to include master node as worker node if necessary
 # $1 list of nodes
@@ -812,12 +830,12 @@ save_hadoop() {
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1"
     logger "INFO: Deleting history files after copy to local"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
+#    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
   fi
 
   if [[ "EXECUTE_HIBENCH" == "true" ]]; then
     #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1"
-    $DSH_MASTER  "$BENCH_HIB_DIR/$bench/hibench.report" "$JOB_PATH/$1/"
+    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$1/"
   fi
 
   #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"

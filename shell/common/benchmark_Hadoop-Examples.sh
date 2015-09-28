@@ -80,7 +80,7 @@ benchmark_randomtextwriter() {
     local extra_configs="-D test.randomtextwrite.total_bytes=$ALOJA_DATA_SIZE"
   fi
 
-  execute_hadoop_new "$bench_name" "jar $examples_jar randomtextwriter $extra_configs $bench_input_dir" "time"
+  execute_hadoop_new "$bench_name" "jar $examples_jar randomtextwriter $(get_hadoop_job_config) $extra_configs $bench_input_dir" "time"
 }
 
 benchmark_wordcount() {
@@ -96,7 +96,7 @@ benchmark_wordcount() {
   extra_configs+=" -D mapreduce.job.inputformat.class=org.apache.hadoop.mapreduce.lib.input.SequenceFileInputFormat"
   extra_configs+=" -D mapreduce.job.outputformat.class=org.apache.hadoop.mapreduce.lib.output.SequenceFileOutputFormat"
 
-  execute_hadoop_new "$bench_name" "jar $examples_jar wordcount $extra_configs $bench_input_dir $bench_output_dir" "time"
+  execute_hadoop_new "$bench_name" "jar $examples_jar wordcount $(get_hadoop_job_config) $extra_configs $bench_input_dir $bench_output_dir" "time"
 }
 
 # wrapper for teragen
@@ -115,7 +115,7 @@ benchmark_teragen() {
   local teragen_data_size="$(( $ALOJA_DATA_SIZE /100 ))"
   [ ! "$teragen_data_size" ] && die "Cannot determine teragen data size"
 
-  execute_hadoop_new "$bench_name" "jar $examples_jar teragen $teragen_data_size $bench_input_dir" "time"
+  execute_hadoop_new "$bench_name" "jar $examples_jar teragen $(get_hadoop_job_config) $teragen_data_size $bench_input_dir" "time"
 }
 
 benchmark_terasort() {
@@ -125,7 +125,7 @@ benchmark_terasort() {
   logger "INFO: making sure $bench_output_dir dir is empty first"
   hadoop_delete_path "$bench_name" "$bench_output_dir"
 
-  execute_hadoop_new "$bench_name" "jar $examples_jar terasort $bench_input_dir $bench_output_dir" "time"
+  execute_hadoop_new "$bench_name" "jar $examples_jar terasort $(get_hadoop_job_config) $bench_input_dir $bench_output_dir" "time"
 }
 
 # wrapper for teravalidate
@@ -143,5 +143,5 @@ benchmark_teravalidate() {
   logger "INFO: making sure $bench_output_dir dir is empty first"
   hadoop_delete_path "$bench_name" "$teravalidate_output_dir"
 
-  execute_hadoop_new "$bench_name" "jar $examples_jar terasort $teravalidate_input_dir $teravalidate_output_dir" "time"
+  execute_hadoop_new "$bench_name" "jar $examples_jar teravalidate $(get_hadoop_job_config) $teravalidate_input_dir $teravalidate_output_dir" "time"
 }
