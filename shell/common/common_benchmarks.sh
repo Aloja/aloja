@@ -486,12 +486,11 @@ set_job_config() {
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
-  LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
-  LOG="2>&1 |tee -a $LOG_PATH"
+  #LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
+  #LOG="2>&1 |tee -a $LOG_PATH"
 
   #create dir to save files in one host
   $DSH_MASTER "mkdir -p $JOB_PATH"
-  $DSH_MASTER "touch $LOG_PATH"
 
   # Automatically log all output to file
   log_all_output "$JOB_PATH/${0##*/}"

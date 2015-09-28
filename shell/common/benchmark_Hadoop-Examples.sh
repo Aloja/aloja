@@ -8,7 +8,7 @@ BENCH_REQUIRED_FILES["Hadoop-Examples"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/Hado
 [ ! "$BENCH_LIST" ] && BENCH_LIST="wordcount terasort"
 
 # Some benchmark specific validations
-[ ! "$ALOJA_DATA_SIZE" ] && die "ALOJA_DATA_SIZE is not set, cannot continue"
+[ ! "$BENCH_DATA_SIZE" ] && die "BENCH_DATA_SIZE is not set, cannot continue"
 
 # Load Hadoop functions
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
@@ -43,7 +43,8 @@ benchmark_run() {
     function_call "benchmark_$bench"
 
     # Validate (eg. teravalidate)
-    function_call "benchmark_validate_$bench"
+
+    #function_call "benchmark_validate_$bench"
 
   done
 
@@ -75,9 +76,9 @@ benchmark_randomtextwriter() {
   hadoop_delete_path "$bench_name" "$bench_input_dir"
 
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    local extra_configs="-D mapreduce.randomtextwriter.totalbytes=$ALOJA_DATA_SIZE"
+    local extra_configs="-D mapreduce.randomtextwriter.totalbytes=$BENCH_DATA_SIZE"
   else
-    local extra_configs="-D test.randomtextwrite.total_bytes=$ALOJA_DATA_SIZE"
+    local extra_configs="-D test.randomtextwrite.total_bytes=$BENCH_DATA_SIZE"
   fi
 
   execute_hadoop_new "$bench_name" "jar $examples_jar randomtextwriter $(get_hadoop_job_config) $extra_configs $bench_input_dir" "time"
@@ -112,7 +113,7 @@ benchmark_teragen() {
   hadoop_delete_path "$bench_name" "$bench_input_dir"
 
   # Teragen uses 100 byte rows, need to divide the datasize
-  local teragen_data_size="$(( $ALOJA_DATA_SIZE /100 ))"
+  local teragen_data_size="$(( $BENCH_DATA_SIZE /100 ))"
   [ ! "$teragen_data_size" ] && die "Cannot determine teragen data size"
 
   execute_hadoop_new "$bench_name" "jar $examples_jar teragen $(get_hadoop_job_config) $teragen_data_size $bench_input_dir" "time"

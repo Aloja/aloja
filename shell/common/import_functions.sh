@@ -12,10 +12,13 @@ insert_DB(){
     logger "DEBUG: File header:\n$(head -n3 "$2")"
 
     #tx levels READ UNCOMMITTED READ-COMMITTED
+
     $MYSQL "
     SET time_zone = '+00:00';
-    SET tx_isolation = 'READ-COMMITTED';
-    SET GLOBAL tx_isolation = 'READ-COMMITTED';
+
+# Removed due to needing super permissions
+#    SET tx_isolation = 'READ-COMMITTED';
+#    SET GLOBAL tx_isolation = 'READ-COMMITTED';
 
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
     FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
@@ -569,8 +572,8 @@ get_exec_params() {
     local comp=$(extract_config_var "COMPRESS_TYPE")
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     local exec_type=$(extract_config_var "EXEC_TYPE")
-    local datasize=$(extract_config_var "ALOJA_DATA_SIZE")
-    local scale_factor=$(extract_config_var "ALOJA_SCALE_FACTOR")
+    local datasize=$(extract_config_var "BENCH_DATA_SIZE")
+    local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
       exec_type="default"
