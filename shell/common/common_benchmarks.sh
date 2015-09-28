@@ -839,7 +839,7 @@ prepare_folder(){
   logger "INFO: Creating bench main dir at: $HDD (and tmp dir: $HDD_TMP)"
 
   # Creating the main dir
-  $DSH "mkdir -p $HDD $HDD_TMP"
+  $DSH "mkdir -p $HDD/logs $HDD_TMP"
   # Testing the main dir
 
   if ! test_nodes "[ -d '$HDD' ] && [ -d '$HDD_TMP' ] " "ERROR" ; then

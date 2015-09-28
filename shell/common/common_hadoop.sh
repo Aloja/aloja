@@ -3,12 +3,19 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_java.sh"
 set_java_requires
 
 get_hadoop_config_folder() {
-  local
-  if [ "$HADOOP_EXTRA_JARS" == "AOP4Hadoop" ] ; then
-    echo "hadoop1_AOP_conf_template"
+  local config_folder_name
+
+  if [ "$HADOOP_CUSTOM_CONFIG" ] ; then
+    config_folder_name="$HADOOP_CUSTOM_CONFIG"
+  elif [ "$HADOOP_EXTRA_JARS" == "AOP4Hadoop" ] ; then
+    config_folder_name="hadoop1_AOP_conf_template"
+  elif [ "$(get_hadoop_major_version)" == "2" ]; then
+    config_folder_name="hadoop2_conf_template"
   else
-    echo "hadoop1_conf_template"
+    config_folder_name="hadoop1_conf_template"
   fi
+
+  echo -e "$config_folder_name"
 }
 
 set_hadoop_config_folder() {
@@ -37,28 +44,27 @@ get_hadoop_exports() {
   local to_export
 
   # For both versions
-  to_export="
+  to_export="$(get_java_exports)
 export HADOOP_CONF_DIR='$HDD/conf';
+export HADOOP_LOG_DIR='$HDD/logs';
 export HADOOP_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
-$(get_java_exports)
-"
+export HADOOP_OPTS='$HADOOP_OPTS';"
 
   # For v2 only
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     to_export="$to_export
-export HADOOP_YARN_HOME='$HADOOP_HOME';
-"
+export HADOOP_YARN_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
+YARN_LOG_DIR='$HDD/logs';"
   fi
 
   if [ "$HADOOP_EXTRA_JARS" ] ; then
     # Right now jar files are hard-coded
     to_export="$to_export
 export HADOOP_USER_CLASSPATH_FIRST=true;
-export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.5.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;
-"
+export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.5.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;"
   fi
 
-  echo -e "$to_export"
+  echo -e "$to_export\n"
 }
 
 # Get the list of slaves
@@ -179,7 +185,9 @@ get_hadoop_ports() {
 #  <name>fs.default.name</name>
 #  <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020</value>
 
-local ports="${PORT_PREFIX}0010
+# For v2
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    ports+="${PORT_PREFIX}0010
 ${PORT_PREFIX}0020
 ${PORT_PREFIX}0070
 ${PORT_PREFIX}0075
@@ -189,7 +197,32 @@ ${PORT_PREFIX}8021
 ${PORT_PREFIX}0030
 ${PORT_PREFIX}0060
 ${PORT_PREFIX}8020
-"
+${PORT_PREFIX}8030
+${PORT_PREFIX}8031
+${PORT_PREFIX}8032"
+
+# Master
+#tcp        0      0 192.168.99.100:39888    0.0.0.0:*               LISTEN      1000       170001      25763/java
+#tcp        0      0 0.0.0.0:10033           0.0.0.0:*               LISTEN      1000       169994      25763/java
+#tcp6       0      0 192.168.99.100:8088     :::*                    LISTEN      1000       168076      25617/java
+#tcp6       0      0 192.168.99.100:8033     :::*                    LISTEN      1000       168264      25617/java
+# Data
+#tcp        0      0 127.0.0.1:42433         0.0.0.0:*               LISTEN      1000       95790       29702/java
+
+# For v1
+  else
+    ports="${PORT_PREFIX}0010
+${PORT_PREFIX}0020
+${PORT_PREFIX}0070
+${PORT_PREFIX}0075
+${PORT_PREFIX}0090
+${PORT_PREFIX}0105
+${PORT_PREFIX}8021
+${PORT_PREFIX}0030
+${PORT_PREFIX}0060
+${PORT_PREFIX}8020"
+
+  fi
 
   echo -e "$ports"
 }
@@ -254,16 +287,7 @@ s,##IO_MB##,$IO_MB,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
-s,##PHYS_MEM##,$PHYS_ME
-
-
-
-
-
-
-
-
-M,g;
+s,##PHYS_MEM##,$PHYS_MEM,g;
 s,##NUM_CORES##,$NUM_CORES,g;
 s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
@@ -296,6 +320,7 @@ $export_perl
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/core-site.xml;
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hdfs-site.xml;
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/mapred-site.xml
+/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics.properties
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics2.properties
 
 echo -e '$master_name' > $HADOOP_CONF_DIR/masters;
@@ -317,10 +342,11 @@ $export_perl
     ssh "$node" "
 $export_perl
 /usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/mapred-site.xml
-/usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/hdfs-site.xml" &
+/usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/hdfs-site.xml"
     # Extra config for v2
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      ssh "$node" "$export_perl /usr/bin/perl -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/yarn-site.xml " &
+      ssh "$node" "$export_perl
+/usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/yarn-site.xml"
     fi
   done
 
@@ -365,13 +391,14 @@ get_hadoop_major_version() {
 # $1 $HADOOP_VERSION
 format_HDFS(){
   local hadoop_version="$1"
-  logger "INFO: Formating HDFS and NameNode"
+  logger "INFO: Formating HDFS and NameNode dirs"
 
   if [ "$(get_hadoop_major_version)" == "1" ]; then
     $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop namenode -format"
     $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop datanode -format"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
     $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
+    $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -390,9 +417,11 @@ restart_hadoop(){
   if [ "$(get_hadoop_major_version)" == "1" ]; then
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/start-all.sh"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/start-dfs.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/start-yarn.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh start historyserver"
+    $DSH_MASTER "$HADOOP_EXPORTS
+$BENCH_HADOOP_DIR/sbin/start-dfs.sh &
+$BENCH_HADOOP_DIR/sbin/start-yarn.sh &
+$BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh start historyserver &
+wait"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -477,9 +506,11 @@ stop_hadoop(){
   if [ "$(get_hadoop_major_version)" == "1" ]; then
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/stop-all.sh"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-yarn.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-dfs.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver"
+    $DSH_MASTER "
+$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-yarn.sh &
+$BENCH_HADOOP_DIR/sbin/stop-dfs.sh &
+$BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver &
+wait"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -518,7 +549,8 @@ stop_hadoop(){
   fi
 
   if [ "$open_port" ] && [ "$dont_retry" ] ; then
-    die "Please manually stop running Hadoop instances"
+    logger "ERROR: Please manually stop running Hadoop instances"
+    #die "Please manually stop running Hadoop instances"
   elif [ "$open_port" ] && [ ! "$retry" ] ; then
     stop_hadoop "dont_retry"
   else
@@ -649,6 +681,23 @@ execute_hadoop_new(){
     save_hadoop "$bench"
   fi
 }
+
+# Deletes a file or directory recursively in HDFS
+# $1 bench name
+# $2 delete cmd
+hadoop_delete_path() {
+  local bench_name="$1"
+  local path_to_delete="$2"
+
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    local delete_cmd="-rm -r -f"
+  else
+    local delete_cmd="-rmr -f"
+  fi
+
+  execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
+}
+
 
 execute_hdi_hadoop() {
   save_disk_usage "BEFORE"

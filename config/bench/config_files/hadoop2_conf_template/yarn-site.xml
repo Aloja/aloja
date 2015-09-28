@@ -1,50 +1,35 @@
 <?xml version="1.0"?>
-<!--
-  Licensed under the Apache License, Version 2.0 (the "License");
-  you may not use this file except in compliance with the License.
-  You may obtain a copy of the License at
 
-    http://www.apache.org/licenses/LICENSE-2.0
-
-  Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
-  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  See the License for the specific language governing permissions and
-  limitations under the License. See accompanying LICENSE file.
--->
 <configuration>
 
-<property>       
- <name>yarn.nodemanager.local-dirs</name>       
- <value>##HDFS_DDIR##</value>  
- <description>Comma separated list of paths. Use the list of directories from $YARN_LOCAL_DIR.  
+<property>
+ <name>yarn.nodemanager.local-dirs</name>
+ <value>##HDFS_DDIR##</value>
+ <description>Comma separated list of paths. Use the list of directories from $YARN_LOCAL_DIR.
                 For example, /grid/hadoop/hdfs/yarn,/grid1/hadoop/hdfs/yarn.</description>
 </property>
-<property>       
- <name>yarn.nodemanager.log-dirs</name>       
- <value>##LOG_DIR##</value>
- <description>Use the list of directories from $YARN_LOG_DIR.  
-                For example, /var/log/hadoop/yarn.</description>
-</property>
 
 <property>
-  <name>yarn.nodemanager.resource.memory-mb</name>
-  <value></value>
+    <name>yarn.scheduler.minimum-allocation-mb</name>
+    <value>##CONTAINER_MIN_MB##</value>
+    <description>Minimum limit of memory to allocate to each container request at the Resource Manager.</description>
 </property>
 
-<property>
-  <name>yarn.nodemanager.resource.cpu-vcores</name>
-  <value>##MAX_MAPS##</value>
-</property>
+<!--<property>-->
+    <!--<name>yarn.scheduler.maximum-allocation-mb</name>-->
+    <!--<value>##CONTAINER_MAX_MB##</value>-->
+    <!--<description>Maximum limit of memory to allocate to each container request at the Resource Manager.</description>-->
+<!--</property>-->
 
 <property>
-  <name>yarn.nodemanager.resource.memory-mb</name>
-  <value>##MAX_MAPS##</value>
+    <name>yarn.nodemanager.resource.memory-mb</name>
+    <value>##PHYS_MEM##</value>
+    <description>Physical memory, in MB, to be made available to running containers</description>
 </property>
-
 <property>
-  <name>yarn.nodemanager.resource.cpu-vcores</name>
-  <value></value>
+    <name>yarn.nodemanager.resource.cpu-vcores</name>
+    <value>##NUM_CORES##</value>
+    <description>Number of CPU cores that can be allocated for containers.</description>
 </property>
 
 <property>
@@ -57,16 +42,16 @@
 </property>
 <property>
   <name>yarn.resourcemanager.resource-tracker.address</name>
-  <value>${yarn.resourcemanager.hostname}:##PORT_PREFIX##8030</value>
+  <value>${yarn.resourcemanager.hostname}:##PORT_PREFIX##8031</value>
 </property>
 <property>
   <name>yarn.resourcemanager.address</name>
-  <value>${yarn.resourcemanager.hostname}:##PORT_PREFIX##8030</value>
+  <value>${yarn.resourcemanager.hostname}:##PORT_PREFIX##8032</value>
 </property>
 
 <property>
   <name>yarn.nodemanager.hostname</name>
-  <value>##MASTER##</value>
+  <value>##HOST##</value>
 </property>
 
 <property>
@@ -77,29 +62,5 @@
    <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
  </property>
-
-<!--
-<property>
-  <name>yarn.scheduler.maximum-allocation-mb</name>
-  <value></value>
-</property>
-
-<property>
-  <name>yarn.scheduler.minimum-allocation-mb</name>
-  <value></value>
-</property>
-
-<property>
-  <name>yarn.scheduler.maximum-allocation-vcores</name>
-  <value></value>
-</property>
-
-<property>
-  <name><yarn.scheduler.minimum-allocation-vcores/name>
-  <value></value>
-</property>
--->
-
-
 
 </configuration>

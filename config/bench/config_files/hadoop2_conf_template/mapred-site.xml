@@ -10,13 +10,27 @@
   <value>yarn</value>
 </property>
 
-<property>       
- <name>mapreduce.jobhistory.address</name>       
- <value>##MASTER##:##PORT_PREFIX##0020</value>  
+<property>
+ <name>mapreduce.jobhistory.address</name>
+ <value>##MASTER##:##PORT_PREFIX##0020</value>
 </property>
-<property>       
- <name>mapreduce.jobhistory.webapp.address</name>       
- <value>##MASTER##:##PORT_PREFIX##9888</value>  
+<property>
+ <name>mapreduce.jobhistory.webapp.address</name>
+ <value>##MASTER##:##PORT_PREFIX##9888</value>
+</property>
+<property>
+    <name>mapreduce.jobtracker.jobhistory.location</name>
+    <value>##LOG_DIR##</value>
+</property>
+
+
+<property>
+    <name>mapreduce.jobhistory.intermediate-done-dir</name>
+    <value>##LOG_DIR##/history/done_intermediate</value>
+</property>
+<property>
+    <name>mapreduce.jobhistory.done-dir</name>
+    <value>##LOG_DIR##/history/done</value>
 </property>
 
 <property>
@@ -36,7 +50,6 @@
   simultaneously by a task tracker.
   </description>
 </property>
-
 <property>
   <name>mapreduce.tasktracker.reduce.tasks.maximum</name>
   <value>##MAX_REDS##</value>
@@ -44,6 +57,16 @@
   simultaneously by a task tracker.
   </description>
 </property>
+
+<property>
+    <name>mapreduce.job.maps</name>
+    <value>##MAX_MAPS##</value>
+</property>
+<property>
+    <name>mapreduce.job.reduces</name>
+    <value>##MAX_REDS##</value>
+</property>
+
 
 <property>
   <name>dfs.datanode.hostname</name>
@@ -75,11 +98,7 @@
   <value>##IO_MB##</value>
 </property>
 
-<property>
-  <name>io.file.buffer.size</name>
-  <value>##IO_FILE##</value>
-</property>
-
+<!--
 <property>
   <name>mapred.child.java.opts</name>
   <value>##JAVA_XMS## ##JAVA_XMX##</value>
@@ -94,5 +113,6 @@
   maximum virtual memory of the child processes.
   </description>
 </property>
+-->
 
 </configuration>
