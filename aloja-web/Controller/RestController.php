@@ -32,7 +32,6 @@ class RestController extends AbstractController
         	'datanodes' => 'Datanodes',
             'exec_type' => 'Type',
             'prv' => 'PARAVER',
-            //'version' => 'Hadoop v.',
             'init_time' => 'End time',
         	'hadoop_version' => 'H Version',
             'bench_type' => 'Bench',
@@ -61,7 +60,6 @@ class RestController extends AbstractController
                         'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
-            			//'version' => 'Hadoop v.',
             			'init_time' => 'End time',
             			'hadoop_version' => 'H Version',
             			'bench_type' => 'Bench',
@@ -82,7 +80,6 @@ class RestController extends AbstractController
                         'cdesc' => 'Cluster description',
             			'datanodes' => 'Datanodes',
             			'prv' => 'PARAVER',
-            			//'version' => 'Hadoop v.',
             			'init_time' => 'End time',
             			'hadoop_version' => 'H Version',
             			'bench_type' => 'Bench',
@@ -109,9 +106,8 @@ class RestController extends AbstractController
                     'cdesc' => 'Cluster description',
 					'datanodes' => 'Datanodes',
 					'prv' => 'PARAVER',
-					//'version' => 'Hadoop v.',
 					'init_time' => 'End time',
-					'hadoop_version' => 'H Version',
+                    'hadoop_version' => 'H Version',
 					'bench_type' => 'Bench',
                     'perf_details' => 'Perf details',
 
@@ -119,9 +115,9 @@ class RestController extends AbstractController
             }
             $whereClause = str_replace('%2F','/',$whereClause);
             
-             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
+             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) as cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
        	 		join aloja2.clusters c USING (id_cluster)
-      		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs().";";
+      		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs()." ORDER BY e.id_exec DESC;";
 
              $exec_rows = $dbUtils->get_rows($query);
 
