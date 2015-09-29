@@ -8,16 +8,6 @@ VAGRANT_WEB_IP="192.168.99.2" #do not use .1 to avoid some vagrant warnings
 VAGRANT_ipAddrPrefix="192.168.99.1" # IP Address Base for private network
 VAGRANT_sshPortPrefix=2222 #prefix port for the different VMs
 
-
-#checks if the command has been run inside the vagrant VM
-inside_vagrant() {
-  if [ -d  "/vagrant" ] ; then
-    return 0
-  else
-    return 1
-  fi
-}
-
 #### start provider customizations
 
 # $1 vm name
