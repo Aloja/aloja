@@ -21,13 +21,19 @@ class Utils
     }
 
     public static function getConfig($items) {
+        $aliases = array('maps' => 'e', 'comp' => 'e', 'id_cluster' => 'c',
+            'net' => 'e', 'disk' => 'e','replication' => 'e',
+            'iofilebuf' => 'e', 'blk_size' => 'e', 'iosf' => 'e', 'vm_size' => 'c',
+            'vm_cores' => 'c', 'vm_RAM' => 'c', 'vm_OS' => 'c', 'datanodes' => 'c', 'hadoop_version' => 'e',
+            'type' => 'c');
+
     	$concatConfig = "";
     	foreach($items as $item) {
 	    	if ($item != 'bench') {
 	    		if ($concatConfig) $concatConfig .= ",'_',";
 	    	
 	    		if ($item == 'id_cluster') {
-	    			$concatConfig .= "CONCAT_WS(',',provider,vm_size,CONCAT(datanodes,' datanodes'))";
+	    			$concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,' datanodes'))";
 	    		} elseif ($item == 'iofilebuf') {
 	    			$confPrefix = 'I';
 	    		} elseif ($item == 'vm_OS') {
@@ -38,9 +44,9 @@ class Utils
 	    	
 	    		//avoid alphanumeric fields
 	    		if ($item != 'id_cluster' && !in_array($item, array('net', 'disk'))) {
-	    			$concatConfig .= "'".$confPrefix."', $item";
+	    			$concatConfig .= "'".$confPrefix."', ${aliases[$item]}.$item";
 	    		} else if($item != 'id_cluster') {
-	    			$concatConfig .= " $item";
+	    			$concatConfig .= " ${aliases[$item]}.$item";
 	    		}
 	    	}
     	}

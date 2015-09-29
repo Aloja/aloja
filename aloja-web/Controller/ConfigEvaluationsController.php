@@ -12,13 +12,13 @@ class ConfigEvaluationsController extends AbstractController
     {
         $db = $this->container->getDBUtils();
 
-	$this->buildFilters();
-	$this->buildGroupFilters();
-        $whereClause = $this->filters->getWhereClause();
+		$this->buildFilters();
+		$this->buildGroupFilters();
+			$whereClause = $this->filters->getWhereClause();
 
-	$model_html = '';
-	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
-	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
+		$model_html = '';
+		$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+		foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
         $rows_config = '';
         try {
@@ -29,42 +29,35 @@ class ConfigEvaluationsController extends AbstractController
 
 		$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
 
+		$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+		$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+		$query = "SELECT COUNT(*) AS num, CONCAT($concat_config) conf
+					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					LEFT JOIN aloja_ml.predictions p USING (id_exec)
+					WHERE 1 $filter_execs $whereClause
+					GROUP BY conf ORDER BY $order_conf";
+		$queryPredicted = "SELECT COUNT(*) AS num, CONCAT($concat_config) conf
+					FROM aloja_ml.predictions AS e
+					JOIN clusters c USING (id_cluster)
+					WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+					GROUP BY conf ORDER BY $order_conf";
+
 		//get configs first (categories)
 		if ($params['uobsr'] == 1 && $params['upred'] == 1)
 		{
-			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
-			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
 			$query = "
 				SELECT SUM(u1.num) AS num, u1.conf as conf
 				FROM (				
-					(SELECT COUNT(*) AS num, CONCAT($concat_config) conf
-					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
-					WHERE 1 $filter_execs $whereClause
-					GROUP BY conf ORDER BY $order_conf)
+					($query)
 					UNION
-					(SELECT COUNT(*) AS num, CONCAT($concat_config) conf 
-					FROM aloja_ml.predictions AS p
-					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-					GROUP BY conf ORDER BY $order_conf)
+					($queryPredicted)
 				) AS u1
 				GROUP BY conf ORDER BY $order_conf
 			";
 		}
 		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
 		{
-			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
-			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
-			$query = "SELECT COUNT(*) num, CONCAT($concat_config) conf 
-				FROM aloja_ml.predictions AS e
-				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-				GROUP BY conf ORDER BY $order_conf";
-		}
-		else
-		{
-			$query = "SELECT COUNT(*) num, CONCAT($concat_config) conf
-				FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
-				WHERE 1 $filter_execs $whereClause
-				GROUP BY conf ORDER BY $order_conf #AVG(exe_time)";
+			$query = $queryPredicted;
 		}
 		$rows_config = $db->get_rows($query);
 
@@ -75,84 +68,50 @@ class ConfigEvaluationsController extends AbstractController
 			$height = round($height + (10*($num_configs-4)));
 		}
 
+		$query = "SELECT e.id_exec,
+			 concat($concat_config) conf, e.bench,
+			 avg(e.exe_time) AVG_exe_time,
+			 min(e.exe_time) MIN_exe_time,
+			 (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
+			 'none'
+			 from aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+			 LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
+			 WHERE 1 $filter_execs $whereClause
+			 GROUP BY conf, e.bench order by e.bench, $order_conf";
+
+		$queryPredicted = "
+				SELECT e.id_exec, CONCAT($concat_config) conf, CONCAT('pred_',e.bench) as bench, AVG(e.pred_time) AVG_exe_time, max(e.pred_time) MAX_exe_time, min(e.pred_time) MIN_exe_time,
+				(
+					SELECT AVG(p.pred_time)
+					FROM aloja_ml.predictions p
+					WHERE p.bench = e.bench $whereClauseML AND p.id_learner = '".$params['prediction_model']."'
+				) AVG_ALL_exe_time, 'none'
+				FROM aloja_ml.predictions AS e
+				JOIN clusters c USING (id_cluster)
+				WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+				GROUP BY conf, e.bench ORDER BY e.bench, $order_conf
+			";
+
 		//get the result rows
 		if ($params['uobsr'] == 1 && $params['upred'] == 1)
 		{
-			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
-			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
-
-			$query = "
-				SELECT u1.id_exec AS id_exec, u1.conf AS conf, u1.bench AS bench, AVG(u1.exe_time) AVG_exe_time, MAX(u1.exe_time) MAX_exe_time, MIN(u1.exe_time) MIN_exe_time,
-				(
-					SELECT AVG(u2.exe_time)
-					FROM (
-						(SELECT exe_time, bench as b1
-						FROM aloja2.execs
-						WHERE 1 $whereClause)
-						UNION
-						(SELECT pred_time AS exe_time, bench as b1
-						FROM aloja_ml.predictions
-						WHERE 1 $whereClauseML AND id_learner = '".$params['prediction_model']."')
-					) as u2
-					WHERE bench = b1
-				) AVG_ALL_exe_time,'none'
-				FROM (
-					(SELECT id_exec, concat($concat_config) conf, bench, exe_time
-					FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster)
-					WHERE 1 $whereClause)
-					UNION
-					(SELECT id_exec, CONCAT($concat_config) conf, bench, pred_time AS exe_time
-					FROM aloja_ml.predictions AS p
-					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."')
-				) AS u1
+			$query = "($query) UNION ($queryPredicted)
 				GROUP BY conf, bench ORDER BY bench, $order_conf
 			";
 		}
 		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
 		{
-			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
-			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
-			$query = "
-				SELECT id_exec, CONCAT($concat_config) conf, bench, AVG(pred_time) AVG_exe_time, max(pred_time) MAX_exe_time, min(pred_time) MIN_exe_time,
-				(
-					SELECT AVG(pred_time)
-					FROM aloja_ml.predictions
-					WHERE bench = p.bench $whereClauseML AND id_learner = '".$params['prediction_model']."'
-				) AVG_ALL_exe_time, 'none'
-				FROM aloja_ml.predictions AS p
-				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
-				GROUP BY conf, bench ORDER BY bench, $order_conf
-			";
+			$query = $queryPredicted;
 		}
-		else
-		{
-			if ($params['uobsr'] == 0 && $params['upred'] == 0)
+		else if ($params['uobsr'] == 0 && $params['upred'] == 0)
 				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
 
-			//#(select CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) FROM execs e WHERE bench = e.bench $filter_execs $whereClause) P50_ALL_exe_time,
-			$query = "SELECT #count(*),
-			      e.id_exec,
-			      concat($concat_config) conf, bench,
-			      avg(exe_time) AVG_exe_time,
-			      #max(exe_time) MAX_exe_time,
-			      min(exe_time) MIN_exe_time,
-			      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 50/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P50_exe_time`,
-			      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 95/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P95_exe_time`,
-			      #CAST(SUBSTRING_INDEX(SUBSTRING_INDEX(GROUP_CONCAT(exe_time ORDER BY exe_time SEPARATOR ','), ',', 05/100 * COUNT(*) + 1), ',', -1) AS DECIMAL) AS `P05_exe_time`,
-			      (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
-			      #(select MAX(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) MAX_ALL_exe_time,
-			      #(select MIN(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) MIN_ALL_exe_time,
-			      'none'
-			      from aloja2.execs e JOIN aloja2.clusters USING (id_cluster)
-			      WHERE 1 $filter_execs $whereClause
-			      GROUP BY conf, bench order by bench, $order_conf";
-		}
 		$rows = $db->get_rows($query);
 
 		if (!$rows) throw new \Exception("No results for query!");
 
         } catch (\Exception $e) {
-		$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+			$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
 
         $categories = '';
