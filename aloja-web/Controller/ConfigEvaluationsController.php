@@ -12,8 +12,46 @@ class ConfigEvaluationsController extends AbstractController
     {
         $db = $this->container->getDBUtils();
 
-	$this->buildFilters();
-	$this->buildGroupFilters();
+	$this->buildFilters(array(
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
+	$this->buildGroupFilters(); // FIXME - WHY?! ALSO NO DEFAULTS ON CHECKBOX?!
         $whereClause = $this->filters->getWhereClause();
 
 	$model_html = '';
@@ -27,7 +65,7 @@ class ConfigEvaluationsController extends AbstractController
 		$filter_execs = DBUtils::getFilterExecs();
 		$order_conf = 'LENGTH(conf), conf';
 
-		$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
 		//get configs first (categories)
 		if ($params['uobsr'] == 1 && $params['upred'] == 1)
@@ -44,7 +82,7 @@ class ConfigEvaluationsController extends AbstractController
 					UNION
 					(SELECT COUNT(*) AS num, CONCAT($concat_config) conf 
 					FROM aloja_ml.predictions AS p
-					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
 					GROUP BY conf ORDER BY $order_conf)
 				) AS u1
 				GROUP BY conf ORDER BY $order_conf
@@ -56,7 +94,7 @@ class ConfigEvaluationsController extends AbstractController
 			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
 			$query = "SELECT COUNT(*) num, CONCAT($concat_config) conf 
 				FROM aloja_ml.predictions AS e
-				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
 				GROUP BY conf ORDER BY $order_conf";
 		}
 		else
@@ -92,7 +130,7 @@ class ConfigEvaluationsController extends AbstractController
 						UNION
 						(SELECT pred_time AS exe_time, bench as b1
 						FROM aloja_ml.predictions
-						WHERE 1 $whereClauseML AND id_learner = '".$params['prediction_model']."')
+						WHERE 1 $whereClauseML AND id_learner = '".$params['current_model']."')
 					) as u2
 					WHERE bench = b1
 				) AVG_ALL_exe_time,'none'
@@ -103,7 +141,7 @@ class ConfigEvaluationsController extends AbstractController
 					UNION
 					(SELECT id_exec, CONCAT($concat_config) conf, bench, pred_time AS exe_time
 					FROM aloja_ml.predictions AS p
-					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."')
+					WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."')
 				) AS u1
 				GROUP BY conf, bench ORDER BY bench, $order_conf
 			";
@@ -117,10 +155,10 @@ class ConfigEvaluationsController extends AbstractController
 				(
 					SELECT AVG(pred_time)
 					FROM aloja_ml.predictions
-					WHERE bench = p.bench $whereClauseML AND id_learner = '".$params['prediction_model']."'
+					WHERE bench = p.bench $whereClauseML AND id_learner = '".$params['current_model']."'
 				) AVG_ALL_exe_time, 'none'
 				FROM aloja_ml.predictions AS p
-				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+				WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
 				GROUP BY conf, bench ORDER BY bench, $order_conf
 			";
 		}
@@ -205,7 +243,7 @@ class ConfigEvaluationsController extends AbstractController
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
-				'models' => $model_html
+		'models' => $model_html
             )
         );
     }
@@ -236,9 +274,46 @@ class ConfigEvaluationsController extends AbstractController
 			       return 'Cost-effectiveness';
 			},
 			'filterGroup' => 'basic'
+		),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
 		)
 	));
-    $whereClause = $this->filters->getWhereClause();
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
+        $whereClause = $this->filters->getWhereClause();
 
 	$model_html = '';
 	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -255,7 +330,7 @@ class ConfigEvaluationsController extends AbstractController
 
 		$filterExecs = DBUtils::getFilterExecs();
 
-		$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
 		// get the result rows
 		if ($params['uobsr'] == 1 && $params['upred'] == 1)
@@ -270,7 +345,7 @@ class ConfigEvaluationsController extends AbstractController
 				UNION
 				(SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,e.bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
 				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
-				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['current_model']."'
 				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version)
 				ORDER BY $order_type ASC
 			";
@@ -282,7 +357,7 @@ class ConfigEvaluationsController extends AbstractController
 			$query = "
 				SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,e.bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
 				FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
-				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+				WHERE 1 $filterExecs $whereClauseML AND id_learner = '".$params['current_model']."'
 				GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
 				ORDER BY $order_type ASC
 			";
@@ -349,13 +424,50 @@ class ConfigEvaluationsController extends AbstractController
                 'minexecs' => array('default' => null, 'type' => 'inputNumber', 'label' => 'Minimum executions:',
                     'parseFunction' => function() { return 0; },
                     'filterGroup' => 'basic'
-                )
-		));
+                ),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
         $whereClause = $this->filters->getWhereClause();
 
-		$model_html = '';
-		$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
-		foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
+	$model_html = '';
+	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
         $categories = '';
         $series = '';
@@ -375,7 +487,7 @@ class ConfigEvaluationsController extends AbstractController
 
 			$benchOptions = "SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench order by $paramEval";
 
-			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+			$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
 			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
 			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
@@ -388,7 +500,7 @@ class ConfigEvaluationsController extends AbstractController
 			$queryPredictions = "
 					SELECT COUNT(*) AS count, $paramEval, CONCAT('pred_',bench) as bench, avg(pred_time) as avg_exe_time, min(pred_time) as min_exe_time
 						FROM aloja_ml.predictions AS e
-						WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+						WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
 						GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
 
 
@@ -399,10 +511,10 @@ class ConfigEvaluationsController extends AbstractController
 				$benchOptions = "SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY $paramEval, bench
 								 UNION
 								 (SELECT DISTINCT CONCAT('pred_', bench) as bench FROM aloja_ml.predictions AS e
-								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
 								 GROUP BY $paramEval, bench $minExecsFilter)
 								 ORDER BY bench";
-				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."' ORDER BY $paramEval";
+				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."' ORDER BY $paramEval";
 				$optionsPredictions = $db->get_rows($optionsPredictions);
 				foreach($optionsPredictions as $predOption)
 					$options[] = $predOption[$paramEval];
@@ -411,11 +523,11 @@ class ConfigEvaluationsController extends AbstractController
 			{
 				$query = $queryPredictions;
 				$benchOptions = "SELECT DISTINCT CONCAT('pred_', bench) as bench FROM aloja_ml.predictions AS e
-								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."'
+								 WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."'
 								 GROUP BY $paramEval, bench $minExecsFilter ORDER BY bench, $paramEval";
 
 				$options = array();
-				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['prediction_model']."' ORDER BY $paramEval";
+				$optionsPredictions = "SELECT DISTINCT $paramEval FROM aloja_ml.predictions AS e WHERE 1 $filter_execs $whereClauseML AND id_learner = '".$params['current_model']."' ORDER BY $paramEval";
 				$optionsPredictions = $db->get_rows($optionsPredictions);
 				foreach($optionsPredictions as $predOption)
 					$options[] = $predOption[$paramEval];

@@ -25,7 +25,6 @@ class AbstractController
     public function __construct($container = null)
     {
         $this->container = $container;
-        $this->filters = new Filters($this->container->getDBUtils());
     }
 
     public function getContainer()
@@ -54,23 +53,22 @@ class AbstractController
         );
     }
 
-    public function addOverrideFilters($filters) {
-        $this->filters->addOverrideFilters($filters);
-    }
-
-    public function removeFilters($filters) {
-        $this->filters->removeFilters($filters);
-    }
-
     public function buildFilters($customDefaultValues = array()) {
+        $this->filters = new Filters($this->container->getDBUtils());
         $this->filters->getFilters($this->container->getScreenName(),$customDefaultValues);
     }
 
     public function buildGroupFilters() {
+        if(!$this->filters) {
+            $this->filters = new Filters();
+        }
         $this->filters->buildGroupFilters();
     }
 
     public function buildFilterGroups($customFilterGroups) {
-        $this->filters->overrideFilterGroups($customFilterGroups);
+        if($this->filters == null)
+            throw new \Exception('Filters not built!');
+
+        $this->filters->buildFilterGroups($customFilterGroups);
     }
 }
