@@ -957,7 +957,13 @@ config_ganglia_gmetad(){
 
 install_ganglia_web(){
 
-  local bootstrap_file="${FUNCNAME[0]}"
+  # temporarily change the bootstrap name for the vagrant VM to force update the web server
+  if inside_vagrant ; then
+    local bootstrap_file="${FUNCNAME[0]}_3"
+  else
+    local bootstrap_file="${FUNCNAME[0]}"
+  fi
+
   local tarball gdir
 
   if check_bootstraped "$bootstrap_file" ""; then
