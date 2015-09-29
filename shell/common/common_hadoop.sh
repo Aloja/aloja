@@ -74,11 +74,11 @@ get_hadoop_job_config() {
 
   # For v2 only
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    job_config+=" -D mapreduce.job.maps $MAX_MAPS"
-    job_config+=" -D mapreduce.job.reduces $MAX_MAPS"
+    job_config+=" -D mapreduce.job.maps='$MAX_MAPS'"
+    job_config+=" -D mapreduce.job.reduces='$MAX_MAPS'"
   else
-    job_config+=" -D mapred.map.tasks $MAX_MAPS"
-    job_config+=" -D mapred.reduce.tasks $MAX_MAPS"
+    job_config+=" -D mapred.map.tasks='$MAX_MAPS'"
+    job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
   fi
 
   echo -e "$job_config"
