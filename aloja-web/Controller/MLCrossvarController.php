@@ -645,7 +645,7 @@ class MLCrossvarController extends AbstractController
 				'current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,
-					'label' => 'Model tu use: ',
+					'label' => 'Model to use: ',
 					'generateChoices' => function() {
 						return array();
 					},
