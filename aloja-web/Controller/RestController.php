@@ -592,7 +592,7 @@ VALUES
                 s.`avg%steal`,s.`max%steal`, s.`min%steal`, s.`stddev_pop%steal`, s.`var_pop%steal`,
                 s.`avg%idle`,s.`max%idle`, s.`min%idle`, s.`stddev_pop%idle`, s.`var_pop%idle`,
                 e.id_cluster,e.end_time,c.name cluster_name
-                FROM aloja2.precal_cpu_metrics s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec)) WHERE 1 $filter_execs $whereClause
+                FROM aloja2.precal_cpu_metrics s JOIN aloja2.execs e USING (id_exec) JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause
                 ";
         
             } else if($type == 'DISK') {
@@ -615,7 +615,7 @@ VALUES
                     AVG(s.await), MAX(s.`await`), MIN(s.`await`), STDDEV_POP(s.`await`), VAR_POP(s.`await`),
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
                     AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`)
-                    FROM aloja2.execs e JOIN  aloja_logs.SAR_block_devices s USING (id_exec) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_disk_metrics) $filter_execs $whereClause GROUP BY (e.id_exec)
+                    FROM aloja2.execs e JOIN  aloja_logs.SAR_block_devices s USING (id_exec) JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_disk_metrics) $filter_execs $whereClause GROUP BY (e.id_exec)
                 ";
 
                 $dbUtil->executeQuery($insertInto);
@@ -631,7 +631,7 @@ VALUES
                     `avgsvctm`,`maxsvctm`,`minsvctm`,`stddev_popsvctm`,`var_popsvctm`,
                     e.id_cluster,e.end_time,
                     c.name cluster_name
-                    FROM aloja2.precal_disk_metrics s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)
+                    FROM aloja2.precal_disk_metrics s JOIN aloja2.execs e USING (id_exec) JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)
                     ";
             } else if($type == 'MEMORY') {
 
@@ -1152,9 +1152,9 @@ VALUES
 
 
         list($bench, $job_offset, $id_exec) = $db->get_jobid_info($jobid);
-
         // Calc pending dbscanexecs (if any)
         $pending = $db->get_dbscanexecs_pending($bench, $job_offset, $metric_x, $metric_y, $task_type, $whereClause);
+
         if (count($pending) > 0) {
             $db->get_dbscan($pending[0]['jobid'], $metric_x, $metric_y, $task_type);
         }
@@ -1166,7 +1166,7 @@ VALUES
                 d.`id_exec`,
                 d.`centroid_x`,
                 d.`centroid_y`
-            FROM `aloja2.JOB_dbscan` d, `aloja2.execs` e
+            FROM aloja2.JOB_dbscan d, aloja2.execs e
             JOIN aloja2.clusters c USING (id_cluster)
             WHERE
                 d.`id_exec` = e.`id_exec` AND
