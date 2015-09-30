@@ -694,6 +694,11 @@ set_monit_binaries() {
   fi
 }
 
+# Before starting monitors always check if they are already running
+start_monit() {
+  restart_monit
+}
+
 # Stops monitors (if any) and starts them
 restart_monit(){
   if [ "$BENCH_PERF_MONITORS" ] ; then
