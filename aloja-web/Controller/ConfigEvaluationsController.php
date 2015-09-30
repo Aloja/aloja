@@ -69,7 +69,7 @@ class ConfigEvaluationsController extends AbstractController
 		}
 
 		$query = "SELECT e.id_exec,
-			 concat($concat_config) conf, e.bench,
+			 concat($concat_config) conf, e.bench as bench,
 			 avg(e.exe_time) AVG_exe_time,
 			 min(e.exe_time) MIN_exe_time,
 			 (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
@@ -80,11 +80,11 @@ class ConfigEvaluationsController extends AbstractController
 			 GROUP BY conf, e.bench order by e.bench, $order_conf";
 
 		$queryPredicted = "
-				SELECT e.id_exec, CONCAT($concat_config) conf, CONCAT('pred_',e.bench) as bench, AVG(e.pred_time) AVG_exe_time, max(e.pred_time) MAX_exe_time, min(e.pred_time) MIN_exe_time,
+				SELECT e.id_exec, CONCAT($concat_config) conf, CONCAT('pred_',e.bench) as bench, AVG(e.pred_time) AVG_exe_time, min(e.pred_time) MIN_exe_time,
 				(
 					SELECT AVG(p.pred_time)
 					FROM aloja_ml.predictions p
-					WHERE p.bench = e.bench $whereClauseML AND p.id_learner = '".$params['prediction_model']."'
+					WHERE p.bench = e.bench ".str_replace("e.","p.",$whereClauseML)." AND p.id_learner = '".$params['prediction_model']."'
 				) AVG_ALL_exe_time, 'none'
 				FROM aloja_ml.predictions AS e
 				JOIN clusters c USING (id_cluster)
@@ -95,8 +95,9 @@ class ConfigEvaluationsController extends AbstractController
 		//get the result rows
 		if ($params['uobsr'] == 1 && $params['upred'] == 1)
 		{
-			$query = "($query) UNION ($queryPredicted)
-				GROUP BY conf, bench ORDER BY bench, $order_conf
+			$query = "SELECT j.id_exec, j.conf, j.bench, j.AVG_exe_time, j.MIN_exe_time, j.AVG_ALL_exe_time, 'none' FROM (
+					($query) UNION ($queryPredicted)) AS j
+				GROUP BY j.conf, j.bench ORDER BY j.bench, $order_conf
 			";
 		}
 		else if ($params['uobsr'] == 0 && $params['upred'] == 1)
