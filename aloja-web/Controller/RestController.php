@@ -115,8 +115,9 @@ class RestController extends AbstractController
             }
             $whereClause = str_replace('%2F','/',$whereClause);
             
-             $query = "SELECT e.*, (exe_time/3600)*(cost_hour) as cost, name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, datanodes  FROM execs e
+             $query = "SELECT e.*, (e.exe_time/3600)*(c.cost_hour) as cost, c.name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, c.datanodes  FROM aloja2.execs e
        	 		join aloja2.clusters c USING (id_cluster)
+       	 		LEFT JOIN aloja_ml.predictions p USING (id_exec)
       		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs()." ORDER BY e.id_exec DESC;";
 
              $exec_rows = $dbUtils->get_rows($query);
@@ -147,17 +148,17 @@ class RestController extends AbstractController
             if (!($type = Utils::get_GET_string('pageTab')))
                 $type = 'SUMMARY';
 
-            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters c2 USING (id_cluster) WHERE e.valid = 1 AND JOBNAME NOT IN
+            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters c2 USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.valid = 1 AND JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
 
             if ($type == 'SUMMARY') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS,
                 e.perf_details
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'MAP') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `Launched map tasks`,
                 `Data-local map tasks`,
                 `Rack-local map tasks`,
@@ -170,7 +171,7 @@ class RestController extends AbstractController
                 e.perf_details
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'REDUCE') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
                 `Launched reduce tasks`,
                 `Reduce input groups`,
@@ -182,7 +183,7 @@ class RestController extends AbstractController
                 e.perf_details
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'FILE-IO') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME,
                 `SLOTS_MILLIS_MAPS`,
                 `SLOTS_MILLIS_REDUCES`,
@@ -196,10 +197,10 @@ class RestController extends AbstractController
                 e.perf_details
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.*, e.perf_details
+                $query = "SELECT e.bench, e.exe_time, c.*, e.perf_details
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'TASKS') {
-                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.*,e.perf_details FROM aloja_logs.JOB_tasks c
+                $query = "SELECT e.bench, e.exe_time, j.JOBNAME, c.*,e.perf_details FROM aloja_logs.JOB_tasks c
                 JOIN aloja2.JOB_details j USING(id_exec, JOBID) $join ";
             } else {
                 throw new \Exception('Unknown type!');
@@ -579,7 +580,7 @@ VALUES
                  AVG(s.`%iowait`), MAX(s.`%iowait`), MIN(s.`%iowait`), STDDEV_POP(s.`%iowait`), VAR_POP(s.`%iowait`),
                  AVG(s.`%steal`), MAX(s.`%steal`), MIN(s.`%steal`), STDDEV_POP(s.`%steal`), VAR_POP(s.`%steal`),
                  AVG(s.`%idle`), MAX(s.`%idle`), MIN(s.`%idle`), STDDEV_POP(s.`%idle`), VAR_POP(s.`%idle`)
-                 FROM aloja2.execs e JOIN aloja_logs.SAR_cpu s USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_cpu_metrics) AND e.valid = 1 $filter_execs $whereClause GROUP BY (e.id_exec)
+                 FROM aloja2.execs e JOIN aloja_logs.SAR_cpu s USING (id_exec) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_cpu_metrics) AND e.valid = 1 $filter_execs $whereClause GROUP BY (e.id_exec)
                 ";
                 $dbUtil->executeQuery($insertInto);
 
@@ -591,7 +592,7 @@ VALUES
                 s.`avg%steal`,s.`max%steal`, s.`min%steal`, s.`stddev_pop%steal`, s.`var_pop%steal`,
                 s.`avg%idle`,s.`max%idle`, s.`min%idle`, s.`stddev_pop%idle`, s.`var_pop%idle`,
                 e.id_cluster,e.end_time,c.name cluster_name
-                FROM aloja2.precal_cpu_metrics s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause
+                FROM aloja2.precal_cpu_metrics s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec)) WHERE 1 $filter_execs $whereClause
                 ";
         
             } else if($type == 'DISK') {
@@ -614,7 +615,7 @@ VALUES
                     AVG(s.await), MAX(s.`await`), MIN(s.`await`), STDDEV_POP(s.`await`), VAR_POP(s.`await`),
                     AVG(s.`%util`), MAX(s.`%util`), MIN(s.`%util`), STDDEV_POP(s.`%util`), VAR_POP(s.`%util`),
                     AVG(s.svctm), MAX(s.`svctm`), MIN(s.`svctm`), STDDEV_POP(s.`svctm`), VAR_POP(s.`svctm`)
-                    FROM aloja2.execs e JOIN  aloja_logs.SAR_block_devices s USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_disk_metrics) $filter_execs $whereClause GROUP BY (e.id_exec)
+                    FROM aloja2.execs e JOIN  aloja_logs.SAR_block_devices s USING (id_exec) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_disk_metrics) $filter_execs $whereClause GROUP BY (e.id_exec)
                 ";
 
                 $dbUtil->executeQuery($insertInto);
@@ -630,7 +631,7 @@ VALUES
                     `avgsvctm`,`maxsvctm`,`minsvctm`,`stddev_popsvctm`,`var_popsvctm`,
                     e.id_cluster,e.end_time,
                     c.name cluster_name
-                    FROM aloja2.precal_disk_metrics s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)
+                    FROM aloja2.precal_disk_metrics s JOIN execs e USING (id_exec) JOIN clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)
                     ";
             } else if($type == 'MEMORY') {
 
@@ -658,7 +659,7 @@ VALUES
                          AVG(su.kbactive), MAX(su.kbactive), MIN(su.kbactive), STDDEV_POP(su.kbactive), VAR_POP(su.kbactive),
                          AVG(su.kbinact), MAX(su.kbinact), MIN(su.kbinact), STDDEV_POP(su.kbinact), VAR_POP(su.kbinact)
                     FROM aloja_logs.SAR_memory_util su
-                    JOIN aloja2.execs e USING (id_exec) JOIN aloja2.clusters c USING (id_cluster) WHERE e.id_exec NOT IN (SELECT id_exec FROM aloja2.precal_memory_metrics) AND 1 $filter_execs $whereClause GROUP BY (e.id_exec)";
+                    JOIN aloja2.execs e USING (id_exec) JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.id_exec NOT IN (SELECT id_exec FROM aloja2.precal_memory_metrics) AND 1 $filter_execs $whereClause GROUP BY (e.id_exec)";
 
                 $dbUtil->executeQuery($insertInto);
 
@@ -674,7 +675,7 @@ VALUES
                        su.avgkbinact,su.maxkbinact,su.minkbinact,su.stddev_popkbinact,su.var_popkbinact,
                        e.id_cluster,e.end_time, c.name cluster_name
                     FROM aloja2.execs e JOIN aloja2.precal_memory_metrics su USING (id_exec) JOIN aloja2.clusters c USING (id_cluster)
-                    WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)";
+                     LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)";
 
             } else if($type == 'NETWORK') {
 
@@ -698,7 +699,7 @@ VALUES
                     AVG(s.`txcmp/s`),MAX(s.`txcmp/s`),MIN(s.`txcmp/s`),STDDEV_POP(s.`txcmp/s`),VAR_POP(s.`txcmp/s`),SUM(s.`txcmp/s`),
                     AVG(s.`rxmcst/s`),MAX(s.`rxmcst/s`),MIN(s.`rxmcst/s`),STDDEV_POP(s.`rxmcst/s`),VAR_POP(s.`rxmcst/s`),SUM(s.`rxmcst/s`)
                     FROM aloja_logs.SAR_net_devices s
-                    JOIN aloja2.execs e USING (id_exec) WHERE id_exec NOT IN (SELECT id_exec FROM precal_network_metrics) AND 1 $filter_execs $whereClause GROUP BY (e.id_exec)";
+                    JOIN aloja2.execs e USING (id_exec) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE id_exec NOT IN (SELECT id_exec FROM precal_network_metrics) AND 1 $filter_execs $whereClause GROUP BY (e.id_exec)";
 
                 $dbUtil->executeQuery($insertInto);
                 
@@ -714,7 +715,7 @@ VALUES
                     e.id_cluster,e.end_time,
                     c.name cluster_name
                     FROM aloja2.precal_network_metrics s
-                    JOIN aloja2.execs e USING (id_exec) JOIN clusters c USING (id_cluster) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)
+                    JOIN aloja2.execs e USING (id_exec) JOIN clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY (e.id_exec)
                     ";
             }
         
@@ -1255,17 +1256,17 @@ VALUES
     		if (!($type = Utils::get_GET_string('pageTab')))
     			$type = 'SUMMARY';
     
-    		$join = "JOIN aloja2.execs e using (id_exec) WHERE e.valid = 1 AND job_name NOT IN
+    		$join = "JOIN aloja2.execs e using (id_exec) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.valid = 1 AND job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
             ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':''). " LIMIT 10000";
     
     		if ($type == 'SUMMARY') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS,
     			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'MAP') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			$query = "SELECT e.bench, e.exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
     			`RACK_LOCAL_MAPS`,
     			`SPILLED_RECORDS`,
@@ -1276,7 +1277,7 @@ VALUES
     			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'REDUCE') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
     			`TOTAL_LAUNCHED_REDUCES`,
     			`REDUCE_INPUT_GROUPS`,
@@ -1288,7 +1289,7 @@ VALUES
     			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'FILE-IO') {
-    			$query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+    			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME,
     			`SLOTS_MILLIS_MAPS`,
     			`SLOTS_MILLIS_REDUCES`,
@@ -1302,16 +1303,16 @@ VALUES
     			e.perf_details
     			FROM HDI_JOB_details c $join";
     		} elseif ($type == 'DETAIL') {
-    			$query = "SELECT e.bench, exe_time, c.*,e.perf_details FROM aloja_logs.HDI_JOB_details c $join";
+    			$query = "SELECT e.bench, e.exe_time, c.*,e.perf_details FROM aloja_logs.HDI_JOB_details c $join";
     		} elseif ($type == 'TASKS') {
-    			$query = "SELECT e.bench, exe_time, j.job_name, c.*,e.perf_details FROM aloja_logs.HDI_JOB_tasks c
+    			$query = "SELECT e.bench, e.exe_time, j.job_name, c.*,e.perf_details FROM aloja_logs.HDI_JOB_tasks c
     			JOIN aloja_logs.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
     		} else {
     			throw new \Exception('Unknown type!');
     		}
     
     		$exec_rows = $db->get_rows($query);
-    
+
     		if (count($exec_rows) > 0) {
     
     			$show_in_result_counters = array(
@@ -1334,7 +1335,8 @@ VALUES
                 echo 'No data available';
     		}
     
-    	} catch (Exception $e) {
+    	} catch (\Exception $e) {
+            exit($e->getMessage());
             echo 'No data available';
     		/*$noData = array();
     		for($i = 0; $i<=sizeof($show_in_result); ++$i)

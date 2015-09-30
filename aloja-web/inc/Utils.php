@@ -280,18 +280,18 @@ class Utils
     {
         $filter_execs = $where_configs ." ".DBUtils::getFilterExecs();
 
-        $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$netOptions = $db->get_rows("SELECT DISTINCT net FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$diskOptions = $db->get_rows("SELECT DISTINCT disk FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$mapsOptions = $db->get_rows("SELECT DISTINCT maps FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$compOptions = $db->get_rows("SELECT DISTINCT comp FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT blk_size FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$clusterOptions = $db->get_rows("SELECT DISTINCT c.name FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE  valid = 1 AND filter = 0 $filter_execs");
-    	$clusterNodes = $db->get_rows("SELECT DISTINCT c.datanodes FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE valid = 1 AND filter = 0 $filter_execs");
-    	$hadoopVersion = $db->get_rows("SELECT DISTINCT hadoop_version FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-        $benchType = $db->get_rows("SELECT DISTINCT bench_type FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-    	$vmOS = $db->get_rows("SELECT DISTINCT vm_OS FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
-        $execTypes = $db->get_rows("SELECT DISTINCT exec_type FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 $filter_execs");
+        $benchOptions = $db->get_rows("SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$netOptions = $db->get_rows("SELECT DISTINCT e.net FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$diskOptions = $db->get_rows("SELECT DISTINCT e.disk FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$mapsOptions = $db->get_rows("SELECT DISTINCT e.maps FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$compOptions = $db->get_rows("SELECT DISTINCT e.comp FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$blk_sizeOptions = $db->get_rows("SELECT DISTINCT e.blk_size FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$clusterOptions = $db->get_rows("SELECT DISTINCT c.name FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE  e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$clusterNodes = $db->get_rows("SELECT DISTINCT c.datanodes FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$hadoopVersion = $db->get_rows("SELECT DISTINCT e.hadoop_version FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+        $benchType = $db->get_rows("SELECT DISTINCT e.bench_type FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+    	$vmOS = $db->get_rows("SELECT DISTINCT c.vm_OS FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
+        $execTypes = $db->get_rows("SELECT DISTINCT e.exec_type FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 AND e.valid = 1 AND e.filter = 0 $filter_execs");
 
         $discreteOptions = array();
     	$discreteOptions['bench'][] = 'All';
