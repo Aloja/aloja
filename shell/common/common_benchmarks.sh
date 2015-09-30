@@ -690,7 +690,7 @@ set_monit_binaries() {
       logger "WARNING: no extra perf monitors set for Windows"
     fi
   else
-    logger "WARNING: No peformance monitors (e.g., vmstats) have been selected"
+    logger "WARNING: No peformance monitors (e.g., vmstat) have been selected"
   fi
 }
 
