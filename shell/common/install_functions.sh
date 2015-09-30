@@ -79,8 +79,8 @@ aloja_wget() {
   local URL="$1"
   local out_file_name="$2"
 
-  local wget_command="wget --progress=dot -e dotbytes=10M $URL"
-  [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
+  local wget_command="wget --progress=dot -e dotbytes=10M '$URL'"
+  [ "$out_file_name" ] && wget_command="$wget_command -O '$out_file_name'"
 
   #make sure we delete the file in case of an error, wget writes an emtpy file
   wget_command="$wget_command || rm $out_file_name"
