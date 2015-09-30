@@ -4,7 +4,7 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CONF_DIR/common_hadoop.sh"
 
 
-benchmark_config() {
+benchmark_suite_config() {
   export TPCH_B_DIR="${HDD}/aplic"
   export TPCH_SOURCE_DIR="${BENCH_SOURCE_DIR}/tpch-hive"
   export TPCH_HOME="$TPCH_SOURCE_DIR"
@@ -18,19 +18,15 @@ benchmark_config() {
   prepare_hive_config
 }
 
-benchmark_run() {
+benchmark_suite_run() {
   execute_TPCH
 }
 
-benchmark_teardown() {
+benchmark_suite_save() {
   : # Empty
 }
 
-benchmark_save() {
-  : # Empty
-}
-
-benchmark_cleanup() {
+benchmark_suite_cleanup() {
   stop_hadoop
 }
 
