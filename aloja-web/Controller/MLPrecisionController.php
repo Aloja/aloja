@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLPrecisionController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlprecisionAction()
 	{
 		$jsonDiversity = $jsonPrecisions = $jsonDiscvars = $jsonHeaderDiv = $jsonPrecisionHeader = '[]';
@@ -35,9 +42,10 @@ class MLPrecisionController extends AbstractController
 				unset($_GET["pass"]);
 				unset($_GET["dump"]);
  			}
+			$this->filters->removeFilterGroup("MLearning");
 			$this->buildFilters();
 			$where_configs = $this->filters->getWhereClause();
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			//$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
