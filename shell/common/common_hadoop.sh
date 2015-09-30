@@ -708,9 +708,9 @@ hadoop_delete_path() {
   local path_to_delete="$2"
 
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    local delete_cmd="-rm -r -f"
+    local delete_cmd="-rm -r -f -skipTrash"
   else
-    local delete_cmd="-rmr -f"
+    local delete_cmd="-rmr -skipTrash"
   fi
 
   execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
