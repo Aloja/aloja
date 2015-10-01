@@ -376,7 +376,12 @@ mkdir -p $JOB_PATH/conf_$node;
 cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
   done
 
-  [ "$DELETE_HDFS" == "1" ] && format_HDFS "$(get_hadoop_major_version)"
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    format_HDFS "$(get_hadoop_major_version)"
+  else
+    logger "INFO: Deleting previous Job history files (in case necessary)"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
+  fi
 
   # Set correct permissions for instrumentation's sniffer
   [ "$INSTRUMENTATION" == "1" ] && instrumentation_set_perms
@@ -685,6 +690,7 @@ execute_hadoop_new(){
   logger "DEBUG: Hadoop command:$hadoop_cmd"
 
   if [ "$time_exec" ] ; then
+    save_disk_usage "BEFORE"
     restart_monit
     set_bench_start "$bench"
   fi

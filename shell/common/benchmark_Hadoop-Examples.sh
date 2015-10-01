@@ -25,7 +25,7 @@ fi
 benchmark_suite_config() {
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
-  restart_hadoop
+  start_hadoop
 }
 
 benchmark_suite_run() {
