@@ -11,8 +11,10 @@ class MLFindAttributesController extends AbstractController
 {
 	public function mlfindattributesAction()
 	{
-		$instance = $instances =  $message = $tree_descriptor = $model_html = $config = '';
+		$current_model = $model_info = $instance = $instances = $message = $tree_descriptor = $model_html = $config = '';
 		$possible_models = $possible_models_id = $other_models = array();
+		$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+		$mae = $rae = 0;
 		$must_wait = 'NO';
 		try
 		{
@@ -34,7 +36,8 @@ class MLFindAttributesController extends AbstractController
 				unset($_GET["pass"]);
 			}
 
-			$this->buildFilters(array('current_model' => array(
+			$this->buildFilters(array(
+			'current_model' => array(
 				'type' => 'selectOne',
 				'default' => null,
 				'label' => 'Model tu use: ',
@@ -76,11 +79,7 @@ class MLFindAttributesController extends AbstractController
 			$param_current_model = $learnParams['current_model'];
 			$unseen = ($learnParams['unseen']) ? true : false;
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-
-			$jsonData = $jsonHeader = "[]";
-			$mae = $rae = 0;
 
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
@@ -220,85 +219,81 @@ class MLFindAttributesController extends AbstractController
 
 				if (!$is_cached)
 				{
-					$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 					$must_wait = 'YES';
 					if (isset($dump)) { $dbml = null; echo "1"; exit(0); }
 					if (isset($pass)) { $dbml = null; return "1"; }
+					throw new \Exception('WAIT');
 				}
-				else
+
+				if (isset($pass) && $pass == 2) { $dbml = null; return "2"; }
+
+				// Fetch results and compose JSON
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
+				$jsonHeader = '[{title:""}';
+				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+				$jsonHeader = $jsonHeader.']';
+
+				$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
+				$result = $dbml->query($query);
+				$jsonData = '[';
+				foreach ($result as $row)
 				{
-					if (isset($pass) && $pass == 2) { $dbml = null; return "2"; }
+					if ($jsonData!='[') $jsonData = $jsonData.',';
+					$jsonData = $jsonData."['".$row['num']."','".str_replace(",","','",$row['instance'])."','".$row['pred_time']."','".$row['exe_time']."']";
+				}
+				$jsonData = $jsonData.']';
 
-					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
-					$jsonHeader = '[{title:""}';
-					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-					$jsonHeader = $jsonHeader.']';
+				foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
-					$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
-					$result = $dbml->query($query);
-					$jsonData = '[';
-					foreach ($result as $row)
-					{
-						if ($jsonData!='[') $jsonData = $jsonData.',';
-						$jsonData = $jsonData."['".$row['num']."','".str_replace(",","','",$row['instance'])."','".$row['pred_time']."','".$row['exe_time']."']";
-					}
-					$jsonData = $jsonData.']';
+				// Fetch MAE & RAE values
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
+				$result = $dbml->query($query);
+				$row = $result->fetch();
+				$mae = $row['MAE'];
+				$rae = $row['RAE'];
 
-					foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
+				// Dump case
+				if (isset($dump))
+				{
+					echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
+					echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
 
-					// Fetch MAE & RAE values
-					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
-					$result = $dbml->query($query);
-					$row = $result->fetch();
-					$mae = $row['MAE'];
-					$rae = $row['RAE'];
+					$dbml = null;
+					exit(0);
+				}
+				if (isset($pass) && $pass == 1)
+				{
+					$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
+					$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
 
-					// Dump case
-					if (isset($dump))
-					{
-						echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
-						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
+					$dbml = null;
+					return $retval;
+				}
 
-						$dbml = null;
-						exit(0);
-					}
-					if (isset($pass) && $pass == 1)
-					{
-						$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
-						$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
-
-						$dbml = null;
-						return $retval;
-					}
-
-					// Display Descriptive Tree
-					$query = "SELECT tree_code FROM aloja_ml.trees WHERE id_findattrs = '".md5($config)."'";
-					$result = $dbml->query($query);
-					$row = $result->fetch();
-					$tree_descriptor = $row['tree_code'];
-				}			
+				// Display Descriptive Tree
+				$query = "SELECT tree_code FROM aloja_ml.trees WHERE id_findattrs = '".md5($config)."'";
+				$result = $dbml->query($query);
+				$row = $result->fetch();
+				$tree_descriptor = $row['tree_code'];			
 			}
 			else
 			{
-	 			$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
-				$must_wait = 'NO';
 				if (isset($dump)) { echo "-1"; exit(0); }
 				if (isset($pass)) { return "-1"; }
+				throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.");
 			}
-			$dbml = null;
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			if ($e->getMessage () != "WAIT")
+			{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			}
 
-			$jsonData = $jsonHeader = "[]";
-			$must_wait = 'NO';
-			$mae = $rae = 0;
-
-			$dbml = null;
+			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 			if (isset($pass)) { return "-2"; }
 		}
+		$dbml = null;
 
 		$return_params = array(
 			'instance' => $instance,
@@ -316,7 +311,6 @@ class MLFindAttributesController extends AbstractController
 			'instances' => implode("<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",$instances),
 			'model_info' => $model_info,
 			'id_findattr' => md5($config),
-			'unseen' => $unseen,
 			'tree_descriptor' => $tree_descriptor,
 		);
 		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
