@@ -148,7 +148,7 @@ vm_finalize() {
 
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
-  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+  [ ! -z "$extraRemoteCommands" ] && vm_execute "$extraRemoteCommands"
   [ ! -z "$extraPackages" ] && vm_install_extra_packages
 
   [ ! -z "$puppet" ] && vm_puppet_apply

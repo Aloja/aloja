@@ -4,13 +4,13 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CONF_DIR/common_hadoop.sh"
 
 
-benchmark_config() {
+benchmark_suite_config() {
   prepare_hadoop_config ${NET} ${DISK} ${BENCH}
   export HIVE_PATH="$BENCH_SOURCE_DIR/apache-hive-0.13.1-bin"
   export MAHOUT_PATH="$BENCH_SOURCE_DIR/mahout-distribution-0.9"
 }
 
-benchmark_run() {
+benchmark_suite_run() {
   restart_hadoop
 
   restart_monit
@@ -53,14 +53,10 @@ export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
   save_hadoop "${BENCH}"
 }
 
-benchmark_teardown() {
+benchmark_suite_save() {
   : # Empty
 }
 
-benchmark_save() {
-  : # Empty
-}
-
-benchmark_cleanup() {
+benchmark_suite_cleanup() {
   stop_hadoop
 }

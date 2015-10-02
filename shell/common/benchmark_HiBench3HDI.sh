@@ -4,7 +4,7 @@ CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 source "$CONF_DIR/common_hadoop.sh"
 
 
-benchmark_config() {
+benchmark_suite_config() {
   : #Empty
 }
 
@@ -13,7 +13,7 @@ format_nodes() {
    $DSH_MASTER "yes Y | hadoop datanode -format"
 }
 
-benchmark_run() {
+benchmark_suite_run() {
   execute_HDI_HiBench
 }
 
@@ -21,14 +21,9 @@ benchmark_teardown() {
   : # Empty
 }
 
-benchmark_save() {
+benchmark_suite_save() {
   : # Empty
 }
-
-benchmark_cleanup() {
-  : #Empty
-}
-
 
 benchmark_hibench_config_bayes() {
   #export COMPRESS_GLOBAL=1

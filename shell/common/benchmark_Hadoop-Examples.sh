@@ -5,7 +5,7 @@
 # we use the same jar for all executions of the same MR API version, to compare the same code
 BENCH_REQUIRED_FILES["Hadoop-Examples"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/Hadoop-Examples.tar.gz"
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="wordcount terasort"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="wordcount terasort teravalidate"
 
 # Some benchmark specific validations
 [ ! "$BENCH_DATA_SIZE" ] && die "BENCH_DATA_SIZE is not set, cannot continue"
@@ -22,14 +22,16 @@ else
   examples_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-examples-1.2.1.jar"
 fi
 
-benchmark_config() {
+benchmark_suite_config() {
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
-  restart_hadoop
+  start_hadoop
 }
 
-benchmark_run() {
+benchmark_suite_run() {
   logger "INFO: Running $BENCH_SUITE"
+
+  local bench_suite_validates="$(get_bench_validates)"
 
   for bench in $BENCH_LIST ; do
 
@@ -43,23 +45,18 @@ benchmark_run() {
     function_call "benchmark_$bench"
 
     # Validate (eg. teravalidate)
-
-    #function_call "benchmark_validate_$bench"
+    function_call "benchmark_validate_$bench"
 
   done
 
   logger "INFO: DONE executing $BENCH_SUITE"
 }
 
-benchmark_teardown() {
+benchmark_suite_save() {
   logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
 }
 
-benchmark_save() {
-  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
-}
-
-benchmark_cleanup() {
+benchmark_suite_cleanup() {
   stop_hadoop
 }
 
