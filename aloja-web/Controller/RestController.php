@@ -269,9 +269,9 @@ class RestController extends AbstractController
                 $query = 'SELECT
                     concat(
                     "2:",
-                    id_host,
+                    (cast(substring(id_host,2) TO INTEGER )+1),
                     ":1:",
-                    id_host,
+                    (cast(substring(id_host,2) TO INTEGER )+1),
                     ":1:",
                     (unix_timestamp(date) -
                     (select unix_timestamp(min(date)) FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
@@ -339,24 +339,41 @@ class RestController extends AbstractController
                 }
                 $header = substr($header,0,-1); //remove trailing ,
 
-                $header .="):1:$row_size("; #1:1,1:2,1:3,1:4
+                $header .= "):2";
+                $header .= ":$row_size(";
                 for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
                     $header .= "1:$node_number,";
                 }
                 $header = substr($header,0,-1); //remove trailing ,
+                $header .= ")";
 
-                $header .= "),0";
+                // TODO adapt according to AOP4Hadoop
+                $header .= ":$row_size(";
+                for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
+                    $header .= "1:$node_number,";
+                }
+                $header = substr($header,0,-1); //remove trailing ,
+                $header .= ")";
+                //
 
                 $row_file = "LEVEL CPU SIZE $row_size";
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     $row_file .= "\nCPU_{$prv_row['role']}_{$prv_row['host_name']}";
                 }
 
-                $row_file .= "\n\nLEVEL APPL SIZE 1
-$exec_name
+                $row_file .= "\n\nLEVEL APPL SIZE 2
+SYSTEM STATS
+HADOOP
 
-TASK LEVEL SIZE $row_size";
+TASK LEVEL SIZE ".($row_size*2);
 
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nSTATS_MASTER_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nSTATS_SLAVE_{$prv_row['host_name']}";
+                    }
+                }
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
                         $row_file .="\nJT+NN_{$prv_row['host_name']}";
@@ -364,13 +381,21 @@ TASK LEVEL SIZE $row_size";
                         $row_file .="\nTT+DN_{$prv_row['host_name']}";
                     }
                 }
+
                 $row_file .= "\n\nLEVEL NODE SIZE $row_size";
 
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     $row_file .="\n".strtoupper($prv_row['role'])."_{$prv_row['host_name']}";
                 }
 
-                $row_file .="\n\nLEVEL THREAD SIZE $row_size";
+                $row_file .="\n\nLEVEL THREAD SIZE ".($row_size*2);
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nSTATS_MASTER_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nSTATS_SLAVE_{$prv_row['host_name']}";
+                    }
+                }
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
                         $row_file .="\nTHREAD-JT+NN_{$prv_row['host_name']}";

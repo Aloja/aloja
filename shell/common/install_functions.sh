@@ -79,8 +79,8 @@ aloja_wget() {
   local URL="$1"
   local out_file_name="$2"
 
-  local wget_command="wget --progress=dot -e dotbytes=10M $URL"
-  [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
+  local wget_command="wget --progress=dot -e dotbytes=10M '$URL'"
+  [ "$out_file_name" ] && wget_command="$wget_command -O '$out_file_name'"
 
   #make sure we delete the file in case of an error, wget writes an emtpy file
   wget_command="$wget_command || rm $out_file_name"
@@ -446,7 +446,10 @@ install_PHP_vendors() {
 
   local bootstrap_file="${FUNCNAME[0]}"
 
-  if check_bootstraped "$bootstrap_file" ""; then
+  # besides the bootstrap file we check that dir exits, because it is not cotained in the vagrant VM (it is in the repo path)
+  local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+  if [[ "$test_action" != *"$testKey"* ]] || check_bootstraped "$bootstrap_file" "" ; then
     logger "Executing $bootstrap_file"
 
     logger "INFO: Checking if to download vendor files"
@@ -456,7 +459,7 @@ install_PHP_vendors() {
     if [[ "$test_action" != *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
 
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150924.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
 
       vm_execute "
 cd /tmp;
@@ -954,7 +957,13 @@ config_ganglia_gmetad(){
 
 install_ganglia_web(){
 
-  local bootstrap_file="${FUNCNAME[0]}"
+  # temporarily change the bootstrap name for the vagrant VM to force update the web server
+  if inside_vagrant ; then
+    local bootstrap_file="${FUNCNAME[0]}_3"
+  else
+    local bootstrap_file="${FUNCNAME[0]}"
+  fi
+
   local tarball gdir
 
   if check_bootstraped "$bootstrap_file" ""; then

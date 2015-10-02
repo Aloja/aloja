@@ -616,4 +616,19 @@ class Utils
 
         return $ret;
     }
+
+    /**
+     * @return checks if we are in development environment
+     */
+    public static function in_dev()
+    {
+        if (is_dir('/vagrant')) return true;
+
+        if (isset($_SERVER['HTTP_CLIENT_IP'])
+            || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
+            || !in_array(@$_SERVER['REMOTE_ADDR'], array('127.0.0.1', 'fe80::1', '::1', '10.0.2.2', '192.168.99.1'))) {
+            return false;
+        } else
+            return true;
+    }
 }

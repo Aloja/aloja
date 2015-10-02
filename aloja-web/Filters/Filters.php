@@ -62,7 +62,7 @@ class Filters
                 },
                 'parseFunction' => 'parseDatasize'),
             'scale_factor' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Scale factor: '),
-            'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectOne', 'label' => 'Bench suite:'),
+            'bench_type' => array('table' => 'execs', 'default' => (Utils::in_dev() ? array():array('HiBench', 'Hadoop-Examples')), 'type' => 'selectOne', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);
@@ -122,7 +122,7 @@ class Filters
                 }),
             'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Cluster type:'),
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Hadoop version:'),
-            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => 50, 'type' => 'inputNumberge','label' => 'Min exec time:'),
+            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => (Utils::in_dev() ? 1:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
             'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle','label' => 'Max exec time:'),
             'datefrom' => array('table' => 'execs', 'field' => 'start_time', 'default' => null, 'type' => 'inputDatege','label' => 'Date from:'),
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
@@ -138,7 +138,7 @@ class Filters
                         $values = 1;
                     } else {
                         $values = $this->filters['prepares']['default'];
-                        if(!$values)
+                        if(!$values && !Utils::in_dev())
                             $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
@@ -240,56 +240,6 @@ class Filters
                 'tabOpenDefault' => true
             )
         );
-    }
-
-    public function addOverrideFilters($filters) {
-        foreach($filters as $filterName => $definition) {
-            if(isset($this->filters[$filterName])) {
-                foreach($definition as $option => $value) {
-                    $this->filters[$filterName][$option] = $value;
-                }
-            } else
-                $this->filters[$filterName] = $definition;
-        }
-    }
-
-    //$filters: array of filter names
-    public function removeFilters($filters) {
-        foreach($filters as $filterName) {
-            if(isset($this->filters[$filterName]))
-                unset($this->filters[$filterName]);
-        }
-    }
-
-    public function removeFilterGroup($groupName) {
-        if(isset($this->filterGroups[$groupName])) {
-            unset($this->filterGroups[$groupName]);
-        }
-    }
-
-    public function removeFiltersFromGroup($groupName, $filters) {
-        if(isset($this->filterGroups[$groupName])) {
-            foreach($filters as $filter) {
-                if(($key = array_search($filter, $this->filterGroups[$groupName]['filters'])) !== false)
-                    unset($this->filterGroups[$groupName]['filters'][$key]);
-            }
-        }
-    }
-
-    public function addFiltersInGroup($groupName, $filters) {
-        foreach($filters as $filter) {
-            if(!in_array($filter,$this->filterGroups[$groupName]['filters']))
-                $this->filterGroups[$groupName]['filters'][] = $filter;
-        }
-    }
-
-    //Add or modify filter groups
-    public function overrideFilterGroups($filterGroups) {
-        foreach($filterGroups as $filterGroup => $options) {
-            foreach($options as $optionKey => $option) {
-                $this->filterGroups[$filterGroup][$optionKey] = $option;
-            }
-        }
     }
 
     private function parseDatasize()
@@ -650,8 +600,67 @@ class Filters
         return $options;
     }
 
+    public function buildFilterGroups($filterGroups) {
+        foreach($filterGroups as $filterGroup => $options) {
+            foreach($options as $optionKey => $option) {
+                $this->filterGroups[$filterGroup][$optionKey] = $option;
+            }
+        }
+    }
+
     public function setCurrentChoices($filter,$choices) {
         if(isset($this->filters[$filter]))
             $this->filters[$filter]['choices'] = $choices;
     }
+
+    public function addOverrideFilters($filters) {
+        foreach($filters as $filterName => $definition) {
+            if(isset($this->filters[$filterName])) {
+                foreach($definition as $option => $value) {
+                    $this->filters[$filterName][$option] = $value;
+                }
+            } else
+                $this->filters[$filterName] = $definition;
+        }
+    }
+
+    //$filters: array of filter names
+    public function removeFilters($filters) {
+        foreach($filters as $filterName) {
+            if(isset($this->filters[$filterName]))
+                unset($this->filters[$filterName]);
+        }
+    }
+
+    public function removeFilterGroup($groupName) {
+        if(isset($this->filterGroups[$groupName])) {
+            unset($this->filterGroups[$groupName]);
+        }
+    }
+
+    public function removeFiltersFromGroup($groupName, $filters) {
+        if(isset($this->filterGroups[$groupName])) {
+            foreach($filters as $filter) {
+                if(($key = array_search($filter, $this->filterGroups[$groupName]['filters'])) !== false)
+                    unset($this->filterGroups[$groupName]['filters'][$key]);
+            }
+        }
+    }
+
+    public function addFiltersInGroup($groupName, $filters) {
+        foreach($filters as $filter) {
+            if(!in_array($filter,$this->filterGroups[$groupName]['filters']))
+                $this->filterGroups[$groupName]['filters'][] = $filter;
+        }
+    }
+
+    //Add or modify filter groups
+    public function overrideFilterGroups($filterGroups) {
+        foreach($filterGroups as $filterGroup => $options) {
+            foreach($options as $optionKey => $option) {
+                $this->filterGroups[$filterGroup][$optionKey] = $option;
+            }
+        }
+    }
+
 }

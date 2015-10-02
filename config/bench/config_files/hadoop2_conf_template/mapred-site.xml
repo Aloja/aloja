@@ -1,0 +1,118 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+<property>
+  <name>mapreduce.framework.name</name>
+  <value>yarn</value>
+</property>
+
+<property>
+ <name>mapreduce.jobhistory.address</name>
+ <value>##MASTER##:##PORT_PREFIX##0020</value>
+</property>
+<property>
+ <name>mapreduce.jobhistory.webapp.address</name>
+ <value>##MASTER##:##PORT_PREFIX##9888</value>
+</property>
+<property>
+    <name>mapreduce.jobtracker.jobhistory.location</name>
+    <value>##LOG_DIR##</value>
+</property>
+
+
+<property>
+    <name>mapreduce.jobhistory.intermediate-done-dir</name>
+    <value>##LOG_DIR##/history/done_intermediate</value>
+</property>
+<property>
+    <name>mapreduce.jobhistory.done-dir</name>
+    <value>##LOG_DIR##/history/done</value>
+</property>
+
+<property>
+ <name>mapreduce.jobtracker.address</name>
+ <value>##MASTER##:##PORT_PREFIX##8021</value>
+</property>
+
+<property>
+ <name>mapreduce.jobtracker.http.address</name>
+ <value>##MASTER##:##PORT_PREFIX##0030</value>
+</property>
+
+<property>
+  <name>mapreduce.tasktracker.map.tasks.maximum</name>
+  <value>##MAX_MAPS##</value>
+  <description>The maximum number of map tasks that will be run
+  simultaneously by a task tracker.
+  </description>
+</property>
+<property>
+  <name>mapreduce.tasktracker.reduce.tasks.maximum</name>
+  <value>##MAX_REDS##</value>
+  <description>The maximum number of reduce tasks that will be run
+  simultaneously by a task tracker.
+  </description>
+</property>
+
+<property>
+    <name>mapreduce.job.maps</name>
+    <value>##MAX_MAPS##</value>
+</property>
+<property>
+    <name>mapreduce.job.reduces</name>
+    <value>##MAX_REDS##</value>
+</property>
+
+
+<property>
+  <name>dfs.datanode.hostname</name>
+  <value>##HOST##</value>
+</property>
+<property>
+  <name>mapreduce.tasktracker.host.name</name>
+  <value>##HOST##</value>
+</property>
+
+<property>
+  <name>mapreduce.tasktracker.http.address</name>
+  <value>##HOST##:##PORT_PREFIX##0060</value>
+</property>
+
+<!-- For infiniBand -->
+<property>
+  <name>mapreduce.tasktracker.dns.interface</name>
+  <value>##IFACE##</value>
+</property>
+
+<property>
+  <name>mapreduce.task.io.sort.factor</name>
+  <value>##IO_FACTOR##</value>
+</property>
+
+<property>
+  <name>mapreduce.task.io.sort.mb</name>
+  <value>##IO_MB##</value>
+</property>
+
+<!--
+<property>
+  <name>mapred.child.java.opts</name>
+  <value>##JAVA_XMS## ##JAVA_XMX##</value>
+  <description>Java opts for the task tracker child processes.
+  The following symbol, if present, will be interpolated: @taskid@ is replaced
+  by current TaskID. Any other occurrences of '@' will go unchanged.
+  For example, to enable verbose gc logging to a file named for the taskid in
+  /tmp and to set the heap maximum to be a gigabyte, pass a 'value' of:
+        -Xmx1024m -verbose:gc -Xloggc:/tmp/@taskid@.gc
+
+  The configuration variable mapred.child.ulimit can be used to control the
+  maximum virtual memory of the child processes.
+  </description>
+</property>
+-->
+
+</configuration>

@@ -14,7 +14,7 @@ class ConfigEvaluationsController extends AbstractController
 
 		$this->buildFilters();
 		$this->buildGroupFilters();
-			$whereClause = $this->filters->getWhereClause();
+		$whereClause = $this->filters->getWhereClause();
 
 		$model_html = '';
 		$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -27,7 +27,7 @@ class ConfigEvaluationsController extends AbstractController
 		$filter_execs = DBUtils::getFilterExecs();
 		$order_conf = 'LENGTH(conf), conf';
 
-		$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+		$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
 		$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
 		$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
@@ -165,7 +165,7 @@ class ConfigEvaluationsController extends AbstractController
                 'highcharts_js' => HighCharts::getHeader(),
                 'categories' => $categories,
                 'series' => $series,
-				'models' => $model_html
+		'models' => $model_html
             )
         );
     }
@@ -196,9 +196,46 @@ class ConfigEvaluationsController extends AbstractController
 			       return 'Cost-effectiveness';
 			},
 			'filterGroup' => 'basic'
+		),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
 		)
 	));
-    $whereClause = $this->filters->getWhereClause();
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
+        $whereClause = $this->filters->getWhereClause();
 
 	$model_html = '';
 	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -299,13 +336,50 @@ class ConfigEvaluationsController extends AbstractController
                 'minexecs' => array('default' => null, 'type' => 'inputNumber', 'label' => 'Minimum executions:',
                     'parseFunction' => function() { return 0; },
                     'filterGroup' => 'basic'
-                )
-		));
+                ),
+		'current_model' => array(
+			'type' => 'selectOne',
+			'default' => null,
+			'label' => 'Reference Model: ',
+			'generateChoices' => function() {
+				$query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions";
+			        $db = $this->container->getDBUtils();
+				$retval = $db->get_rows ($query);
+				return array_column($retval,"id_learner");
+			},
+			'parseFunction' => function() {
+				$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'upred' => array(
+			'type' => 'checkbox',
+			'default' => 0,
+			'label' => 'Use predictions',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['upred'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		),
+		'uobsr' => array(
+			'type' => 'checkbox',
+			'default' => 1,
+			'label' => 'Use observations',
+			'parseFunction' => function() {
+				$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+				return array('whereClause' => '', 'currentChoice' => $choice);
+			},
+			'filterGroup' => 'MLearning'
+		)
+	));
+	$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','upred','uobsr'))));
         $whereClause = $this->filters->getWhereClause();
 
-		$model_html = '';
-		$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
-		foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
+	$model_html = '';
+	$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+	foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
         $categories = '';
         $series = '';
@@ -331,7 +405,7 @@ class ConfigEvaluationsController extends AbstractController
 
 			$benchOptions = "SELECT DISTINCT e.bench FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $whereClause GROUP BY ${shortAliasParamEval[$paramEval]}.$paramEval, e.bench order by ${shortAliasParamEval[$paramEval]}.$paramEval";
 
-			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+			$params = $this->filters->getFiltersSelectedChoices(array('current_model','upred','uobsr'));
 
 			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
 			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);

@@ -486,12 +486,11 @@ set_job_config() {
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
-  LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
-  LOG="2>&1 |tee -a $LOG_PATH"
+  #LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
+  #LOG="2>&1 |tee -a $LOG_PATH"
 
   #create dir to save files in one host
   $DSH_MASTER "mkdir -p $JOB_PATH"
-  $DSH_MASTER "touch $LOG_PATH"
 
   # Automatically log all output to file
   log_all_output "$JOB_PATH/${0##*/}"
@@ -691,7 +690,7 @@ set_monit_binaries() {
       logger "WARNING: no extra perf monitors set for Windows"
     fi
   else
-    logger "WARNING: No peformance monitors (e.g., vmstats) have been selected"
+    logger "WARNING: No peformance monitors (e.g., vmstat) have been selected"
   fi
 }
 
@@ -839,7 +838,7 @@ prepare_folder(){
   logger "INFO: Creating bench main dir at: $HDD (and tmp dir: $HDD_TMP)"
 
   # Creating the main dir
-  $DSH "mkdir -p $HDD $HDD_TMP"
+  $DSH "mkdir -p $HDD/logs $HDD_TMP"
   # Testing the main dir
 
   if ! test_nodes "[ -d '$HDD' ] && [ -d '$HDD_TMP' ] " "ERROR" ; then

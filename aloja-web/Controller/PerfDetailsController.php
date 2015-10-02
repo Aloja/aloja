@@ -13,7 +13,7 @@ class PerfDetailsController extends AbstractController
 
         $this->removeFilters(array('upred','uobsr'));
     }
-    
+
     public function performanceChartsAction()
     {
         $exec_rows = null;
