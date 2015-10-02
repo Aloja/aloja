@@ -342,6 +342,7 @@ class MLFindAttributesController extends AbstractController
 			)
 			));
 			$where_configs = $this->filters->getWhereClause();
+			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
@@ -396,11 +397,13 @@ class MLFindAttributesController extends AbstractController
 				}
 				fclose($fp);
 
+				if (($key = array_search('id_cluster', $headers)) !== false) $headers[$key] = 'e.id_cluster';
+
 				// Execute R Engine
 				$exe_query = 'cd '.getcwd().'/cache/query;';
 				$exe_query = $exe_query.' touch '.md5($config).'.lock;';
-				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file='.$tmp_file.':output=html -v >'.md5($config).'-split.dat 2>/dev/null;';
-				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=gini:dump_file='.$tmp_file.':output=html -v >'.md5($config).'-gini.dat 2>/dev/null;';
+				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file='.$tmp_file.':output=nodejson -v >'.md5($config).'-split.dat 2>/dev/null;';
+				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=gini:dump_file='.$tmp_file.':output=nodejson -v >'.md5($config).'-gini.dat 2>/dev/null;';
 				$exe_query = $exe_query.' rm -f '.md5($config).'.lock; rm -f '.$tmp_file.'; touch '.md5($config).'.fin';
 				exec(getcwd().'/resources/queue -d -c "'.$exe_query.'" >/dev/null 2>&1 &');
 			}
@@ -418,6 +421,8 @@ class MLFindAttributesController extends AbstractController
 						$file = fopen(getcwd().'/cache/query/'.md5($config).'-split.dat', "r");
 						$tree_descriptor_ordered = fgets($file);
 						$tree_descriptor_ordered = substr($tree_descriptor_ordered, 5, -2);
+						$tree_descriptor_ordered = str_replace("\\\"","\"",$tree_descriptor_ordered);
+						$tree_descriptor_ordered = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor_ordered);
 						fclose($file);
 					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
 
@@ -427,6 +432,7 @@ class MLFindAttributesController extends AbstractController
 						$file = fopen(getcwd().'/cache/query/'.md5($config).'-gini.dat', "r");
 						$tree_descriptor_gini = fgets($file);
 						$tree_descriptor_gini = substr($tree_descriptor_gini, 5, -2);
+						$tree_descriptor_gini = str_replace("\\\"","\"",$tree_descriptor_gini);
 						fclose($file);
 					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
 */
@@ -434,7 +440,7 @@ class MLFindAttributesController extends AbstractController
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.dat');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.dat');
 					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
 				}
 				else
