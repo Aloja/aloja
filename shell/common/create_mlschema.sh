@@ -174,6 +174,16 @@ CREATE TABLE IF NOT EXISTS precisions (
   PRIMARY KEY (id_precision,discvar)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS observed_trees (
+  id_obstrees varchar(255) NOT NULL,
+  instance varchar(255) NOT NULL,
+  model longtext NOT NULL,
+  tree_code_split longtext NOT NULL,
+  tree_code_gain longtext NOT NULL,
+  creation_time datetime NOT NULL,
+  PRIMARY KEY (id_obstrees),
+  KEY idx_instance (instance)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 "
 
 $MYSQL "ALTER TABLE $DBML.learners MODIFY model longtext NOT NULL;"

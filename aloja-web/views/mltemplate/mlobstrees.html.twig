@@ -1,0 +1,144 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %} {{ parent() }}
+	<style type="text/css">
+        @import "js/datatables.new/media/css/demo_table.css";
+        @import "js/datatables.new/media/css/jquery.dataTables.css";
+        @import "js/datatables.new/extensions/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables.new/extensions/TableTools/media/css/TableTools.css";
+        @import "js/datatables.new/extensions/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x: auto;
+	    float: left;
+            width: 100%;
+        }
+	</style>
+{% endblock %}
+{% block content %}
+	{% block datacollapsed %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify"><b>Predict Configurations</b>: This tool uses the created models from <a href="/mlprediction">Modeling Data</a> to expand the space of possibilities for the selected attributes in the right filter box. It gets the best compatible model in cache and predicts all the possible software and hardware configurations for the selected filter, and returns a table with the results. It also creates a tree of attributes, indicating which ones separate better the faster from the slower executions.</p>
+		<p style="text-align:justify">To use the tool, select which executions you want to filter through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Then observe the predictions for each combination, also the tree of attributes. Optionally you can re-launch the prediction process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
+		<hr />
+	</div>
+	<div id="contentdiv" style="float: left; width: 68%;">
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingBenchDiv">
+				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" aria-expanded="true" aria-controls="benchDivFilter">
+						Observed Configurations
+					</a>
+				</h4>
+			</div>
+			<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
+				<div class="panel-body">
+					<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="65%"><thead></thead></table>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingTreeDiv">
+				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
+						Descriptor Tree
+					</a>
+				</h4>
+			</div>
+			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">
+				<div class="panel-body">
+					<div id="treedescriptor" style="float: left; width: 65%;">{{ tree_descriptor_ordered | raw}}</div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Search cache ID: {{id_obstrees|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div style="float: right; width: 30%;">
+	{% set select_multiple_benchs = false %}
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+	{% endblock %}
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Observe Executions');
+		$("#submitForm").html('Observe Executions');
+
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		$('#MLearning').parent().hide();
+
+		var jsondata = "{{ jsonData | raw }}";
+		var jsonheader = '{{ jsonHeader | raw }}';
+
+		if ("{{must_wait}}" == "NO")
+		{
+			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
+			var jsonObjHeader = JSON.parse(jsonheader.replace(/title/g,"\"title\""));
+
+			oTable = $('#benchmark').dataTable({
+				"lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+				"aaData": jsonObjData,
+				"columns": jsonObjHeader,
+				"columnDefs" : [
+					{"targets" : -1, "render" : function (data) { return Math.round(data); }},
+					{"targets" : 20, "render" : function (data) { return Math.max(data,100); }},
+					{"targets" : [11,12,13,14,15,16,17], "visible": false}
+				]
+			});
+			$(window).bind('resize', function () {
+				oTable.fnAdjustColumnSizing();
+			});           
+			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
+
+			$('#waitdiv').hide();
+		}
+		else
+		{
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}
+	});
+	</script>
+{% endblock %}

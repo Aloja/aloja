@@ -316,5 +316,196 @@ class MLFindAttributesController extends AbstractController
 		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
 		return $this->render('mltemplate/mlfindattributes.html.twig', $return_params);
 	}
+
+	public function mlobservedtreesAction()
+	{
+		$model_info = $instance = $message = $config = $tree_descriptor_ordered = $tree_descriptor_gini = '';
+		$jsonData = $jsonHeader = '[]';
+		$must_wait = 'NO';
+		try
+		{
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
+		    	$db = $this->container->getDBUtils();
+
+			$this->buildFilters(array(
+			'minexetime' => array(
+				'default' => 0
+			), 'valid' => array(
+				'default' => 0
+			), 'filter' => array(
+				'default' => 0
+			), 'prepares' => array(
+				'default' => 1
+			)
+			));
+			$where_configs = $this->filters->getWhereClause();
+
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
+
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
+			// compose instance
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, TRUE);	$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, TRUE);
+			$config = $instance.'-obstree';
+
+			$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.observed_trees WHERE id_obstrees = '".md5($config)."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = ($tmp_result['total'] > 0);
+
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+
+			$tmp_file = getcwd().'/cache/query/'.md5($config).'.tmp';
+
+			// get headers for csv
+			$header_names = array(
+				'bench' => 'Benchmark','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
+				'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
+			);
+			$special_header_names = array('id_exec' => 'ID','exe_time' => 'Exe.Time');
+
+			$headers = array_keys($header_names);
+			$special_headers = array_keys($special_header_names);
+
+			if (!$in_process && !$finished_process && !$is_cached)
+			{
+				// Dump the DB slice to csv
+				$query = "SELECT ".implode(",",$headers).", ".implode(",",$special_headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
+			    	$rows = $db->get_rows($query);
+				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+				if (($key = array_search('e.id_cluster', $headers)) !== false) $headers[$key] = 'id_cluster';
+
+				$fp = fopen($tmp_file, 'w');
+			    	foreach($rows as $row)
+				{
+					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+
+					$line = '';
+					foreach ($headers as $hn) $line = $line.(($line != '')?',':'').$row[$hn];
+					$line = $row['id_exec'].' '.$line.' '.$row['exe_time']."\n";
+					fputs($fp, $line);
+				}
+				fclose($fp);
+
+				// Execute R Engine
+				$exe_query = 'cd '.getcwd().'/cache/query;';
+				$exe_query = $exe_query.' touch '.md5($config).'.lock;';
+				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file='.$tmp_file.':output=html -v >'.md5($config).'-split.dat 2>/dev/null;';
+				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=gini:dump_file='.$tmp_file.':output=html -v >'.md5($config).'-gini.dat 2>/dev/null;';
+				$exe_query = $exe_query.' rm -f '.md5($config).'.lock; rm -f '.$tmp_file.'; touch '.md5($config).'.fin';
+				exec(getcwd().'/resources/queue -d -c "'.$exe_query.'" >/dev/null 2>&1 &');
+			}
+
+			if (!$is_cached)
+			{
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+
+				if ($finished_process)
+				{
+					// Read results and dump to DB	
+					$tree_descriptor_ordered = '';
+					try
+					{
+						$file = fopen(getcwd().'/cache/query/'.md5($config).'-split.dat', "r");
+						$tree_descriptor_ordered = fgets($file);
+						$tree_descriptor_ordered = substr($tree_descriptor_ordered, 5, -2);
+						fclose($file);
+					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
+
+					$tree_descriptor_gini = '';
+/*					try
+					{
+						$file = fopen(getcwd().'/cache/query/'.md5($config).'-gini.dat', "r");
+						$tree_descriptor_gini = fgets($file);
+						$tree_descriptor_gini = substr($tree_descriptor_gini, 5, -2);
+						fclose($file);
+					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
+*/
+					$query = "INSERT INTO aloja_ml.observed_trees (id_obstrees,instance,model,tree_code_split,tree_code_gain) VALUES ('".md5($config)."','".$instance."','".$model_info."','".$tree_descriptor_ordered."','".$tree_descriptor_gini."')";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
+
+					// Remove temporal files
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.dat');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+				}
+				else
+				{
+					$must_wait = 'YES';
+					throw new \Exception('WAIT');
+				}
+			}
+
+			// Fetch results and compose JSON
+			$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Observed');
+			$jsonHeader = '[{title:""}';
+			foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+			$jsonHeader = $jsonHeader.']';
+
+			// Fetch observed values
+			$query = "SELECT ".implode(",",$headers).", ".implode(",",$special_headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
+		    	$rows = $db->get_rows($query);
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+			if (($key = array_search('e.id_cluster', $headers)) !== false) $headers[$key] = 'id_cluster';
+
+			$jsonData = '[';
+			foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+
+				$line = '';
+				foreach ($headers as $hn) $line = $line.(($line != '')?',':'').$row[$hn];
+				$line = $row['id_exec'].','.$line.','.$row['exe_time'];
+
+				if ($jsonData!='[') $jsonData = $jsonData.',';
+				$jsonData = $jsonData."['".str_replace(",","','",$line)."']";
+
+			}
+			$jsonData = $jsonData.']';
+			foreach (range(1,32) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
+
+			if ($tree_descriptor_ordered == '')
+			{
+				// Display Descriptive Tree, if not processed yet
+				$query = "SELECT tree_code_split, tree_code_gain FROM aloja_ml.observed_trees WHERE id_obstrees = '".md5($config)."'";
+				$result = $dbml->query($query);
+				$row = $result->fetch();
+				$tree_descriptor_ordered = $row['tree_code_split'];
+				$tree_descriptor_gini = $row['tree_code_gain'];
+			}
+		}
+		catch(\Exception $e)
+		{
+			if ($e->getMessage () != "WAIT")
+			{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			}
+			$jsonData = $jsonHeader = '[]';
+		}
+		$dbml = null;
+
+		$return_params = array(
+			'jsonData' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'message' => $message,
+			'must_wait' => $must_wait,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'id_obstrees' => md5($config),
+			'tree_descriptor_ordered' => $tree_descriptor_ordered,
+			'tree_descriptor_gini' => $tree_descriptor_gini,
+		);
+		return $this->render('mltemplate/mlobstrees.html.twig', $return_params);
+	}
 }
 ?>
