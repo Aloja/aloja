@@ -8,6 +8,12 @@ use alojaweb\inc\DBUtils;
 
 class PerfDetailsController extends AbstractController
 {
+    public function __construct($container) {
+        parent::__construct($container);
+
+        $this->removeFilters(array('upred','uobsr'));
+    }
+    
     public function performanceChartsAction()
     {
         $exec_rows = null;

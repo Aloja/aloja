@@ -1168,6 +1168,7 @@ VALUES
                 d.`centroid_y`
             FROM aloja2.JOB_dbscan d, aloja2.execs e
             JOIN aloja2.clusters c USING (id_cluster)
+            LEFT JOIN aloja_ml.predictions p USING (id_exec)
             WHERE
                 d.`id_exec` = e.`id_exec` AND
                 d.`bench` = :bench AND

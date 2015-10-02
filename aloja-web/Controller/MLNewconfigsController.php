@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLNewconfigsController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function read_params($item_name)
 	{
 		if (isset($_GET[$item_name]))
