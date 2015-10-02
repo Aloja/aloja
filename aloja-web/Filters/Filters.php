@@ -160,7 +160,7 @@ class Filters
                 },
                 'filterGroup' => 'MLearning'
             ),
-            'upred' => array(
+           /* 'upred' => array(
                 'type' => 'checkbox',
                 'default' => 0,
                 'label' => 'Use predictions',
@@ -179,7 +179,7 @@ class Filters
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
-            ),
+            ),*/
             'warning' => array('field' => 'outlier', 'table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show warnings',
                 'parseFunction' => function() {
                     $learner = $this->filters['prediction_model']['currentChoice'];
@@ -236,7 +236,8 @@ class Filters
             ),
             'MLearning' => array(
                 'label' => 'Machine Learning',
-                'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
+                'filters' => array('prediction_model','warning','outlier'),
+               // 'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
                 'tabOpenDefault' => true
             )
         );
