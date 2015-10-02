@@ -156,6 +156,10 @@ class Filters
                 },
                 'parseFunction' => function() {
                     $choice = isset($_GET['prediction_model']) ? Utils::get_GET_stringArray('prediction_model') : array("");
+                    if($choice = array("")) {
+                        $query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions LIMIT 1";
+                        $choice = $this->dbConnection->get_rows($query)[0]['id_learner'];
+                    }
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
@@ -201,11 +205,11 @@ class Filters
 
                     if($values && !empty($learner)) {
                         $whereClause = " AND (ml_predictionsAlias.outlier <= 2 OR ml_predictionsAlias.outlier IS NULL) ".
-                            "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
+                            "AND (ml_predictionsAlias.id_learner = '${learner}' OR ml_predictionsAlias.id_learner IS NULL)";
                         $values = 1;
                     } else if(!empty($learner) && !isset($_GET['warning'])) {
                         $whereClause = " AND (ml_predictionsAlias.outlier = 0 OR ml_predictionsAlias.outlier IS NULL) ".
-                            "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
+                            "AND (ml_predictionsAlias.id_learner = '${learner}' OR ml_predictionsAlias.id_learner IS NULL)";
                     }
 
                     return array('currentChoice' => $values, 'whereClause' => $whereClause);

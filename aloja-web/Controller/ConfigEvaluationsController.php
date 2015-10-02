@@ -257,8 +257,9 @@ class ConfigEvaluationsController extends AbstractController
 
 			$queryPredictions = "SELECT (e.exe_time/3600)*c.cost_hour AS cost,e.id_exec,e.exec,CONCAT('Predicted ',e.bench) as bench,e.pred_time AS exe_time,e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,c.*
 					FROM aloja_ml.predictions AS e JOIN aloja2.clusters AS c USING (id_cluster)
-					WHERE 1 $filterExecs ".str_replace("p.","e.",$whereClauseML)." AND id_learner = '".$params['prediction_model']."'
-					GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version";
+					WHERE 1 $filterExecs ".str_replace("p.","e.",$whereClauseML)."
+					GROUP BY e.net,e.disk,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version
+					ORDER BY $order_type ASC";
 
 			$query = $queryObserved;
 
