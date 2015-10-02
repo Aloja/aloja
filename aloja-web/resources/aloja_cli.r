@@ -41,7 +41,7 @@
 #	 ./aloja_cli.r -m aloja_diversity -d aloja-dataset.csv -p json=0 -v
 
 library(devtools);
-source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/master/functions.r");
+source_url("https://raw.githubusercontent.com/Aloja/aloja-ml/test/functions.r");
 options(width=as.integer(1000));
 
 ###############################################################################
