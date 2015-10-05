@@ -206,6 +206,7 @@ class MLUtils
 	{
 		$url = '';
 
+		if ($model_info[0] == " ") $model_info = substr($model_info, 1);
 		$model_array = explode(" ",$model_info);
 		for($i = 1; $i < count($model_array); $i = $i + 2)
 		{
@@ -227,24 +228,27 @@ class MLUtils
 			}
 		}
 
-		if ($slice_info[0] == " ") $slice_info = substr($slice_info, 1);
-		$slice_array = explode(" ",$slice_info);
-		for($i = 1; $i < count($slice_array); $i = $i + 2)
+		if ($slice_info !== false)
 		{
-			$param1 = $slice_array[$i-1];
-			$param2 = $slice_array[$i];
-
-			if ($param2 != '("*")')
+			if ($slice_info[0] == " ") $slice_info = substr($slice_info, 1);
+			$slice_array = explode(" ",$slice_info);
+			for($i = 1; $i < count($slice_array); $i = $i + 2)
 			{
-				$param2 = str_replace('(','',$param2);
-				$param2 = str_replace(')','',$param2);
-				$param2 = str_replace('"','',$param2);
+				$param1 = $slice_array[$i-1];
+				$param2 = $slice_array[$i];
 
-				$param2_array = explode(",",$param2);
-				for($j = 0; $j < count($param2_array); $j = $j + 1)
+				if ($param2 != '("*")')
 				{
-					if ($url != '') $url = $url.'&';
-					$url = $url.$param1.'='.$param2_array[$j];
+					$param2 = str_replace('(','',$param2);
+					$param2 = str_replace(')','',$param2);
+					$param2 = str_replace('"','',$param2);
+
+					$param2_array = explode(",",$param2);
+					for($j = 0; $j < count($param2_array); $j = $j + 1)
+					{
+						if ($url != '') $url = $url.'&';
+						$url = $url.$param1.'='.$param2_array[$j];
+					}
 				}
 			}
 		}
@@ -296,5 +300,32 @@ class MLUtils
 		$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'Actions'}]";
 	}
 
+	public static function getIndexFAttrs (&$jsonFAttrs, &$jsonFAttrsHeader, $dbml)
+	{
+		$query="SELECT DISTINCT f.id_findattrs AS id_findattrs, f.id_learner as id_learner, f.creation_time AS creation_time, f.model AS model FROM aloja_ml.trees AS f";
+		$rows = $dbml->query($query);
+
+		$jsonFAttrs = '[';
+		foreach ($rows as $row)
+		{
+			if (strpos($row['model'],'*') !== false) $unseen = 'unseen=unseen&'; else $unseen = '';
+			$url = MLUtils::revertModelToURL($row['model'], null, 'presets=none&submit=&current_model[]='.$row['id_learner'].'&'.$unseen);
+
+			$model_display = '';
+			if ($row['model'][0] == " ") $row['model'] = substr($row['model'], 1);
+			$model_array = explode(" ",$row['model']);
+			for($i = 1; $i < count($model_array); $i = $i + 2)
+			{
+				$param1 = $model_array[$i-1];
+				$param2 = $model_array[$i];
+
+				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
+			}
+
+			$jsonFAttrs = $jsonFAttrs.(($jsonFAttrs=='[')?'':',')."['".$row['id_findattrs']."','".$row['id_learner']."','".$model_display."','".$row['creation_time']."','<a href=\'/mlfindattributes?".$url."\'>View</a>']";
+		}
+		$jsonFAttrs = $jsonFAttrs.']';
+		$jsonFAttrsHeader = "[{'title':'ID'},{'title':'Model ID Used'},{'title':'Attribute Selection'},{'title':'Creation'},{'title':'Actions'}]";
+	}
 }
 ?>

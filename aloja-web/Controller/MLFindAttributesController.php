@@ -14,6 +14,7 @@ class MLFindAttributesController extends AbstractController
 		$current_model = $model_info = $instance = $instances = $message = $tree_descriptor = $model_html = $config = '';
 		$possible_models = $possible_models_id = $other_models = array();
 		$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+		$jsonFAttrs = $jsonFAttrsHeader = '[]';
 		$mae = $rae = 0;
 		$must_wait = 'NO';
 		try
@@ -106,11 +107,14 @@ class MLFindAttributesController extends AbstractController
 
 			if ($instructions)
 			{
+
 				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
 
+				MLUtils::getIndexFAttrs ($jsonFAttrs, $jsonFAttrsHeader, $dbml);
+
 				$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
-				return $this->render('mltemplate/mlfindattributes.html.twig', array('models' => $model_html,'instructions' => 'YES'));
+				return $this->render('mltemplate/mlfindattributes.html.twig', array('fattrs' => $jsonFAttrs, 'header_fattrs' => $jsonFAttrsHeader, 'models' => $model_html,'instructions' => 'YES'));
 			}
 
 			if (!empty($possible_models_id) || $current_model != "")
@@ -313,6 +317,8 @@ class MLFindAttributesController extends AbstractController
 			'instance' => $instance,
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
+			'fattrs' => $jsonFAttrs,
+			'header_fattrs' => $jsonFAttrsHeader,
 			'models' => $model_html,
 			'models_id' => $possible_models_id,
 			'other_models_id' => $other_models,

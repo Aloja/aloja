@@ -43,6 +43,12 @@
 				</td></tr>
 				</table>
 			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently predictions generated: <a id="displayText" href="javascript:toggle('fattrsdiv','displayText');">show</a></h4><br/> 
+			<div id="fattrsdiv" style="float: left; width: 100%; display:none;">
+				<table id="fattrstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
 		</div>
 
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
@@ -201,6 +207,8 @@
 		var text = document.getElementById(textid);
 		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		if (fTable) fTable.fnAdjustColumnSizing();
 	}
 
 	function datachart (jsonObjData, jsonObjHeader, variable1)
@@ -399,11 +407,26 @@
 
 		if ("{{instructions}}" == "YES")
 		{
+			var fattrs = {{ fattrs | raw }};
+			var fattrs_header = {{ header_fattrs | raw }};
+
 			$('#instructions').show();
 			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
 			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
 			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
 			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+
+			if (fattrs != [])
+			{
+				fTable = $('#fattrstable').dataTable({
+					"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+					"aaData": fattrs,
+					"columns": fattrs_header,
+					"columnDefs" : [],
+					"sScrollX": "100%",
+					"bScrollCollapse": true
+				});
+			}
 			return;
 		}
 
