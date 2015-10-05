@@ -14,6 +14,7 @@ class MLOutliersController extends AbstractController
 		$jsonData = $jsonWarns = $jsonOuts = array();
 		$message = $instance = $jsonHeader = $jsonTable = $model_html = $config = $model_info = '';
 		$possible_models = $possible_models_id = $other_models = array();
+		$jsonResolutions = $jsonResolutionsHeader = '[]';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		try
@@ -23,6 +24,9 @@ class MLOutliersController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
+
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
 		    	
 			if (array_key_exists('dump',$_GET))
 			{
@@ -72,7 +76,6 @@ class MLOutliersController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','sigma'))));
-			$where_configs = $this->filters->getWhereclause();
 
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
@@ -87,6 +90,7 @@ class MLOutliersController extends AbstractController
 			$param_current_model = $param_variables['current_model'];
 			$sigma_param = $param_variables['sigma'];
 
+			$where_configs = $this->filters->getWhereclause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -108,6 +112,17 @@ class MLOutliersController extends AbstractController
 			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
 
+			if ($instructions)
+			{
+				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
+
+				MLUtils::getIndexOutExps ($jsonResolutions, $jsonResolutionsHeader, $dbml);
+
+				$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+				return $this->render('mltemplate/mloutliers.html.twig', array('outexps' => $jsonResolutions, 'header_outexps' => $jsonResolutionsHeader, 'jsonData' => '[]','jsonWarns' => '[]','jsonOuts' => '[]','jsonHeader' => '[]','jsonTable' => '[]','max_p' => 0,'models' => $model_html,'instructions' => 'YES'));
+			}
+
 			if (!empty($possible_models_id))
 			{
 				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
@@ -120,7 +135,7 @@ class MLOutliersController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model.'-'.$sigma_param.' '.$slice_info.'-outliers';
+				$config = $instance.'-'.$current_model.'-'.$sigma_param.' '.$slice_info.'-outliers'; // FIXME - Add slice_info in Outliers Table in DB!
 
 				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
@@ -296,6 +311,8 @@ class MLOutliersController extends AbstractController
 			'jsonHeader' => $jsonHeader,
 			'jsonTable' => $jsonTable,
 			'max_p' => min(array($max_x,$max_y)),
+			'outexps' => $jsonResolutions,
+			'header_outexps' => $jsonResolutionsHeader,
 			'must_wait' => $must_wait,
 			'models' => $model_html,
 			'models_id' => $possible_models_id,

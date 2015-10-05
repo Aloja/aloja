@@ -327,5 +327,32 @@ class MLUtils
 		$jsonFAttrs = $jsonFAttrs.']';
 		$jsonFAttrsHeader = "[{'title':'ID'},{'title':'Model ID Used'},{'title':'Attribute Selection'},{'title':'Creation'},{'title':'Actions'}]";
 	}
+
+	public static function getIndexOutExps (&$jsonResolutions, &$jsonResolutionsHeader, $dbml)
+	{
+		$query="SELECT DISTINCT id_resolution, id_learner, model, creation_time, sigma, count(*) AS instances FROM aloja_ml.resolutions	GROUP BY id_resolution";
+		$rows = $dbml->query($query);
+
+		$jsonResolutions = '[';
+	    	foreach($rows as $row)
+		{
+			$url = MLUtils::revertModelToURL($row['model'], null, 'presets=none&submit=&current_model[]='.$row['id_learner'].'&sigma='.$row['sigma'].'&');
+
+			$model_display = '';
+			if ($row['model'][0] == " ") $row['model'] = substr($row['model'], 1);
+			$model_array = explode(" ",$row['model']);
+			for($i = 1; $i < count($model_array); $i = $i + 2)
+			{
+				$param1 = $model_array[$i-1];
+				$param2 = $model_array[$i];
+
+				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
+			}
+
+			$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$model_display."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mloutliers?".$url."\'>View</a> <a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
+		}
+		$jsonResolutions = $jsonResolutions.']';
+		$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Model ID Used'},{'title':'Attribute Selection'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
+	}
 }
 ?>
