@@ -24,6 +24,9 @@ class MLFindAttributesController extends AbstractController
 
 		    	$db = $this->container->getDBUtils();
 
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
+
 			if (array_key_exists('dump',$_GET))
 			{
 				$dump = $_GET["dump"];
@@ -69,7 +72,6 @@ class MLFindAttributesController extends AbstractController
 			)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
@@ -79,6 +81,7 @@ class MLFindAttributesController extends AbstractController
 			$param_current_model = $learnParams['current_model'];
 			$unseen = ($learnParams['unseen']) ? true : false;
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -100,6 +103,15 @@ class MLFindAttributesController extends AbstractController
 			}
 			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
+
+			if ($instructions)
+			{
+				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
+
+				$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+				return $this->render('mltemplate/mlfindattributes.html.twig', array('models' => $model_html,'instructions' => 'YES'));
+			}
 
 			if (!empty($possible_models_id) || $current_model != "")
 			{
@@ -200,8 +212,10 @@ class MLFindAttributesController extends AbstractController
 						}
 
 						// Descriptive Tree
-						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output="html" -v 2> /dev/null');
+						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output=nodejson -v 2> /dev/null');
 						$tree_descriptor = substr($tree_descriptor, 5, -2);
+						$tree_descriptor = str_replace("\\\"","\"",$tree_descriptor);
+						$tree_descriptor = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor);
 						$query = "INSERT INTO aloja_ml.trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
 
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');

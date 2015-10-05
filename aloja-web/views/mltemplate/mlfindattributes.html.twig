@@ -28,6 +28,23 @@
 
 		<div id="waitdiv" style="float: left; width: 100%;"></div>
 
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>&nbsp;</td><td>This tool will <b>generate predictions</b> for ALL of the combinations of configurations/executions</td></tr>
+				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box):<br/>1) The values for each attribute that will be added to the combinations (if no value selected, all will be added to the combination)<br/>2) The model that will be used to predict all the combinations.</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Generate Predictions</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
+					a) A <b>table</b> with the executions selected<br/>
+					b) A <b>chart</b> displaying the predicted configurations, marking each prediction and averages, also with the possibility of adding the observed executions that coincide with the filter.<br/> 
+					c) A <b>tree</b> with the executions, joined by common attributes. The order of the attributes is greedily selected by the ones that generate the least splits between faster and slower executions.
+				</td></tr>
+				</table>
+			</p>
+		</div>
+
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
 			<div class="panel-heading" role="tab" id="headingBenchDiv">
 				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
@@ -85,9 +102,48 @@
 					</a>
 				</h4>
 			</div>
-			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">
-				<div class="panel-body">
-					<div id="treedescriptor" style="float: left; width: 65%;">{{ tree_descriptor | raw}}</div>
+<!--			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">-->
+			<div id="treeDivFilter" aria-labelledby="headingTreeDiv">
+				<div class="panel-body" >
+					<script src="js/treant-js-master/vendor/raphael.js"></script>
+					<script src="js/treant-js-master/Treant.js"></script>
+
+					<link rel="stylesheet" href="js/treant-js-master/Treant.css">
+					<style type="text/css">
+					body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
+					table { border-collapse:collapse; border-spacing:0; }
+					fieldset,img { border:0; }
+					address,caption,cite,code,dfn,em,strong,th,var { font-style:normal; font-weight:normal; }
+					caption,th { text-align:left; }
+					h1,h2,h3,h4,h5,h6 { font-size:100%; font-weight:normal; }
+					q:before,q:after { content:''; }
+					abbr,acronym { border:0; }
+
+					body { background: #fff;  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
+
+					.tree { height: 600px; width: 100%; margin: 5px; margin: 15px auto; border: 3px solid #DDD; border-radius: 3px; }
+
+					.tennis-draw { font-size: 10px; width: 100px; }
+
+					.tennis-draw.winner { height: 38px; }
+					.tennis-draw.winner .node-name { padding-left: 10px; margin-top: 1px; display: block; }
+
+					.tennis-draw .node-name { padding: 2px; white-space: pre; color: #00AFF0; }
+					.tennis-draw .node-desc { padding: 2px; color: #999; }
+
+					.tennis-draw.first-draw .node-title,
+					.tennis-draw.first-draw .node-name,
+					.tennis-draw.first-draw img { position: absolute; top: -8px; }
+					.tennis-draw.first-draw:hover img { width: 20px; top: -12px; }
+
+					.tennis-draw.first-draw { width: 165px; height: 20px; }
+					.tennis-draw.first-draw img { margin: 3px 4px 0 0; left: 25px; }
+					.tennis-draw.first-draw .node-title { margin-top: 3px; }
+					.tennis-draw.first-draw .node-name { width: 113px; padding-left: 50px; }
+					.tennis-draw.first-draw.bye .node-name { color: #999; }
+					</style>
+
+					<div class="tree" id="treedescriptor"></div>
 				</div>
 			</div>
 
@@ -341,6 +397,16 @@
 
 		$('#headingadvanced').parent().hide();
 
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+			return;
+		}
+
 		if ("{{must_wait}}" == "NO")
 		{
 			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
@@ -360,6 +426,32 @@
 					{"targets" : [11,12,13,14,15,16,17], "visible": false}
 				]
 			});
+
+			var tree_structure = {
+				chart: {
+					container: "#treedescriptor",
+					levelSeparation:    15,
+					siblingSeparation:  15,
+					subTeeSeparation:   15,
+					rootOrientation: "WEST",
+					node: {
+						HTMLclass: "tennis-draw",
+						drawLineThrough: true
+					},
+					connectors: {
+						type: "straight",
+						style: { "stroke-width": 2, "stroke": "#ccc" }
+					}
+				},
+				nodeStructure:
+				{
+					text: { name: {val: "Start", href: "http://aloja.bsc.es", desc: "comment here"} },
+					HTMLclass: "winner",
+					children: [{{ tree_descriptor | raw}}]
+				}
+			};
+			new Treant( tree_structure );
+
 			$(window).bind('resize', function () {
 				oTable.fnAdjustColumnSizing();
 			});           
