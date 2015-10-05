@@ -49,6 +49,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.precisions";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing precisions from DB');
 
+				$query = "DELETE FROM aloja_ml.observed_trees";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing observed trees from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
@@ -101,6 +104,15 @@ class MLCacheController extends AbstractController
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a precision from DB');
 
 				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmp'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
+			if (isset($_GET['rmo']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM aloja_ml.observed_trees WHERE id_obstrees='".$_GET['rmo']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing an observed tree from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmo'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -192,6 +204,20 @@ class MLCacheController extends AbstractController
 			$jsonPrecisions = $jsonPrecisions.']';
 			$jsonPrecisionsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 
+
+			// Compilation of Observed Trees on Cache
+			$query="SELECT id_obstrees, model, dataslice, creation_time
+				FROM aloja_ml.observed_trees
+				";
+			$rows = $dbml->query($query);
+			$jsonObstrees = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonObstrees = $jsonObstrees.(($jsonObstrees=='[')?'':',')."['".$row['id_obstrees']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmo=".$row['id_obstrees']."\'>Remove</a>']";
+			}
+			$jsonObstrees = $jsonObstrees.']';
+			$jsonObstreesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
+
 			$dbml = null;
 		}
 		catch(Exception $e)
@@ -211,7 +237,9 @@ class MLCacheController extends AbstractController
 				'summaries' => $jsonSummaries,
 				'header_summaries' => $jsonSummariesHeader,
 				'precisions' => $jsonPrecisions,
-				'header_precisions' => $jsonPrecisionsHeader
+				'header_precisions' => $jsonPrecisionsHeader,
+				'obstrees' => $jsonObstrees,
+				'header_obstrees' => $jsonObstreesHeader
 			)
 		);
 	}

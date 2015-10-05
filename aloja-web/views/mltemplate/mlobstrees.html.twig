@@ -1,0 +1,232 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %} {{ parent() }}
+	<style type="text/css">
+        @import "js/datatables.new/media/css/demo_table.css";
+        @import "js/datatables.new/media/css/jquery.dataTables.css";
+        @import "js/datatables.new/extensions/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables.new/extensions/TableTools/media/css/TableTools.css";
+        @import "js/datatables.new/extensions/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x: auto;
+	    float: left;
+            width: 100%;
+        }
+	</style>
+{% endblock %}
+{% block content %}
+	{% block datacollapsed %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify"><b>Observe Executions</b>: This tool selects the executions with the software and hardware configurations for the selected filter, and returns a table with the results. It also creates a tree of attributes, indicating which ones separate better the faster from the slower executions.</p>
+		<p style="text-align:justify">To use the tool, select which executions you want to filter through the right filter box. Then observe the executions, also the tree of attributes.</p>
+		<hr />
+	</div>
+	<div id="contentdiv" style="float: left; width: 68%;">
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>1 -</td><td>Select from the <b>Filters Box</b> (right box) the subset of data to observe.</td></tr>
+				<tr><td width='50px'>2 -</td><td>Click on <b>Observe Executions</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px'>3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>a) <b>Table</b> with the executions selected<br/>b) <b>Tree</b> with the executions, joined by common attributes. The order of the attributes is greedily selected by the ones that generate the least splits between faster and slower executions.</td></tr>
+				</table>
+			</p>
+		</div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingBenchDiv">
+				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" aria-expanded="true" aria-controls="benchDivFilter">
+						Observed Configurations
+					</a>
+				</h4>
+			</div>
+			<div id="benchDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingBenchDiv">
+				<div class="panel-body">
+					<table id="benchmark" cellpadding="0" cellspacing="0" border="0" class="display" width="65%"><thead></thead></table>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingTreeDiv">
+				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
+						Descriptor Tree
+					</a>
+				</h4>
+			</div>
+<!--			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">-->
+			<div id="treeDivFilter" aria-labelledby="headingTreeDiv">
+				<div class="panel-body" >
+					<script src="js/treant-js-master/vendor/raphael.js"></script>
+					<script src="js/treant-js-master/Treant.js"></script>
+
+					<link rel="stylesheet" href="js/treant-js-master/Treant.css">
+					<style type="text/css">
+					body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
+					table { border-collapse:collapse; border-spacing:0; }
+					fieldset,img { border:0; }
+					address,caption,cite,code,dfn,em,strong,th,var { font-style:normal; font-weight:normal; }
+					caption,th { text-align:left; }
+					h1,h2,h3,h4,h5,h6 { font-size:100%; font-weight:normal; }
+					q:before,q:after { content:''; }
+					abbr,acronym { border:0; }
+
+					body { background: #fff;  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
+
+					.tree { height: 600px; width: 100%; margin: 5px; margin: 15px auto; border: 3px solid #DDD; border-radius: 3px; }
+
+					.tennis-draw { font-size: 10px; width: 100px; }
+
+					.tennis-draw.winner { height: 38px; }
+					.tennis-draw.winner .node-name { padding-left: 10px; margin-top: 1px; display: block; }
+
+					.tennis-draw .node-name { padding: 2px; white-space: pre; color: #00AFF0; }
+					.tennis-draw .node-desc { padding: 2px; color: #999; }
+
+					.tennis-draw.first-draw .node-title,
+					.tennis-draw.first-draw .node-name,
+					.tennis-draw.first-draw img { position: absolute; top: -8px; }
+					.tennis-draw.first-draw:hover img { width: 20px; top: -12px; }
+
+					.tennis-draw.first-draw { width: 165px; height: 20px; }
+					.tennis-draw.first-draw img { margin: 3px 4px 0 0; left: 25px; }
+					.tennis-draw.first-draw .node-title { margin-top: 3px; }
+					.tennis-draw.first-draw .node-name { width: 113px; padding-left: 50px; }
+					.tennis-draw.first-draw.bye .node-name { color: #999; }
+					</style>
+
+					<div class="tree" id="treedescriptor"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>{{error_stats | raw}}</p>
+					<p>
+						<ul>
+						<li>Search cache ID: {{id_obstrees|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+	<div style="float: right; width: 30%;">
+	{% set select_multiple_benchs = false %}
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+	{% endblock %}
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+	$(document).ready(function()
+	{
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Observe Executions');
+		$("#submitForm").html('Observe Executions');
+
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		$('#MLearning').parent().hide();
+
+		var jsondata = "{{ jsonData | raw }}";
+		var jsonheader = '{{ jsonHeader | raw }}';
+
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+			return;
+		}
+
+		if ("{{must_wait}}" == "NO")
+		{
+			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
+			var jsonObjHeader = JSON.parse(jsonheader.replace(/title/g,"\"title\""));
+
+			oTable = $('#benchmark').dataTable({
+				"lengthMenu": [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+				"aaData": jsonObjData,
+				"columns": jsonObjHeader,
+				"columnDefs" : [
+					{"targets" : -1, "render" : function (data) { return Math.round(data); }},
+					{"targets" : 20, "render" : function (data) { return Math.max(data,100); }},
+					{"targets" : [11,12,13,14,15,16,17], "visible": false}
+				]
+			});
+
+			var tree_structure = {
+				chart: {
+					container: "#treedescriptor",
+					levelSeparation:    15,
+					siblingSeparation:  15,
+					subTeeSeparation:   15,
+					rootOrientation: "WEST",
+					node: {
+						HTMLclass: "tennis-draw",
+						drawLineThrough: true
+					},
+					connectors: {
+						type: "straight",
+						style: { "stroke-width": 2, "stroke": "#ccc" }
+					}
+				},
+				nodeStructure:
+				{
+					text: { name: {val: "Start", href: "http://aloja.bsc.es", desc: "comment here"} },
+					HTMLclass: "winner",
+					children: [{{ tree_descriptor_ordered | raw}}]
+				}
+			};
+			new Treant( tree_structure );
+
+			$(window).bind('resize', function () {
+				oTable.fnAdjustColumnSizing();
+			});           
+			jQuery('.dataTable').wrap('<div class="scrollStyle" />');
+
+			$('#waitdiv').hide();
+		}
+		else
+		{
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
+
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}
+	});
+	</script>
+{% endblock %}
