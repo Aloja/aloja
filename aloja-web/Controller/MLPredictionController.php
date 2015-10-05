@@ -11,7 +11,7 @@ class MLPredictionController extends AbstractController
 {
 	public function mlpredictionAction()
 	{
-		$jsonExecs = '[]';
+		$jsonExecs = $jsonLearners = $jsonLearningHeader = '[]';
 		$message = $instance = $error_stats = $config = $model_info = $slice_info = '';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
@@ -22,6 +22,9 @@ class MLPredictionController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
+
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
 
 			if (array_key_exists('dump',$_GET))
 			{
@@ -62,10 +65,13 @@ class MLPredictionController extends AbstractController
 				},
 				'filterGroup' => 'MLearning')
 			));
-
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn','umodel'))));
 
-			$where_configs = $this->filters->getWhereClause();
+			if ($instructions)
+			{
+				MLUtils::getIndexModels ($jsonLearners, $jsonLearningHeader, $dbml);
+				return $this->render('mltemplate/mlprediction.html.twig', array('jsonExecs' => $jsonExecs, 'learners' => $jsonLearners, 'header_learners' => $jsonLearningHeader, 'instructions' => 'YES'));
+			}
 
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
@@ -80,6 +86,7 @@ class MLPredictionController extends AbstractController
 			$learn_param = $learnParams['learn'];
 			$unrestricted = ($learnParams['umodel']) ? true : false;
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
@@ -265,6 +272,8 @@ class MLPredictionController extends AbstractController
 
 		$return_params = array(
 			'jsonExecs' => json_encode($jsonExecs),
+			'learners' => $jsonLearners,
+			'header_learners' => $jsonLearningHeader,
 			'max_p' => min(array($max_x,$max_y)),
 			'must_wait' => $must_wait,
 			'instance' => $instance,

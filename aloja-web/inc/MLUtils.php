@@ -201,5 +201,100 @@ class MLUtils
 			}
 		}
 	}
+
+	public static function revertModelToURL($model_info, $slice_info, $pre_info)
+	{
+		$url = '';
+
+		$model_array = explode(" ",$model_info);
+		for($i = 1; $i < count($model_array); $i = $i + 2)
+		{
+			$param1 = $model_array[$i-1];
+			$param2 = $model_array[$i];
+
+			if ($param2 != '("*")')
+			{
+				$param2 = str_replace('(','',$param2);
+				$param2 = str_replace(')','',$param2);
+				$param2 = str_replace('"','',$param2);
+
+				$param2_array = explode(",",$param2);
+				for($j = 0; $j < count($param2_array); $j = $j + 1)
+				{
+					if ($url != '') $url = $url.'&';
+					$url = $url.$param1.'[]='.$param2_array[$j];
+				}
+			}
+		}
+
+		if ($slice_info[0] == " ") $slice_info = substr($slice_info, 1);
+		$slice_array = explode(" ",$slice_info);
+		for($i = 1; $i < count($slice_array); $i = $i + 2)
+		{
+			$param1 = $slice_array[$i-1];
+			$param2 = $slice_array[$i];
+
+			if ($param2 != '("*")')
+			{
+				$param2 = str_replace('(','',$param2);
+				$param2 = str_replace(')','',$param2);
+				$param2 = str_replace('"','',$param2);
+
+				$param2_array = explode(",",$param2);
+				for($j = 0; $j < count($param2_array); $j = $j + 1)
+				{
+					if ($url != '') $url = $url.'&';
+					$url = $url.$param1.'='.$param2_array[$j];
+				}
+			}
+		}
+
+		$url = $pre_info.$url;
+
+		return $url;
+	}
+
+	public static function getIndexModels (&$jsonLearners, &$jsonLearningHeader, $dbml)
+	{
+		$query="SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
+				l.creation_time AS creation_time, l.model AS model, l.dataslice AS advanced,
+				COUNT(p.id_prediction) AS num_preds
+			FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner
+			GROUP BY l.id_learner
+			";
+
+		$rows = $dbml->query($query);
+		$jsonLearners = '[';
+	    	foreach($rows as $row)
+		{
+			if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
+			$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
+
+			$model_display = '';
+			$model_array = explode(" ",$row['model']);
+			for($i = 1; $i < count($model_array); $i = $i + 2)
+			{
+				$param1 = $model_array[$i-1];
+				$param2 = $model_array[$i];
+				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
+			}
+
+			$slice_display = '';
+			if ($row['advanced'][0] == " ") $row['advanced'] = substr($row['advanced'], 1);
+			$slice_array = explode(" ",$row['advanced']);
+			for($i = 1; $i < count($slice_array); $i = $i + 2)
+			{
+				$param1 = $slice_array[$i-1];
+				$param2 = $slice_array[$i];
+				if ($param2 != '("*")') $slice_display = $slice_display.' '.$param1.' '.$param2;
+			}
+
+			$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$model_display."','".$slice_display."','".$row['creation_time']."','".$row['num_preds']."',
+			'<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
+		}
+		$jsonLearners = $jsonLearners.']';
+		$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'Actions'}]";
+	}
+
 }
 ?>
