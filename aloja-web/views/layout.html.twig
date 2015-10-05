@@ -127,6 +127,7 @@
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Visualization</a></li>
 				<li {% if selected is defined and selected == 'mlcrossvar3d' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3d') }}">Variable Visualization [vs. Time]</a></li>
+				<li {% if selected is defined and selected == 'mlobstrees' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlobstrees') }}">Execution Visualization</a></li>
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlprecision' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlprecision') }}">Precision and Comparison</a></li>
 			  </ul>
