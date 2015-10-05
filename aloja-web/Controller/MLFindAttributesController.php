@@ -319,7 +319,7 @@ class MLFindAttributesController extends AbstractController
 
 	public function mlobservedtreesAction()
 	{
-		$model_info = $instance = $message = $config = $tree_descriptor_ordered = $tree_descriptor_gini = '';
+		$model_info = $instance = $slice_info = $message = $config = $tree_descriptor_ordered = $tree_descriptor_gini = '';
 		$jsonData = $jsonHeader = '[]';
 		$must_wait = 'NO';
 		try
@@ -330,17 +330,18 @@ class MLFindAttributesController extends AbstractController
 
 		    	$db = $this->container->getDBUtils();
 
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
+
 			$this->buildFilters(array(
-			'minexetime' => array(
-				'default' => 0
-			), 'valid' => array(
-				'default' => 0
-			), 'filter' => array(
-				'default' => 0
-			), 'prepares' => array(
-				'default' => 1
-			)
+				'minexetime' => array('default' => 0),
+				'valid' => array('default' => 0),
+				'filter' => array('default' => 0),
+				'prepares' => array('default' => 1)
 			));
+
+			if ($instructions) return $this->render('mltemplate/mlobstrees.html.twig', array('instructions' => 'YES'));
+
 			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
@@ -348,11 +349,17 @@ class MLFindAttributesController extends AbstractController
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
+
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
-			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, TRUE);	$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, TRUE);
-			$config = $instance.'-obstree';
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, TRUE);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, TRUE);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
+			$config = $instance.'-'.$slice_info.'-obstree';
 
 			$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.observed_trees WHERE id_obstrees = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
@@ -436,7 +443,7 @@ class MLFindAttributesController extends AbstractController
 						fclose($file);
 					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
 */
-					$query = "INSERT INTO aloja_ml.observed_trees (id_obstrees,instance,model,tree_code_split,tree_code_gain) VALUES ('".md5($config)."','".$instance."','".$model_info."','".$tree_descriptor_ordered."','".$tree_descriptor_gini."')";
+					$query = "INSERT INTO aloja_ml.observed_trees (id_obstrees,instance,model,dataslice,tree_code_split,tree_code_gain) VALUES ('".md5($config)."','".$instance."','".$model_info."','".$slice_info."','".$tree_descriptor_ordered."','".$tree_descriptor_gini."')";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 
 					// Remove temporal files
@@ -507,6 +514,7 @@ class MLFindAttributesController extends AbstractController
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,
+			'slice_info' => $slice_info,
 			'id_obstrees' => md5($config),
 			'tree_descriptor_ordered' => $tree_descriptor_ordered,
 			'tree_descriptor_gini' => $tree_descriptor_gini,

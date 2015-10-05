@@ -20,13 +20,25 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify"><b>Predict Configurations</b>: This tool uses the created models from <a href="/mlprediction">Modeling Data</a> to expand the space of possibilities for the selected attributes in the right filter box. It gets the best compatible model in cache and predicts all the possible software and hardware configurations for the selected filter, and returns a table with the results. It also creates a tree of attributes, indicating which ones separate better the faster from the slower executions.</p>
-		<p style="text-align:justify">To use the tool, select which executions you want to filter through the right filter box (make sure you created a compatible model in <i>Modeling Data</i> section). Then observe the predictions for each combination, also the tree of attributes. Optionally you can re-launch the prediction process using a different model in cache, from the <i>Model information</i> toolbox found at the bottom of the page.</p>
+		<p style="text-align:justify"><b>Observe Executions</b>: This tool selects the executions with the software and hardware configurations for the selected filter, and returns a table with the results. It also creates a tree of attributes, indicating which ones separate better the faster from the slower executions.</p>
+		<p style="text-align:justify">To use the tool, select which executions you want to filter through the right filter box. Then observe the executions, also the tree of attributes.</p>
 		<hr />
 	</div>
 	<div id="contentdiv" style="float: left; width: 68%;">
 
 		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>1 -</td><td>Select from the <b>Filters Box</b> (right box) the subset of data to observe.</td></tr>
+				<tr><td width='50px'>2 -</td><td>Click on <b>Observe Executions</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px'>3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>a) <b>Table</b> with the executions selected<br/>b) <b>Tree</b> with the executions, joined by common attributes. The order of the attributes is greedily selected by the ones that generate the least splits between faster and slower executions.</td></tr>
+				</table>
+			</p>
+		</div>
 
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
 			<div class="panel-heading" role="tab" id="headingBenchDiv">
@@ -52,11 +64,12 @@
 				</h4>
 			</div>
 <!--			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">-->
+			<div id="treeDivFilter" aria-labelledby="headingTreeDiv">
 				<div class="panel-body" >
-					<script src="views/mltemplate/treant-js-master/vendor/raphael.js"></script>
-					<script src="views/mltemplate/treant-js-master/Treant.js"></script>
+					<script src="js/treant-js-master/vendor/raphael.js"></script>
+					<script src="js/treant-js-master/Treant.js"></script>
 
-					<link rel="stylesheet" href="views/mltemplate/treant-js-master/Treant.css">
+					<link rel="stylesheet" href="js/treant-js-master/Treant.css">
 					<style type="text/css">
 					body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
 					table { border-collapse:collapse; border-spacing:0; }
@@ -74,7 +87,6 @@
 					.tennis-draw { font-size: 10px; width: 100px; }
 
 					.tennis-draw.winner { height: 38px; }
-					.tennis-draw.winner:hover { background: url('trophy.png') right 0 no-repeat; }
 					.tennis-draw.winner .node-name { padding-left: 10px; margin-top: 1px; display: block; }
 
 					.tennis-draw .node-name { padding: 2px; white-space: pre; color: #00AFF0; }
@@ -93,38 +105,8 @@
 					</style>
 
 					<div class="tree" id="treedescriptor"></div>
-
-					<script>
-					var tree_structure = {
-						chart: {
-							container: "#treedescriptor",
-							levelSeparation:    10,
-							siblingSeparation:  15,
-							subTeeSeparation:   15,
-							rootOrientation: "WEST",
-							node: {
-								HTMLclass: "tennis-draw",
-								drawLineThrough: true
-							},
-							connectors: {
-								type: "straight",
-								style: {
-									"stroke-width": 2,
-									"stroke": "#ccc"
-								}
-							}
-						},
-						nodeStructure:
-						{
-							text: { name: {val: "Start", href: "http://aloja.bsc.es", desc: "comment here"} },
-							HTMLclass: "winner",
-							children: [{{ tree_descriptor_ordered | raw}}]
-						}
-					};
-					new Treant( tree_structure );
-					</script>
 				</div>
-<!--			</div>-->
+			</div>
 
 			<div class="panel-heading" role="tab" id="headingModelInfo">
 				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
@@ -142,6 +124,7 @@
 						<li>Search cache ID: {{id_obstrees|raw}}</li>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -176,6 +159,16 @@
 		var jsondata = "{{ jsonData | raw }}";
 		var jsonheader = '{{ jsonHeader | raw }}';
 
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+			return;
+		}
+
 		if ("{{must_wait}}" == "NO")
 		{
 			var jsonObjData = JSON.parse(jsondata.replace(/\'/g,"\""));
@@ -191,6 +184,32 @@
 					{"targets" : [11,12,13,14,15,16,17], "visible": false}
 				]
 			});
+
+			var tree_structure = {
+				chart: {
+					container: "#treedescriptor",
+					levelSeparation:    15,
+					siblingSeparation:  15,
+					subTeeSeparation:   15,
+					rootOrientation: "WEST",
+					node: {
+						HTMLclass: "tennis-draw",
+						drawLineThrough: true
+					},
+					connectors: {
+						type: "straight",
+						style: { "stroke-width": 2, "stroke": "#ccc" }
+					}
+				},
+				nodeStructure:
+				{
+					text: { name: {val: "Start", href: "http://aloja.bsc.es", desc: "comment here"} },
+					HTMLclass: "winner",
+					children: [{{ tree_descriptor_ordered | raw}}]
+				}
+			};
+			new Treant( tree_structure );
+
 			$(window).bind('resize', function () {
 				oTable.fnAdjustColumnSizing();
 			});           

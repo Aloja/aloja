@@ -178,6 +178,7 @@ CREATE TABLE IF NOT EXISTS observed_trees (
   id_obstrees varchar(255) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL,
   tree_code_split longtext NOT NULL,
   tree_code_gain longtext NOT NULL,
   creation_time datetime NOT NULL,
@@ -199,16 +200,4 @@ $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
-
-
-#$MYSQL "ALTER TABLE learners MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE predictions MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE trees MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE resolutions MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE minconfigs MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE minconfigs_props MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE minconfigs_centers MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE summaries MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-#$MYSQL "ALTER TABLE model_storage MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP"
-
 
