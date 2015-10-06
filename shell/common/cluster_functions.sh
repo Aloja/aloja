@@ -725,7 +725,7 @@ vm_set_dot_files() {
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'
-export PATH=\$HOME/sw/bin:\$PATH" ""
+export PATH=\$HOME/share/sw/bin:\$PATH" ""
 
     vm_update_template "$homePrefixAloja/$userAloja/.screenrc" "
 defscrollback 99999
