@@ -298,7 +298,7 @@ class MLUtils
 			'<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
 		}
 		$jsonLearners = $jsonLearners.']';
-		$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'Actions'}]";
+		$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Predictions'},{'title':'Actions'}]";
 	}
 
 	public static function getIndexFAttrs (&$jsonFAttrs, &$jsonFAttrsHeader, $dbml)
@@ -354,7 +354,25 @@ class MLUtils
 			$jsonObstrees = $jsonObstrees.(($jsonObstrees=='[')?'':',')."['".$row['id_obstrees']."','".$model_display."','".$slice_display."','".$row['creation_time']."','<a href=\'/mlobstrees?".$url."\'>View</a> <a href=\'/mlclearcache?rmo=".$row['id_obstrees']."\'>Remove</a>']";
 		}
 		$jsonObstrees = $jsonObstrees.']';
-		$jsonObstreesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
+		$jsonObstreesHeader = "[{'title':'ID'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Actions'}]";
+	}
+
+	public static function getIndexPrecExps (&$jsonPrecexps, &$jsonPrecexpsHeader, $dbml)
+	{
+		$query="SELECT id_precision, model, dataslice, creation_time FROM aloja_ml.precisions GROUP BY id_precision";
+		$rows = $dbml->query($query);
+		$jsonPrecexps = '[';
+	    	foreach($rows as $row)
+		{
+			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&');
+
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['dataslice']);
+
+			$jsonPrecexps = $jsonPrecexps.(($jsonPrecexps=='[')?'':',')."['".$row['id_precision']."','".$model_display."','".$slice_display."','".$row['creation_time']."','<a href=\'/mlprecision?".$url."\'>View</a> <a href=\'/mlclearcache?rmp=".$row['id_precision']."\'>Remove</a>']";
+		}
+		$jsonPrecexps = $jsonPrecexps.']';
+		$jsonPrecexpsHeader = "[{'title':'ID'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Actions'}]";
 	}
 }
 ?>

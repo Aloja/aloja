@@ -31,6 +31,28 @@
 
 		<div id="waitdiv" style="float: left; width: 100%;"></div>
 
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>&nbsp;</td><td>This tool will <b>display the precisions</b> (stability and confidence) on clusters (or selected discriminating attribute), and <b>compare observed executions</b> also by a selected discrimination attribute (e.g. cluster)</td></tr>
+				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box) the values for each attribute to select the data to examine (if no value selected, all values will be added).</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Check Values</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
+					a) A <b>table</b> displaying the precision index, and the basic statistics for each cluster (or other discriminating selected variable).<br/> 
+					b) A <b>chart and table</b> with the executions, grouped by similars, so the user can compare how identical executions behave in different clusters (or other discriminating selected variable). Executions with no similars in other clustrers are dismissed.
+				</td></tr>
+				</table>
+			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently precision/comparisons done: <a id="displayText" href="javascript:toggle('precexpsdiv','displayText');">show</a></h4><br/> 
+			<div id="precexpsdiv" style="float: left; width: 100%; display:none;">
+				<table id="precexpstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
+		</div>
+
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
 			<div class="panel-heading" role="tab" id="headingBenchDiv">
 				<i id="BenchFG" data-toggle="collapse" data-parent="#stuffdivs" href="#benchDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
@@ -361,6 +383,16 @@
 	/* Regular web-page start-up.                                        */
 	/*********************************************************************/
 
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		if (xTable) xTable.fnAdjustColumnSizing();
+	}
+
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
@@ -370,6 +402,31 @@
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 
 		$('#MLearning').parent().hide();
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#diversityDivFilter').hide(); $('#headingDiversityDiv').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+
+			var precexps = {{ precexps | raw }};
+			var precexps_header = {{ header_precexps | raw }};
+
+			if (precexps != [])
+			{
+				xTable = $('#precexpstable').dataTable({
+					"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+					"aaData": precexps,
+					"columns": precexps_header,
+					"columnDefs" : [],
+					"sScrollX": "100%",
+					"bScrollCollapse": true
+				});
+			}
+
+			return;
+		}
 
 		if ("{{must_wait}}"== "NO")
 		{
