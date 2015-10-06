@@ -245,34 +245,6 @@ ${PORT_PREFIX}8020"
   echo -e "$ports"
 }
 
-get_hive_env(){
-  echo "export HADOOP_PREFIX=${BENCH_HADOOP_DIR} && \
-        export HADOOP_USER_CLASSPATH_FIRST=true && \
-        export PATH=$PATH:$HIVE_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin && \
-  "
-}
-
-prepare_hive_config() {
-
-subs=$(cat <<EOF
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##HIVE_HOME##,$HIVE_HOME,g;
-EOF
-)
-
-  #to avoid perl warnings
-  export LC_CTYPE=en_US.UTF-8
-  export LC_ALL=en_US.UTF-8
-
-  logger "INFO: Copying Hive and Hive-testbench dirs"
-  $DSH "cp -ru $BENCH_SOURCE_DIR/apache-hive-1.2.0-bin $HIVE_B_DIR/"
-
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-env.sh.template > $HIVE_HOME/conf/hive-env.sh"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-default.xml.template > $HIVE_HOME/conf/hive-default.xml"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-log4j.properties.template > $HIVE_HOME/conf/hive-log4j.properties"
-  $DSH "/usr/bin/perl -pe \"$subs\" $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME.template > $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME"
-}
-
 # Sets the substitution values for the hadoop config
 get_substitutions() {
 
