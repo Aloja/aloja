@@ -13,6 +13,7 @@ class MLPrecisionController extends AbstractController
 	{
 		$jsonDiversity = $jsonPrecisions = $jsonDiscvars = $jsonHeaderDiv = $jsonPrecisionHeader = '[]';
 		$instance = $error_stats = '';
+		$jsonPrecexps = $jsonPrecexpsHeader = '[]';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -20,22 +21,18 @@ class MLPrecisionController extends AbstractController
 		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
-		    	
-		    	$where_configs = "";
 
-			$dump = null;
-			$pass = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
-			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
- 			{
-				$pass = (isset($_GET["pass"])) ? $_GET["pass"] : null;
-				$dump =  (isset($_GET["dump"])) ? $_GET["dump"] : null;
-				unset($_GET["pass"]);
-				unset($_GET["dump"]);
- 			}
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
+
 			$this->buildFilters();
+
+			if ($instructions)
+			{
+				MLUtils::getIndexPrecExps ($jsonPrecexps, $jsonPrecexpsHeader, $dbml);
+				return $this->render('mltemplate/mlprecision.html.twig', array('precexps' => $jsonPrecexps, 'header_precexps' => $jsonPrecexpsHeader,'discvars' => '[]','diversity' => '[]','precisions' => '[]','diversityHeader' => '[]','precisionHeader' => '[]','instructions' => 'YES'));
+			}
+
 			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
@@ -207,6 +204,8 @@ class MLPrecisionController extends AbstractController
 			'precisions' => $jsonPrecisions,
 			'diversityHeader' => $jsonHeaderDiv,
 			'precisionHeader' => $jsonPrecisionHeader,
+			'precexps' => $jsonPrecexps,
+			'header_precexps' => $jsonPrecexpsHeader,
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,
