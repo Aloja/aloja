@@ -164,7 +164,7 @@ class MLCacheController extends AbstractController
 			$jsonMinconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Creation'},{'title':'Is_New'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
 
 			// Compilation of Resolutions on Cache
-			$query="SELECT DISTINCT id_resolution, id_learner, model, creation_time, sigma, count(*) AS instances
+			$query="SELECT DISTINCT id_resolution, id_learner, model, dataslice, creation_time, sigma, count(*) AS instances
 				FROM aloja_ml.resolutions
 				GROUP BY id_resolution
 				";
@@ -172,10 +172,10 @@ class MLCacheController extends AbstractController
 			$jsonResolutions = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$row['model']."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
+				$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
 			}
 			$jsonResolutions = $jsonResolutions.']';
-			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
+			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
 
 			// Compilation of Summaries on Cache
 			$query="SELECT DISTINCT id_summaries, model, dataslice, creation_time

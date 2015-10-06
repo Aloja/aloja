@@ -282,6 +282,7 @@ class MLUtils
 				$param2 = $model_array[$i];
 				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
 			}
+			if ($model_display == '') $model_display = 'No Filters';
 
 			$slice_display = '';
 			if ($row['advanced'][0] == " ") $row['advanced'] = substr($row['advanced'], 1);
@@ -292,6 +293,7 @@ class MLUtils
 				$param2 = $slice_array[$i];
 				if ($param2 != '("*")') $slice_display = $slice_display.' '.$param1.' '.$param2;
 			}
+			if ($slice_display == '') $slice_display = 'No Filters';
 
 			$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$model_display."','".$slice_display."','".$row['creation_time']."','".$row['num_preds']."',
 			'<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
@@ -321,6 +323,7 @@ class MLUtils
 
 				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
 			}
+			if ($model_display == '') $model_display = 'No Filters';
 
 			$jsonFAttrs = $jsonFAttrs.(($jsonFAttrs=='[')?'':',')."['".$row['id_findattrs']."','".$row['id_learner']."','".$model_display."','".$row['creation_time']."','<a href=\'/mlfindattributes?".$url."\'>View</a>']";
 		}
@@ -330,13 +333,13 @@ class MLUtils
 
 	public static function getIndexOutExps (&$jsonResolutions, &$jsonResolutionsHeader, $dbml)
 	{
-		$query="SELECT DISTINCT id_resolution, id_learner, model, creation_time, sigma, count(*) AS instances FROM aloja_ml.resolutions	GROUP BY id_resolution";
+		$query="SELECT DISTINCT id_resolution, id_learner, model, dataslice, creation_time, sigma, count(*) AS instances FROM aloja_ml.resolutions GROUP BY id_resolution";
 		$rows = $dbml->query($query);
 
 		$jsonResolutions = '[';
 	    	foreach($rows as $row)
 		{
-			$url = MLUtils::revertModelToURL($row['model'], null, 'presets=none&submit=&current_model[]='.$row['id_learner'].'&sigma='.$row['sigma'].'&');
+			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&current_model[]='.$row['id_learner'].'&sigma='.$row['sigma'].'&');
 
 			$model_display = '';
 			if ($row['model'][0] == " ") $row['model'] = substr($row['model'], 1);
@@ -348,11 +351,24 @@ class MLUtils
 
 				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
 			}
+			if ($model_display == '') $model_display = 'No Filters';
 
-			$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$model_display."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mloutliers?".$url."\'>View</a> <a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
+			$slice_display = '';
+			if ($row['dataslice'][0] == " ") $row['dataslice'] = substr($row['dataslice'], 1);
+			$slice_array = explode(" ",$row['dataslice']);
+			for($i = 1; $i < count($slice_array); $i = $i + 2)
+			{
+				$param1 = $slice_array[$i-1];
+				$param2 = $slice_array[$i];
+
+				if ($param2 != '("*")') $slice_display = $slice_display.' '.$param1.' '.$param2;
+			}
+			if ($slice_display == '') $slice_display = 'No Filters';
+
+			$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$model_display."','".$slice_display."','".$row['sigma']."','".$row['creation_time']."','".$row['instances']."','<a href=\'/mloutliers?".$url."\'>View</a> <a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
 		}
 		$jsonResolutions = $jsonResolutions.']';
-		$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Model ID Used'},{'title':'Attribute Selection'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
+		$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Model ID Used'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Sigma'},{'title':'Creation'},{'title':'Instances'},{'title':'Actions'}]";
 	}
 }
 ?>

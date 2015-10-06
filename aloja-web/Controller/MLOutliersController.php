@@ -196,7 +196,7 @@ class MLOutliersController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 
 						$token = 0;
-						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
+						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,dataslice,sigma,outlier_code,predicted,observed) VALUES ";
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
@@ -207,7 +207,7 @@ class MLOutliersController extends AbstractController
 							$specific_id = $data[4];
 
 							if ($token > 0) { $query = $query.","; } $token = 1;
-							$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
+							$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$slice_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
 						}
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 					}

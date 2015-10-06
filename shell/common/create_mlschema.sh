@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS resolutions (
   id_exec int(11) NOT NULL,
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
+  dataslice longtext NOT NULL DEFAULT '',
   sigma int(8) NOT NULL,
   outlier_code int(8) DEFAULT 0,
   predicted int(11) DEFAULT 0,
@@ -200,4 +201,5 @@ $MYSQL "ALTER TABLE $DBML.learners ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
+$MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT '';"
 
