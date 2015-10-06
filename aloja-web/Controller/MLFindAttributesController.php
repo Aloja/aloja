@@ -341,6 +341,7 @@ class MLFindAttributesController extends AbstractController
 	{
 		$model_info = $instance = $slice_info = $message = $config = $tree_descriptor_ordered = $tree_descriptor_gini = '';
 		$jsonData = $jsonHeader = '[]';
+		$jsonObstrees = $jsonObstreesHeader = '[]';
 		$must_wait = 'NO';
 		try
 		{
@@ -360,7 +361,11 @@ class MLFindAttributesController extends AbstractController
 				'prepares' => array('default' => 1)
 			));
 
-			if ($instructions) return $this->render('mltemplate/mlobstrees.html.twig', array('instructions' => 'YES'));
+			if ($instructions)
+			{
+				MLUtils::getIndexObsTrees ($jsonObstrees, $jsonObstreesHeader, $dbml);
+				return $this->render('mltemplate/mlobstrees.html.twig', array('obstrees' => $jsonObstrees, 'header_obstrees' => $jsonObstreesHeader,'jsonData' => '[]','jsonHeader' => '[]', 'instructions' => 'YES'));
+			}
 
 			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
@@ -530,6 +535,8 @@ class MLFindAttributesController extends AbstractController
 		$return_params = array(
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
+			'obstrees' => $jsonObstrees,
+			'header_obstrees' => $jsonObstreesHeader,
 			'message' => $message,
 			'must_wait' => $must_wait,
 			'instance' => $instance,

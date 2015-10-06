@@ -101,22 +101,21 @@
 			</div>
 
 			<div class="panel-heading" role="tab" id="headingTreeDiv">
-				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
 				<h4 class="panel-title">
-					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
 						Descriptor Tree
 					</a>
 				</h4>
 			</div>
-<!--			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">-->
-			<div id="treeDivFilter" aria-labelledby="headingTreeDiv">
+			<div id="treeDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">
 				<div class="panel-body" >
 					<script src="js/treant-js-master/vendor/raphael.js"></script>
 					<script src="js/treant-js-master/Treant.js"></script>
 
 					<link rel="stylesheet" href="js/treant-js-master/Treant.css">
 					<style type="text/css">
-					body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
+					pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
 					table { border-collapse:collapse; border-spacing:0; }
 					fieldset,img { border:0; }
 					address,caption,cite,code,dfn,em,strong,th,var { font-style:normal; font-weight:normal; }

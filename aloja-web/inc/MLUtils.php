@@ -258,6 +258,23 @@ class MLUtils
 		return $url;
 	}
 
+	public static function display_models_noasts ($input)
+	{
+		$data_display = '';
+
+		if ($input[0] == " ") $input = substr($input, 1);
+		$data_array = explode(" ",$input);
+		for($i = 1; $i < count($data_array); $i = $i + 2)
+		{
+			$param1 = $data_array[$i-1];
+			$param2 = $data_array[$i];
+			if ($param2 != '("*")') $data_display = $data_display.' '.$param1.' '.$param2;
+		}
+		if ($data_display == '') $data_display = 'No Filters';
+
+		return $data_display;
+	}
+
 	public static function getIndexModels (&$jsonLearners, &$jsonLearningHeader, $dbml)
 	{
 		$query="SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
@@ -274,26 +291,8 @@ class MLUtils
 			if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
 			$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
 
-			$model_display = '';
-			$model_array = explode(" ",$row['model']);
-			for($i = 1; $i < count($model_array); $i = $i + 2)
-			{
-				$param1 = $model_array[$i-1];
-				$param2 = $model_array[$i];
-				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
-			}
-			if ($model_display == '') $model_display = 'No Filters';
-
-			$slice_display = '';
-			if ($row['advanced'][0] == " ") $row['advanced'] = substr($row['advanced'], 1);
-			$slice_array = explode(" ",$row['advanced']);
-			for($i = 1; $i < count($slice_array); $i = $i + 2)
-			{
-				$param1 = $slice_array[$i-1];
-				$param2 = $slice_array[$i];
-				if ($param2 != '("*")') $slice_display = $slice_display.' '.$param1.' '.$param2;
-			}
-			if ($slice_display == '') $slice_display = 'No Filters';
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['advanced']);
 
 			$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$model_display."','".$slice_display."','".$row['creation_time']."','".$row['num_preds']."',
 			'<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
@@ -313,17 +312,7 @@ class MLUtils
 			if (strpos($row['model'],'*') !== false) $unseen = 'unseen=unseen&'; else $unseen = '';
 			$url = MLUtils::revertModelToURL($row['model'], null, 'presets=none&submit=&current_model[]='.$row['id_learner'].'&'.$unseen);
 
-			$model_display = '';
-			if ($row['model'][0] == " ") $row['model'] = substr($row['model'], 1);
-			$model_array = explode(" ",$row['model']);
-			for($i = 1; $i < count($model_array); $i = $i + 2)
-			{
-				$param1 = $model_array[$i-1];
-				$param2 = $model_array[$i];
-
-				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
-			}
-			if ($model_display == '') $model_display = 'No Filters';
+			$model_display = MLUtils::display_models_noasts ($row['model']);
 
 			$jsonFAttrs = $jsonFAttrs.(($jsonFAttrs=='[')?'':',')."['".$row['id_findattrs']."','".$row['id_learner']."','".$model_display."','".$row['creation_time']."','<a href=\'/mlfindattributes?".$url."\'>View</a>']";
 		}
@@ -341,34 +330,31 @@ class MLUtils
 		{
 			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&current_model[]='.$row['id_learner'].'&sigma='.$row['sigma'].'&');
 
-			$model_display = '';
-			if ($row['model'][0] == " ") $row['model'] = substr($row['model'], 1);
-			$model_array = explode(" ",$row['model']);
-			for($i = 1; $i < count($model_array); $i = $i + 2)
-			{
-				$param1 = $model_array[$i-1];
-				$param2 = $model_array[$i];
-
-				if ($param2 != '("*")') $model_display = $model_display.' '.$param1.' '.$param2;
-			}
-			if ($model_display == '') $model_display = 'No Filters';
-
-			$slice_display = '';
-			if ($row['dataslice'][0] == " ") $row['dataslice'] = substr($row['dataslice'], 1);
-			$slice_array = explode(" ",$row['dataslice']);
-			for($i = 1; $i < count($slice_array); $i = $i + 2)
-			{
-				$param1 = $slice_array[$i-1];
-				$param2 = $slice_array[$i];
-
-				if ($param2 != '("*")') $slice_display = $slice_display.' '.$param1.' '.$param2;
-			}
-			if ($slice_display == '') $slice_display = 'No Filters';
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['dataslice']);
 
 			$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$model_display."','".$slice_display."','".$row['sigma']."','".$row['creation_time']."','".$row['instances']."','<a href=\'/mloutliers?".$url."\'>View</a> <a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
 		}
 		$jsonResolutions = $jsonResolutions.']';
 		$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Model ID Used'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Sigma'},{'title':'Creation'},{'title':'Instances'},{'title':'Actions'}]";
+	}
+
+	public static function getIndexObsTrees (&$jsonObstrees, &$jsonObstreesHeader, $dbml)
+	{
+		$query="SELECT id_obstrees, model, dataslice, creation_time FROM aloja_ml.observed_trees";
+		$rows = $dbml->query($query);
+		$jsonObstrees = '[';
+	    	foreach($rows as $row)
+		{
+			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&');
+
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['dataslice']);
+
+			$jsonObstrees = $jsonObstrees.(($jsonObstrees=='[')?'':',')."['".$row['id_obstrees']."','".$model_display."','".$slice_display."','".$row['creation_time']."','<a href=\'/mlobstrees?".$url."\'>View</a> <a href=\'/mlclearcache?rmo=".$row['id_obstrees']."\'>Remove</a>']";
+		}
+		$jsonObstrees = $jsonObstrees.']';
+		$jsonObstreesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 	}
 }
 ?>

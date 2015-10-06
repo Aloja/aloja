@@ -195,7 +195,7 @@ class MLPrecisionController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage ());
 			$jsonDiversity = $jsonPrecisions = $jsonDiscvars = $jsonHeaderDiv = $jsonPrecisionHeader = '[]';
 			$must_wait = 'NO';
 			$dbml = null;

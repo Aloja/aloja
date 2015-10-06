@@ -135,7 +135,7 @@ class MLOutliersController extends AbstractController
 					$row = $result->fetch();	
 					$current_model = $row['id_learner'];
 				}
-				$config = $instance.'-'.$current_model.'-'.$sigma_param.' '.$slice_info.'-outliers'; // FIXME - Add slice_info in Outliers Table in DB!
+				$config = $instance.'-'.$current_model.'-'.$sigma_param.' '.$slice_info.'-outliers';
 
 				$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."'");
 				$tmp_result = $is_cached_mysql->fetch();
@@ -298,7 +298,7 @@ class MLOutliersController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () );
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$must_wait = "NO";
 			$dbml = null;

@@ -38,6 +38,12 @@
 				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>a) <b>Table</b> with the executions selected<br/>b) <b>Tree</b> with the executions, joined by common attributes. The order of the attributes is greedily selected by the ones that generate the least splits between faster and slower executions.</td></tr>
 				</table>
 			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently executions observed: <a id="displayText" href="javascript:toggle('obstreesdiv','displayText');">show</a></h4><br/> 
+			<div id="obstreesdiv" style="float: left; width: 100%; display:none;">
+				<table id="obstreestable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
 		</div>
 
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
@@ -56,22 +62,21 @@
 			</div>
 
 			<div class="panel-heading" role="tab" id="headingTreeDiv">
-				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<i id="TreeDivFG" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
 				<h4 class="panel-title">
-					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#treeDivFilter" aria-expanded="true" aria-controls="treeDivFilter">
 						Descriptor Tree
 					</a>
 				</h4>
 			</div>
-<!--			<div id="treeDivFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">-->
-			<div id="treeDivFilter" aria-labelledby="headingTreeDiv">
+			<div id="treeDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingTreeDiv">
 				<div class="panel-body" >
 					<script src="js/treant-js-master/vendor/raphael.js"></script>
 					<script src="js/treant-js-master/Treant.js"></script>
 
 					<link rel="stylesheet" href="js/treant-js-master/Treant.css">
 					<style type="text/css">
-					body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
+					pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
 					table { border-collapse:collapse; border-spacing:0; }
 					fieldset,img { border:0; }
 					address,caption,cite,code,dfn,em,strong,th,var { font-style:normal; font-weight:normal; }
@@ -146,6 +151,16 @@
 	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		if (tTable) tTable.fnAdjustColumnSizing();
+	}
+
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
@@ -166,6 +181,22 @@
 			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
 			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
 			$('#treeDivFilter').hide(); $('#headingTreeDiv').hide();
+
+			var obstrees = {{ obstrees | raw }};
+			var obstrees_header = {{ header_obstrees | raw }};
+
+			if (obstrees != [])
+			{
+				tTable = $('#obstreestable').dataTable({
+					"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+					"aaData": obstrees,
+					"columns": obstrees_header,
+					"columnDefs" : [],
+					"sScrollX": "100%",
+					"bScrollCollapse": true
+				});
+			}
+
 			return;
 		}
 
