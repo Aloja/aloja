@@ -27,10 +27,10 @@ set_hadoop_requires
 if [ "$(get_hadoop_major_version)" == "2" ]; then
   examples_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-mapreduce-examples-2.7.1.jar"
   #examples_jar="\$HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar"
-  tests_jar="\$HADOOP_HOME/hadoop-common-2.7.1-tests.jar"
+  tests_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-common-2.7.1-tests.jar"
 else
   examples_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-examples-1.2.1.jar"
-  tests_jar="\$HADOOP_HOME/hadoop-test-1.2.1.jar"
+  tests_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-test-1.2.1.jar"
 fi
 
 benchmark_suite_config() {
