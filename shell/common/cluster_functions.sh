@@ -169,21 +169,22 @@ vm_finalize() {
 vm_check_install_perfmon(){
   logger "Checking whether performance monitor tools are available on $vm_name"
 
-  local success=1
+  local ret=0
 
   # add new tools here
   for tool in dsh sar; do
     if ! vm_is_available "$tool"; then
+      logger "WARNING: Trying to build tool '$tool' on $vm_name"
       vm_build_${tool}
       ok=$?
       if [ $ok -ne 0 ] || ! vm_is_available "$tool"; then
         logger "WARNING: cannot build tool $tool on $vm_name"
-        success=0
+        ret=1
       fi
     fi
   done
 
-  return ${success}
+  return ${ret}
 }
 
 vm_is_available(){
