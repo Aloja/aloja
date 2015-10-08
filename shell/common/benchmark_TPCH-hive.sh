@@ -109,7 +109,7 @@ generate_TPCH_data() {
   fi
 
   logger "INFO: # GENERATING TPCH DATA WITH SCALE FACTOR ${2}"
-  logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && /usr/bin/time -f 'Time data generator %e' $DATA_GENERATOR"
+  logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && export TIMEFORMAT='Time data generator %R' && time $DATA_GENERATOR"
 
   time_cmd_master "$EXP cd ${TPCH_HOME} && bash $DATA_GENERATOR" "$time_exec"
 

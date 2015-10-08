@@ -593,7 +593,7 @@ $(get_hadoop_exports)"
 
   logger "DEBUG: $hadoop_exports"
 
-  $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${prefix}${bench} %e' $cmd"
+  $DSH_MASTER "$hadoop_exports export TIMEFORMAT='Time ${prefix}${bench} %R' && time $cmd"
 
   local end_exec="$(timestamp)"
 
@@ -749,7 +749,7 @@ export MAX_ITERATION=$MAX_ITERATION && \
 export NUM_ITERATIONS=$NUM_ITERATIONS && \
 "
 
-  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2"
+  $DSH_MASTER "$EXP export TIMEFORMAT='Time ${3}${1} %R' && time $2"
 
   local end_exec=`timestamp`
 

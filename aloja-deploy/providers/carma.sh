@@ -14,11 +14,13 @@ install_ARM_JDK() {
 
   local JDK_folder="jdk1.7.0_60_ARM"
 
-  vm_execute "[ ! -d ~/share/aplic/$JDK_folder ] &&
+  vm_execute "[ ! -d ~/share/aplic2/$JDK_folder ] &&
     {
-      echo ' Dowloading Java JDK for AMR'
-      cd ~/share/aplic
-      wget -nv --no-cookies --no-check-certificate --header 'Cookie: gpw_e24=http%3A%2F%2Fwww.oracle.com%2F; oraclelicense=accept-securebackup-cookie' http://download.oracle.com/otn-pub/java/jdk/7u60-b19/jdk-7u60-linux-arm-vfp-hflt.tar.gz -O jdk-7u60-linux-arm-vfp-hflt.tar.gz;
+      set -x;
+      echo ' Dowloading Java JDK for AMR';
+      mkdir -p ~/share/aplic2;
+      cd ~/share/aplic2;
+      wget -nv '$ALOJA_PUBLIC_HTTP/files/jdk-7u60-linux-arm-vfp-hflt.tar.gz';
       tar -zxf jdk-7u60-linux-arm-vfp-hflt.tar.gz;
       mv jdk1.7.0_60 $JDK_folder;
     } || echo ' JDK already installed'"
