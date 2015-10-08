@@ -5,7 +5,7 @@ CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 source "$CUR_DIR/common/include_process_jobs.sh"
 
-repo="master"
+repo="provider/minerva100"
 
 while true ; do
 
