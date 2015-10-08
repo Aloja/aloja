@@ -49,6 +49,7 @@ class DBUtils
 
     public function get_rows($sql, $params = array())
     {
+echo "$sql";
         $md5_sql = md5($sql.http_build_query($params, '', ','));
         $file_path = "{$this->container['config']['db_cache_path']}/CACHE_$md5_sql.sql";
 
