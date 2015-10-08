@@ -28,7 +28,7 @@ export PATH=\"$BENCH_HADOOP_DIR/bin:$MAHOUT_PATH/bin:$PATH\" && \
 export HIVE_BINARY=\"$HIVE_PATH/bin/hive\" && \
 "
 
-  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench runBenchmark -m 2 -f 1 -s 2"
+  $DSH_MASTER "$EXP export TIMEFORMAT='Time ${BENCH} %R' && time $BENCH_HIB_DIR/bin/bigBench runBenchmark -m 2 -f 1 -s 2"
 
   # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench dataGen -m 2 -f 1 -b"
   # $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${BENCH} %e' $BENCH_HIB_DIR/bin/bigBench populateMetastore -b"
