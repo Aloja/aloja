@@ -45,7 +45,6 @@ CREATE TABLE IF NOT EXISTS \`execs\` (
   KEY \`idx_perf_details\` (\`perf_details\`)
 ) ENGINE=InnoDB;
 
-
 create table if not exists hosts (
   id_host int(11) NOT NULL AUTO_INCREMENT,
   host_name varchar(127) NOT NULL,
@@ -634,7 +633,7 @@ CREATE TABLE IF NOT EXISTS \`SAR_memory_util\` (
   \`%commit\` decimal(20,3) DEFAULT NULL,
   \`kbactive\` decimal(20,3) DEFAULT NULL,
   \`kbinact\` decimal(20,3) DEFAULT NULL,
-  #\`kbdirty\` decimal(20,3) DEFAULT NULL,
+  \`kbdirty\` decimal(20,3) DEFAULT NULL,
   PRIMARY KEY (\`id_SAR_memory_util\`),
   UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`host\`,\`date\`)
 ) ENGINE=InnoDB;
@@ -653,6 +652,7 @@ CREATE TABLE IF NOT EXISTS \`SAR_net_devices\` (
   \`rxcmp/s\` decimal(20,3) DEFAULT NULL,
   \`txcmp/s\` decimal(20,3) DEFAULT NULL,
   \`rxmcst/s\` decimal(20,3) DEFAULT NULL,
+  \`%ifutil\` decimal(20,3) DEFAULT NULL,
   PRIMARY KEY (\`id_SAR_net_devices\`),
   UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`host\`,\`date\`,\`IFACE\`)
 ) ENGINE=InnoDB;
@@ -776,29 +776,30 @@ CREATE TABLE IF NOT EXISTS \`BWM2\` (
   UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`host\`,\`unix_timestamp\`,\`iface_name\`)
 ) ENGINE=InnoDB;
 
-CREATE TABLE IF NOT EXISTS \`VMSTATS\` (
-  \`id_VMSTATS\` int(11) NOT NULL AUTO_INCREMENT,
-  \`id_exec\` int(11) NOT NULL,
-  \`host\` varchar(255) DEFAULT NULL,
-  \`time\` int(11) DEFAULT NULL,
-  \`r\` decimal(20,3) DEFAULT NULL,
-  \`b\` decimal(20,3) DEFAULT NULL,
-  \`swpd\` decimal(20,3) DEFAULT NULL,
-  \`free\` decimal(20,3) DEFAULT NULL,
-  \`buff\` decimal(20,3) DEFAULT NULL,
-  \`cache\` decimal(20,3) DEFAULT NULL,
-  \`si\` decimal(20,3) DEFAULT NULL,
-  \`so\` decimal(20,3) DEFAULT NULL,
-  \`bi\` decimal(20,3) DEFAULT NULL,
-  \`bo\` decimal(20,3) DEFAULT NULL,
+CREATE TABLE IF NOT EXISTS VMSTATS (
+  id_VMSTATS int(11) NOT NULL AUTO_INCREMENT,
+  id_exec int(11) NOT NULL,
+  host varchar(255) DEFAULT NULL,
+  time int(11) DEFAULT NULL,
+  r decimal(20,3) DEFAULT NULL,
+  b decimal(20,3) DEFAULT NULL,
+  swpd decimal(20,3) DEFAULT NULL,
+  free decimal(20,3) DEFAULT NULL,
+  buff decimal(20,3) DEFAULT NULL,
+  cache decimal(20,3) DEFAULT NULL,
+  si decimal(20,3) DEFAULT NULL,
+  so decimal(20,3) DEFAULT NULL,
+  bi decimal(20,3) DEFAULT NULL,
+  bo decimal(20,3) DEFAULT NULL,
   \`in\` decimal(20,3) DEFAULT NULL,
-  \`cs\` decimal(20,3) DEFAULT NULL,
-  \`us\` decimal(20,3) DEFAULT NULL,
-  \`sy\` decimal(20,3) DEFAULT NULL,
-  \`id\` decimal(20,3) DEFAULT NULL,
-  \`wa\` decimal(20,3) DEFAULT NULL,
-  PRIMARY KEY (\`id_VMSTATS\`),
-  UNIQUE KEY \`avoid_duplicates_UNIQUE\` (\`id_exec\`,\`host\`,\`time\`)
+  cs decimal(20,3) DEFAULT NULL,
+  us decimal(20,3) DEFAULT NULL,
+  sy decimal(20,3) DEFAULT NULL,
+  id decimal(20,3) DEFAULT NULL,
+  wa decimal(20,3) DEFAULT NULL,
+  st decimal(20,3) DEFAULT NULL,
+  PRIMARY KEY (id_VMSTATS),
+  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,host,time)
 ) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS \`JOB_status\` (
@@ -919,6 +920,20 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
+CREATE TABLE IF NOT EXISTS AOP4Hadoop (
+  id_AOP4Hadoop int(11) NOT NULL AUTO_INCREMENT,
+  id_exec int(11) NOT NULL,
+  date datetime DEFAULT NULL,
+  mili_secs int(11) DEFAULT NULL,
+  host_name varchar(127) DEFAULT NULL,
+  PID int(11) DEFAULT NULL,
+  moment varchar(127) DEFAULT NULL,
+  event varchar(127) DEFAULT NULL,
+  extra1 varchar(255) DEFAULT NULL,
+  PRIMARY KEY (id_AOP4Hadoop),
+  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event),
+  KEY index2 (id_exec)
+) ENGINE=InnoDB;
 "
 
 ####################################################
@@ -937,6 +952,15 @@ $MYSQL "alter table execs
 
 $MYSQL "alter table execs
  add column  \`valid\` int DEFAULT '1';"
+
+$MYSQL "alter table aloja_logs.VMSTATS
+ add column st decimal(20,3) DEFAULT NULL;"
+
+$MYSQL "alter table aloja_logs.SAR_memory_util
+ add column \`kbdirty\` decimal(20,3) DEFAULT NULL"
+
+$MYSQL "alter table aloja_logs.SAR_net_devices
+ add column \`%ifutil\` decimal(20,3) DEFAULT NULL"
 
 $MYSQL "alter table execs
  modify column  \`valid\` int DEFAULT '1',
@@ -993,6 +1017,9 @@ $MYSQL "alter table execs
 
 $MYSQL "alter table execs
     add column datasize int(11) default NULL;"
+
+$MYSQL "alter table execs
+    modify column datasize bigint default NULL;"
 
 $MYSQL "alter table execs
     add column scale_factor varchar(255) default NULL;"

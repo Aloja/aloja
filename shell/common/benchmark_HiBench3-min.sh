@@ -1,14 +1,12 @@
 CONF_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # All HiBench are the same
-source "$CONF_DIR/benchmark_HiBench3.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/benchmark_HiBench3.sh"
 
 
 benchmark_hibench_config_bayes() {
   export PAGES=24500
   export CLASSES=5
-  export NUM_MAPS=2
-  export NUM_REDS=2
   export NGRAMS=3
 }
 
@@ -29,32 +27,22 @@ benchmark_hibench_config_kmeans() {
 
 benchmark_hibench_config_pagerank() {
   export PAGES=500
-  export NUM_MAPS=4
-  export NUM_REDS=4
   export NUM_ITERATIONS=1
 }
 
 benchmark_hibench_config_sort() {
   export DATASIZE=1000
-  export NUM_MAPS=4
-  export NUM_REDS=4
 }
 
 benchmark_hibench_config_terasort() {
   export DATASIZE=1000
-  export NUM_MAPS=4
-  export NUM_REDS=4
 }
 
 benchmark_hibench_config_wordcount() {
   export DATASIZE=1000
-  export NUM_MAPS=4
-  export NUM_REDS=4
 }
 
 benchmark_hibench_config_hivebench() {
   export USERVISITS=1000000 #1MB-rangings
   export PAGES=120000
-  export NUM_MAPS=1
-  export NUM_REDS=1
 }

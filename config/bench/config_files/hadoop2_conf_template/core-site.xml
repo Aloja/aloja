@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+<property>
+ <name>fs.defaultFS</name>
+ <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020</value>
+</property>
+<property>
+  <name>hadoop.tmp.dir</name>
+  <value>##TMP_DIR##</value>
+</property>
+
+<property>
+  <name>io.file.buffer.size</name>
+  <value>##IO_FILE##</value>
+</property>
+
+</configuration>

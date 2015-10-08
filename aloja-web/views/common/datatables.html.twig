@@ -345,7 +345,7 @@
                     {% if selected == 'Benchmark Executions' %}
                       {"bVisible": false, "aTargets": [ 4, 20 + hideOffset + offset - 1] }
                     {% elseif selected == 'Performance Metrics' %}
-                      {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time')+1 }} ] }
+                      {"bVisible": false, "aTargets": [ 1,{{ getArrayIndex(theaders,'End time') + 1 }} ] }
                     {% endif %}
                 ],
                 "bSortCellsTop": true,

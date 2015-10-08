@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLOutliersController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
@@ -40,7 +47,7 @@ class MLOutliersController extends AbstractController
 				array('current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,
-					'label' => 'Model tu use: ',
+					'label' => 'Model to use: ',
 					'generateChoices' => function() {
 						return array();
 					},

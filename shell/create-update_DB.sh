@@ -1,4 +1,6 @@
-#!/bin/bash
+#!/usr/bin/env bash
+
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/.."
 
 CUR_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 BASE_DIR=$(pwd)
@@ -17,13 +19,13 @@ source "$CUR_DIR/common/import_functions.sh"
 
 logger "Starting ALOJA DB create/update script"
 
-logger "Creating tables, applying alters, updating data..."
+logger "INFO: Creating tables, applying alters, updating data..."
 
-logger "Creating/Updating DB aloja2"
+logger "INFO: Creating/Updating DB aloja2"
 source "$CUR_DIR/common/create_db.sh"
-logger "Creating/Updating DB aloja_ml"
+logger "INFO: Creating/Updating DB aloja_ml"
 source "$CUR_DIR/common/create_mlschema.sh"
-logger "Regenerating presets"
+logger "INFO: Regenerating presets"
 source "$CUR_DIR/common/create_presets_schema.sh"
 
 logger "Updating aloja2.clusters  and hosts"
@@ -45,9 +47,9 @@ done
 
 #update filters in the whole DB (slow)
 if [ "$DONT_UPDATE_FILTERS" ] ; then
-  logger "Skipping updating filters for the whole DB to save time or for vagrant VM"
+  logger "INFO: Skipping updating filters for the whole DB to save time or for vagrant VM"
 else
-  logger "Updating VALID and FILTER fields (probably will take a while...)"
+  logger "INFO: Updating VALID and FILTER fields (probably will take a while...)"
   $MYSQL "$(get_filter_sql)"
 fi
 

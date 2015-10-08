@@ -294,6 +294,39 @@ cache_get() {
 # $1 file path
 save_env() {
   local path="$1"
-  # save all exept for passwords
+  # save all exept for passwords andd SHS info
   ( set -o posix ; set ) | grep -i -v "password" | grep -i -v "SSH" > "$path"
+}
+
+# Function to dynamically construct function names
+# $1 function name to try to call
+# $2 severy of error in case function doesn't exists (optional) (INFO, ERROR, etc)
+function_call() {
+  local function_name="$1"
+  local severity="$2"
+
+  #check if function exists and call it
+  if type "$function_name" &>/dev/null ; then
+    eval "$function_name"
+  # doesnt exists, now what...
+  else
+    if [ "$severity" ] ; then
+      if [ "$severity" == "ERROR" ] ; then
+        die "Function $function_name does not exists"
+      else
+        logger "${severity}: Function name $function_name is not defined or not necessary"
+      fi
+    else
+      logger "DEBUG: Function name $function_name is not defined or not necessary"
+    fi
+  fi
+}
+
+# Checks if the command has been run inside the vagrant VM
+inside_vagrant() {
+  if [ -d  "/vagrant" ] ; then
+    return 0
+  else
+    return 1
+  fi
 }

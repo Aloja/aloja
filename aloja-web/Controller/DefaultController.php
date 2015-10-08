@@ -15,9 +15,8 @@ class DefaultController extends AbstractController
 
     public function publicationsAction()
     {
-        echo $this->container->getTwig()->render('defaultViews/publications.html.twig', array(
-            'selected' => 'Publications',
-            'title' => 'ALOJA Publications and Slides'));
+        return $this->render('defaultViews/publications.html.twig', array(
+              'title' => 'ALOJA Publications and Slides'));
     }
 
     public function teamAction()

@@ -35,6 +35,8 @@ vm_check_create() {
 #requires $vm_name and $type to be set
 vm_create_node() {
 
+  local needSshPw=$1
+
   if [ "$defaultProvider" == "hdinsight" ]; then
     vm_name="$clusterName"
     status=$(hdi_cluster_check_create "$clusterName")
@@ -55,9 +57,9 @@ vm_create_node() {
     #boostrap and provision VM with base packages in parallel
 
     if [ -z "$noParallelProvision" ] && [ "$type" != "node" ] ; then
-      vm_provision & #in parallel
+      vm_provision $needSshPw & #in parallel
     else
-      vm_provision
+      vm_provision $needSshPw
     fi
 
   elif [ "$vmType" == 'windows' ] ; then
@@ -90,12 +92,19 @@ vm_create_connect() {
   fi
 
   [ ! -z "$endpoints" ] && vm_endpoints_create
+
+}
+
+# by default we install ganglia
+must_install_ganglia(){
+  echo 1
 }
 
 #requires $vm_name and $type to be set
 #$1 use password
 vm_provision() {
   vm_initial_bootstrap
+
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
   needPasswordPre=
 
@@ -104,13 +113,28 @@ vm_provision() {
   else
     vm_set_ssh
   fi
-  vm_install_base_packages
 
   if [ -z "$noSudo" ] ; then
+
+    vm_install_base_packages
+
+    if [ "$type" == "cluster" ] ; then
+      [ "$(must_install_ganglia)" = "1" ] && install_ganglia_gmond
+      config_ganglia_gmond "$clusterName"
+    fi
+
     vm_initialize_disks #cluster is in parallel later
     vm_mount_disks
   else
-    logger "WARNING: Not mounting disk, sudo is not present or disabled for VM $vm_name"
+    logger "WARNING: Skipping package installation and disk mount due to sudo not being present or disabled for VM $vm_name"
+
+    # if running on master node, check if performance monitors are available
+    # and if not, install them under ~/share
+    if [ "$type" = "cluster" ] && [ "$vm_name" = "$(get_master_name)" ]; then
+      if ! vm_check_install_perfmon; then
+        logger "WARNING: Performance monitor tools not installed and we were unable to install them on $vm_name"
+      fi
+    fi
   fi
 
   vm_set_dot_files &
@@ -124,7 +148,7 @@ vm_provision() {
 
   logger "Provisioning for VM $vm_name ready, finalizing deployment"
   #check if extra commands are specified once VMs are provisioned
-  vm_finalize &
+  vm_finalize
 }
 
 vm_finalize() {
@@ -134,11 +158,137 @@ vm_finalize() {
 
   #extra commands to exectute (if defined)
   [ ! -z "$extraLocalCommands" ] && eval $extraLocalCommands #eval is to support multiple commands
-  [ ! -z "$extraCommands" ] && vm_execute "$extraCommands"
+  [ ! -z "$extraRemoteCommands" ] && vm_execute "$extraRemoteCommands"
   [ ! -z "$extraPackages" ] && vm_install_extra_packages
 
   [ ! -z "$puppet" ] && vm_puppet_apply
 }
+
+
+# Here we have no root access; check whether performance monitor tools
+# are available and if not, try to download and build them
+
+vm_check_install_perfmon(){
+  logger "Checking whether performance monitor tools are available on $vm_name"
+
+  local ret=0
+
+  # add new tools here
+  for tool in dsh sar; do
+    if ! vm_is_available "$tool"; then
+      logger "WARNING: Trying to build tool '$tool' on $vm_name"
+      vm_build_${tool}
+      ok=$?
+      if [ $ok -ne 0 ] || ! vm_is_available "$tool"; then
+        logger "WARNING: cannot build tool $tool on $vm_name"
+        ret=1
+      fi
+    fi
+  done
+
+  return ${ret}
+}
+
+vm_is_available(){
+  local cmd
+  local tool=$1
+  cmd=$(vm_execute "command -v '${tool}'")
+  if [[ "${cmd}" =~ /${tool}$  ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
+vm_build_dsh(){
+
+  vm_execute "
+
+# download and build dsh for local use
+
+mkdir -p \$HOME/share/build || exit 1
+cd \$HOME/share/build || exit 1
+
+# target dir
+mkdir -p \$HOME/share/sw/bin || exit 1
+
+tarball1=libdshconfig-0.20.13.tar.gz
+tarball2=dsh-0.25.9.tar.gz
+dir1=\${tarball1%.tar.gz}
+dir2=\${tarball2%.tar.gz}
+
+wget -nv \"http://www.netfort.gr.jp/~dancer/software/downloads/\${tarball1}\" || exit 1
+wget -nv \"http://www.netfort.gr.jp/~dancer/software/downloads/\${tarball2}\" || exit 1
+
+rm -rf -- \"\${dir1}\" \"\${dir2}\" || exit 1
+
+# first, build the library
+{ tar -xf \"\${tarball1}\" && rm \"\${tarball1}\"; } || exit 1
+
+cd \"\${dir1}\" || exit 1
+
+./configure --prefix=\$HOME/share/sw || exit 1
+make || exit 1
+make install || exit 1
+
+# now build dsh telling it where the library is
+
+cd \$HOME/share/build || exit 1
+{ tar -xf \"\${tarball2}\" && rm \"\${tarball2}\"; } || exit 1
+cd \"\${dir2}\" || exit 1
+
+CFLAGS=\"-I\${HOME}/share/sw/include\" LDFLAGS=\"-L\${HOME}/share/sw/lib\" ./configure --prefix=\$HOME/share/sw || exit 1
+CFLAGS=\"-I\${HOME}/share/sw/include\" LDFLAGS=\"-L\${HOME}/share/sw/lib\" make || exit 1
+make install || exit 1
+
+# we know that \$HOME/sw/bin is in our path because the deployment configures it
+
+mv \$HOME/share/sw/bin/{dsh,dsh.bin}
+
+# install wrapper to not depend on config file
+
+echo \"
+#!/bin/bash
+
+\$HOME/share/sw/bin/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
+\" > \$HOME/share/sw/bin/dsh || exit 1
+
+chmod +x \$HOME/share/sw/bin/dsh || exit 1
+"
+
+}
+
+vm_build_sar(){
+
+  vm_execute "
+
+# download and build sysstat for local use
+
+mkdir -p \$HOME/share/build || exit 1
+cd \$HOME/share/build || exit 1
+
+tarball=sysstat-10.2.1.tar.bz2
+dir=\${tarball%.tar.bz2}
+
+wget -nv \"http://pagesperso-orange.fr/sebastien.godard/\${tarball}\" || exit 1
+
+rm -rf -- \"\${dir}\" || exit 1
+
+{ tar -xf \"\${tarball}\" && rm \"\${tarball}\"; } || exit 1
+cd \"\${dir}\" || exit 1
+
+./configure || exit 1
+make || exit 1
+
+# we know that \$HOME/sw/bin is in our path because the deployment configures it
+
+mkdir -p \$HOME/share/sw/bin || exit 1
+cp sar \$HOME/share/sw/bin || exit 1
+
+"
+
+}
+
 
 get_node_names() {
   local node_names=''
@@ -212,7 +362,7 @@ get_ssh_port() {
   if [ "$vm_ssh_port_tmp" ] ; then
     echo "$vm_ssh_port_tmp"
   else
-    die "EEROR: cannot get SSH port for VM $vm_name"
+    die "ERROR: cannot get SSH port for VM $vm_name"
   fi
 }
 
@@ -245,20 +395,11 @@ check_sudo() {
   fi
 }
 
-check_sshpass() {
-  if ! which sshpass > /dev/null; then
-    logger "WARNING: sshpass is not installed, attempting install for Debian based systems"
-    sudo apt-get install -y sshpass
-    if ! which sshpass > /dev/null; then
-      logger "ERROR: sshpass could not be installed or not found"
-      exit 1
-    fi
-  fi
-}
-
 #$1 commands to execute $2 set in parallel (&) $3 use password
 #$vm_ssh_port must be set before
 vm_execute() {
+
+  local sshpass=files/sshpass.sh
 
   set_shh_proxy
 
@@ -281,12 +422,11 @@ vm_execute() {
     #chmod 0644 $(get_ssh_key)
   #Use password
   else
-    check_sshpass
     if [ -z "$2" ] ; then
-      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+      echo "$1" | "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
       result=$?
     else
-      echo "$1" |sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
+      echo "$1" | "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" &
       result=$?
     fi
   fi
@@ -305,6 +445,7 @@ set_shh_proxy() {
 #interactive ssh, $1 use password
 vm_connect() {
 
+  local sshpass=files/sshpass.sh
   set_shh_proxy
 
   local sshOptions="-o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3"
@@ -322,15 +463,15 @@ vm_connect() {
     #chmod 0644 $(get_ssh_key)
   #Use password
   else
-    check_sshpass
     logger "Connecting to VM $vm_name (using PASS), with details: ssh  $(eval echo "$sshOptions") -o '$proxyDetails' $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
-    sshpass -p "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
+    "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" -t "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)"
   fi
 }
 
 #$1 source files $2 destination $3 extra options $4 use password
 vm_local_scp() {
 
+  local sshpass=files/sshpass.sh
   local src="$1"
 
   logger "SCPing files"
@@ -343,10 +484,8 @@ vm_local_scp() {
     scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
-   logger "password"
-    check_sshpass
-
-    sshpass -p "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+    logger "password"
+    "$sshpass" "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
 
@@ -631,12 +770,15 @@ vm_set_ssh() {
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
                echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
 
+    # Install extra pub keys for login if defined
+    [ "$extraPublicKeys" ] && vm_execute "echo -e '${extraPublicKeys}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+
     vm_update_template "$homePrefixAloja/$userAloja/.ssh/config" "$(get_ssh_config)" ""
 
     vm_local_scp "$ALOJA_SSH_COPY_KEYS" "$homePrefixAloja/$userAloja/.ssh/" "" "$use_password"
     vm_execute "chmod -R 0600 $homePrefixAloja/$userAloja/.ssh/*;" "" "$use_password"
 
-    test_set_ssh="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
+    local test_action="$(vm_execute "grep 'UserKnownHostsFile' $homePrefixAloja/$userAloja/.ssh/config && ls $homePrefixAloja/$userAloja/.ssh/id_rsa && echo '$testKey'")"
     #logger "TEST SSH $test_set_ssh"
 
     if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -718,7 +860,8 @@ vm_set_dot_files() {
     vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
-alias s='dsh -g s -M -c'" ""
+alias s='dsh -g s -M -c'
+export PATH=\$HOME/share/sw/bin:\$PATH" ""
 
     vm_update_template "$homePrefixAloja/$userAloja/.screenrc" "
 defscrollback 99999
@@ -1059,25 +1202,26 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../config ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
   vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
-  vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
+  #vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 
-  logger "Checking if aplic exits to redownload or rsync for changes"
-  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
-  #in case we get a welcome banner we need to grep
-  test_action="$(echo -e "$test_action"|grep "$testKey")"
-
-  if [ -z "$test_action" ] ; then
-    logger "Downloading aplic"
-    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
-
-    logger "Uncompressing aplic"
-    vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
-  fi
-
-  logger "RSynching aplic for possible updates"
-  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
+# Uncomment to sync deprecated aplic dir
+#  logger "Checking if aplic exits to redownload or rsync for changes"
+#  test_action="$(vm_execute "ls $homePrefixAloja/$userAloja/share/aplic/aplic_version && echo '$testKey'")"
+#  #in case we get a welcome banner we need to grep
+#  test_action="$(echo -e "$test_action"|grep "$testKey")"
+#
+#  if [ -z "$test_action" ] ; then
+#    logger "Downloading aplic"
+#    aloja_wget "$ALOJA_PUBLIC_HTTP/aplic.tar.bz2" "$homePrefixAloja/$userAloja/share/aplic.tar.bz2"
+#
+#    logger "Uncompressing aplic"
+#    vm_execute "cd $homePrefixAloja/$userAloja/share; tar -jxf aplic.tar.bz2"
+#  fi
+#
+#  logger "RSynching aplic for possible updates"
+#  vm_rsync "../blobs/aplic" "$homePrefixAloja/$userAloja/share" "--copy-links"
 }
 
 #[$1 share location]

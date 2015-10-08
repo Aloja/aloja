@@ -1,4 +1,4 @@
-# All HiBench are the same
+# All HiBench2 are the same
 source "$ALOJA_REPO_PATH/shell/common/benchmark_HiBench2.sh"
 
 benchmark_hibench_config_bayes() {

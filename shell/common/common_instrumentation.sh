@@ -3,7 +3,7 @@
 instrumentation_set_perms() {
   logger "INFO: Setting permissions for instrumentation's sniffer"
   $DSH "sudo apt-get install -y binutils-dev"
-  $DSH "sudo -n setcap cap_net_raw=eip ${BENCH_DEFAULT_SCRATCH}/aplic/instrumentation/bin/sniffer"
+  $DSH "sudo -n setcap cap_net_raw=eip ${BENCH_LOCAL_DIR}/aplic/instrumentation/bin/sniffer"
 }
 
 stop_sniffer(){
@@ -16,8 +16,8 @@ instrumentation_post_process() {
 
   # Emulate vars.sh from instrumentation project setting the required environment variables
   local EXTRAE_DIR="${HDD}/traces"
-  local BIN_DIR="${BENCH_DEFAULT_SCRATCH}/aplic/instrumentation/bin"
-  local LIB_DIR="${BENCH_DEFAULT_SCRATCH}/aplic/instrumentation/lib"
+  local BIN_DIR="${BENCH_LOCAL_DIR}/aplic/instrumentation/bin"
+  local LIB_DIR="${BENCH_LOCAL_DIR}/aplic/instrumentation/lib"
   local JAVA="${JAVA_HOME}/bin/java"
   # Has to be an export because Undef2prv has to read it
   export TRACES_OUTPUT="${JOB_PATH}/traces"

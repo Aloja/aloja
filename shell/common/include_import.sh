@@ -21,15 +21,16 @@ configFolderPath="$CONF_DIR/../conf"
 [ ! -f "$configFolderPath/$clusterConfigFile" ] && { logger "$configFolderPath/$clusterConfigFile is not a file." ; exit 1;}
 
 #load cluster or node config
-source "$configFolderPath/$clusterConfigFile"
+source_file "$configFolderPath/$clusterConfigFile"
 
 
 logger "Starting ALOJA import2db tool"
 
 #4) Load the common cluster functions
 
-source "$CONF_DIR/cluster_functions.sh"
-
+source_file "$ALOJA_REPO_PATH/shell/common/cluster_functions.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 
 
 #Check if to use a special version of sar or the system one
