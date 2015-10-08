@@ -286,9 +286,9 @@ validate() {
 
   if [ "$clusterType" != "PaaS" ]; then
     # Check whether we are in the right cluster
-#    if ! test_in_cluster "$(hostname)" ; then
-#      die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
-#    fi
+    if [ "${checkClusterMembership}" = "1" ] && ! test_in_cluster "$(hostname)" ; then
+      die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
+    fi
 
     if ! inList "$CLUSTER_NETS" "$NET" ; then
       die "Disk type $NET not supported for $clusterName\nSupported: $NET"
