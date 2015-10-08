@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLDataCollapseController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	/* This function is half 'Shut Down' until some re-logics are done */
 	public function mldatacollapseAction()
 	{

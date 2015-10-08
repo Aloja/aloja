@@ -247,38 +247,12 @@
 				    $("#showFilters").text('Show filters');
 			});
 		});
+
 		$(".datepicker").each(function() {
 			$(this).datepicker({
 				autoclose: true,
 				format: 'yyyy/mm/dd'
 			});
-		});
-
-		$("form[name='configFilters'] input").change(function() {
-			if($(this).attr('name') != 'execsfilters[]') {
-				if($(this).val() == "None") {
-					if($(this).attr('checked')) {
-						$(this).parent().find('input').each(function() {
-							if($(this).val() != "None")
-								$(this).removeAttr('checked');
-						});
-					} else if($(this).parent().find('input:checked').length == 0)
-						$(this).attr('checked');
-					else {
-						$(this).parent().find('input').each(function() {
-							if($(this).val() != "None")
-								$(this).removeAttr('checked');
-						});
-					}
-				}
-
-				if($(this).parent().parent().attr('id') == "advancedFilters") {
-					var length = $(this).parent().find('input:checked').length;
-					if(length > 1) {
-						$(this).parent().find("input[value='None']").removeAttr('checked');
-					}
-				}
-			}
 		});
 
 		$("select[name='presets']").change(function() { 
@@ -311,6 +285,11 @@
 						$("select[name='" + filterName + "']").val(filterValue);
 					}
 				}
+			}
+		});
+		$("form[name='configFilters'] input").change(function() {
+			if($(this).attr('name') != 'presets') {
+				$("select[name='presets']").val("none");
 			}
 		});
 
@@ -359,6 +338,18 @@
 				$(".addgroup.active").each(function() { selected[selected.length] = $(this).attr('value'); });
 
 				$("input[name='selected-groups']").attr('value',selected.join());
+			});
+
+			$("input[name='outlier']").change(function() {
+				if($(this).is(':checked')) {
+					$("input[name='warning']").prop('checked',false);
+				}
+			});
+
+			$("input[name='warning']").change(function() {
+				if($("input[name='outlier']").is(':checked')) {
+					$(this).prop('checked',false);
+				}
 			});
 
 			{% if additionalFilters is defined %}

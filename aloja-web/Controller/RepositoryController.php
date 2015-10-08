@@ -144,7 +144,7 @@ class RepositoryController extends AbstractController
                 $type = 'SUMMARY';
             }
 
-            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters USING (id_cluster) WHERE JOBNAME NOT IN
+            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE JOBNAME NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
@@ -153,11 +153,11 @@ class RepositoryController extends AbstractController
             $join .= " LIMIT 10000";
 
             if ($type == 'SUMMARY') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.JOBNAME as CHARTS
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'MAP') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, JOBID, JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `Launched map tasks`,
                 `Data-local map tasks`,
                 `Rack-local map tasks`,
@@ -169,7 +169,7 @@ class RepositoryController extends AbstractController
                 `Map output materialized bytes`
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'REDUCE') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
                 `Launched reduce tasks`,
                 `Reduce input groups`,
@@ -180,7 +180,7 @@ class RepositoryController extends AbstractController
                 `Combine output records`
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'FILE-IO') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOBID, c.JOBNAME, c.SUBMIT_TIME, c.LAUNCH_TIME,
                 c.FINISH_TIME,
                 `SLOTS_MILLIS_MAPS`,
                 `SLOTS_MILLIS_REDUCES`,
@@ -193,9 +193,9 @@ class RepositoryController extends AbstractController
                 `Bytes Written`
                 FROM aloja2.JOB_details c $join";
             } elseif ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM aloja2.JOB_details c $join";
+                $query = "SELECT e.bench, e.exe_time, c.* FROM aloja2.JOB_details c $join";
             } elseif ($type == 'TASKS') {
-                $query = "SELECT e.bench, exe_time, j.JOBNAME, c.* FROM aloja_logs.JOB_tasks c
+                $query = "SELECT e.bench, e.exe_time, j.JOBNAME, c.* FROM aloja_logs.JOB_tasks c
                 JOIN aloja2.JOB_details j USING(id_exec, JOBID) $join ";
                 #$taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");
                 #TODO cache this result into a temp table
@@ -274,7 +274,7 @@ class RepositoryController extends AbstractController
                 $type = 'SUMMARY';
             }
 
-            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters USING (id_cluster) WHERE job_name NOT IN
+            $join = "JOIN aloja2.execs e using (id_exec) JOIN aloja2.clusters USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE job_name NOT IN
         ('TeraGen', 'random-text-writer', 'mahout-examples-0.7-job.jar', 'Create pagerank nodes', 'Create pagerank links') $whereClause".
                 ($execs ? ' AND id_exec IN ('.join(',', $execs).') ':'');
             if(isset($_GET['jobid'])) {
@@ -284,11 +284,11 @@ class RepositoryController extends AbstractController
 
             $query = "";
             if ($type == 'SUMMARY') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS
     			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == "MAP") {
-                $query = "SELECT e.bench, exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
     			`RACK_LOCAL_MAPS`,
     			`SPILLED_RECORDS`,
@@ -298,7 +298,7 @@ class RepositoryController extends AbstractController
     			`MAP_OUTPUT_MATERIALIZED_BYTES`
     			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'REDUCE') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
     			`TOTAL_LAUNCHED_REDUCES`,
     			`REDUCE_INPUT_GROUPS`,
@@ -309,7 +309,7 @@ class RepositoryController extends AbstractController
     			`COMBINE_OUTPUT_RECORDS`
     			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'FILE-IO') {
-                $query = "SELECT e.bench, exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
+                $query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME,
     			`SLOTS_MILLIS_MAPS`,
     			`SLOTS_MILLIS_REDUCES`,
@@ -322,9 +322,9 @@ class RepositoryController extends AbstractController
     			`BYTES_WRITTEN`
     			FROM aloja2.HDI_JOB_details c $join";
             } else if ($type == 'DETAIL') {
-                $query = "SELECT e.bench, exe_time, c.* FROM aloja_logs.aloja2 c $join";
+                $query = "SELECT e.bench, e.exe_time, c.* FROM aloja_logs.aloja2 c $join";
             } else if ($type == "TASKS") {
-                $query = "SELECT e.bench, exe_time, j.job_name, c.* FROM aloja_logs.HDI_JOB_tasks c
+                $query = "SELECT e.bench, e.exe_time, j.job_name, c.* FROM aloja_logs.HDI_JOB_tasks c
     			JOIN aloja2.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
 
 //                $taskStatusOptions = $db->get_rows("SELECT DISTINCT TASK_STATUS FROM HDI_JOB_tasks JOIN aloja2.execs USING (id_exec) WHERE valid = 1");

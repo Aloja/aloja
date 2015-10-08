@@ -216,7 +216,20 @@ vm_final_bootstratp() {
 ### cluster functions
 
 cluster_final_boostrap() {
-  : #not necessary for Azure (yet)
+
+  local hosts_fragment
+
+  hosts_fragment=$(
+  cluster_execute 'ip -4 -o addr show' |\
+  awk '/inet 127\.0\.0\.1/{ next; }
+
+  { host = substr($1, 1, length($1) - 1)
+    ip = $5; sub(/\/.*/, "", ip)
+    print ip "  " host
+  }')
+
+  echo "$hosts_fragment"
+
 }
 
 #interactive SSH

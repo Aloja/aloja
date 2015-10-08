@@ -9,6 +9,12 @@ use alojaweb\inc\MLUtils;
 
 class MLCrossvarController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
 
 	public function mlcrossvarAction()
 	{
@@ -645,7 +651,7 @@ class MLCrossvarController extends AbstractController
 				'current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,
-					'label' => 'Model tu use: ',
+					'label' => 'Model to use: ',
 					'generateChoices' => function() {
 						return array();
 					},
@@ -757,10 +763,10 @@ class MLCrossvarController extends AbstractController
 			}
 
 			// Get stuff from the DB
-			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
-				FROM aloja_ml.predictions as p
-				WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
-				GROUP BY p.instance
+			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(e.pred_time) as V3, e.instance
+				FROM aloja_ml.predictions as e
+				WHERE e.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
+				GROUP BY e.instance
 				ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 	  	  	$rows = $db->get_rows($query);
 			if (empty($rows))

@@ -1,0 +1,315 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration xmlns:xi="http://www.w3.org/2001/XInclude">
+
+<!-- map/reduce properties -->
+
+<property>
+  <name>mapred.tasktracker.tasks.sleeptime-before-sigkill</name>
+  <value>250</value>
+  <description>Normally, this is the amount of time before killing
+  processes, and the recommended-default is 5.000 seconds - a value of
+  5000 here.  In this case, we are using it solely to blast tasks before
+  killing them, and killing them very quickly (1/4 second) to guarantee
+  that we do not leave VMs around for later jobs.
+  </description>
+</property>
+
+  <property>
+    <name>mapred.job.tracker.handler.count</name>
+    <value>5</value>
+    <description>
+    The number of server threads for the JobTracker. This should be roughly
+    4% of the number of tasktracker nodes.
+    </description>
+  </property>
+
+  <property>
+    <name>mapred.system.dir</name>
+    <value>/mapred/system</value>
+    <description>No description</description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>mapred.job.tracker</name>
+    <!-- cluster variant -->
+    <value>NAMENODE-1:50300</value>
+    <description>No description</description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>mapred.job.tracker.http.address</name>
+    <!-- cluster variant -->
+    <value>private:50030</value>
+    <description>No description</description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <!-- cluster specific -->
+    <name>mapred.local.dir</name>
+    <value>/data1/hadoop/mapred</value>
+    <description>No description</description>
+    <final>true</final>
+  </property>
+
+  <property>
+  <name>mapreduce.cluster.administrators</name>
+  <value>hadoop</value>
+  </property>
+
+  <property>
+    <name>mapred.reduce.parallel.copies</name>
+    <value>10</value>
+    <description>No description</description>
+  </property>
+
+  <property>
+    <name>mapred.tasktracker.map.tasks.maximum</name>
+    <value>4</value>
+    <description>No description</description>
+  </property>
+
+  <property>
+    <name>mapred.tasktracker.reduce.tasks.maximum</name>
+    <value>4</value>
+    <description>No description</description>
+  </property>
+
+  <property>
+    <name>tasktracker.http.threads</name>
+    <value>50</value>
+  </property>
+
+  <property>
+    <name>mapred.map.tasks.speculative.execution</name>
+    <value>false</value>
+    <description>If true, then multiple instances of some map tasks
+               may be executed in parallel.</description>
+  </property>
+
+  <property>
+    <name>mapred.reduce.tasks.speculative.execution</name>
+    <value>false</value>
+    <description>If true, then multiple instances of some reduce tasks
+               may be executed in parallel.</description>
+  </property>
+
+  <property>
+    <name>mapred.map.output.compression.codec</name>
+    <value>org.apache.hadoop.io.compress.SnappyCodec</value>
+    <description>If the map outputs are compressed, how should they be
+      compressed
+    </description>
+  </property>
+
+<property>
+  <name>mapred.output.compression.type</name>
+  <value>BLOCK</value>
+  <description>If the job outputs are to compressed as SequenceFiles, how should
+               they be compressed? Should be one of NONE, RECORD or BLOCK.
+  </description>
+</property>
+
+
+  <property>
+    <name>mapred.jobtracker.completeuserjobs.maximum</name>
+    <value>0</value>
+  </property>
+
+  <property>
+    <name>mapred.jobtracker.taskScheduler</name>
+    <value>org.apache.hadoop.mapred.CapacityTaskScheduler</value>
+  </property>
+
+  <property>
+    <name>mapred.compress.map.output</name>
+    <value>true</value>
+  </property>
+
+  <property>
+    <name>jetty.connector</name>
+    <value>org.mortbay.jetty.nio.SelectChannelConnector</value>
+    <description>No description</description>
+  </property>
+
+  <property>
+    <name>mapred.child.root.logger</name>
+    <value>INFO,TLA</value>
+  </property>
+
+  <property>
+    <name>mapred.child.java.opts</name>
+    <value>-server -Xmx768m -Djava.net.preferIPv4Stack=true</value>
+
+    <description>No description</description>
+  </property>
+
+  <property>
+    <name>mapred.cluster.map.memory.mb</name>
+    <value>1536</value>
+  </property>
+
+  <property>
+    <name>mapred.cluster.reduce.memory.mb</name>
+    <value>2048</value>
+  </property>
+
+  <property>
+    <name>mapred.job.map.memory.mb</name>
+    <value>1536</value>
+  </property>
+
+  <property>
+    <name>mapred.job.reduce.memory.mb</name>
+    <value>2048</value>
+  </property>
+
+  <property>
+    <name>mapred.cluster.max.map.memory.mb</name>
+    <value>15360</value>
+  </property>
+
+  <property>
+    <name>mapred.cluster.max.reduce.memory.mb</name>
+    <value>15360</value>
+  </property>
+
+<property>
+  <name>mapred.hosts</name>
+  <value>/etc/hadoop/conf/mapred.include</value>
+</property>
+
+<property>
+  <name>mapred.hosts.exclude</name>
+  <value>/etc/hadoop/conf/mapred.exclude</value>
+</property>
+
+<property>
+  <name>mapred.max.tracker.blacklists</name>
+  <value>16</value>
+  <description>
+    if node is reported blacklisted by 16 successful jobs within timeout-window, it will be graylisted
+  </description>
+</property>
+
+<property>
+  <name>mapred.healthChecker.script.path</name>
+  <value>/etc/hadoop/conf/health_check</value>
+</property>
+
+<property>
+  <name>mapred.healthChecker.interval</name>
+  <value>135000</value>
+</property>
+
+<property>
+  <name>mapred.healthChecker.script.timeout</name>
+  <value>60000</value>
+</property>
+
+<property>
+  <name>mapred.job.tracker.persist.jobstatus.active</name>
+  <value>true</value>
+  <description>Indicates if persistency of job status information is
+  active or not.
+  </description>
+</property>
+
+<property>
+  <name>mapred.job.tracker.persist.jobstatus.hours</name>
+  <value>1</value>
+  <description>The number of hours job status information is persisted in DFS.
+    The job status information will be available after it drops of the memory
+    queue and between jobtracker restarts. With a zero value the job status
+    information is not persisted at all in DFS.
+  </description>
+</property>
+
+<property>
+  <name>mapred.job.tracker.persist.jobstatus.dir</name>
+  <value>file:////var/log/hadoop/mapred/jobstatus</value>
+  <description>The directory where the job status information is persisted
+   in a file system to be available after it drops of the memory queue and
+   between jobtracker restarts.
+  </description>
+</property>
+
+<property>
+  <name>mapred.jobtracker.retirejob.check</name>
+  <value>10000</value>
+</property>
+
+<property>
+  <name>mapred.jobtracker.retirejob.interval</name>
+  <value>0</value>
+</property>
+
+<property>
+  <name>mapred.job.tracker.history.completed.location</name>
+  <value>/mapred/history/done</value>
+  <description>No description</description>
+</property>
+
+<property>
+  <name>mapred.task.maxvmem</name>
+  <value></value>
+  <final>true</final>
+   <description>Disable due to bz-3038498</description>
+</property>
+
+<property>
+  <name>mapreduce.fileoutputcommitter.marksuccessfuljobs</name>
+  <value>false</value>
+</property>
+
+  <property>
+    <name>hadoop.job.history.user.location</name>
+    <value>none</value>
+    <final>true</final>
+  </property>
+
+ <property>
+   <name>mapreduce.jobtracker.staging.root.dir</name>
+   <value>/user</value>
+ <description>The Path prefix for where the staging directories should be placed. The next level is always the user's
+   name. It is a path in the default file system.</description>
+ </property>
+
+ <property>
+      <name>mapreduce.tasktracker.group</name>
+      <value>hadoop</value>
+      <description>The group that the task controller uses for accessing the task controller. The mapred user must be a member and users should *not* be members.</description>
+
+ </property>
+
+  <property>
+    <name>mapreduce.jobtracker.split.metainfo.maxsize</name>
+    <value>50000000</value>
+    <final>true</final>
+     <description>If the size of the split metainfo file is larger than this, the JobTracker will fail the job during
+    initialize.
+   </description>
+  </property>
+  <property>
+    <name>mapreduce.history.server.embedded</name>
+    <value>false</value>
+    <description>Should job history server be embedded within Job tracker
+process</description>
+    <final>true</final>
+  </property>
+
+  <property>
+    <name>mapreduce.history.server.http.address</name>
+    <!-- cluster variant -->
+    <value>NAMENODE-1:50030</value>
+    <description>Http address of the history server</description>
+    <final>true</final>
+  </property>
+
+</configuration>

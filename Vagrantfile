@@ -92,8 +92,8 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #default.vm.box = "ubuntu/trusty64"
     #Prebuilt box for ALOJA
     #default.vm.box = "npoggi/aloja-precise64" #Aloja v1 VM on Ubuntu 12.04
-    default.vm.box = "npoggi/aloja-trusty64" #Aloja v2 VM on Ubuntu 14.04
-    #default.vm.box_version = "2.2" #to force upload version
+    default.vm.box = "npoggi/aloja-trusty64" #Aloja v2.x VM on Ubuntu 14.04
+    default.vm.box_version = "2.3" #to force update version
 
     #for Virtualbox (Default)
     default.vm.provider 'virtualbox' do |v|
@@ -101,6 +101,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
 
       v.memory = vm_mem   #change as needed
       v.cpus = vm_cpus    #change as needed
+
+      # Force to use hosts DNS
+      v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     end
 
     # #for Docker (optional, but faster on Linux)
@@ -133,7 +136,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
 
     #use aloja-deploy for provisiong (bash scripts)
-    default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "aloja-web-vagrant"
+    default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "aloja-web-vagrant", :binary => false
 
     #web document root
     #config.vm.synced_folder "./", "/vagrant"
@@ -169,12 +172,14 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.ssh.insert_key = false #relaxed security
 
       #use aloja-deploy for provisiong (bash scripts)
-      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "-n " + nodeName + " vagrant-99"
+      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "-n " + nodeName + " vagrant-99", :binary => false
 
       node.vm.provider "virtualbox" do |v|
         v.name = "vagrant-99-" + num.to_s.rjust(2, '0')
         v.memory = vmRAM #change as needed
         v.cpus = vmCPUS  #change as needed
+        # Force to use hosts DNS
+        v.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
       end
     end
   end

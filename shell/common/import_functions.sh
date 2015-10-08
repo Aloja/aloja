@@ -5,29 +5,340 @@ CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 #CREATE TABLE AND LOAD VALUES FROM CSV FILE
 # $1 TABLE NAME $2 PATH TO CSV FILE $3 DROP THE DB FIRST $4 DELIMITER $5 DB
 insert_DB(){
-
-  echo "Inserting into DB $sar_file TN $1"
+  logger "INFO: Inserting into DB $sar_file TN $1"
 
   if [[ $(head "$2"|wc -l) > 1 ]] ; then
-    echo "Loading $2 into $1"
-head -n3 "$2"
+    logger "DEBUG: Loading $2 into $1"
+    logger "DEBUG: File header:\n$(head -n3 "$2")"
 
-#tx levels READ UNCOMMITTED READ-COMMITTED
+    #tx levels READ UNCOMMITTED READ-COMMITTED
+
     $MYSQL "
     SET time_zone = '+00:00';
-    SET tx_isolation = 'READ-COMMITTED';
-    SET GLOBAL tx_isolation = 'READ-COMMITTED';
+
+# Removed due to needing super permissions
+#    SET tx_isolation = 'READ-COMMITTED';
+#    SET GLOBAL tx_isolation = 'READ-COMMITTED';
 
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
     FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
     IGNORE 1 LINES;"
-    echo -e "Loaded $2 into $1\n"
-
+    logger "DEBUG: Loaded $2 into $1\n"
   else
-    echo "EMPTY CSV FILE FOR $csv_name $(cat $csv_name)"
+    logger "WARNING: empty CSV file $csv_name $(cat $csv_name)"
   fi
 
-  rm $2
+  # Delete the temporary file
+  rm "$2"
+}
+
+# Transition function to be able to import an especific folder
+# $1 folder to import
+# $2 reload caches
+import_from_folder() {
+  local folder="$1"
+  local reload_caches="$2"
+
+  # Remove trailing slash if any
+  [ "${folder:(-1)}" == "/" ] && folder="${folder:0:(-1)}"
+
+  # Test for full or relative path
+  if [ "${folder:0:1}" == "/" ] ; then
+    BASE_DIR="${folder%/*}"
+    folder="${folder##*/}"
+  # if not, check if we have a cluster defined (eg from benchs)
+  elif [ "$clusterName" ] ; then
+    BASE_DIR="$BENCH_SHARE_DIR/jobs_${clusterName}"
+  # use the current path
+  else
+    BASE_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+  fi
+
+  [ ! -d "$BASE_DIR/$folder" ] && die "Cannot find $BASE_DIR/$folder folder. Exit..."
+
+  logger "INFO: Importing data from from $BASE_DIR/$folder"
+
+  INSERT_DB="1" #if to dump CSV into the DB
+  REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+  REDO_UNTARS="" #if to redo the untars for folders that have it
+  PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+  MOVE_TO_DONE="" #if set moves completed folders to DONE
+
+  sadf="/usr/bin/sadf"
+
+  if ! which mysql ; then
+    source "$ALOJA_REPO_PATH/shell/common/install_functions.sh"
+    install_packages "mysql-client" "update"
+  fi
+
+  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
+  MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
+  DB="aloja2"
+  MYSQL_CREATE="sudo mysql $MYSQL_ARGS -e " #do not include DB name in case it doesn't exist yet
+  MYSQL="sudo mysql $MYSQL_ARGS $DB -e "
+
+  # Finally, run the command
+  import_folder "$folder"
+  logger "INFO: clearing unzipped files"
+  delete_untars "$BASE_DIR/$folder"
+
+  [ "$reload_caches" ] && refresh_web_caches "aloja-web"
+
+  # Construct the helper URL
+  if [ "$id_execs" ] ; then
+    for id_exec in ${id_execs[@]} ; do
+      query_string+="&execs[]=$id_exec"
+    done
+    logger "INFO: URL of perf charts http://localhost:8080/perfcharts?${query_string:1}&detail=1"
+  fi
+}
+
+
+# Imports the given folder into ALOJA-WEB
+# TODO old code moved here need refactoring
+# $1 folder to import
+import_folder() {
+  local folder="$1"
+
+  #filter folders by date
+  min_date="20120101"
+  min_time="$(date --utc --date "$min_date" +%s)"
+
+	[ "$folder" ] || die "Empty folder supplied to import_folder()"
+
+  folder_OK="0"
+  cd "$BASE_DIR" #make sure we come back to the starting folder
+  logger "INFO: Iterating folder\t$folder CP: $(pwd)"
+
+  folder_time="$(date --utc --date "${folder:0:8}" +%s)"
+
+  if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
+    logger "INFO: Entering folder\t$folder"
+    cd "$folder"
+
+    #get all executions details
+    exec_params="$(get_exec_params "log_${folder}.log" "$folder")"
+
+    if [[ -z $exec_params ]] ; then
+      logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
+      cd ..
+
+      #move folder to failed dir
+      if [ "$MOVE_TO_DONE" ] ; then
+        delete_untars "$BASE_DIR/$folder"
+        move2done "$folder" "$folder_OK"
+      fi
+
+      continue
+    else
+      logger "DEBUG: Exec params:\n$exec_params"
+    fi
+
+
+    # First untar prep folders (if any). Needed to fill conf parameters table, excluding prep jobs
+    # NOTE: this is for legacy HiBench
+    if ls prep_*.tar.bz2 1> /dev/null 2>&1; then
+      logger "INFO: Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
+      for bzip_file in prep_*.tar.bz2 ; do
+        bench_folder="${bzip_file%%.*}"
+        if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
+          logger "INFO: Untaring $bzip_file"
+          tar -xjf "$bzip_file"
+        fi
+      done
+    else
+      logger "INFO: No prep_* bench folder found (LEGACY)"
+    fi
+
+    for bzip_file in *.tar.bz2 ; do
+      bench_folder="${bzip_file%%.*}"
+
+      #skip conf folders
+      [ "$bench_folder" == "host_conf" ] && continue
+
+      if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
+        logger "INFO: Untaring $bzip_file in $(pwd)"
+        logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
+        tar -xjf "$bzip_file"
+      fi
+
+      if [ -d "$bench_folder" ] ; then
+
+        logger "INFO: Entering $bench_folder"
+        cd "$bench_folder"
+
+        exec="${folder}/${bench_folder}"
+
+        #insert config and get ID_exec
+        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
+
+        if [[  $folder == *_az ]] ; then
+          id_cluster="2"
+        else
+
+          id_cluster="${folder:(-2):2}"
+
+          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+          source $clusterConfigFile
+
+          logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
+
+          #TODO this check wont work for old folders with numeric values at the end, need another strategy
+          #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
+          if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
+            $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
+          else
+            id_cluster="1"
+          fi
+        fi
+
+        if [ "$exec_values" ] ; then
+          folder_OK="$(( folder_OK + 1 ))"
+
+          # Legacy config, taken from folder and log
+          if [ "${name:15:6}" == "_conf_" ]; then
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
+                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
+                  ON DUPLICATE KEY UPDATE
+                    id_cluster=VALUES(id_cluster),
+                    exec=VALUES(exec),
+                    bench=VALUES(bench),
+                    exe_time=VALUES(exe_time),
+                    start_time=VALUES(start_time),
+                    end_time=VALUES(end_time),
+                    net=VALUES(net),
+                    disk=VALUES(disk),
+                    bench_type=VALUES(bench_type),
+                    maps=VALUES(maps),
+                    iosf=VALUES(iosf),
+                    replication=VALUES(replication),
+                    iofilebuf=VALUES(iofilebuf),
+                    comp=VALUES(comp),
+                    blk_size=VALUES(blk_size),
+                    zabbix_link=VALUES(zabbix_link),
+                    hadoop_version=VALUES(hadoop_version),
+                    exec_type=VALUES(exec_type);"
+          # New style, with more db fields
+          else
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor)
+                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
+                  ON DUPLICATE KEY UPDATE
+                    id_cluster=VALUES(id_cluster),
+                    exec=VALUES(exec),
+                    bench=VALUES(bench),
+                    exe_time=VALUES(exe_time),
+                    start_time=VALUES(start_time),
+                    end_time=VALUES(end_time),
+                    net=VALUES(net),
+                    disk=VALUES(disk),
+                    bench_type=VALUES(bench_type),
+                    maps=VALUES(maps),
+                    iosf=VALUES(iosf),
+                    replication=VALUES(replication),
+                    iofilebuf=VALUES(iofilebuf),
+                    comp=VALUES(comp),
+                    blk_size=VALUES(blk_size),
+                    zabbix_link=VALUES(zabbix_link),
+                    hadoop_version=VALUES(hadoop_version),
+                    exec_type=VALUES(exec_type),
+                    datasize=VALUES(datasize),
+                    scale_factor=VALUES(scale_factor);"
+          fi
+
+          #logger "DEBUG: $insert"
+          $MYSQL "$insert"
+
+          if [ "$hadoop_major_version" == "2" ]; then
+              if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
+                get_xml_exec_params "mr-history"
+              else
+                get_xml_exec_params "history"
+              fi
+            update="UPDATE aloja2.execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
+            logger "DEBUG: updating exec params from execution conf: $update"
+            $MYSQL "$update"
+          fi
+
+        # An example of how to imput values to de DB in another way
+        elif [ "$bench_folder" == "SCWC" ] ; then
+          logger "DEBUG: Processing SCWC"
+
+          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+                  ;"
+                  #ON DUPLICATE KEY UPDATE
+                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
+                  #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
+          logger "INFO: $insert"
+
+          $MYSQL "$insert"
+
+        else
+          logger "ERROR: cannot find bench $bench_folder execution details in log"
+          #continue
+        fi
+
+        #get Job XML configuration if needed
+        #get_job_confs
+
+        # Get the DB id for the exec
+        id_exec="$(get_id_exec "$exec")"
+
+        # Save the different id_execs to construc the URL at the end
+        id_execs+=("$id_exec")
+
+        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
+
+        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
+
+          #if dir does not exists or need to insert in DB
+          if [ "$hadoop_major_version" != "2" ]; then
+        if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
+        extract_hadoop_jobs
+        fi
+          fi
+
+          #DB inserting scripts
+          if [ "$INSERT_DB" == "1" ] ; then
+            #start with Hadoop's
+            if [ "$hadoop_major_version" != "2" ]; then
+             import_hadoop_jobs
+            else
+              extract_import_hadoop2_jobs
+            fi
+            import_AOP4Hadoop_files
+            wait
+            import_sar_files
+            wait
+            import_vmstats_files
+            wait
+            import_bwm_files
+            wait
+          fi
+        fi
+        cd ..; logger "INFO: Leaving folder $bench_folder\n"
+
+        #update DB filters
+        logger "INFO: checking if run was valid"
+        #logger "DEBUG: $(get_filter_sql_exec "$id_exec")"
+        $MYSQL "$(get_filter_sql_exec "$id_exec")"
+
+      else
+        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
+      fi
+    done #end for bzip file
+    cd ..; logger "INFO: Leaving folder $folder\n"
+
+    if [ "$MOVE_TO_DONE" ] ; then
+      delete_untars "$BASE_DIR/$folder"
+      move2done "$folder" "$folder_OK"
+    fi
+
+  else
+    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
+    [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
+  fi
+
 }
 
 
@@ -83,11 +394,11 @@ move2done() {
     mkdir -p "$BASE_DIR/DONE"
     mkdir -p $BASE_DIR/FAIL/{0..3}
     if (( "$2" >= 3 )) ; then
-      logger "OK=$2 Moving folder $1 to DONE"
+      logger "DEBUG: OK=$2 Moving folder $1 to DONE"
       cp -ru "$BASE_DIR/$1" "$BASE_DIR/DONE/"
       rm -rf "$BASE_DIR/$1"
     else
-      logger "OK=$2 Moving $1 to FAIL/$2 for manual check"
+      logger "DEBUG: OK=$2 Moving $1 to FAIL/$2 for manual check"
       cp -ru "$BASE_DIR/$1" "$BASE_DIR/FAIL/$2/"
       rm -rf "$BASE_DIR/$1"
     fi
@@ -101,14 +412,14 @@ get_filter_sql() {
 #filter, execs that don't have any Hadoop details
 
 update ignore aloja2.execs SET filter = 0;
-update ignore aloja2.execs SET filter = 1 where bench like 'HiBench%' AND id_exec  NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null);
+update ignore aloja2.execs SET filter = 1 where (bench like 'HiBench%' OR bench = 'Hadoop-Examples') AND id_exec  NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec is not null);
 
 #perf_detail, aloja2.execs without perf counters
 
 update ignore aloja2.execs SET perf_details = 0;
 update ignore aloja2.execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec is not null);
 
-#valid, set everything as valid, exept the ones that do not match the following rules
+#valid, set everything as valid, except the ones that do not match the following rules
 update ignore aloja2.execs SET valid = 1;
 update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
@@ -116,24 +427,14 @@ update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench 
     tmp_table
 );
 
-update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
-
-
-#azure VMs
-update ignore aloja2.clusters  SET vm_size='A3' where vm_size IN ('large', 'Large');
-update ignore aloja2.clusters  SET vm_size='A2' where vm_size IN ('medium', 'Medium');
-update ignore aloja2.clusters  SET vm_size='A4' where vm_size IN ('extralarge', 'Extralarge');
-update ignore aloja2.clusters  SET vm_size='D4' where vm_size IN ('Standard_D4');
+update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE  e2.bench NOT LIKE 'prep%' and e2.bench NOT IN ('teragen','randomtextwriter') GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE  suma < 1;
 
 ##HDInsight filters
 update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 0 where type != 'PaaS' AND exec LIKE '%hdi%';
 update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set valid = 1, filter = 0 where provider = 'hdinsight';
 update ignore aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time < 700 OR id_cluster =25 AND YEAR(start_time) = '2014';
-update ignore aloja2.execs set id_cluster=25 where exec like '%alojahdi32%' AND YEAR(start_time) = '2014';
 update ignore aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench='wordcount' and exe_time>5000 AND YEAR(start_time) = '2014';
-update ignore aloja2.execs set bench_type = 'HiBench-1TB' where id_cluster IN (20,23,24,25) AND exe_time > 10000 AND bench = 'terasort' AND YEAR(start_time) = '2014';
 update ignore aloja2.execs set valid=0 where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND bench = 'terasort' AND exe_time > 5000 AND YEAR(start_time) = '2014';
-update ignore aloja2.execs set bench_type = 'HiBench' where id_cluster IN (20,23,24,25) AND bench_type = 'HDI' AND YEAR(start_time) = '2014';
 
 update ignore aloja2.execs set filter = 1 where id_cluster = 24 AND bench = 'terasort' AND exe_time > 900 AND YEAR(start_time) = '2014';
 
@@ -141,33 +442,11 @@ update ignore aloja2.execs set filter = 1 where id_cluster = 23 AND bench = 'ter
 
 update ignore aloja2.execs set filter = 1 where id_cluster = 20 AND bench = 'terasort' AND exe_time > 2300 AND YEAR(start_time) = '2014';
 
-update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'experimental' where exec_type = 'default' and vm_OS = 'linux' and comp != 0 and provider = 'hdinsight' and start_time < '2015-05-22';
-update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set exec_type = 'default' where exec_type != 'default' and vm_OS = 'linux' and comp = 0 and provider = 'hdinsight' and start_time < '2015-05-22';
-update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'RR1' where disk != 'RR1' and provider = 'hdinsight' and start_time < '2015-05-22';
 update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set filter = 1 where type = 'PaaS' and provider = 'hdinsight' and exe_time < 100;
 update ignore aloja2.execs set filter = 1 where bench IN ('prep_terasort-t','terasort-t','prep_wordcount,terasort','wordcount,terasort');
 
 #Wrong imports filter
-update ignore aloja2.execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL) and valid = 1 and filter = 0;
-
-##Datasize and scale factor
-update ignore aloja2.execs set datasize = NULL;
-update ignore aloja2.execs set scale_factor = 'N/A';
-
-update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_READ where c.type != 'PaaS' and bench != 'terasort';
-update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_READ where c.type = 'PaaS' and bench != 'terasort';
-
-update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_WRITTEN where c.type != 'PaaS' and bench = 'terasort';
-update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_WRITTEN where c.type = 'PaaS' and bench = 'terasort';
-
-update ignore aloja2.execs e set e.scale_factor = '32GB/Dn' where e.bench='wordcount' and e.bench_type LIKE 'HiBench%';
-
-update ignore aloja2.execs e set e.scale_factor='24GB/Dn' where e.bench='sort' and e.bench_type LIKE 'HiBench%';
-
-#Change bench suite names
-update ignore aloja2.execs set bench_type = 'HiBench' where bench_type LIKE 'HiBench-%';
-update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = 'HiBench3' where bench_type LIKE 'HiBench3-%' OR (bench_type = 'HiBench3HDI' AND vm_OS = 'linux');
-update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = 'MapReduce-Examples' where bench_type = 'HiBench3HDI' AND vm_OS = 'windows';
+update ignore aloja2.execs set filter = 1 where (iosf IS NULL or iosf=0 or iofilebuf IS NULL or iofilebuf=0 OR blk_size IS NULL or iofilebuf = 0 OR replication IS NULL or replication = 0 or comp IS NULL or maps = 0 or maps IS NULL) and valid = 1 and filter = 0;
 "
 
 #update ignore aloja2.execs SET valid = 1 where bench_type = 'HiBench' and bench = 'sort' and id_exec IN (
@@ -187,15 +466,15 @@ get_filter_sql_exec() {
 
 #filter, execs that don't have any Hadoop details
 
-update ignore aloja2.execs SET filter = 0 where id_exec = '$1' AND bench like 'HiBench%';
-update ignore aloja2.execs SET filter = 1 where id_exec = '$1' AND bench like 'HiBench%' AND id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec = '$1' AND id_exec is not null);
+update ignore aloja2.execs SET filter = 0 where id_exec = '$1' AND (bench like 'HiBench%' OR bench = 'Hadoop-Examples') ;
+update ignore aloja2.execs SET filter = 1 where id_exec = '$1' AND (bench like 'HiBench%' OR bench = 'Hadoop-Examples') AND id_exec NOT IN(select distinct (id_exec) FROM aloja_logs.JOB_status where id_exec = '$1' AND id_exec is not null);
 
 #perf_detail, aloja2.execs without perf counters
 
 update ignore aloja2.execs SET perf_details = 0 where id_exec = '$1';
 update ignore aloja2.execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec = '$1' AND id_exec is not null);
 
-#valid, set everything as valid, exept the ones that do not match the following rules
+#valid, set everything as valid, except the ones that do not match the following rules
 update ignore aloja2.execs SET valid = 1 where id_exec = '$1' ;
 update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
@@ -203,7 +482,7 @@ update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = '
     tmp_table
 );
 
-update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
+update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' and e2.bench NOT IN ('teragen','randomtextwriter') GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
 
 
 "
@@ -281,7 +560,11 @@ get_exec_params() {
     local end_time=""
     local net=$(extract_config_var "NET")
     local disk=$(extract_config_var "DISK")
-    local bench=$(extract_config_var "BENCH")
+    local bench=$(extract_config_var "BENCH_SUITE")
+
+    # if not found, try previous name
+    [ ! "$bench" ] && local bench=$(extract_config_var "BENCH")
+
     local maps=$(extract_config_var "MAX_MAPS")
     local iosf=$(extract_config_var "IO_FACTOR")
     local replication=$(extract_config_var "REPLICATION")
@@ -289,6 +572,8 @@ get_exec_params() {
     local comp=$(extract_config_var "COMPRESS_TYPE")
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     local exec_type=$(extract_config_var "EXEC_TYPE")
+    local datasize=$(extract_config_var "BENCH_DATA_SIZE")
+    local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
       exec_type="default"
@@ -297,8 +582,10 @@ get_exec_params() {
     blk_size=$((blk_size / 1048576 ))
     local zabbix_link=""
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
+    hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
+
     # Remove "hadoop" string from version: "hadoop2" -> "2"
-    hadoop_version="${hadoop_version//hadoop}"
+    #hadoop_version="${hadoop_version//hadoop}"
 
     # load arrays
     local temp_array
@@ -328,7 +615,7 @@ get_exec_params() {
       end_time="${exec_end[$index]}"
       end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\""
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
     done
 
   fi
@@ -386,7 +673,7 @@ get_job_confs() {
   id_exec_conf_params=""
   get_id_exec_conf_params "$exec"
 
-  logger "Attempting to get XML configuration for ID get_id_exec_conf_params"
+  logger "INFO: Attempting to get XML configuration for ID get_id_exec_conf_params"
   if [[ ! -z "$id_exec_conf_params" ]] ; then
     jobconfs=""
     #get Haddop conf files which are NOT jobs of prep
@@ -404,7 +691,7 @@ get_job_confs() {
       jobconfs=$(grep -v -f file2.tmp file.tmp)
       rm file.tmp file2.tmp
     else
-      logger "Not prep folder, considering all confs belonging to exec"
+      logger "INFO: Not prep folder, considering all confs belonging to exec"
       jobconfs=$(find "./history/done" -type f -name "job*.xml");
     fi
 
@@ -459,7 +746,7 @@ import_hadoop2_jhist() {
 		        ON DUPLICATE KEY UPDATE
 		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
 		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
-    logger "$insert"
+    logger "DEBUG: $insert"
 
 	$MYSQL "$insert"
 
@@ -489,7 +776,7 @@ import_hadoop2_jhist() {
 			insert="INSERT INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 
-			logger "$insert"
+			logger "DEBUG: $insert"
 			$MYSQL "$insert"
 
 			normalStartTime=`expr $taskStartTime - $startTimeTS`
@@ -518,7 +805,7 @@ import_hadoop2_jhist() {
 					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
-			logger "$insert"
+			logger "DEBUG: $insert"
 			$MYSQL "$insert"
 		done
 	fi
@@ -544,7 +831,7 @@ extract_hadoop_jobs() {
   #get the Hadoop job logs
   job_files=$(find "./history" -type f -name "job*"|grep -v ".xml")
 
-  logger "Generating Hadoop Job CSVs for $bench_folder"
+  logger "INFO: Generating Hadoop Job CSVs for $bench_folder"
   rm -rf "hadoop_job"
   mkdir -p "hadoop_job"
 
@@ -553,10 +840,10 @@ extract_hadoop_jobs() {
     job_name="${job_file##*/}"
     job_name="${job_name:0:21}"
 
-    logger "Processing Job $job_name File $job_file"
+    logger "INFO: Processing Job $job_name File $job_file"
 
-    logger "Extrating Job history details for $job_file"
-    python2.7 "$CUR_DIR/job_history.py" -j "hadoop_job/${job_name}.details.csv" -d "hadoop_job/${job_name}.status.csv" -t "hadoop_job/${job_name}.tasks.csv" -i "$job_file"
+    logger "INFO: Extrating Job history details for $job_file"
+    python2.7 "$ALOJA_REPO_PATH/shell/job_history.py" -j "hadoop_job/${job_name}.details.csv" -d "hadoop_job/${job_name}.status.csv" -t "hadoop_job/${job_name}.tasks.csv" -i "$job_file"
 
   done
 }
@@ -567,29 +854,36 @@ import_hadoop_jobs() {
   for csv_file in *.csv ; do
     if [[ $(head $csv_file |wc -l) > 1 ]] ; then
       #get the job name and counter type from csv file name
-      separator_pos=$(echo "$csv_file" | awk '{ print index($1,".")}')
-      job_name="${csv_file:0:$(($separator_pos - 1))}"
-      counter="${csv_file:$separator_pos:-4}"
-      table_name="JOB_${counter}"
-      logger "Inserting into DB $csv_file TN $table_name"
+      local separator_pos=$(echo "$csv_file" | awk '{ print index($1,".")}')
+      local job_name="${csv_file:0:$(($separator_pos - 1))}"
+      local counter="${csv_file:$separator_pos:-4}"
+      local table_name="JOB_${counter}"
+
+      if [[ "$table_name" == "JOB_status" || "$table_name" == "JOB_tasks" ]] ; then
+        table_name="aloja_logs.$table_name"
+      else
+        table_name="aloja2.$table_name"
+      fi
+
+      logger "INFO: Inserting into DB $csv_file TN $table_name"
       #add host and missing data to csv
       awk "NR == 1 {\$1=\"id,id_exec,job_name,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${job_name},\"\$1; print }" "$csv_file" > tmp_${csv_file}.csv
 
       if [ "$PARALLEL_INSERTS" ] ; then
-        insert_DB "${table_name}" "tmp_${csv_file}.csv" "" "," &
+        insert_DB "$table_name" "tmp_${csv_file}.csv" "" "," &
       else
-        insert_DB "${table_name}" "tmp_${csv_file}.csv" "" ","
+        insert_DB "$table_name" "tmp_${csv_file}.csv" "" ","
       fi
 
       local data_OK="1"
     else
-      logger "File $csv_file is INVALID\n$(cat $csv_file)"
+      logger "ERROR: Hadoop file $csv_file is INVALID\n$(cat $csv_file)"
     fi
   done
 
   [ "$data_OK" ] && folder_OK="$(( folder_OK + data_OK ))"
 
-  cd ..; logger "\n"
+  cd ..;
 }
 
 import_sar_files() {
@@ -597,7 +891,7 @@ import_sar_files() {
     if [[ $(head $sar_file |wc -l) > 1 ]] ; then
 
       for table_name in "SAR_cpu" "SAR_io_paging" "SAR_interrupts" "SAR_load" "SAR_memory_util" "SAR_memory" "SAR_swap" "SAR_swap_util" "SAR_switches" "SAR_block_devices" "SAR_net_devices" "SAR_io_rate" "SAR_net_errors" "SAR_net_sockets"; do
-        sar_command=""
+        local sar_command=""
         if [ "$table_name" == "SAR_cpu" ] ; then
           sar_command="-u"
         elif [ "$table_name" == "SAR_io_paging" ] ; then
@@ -629,7 +923,7 @@ import_sar_files() {
         fi
 
         if [ "$sar_command" != "" ] ; then
-          csv_name="$sar_file.$table_name.csv"
+          local csv_name="$sar_file.$table_name.csv"
           $sadf -d "$sar_file" -- $sar_command |\
           sed 's/ UTC//g' | \
           awk "NR == 1 {sub(\"timestamp\", \"date\", \$2); sub(\"hostname\", \"host\", \$2); \
@@ -648,7 +942,7 @@ import_sar_files() {
         fi
       done
     else
-      logger "ERROR: File $sar_file is INVALID"
+      logger "ERROR: sar File $sar_file is INVALID"
     fi
   done
 
@@ -656,12 +950,12 @@ import_sar_files() {
 }
 
 import_vmstats_files() {
-  for vmstats_file in [vmstat-]*.log ; do
+  for vmstats_file in vmstat-*.log ; do
     if [[ $(head $vmstats_file |wc -l) -gt 1 ]] ; then
       #get host name from file name
       hostn="${vmstats_file:7:-4}"
       table_name="VMSTATS"
-      logger "Inserting into DB $vmstats_file TN $table_name"
+      logger "INFO: Inserting into DB $vmstats_file TN $table_name"
 
       tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp_${vmstats_file}.csv
 
@@ -672,19 +966,35 @@ import_vmstats_files() {
       fi
 
     else
-      logger "ERROR: File $vmstats_file is INVALID"
+      logger "DEBUG: vmstats File $vmstats_file is INVALID"
     fi
   done
 }
 
+# Imports log generated by AOP4Hadoop (if any)
+# More info at: https://github.com/Aloja/AOP4Hadoop
+import_AOP4Hadoop_files() {
+  local AOP_file_name="aloja.log"
+  local tmp_file="tmp_${AOP_file_name}.csv"
+
+  if [ -f "$AOP_file_name" ] ; then
+    if [[ $(head $AOP_file_name |wc -l) -gt 1 ]] ; then
+      table_name="AOP4Hadoop"
+      logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
+      awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$3","$4","$5","$6","$7}' "$AOP_file_name" > "$tmp_file"
+      insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
+    fi
+  fi
+}
+
 import_bwm_files() {
-  for bwm_file in [bwm-]*.log ; do
-    if [[ $(head $bwm_file |wc -l) > 1 ]] ; then
+  for bwm_file in bwm-*.log ; do 2> /dev/null
+    if [ -f "$bwm_file" ] && [[ $(head $bwm_file |wc -l) > 1 ]] ; then
       #get host name from file name
       hostn="${bwm_file:4:-4}"
       #there are two formats, 9 and 15 fields
       bwm_format="$(head -n 1 "$bwm_file" |grep -o ';'|wc -l)"
-      logger "BWM format $bwm_format"
+      logger "INFO: BWM format $bwm_format"
       head -n3 "$bwm_file"
       if [[ $bwm_format -gt 9 ]] ; then
         table_name="BWM2"
@@ -694,7 +1004,7 @@ import_bwm_files() {
         cat "$bwm_file" | awk "NR == 1 {print \"id;id_exec;host;unix_timestamp;iface_name;bytes_out;bytes_in;bytes_total;packets_out;packets_in;packets_total;errors_out;errors_in\"} NR > 1 {\$1=\"NULL;${id_exec};${hostn};\"\$1; print }" > tmp_${bwm_file}.csv
       fi
 
-      logger "Inserting into DB $bwm_file TN $table_name"
+      logger "INFO: Inserting into DB $bwm_file TN $table_name"
 
       if [ "$PARALLEL_INSERTS" ] ; then
         insert_DB "aloja_logs.${table_name}" "tmp_${bwm_file}.csv" "" ";" &
@@ -703,7 +1013,7 @@ import_bwm_files() {
       fi
 
     else
-      logger "File $bwm_file is INVALID"
+      logger "DEBUG: bwm File $bwm_file is INVALID"
     fi
   done
 }
@@ -718,7 +1028,7 @@ delete_untars() {
       folder_name="${tarball:0:(-8)}"
       #echo "Found $tarball Folder $folder_name"
       if [ -d "$folder_name" ] ; then
-        logger "Deleting $folder_name"
+        logger "INFO: Deleting untarred $folder_name folder"
         rm -rf $folder_name
       fi
     done
@@ -754,4 +1064,52 @@ get_xml_exec_params() {
 	fi
 
 	blocksize=`expr $blocksize / 1000000`
+}
+
+
+# Just opens the specified web for cache generation
+# $1 url
+hit_page() {
+  wget -O /dev/null "$1"
+  #-o /dev/null
+}
+
+# $1 host name
+refresh_web_caches() {
+  local host_name="$1"
+  
+  [ "$host_name" ] || die "No hostname supplied"
+
+  logger "INFO: Re-generating basic caches..."
+  hit_page "http://$host_name/?NO_CACHE=1"
+  hit_page "http://$host_name/benchdata?NO_CACHE=1"
+  hit_page "http://$host_name/counters?NO_CACHE=1"
+  hit_page "http://$host_name/benchexecs?NO_CACHE=1"
+  hit_page "http://$host_name/bestconfig?NO_CACHE=1"
+  hit_page "http://$host_name/configimprovement?NO_CACHE=1"
+  hit_page "http://$host_name/parameval?NO_CACHE=1"
+  hit_page "http://$host_name/costperfeval?NO_CACHE=1"
+  #hit_page "http://$host_name/perfcharts?random=1&NO_CACHE=1"
+  hit_page "http://$host_name/metrics?NO_CACHE=1"
+  hit_page "http://$host_name/metrics?type=MEMORY&NO_CACHE=1"
+  hit_page "http://$host_name/metrics?type=DISK&NO_CACHE=1"
+  hit_page "http://$host_name/metrics?type=NETWORK&NO_CACHE=1"
+  hit_page "http://$host_name/dbscan?NO_CACHE=1"
+  hit_page "http://$host_name/dbscanexecs?NO_CACHE=1"
+
+#  hit_page "http://$host_name/"
+#  hit_page "http://$host_name/benchdata"
+#  hit_page "http://$host_name/counters"
+#  hit_page "http://$host_name/benchexecs"
+#  hit_page "http://$host_name/bestconfig"
+#  hit_page "http://$host_name/configimprovement"
+#  hit_page "http://$host_name/parameval"
+#  hit_page "http://$host_name/costperfeval"
+#  #hit_page "http://$host_name/perfcharts?random=1"
+#  hit_page "http://$host_name/metrics"
+#  hit_page "http://$host_name/metrics?type=MEMORY"
+#  hit_page "http://$host_name/metrics?type=DISK"
+#  hit_page "http://$host_name/metrics?type=NETWORK"
+#  hit_page "http://$host_name/dbscan"
+#  hit_page "http://$host_name/dbscanexecs"
 }

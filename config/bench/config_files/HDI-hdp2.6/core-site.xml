@@ -1,0 +1,135 @@
+<!--Sat Apr  4 10:49:11 2015-->
+    <configuration>
+    
+    <property>
+      <name>fs.azure.account.key.alojahdil4.blob.core.windows.net</name>
+      <value>MIIB/wYJKoZIhvcNAQcDoIIB8DCCAewCAQAxggFfMIIBWwIBADBDMC8xLTArBgNVBAMTJEhESW5zaWdodC5Qcm9kdWN0aW9uLkVuY3J5cHRpb24uQ2VydAIQdKw1vpW+25RMHi6BR8HLVTANBgkqhkiG9w0BAQEFAASCAQBBlj4GmKScRn5UBk1WR+o2yJfxH+TYhVc93gb1hZXedpRWHxKIbKrP5aopEXFDQaDCqfc6iFZFFNrjno+pwDLNW/KvH4KF1pFnTe8E9pVfiLC/u7tmRikerhpSBAZ9QN9TTEmJOARzD0mp0tgehd0IKlbtgeXs8gWJsE6sRTDzqc+Bko4dR9JVHjzsxtwKzyZuO2OhJBhc4zt+GewelYyLMXdLCw68jAIbkzAyHjlsXSsQO3hCFpqBBQ7i3VrsaSsvFrNTdHoe/bTIzalrkT+mb193Vd8RKgWPhemayFHa5VPs5HBDy7g3zx0WmHDG+iHUGxZ6+g+ECg6z16Uu4rwxMIGDBgkqhkiG9w0BBwEwFAYIKoZIhvcNAwcECB6jsSJolgczgGBMcyvKG/QyzRkcRVC5rog2TEJEzhPctYAw10DZ43AIzNpkFjnruoKtZre6GYppuBZENYK0pw4w0cwAQ9tS8uCBL9sldBDlG3rzW1rAHZft4kNUU49kh3DKjWHhd8tq2jA=</value>
+    </property>
+    
+    <property>
+      <name>fs.azure.account.keyprovider.alojahdil4.blob.core.windows.net</name>
+      <value>org.apache.hadoop.fs.azurenative.ShellDecryptionKeyProvider</value>
+    </property>
+    
+    <property>
+      <name>fs.azure.selfthrottling.read.factor</name>
+      <value>1.000000</value>
+    </property>
+    
+    <property>
+      <name>fs.azure.selfthrottling.write.factor</name>
+      <value>1.000000</value>
+    </property>
+    
+    <property>
+      <name>fs.azure.shellkeyprovider.script</name>
+      <value>/usr/lib/python2.7/dist-packages/hdinsight_common/decrypt.sh</value>
+    </property>
+    
+    <property>
+      <name>fs.defaultFS</name>
+      <value>wasb://alojahdil4@alojahdil4.blob.core.windows.net</value>
+      <final>true</final>
+    </property>
+    
+    <property>
+      <name>fs.trash.interval</name>
+      <value>360</value>
+    </property>
+    
+    <property>
+      <name>hadoop.http.authentication.simple.anonymous.allowed</name>
+      <value>true</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hcat.groups</name>
+      <value>users</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hcat.hosts</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hive.groups</name>
+      <value>users</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.hive.hosts</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.oozie.groups</name>
+      <value>users</value>
+    </property>
+    
+    <property>
+      <name>hadoop.proxyuser.oozie.hosts</name>
+      <value>*</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.auth_to_local</name>
+      <value>RULE:[2:$1@$0]([rn]m@.*)s/.*/yarn/
+        RULE:[2:$1@$0](jhs@.*)s/.*/mapred/
+        RULE:[2:$1@$0]([nd]n@.*)s/.*/hdfs/
+        RULE:[2:$1@$0](hm@.*)s/.*/hbase/
+        RULE:[2:$1@$0](rs@.*)s/.*/hbase/
+        DEFAULT</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.authentication</name>
+      <value>simple</value>
+    </property>
+    
+    <property>
+      <name>hadoop.security.authorization</name>
+      <value>false</value>
+    </property>
+    
+    <property>
+      <name>io.compression.codecs</name>
+      <value>org.apache.hadoop.io.compress.GzipCodec,org.apache.hadoop.io.compress.DefaultCodec,org.apache.hadoop.io.compress.SnappyCodec</value>
+    </property>
+    
+    <property>
+      <name>io.file.buffer.size</name>
+      <value>131072</value>
+    </property>
+    
+    <property>
+      <name>io.serializations</name>
+      <value>org.apache.hadoop.io.serializer.WritableSerialization</value>
+    </property>
+    
+    <property>
+      <name>ipc.client.connect.max.retries</name>
+      <value>50</value>
+    </property>
+    
+    <property>
+      <name>ipc.client.connection.maxidletime</name>
+      <value>30000</value>
+    </property>
+    
+    <property>
+      <name>ipc.client.idlethreshold</name>
+      <value>8000</value>
+    </property>
+    
+    <property>
+      <name>ipc.server.tcpnodelay</name>
+      <value>true</value>
+    </property>
+    
+    <property>
+      <name>mapreduce.jobtracker.webinterface.trusted</name>
+      <value>false</value>
+    </property>
+    
+  </configuration>

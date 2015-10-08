@@ -14,6 +14,22 @@ server {
     autoindex on;
   }
 
+  location /slides {
+    alias /var/www/aloja-web/presentations/aloja-web;
+    index template.html;
+  }
+
+  location /ganglia {
+
+    root /var/www/;
+
+    location ~ \.php$ {
+      fastcgi_pass unix:/var/run/php5-fpm.sock;
+      fastcgi_index index.php;
+      include fastcgi_params;
+    }
+  }
+
   location ~ \.php$ {
 #    try_files $uri =404;
     try_files $uri /index.php?c=404&q=$uri&$args;
@@ -69,6 +85,7 @@ opcache.enable=1
 # $3 relaylog_location
 # $4 role (master, slave)
 # $5 server_id
+# ... extra key=value arguments
 
 get_mysqld_conf(){
 
@@ -77,6 +94,8 @@ get_mysqld_conf(){
   local relaylog_location=$3
   local role=$4
   local server_id=$5
+
+  shift 5
 
   if [ "${env}" == "dev" ]; then
     key_buffer_size=64M
@@ -123,9 +142,15 @@ relay_log       = ${relaylog_location}
   if [ "$role" != "master" ]; then
     echo -e "
 read_only = 1
+replicate-ignore-db = mysql
 "
   fi
   
+  echo
+  for p in "$@"; do
+    echo "${p}"
+  done
+  echo
 
   echo -e "
 # Set Base Innodb Specific settings here
@@ -154,6 +179,7 @@ Host *
   GSSAPIAuthentication=no
   ServerAliveInterval=30
   ServerAliveCountMax=3
+  connectTimeout=10
 "
 # Other possible options to test
 #  ControlPersist=600 #this one is causing problems for some reason

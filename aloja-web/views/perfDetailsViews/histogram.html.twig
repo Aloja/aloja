@@ -102,7 +102,7 @@
 			        chart: {
 				        renderTo: 'chart',
 			            type: 'columnrange',
-			            inverted: true,
+			            inverted: true
 			        },
 			        title: {
 			            text: $(metricSel).text()
@@ -144,7 +144,7 @@
 			        },
 					credits: {
 						enabled: false
-					},
+					}
 			    });
 			    chart.xAxis[0].setCategories(categories,false);
 	            chart.addSeries({
@@ -205,7 +205,7 @@
 					group: group.val(),
 					accumulated: ((accumulated)?1:0),
 					divided: ((divided)?1:0),
-					tasks_chart: selected,
+					tasks_chart: selected
 				});
 
 				// Launch ajax request
@@ -217,8 +217,8 @@
 						task_type: task_type.val(),
 						group: group.val(),
 						accumulated: ((accumulated)?1:0),
-						divided: ((divided)?1:0),
-					},
+						divided: ((divided)?1:0)
+					}
 				})
 				.done(function(data) {
 
@@ -255,7 +255,7 @@
 				        xAxis: {
 							type: 'category',
 							labels: {
-							    rotation: -45,
+							    rotation: -45
 							}
 				        },
 				        yAxis: {
@@ -275,11 +275,11 @@
 							column: {
 								groupPadding: 0,
 								pointPadding: 0,
-								borderWidth: 0,
+								borderWidth: 0
 							},
 							series: {
-								turboThreshold: Number.MAX_VALUE,
-							},
+								turboThreshold: Number.MAX_VALUE
+							}
 						},
 				        legend: {
 							enabled: false
@@ -292,7 +292,7 @@
 								{
 									name: $(metricSel).text(),
 									showInLegend: false,
-									data: [],
+									data: []
 								},
 								{
 									name: "Error",
@@ -302,9 +302,9 @@
 									stemWidth: 3,
 									whiskerLength: 0,
 									tooltip: {
-										pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td><td style="padding:0"><b>&plusmn;{point.stddev:.2f} '+sufix+'</b></td></tr>',
+										pointFormat: '<tr><td style="color:{series.color};padding:0">{series.name}: </td><td style="padding:0"><b>&plusmn;{point.stddev:.2f} '+sufix+'</b></td></tr>'
 									},
-									data: [],
+									data: []
 								},
 							]
 				    });

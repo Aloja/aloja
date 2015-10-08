@@ -1,0 +1,279 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+    <!-- file system properties -->
+
+    <property>
+        <name>dfs.name.dir</name>
+        <!-- cluster variant -->
+        <value>/data1/hadoop/hdfs/nn</value>
+        <description>Determines where on the local filesystem the DFS name
+            node
+            should store the name table. If this is a comma-delimited list
+            of directories then the name table is replicated in all of the
+            directories, for redundancy.
+        </description>
+        <final>true</final>
+    </property>
+
+    <property>
+        <name>dfs.webhdfs.enabled</name>
+        <value>true</value>
+        <description>to enable webhdfs</description>
+        <final>true</final>
+    </property>
+
+    <property>
+        <name>dfs.data.dir</name>
+        <value>/data1/hadoop/hdfs/dn</value>
+        <description>Determines where on the local filesystem an DFS data node
+            should store its blocks. If this is a comma-delimited
+            list of directories, then data will be stored in all named
+            directories, typically on different devices.
+            Directories that do not exist are ignored.
+        </description>
+        <final>true</final>
+    </property>
+
+    <property>
+        <name>dfs.hosts.exclude</name>
+        <value>/etc/hadoop/conf/dfs.exclude</value>
+        <description>Names a file that contains a list of hosts that are
+            not permitted to connect to the namenode. The full pathname of the
+            file must be specified. If the value is empty, no hosts are
+            excluded.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.hosts</name>
+        <value>/etc/hadoop/conf/dfs.include</value>
+        <description>Names a file that contains a list of hosts that are
+            permitted to connect to the namenode. The full pathname of the file
+            must be specified. If the value is empty, all hosts are
+            permitted.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.replication.max</name>
+        <value>50</value>
+        <description>Maximal block replication.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.balance.bandwidthPerSec</name>
+        <value>6250000</value>
+        <description>
+            Specifies the maximum amount of bandwidth that each datanode
+            can utilize for the balancing purpose in term of
+            the number of bytes per second.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.datanode.address</name>
+        <value>private:50010</value>
+    </property>
+
+    <property>
+        <name>dfs.datanode.http.address</name>
+        <value>private:50075</value>
+    </property>
+
+    <property>
+        <name>dfs.block.size</name>
+        <value>268435456</value>
+        <description>The default block size for new files.</description>
+    </property>
+
+    <property>
+        <name>dfs.http.address</name>
+        <value>NAMENODE-1:50070</value>
+        <description>The name of the default file system. Either the
+            literal string "local" or a host:port for NDFS.
+        </description>
+        <final>true</final>
+    </property>
+
+    <property>
+        <name>dfs.datanode.du.reserved</name>
+        <!-- cluster variant -->
+        <value>0</value>
+        <description>Reserved space in bytes per volume. Always leave this
+            much space free for non dfs use.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.datanode.ipc.address</name>
+        <value>0.0.0.0:8010</value>
+        <description>
+            The datanode ipc server address and port.
+            If the port is 0 then the server will start on a free port.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.blockreport.initialDelay</name>
+        <value>120</value>
+        <description>Delay for first block report in seconds.</description>
+    </property>
+
+    <property>
+        <name>dfs.datanode.du.pct</name>
+        <value>0.85f</value>
+        <description>When calculating remaining space, only use this
+            percentage of the real available space
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.datanode.handler.count</name>
+        <value>3</value>
+        <description>The number of server threads for the datanode.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.datanode.max.xcievers</name>
+        <value>256</value>
+        <description>PRIVATE CONFIG VARIABLE</description>
+    </property>
+
+    <property>
+      <name>dfs.datanode.drop.cache.behind.reads</name>
+      <value>true</value>
+      <description>
+            In some workloads, the data read from HDFS is known to be significantly
+            large enough that it is unlikely to be useful to cache it in the
+            operating system buffer cache. In this case, the DataNode may be
+            configured to automatically purge all data from the buffer cache
+            after it is delivered to the client. This behavior is automatically
+            disabled for workloads which read only short sections of a block
+            (e.g HBase random-IO workloads).
+
+            This may improve performance for some workloads by freeing buffer
+            cache spage usage for more cacheable data.
+
+            If the Hadoop native libraries are not available, this configuration
+            has no effect.
+      </description>
+    </property>
+
+    <!-- Permissions configuration -->
+
+    <property>
+        <name>dfs.umaskmode</name>
+        <value>077</value>
+        <description>
+            The octal umask used when creating files and directories.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.web.ugi</name>
+        <!-- cluster variant -->
+        <value>pristine, pristine</value>
+        <description>The user account used by the web interface.
+            Syntax: USERNAME,GROUP1,GROUP2, ...
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.permissions.supergroup</name>
+        <value>hdfs</value>
+        <description>The name of the group of super-users.</description>
+    </property>
+
+    <property>
+        <name>dfs.namenode.handler.count</name>
+        <value>5</value>
+        <description>Added to grow Queue size so that more client connections
+            are allowed</description>
+    </property>
+
+    <property>
+        <name>ipc.server.max.response.size</name>
+        <value>5242880</value>
+    </property>
+    <property>
+        <name>dfs.block.access.token.enable</name>
+        <value>true</value>
+        <description>
+            If "true", access tokens are used as capabilities for accessing
+            datanodes.
+            If "false", no access tokens are checked on accessing datanodes.
+        </description>
+    </property>
+
+    <property>
+        <!-- cluster variant -->
+        <name>dfs.secondary.http.address</name>
+        <value>master-2:50090</value>
+        <description>Address of secondary namenode web server</description>
+    </property>
+
+    <property>
+        <name>dfs.secondary.https.port</name>
+        <value>50490</value>
+        <description>The https port where secondary-namenode binds
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.https.port</name>
+        <value>50470</value>
+        <description>The https port where namenode binds</description>
+
+    </property>
+
+    <property>
+        <name>dfs.https.address</name>
+        <value>0.0.0.0:50470</value>
+        <description>The https address where namenode binds</description>
+
+    </property>
+
+    <property>
+        <name>dfs.datanode.data.dir.perm</name>
+        <value>750</value>
+        <description>The permissions that should be there on dfs.data.dir
+            directories. The datanode will not come up if the permissions are
+            different on existing dfs.data.dir directories. If the directories
+            don't exist, they will be created with this permission.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.access.time.precision</name>
+        <value>0</value>
+        <description>The access time for HDFS file is precise upto this value.
+            The default value is 1 hour. Setting a value of 0 disables
+            access times for HDFS.
+        </description>
+    </property>
+
+    <property>
+        <name>dfs.cluster.administrators</name>
+        <value>hadoop</value>
+        <description>ACL for who all can view the default servlets in the HDFS
+        </description>
+    </property>
+
+    <property>
+        <name>ipc.server.read.threadpool.size</name>
+        <value>5</value>
+        <description></description>
+    </property>
+
+    <property>
+        <name>dfs.replication</name>
+        <value>3</value>
+    </property>
+</configuration>

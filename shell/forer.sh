@@ -13,7 +13,7 @@ MAX_MAPS=12
 IO_FACTOR=10
 PORT_PREFIX=3
 IO_FILE=65536
-LIST_BENCHS="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
+BENCH_LIST="wordcount sort terasort kmeans pagerank bayes dfsioe" #nutchindexing hivebench
 
 COMPRESS_GLOBAL=0
 COMPRESS_TYPE=0
@@ -65,11 +65,11 @@ for COMPRESS_TYPE in {0..3}
 do
 for BLOCK_SIZE in "67108864" "33554432" "67108864" "134217728" "268435456" #
 do
-for LIST_BENCHS in  "wordcount" "sort" "dfsioe" "pagerank"  # "terasort" "bayes" "kmeans"
+for BENCH_LIST in  "wordcount" "sort" "dfsioe" "pagerank"  # "terasort" "bayes" "kmeans"
 do
 
   CONF="conf_${NET}_${DISK}_b${BENCH}_m${MAX_MAPS}_i${IO_FACTOR}_r${REPLICATION}_I${IO_FILE}_c${COMPRESS_TYPE}_z$((BLOCK_SIZE / 1048576 ))_${CLUSTER_NAME}"
-  current_command="bash ~/share/shell/run_az_d.sh -C ${CLUSTER_NAME} -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$LIST_BENCHS\";"
+  current_command="bash ~/share/shell/run_az_d.sh -C ${CLUSTER_NAME} -n $NET -d $DISK -r $REPLICATION -m $MAX_MAPS -i $IO_FACTOR -p $PORT_PREFIX -I $IO_FILE -c $COMPRESS_TYPE -z $BLOCK_SIZE $DELETE -l \"$BENCH_LIST\";"
   output="${output}${current_command}
   "
   #date_with_nano=$(date +%s%N | cut -b1-13)
@@ -77,7 +77,7 @@ do
   index=$(printf %08d $current_idx)
 
   #create the file for the queue
-  echo "$current_command" > "$Q_PATH/${index}_${CONF// /_}_${LIST_BENCHS// /_}"
+  echo "$current_command" > "$Q_PATH/${index}_${CONF// /_}_${BENCH_LIST// /_}"
 
   #Set to dont delete HDFS to save time after first exec of disk group
   #DELETE="-N"

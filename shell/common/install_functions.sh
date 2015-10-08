@@ -79,8 +79,8 @@ aloja_wget() {
   local URL="$1"
   local out_file_name="$2"
 
-  local wget_command="wget --progress=dot -e dotbytes=10M $URL"
-  [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
+  local wget_command="wget --progress=dot -e dotbytes=10M '$URL'"
+  [ "$out_file_name" ] && wget_command="$wget_command -O '$out_file_name'"
 
   #make sure we delete the file in case of an error, wget writes an emtpy file
   wget_command="$wget_command || rm $out_file_name"
@@ -141,6 +141,8 @@ vm_install_extra_packages() {
 # $5 role (master, slave, if empty defaults to master)
 # $6 server_id (optional if master, mandatory if slave, defaults to 1 if empty)
 
+# ... extra key=value options
+
 install_percona() {
 
   local bootstrap_file="${FUNCNAME[0]}"
@@ -154,14 +156,10 @@ install_percona() {
   [ "$5" != "" ] && role=$5 || role=master
   [ "$6" != "" ] && server_id=$6 || server_id=1
 
+  shift 6
+
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
-
-    if [ "$1" ] ; then
-      local datadir="datadir=$1"
-    else
-      local datadir=""
-    fi
 
     logger "Installing Percona server"
 
@@ -174,8 +172,8 @@ sudo apt-get autoremove -y;
 sudo mkdir -p /etc/mysql/conf.d;
   "
 
-    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}")
-$datadir" "secured"
+    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}" "$@")
+datadir=${datadir}" "secured"
 
     logger "INFO: Installing Percona"
 
@@ -194,12 +192,16 @@ Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;"
 
-    install_packages "percona-server-server percona-xtrabackup qpress php5-mysql percona-toolkit"
+    install_packages "percona-server-server-5.6 percona-xtrabackup qpress php5-mysql percona-toolkit"
 
     # create binlog and relaylog dirs
     vm_execute "
 sudo mkdir -p '${datadir}/binlogs' '${datadir}/relaylogs';
-sudo chowm -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
+sudo chown -R mysql:mysql '${datadir}/binlogs' '${datadir}/relaylogs';
+
+sudo mysql -e \"GRANT ALL PRIVILEGES ON *.* TO '${userDbAloja}'@'%' IDENTIFIED BY '${passwordDbAloja}';\"
+sudo mysql -e \"REVOKE SUPER ON *.* FROM '${userDbAloja}'@'%';\"
+
 "
 
     #test
@@ -444,7 +446,10 @@ install_PHP_vendors() {
 
   local bootstrap_file="${FUNCNAME[0]}"
 
-  if check_bootstraped "$bootstrap_file" ""; then
+  # besides the bootstrap file we check that dir exits, because it is not cotained in the vagrant VM (it is in the repo path)
+  local test_action="$(vm_execute " [ -f '/var/www/aloja-web/vendor/autoload.php' ] && echo '$testKey'")"
+
+  if [[ "$test_action" != *"$testKey"* ]] || check_bootstraped "$bootstrap_file" "" ; then
     logger "Executing $bootstrap_file"
 
     logger "INFO: Checking if to download vendor files"
@@ -454,7 +459,7 @@ install_PHP_vendors() {
     if [[ "$test_action" != *"$testKey"* ]] ; then
       logger "INFO: downloading and copying bundled vendors folder"
 
-      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150818.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
+      aloja_wget "$ALOJA_PUBLIC_HTTP/files/PHP_vendors_20150924.tar.bz2"  "/tmp/PHP_vendors.tar.bz2"
 
       vm_execute "
 cd /tmp;
@@ -819,7 +824,7 @@ config_ganglia_gmond(){
 
     logger "INFO: Configuring ganglia-monitor (gmond)"
 
-    vm_local_scp files/gmond.conf.t /tmp/ "" ""
+    vm_local_scp "$ALOJA_REPO_PATH/aloja-deploy/files/gmond.conf.t" "/tmp/" "" ""
 
     vm_execute "
 
@@ -835,7 +840,7 @@ config_ganglia_gmond(){
     # copy conf to destination
     sudo cp /tmp/gmond.conf /etc/ganglia
 
-    sudo /etc/init.d/ganglia-monitor restart"
+    sudo service ganglia-monitor restart"
 
     result=$?
 
@@ -899,7 +904,7 @@ config_ganglia_gmetad(){
       sep=%
     done
 
-    vm_local_scp files/gmetad.conf.t /tmp/ "" ""
+    vm_local_scp "$ALOJA_REPO_PATH/aloja-deploy/files/gmetad.conf.t" "/tmp/" "" ""
 
     vm_execute "
 
@@ -952,7 +957,13 @@ config_ganglia_gmetad(){
 
 install_ganglia_web(){
 
-  local bootstrap_file="${FUNCNAME[0]}"
+  # temporarily change the bootstrap name for the vagrant VM to force update the web server
+  if inside_vagrant ; then
+    local bootstrap_file="${FUNCNAME[0]}_3"
+  else
+    local bootstrap_file="${FUNCNAME[0]}"
+  fi
+
   local tarball gdir
 
   if check_bootstraped "$bootstrap_file" ""; then
@@ -966,7 +977,7 @@ install_ganglia_web(){
     install_packages "php5-gd rrdtool" || die "Error installing ganglia-web"
     aloja_wget "$ALOJA_PUBLIC_HTTP/files/$tarball" "/tmp/$tarball" || die "Error installing ganglia-web"
 
-    vm_local_scp files/ganglia_conf.php.t /tmp/ "" ""
+    vm_local_scp "$ALOJA_REPO_PATH/aloja-deploy/files/ganglia_conf.php.t" "/tmp/" "" ""
 
     if [ -d '/vagrant' ]; then
   

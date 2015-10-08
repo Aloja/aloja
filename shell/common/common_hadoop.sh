@@ -3,7 +3,19 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_java.sh"
 set_java_requires
 
 get_hadoop_config_folder() {
-  echo "hadoop1_conf_template"
+  local config_folder_name
+
+  if [ "$HADOOP_CUSTOM_CONFIG" ] ; then
+    config_folder_name="$HADOOP_CUSTOM_CONFIG"
+  elif [ "$HADOOP_EXTRA_JARS" == "AOP4Hadoop" ] ; then
+    config_folder_name="hadoop1_AOP_conf_template"
+  elif [ "$(get_hadoop_major_version)" == "2" ]; then
+    config_folder_name="hadoop2_conf_template"
+  else
+    config_folder_name="hadoop1_conf_template"
+  fi
+
+  echo -e "$config_folder_name"
 }
 
 set_hadoop_config_folder() {
@@ -13,7 +25,16 @@ $(get_hadoop_config_folder)"
 
 # Sets the required files to download/copy
 set_hadoop_requires() {
-  BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION-bin.tar.gz"
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION.tar.gz"
+  else
+    BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION-bin.tar.gz"
+  fi
+
+  if [ "$HADOOP_EXTRA_JARS" ] ; then
+    BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
+  fi
+
   #also set the config here
   set_hadoop_config_folder
 }
@@ -23,21 +44,55 @@ get_hadoop_exports() {
   local to_export
 
   # For both versions
-  to_export="
+  to_export="$(get_java_exports)
 export HADOOP_CONF_DIR='$HDD/conf';
+export HADOOP_LOG_DIR='$HDD/logs';
 export HADOOP_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
-$(get_java_exports)
-"
+export HADOOP_OPTS='$HADOOP_OPTS';"
 
   # For v2 only
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    export="$to_export
-export HADOOP_YARN_HOME='$HADOOP_HOME';
-"
+    to_export="$to_export
+export HADOOP_YARN_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
+YARN_LOG_DIR='$HDD/logs';"
   fi
 
-  echo -e "$to_export"
+  if [ "$HADOOP_EXTRA_JARS" ] ; then
+    # Right now jar files are hard-coded
+    to_export="$to_export
+export HADOOP_USER_CLASSPATH_FIRST=true;
+export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.5.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;"
+  fi
+
+  echo -e "$to_export\n"
 }
+
+# Function to return job specific config
+# rr in the case of PaaS where we cannot change the server config
+get_hadoop_job_config() {
+  local job_config="$BENCH_EXTRA_CONFIG"
+
+  # For v2 only
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    job_config+=" -D mapreduce.job.maps='$MAX_MAPS'"
+    job_config+=" -D mapreduce.job.reduces='$MAX_MAPS'"
+    #if [ ! -z "$AM_MB" ]; then
+    #  job_config+=" -Dyarn.yarn.app.mapreduce.am.resource.mb='${AM_MB}'"
+    #fi
+    if [ ! -z "$MAPS_MB" ]; then
+      job_config+=" -Dmapreduce.map.memory.mb='${MAPS_MB}'"
+    fi
+    if [ ! -z "$REDUCES_MB" ]; then
+      job_config+=" -Dmapreduce.reduce.memory.mb='${REDUCES_MB}'"
+    fi
+  else
+    job_config+=" -D mapred.map.tasks='$MAX_MAPS'"
+    job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
+  fi
+
+  echo -e "$job_config"
+}
+
 
 # Get the list of slaves
 # TODO should be improved to include master node as worker node if necessary
@@ -108,8 +163,8 @@ initialize_hadoop_vars() {
   fi
 
 #logger "INFO: DEBUG: userAloja=$userAloja
-#DEBUG: BENCH_BASE_DIR=$BENCH_BASE_DIR
-#BENCH_DEFAULT_SCRATCH=$BENCH_DEFAULT_SCRATCH
+#DEBUG: BENCH_SHARE_DIR=$BENCH_SHARE_DIR
+#BENCH_LOCAL_DIR=$BENCH_LOCAL_DIR
 #BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
 #BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
 #HADOOP_VERSION=$HADOOP_VERSION
@@ -157,7 +212,9 @@ get_hadoop_ports() {
 #  <name>fs.default.name</name>
 #  <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020</value>
 
-local ports="${PORT_PREFIX}0010
+# For v2
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    ports+="${PORT_PREFIX}0010
 ${PORT_PREFIX}0020
 ${PORT_PREFIX}0070
 ${PORT_PREFIX}0075
@@ -167,37 +224,34 @@ ${PORT_PREFIX}8021
 ${PORT_PREFIX}0030
 ${PORT_PREFIX}0060
 ${PORT_PREFIX}8020
-"
+${PORT_PREFIX}8030
+${PORT_PREFIX}8031
+${PORT_PREFIX}8032"
+
+# Master
+#tcp        0      0 192.168.99.100:39888    0.0.0.0:*               LISTEN      1000       170001      25763/java
+#tcp        0      0 0.0.0.0:10033           0.0.0.0:*               LISTEN      1000       169994      25763/java
+#tcp6       0      0 192.168.99.100:8088     :::*                    LISTEN      1000       168076      25617/java
+#tcp6       0      0 192.168.99.100:8033     :::*                    LISTEN      1000       168264      25617/java
+# Data
+#tcp        0      0 127.0.0.1:42433         0.0.0.0:*               LISTEN      1000       95790       29702/java
+
+# For v1
+  else
+    ports="${PORT_PREFIX}0010
+${PORT_PREFIX}0020
+${PORT_PREFIX}0070
+${PORT_PREFIX}0075
+${PORT_PREFIX}0090
+${PORT_PREFIX}0105
+${PORT_PREFIX}8021
+${PORT_PREFIX}0030
+${PORT_PREFIX}0060
+${PORT_PREFIX}8020"
+
+  fi
 
   echo -e "$ports"
-}
-
-get_hive_env(){
-  echo "export HADOOP_PREFIX=${BENCH_HADOOP_DIR} && \
-        export HADOOP_USER_CLASSPATH_FIRST=true && \
-        export PATH=$PATH:$HIVE_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin && \
-  "
-}
-
-prepare_hive_config() {
-
-subs=$(cat <<EOF
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##HIVE_HOME##,$HIVE_HOME,g;
-EOF
-)
-
-  #to avoid perl warnings
-  export LC_CTYPE=en_US.UTF-8
-  export LC_ALL=en_US.UTF-8
-
-  logger "INFO: Copying Hive and Hive-testbench dirs"
-  $DSH "cp -ru $BENCH_SOURCE_DIR/apache-hive-1.2.0-bin $HIVE_B_DIR/"
-
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-env.sh.template > $HIVE_HOME/conf/hive-env.sh"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-default.xml.template > $HIVE_HOME/conf/hive-default.xml"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-log4j.properties.template > $HIVE_HOME/conf/hive-log4j.properties"
-  $DSH "/usr/bin/perl -pe \"$subs\" $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME.template > $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME"
 }
 
 # Sets the substitution values for the hadoop config
@@ -232,23 +286,14 @@ s,##IO_MB##,$IO_MB,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
-s,##PHYS_MEM##,$PHYS_ME
-
-
-
-
-
-
-
-
-M,g;
+s,##PHYS_MEM##,$PHYS_MEM,g;
 s,##NUM_CORES##,$NUM_CORES,g;
 s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
 s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$REDUCES_MB,g;
-s,##BENCH_DEFAULT_SCRATCH##,$BENCH_DEFAULT_SCRATCH,g;
+s,##AM_MB##,$AM_MB,g;
+s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 EOF
 }
@@ -274,6 +319,9 @@ $export_perl
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/core-site.xml;
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hdfs-site.xml;
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/mapred-site.xml
+/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics.properties
+/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics2.properties
+
 echo -e '$master_name' > $HADOOP_CONF_DIR/masters;
 echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;"
 
@@ -293,10 +341,11 @@ $export_perl
     ssh "$node" "
 $export_perl
 /usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/mapred-site.xml
-/usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/hdfs-site.xml" &
+/usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/hdfs-site.xml"
     # Extra config for v2
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      ssh "$node" "$export_perl /usr/bin/perl -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/yarn-site.xml " &
+      ssh "$node" "$export_perl
+/usr/bin/perl -i -pe \"s,##HOST##,$node,g;\" $HADOOP_CONF_DIR/yarn-site.xml"
     fi
   done
 
@@ -308,23 +357,35 @@ mkdir -p $JOB_PATH/conf_$node;
 cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
   done
 
-  [ "$DELETE_HDFS" == "1" ] && format_HDFS "$(get_hadoop_major_version)"
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    format_HDFS "$(get_hadoop_major_version)"
+  else
+    logger "INFO: Deleting previous Job history files (in case necessary)"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
+  fi
 
   # Set correct permissions for instrumentation's sniffer
   [ "$INSTRUMENTATION" == "1" ] && instrumentation_set_perms
 }
 
 # Returns if Hadoop v1 or v2
+# $1 the hadoop string (optional, if not uses $HADOOP_VERSION)
 get_hadoop_major_version() {
+  if [ "$1" ] ; then
+    local hadoop_string="$1"
+  else
+    local hadoop_string="$HADOOP_VERSION"
+  fi
+
   local major_version
   if [ "$clusterType" == "PaaS" ]; then
     major_version="2"
-  elif [[ "$HADOOP_VERSION" == *"p-1"* ]] ; then
+  elif [[ "$hadoop_string" == *"p-1"* ]] ; then
     major_version="1"
-  elif [[ "$HADOOP_VERSION" == *"p-2"* ]] ; then
+  elif [[ "$hadoop_string" == *"p-2"* ]] ; then
     major_version="2"
   else
-    die "Cannot determine Hadoop major version.  Supplied version $HADOOP_VERSION"
+    die "Cannot determine Hadoop major version.  Supplied version $hadoop_string"
   fi
 
   echo -e "$major_version"
@@ -334,13 +395,14 @@ get_hadoop_major_version() {
 # $1 $HADOOP_VERSION
 format_HDFS(){
   local hadoop_version="$1"
-  logger "INFO: Formating HDFS and NameNode"
+  logger "INFO: Formating HDFS and NameNode dirs"
 
   if [ "$(get_hadoop_major_version)" == "1" ]; then
     $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop namenode -format"
     $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop datanode -format"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
     $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
+    $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -359,9 +421,11 @@ restart_hadoop(){
   if [ "$(get_hadoop_major_version)" == "1" ]; then
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/start-all.sh"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/start-dfs.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/start-yarn.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh start historyserver"
+    $DSH_MASTER "$HADOOP_EXPORTS
+$BENCH_HADOOP_DIR/sbin/start-dfs.sh &
+$BENCH_HADOOP_DIR/sbin/start-yarn.sh &
+$BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh start historyserver &
+wait"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -446,9 +510,11 @@ stop_hadoop(){
   if [ "$(get_hadoop_major_version)" == "1" ]; then
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/stop-all.sh"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-yarn.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-dfs.sh"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver"
+    $DSH_MASTER "
+$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-yarn.sh &
+$BENCH_HADOOP_DIR/sbin/stop-dfs.sh &
+$BENCH_HADOOP_DIR/sbin/mr-jobhistory-daemon.sh stop historyserver &
+wait"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -487,7 +553,8 @@ stop_hadoop(){
   fi
 
   if [ "$open_port" ] && [ "$dont_retry" ] ; then
-    die "Please manually stop running Hadoop instances"
+    logger "ERROR: Please manually stop running Hadoop instances"
+    #die "Please manually stop running Hadoop instances"
   elif [ "$open_port" ] && [ ! "$retry" ] ; then
     stop_hadoop "dont_retry"
   else
@@ -526,7 +593,7 @@ $(get_hadoop_exports)"
 
   logger "DEBUG: $hadoop_exports"
 
-  $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${prefix}${bench} %e' $cmd"
+  $DSH_MASTER "$hadoop_exports export TIMEFORMAT='Time ${prefix}${bench} %R' && time $cmd"
 
   local end_exec="$(timestamp)"
 
@@ -572,14 +639,8 @@ $(get_hadoop_exports)"
   save_hadoop "${3}${1}"
 }
 
-# Performs the actual benchmark execution
-# $1 benchmark name
-# $2 command
-
-execute_hadoop_new(){
-  local bench="$1"
-  local cmd="$2"
-
+# Returns the the path to the hadoop binary with the proper exports
+get_hadoop_cmd() {
   local hadoop_exports
   local hadoop_cmd
 
@@ -590,16 +651,58 @@ $(get_hadoop_exports)"
   else
     hadoop_exports="$(get_hadoop_exports)"
   fi
-  logger "DEBUG: $hadoop_exports"
 
-  hadoop_cmd="$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop $cmd"
+  hadoop_cmd="$hadoop_exports $BENCH_HADOOP_DIR/bin/hadoop"
 
-  $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${bench} %e' $hadoop_cmd"
-
-  save_disk_usage "AFTER"
-
-  save_hadoop "$bench"
+  echo -e "$hadoop_cmd"
 }
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_hadoop_new(){
+  local bench="$1"
+  local cmd="$2"
+  local time_exec="$3"
+
+  local hadoop_cmd="$(get_hadoop_cmd) $cmd"
+
+  logger "DEBUG: Hadoop command:$hadoop_cmd"
+
+  if [ "$time_exec" ] ; then
+    save_disk_usage "BEFORE"
+    restart_monit
+    set_bench_start "$bench"
+  fi
+
+  # Run the command and time it
+  time_cmd_master "$hadoop_cmd" "$time_exec"
+
+  if [ "$time_exec" ] ; then
+    set_bench_end "$bench"
+    stop_monit
+    save_disk_usage "AFTER"
+    save_hadoop "$bench"
+  fi
+}
+
+# Deletes a file or directory recursively in HDFS
+# $1 bench name
+# $2 delete cmd
+hadoop_delete_path() {
+  local bench_name="$1"
+  local path_to_delete="$2"
+
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    local delete_cmd="-rm -r -f -skipTrash"
+  else
+    local delete_cmd="-rmr -skipTrash"
+  fi
+
+  execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
+}
+
 
 execute_hdi_hadoop() {
   save_disk_usage "BEFORE"
@@ -646,7 +749,7 @@ export MAX_ITERATION=$MAX_ITERATION && \
 export NUM_ITERATIONS=$NUM_ITERATIONS && \
 "
 
-  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2"
+  $DSH_MASTER "$EXP export TIMEFORMAT='Time ${3}${1} %R' && time $2"
 
   local end_exec=`timestamp`
 
@@ -688,11 +791,8 @@ save_hadoop() {
   logger "INFO: Saving benchmark $1"
   $DSH "mkdir -p $JOB_PATH/$1"
   $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
-  #we cannot move hadoop files
-  #take into account naming *.date when changing dates
-  #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
-  #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
 
+  # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
@@ -706,19 +806,29 @@ save_hadoop() {
 	    hdfs dfs -expunge
     fi
   else
-    $DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/ 2> /dev/null"
+    #we cannot move hadoop files
+    #take into account naming *.date when changing dates
+    #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
+    #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
+    $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/ 2> /dev/null"
   fi
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1"
-    logger "INFO: Deleting history files after copy to local"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
+    ##Copy history logs
+    logger "INFO: Getting mapreduce job history logs from HDFS"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$1"
+    ##Copy jobhistory daemon logs
+    logger "INFO: Moving jobhistory daemon logs to logs dir"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/logs"
+    #logger "INFO: Deleting history files after copy to local"
+
+#    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
   fi
 
   if [[ "EXECUTE_HIBENCH" == "true" ]]; then
     #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1"
-    $DSH_MASTER  "$BENCH_HIB_DIR/$bench/hibench.report" "$JOB_PATH/$1/"
+    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$1/"
   fi
 
   #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"

@@ -16,14 +16,21 @@ CREATE TABLE IF NOT EXISTS filter_presets (
 
 "
 
+# TODO remove in some time
 $MYSQL "DROP TABLE IF EXISTS filters_presets;"
 
 ###############################################################################
 # Presets for Local Deployment
 
-#common settings for most filters
-filter_common="&minexetime=50&maxexetime=5000&filters[]=valid&filters[]=filters"
-filter_ml="&bench_type[]=HiBench"
+#common settings for most filters in case we are NOT in the vagrant VM
+if [ ! -d  "/vagrant" ] ; then
+  filter_common="&minexetime=50&maxexetime=5000&filters[]=valid&filters[]=filters"
+  filter_ml="&bench_type[]=HiBench"
+#for vagrant allow more values
+else
+  filter_common="&minexetime=1&maxexetime=5000"
+  filter_ml=""
+fi
 
 filter_HiBench_Terasort_8d_2015="$filter_common&bench_type[]=HiBench&bench[]=terasort&datanodes[]=8&datefrom=2015/01/01"
 filter_HiBench_Terasort_WordCount_Sort_8d_2015="$filter_common&bench_type[]=HiBench&bench[]=sort&bench[]=terasort&bench[]=wordcount&datanodes[]=8&datefrom=2015/01/01"
