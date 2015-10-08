@@ -76,6 +76,15 @@ get_hadoop_job_config() {
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     job_config+=" -D mapreduce.job.maps='$MAX_MAPS'"
     job_config+=" -D mapreduce.job.reduces='$MAX_MAPS'"
+    #if [ ! -z "$AM_MB" ]; then
+    #  job_config+=" -Dyarn.yarn.app.mapreduce.am.resource.mb='${AM_MB}'"
+    #fi
+    if [ ! -z "$MAPS_MB" ]; then
+      job_config+=" -Dmapreduce.map.memory.mb='${MAPS_MB}'"
+    fi
+    if [ ! -z "$REDUCES_MB" ]; then
+      job_config+=" -Dmapreduce.reduce.memory.mb='${REDUCES_MB}'"
+    fi
   else
     job_config+=" -D mapred.map.tasks='$MAX_MAPS'"
     job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
@@ -245,34 +254,6 @@ ${PORT_PREFIX}8020"
   echo -e "$ports"
 }
 
-get_hive_env(){
-  echo "export HADOOP_PREFIX=${BENCH_HADOOP_DIR} && \
-        export HADOOP_USER_CLASSPATH_FIRST=true && \
-        export PATH=$PATH:$HIVE_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin && \
-  "
-}
-
-prepare_hive_config() {
-
-subs=$(cat <<EOF
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##HIVE_HOME##,$HIVE_HOME,g;
-EOF
-)
-
-  #to avoid perl warnings
-  export LC_CTYPE=en_US.UTF-8
-  export LC_ALL=en_US.UTF-8
-
-  logger "INFO: Copying Hive and Hive-testbench dirs"
-  $DSH "cp -ru $BENCH_SOURCE_DIR/apache-hive-1.2.0-bin $HIVE_B_DIR/"
-
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-env.sh.template > $HIVE_HOME/conf/hive-env.sh"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-default.xml.template > $HIVE_HOME/conf/hive-default.xml"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-log4j.properties.template > $HIVE_HOME/conf/hive-log4j.properties"
-  $DSH "/usr/bin/perl -pe \"$subs\" $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME.template > $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME"
-}
-
 # Sets the substitution values for the hadoop config
 get_substitutions() {
 
@@ -311,7 +292,7 @@ s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
 s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$REDUCES_MB,g;
+s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 EOF
@@ -834,8 +815,14 @@ save_hadoop() {
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1"
-    logger "INFO: Deleting history files after copy to local"
+    ##Copy history logs
+    logger "INFO: Getting mapreduce job history logs from HDFS"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$1"
+    ##Copy jobhistory daemon logs
+    logger "INFO: Moving jobhistory daemon logs to logs dir"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/logs"
+    #logger "INFO: Deleting history files after copy to local"
+
 #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
   fi
 
