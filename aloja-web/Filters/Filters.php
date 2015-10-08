@@ -291,7 +291,7 @@ class Filters
                         $fromClause .= ' JOIN clusters USING (id_cluster) ';
                     }
                     $field = isset($definition['field']) ? $definition['field'] : $filterName;
-                    $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs() . " ORDER BY $field ASC";
+                    $queryChoices = "SELECT DISTINCT $field FROM $fromClause e WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs() . " ORDER BY $field ASC";
                     $choices = $this->dbConnection->get_rows($queryChoices);
                     foreach($choices as $choice) {
                         $this->filters[$filterName]['choices'][] = $choice[$field];
