@@ -76,6 +76,15 @@ get_hadoop_job_config() {
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     job_config+=" -D mapreduce.job.maps='$MAX_MAPS'"
     job_config+=" -D mapreduce.job.reduces='$MAX_MAPS'"
+    #if [ ! -z "$AM_MB" ]; then
+    #  job_config+=" -Dyarn.yarn.app.mapreduce.am.resource.mb='${AM_MB}'"
+    #fi
+    if [ ! -z "$MAPS_MB" ]; then
+      job_config+=" -Dmapreduce.map.memory.mb='${MAPS_MB}'"
+    fi
+    if [ ! -z "$REDUCES_MB" ]; then
+      job_config+=" -Dmapreduce.reduce.memory.mb='${REDUCES_MB}'"
+    fi
   else
     job_config+=" -D mapred.map.tasks='$MAX_MAPS'"
     job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
@@ -283,7 +292,7 @@ s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
 s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$REDUCES_MB,g;
+s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 EOF
@@ -806,8 +815,14 @@ save_hadoop() {
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1"
-    logger "INFO: Deleting history files after copy to local"
+    ##Copy history logs
+    logger "INFO: Getting mapreduce job history logs from HDFS"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$1"
+    ##Copy jobhistory daemon logs
+    logger "INFO: Moving jobhistory daemon logs to logs dir"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/logs"
+    #logger "INFO: Deleting history files after copy to local"
+
 #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
   fi
 
