@@ -78,7 +78,7 @@ execute_TPCH_query() {
 
   logger "INFO: # EXECUTING TPCH $query"
 
-  $DSH_MASTER "$EXP cd ${TPCH_HOME} && /usr/bin/time -f 'Time ${3}${1} %e' $COMMAND"
+  $DSH_MASTER "$EXP cd ${TPCH_HOME} && export TIMEFORMAT='Time ${3}${1} %R' && time $COMMAND"
 
   execute_hive "tpch-${query}" "-f ${PREFIX}/tpch_${1}.sql --database ${TABLE_NAME}" "time"
 
@@ -91,7 +91,7 @@ generate_TPCH_data() {
   DATA_GENERATOR="${TPCH_HOME}/tpch-setup.sh $2 $TPCH_DATA_DIR"
 
   logger "INFO: # GENERATING TPCH DATA WITH SCALE FACTOR ${2}"
-  logger "INFO: COMMAND: $EXP cd $TPCH_HOME && /usr/bin/time -f 'Time data generator %e' $DATA_GENERATOR"
+  logger "INFO: COMMAND: $EXP cd $TPCH_HOME && export TIMEFORMAT='Time data generator %R' && time $DATA_GENERATOR"
 
 time_cmd_master "$EXP cd $TPCH_HOME  bash $DATA_GENERATOR" "$time_exec"
 
@@ -108,7 +108,7 @@ time_cmd_master "$EXP cd $TPCH_HOME  bash $DATA_GENERATOR" "$time_exec"
      fi
 
     logger "INFO: RETRYING TO GENERATE DATA WITH SCALE FACTOR ${2}"
-    $DSH_MASTER "$EXP cd $TPCH_HOME && /usr/bin/time -f 'Time data generator %e' bash $DATA_GENERATOR" 2>&1 | tee -a $LOG_PATH
+    $DSH_MASTER "$EXP cd $TPCH_HOME && export TIMEFORMAT='Time data generator %R' && time bash $DATA_GENERATOR" 2>&1 | tee -a $LOG_PATH
     if [ "${PIPESTATUS[0]}" -ne 0 ]; then
       logger "INFO: ERROR: GENERATING DATA FAILED FOR A SECOND TIME, exiting..."
       exit 1

@@ -286,9 +286,9 @@ validate() {
 
   if [ "$clusterType" != "PaaS" ]; then
     # Check whether we are in the right cluster
-    if ! test_in_cluster "$(hostname)" ; then
-      die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
-    fi
+#    if ! test_in_cluster "$(hostname)" ; then
+#      die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
+#    fi
 
     if ! inList "$CLUSTER_NETS" "$NET" ; then
       die "Disk type $NET not supported for $clusterName\nSupported: $NET"
@@ -924,7 +924,7 @@ time_cmd_master() {
   local set_bench_time="$2"
 
   exec 9>&2 # Create a new file descriptor
-  local cmd_output="$($DSH_MASTER "/usr/bin/time -f 'Bench time ${bench} %e' bash -c '$cmd'" 2>&1 |tee >(cat - >&9))"
+  local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd'" 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
 
   # Set the accurate time to the global var

@@ -92,6 +92,7 @@ vm_create_connect() {
   fi
 
   [ ! -z "$endpoints" ] && vm_endpoints_create
+
 }
 
 # by default we install ganglia
@@ -103,6 +104,7 @@ must_install_ganglia(){
 #$1 use password
 vm_provision() {
   vm_initial_bootstrap
+
   requireRootFirst["$vm_name"]="" #disable root/admin user from this part on
   needPasswordPre=
 
@@ -128,7 +130,7 @@ vm_provision() {
 
     # if running on master node, check if performance monitors are available
     # and if not, install them under ~/share
-    if [ "$vm_name" = "$(get_master_name)" ]; then
+    if [ "$type" = "cluster" ] && [ "$vm_name" = "$(get_master_name)" ]; then
       if ! vm_check_install_perfmon; then
         logger "WARNING: Performance monitor tools not installed and we were unable to install them on $vm_name"
       fi
