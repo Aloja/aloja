@@ -14,14 +14,10 @@ library(session);
 
 set.seed(1234567890);
 
-#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/models.r');
-#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/searchalgs.r');
-#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/searchrules.r');
-#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/precision.r');
-source('models.r');
-source('searchalgs.r');
-source('searchrules.r');
-source('precision.r');
+source('/vagrant/aloja-web/resources/models.r');
+source('/vagrant/aloja-web/resources/searchalgs.r');
+source('/vagrant/aloja-web/resources/searchrules.r');
+source('/vagrant/aloja-web/resources/precision.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -644,6 +640,11 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	{
 		dsid <- cbind(ds[,"ID"],dsbaux);
 		colnames(dsid) <- c("ID",vout,vin);
+		auxset <- list();
+		auxset$trset <- NULL;
+		auxset$tvset <- NULL;
+		auxset$ttset <- NULL;
+		auxset$ntset <- NULL;
 	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
 
@@ -788,6 +789,11 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	{
 		dsid <- cbind(ds[,"ID"],dsbaux);
 		colnames(dsid) <- c("ID",vout,vin);
+		auxset <- list();
+		auxset$trset <- NULL;
+		auxset$tvset <- NULL;
+		auxset$ttset <- NULL;
+		auxset$ntset <- NULL;
 	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
 	rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
