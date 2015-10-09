@@ -106,13 +106,8 @@ class DBUtils
         if($execsAlias != ' ')
             $execsAlias = "$execsAlias.";
 
-        return " AND ${execsAlias}id_cluster NOT IN (select id_cluster from clusters where id_cluster = '35' OR  provider = 'rackspacecbd') " ;
-
-        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
-            return " " ;
-        } else {
-            return " AND ${execsAlias}id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
-        }
+        //To test the queries, but doesn't filter rows
+        return " AND ${execsAlias}id_cluster NOT IN (select id_cluster from clusters where id_cluster = '999' OR  provider = 'notexists') " ;
     }
 
     public function get_execs($filter_execs = null)
