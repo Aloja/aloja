@@ -18,18 +18,16 @@ set_hadoop_requires
 
 
 benchmark_suite_config() {
-
-
-  [ ! "$TPCH_SETTINGS_FILE_NAME" ] && export HIVE_SETTINGS_FILENAME="hive.settings"
   [ ! "$TPCH_DATA_DIR" ] && export TPCH_DATA_DIR=/tpch/tpch-generate
   BENCH_SAVE_PREPARE_LOCATION="${BENCH_LOCAL_DIR}${TPCH_DATA_DIR}"
 
-  EXECUTE_TPCH=true
+  EXECUTE_TPCH_HIVE=true
   TPCH_HOME=$(get_local_apps_path)/tpch-hive
 
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
-  prepare_hive_config
+  initialize_hive_vars
+  prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
 
   start_hadoop
 }
@@ -93,6 +91,7 @@ execute_TPCH_query() {
 
 # $2 scale factor
 generate_TPCH_data() {
+  SCALE=$2
   EXP=$(get_hive_exports)
   DATA_GENERATOR="tpch-setup.sh $2 $TPCH_DATA_DIR"
 
@@ -108,14 +107,43 @@ generate_TPCH_data() {
     logger "INFO: Data generator already built, skipping..."
   fi
 
-  logger "INFO: # GENERATING TPCH DATA WITH SCALE FACTOR ${2}"
-  logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && export TIMEFORMAT='Time data generator %R' && time $DATA_GENERATOR"
+  logger "INFO: PREPARING DIR TO GENERATE TPC-H DATA"
+  time_cmd_master "$(get_hadoop_exports) ${BENCH_HADOOP_DIR}/bin/hdfs dfs -mkdir -p ${TPCH_DATA_DIR}"
 
-  time_cmd_master "$EXP cd ${TPCH_HOME} && bash $DATA_GENERATOR" "$time_exec"
+  logger "INFO: # GENERATING TPCH DATA WITH SCALE FACTOR ${SCALE}"
+  logger "DEBUG: COMMAND: $(get_hadoop_exports) cd ${TPCH_HOME}/tpch-gen && ${BENCH_HADOOP_DIR}/bin/hadoop jar target/*.jar $(get_hadoop_job_config) -d ${TPCH_DATA_DIR}/${SCALE}/ -s ${SCALE}"
+  #execute_hadoop_new "$1" "jar ${TPCH_HOME}/tpch-gen/target/*.jar -d ${TPCH_DATA_DIR}/${SCALE}/ -s ${SCALE}" "time"
+  time_cmd_master "$(get_hadoop_exports) cd ${TPCH_HOME}/tpch-gen && ${BENCH_HADOOP_DIR}/bin/hadoop jar target/*.jar $(get_hadoop_job_config) -d ${TPCH_DATA_DIR}/${SCALE}/ -s ${SCALE}"
 
-  if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-    logger "INFO: ERROR: GENERATING DATA FAILED, exiting..."
-    exit 1
-  fi
+  logger "INFO: Loading text data into external tables"
+  execute_hive "prep_tpch_create_tables" "-f ${TPCH_HOME}/ddl-tpch/bin_flat/alltables.sql -d DB=tpch_text_${SCALE} -d LOCATION=${TPCH_DATA_DIR}/${SCALE}" "time"
+
+  TABLES="part partsupp supplier customer orders lineitem nation region"
+  BUCKETS=13
+  # Create the optimized tables.
+  i=1
+  total=8
+  DATABASE=tpch_bin_partitioned_orc_${SCALE}
+  for t in ${TABLES}
+  do
+          logger "INFO: Optimizing table $t ($i/$total)."
+          COMMAND="-f ${TPCH_HOME}/ddl-tpch/bin_flat/${t}.sql \
+              -d DB=tpch_bin_flat_orc_${SCALE} \
+              -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
+              -d FILE=orc"
+          execute_hive "prep_tpch_table_${t}" "$COMMAND" "time"
+          i=`expr $i + 1`
+  done
+
+  logger "INFO: Data loaded into database ${DATABASE}"
+
+#OLD CODE
+#  logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && /usr/bin/time -f 'Time data generator %e' $DATA_GENERATOR"
+#  time_cmd_master "$EXP cd ${TPCH_HOME} && bash $DATA_GENERATOR" "$time_exec"
+
+#  if [ "${PIPESTATUS[0]}" -ne 0 ]; then
+#    logger "INFO: ERROR: GENERATING DATA FAILED, exiting..."
+#    exit 1
+#  fi
 }
 

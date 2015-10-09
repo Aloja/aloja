@@ -213,7 +213,7 @@ class CostPerfEvaluationController extends AbstractController
     		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
       		  INNER JOIN (SELECT MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
       		  				LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
-        					 WHERE  1 $filter_execs $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
+        					 WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
@@ -303,7 +303,7 @@ class CostPerfEvaluationController extends AbstractController
     		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
     		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
       		  INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
-        					 LEFT JOIN aloja_ml.predictions p2 USING (id_exec) WHERE  1 $filter_execs $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
+        					 LEFT JOIN aloja_ml.predictions p2 USING (id_exec) WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
