@@ -102,12 +102,16 @@ class DBUtils
 
     public static function getFilterExecs($execsAlias = "e")
     {
-        return " AND 1=1" ;
+        //Trick to avoid bugs on empty alias
+        if($execsAlias != ' ')
+            $execsAlias = "$execsAlias.";
+
+        return " AND 1=1 ";
 
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
             return " " ;
         } else {
-            return " AND $execsAlias.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
+            return " AND ${execsAlias}id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
         }
     }
 
