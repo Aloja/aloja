@@ -60,8 +60,6 @@ class MLMinconfigsController extends AbstractController
 
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn','umodel'))));
 
-			$where_configs = $this->filters->getWhereClause();
-
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
@@ -75,7 +73,7 @@ class MLMinconfigsController extends AbstractController
 			$learn_param = $learnParams['learn'];
 			$unrestricted = ($learnParams['umodel']) ? true : false;
 
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance

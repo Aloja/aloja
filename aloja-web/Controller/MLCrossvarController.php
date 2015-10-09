@@ -135,7 +135,6 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -154,8 +153,8 @@ class MLCrossvarController extends AbstractController
 			$current_model = $variables['current_model'];
 			$param_allmodels = $variables['umods'];
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
 			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
@@ -398,7 +397,6 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods','upred'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -420,8 +418,8 @@ class MLCrossvarController extends AbstractController
 			$param_predict = $variables['upred'];
 			$param_allmodels = $variables['umods'];
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
 			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
@@ -681,7 +679,6 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -703,6 +700,7 @@ class MLCrossvarController extends AbstractController
 			$param_current_model = $variables['current_model'];
 			$unseen = ($variables['unseen']) ? true : false;
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
 			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
