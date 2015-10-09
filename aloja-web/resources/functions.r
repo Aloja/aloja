@@ -14,10 +14,14 @@ library(session);
 
 set.seed(1234567890);
 
-source("/vagrant/aloja-web/resources/models.r");
-source("/vagrant/aloja-web/resources/searchalgs.r");
-source("/vagrant/aloja-web/resources/searchrules.r");
-source("/vagrant/aloja-web/resources/precision.r");
+#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/models.r');
+#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/searchalgs.r');
+#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/searchrules.r');
+#source_url('https://raw.githubusercontent.com/Aloja/aloja-ml/test/precision.r');
+source('models.r');
+source('searchalgs.r');
+source('searchrules.r');
+source('precision.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -489,21 +493,23 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 
 	if (!is.null(traux) & !is.null(tvaux) & !is.null(ttaux))
 	{
-		for(name in !(c(colnames(traux),colnames(ttaux)) %in% colnames(tvaux)))
+		auxallnames <- unique(c(colnames(traux),colnames(ttaux),colnames(tvaux)));
+
+		for (name in setdiff(auxallnames,colnames(tvaux)))
 		{
 			auxnames <- colnames(tvaux);
 			tvaux <- cbind(tvaux,rep(0,nrow(tvaux))); 
 			colnames(tvaux) <- c(auxnames,name);
 		}
 
-		for(name in !(c(colnames(traux),colnames(tvaux)) %in% colnames(ttaux)))
+		for (name in setdiff(auxallnames,colnames(ttaux)))
 		{
 			auxnames <- colnames(ttaux);
 			ttaux <- cbind(ttaux,rep(0,nrow(ttaux))); 
 			colnames(ttaux) <- c(auxnames,name);
 		}
 
-		for(name in !(c(colnames(ttaux),colnames(tvaux)) %in% colnames(traux)))
+		for (name in setdiff(auxallnames,colnames(traux)))
 		{
 			auxnames <- colnames(traux);
 			traux <- cbind(traux,rep(0,nrow(traux))); 
@@ -513,14 +519,16 @@ aloja_binarize_mixsets <- function (vin, vout, traux = NULL, ntaux = NULL, tvaux
 
 	if (!is.null(ttaux) & !is.null(ntaux))
 	{
-		for(name in !(colnames(traux) %in% colnames(ntaux)))
+		auxallnames <- unique(c(colnames(ntaux),colnames(ttaux)));
+
+		for(name in setdiff(auxallnames,colnames(ntaux)))
 		{
 			auxnames <- colnames(ntaux);
 			ntaux <- cbind(ntaux,rep(0,nrow(ntaux))); 
 			colnames(ntaux) <- c(auxnames,name);
 		}
 
-		for(name in !(colnames(ntaux) %in% colnames(ttaux)))
+		for(name in setdiff(auxallnames,colnames(ttaux)))
 		{
 			auxnames <- colnames(ttaux);
 			ttaux <- cbind(ttaux,rep(0,nrow(ttaux))); 
@@ -619,14 +627,24 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	if (!is.integer(maxit)) maxit <- as.integer(maxit);
 
 	# Binarization of variables
-	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
-	vinorig <- vin;
-	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+	if (is.null(ds))
+	{
+		auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+		vinorig <- vin;
+		vin <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+	} else {
+		dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+		vinorig <- vin;
+		vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+	}
 
 	# Load and split datasets
-	dsid <- cbind(ds[,"ID"],dsbaux);
-	colnames(dsid) <- c("ID",vout,vin);
+	dsid <- NULL;
+	if (!is.null(ds))
+	{
+		dsid <- cbind(ds[,"ID"],dsbaux);
+		colnames(dsid) <- c("ID",vout,vin);
+	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
 
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
@@ -753,14 +771,24 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	options(warn=-1);
 
 	# Binarization of variables
-	dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
-	auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
-	vinorig <- vin;
-	vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+	if (is.null(ds))
+	{
+		auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
+		vinorig <- vin;
+		vin <- unique(c(colnames(auxset$trset),colnames(auxset$tvset),colnames(auxset$ttset)));
+	} else {
+		dsbaux <- aloja_binarize_ds(ds[,c(vout,vin)]);
+		vinorig <- vin;
+		vin <- colnames(dsbaux[!(colnames(dsbaux) %in% vout)]);
+	}
 
 	# Load and split datasets
-	dsid <- cbind(ds[,"ID"],dsbaux);
-	colnames(dsid) <- c("ID",vout,vin);
+	dsid <- NULL;
+	if (!is.null(ds))
+	{
+		dsid <- cbind(ds[,"ID"],dsbaux);
+		colnames(dsid) <- c("ID",vout,vin);
+	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttaux,auxset$ntaux,auxset$traux,auxset$tvaux,ttfile,trfile,tvfile);
 	rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
 	rt[["varin"]] <- vin;
