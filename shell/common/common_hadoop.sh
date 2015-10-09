@@ -20,7 +20,7 @@ get_hadoop_config_folder() {
 
 set_hadoop_config_folder() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS
-$(get_hadoop_config_folder)"
+    $(get_hadoop_config_folder)"
 }
 
 # Sets the required files to download/copy
@@ -818,6 +818,7 @@ save_hadoop() {
     ##Copy history logs
     logger "INFO: Getting mapreduce job history logs from HDFS"
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$1"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history"
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
     $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/logs"
