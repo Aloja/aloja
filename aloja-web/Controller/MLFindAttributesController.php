@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLFindAttributesController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlfindattributesAction()
 	{
 		$current_model = $model_info = $instance = $instances = $message = $tree_descriptor = $model_html = $config = '';
@@ -44,7 +51,7 @@ class MLFindAttributesController extends AbstractController
 			'current_model' => array(
 				'type' => 'selectOne',
 				'default' => null,
-				'label' => 'Model tu use: ',
+				'label' => 'Model to use: ',
 				'generateChoices' => function() {
 					return array();
 				},
@@ -251,7 +258,7 @@ class MLFindAttributesController extends AbstractController
 				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 				$jsonHeader = $jsonHeader.']';
 
-				$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
+				$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions AS e, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
 				$result = $dbml->query($query);
 				$jsonData = '[';
 				foreach ($result as $row)
@@ -264,7 +271,7 @@ class MLFindAttributesController extends AbstractController
 				foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
 				// Fetch MAE & RAE values
-				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions AS e WHERE id_learner='".md5($config)."' AND predict_code > 0";
 				$result = $dbml->query($query);
 				$row = $result->fetch();
 				$mae = $row['MAE'];
@@ -367,9 +374,6 @@ class MLFindAttributesController extends AbstractController
 				return $this->render('mltemplate/mlobstrees.html.twig', array('obstrees' => $jsonObstrees, 'header_obstrees' => $jsonObstreesHeader,'jsonData' => '[]','jsonHeader' => '[]', 'instructions' => 'YES'));
 			}
 
-			$where_configs = $this->filters->getWhereClause();
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
-
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
@@ -378,6 +382,7 @@ class MLFindAttributesController extends AbstractController
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance

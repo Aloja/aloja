@@ -33,7 +33,7 @@ install_files
 
 # 3.) Run the benchmarks
 
-benchmark_config
+benchmark_suite_config
 
 start_time=$(date '+%s')
 
@@ -42,11 +42,9 @@ logger  "INFO: Starting $BENCH_SUITE benchmark"
 
 # Benchmark stages
 
-benchmark_run
+benchmark_suite_run
 
-benchmark_teardown
-
-benchmark_save
+benchmark_suite_save
 
 logger  "INFO: $(date +"%H:%M:%S") DONE $bench"
 
@@ -54,7 +52,7 @@ logger  "INFO: $(date +"%H:%M:%S") DONE $bench"
 ########################################################
 end_time=$(date '+%s')
 
-benchmark_cleanup
+benchmark_suite_cleanup
 
 # Save env vars and globals
 save_env "$JOB_PATH/config.sh"

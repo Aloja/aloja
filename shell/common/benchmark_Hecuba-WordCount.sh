@@ -5,26 +5,26 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
-#[ ! "$BENCH_LIST" ] &&
-#BENCH_LIST="Hecuba-WordCount"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="Hecuba-WordCount"
 
 in_dir="$BENCH_SUITE/input"
 out_dir="$BENCH_SUITE/output"
 job="\$HADOOP_HOME/hadoop-examples-*.jar wordcount $in_dir $out_dir"
 
 [ ! "$INPUT_FILE" ] && INPUT_FILE="$homePrefixAloja/$userAloja/.bashrc"
-[ ! "$NUM_RUNS" ] && NUM_RUNS="4"
+[ ! "$BENCH_NUM_RUNS" ] && BENCH_NUM_RUNS="4"
 
-benchmark_config() {
+benchmark_suite_config() {
   initialize_hadoop_vars
   #initialize_HiBench_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
   restart_hadoop
 }
 
-benchmark_run() {
+benchmark_suite_run() {
   logger "INFO: Executing $BENCH_SUITE in all nodes"
-BENCH_LIST="Hecuba-WordCount"
+  #BENCH_LIST="Hecuba-WordCount"
+
   for bench in $BENCH_LIST ; do
 
     # Prepare
@@ -43,7 +43,7 @@ BENCH_LIST="Hecuba-WordCount"
 
 
     # Run
-    for run_number in $(seq 1 "$NUM_RUNS") ; do
+    for run_number in $(seq 1 "$BENCH_NUM_RUNS") ; do
       logger "INFO: making sure output dir is empty first"
       execute_hadoop_new "${bench}_${run_number}" "fs -rmr $out_dir"
       execute_hadoop_new "${bench}_${run_number}" "jar $job" "time"
@@ -54,14 +54,10 @@ BENCH_LIST="Hecuba-WordCount"
   logger "INFO: DONE executing $BENCH_SUITE"
 }
 
-benchmark_teardown() {
+benchmark_suite_save() {
   : # Empty
 }
 
-benchmark_save() {
-  : # Empty
-}
-
-benchmark_cleanup() {
+benchmark_suite_cleanup() {
   stop_hadoop
 }

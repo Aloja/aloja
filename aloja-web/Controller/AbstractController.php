@@ -22,6 +22,7 @@ class AbstractController
      */
     protected $filters;
 
+
     public function __construct($container = null)
     {
         $this->container = $container;
@@ -40,7 +41,7 @@ class AbstractController
 
     public function render($templatePath, $parameters) {
         $genericParameters = array('selected' => $this->container->getScreenName());
-        if($this->filters) {
+        if($this->filters->getWhereClause() != "") {
             $genericParameters = array_merge($genericParameters,
                 array('additionalFilters' => $this->filters->getAdditionalFilters(),
                     'filters' => $this->filters->getFiltersArray(),

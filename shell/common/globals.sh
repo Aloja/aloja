@@ -6,7 +6,7 @@
 dont_mount_share='' #prevent ~/share to be mounted or created
 
 extraLocalCommands='' #commands to be run after deploy on local machine
-extraCommands='' #commands to be executed on the deployed machine
+extraRemoteCommands='' #commands to be executed on the deployed machine
 
 homeIsShared="true" #if true, home dir is shared across machines in the cluster (ie. minerva)
 

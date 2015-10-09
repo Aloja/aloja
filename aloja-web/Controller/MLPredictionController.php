@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLPredictionController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlpredictionAction()
 	{
 		$jsonExecs = $jsonLearners = $jsonLearningHeader = '[]';
@@ -87,7 +94,6 @@ class MLPredictionController extends AbstractController
 			$unrestricted = ($learnParams['umodel']) ? true : false;
 
 			$where_configs = $this->filters->getWhereClause();
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance

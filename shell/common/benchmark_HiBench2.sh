@@ -12,25 +12,21 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_HiBench.sh"
 set_HiBench_requires
 
 
-benchmark_config() {
+benchmark_suite_config() {
   initialize_hadoop_vars
   initialize_HiBench_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
 }
 
-benchmark_run() {
+benchmark_suite_run() {
   execute_HiBench
 }
 
-benchmark_teardown() {
+benchmark_suite_save() {
   : # Empty
 }
 
-benchmark_save() {
-  : # Empty
-}
-
-benchmark_cleanup() {
+benchmark_suite_cleanup() {
   stop_hadoop
 }
 

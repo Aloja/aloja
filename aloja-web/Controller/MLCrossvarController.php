@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLCrossvarController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlcrossvarAction()
 	{
 		$jsonData = array();
@@ -128,7 +135,6 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -147,8 +153,8 @@ class MLCrossvarController extends AbstractController
 			$current_model = $variables['current_model'];
 			$param_allmodels = $variables['umods'];
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
 			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
@@ -391,7 +397,6 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','umods','upred'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -413,8 +418,8 @@ class MLCrossvarController extends AbstractController
 			$param_predict = $variables['upred'];
 			$param_allmodels = $variables['umods'];
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
 			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
 
@@ -644,7 +649,7 @@ class MLCrossvarController extends AbstractController
 				'current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,
-					'label' => 'Model tu use: ',
+					'label' => 'Model to use: ',
 					'generateChoices' => function() {
 						return array();
 					},
@@ -674,7 +679,6 @@ class MLCrossvarController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$model_html = '';
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
@@ -696,6 +700,7 @@ class MLCrossvarController extends AbstractController
 			$param_current_model = $variables['current_model'];
 			$unseen = ($variables['unseen']) ? true : false;
 
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 			$cross_var1 = str_replace("id_cluster","e.id_cluster",$cross_var1);
 			$cross_var2 = str_replace("id_cluster","e.id_cluster",$cross_var2);
@@ -756,10 +761,10 @@ class MLCrossvarController extends AbstractController
 			}
 
 			// Get stuff from the DB
-			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
-				FROM aloja_ml.predictions as p
-				WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
-				GROUP BY p.instance
+			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(e.pred_time) as V3, e.instance
+				FROM aloja_ml.predictions as e
+				WHERE e.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
+				GROUP BY e.instance
 				ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 	  	  	$rows = $db->get_rows($query);
 			if (empty($rows))

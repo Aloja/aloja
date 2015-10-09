@@ -136,7 +136,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
     #default.vm.network :forwarded_port, host: 3307, guest: 3307 #mysql prod
 
     #use aloja-deploy for provisiong (bash scripts)
-    default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "aloja-web-vagrant"
+    default.vm.provision :shell, :path => "aloja-deploy/deploy_node.sh", :args => "aloja-web-vagrant", :binary => false
 
     #web document root
     #config.vm.synced_folder "./", "/vagrant"
@@ -172,7 +172,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
       node.ssh.insert_key = false #relaxed security
 
       #use aloja-deploy for provisiong (bash scripts)
-      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "-n " + nodeName + " vagrant-99"
+      node.vm.provision :shell, :path => "aloja-deploy/deploy_cluster.sh", :args => "-n " + nodeName + " vagrant-99", :binary => false
 
       node.vm.provider "virtualbox" do |v|
         v.name = "vagrant-99-" + num.to_s.rjust(2, '0')
