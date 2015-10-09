@@ -81,7 +81,7 @@ class Filters
                     return $this->filters['id_cluster']['namesClusters'][$value];
                 },
                 'generateChoices' => function() {
-                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs(' ')." ORDER BY c.name ASC");
                     $returnChoices = array();
                     foreach($choices as $choice) {
                         $returnChoices[] = $choice['id_cluster'];
@@ -286,13 +286,12 @@ class Filters
                     $choices = $definition['generateChoices']();
                     $this->filters[$filterName]['choices'] = $choices;
                 } else {
-                    $fromClause = "aloja2.execs e";
+                    $fromClause = "aloja2.execs";
                     if ($definition['table'] == 'clusters') {
-                        $fromClause .= ' JOIN clusters c USING (id_cluster) ';
+                        $fromClause .= ' JOIN clusters USING (id_cluster) ';
                     }
                     $field = isset($definition['field']) ? $definition['field'] : $filterName;
-                    $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs() . " ORDER BY $field ASC";
-
+                    $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs(' ') . " ORDER BY $field ASC";
                     $choices = $this->dbConnection->get_rows($queryChoices);
                     foreach($choices as $choice) {
                         $this->filters[$filterName]['choices'][] = $choice[$field];

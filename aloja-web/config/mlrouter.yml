@@ -67,3 +67,8 @@ mlprecision:
     pattern: "/mlprecision"
     controller: "alojaweb\\Controller\\MLPrecisionController::mlprecisionAction"
     screenName: "mlprecision"
+
+mlobstrees:
+    pattern: "/mlobstrees"
+    controller: "alojaweb\\Controller\\MLFindAttributesController::mlobservedtreesAction"
+    screenName: "mlobstrees"

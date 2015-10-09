@@ -50,7 +50,6 @@ class MLSummariesController extends AbstractController
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true)));
 
 			$where_configs = $this->filters->getWhereClause();
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
