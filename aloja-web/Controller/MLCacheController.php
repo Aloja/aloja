@@ -49,6 +49,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.precisions";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing precisions from DB');
 
+				$query = "DELETE FROM aloja_ml.observed_trees";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing observed trees from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
@@ -104,6 +107,15 @@ class MLCacheController extends AbstractController
 				$output[] = shell_exec($command);
  			}
 
+			if (isset($_GET['rmo']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM aloja_ml.observed_trees WHERE id_obstrees='".$_GET['rmo']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing an observed tree from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmo'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
 			// Compilation of Learners on Cache
 			$query="SELECT v.*, COUNT(t.id_findattrs) as num_trees
 				FROM (	SELECT s.*, COUNT(r.id_resolution) AS num_resolutions
@@ -124,7 +136,10 @@ class MLCacheController extends AbstractController
 			$jsonLearners = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','<a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
+				if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
+				$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
+
+				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
 			}
 			$jsonLearners = $jsonLearners.']';
 			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Actions'}]";
@@ -149,7 +164,7 @@ class MLCacheController extends AbstractController
 			$jsonMinconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Creation'},{'title':'Is_New'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
 
 			// Compilation of Resolutions on Cache
-			$query="SELECT DISTINCT id_resolution, id_learner, model, creation_time, sigma, count(*) AS instances
+			$query="SELECT DISTINCT id_resolution, id_learner, model, dataslice, creation_time, sigma, count(*) AS instances
 				FROM aloja_ml.resolutions
 				GROUP BY id_resolution
 				";
@@ -157,10 +172,10 @@ class MLCacheController extends AbstractController
 			$jsonResolutions = '[';
 		    	foreach($rows as $row)
 			{
-				$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$row['model']."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
+				$jsonResolutions = $jsonResolutions.(($jsonResolutions=='[')?'':',')."['".$row['id_resolution']."','".$row['id_learner']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','".$row['sigma']."','".$row['instances']."','<a href=\'/mlclearcache?rmr=".$row['id_resolution']."\'>Remove</a>']";
 			}
 			$jsonResolutions = $jsonResolutions.']';
-			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
+			$jsonResolutionsHeader = "[{'title':'ID'},{'title':'Learner'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Sigma'},{'title':'Instances'},{'title':'Actions'}]";
 
 			// Compilation of Summaries on Cache
 			$query="SELECT DISTINCT id_summaries, model, dataslice, creation_time
@@ -189,6 +204,20 @@ class MLCacheController extends AbstractController
 			$jsonPrecisions = $jsonPrecisions.']';
 			$jsonPrecisionsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 
+
+			// Compilation of Observed Trees on Cache
+			$query="SELECT id_obstrees, model, dataslice, creation_time
+				FROM aloja_ml.observed_trees
+				";
+			$rows = $dbml->query($query);
+			$jsonObstrees = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonObstrees = $jsonObstrees.(($jsonObstrees=='[')?'':',')."['".$row['id_obstrees']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmo=".$row['id_obstrees']."\'>Remove</a>']";
+			}
+			$jsonObstrees = $jsonObstrees.']';
+			$jsonObstreesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
+
 			$dbml = null;
 		}
 		catch(Exception $e)
@@ -208,7 +237,9 @@ class MLCacheController extends AbstractController
 				'summaries' => $jsonSummaries,
 				'header_summaries' => $jsonSummariesHeader,
 				'precisions' => $jsonPrecisions,
-				'header_precisions' => $jsonPrecisionsHeader
+				'header_precisions' => $jsonPrecisionsHeader,
+				'obstrees' => $jsonObstrees,
+				'header_obstrees' => $jsonObstreesHeader
 			)
 		);
 	}

@@ -18,8 +18,10 @@ class MLPredictionController extends AbstractController
 
 	public function mlpredictionAction()
 	{
-		$jsonExecs = array();
-		$instance = $error_stats = '';
+		$jsonExecs = $jsonLearners = $jsonLearningHeader = '[]';
+		$message = $instance = $error_stats = $config = $model_info = $slice_info = '';
+		$max_x = $max_y = 0;
+		$must_wait = 'NO';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -27,6 +29,9 @@ class MLPredictionController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
+
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
 
 			if (array_key_exists('dump',$_GET))
 			{
@@ -67,10 +72,13 @@ class MLPredictionController extends AbstractController
 				},
 				'filterGroup' => 'MLearning')
 			));
-
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn','umodel'))));
 
-			$where_configs = $this->filters->getWhereClause();
+			if ($instructions)
+			{
+				MLUtils::getIndexModels ($jsonLearners, $jsonLearningHeader, $dbml);
+				return $this->render('mltemplate/mlprediction.html.twig', array('jsonExecs' => $jsonExecs, 'learners' => $jsonLearners, 'header_learners' => $jsonLearningHeader, 'instructions' => 'YES'));
+			}
 
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
@@ -85,7 +93,7 @@ class MLPredictionController extends AbstractController
 			$learn_param = $learnParams['learn'];
 			$unrestricted = ($learnParams['umodel']) ? true : false;
 
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -142,139 +150,137 @@ class MLPredictionController extends AbstractController
 			}
 
 			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
 
 			if ($in_process)
 			{
-				$jsonExecs = "[]";
 				$must_wait = "YES";
-				$max_x = $max_y = 0;
 				if (isset($dump)) { echo "1"; exit(0); }
 				if (isset($pass)) { return 1; }
+				throw new \Exception('WAIT');
 			}
-			else
+
+			// Retrieve / Process the Learning
+			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.learners WHERE id_learner = '".md5($config)."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = ($tmp_result['num'] > 0);
+
+			if (!$is_cached) 
 			{
-				$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.learners WHERE id_learner = '".md5($config)."'");
-				$tmp_result = $is_cached_mysql->fetch();
-				$is_cached = ($tmp_result['num'] > 0);
+				// register model to DB
+				$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice)";
+				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."');";
 
-				if (!$is_cached) 
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
+
+				// read results of the CSV and dump to DB
+				foreach (array("tt", "tv", "tr") as $value)
 				{
-					// register model to DB
-					$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice)";
-					$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."');";
-
-					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
-
-					// read results of the CSV and dump to DB
-					foreach (array("tt", "tv", "tr") as $value)
+					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
 					{
-						if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-'.$value.'.csv', 'r')) !== FALSE)
+						$header = fgetcsv($handle, 1000, ",");
+
+						$token = 0; $insertions = 0;
+						$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
-							$header = fgetcsv($handle, 1000, ",");
+							$specific_instance = implode(",",array_slice($data, 2, 21));
+							$specific_data = implode(",",$data);
+							$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
+							$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
+							$specific_data = str_replace(",","','",$specific_data);
 
-							$token = 0; $insertions = 0;
-							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
-							while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+							$query_var = "SELECT count(*) as num FROM aloja_ml.predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
+							$result = $dbml->query($query_var);
+							$row = $result->fetch();
+					
+							// Insert instance values
+							if ($row['num'] == 0)
 							{
-								$specific_instance = implode(",",array_slice($data, 2, 21));
-								$specific_data = implode(",",$data);
-								$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
-								$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
-								$specific_data = str_replace(",","','",$specific_data);
-
-								$query_var = "SELECT count(*) as num FROM aloja_ml.predictions WHERE instance = '".$specific_instance."' AND id_learner = '".md5($config)."'";
-								$result = $dbml->query($query_var);
-								$row = $result->fetch();
-						
-								// Insert instance values
-								if ($row['num'] == 0)
-								{
-									if ($token != 0) { $query = $query.","; } $token = 1; $insertions = 1;
-									$query = $query."('".$specific_data."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
-								}
+								if ($token != 0) { $query = $query.","; } $token = 1; $insertions = 1;
+								$query = $query."('".$specific_data."','".md5($config)."','".$specific_instance."','".(($value=='tt')?3:(($value=='tv')?2:1))."') ";								
 							}
-
-							if ($insertions > 0)
-							{
-								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-							}
-							fclose($handle);
 						}
+
+						if ($insertions > 0)
+						{
+							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+						}
+						fclose($handle);
 					}
-
-					// Store file model to DB
-					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
-					$fp = fopen($filemodel, 'r');
-					$content = fread($fp, filesize($filemodel));
-					$content = addslashes($content);
-					fclose($fp);
-
-					$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
-					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
-
-					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
+					else throw new \Exception('Error on R processing. Result file '.md5($config).'-'.$value.'.csv not present');
 				}
 
-				$must_wait = "NO";
-				$count = 0;
-				$max_x = $max_y = 0;
-				$error_stats = '';
+				// Store file model to DB
+				$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+				$fp = fopen($filemodel, 'r');
+				$content = fread($fp, filesize($filemodel));
+				$content = addslashes($content);
+				fclose($fp);
 
-				$query = "SELECT exe_time, pred_time, instance FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND exe_time > 100 LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
-				$result = $dbml->query($query);
-				foreach ($result as $row)
-				{
-					$jsonExecs[$count]['y'] = (int)$row['exe_time'];
-					$jsonExecs[$count]['x'] = (int)$row['pred_time'];
-					$jsonExecs[$count]['mydata'] = $row['instance'];
+				$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file) VALUES ('".md5($config)."','learner','".$content."');";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file model into DB');
 
-					if ((int)$row['exe_time'] > $max_y) $max_y = (int)$row['exe_time'];
-					if ((int)$row['pred_time'] > $max_x) $max_x = (int)$row['pred_time'];
-					$count++;
-				}
-
-				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 AND exe_time > 100 GROUP BY predict_code";
-				$result = $dbml->query($query);
-				foreach ($result as $row)
-				{
-					$error_stats = $error_stats.'Dataset: '.(($row['predict_code']==1)?'tr':(($row['predict_code']==2)?'tv':'tt')).' => MAE: '.$row['MAE'].' RAE: '.$row['RAE'].'<br/>';
-				}
-
-				if (isset($dump))
-				{
-					$data = json_encode($jsonExecs);
-					echo "Observed, Predicted, Execution\n";
-					echo str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
-					exit(0);
-				}
-				if (isset($pass))
-				{
-					$data = json_encode($jsonExecs);
-					$retval = "Observed, Predicted, Execution\n";
-					$retval = $retval.str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
-					return $retval;
-				}
+				// Remove temporal files
+				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
+				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.fin');
+				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.dat');
 			}
-			$dbml = null;
+
+			// Retrieve results from DB
+			$count = 0;
+			$error_stats = '';
+			$jsonExecs = array();
+
+			$query = "SELECT exe_time, pred_time, instance FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND exe_time > 100 LIMIT 5000"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LIMIT WHEN THE BUG IS SOLVED
+			$result = $dbml->query($query);
+			foreach ($result as $row)
+			{
+				$jsonExecs[$count]['y'] = (int)$row['exe_time'];
+				$jsonExecs[$count]['x'] = (int)$row['pred_time'];
+				$jsonExecs[$count]['mydata'] = $row['instance'];
+
+				if ((int)$row['exe_time'] > $max_y) $max_y = (int)$row['exe_time'];
+				if ((int)$row['pred_time'] > $max_x) $max_x = (int)$row['pred_time'];
+				$count++;
+			}
+
+			$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE, predict_code FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0 AND exe_time > 100 GROUP BY predict_code";
+			$result = $dbml->query($query);
+			foreach ($result as $row)
+			{
+				$error_stats = $error_stats.'Dataset: '.(($row['predict_code']==1)?'tr':(($row['predict_code']==2)?'tv':'tt')).' => MAE: '.$row['MAE'].' RAE: '.$row['RAE'].'<br/>';
+			}
+
+			if (isset($dump))
+			{
+				$data = json_encode($jsonExecs);
+				echo "Observed, Predicted, Execution\n";
+				echo str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
+				exit(0);
+			}
+			if (isset($pass))
+			{
+				$data = json_encode($jsonExecs);
+				$retval = "Observed, Predicted, Execution\n";
+				$retval = $retval.str_replace(array('},{"y":','"x":','"mydata":','[{"y":','"}]'),array("\n",'','','',''),$data);
+				return $retval;
+			}
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			if ($e->getMessage () != "WAIT")
+			{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			}
 			$jsonExecs = '[]';
-			$max_x = $max_y = 0;
-			$must_wait = 'NO';
-			$dbml = null;
 		}
+		$dbml = null;
 
 		$return_params = array(
 			'jsonExecs' => json_encode($jsonExecs),
+			'learners' => $jsonLearners,
+			'header_learners' => $jsonLearningHeader,
 			'max_p' => min(array($max_x,$max_y)),
-			'unrestricted' => $unrestricted,
-			'learn' => $learn_param,
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,

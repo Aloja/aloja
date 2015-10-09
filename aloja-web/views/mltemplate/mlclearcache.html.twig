@@ -22,8 +22,13 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
+		<table width="100%"><tr><td>
 		<h4><p style="text-align:justify">Clear full cache database</p></h4>
 		<p style="text-align:justify">Do you REALLY want to clear the cache? [<a href="mlclearcache?ccache">CLEAR CACHE</a>]</p>
+		</td><td>
+		<h4><p style="text-align:justify">Refresh this page</p></h4>
+		<p style="text-align:justify"><a href="mlclearcache">REFRESH PAGE</a></p>
+		</td></tr></table>
 	</div>
 	<div id="contentdiv" style="float: left; width: 100%;">	
 		<h4><p style="text-align:justify">Table of current Learning algorithms</p></h4>
@@ -54,6 +59,12 @@
 		<div id="precisiondiv" style="float: left; width: 100%;">
 			<table id="precisiontable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
 		</div>
+		<br/>
+		<hr/>
+		<h4><p style="text-align:justify">Table of current Observed Trees computed</p></h4>
+		<div id="obstreesdiv" style="float: left; width: 100%;">
+			<table id="obstreestable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+		</div>
 	</div>
 	<div style="clear: both;"></div>
 {% endblock %}
@@ -71,7 +82,7 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 	<script type="text/javascript">
 	$(document).ready(function() {
-		oTable = $('#learntable').dataTable({
+		lTable = $('#learntable').dataTable({
 			"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
 			"aaData": {{ learners | raw }},
 			"columns": {{ header_learners | raw }},
@@ -111,6 +122,16 @@
 			"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
 			"aaData": {{ precisions | raw }},
 			"columns": {{ header_precisions | raw }},
+			"columnDefs" : [],
+			"sScrollX": "100%",
+			"bScrollCollapse": true
+		});
+
+
+		oTable = $('#obstreestable').dataTable({
+			"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+			"aaData": {{ obstrees | raw }},
+			"columns": {{ header_obstrees | raw }},
 			"columnDefs" : [],
 			"sScrollX": "100%",
 			"bScrollCollapse": true
