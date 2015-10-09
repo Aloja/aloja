@@ -12,31 +12,17 @@ use Twig_Environment;
 use Twig_Extension_Debug;
 use alojaweb\inc\AlojaTwigExtension;
 use alojaweb\inc\DBUtils;
+use alojaweb\inc\Utils;
 use alojaweb\Router\Router;
 
 class Container
 {
     private $container;
 
-    /**
-	 * @return checks if we are in development environment
-	 */
-    public function in_dev()
-    {
-        if (is_dir('/vagrant')) return true;
-
-        if (isset($_SERVER['HTTP_CLIENT_IP'])
-                || isset($_SERVER['HTTP_X_FORWARDED_FOR'])
-                || !in_array(@$_SERVER['REMOTE_ADDR'], array('127.0.0.1', 'fe80::1', '::1', '10.0.2.2', '192.168.99.1'))) {
-              return false;
-        } else
-              return true;
-    }
-
     public function __construct()
     {
         $container = new PimpleContainer();
-        if ($this->in_dev()) {
+        if (Utils::in_dev()) {
             ini_set('display_errors', 'On');
             error_reporting(E_ALL);
             //ini_set('memory_limit', '512M');

@@ -79,8 +79,8 @@ aloja_wget() {
   local URL="$1"
   local out_file_name="$2"
 
-  local wget_command="wget --progress=dot -e dotbytes=10M $URL"
-  [ "$out_file_name" ] && wget_command="$wget_command -O $out_file_name"
+  local wget_command="wget --progress=dot -e dotbytes=10M '$URL'"
+  [ "$out_file_name" ] && wget_command="$wget_command -O '$out_file_name'"
 
   #make sure we delete the file in case of an error, wget writes an emtpy file
   wget_command="$wget_command || rm $out_file_name"
@@ -957,7 +957,13 @@ config_ganglia_gmetad(){
 
 install_ganglia_web(){
 
-  local bootstrap_file="${FUNCNAME[0]}"
+  # temporarily change the bootstrap name for the vagrant VM to force update the web server
+  if inside_vagrant ; then
+    local bootstrap_file="${FUNCNAME[0]}_3"
+  else
+    local bootstrap_file="${FUNCNAME[0]}"
+  fi
+
   local tarball gdir
 
   if check_bootstraped "$bootstrap_file" ""; then

@@ -15,8 +15,7 @@ export JAVA_HOME=##JAVA_HOME##
 # export HADOOP_HEAPSIZE=2000
 
 # Extra Java runtime options.  Empty by default.
-# if [ "$HADOOP_OPTS" == "" ]; then export HADOOP_OPTS=-server; else HADOOP_OPTS+=" -server"; fi
-# export HADOOP_OPTS="-Djava.net.preferIPv4Stack=true"
+export HADOOP_OPTS="$HADOOP_OPTS -Djava.net.preferIPv4Stack=true"
 
 # Command specific options appended to HADOOP_OPTS when specified
 export HADOOP_NAMENODE_OPTS="-Dcom.sun.management.jmxremote $HADOOP_NAMENODE_OPTS"
@@ -27,7 +26,6 @@ export HADOOP_JOBTRACKER_OPTS="-Dcom.sun.management.jmxremote $HADOOP_JOBTRACKER
 # export HADOOP_TASKTRACKER_OPTS=
 # The following applies to multiple commands (fs, dfs, fsck, distcp etc)
 # export HADOOP_CLIENT_OPTS
-export HADOOP_CLIENT_OPTS="-Djava.net.preferIPv4Stack=true"
 
 # Extra ssh options.  Empty by default.
 # export HADOOP_SSH_OPTS="-o ConnectTimeout=1 -o SendEnv=HADOOP_CONF_DIR"
@@ -47,6 +45,9 @@ export HADOOP_LOG_DIR=##LOG_DIR##
 # export HADOOP_SLAVE_SLEEP=0.1
 
 # The directory where pid files are stored. /tmp by default.
+# NOTE: this should be set to a directory that can only be written to by 
+#       the users that are going to run the hadoop daemons.  Otherwise there is
+#       the potential for a symlink attack.
 # export HADOOP_PID_DIR=/var/hadoop/pids
 
 # A string representing this instance of hadoop. $USER by default.
@@ -54,6 +55,3 @@ export HADOOP_LOG_DIR=##LOG_DIR##
 
 # The scheduling priority for daemon processes.  See 'man nice'.
 # export HADOOP_NICENESS=10
-
-# Allow Hadoop to run with sysctl net.ipv6.bindv6only = 1
-# export HADOOP_ALLOW_IPV6=yes

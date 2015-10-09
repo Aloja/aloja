@@ -294,7 +294,7 @@ cache_get() {
 # $1 file path
 save_env() {
   local path="$1"
-  # save all exept for passwords
+  # save all exept for passwords andd SHS info
   ( set -o posix ; set ) | grep -i -v "password" | grep -i -v "SSH" > "$path"
 }
 
@@ -319,5 +319,14 @@ function_call() {
     else
       logger "DEBUG: Function name $function_name is not defined or not necessary"
     fi
+  fi
+}
+
+# Checks if the command has been run inside the vagrant VM
+inside_vagrant() {
+  if [ -d  "/vagrant" ] ; then
+    return 0
+  else
+    return 1
   fi
 }

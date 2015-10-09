@@ -8,6 +8,12 @@ use alojaweb\inc\DBUtils;
 
 class PerfDetailsController extends AbstractController
 {
+    public function __construct($container) {
+        parent::__construct($container);
+
+        $this->removeFilters(array('upred','uobsr'));
+    }
+
     public function performanceChartsAction()
     {
         $exec_rows = null;
@@ -25,7 +31,9 @@ class PerfDetailsController extends AbstractController
             $execs = Utils::get_GET_intArray('execs');
             if(empty($execs)) {
                 $whereClause = $this->filters->getWhereClause();
-                $query = "SELECT id_exec FROM execs WHERE 1 ". DBUtils::getFilterExecs()."$whereClause ";
+                $query = "SELECT e.id_exec FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+                          LEFT JOIN aloja_ml.predictions p USING (id_exec)
+                          WHERE 1 ". DBUtils::getFilterExecs()."$whereClause ";
                 $query .= (isset($_GET['random'])) ? '' : 'LIMIT 1';
                 $idExecs = $dbUtil->get_rows($query);
                 if(isset($_GET['random']))
@@ -720,6 +728,8 @@ class PerfDetailsController extends AbstractController
             $query = '
                 SELECT DISTINCT(t.JOBID)
                 FROM aloja_logs.JOB_tasks t
+                JOIN aloja2.execs e USING (id_exec)
+                WHERE e.perf_details = 1
                 #ORDER BY t.JOBID DESC
                 LIMIT 100
             ;';
@@ -739,7 +749,7 @@ class PerfDetailsController extends AbstractController
     public function dbscanexecsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters();
+        $this->buildFilters(array('perf_details' => array('default' => 1)));
         $whereClause = $this->filters->getWhereClause(array('execs' => 'e', 'clusters' => 'c'));
 
         $jobid = Utils::get_GET_string("jobid");
@@ -751,10 +761,12 @@ class PerfDetailsController extends AbstractController
             $query = "
                 SELECT DISTINCT(t.JOBID)
                 FROM aloja_logs.JOB_tasks t JOIN aloja2.execs e USING (id_exec)
-                JOIN aloja2.clusters c USING (id_cluster) WHERE 1=1 $whereClause
+                JOIN aloja2.clusters c USING (id_cluster)
+                LEFT JOIN aloja_ml.predictions p USING (id_exec)
+                WHERE 1=1 $whereClause
                 LIMIT 100
             ;";
-            $jobid = $db->get_rows($query)[rand(0,99)]['JOBID'];
+            $jobid = $db->get_rows($query)[rand(0,9)]['JOBID'];
         }
 
         list($bench, $job_offset, $id_exec) = $this->container->getDBUtils()->get_jobid_info($jobid);
@@ -782,6 +794,7 @@ class PerfDetailsController extends AbstractController
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }
+
         if(!$idExec) {
             $this->container->getTwig()->addGlobal('message','No executions with performance details available');
             $exec = null;
@@ -802,7 +815,7 @@ class PerfDetailsController extends AbstractController
         try {
             $idExec = Utils::get_GET_string('id_exec');
             if(!$idExec)
-                $idExec = $dbConn->get_rows("SELECT id_exec FROM aloja2.execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 AND hadoop_version = 2 LIMIT 5")[rand(0,5)]['id_exec'];
+                $idExec = @$dbConn->get_rows("SELECT id_exec FROM aloja2.execs WHERE perf_details = 1 AND valid = 1 AND filter = 0 AND hadoop_version = 2 LIMIT 5")[rand(0,5)]['id_exec'];
         } catch (\Exception $e) {
             $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
         }

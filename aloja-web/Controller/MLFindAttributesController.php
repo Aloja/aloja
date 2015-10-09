@@ -9,6 +9,13 @@ use alojaweb\inc\MLUtils;
 
 class MLFindAttributesController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlfindattributesAction()
 	{
 		$current_model = $model_info = $instance = $instances = $message = $tree_descriptor = $model_html = $config = '';
@@ -44,7 +51,7 @@ class MLFindAttributesController extends AbstractController
 			'current_model' => array(
 				'type' => 'selectOne',
 				'default' => null,
-				'label' => 'Model tu use: ',
+				'label' => 'Model to use: ',
 				'generateChoices' => function() {
 					return array();
 				},
