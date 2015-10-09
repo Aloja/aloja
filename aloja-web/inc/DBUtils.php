@@ -49,6 +49,7 @@ class DBUtils
 
     public function get_rows($sql, $params = array())
     {
+        echo("$sql <br />");
         $md5_sql = md5($sql.http_build_query($params, '', ','));
         $file_path = "{$this->container['config']['db_cache_path']}/CACHE_$md5_sql.sql";
 
@@ -106,7 +107,7 @@ class DBUtils
         if($execsAlias != ' ')
             $execsAlias = "$execsAlias.";
 
-        return " AND 1=1 ";
+        return " AND ${execsAlias}id_cluster NOT IN (select id_cluster from clusters where id_cluster = '35' OR  provider = 'rackspacecbd') " ;
 
         if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
             return " " ;
