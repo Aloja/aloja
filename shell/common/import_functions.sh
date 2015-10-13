@@ -977,15 +977,18 @@ import_vmstats_files() {
 # More info at: https://github.com/Aloja/AOP4Hadoop
 import_AOP4Hadoop_files() {
   #TODO: do not hardcode this name...
+  table_name="AOP4Hadoop"
   cd aloja
   for AOP_file_name in *.log ; do
     local tmp_file="tmp_${AOP_file_name}.csv"
     if [ -f "$AOP_file_name" ] ; then
       if [[ $(head $AOP_file_name |wc -l) -gt 1 ]] ; then
-        table_name="AOP4Hadoop"
+        echo "Processing AOP4Hadoop $AOP_file_name in `pwd`"
         logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
-        awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$3","$4}' "$AOP_file_name" > "$tmp_file"
-        insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
+        grep ",2:" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); match($5, /(.*:)([0-9]+):([0-9]+)$/, arr);  print "NULL,"id_exec","$1","$2","$3","$4",NULL,"arr[2]","$5}' > "$tmp_file"
+        if [[ $(head $tmp_file |wc -l) -gt 0 ]] ; then
+          insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
+        fi
       fi
     fi
   done
