@@ -269,9 +269,9 @@ class RestController extends AbstractController
                 $query = 'SELECT
                     concat(
                     "2:",
-                    (cast(substring(id_host,2) TO INTEGER )+1),
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
                     ":1:",
-                    (cast(substring(id_host,2) TO INTEGER )+1),
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
                     ":1:",
                     (unix_timestamp(date) -
                     (select unix_timestamp(min(date)) FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,

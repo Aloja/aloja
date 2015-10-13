@@ -29,6 +29,29 @@
 
 		<div id="waitdiv" style="float: left; width: 100%;"></div>
 
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>&nbsp;</td><td>This tool will <b>find outliers and anomalies</b> for the selected executions</td></tr>
+				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box):<br/>1) The values for each attribute to select the data to examine (if no value selected, all values will be added)<br/>2) The model that will be used to classify the executions.</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Find Anomalies</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
+					a) A <b>chart</b> displaying the observed time of the executions vs. the predicted time by the model. In colors, the executions will be classified as <b>legitimate</b>, <b>warning</b> or <b>outlier</b>. The far a point is from the line x=y, the higher are the chances to be an outlier or a warning.<br/> 
+					b) A <b>table</b> with the executions, classified each one as legitimate, warning or outlier.<br/>
+					c) A <b>button</b> to accept the classification results, and tag the executions in the DataBase.
+				</td></tr>
+				</table>
+			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently anomaly searches: <a id="displayText" href="javascript:toggle('outexpsdiv','displayText');">show</a></h4><br/> 
+			<div id="outexpsdiv" style="float: left; width: 100%; display:none;">
+				<table id="outexpstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
+		</div>
+
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
 			<div class="panel-heading" role="tab" id="headingChartDiv">
 				<i id="ChartFG" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
@@ -123,11 +146,15 @@
 		var text = document.getElementById(textid);
 		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
 		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		if (xTable) xTable.fnAdjustColumnSizing();
 	}
 
 	$(document).ready(function()
 	{
 		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Find Anomalies');
+		$("#submitForm").html('Find Anomalies');
 
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 		if ('{{jsonData | raw}}' == '[]' && '{{jsonWarns | raw}}' == '[]' && '{{jsonOuts | raw}}' == '[]') $("#footer").hide();
@@ -139,6 +166,31 @@
 			else url = url + '?register=1';
 			window.location.href = url;
 		});
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#outliersFilter').hide(); $('#headingOutliers').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+
+			var outexps = {{ outexps | raw }};
+			var outexps_header = {{ header_outexps | raw }};
+
+			if (outexps != [])
+			{
+				xTable = $('#outexpstable').dataTable({
+					"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+					"aaData": outexps,
+					"columns": outexps_header,
+					"columnDefs" : [],
+					"sScrollX": "100%",
+					"bScrollCollapse": true
+				});
+			}
+
+			return;
+		}
 
 		if ("{{must_wait}}"== "NO")
 		{
@@ -194,7 +246,7 @@
 			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait<!--<br/>{{instance}}--></p>";
 
 			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
-			$('#outliersFilter').show(); $('#headingOutliers').hide();
+			$('#outliersFilter').hide(); $('#headingOutliers').hide();
 			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
 
 			setInterval( function() { window.location.reload(); }, 300000 );
