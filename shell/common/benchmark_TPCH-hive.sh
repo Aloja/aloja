@@ -3,7 +3,6 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
 BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-
 [ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "query%g" 1 22)"
 
 # Some benchmark specific validations
