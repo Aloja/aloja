@@ -32,7 +32,8 @@ set_hadoop_requires() {
   fi
 
   if [ "$HADOOP_EXTRA_JARS" ] ; then
-    BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
+    #BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
+    BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="http://autonomic.ac.upc.edu/$HADOOP_EXTRA_JARS.tar.gz"
   fi
 
   #also set the config here
@@ -61,7 +62,7 @@ YARN_LOG_DIR='$HDD/logs';"
     # Right now jar files are hard-coded
     to_export="$to_export
 export HADOOP_USER_CLASSPATH_FIRST=true;
-export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.6.5.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;"
+export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjtools-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/ant-1.9.6.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;"
   fi
 
   echo -e "$to_export\n"

@@ -269,12 +269,24 @@ class RestController extends AbstractController
 
             //check if it needs to be created
             if (true ) {  //Caching of file disabled !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
+	       $query = 'SELECT DISTINCT  id_host
+			 FROM aloja_logs.SAR_cpu s
+			 JOIN aloja2.execs e USING(id_exec)
+			 JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
+			 WHERE id_exec = "'.$id_exec.'"
+			 ORDER BY ABS(id_host)
+			 LIMIT 1;';
+
+		$low_id_rows = $dbUtils->get_rows($query);
+                if (!isset($low_id_rows)) throw new \Exception('No data returned!');
+		$lowid = $low_id_rows[0]['id_host'];
+
                 $query = 'SELECT
                     concat(
                     "2:",
-                    (cast(substring(id_host,2) TO INTEGER )+1),
+                    (cast(id_host AS UNSIGNED ) - '.$lowid.' +1),
                     ":1:",
-                    (cast(substring(id_host,2) TO INTEGER )+1),
+                    (cast(id_host AS UNSIGNED ) - '.$lowid.' +1),
                     ":1:",
                     (unix_timestamp(date) -
                     (select unix_timestamp(min(date)) FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
