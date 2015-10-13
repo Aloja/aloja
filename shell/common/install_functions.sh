@@ -557,7 +557,12 @@ cd -;
 #install R packages (slow)
 install_R() {
 
-  local bootstrap_file="${FUNCNAME[0]}"
+  # temporarily change the bootstrap name for the vagrant VM to force update the R packages
+  if inside_vagrant ; then
+    local bootstrap_file="${FUNCNAME[0]}_2"
+  else
+    local bootstrap_file="${FUNCNAME[0]}"
+  fi
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
