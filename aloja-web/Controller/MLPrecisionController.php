@@ -9,10 +9,18 @@ use alojaweb\inc\MLUtils;
 
 class MLPrecisionController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlprecisionAction()
 	{
 		$jsonDiversity = $jsonPrecisions = $jsonDiscvars = $jsonHeaderDiv = $jsonPrecisionHeader = '[]';
 		$instance = $error_stats = '';
+		$jsonPrecexps = $jsonPrecexpsHeader = '[]';
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -20,24 +28,19 @@ class MLPrecisionController extends AbstractController
 		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
-		    	
-		    	$where_configs = "";
 
-			$dump = null;
-			$pass = null;
-			if (count($_GET) <= 1
-			|| (count($_GET) == 2 && array_key_exists("dump",$_GET))
-			|| (count($_GET) == 2 && array_key_exists("pass",$_GET))
-			|| (count($_GET) == 3 && array_key_exists("dump",$_GET) && array_key_exists("pass",$_GET)))
- 			{
-				$pass = (isset($_GET["pass"])) ? $_GET["pass"] : null;
-				$dump =  (isset($_GET["dump"])) ? $_GET["dump"] : null;
-				unset($_GET["pass"]);
-				unset($_GET["dump"]);
- 			}
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
+
 			$this->buildFilters();
+
+			if ($instructions)
+			{
+				MLUtils::getIndexPrecExps ($jsonPrecexps, $jsonPrecexpsHeader, $dbml);
+				return $this->render('mltemplate/mlprecision.html.twig', array('precexps' => $jsonPrecexps, 'header_precexps' => $jsonPrecexpsHeader,'discvars' => '[]','diversity' => '[]','precisions' => '[]','diversityHeader' => '[]','precisionHeader' => '[]','instructions' => 'YES'));
+			}
+
 			$where_configs = $this->filters->getWhereClause();
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
@@ -68,16 +71,16 @@ class MLPrecisionController extends AbstractController
 			{
 				// get headers for csv
 				$header_names = array(
-					'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-					'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','name' => 'Cl.Name',
-					'datanodes' => 'Datanodes','headnodes' => 'Headnodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-					'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version'
+					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
+					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
+					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
+					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version'=>'Hadoop.Version'
 				);
 				$headers = array_keys($header_names);
 				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
@@ -195,7 +198,7 @@ class MLPrecisionController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage ());
 			$jsonDiversity = $jsonPrecisions = $jsonDiscvars = $jsonHeaderDiv = $jsonPrecisionHeader = '[]';
 			$must_wait = 'NO';
 			$dbml = null;
@@ -207,6 +210,8 @@ class MLPrecisionController extends AbstractController
 			'precisions' => $jsonPrecisions,
 			'diversityHeader' => $jsonHeaderDiv,
 			'precisionHeader' => $jsonPrecisionHeader,
+			'precexps' => $jsonPrecexps,
+			'header_precexps' => $jsonPrecexpsHeader,
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,

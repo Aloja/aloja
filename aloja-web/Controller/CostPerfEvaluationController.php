@@ -44,7 +44,7 @@ class CostPerfEvaluationController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
+            $execs = "SELECT e.*, c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -108,10 +108,15 @@ class CostPerfEvaluationController extends AbstractController
 
         $filter_execs = DBUtils::getFilterExecs();
 
+		$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
+		$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
+		$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
         $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN aloja2.clusters c USING (id_cluster)
-        		INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM aloja2.execs JOIN aloja2.clusters USING(id_cluster)
-        					 WHERE  1 $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
-        		t ON e.exe_time = t.minexe WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+ 				  LEFT JOIN aloja_ml.predictions p USING (id_exec)
+						INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
+									LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
+									 WHERE  1 $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
+        		  t ON e.exe_time = t.minexe WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
         
     	try {
     		$rows = $db->get_rows($query);
@@ -199,11 +204,16 @@ class CostPerfEvaluationController extends AbstractController
     		$minExeTime = -1;
     		$maxExeTime = 0;
     		$sumCount = 0;
-    
+
+			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
+			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
+			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT MIN(exe_time) minexe FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster)
-        					 WHERE  1 $filter_execs $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
+    		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
+      		  INNER JOIN (SELECT MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
+      		  				LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
+        					 WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
@@ -286,10 +296,14 @@ class CostPerfEvaluationController extends AbstractController
     		$minExeTime = -1;
     		$maxExeTime = 0;
 
+			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
+			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
+			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
     		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
-      		  INNER JOIN (SELECT count(*) as scount, MIN(exe_time) minexe FROM aloja2.execs e JOIN aloja2.clusters c USING(id_cluster)
-        					 WHERE  1 $filter_execs $this->whereClause GROUP BY name,net,disk ORDER BY name ASC)
+    		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
+      		  INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
+        					 LEFT JOIN aloja_ml.predictions p2 USING (id_exec) WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
     
@@ -394,7 +408,19 @@ class CostPerfEvaluationController extends AbstractController
         try {
             $filter_execs = DBUtils::getFilterExecs();
 
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe from execs e2 JOIN aloja2.clusters c2 USING (id_cluster) WHERE 1 $this->whereClause GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
+			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
+			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
+            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.*
+					FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+					LEFT JOIN aloja_ml.predictions p USING (id_exec)
+					INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
+								from execs e2 JOIN aloja2.clusters c2 USING (id_cluster)
+								LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
+								WHERE 1 $innerQueryWhere GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
+					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
+					WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
+					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
 
             $vmSizes = array();
             $categories = array();

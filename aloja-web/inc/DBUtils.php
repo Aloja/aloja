@@ -102,13 +102,12 @@ class DBUtils
 
     public static function getFilterExecs($execsAlias = "e")
     {
-        return " AND 1=1" ;
+        //Trick to avoid bugs on empty alias
+        if($execsAlias != ' ')
+            $execsAlias = "$execsAlias.";
 
-        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
-            return " " ;
-        } else {
-            return " AND $execsAlias.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
-        }
+        //To test the queries, but doesn't filter rows
+        return " AND ${execsAlias}id_cluster NOT IN (select id_cluster from clusters where id_cluster = '999' OR  provider = 'notexists') " ;
     }
 
     public function get_execs($filter_execs = null)
@@ -316,8 +315,8 @@ class DBUtils
                 e.`bench`,
                 e.`id_exec`
             FROM
-                `aloja_logs.JOB_details` d,
-                `aloja2.execs` e
+                aloja2.JOB_details d
+                JOIN aloja2.execs e USING (id_exec)
             WHERE
                 e.`id_exec` = d.`id_exec` AND
                 d.`JOBID` = :jobid
@@ -355,16 +354,16 @@ class DBUtils
                 e.`bench`,
                 d.`id_exec`,
                 d.`JOBID` as jobid
-            FROM `aloja_logs.JOB_details` d
+            FROM aloja2.JOB_details d
 
-            JOIN `aloja2.execs` e
+            JOIN aloja2.execs e
             ON e.`id_exec` = d.`id_exec`
             INNER JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster
-            LEFT OUTER JOIN `aloja2.JOB_dbscan` s
+            LEFT OUTER JOIN aloja2.JOB_dbscan s
             ON
                 e.`bench` = s.`bench` AND
-                s.`metric_x` = :metric_x AND
-                s.`metric_y` = :metric_y AND
+                s.`metric_x` = '$metric_x' AND
+                s.`metric_y` = '$metric_y' AND
                 d.`id_exec` = s.`id_exec`
                 ".$task_type_select('s')."
 
@@ -372,8 +371,9 @@ class DBUtils
             ON
                 d.`JOBID` = t.`JOBID`
                 ".$task_type_select('t')."
-            WHERE e.`bench` = :bench
-            AND d.`JOBID` LIKE :job_offset
+            LEFT JOIN aloja_ml.predictions p ON p.id_exec = e.id_exec
+            WHERE e.`bench` = '$bench'
+            AND d.`JOBID` LIKE '%_$job_offset'
             AND s.`id` IS null
             AND t.`JOBID` IS NOT null
             $where_configs
@@ -381,12 +381,7 @@ class DBUtils
             ORDER BY d.`id_exec`
         ;";
 
-        $query_params = array(
-            ":bench" => $bench,
-            ":job_offset" => "%_$job_offset",
-            ":metric_x" => $metric_x,
-            ":metric_y" => $metric_y
-        );
+        $query_params = array();
 
         // Done manually to bypass cache
         $sth = $this->dbConn->prepare($query);
@@ -420,7 +415,7 @@ class DBUtils
         $query_values = implode(', ', array_fill(0, count($clusters), '('.str_pad('', (count($columns)*2)-1, '?,').')'));
         $query = "
             INSERT INTO
-                `aloja2.JOB_dbscan` (".implode(',', $columns).")
+                aloja2.JOB_dbscan (".implode(',', $columns).")
             VALUES
                 $query_values
         ;";

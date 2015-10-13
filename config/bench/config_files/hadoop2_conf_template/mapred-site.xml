@@ -67,6 +67,11 @@
     <value>##MAX_REDS##</value>
 </property>
 
+<property>
+    <name>yarn.app.mapreduce.am.resource.mb</name>
+    <value>##AM_MB##</value>
+</property>
+
 
 <property>
   <name>dfs.datanode.hostname</name>

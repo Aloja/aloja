@@ -20,7 +20,7 @@ get_hadoop_config_folder() {
 
 set_hadoop_config_folder() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS
-$(get_hadoop_config_folder)"
+    $(get_hadoop_config_folder)"
 }
 
 # Sets the required files to download/copy
@@ -67,6 +67,33 @@ export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.
 
   echo -e "$to_export\n"
 }
+
+# Function to return job specific config
+# rr in the case of PaaS where we cannot change the server config
+get_hadoop_job_config() {
+  local job_config="$BENCH_EXTRA_CONFIG"
+
+  # For v2 only
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    job_config+=" -D mapreduce.job.maps='$MAX_MAPS'"
+    job_config+=" -D mapreduce.job.reduces='$MAX_MAPS'"
+    #if [ ! -z "$AM_MB" ]; then
+    #  job_config+=" -Dyarn.yarn.app.mapreduce.am.resource.mb='${AM_MB}'"
+    #fi
+    if [ ! -z "$MAPS_MB" ]; then
+      job_config+=" -Dmapreduce.map.memory.mb='${MAPS_MB}'"
+    fi
+    if [ ! -z "$REDUCES_MB" ]; then
+      job_config+=" -Dmapreduce.reduce.memory.mb='${REDUCES_MB}'"
+    fi
+  else
+    job_config+=" -D mapred.map.tasks='$MAX_MAPS'"
+    job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
+  fi
+
+  echo -e "$job_config"
+}
+
 
 # Get the list of slaves
 # TODO should be improved to include master node as worker node if necessary
@@ -228,34 +255,6 @@ ${PORT_PREFIX}8020"
   echo -e "$ports"
 }
 
-get_hive_env(){
-  echo "export HADOOP_PREFIX=${BENCH_HADOOP_DIR} && \
-        export HADOOP_USER_CLASSPATH_FIRST=true && \
-        export PATH=$PATH:$HIVE_HOME/bin:$HADOOP_HOME/bin:$JAVA_HOME/bin && \
-  "
-}
-
-prepare_hive_config() {
-
-subs=$(cat <<EOF
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##HIVE_HOME##,$HIVE_HOME,g;
-EOF
-)
-
-  #to avoid perl warnings
-  export LC_CTYPE=en_US.UTF-8
-  export LC_ALL=en_US.UTF-8
-
-  logger "INFO: Copying Hive and Hive-testbench dirs"
-  $DSH "cp -ru $BENCH_SOURCE_DIR/apache-hive-1.2.0-bin $HIVE_B_DIR/"
-
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-env.sh.template > $HIVE_HOME/conf/hive-env.sh"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-default.xml.template > $HIVE_HOME/conf/hive-default.xml"
-  $DSH "/usr/bin/perl -pe \"$subs\" $HIVE_HOME/conf/hive-log4j.properties.template > $HIVE_HOME/conf/hive-log4j.properties"
-  $DSH "/usr/bin/perl -pe \"$subs\" $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME.template > $TPCH_SOURCE_DIR/sample-queries-tpch/$TPCH_SETTINGS_FILE_NAME"
-}
-
 # Sets the substitution values for the hadoop config
 get_substitutions() {
 
@@ -294,7 +293,7 @@ s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
 s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
 s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$REDUCES_MB,g;
+s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 EOF
@@ -359,7 +358,12 @@ mkdir -p $JOB_PATH/conf_$node;
 cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
   done
 
-  [ "$DELETE_HDFS" == "1" ] && format_HDFS "$(get_hadoop_major_version)"
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    format_HDFS "$(get_hadoop_major_version)"
+  else
+    logger "INFO: Deleting previous Job history files (in case necessary)"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
+  fi
 
   # Set correct permissions for instrumentation's sniffer
   [ "$INSTRUMENTATION" == "1" ] && instrumentation_set_perms
@@ -590,7 +594,7 @@ $(get_hadoop_exports)"
 
   logger "DEBUG: $hadoop_exports"
 
-  $DSH_MASTER "$hadoop_exports /usr/bin/time -f 'Time ${prefix}${bench} %e' $cmd"
+  $DSH_MASTER "$hadoop_exports export TIMEFORMAT='Time ${prefix}${bench} %R' && time $cmd"
 
   local end_exec="$(timestamp)"
 
@@ -668,6 +672,7 @@ execute_hadoop_new(){
   logger "DEBUG: Hadoop command:$hadoop_cmd"
 
   if [ "$time_exec" ] ; then
+    save_disk_usage "BEFORE"
     restart_monit
     set_bench_start "$bench"
   fi
@@ -691,9 +696,9 @@ hadoop_delete_path() {
   local path_to_delete="$2"
 
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    local delete_cmd="-rm -r -f"
+    local delete_cmd="-rm -r -f -skipTrash"
   else
-    local delete_cmd="-rmr -f"
+    local delete_cmd="-rmr -skipTrash"
   fi
 
   execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
@@ -745,7 +750,7 @@ export MAX_ITERATION=$MAX_ITERATION && \
 export NUM_ITERATIONS=$NUM_ITERATIONS && \
 "
 
-  $DSH_MASTER "$EXP /usr/bin/time -f 'Time ${3}${1} %e' $2"
+  $DSH_MASTER "$EXP export TIMEFORMAT='Time ${3}${1} %R' && time $2"
 
   local end_exec=`timestamp`
 
@@ -811,14 +816,21 @@ save_hadoop() {
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal /tmp/hadoop-yarn/staging/history $JOB_PATH/$1"
-    logger "INFO: Deleting history files after copy to local"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
+    ##Copy history logs
+    logger "INFO: Getting mapreduce job history logs from HDFS"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$1"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history"
+    ##Copy jobhistory daemon logs
+    logger "INFO: Moving jobhistory daemon logs to logs dir"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/logs"
+    #logger "INFO: Deleting history files after copy to local"
+
+#    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
   fi
 
   if [[ "EXECUTE_HIBENCH" == "true" ]]; then
     #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1"
-    $DSH_MASTER  "$BENCH_HIB_DIR/$bench/hibench.report" "$JOB_PATH/$1/"
+    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$1/"
   fi
 
   #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"

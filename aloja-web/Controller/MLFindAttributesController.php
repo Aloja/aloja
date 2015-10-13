@@ -9,10 +9,20 @@ use alojaweb\inc\MLUtils;
 
 class MLFindAttributesController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mlfindattributesAction()
 	{
-		$instance = $instances =  $message = $tree_descriptor = $model_html = $config = '';
+		$current_model = $model_info = $instance = $instances = $message = $tree_descriptor = $model_html = $config = '';
 		$possible_models = $possible_models_id = $other_models = array();
+		$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+		$jsonFAttrs = $jsonFAttrsHeader = '[]';
+		$mae = $rae = 0;
 		$must_wait = 'NO';
 		try
 		{
@@ -21,6 +31,9 @@ class MLFindAttributesController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 		    	$db = $this->container->getDBUtils();
+
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
 
 			if (array_key_exists('dump',$_GET))
 			{
@@ -34,10 +47,11 @@ class MLFindAttributesController extends AbstractController
 				unset($_GET["pass"]);
 			}
 
-			$this->buildFilters(array('current_model' => array(
+			$this->buildFilters(array(
+			'current_model' => array(
 				'type' => 'selectOne',
 				'default' => null,
-				'label' => 'Model tu use: ',
+				'label' => 'Model to use: ',
 				'generateChoices' => function() {
 					return array();
 				},
@@ -66,7 +80,6 @@ class MLFindAttributesController extends AbstractController
 			)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
-			$where_configs = $this->filters->getWhereClause();
 
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
@@ -76,11 +89,8 @@ class MLFindAttributesController extends AbstractController
 			$param_current_model = $learnParams['current_model'];
 			$unseen = ($learnParams['unseen']) ? true : false;
 
-			// FIXME PATCH FOR PARAM LIBRARIES WITHOUT LEGACY
+			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
-
-			$jsonData = $jsonHeader = "[]";
-			$mae = $rae = 0;
 
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
@@ -101,6 +111,18 @@ class MLFindAttributesController extends AbstractController
 			}
 			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
+
+			if ($instructions)
+			{
+
+				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
+
+				MLUtils::getIndexFAttrs ($jsonFAttrs, $jsonFAttrsHeader, $dbml);
+
+				$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+				return $this->render('mltemplate/mlfindattributes.html.twig', array('fattrs' => $jsonFAttrs, 'header_fattrs' => $jsonFAttrsHeader, 'models' => $model_html,'instructions' => 'YES'));
+			}
 
 			if (!empty($possible_models_id) || $current_model != "")
 			{
@@ -201,8 +223,10 @@ class MLFindAttributesController extends AbstractController
 						}
 
 						// Descriptive Tree
-						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output="html" -v 2> /dev/null');
+						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output=nodejson -v 2> /dev/null');
 						$tree_descriptor = substr($tree_descriptor, 5, -2);
+						$tree_descriptor = str_replace("\\\"","\"",$tree_descriptor);
+						$tree_descriptor = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor);
 						$query = "INSERT INTO aloja_ml.trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
 
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
@@ -220,90 +244,88 @@ class MLFindAttributesController extends AbstractController
 
 				if (!$is_cached)
 				{
-					$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 					$must_wait = 'YES';
 					if (isset($dump)) { $dbml = null; echo "1"; exit(0); }
 					if (isset($pass)) { $dbml = null; return "1"; }
+					throw new \Exception('WAIT');
 				}
-				else
+
+				if (isset($pass) && $pass == 2) { $dbml = null; return "2"; }
+
+				// Fetch results and compose JSON
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
+				$jsonHeader = '[{title:""}';
+				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+				$jsonHeader = $jsonHeader.']';
+
+				$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions AS e, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
+				$result = $dbml->query($query);
+				$jsonData = '[';
+				foreach ($result as $row)
 				{
-					if (isset($pass) && $pass == 2) { $dbml = null; return "2"; }
+					if ($jsonData!='[') $jsonData = $jsonData.',';
+					$jsonData = $jsonData."['".$row['num']."','".str_replace(",","','",$row['instance'])."','".$row['pred_time']."','".$row['exe_time']."']";
+				}
+				$jsonData = $jsonData.']';
 
-					// Fetch results and compose JSON
-					$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
-					$jsonHeader = '[{title:""}';
-					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
-					$jsonHeader = $jsonHeader.']';
+				foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
 
-					$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
-					$result = $dbml->query($query);
-					$jsonData = '[';
-					foreach ($result as $row)
-					{
-						if ($jsonData!='[') $jsonData = $jsonData.',';
-						$jsonData = $jsonData."['".$row['num']."','".str_replace(",","','",$row['instance'])."','".$row['pred_time']."','".$row['exe_time']."']";
-					}
-					$jsonData = $jsonData.']';
+				// Fetch MAE & RAE values
+				$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions AS e WHERE id_learner='".md5($config)."' AND predict_code > 0";
+				$result = $dbml->query($query);
+				$row = $result->fetch();
+				$mae = $row['MAE'];
+				$rae = $row['RAE'];
 
-					foreach (range(1,33) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
+				// Dump case
+				if (isset($dump))
+				{
+					echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
+					echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
 
-					// Fetch MAE & RAE values
-					$query = "SELECT AVG(ABS(exe_time - pred_time)) AS MAE, AVG(ABS(exe_time - pred_time)/exe_time) AS RAE FROM aloja_ml.predictions WHERE id_learner='".md5($config)."' AND predict_code > 0";
-					$result = $dbml->query($query);
-					$row = $result->fetch();
-					$mae = $row['MAE'];
-					$rae = $row['RAE'];
+					$dbml = null;
+					exit(0);
+				}
+				if (isset($pass) && $pass == 1)
+				{
+					$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
+					$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
 
-					// Dump case
-					if (isset($dump))
-					{
-						echo "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
-						echo str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
+					$dbml = null;
+					return $retval;
+				}
 
-						$dbml = null;
-						exit(0);
-					}
-					if (isset($pass) && $pass == 1)
-					{
-						$retval = "ID".str_replace(array("[","]","{title:\"","\"}"),array('','',''),$jsonHeader)."\n";
-						$retval .= str_replace(array('],[','[[',']]'),array("\n",'',''),$jsonData);
-
-						$dbml = null;
-						return $retval;
-					}
-
-					// Display Descriptive Tree
-					$query = "SELECT tree_code FROM aloja_ml.trees WHERE id_findattrs = '".md5($config)."'";
-					$result = $dbml->query($query);
-					$row = $result->fetch();
-					$tree_descriptor = $row['tree_code'];
-				}			
+				// Display Descriptive Tree
+				$query = "SELECT tree_code FROM aloja_ml.trees WHERE id_findattrs = '".md5($config)."'";
+				$result = $dbml->query($query);
+				$row = $result->fetch();
+				$tree_descriptor = $row['tree_code'];			
 			}
 			else
 			{
-	 			$message = "There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.";
-				$must_wait = 'NO';
 				if (isset($dump)) { echo "-1"; exit(0); }
 				if (isset($pass)) { return "-1"; }
+				throw new \Exception("There are no prediction models trained for such parameters. Train at least one model in 'ML Prediction' section.");
 			}
-			$dbml = null;
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			if ($e->getMessage () != "WAIT")
+			{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			}
 
-			$jsonData = $jsonHeader = "[]";
-			$must_wait = 'NO';
-			$mae = $rae = 0;
-
-			$dbml = null;
+			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
 			if (isset($pass)) { return "-2"; }
 		}
+		$dbml = null;
 
 		$return_params = array(
 			'instance' => $instance,
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
+			'fattrs' => $jsonFAttrs,
+			'header_fattrs' => $jsonFAttrsHeader,
 			'models' => $model_html,
 			'models_id' => $possible_models_id,
 			'other_models_id' => $other_models,
@@ -316,11 +338,220 @@ class MLFindAttributesController extends AbstractController
 			'instances' => implode("<br/>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",$instances),
 			'model_info' => $model_info,
 			'id_findattr' => md5($config),
-			'unseen' => $unseen,
 			'tree_descriptor' => $tree_descriptor,
 		);
 		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
 		return $this->render('mltemplate/mlfindattributes.html.twig', $return_params);
+	}
+
+	public function mlobservedtreesAction()
+	{
+		$model_info = $instance = $slice_info = $message = $config = $tree_descriptor_ordered = $tree_descriptor_gini = '';
+		$jsonData = $jsonHeader = '[]';
+		$jsonObstrees = $jsonObstreesHeader = '[]';
+		$must_wait = 'NO';
+		try
+		{
+			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+
+		    	$db = $this->container->getDBUtils();
+
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
+
+			$this->buildFilters(array(
+				'minexetime' => array('default' => 0),
+				'valid' => array('default' => 0),
+				'filter' => array('default' => 0),
+				'prepares' => array('default' => 1)
+			));
+
+			if ($instructions)
+			{
+				MLUtils::getIndexObsTrees ($jsonObstrees, $jsonObstreesHeader, $dbml);
+				return $this->render('mltemplate/mlobstrees.html.twig', array('obstrees' => $jsonObstrees, 'header_obstrees' => $jsonObstreesHeader,'jsonData' => '[]','jsonHeader' => '[]', 'instructions' => 'YES'));
+			}
+
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$params = $this->filters->getFiltersSelectedChoices($param_names);
+			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
+
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
+
+			$where_configs = $this->filters->getWhereClause();
+			$where_configs = str_replace("AND .","AND ",$where_configs);
+
+			// compose instance
+			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, TRUE);
+			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, TRUE);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
+			$config = $instance.'-'.$slice_info.'-obstree';
+
+			$is_cached_mysql = $dbml->query("SELECT count(*) as total FROM aloja_ml.observed_trees WHERE id_obstrees = '".md5($config)."'");
+			$tmp_result = $is_cached_mysql->fetch();
+			$is_cached = ($tmp_result['total'] > 0);
+
+			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
+			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+
+			$tmp_file = getcwd().'/cache/query/'.md5($config).'.tmp';
+
+			// get headers for csv
+			$header_names = array(
+				'bench' => 'Benchmark','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
+				'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
+			);
+			$special_header_names = array('id_exec' => 'ID','exe_time' => 'Exe.Time');
+
+			$headers = array_keys($header_names);
+			$special_headers = array_keys($special_header_names);
+
+			if (!$in_process && !$finished_process && !$is_cached)
+			{
+				// Dump the DB slice to csv
+				$query = "SELECT ".implode(",",$headers).", ".implode(",",$special_headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
+			    	$rows = $db->get_rows($query);
+				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+				if (($key = array_search('e.id_cluster', $headers)) !== false) $headers[$key] = 'id_cluster';
+
+				$fp = fopen($tmp_file, 'w');
+			    	foreach($rows as $row)
+				{
+					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+
+					$line = '';
+					foreach ($headers as $hn) $line = $line.(($line != '')?',':'').$row[$hn];
+					$line = $row['id_exec'].' '.$line.' '.$row['exe_time']."\n";
+					fputs($fp, $line);
+				}
+				fclose($fp);
+
+				if (($key = array_search('id_cluster', $headers)) !== false) $headers[$key] = 'e.id_cluster';
+
+				// Execute R Engine
+				$exe_query = 'cd '.getcwd().'/cache/query;';
+				$exe_query = $exe_query.' touch '.md5($config).'.lock;';
+				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file='.$tmp_file.':output=nodejson -v >'.md5($config).'-split.dat 2>/dev/null;';
+				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=gini:dump_file='.$tmp_file.':output=nodejson -v >'.md5($config).'-gini.dat 2>/dev/null;';
+				$exe_query = $exe_query.' rm -f '.md5($config).'.lock; rm -f '.$tmp_file.'; touch '.md5($config).'.fin';
+				exec(getcwd().'/resources/queue -d -c "'.$exe_query.'" >/dev/null 2>&1 &');
+			}
+
+			if (!$is_cached)
+			{
+				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+
+				if ($finished_process)
+				{
+					// Read results and dump to DB	
+					$tree_descriptor_ordered = '';
+					try
+					{
+						$file = fopen(getcwd().'/cache/query/'.md5($config).'-split.dat', "r");
+						$tree_descriptor_ordered = fgets($file);
+						$tree_descriptor_ordered = substr($tree_descriptor_ordered, 5, -2);
+						$tree_descriptor_ordered = str_replace("\\\"","\"",$tree_descriptor_ordered);
+						$tree_descriptor_ordered = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor_ordered);
+						fclose($file);
+					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
+
+					$tree_descriptor_gini = '';
+/*					try
+					{
+						$file = fopen(getcwd().'/cache/query/'.md5($config).'-gini.dat', "r");
+						$tree_descriptor_gini = fgets($file);
+						$tree_descriptor_gini = substr($tree_descriptor_gini, 5, -2);
+						$tree_descriptor_gini = str_replace("\\\"","\"",$tree_descriptor_gini);
+						fclose($file);
+					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
+*/
+					$query = "INSERT INTO aloja_ml.observed_trees (id_obstrees,instance,model,dataslice,tree_code_split,tree_code_gain) VALUES ('".md5($config)."','".$instance."','".$model_info."','".$slice_info."','".$tree_descriptor_ordered."','".$tree_descriptor_gini."')";
+					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
+
+					// Remove temporal files
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.dat');
+					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+				}
+				else
+				{
+					$must_wait = 'YES';
+					throw new \Exception('WAIT');
+				}
+			}
+
+			// Fetch results and compose JSON
+			$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Observed');
+			$jsonHeader = '[{title:""}';
+			foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
+			$jsonHeader = $jsonHeader.']';
+
+			// Fetch observed values
+			$query = "SELECT ".implode(",",$headers).", ".implode(",",$special_headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
+		    	$rows = $db->get_rows($query);
+			if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+
+			if (($key = array_search('e.id_cluster', $headers)) !== false) $headers[$key] = 'id_cluster';
+
+			$jsonData = '[';
+			foreach($rows as $row)
+			{
+				$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
+				$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+
+				$line = '';
+				foreach ($headers as $hn) $line = $line.(($line != '')?',':'').$row[$hn];
+				$line = $row['id_exec'].','.$line.','.$row['exe_time'];
+
+				if ($jsonData!='[') $jsonData = $jsonData.',';
+				$jsonData = $jsonData."['".str_replace(",","','",$line)."']";
+
+			}
+			$jsonData = $jsonData.']';
+			foreach (range(1,32) as $value) $jsonData = str_replace('Cmp'.$value,Utils::getCompressionName($value),$jsonData);
+
+			if ($tree_descriptor_ordered == '')
+			{
+				// Display Descriptive Tree, if not processed yet
+				$query = "SELECT tree_code_split, tree_code_gain FROM aloja_ml.observed_trees WHERE id_obstrees = '".md5($config)."'";
+				$result = $dbml->query($query);
+				$row = $result->fetch();
+				$tree_descriptor_ordered = $row['tree_code_split'];
+				$tree_descriptor_gini = $row['tree_code_gain'];
+			}
+		}
+		catch(\Exception $e)
+		{
+			if ($e->getMessage () != "WAIT")
+			{
+				$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			}
+			$jsonData = $jsonHeader = '[]';
+		}
+		$dbml = null;
+
+		$return_params = array(
+			'jsonData' => $jsonData,
+			'jsonHeader' => $jsonHeader,
+			'obstrees' => $jsonObstrees,
+			'header_obstrees' => $jsonObstreesHeader,
+			'message' => $message,
+			'must_wait' => $must_wait,
+			'instance' => $instance,
+			'model_info' => $model_info,
+			'slice_info' => $slice_info,
+			'id_obstrees' => md5($config),
+			'tree_descriptor_ordered' => $tree_descriptor_ordered,
+			'tree_descriptor_gini' => $tree_descriptor_gini,
+		);
+		return $this->render('mltemplate/mlobstrees.html.twig', $return_params);
 	}
 }
 ?>

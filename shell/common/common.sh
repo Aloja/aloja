@@ -321,3 +321,12 @@ function_call() {
     fi
   fi
 }
+
+# Checks if the command has been run inside the vagrant VM
+inside_vagrant() {
+  if [ -d  "/vagrant" ] ; then
+    return 0
+  else
+    return 1
+  fi
+}

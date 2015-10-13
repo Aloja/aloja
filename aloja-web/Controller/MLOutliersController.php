@@ -9,11 +9,19 @@ use alojaweb\inc\MLUtils;
 
 class MLOutliersController extends AbstractController
 {
+	public function __construct($container) {
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+	}
+
 	public function mloutliersAction()
 	{
 		$jsonData = $jsonWarns = $jsonOuts = array();
 		$message = $instance = $jsonHeader = $jsonTable = $model_html = $config = $model_info = '';
 		$possible_models = $possible_models_id = $other_models = array();
+		$jsonResolutions = $jsonResolutionsHeader = '[]';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		try
@@ -23,6 +31,9 @@ class MLOutliersController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
+
+			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
+			$instructions = count($_GET) <= 1;
 		    	
 			if (array_key_exists('dump',$_GET))
 			{
@@ -40,7 +51,7 @@ class MLOutliersController extends AbstractController
 				array('current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,
-					'label' => 'Model tu use: ',
+					'label' => 'Model to use: ',
 					'generateChoices' => function() {
 						return array();
 					},
@@ -72,7 +83,6 @@ class MLOutliersController extends AbstractController
 				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','sigma'))));
-			$where_configs = $this->filters->getWhereclause();
 
 			$params = array();
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
@@ -87,6 +97,7 @@ class MLOutliersController extends AbstractController
 			$param_current_model = $param_variables['current_model'];
 			$sigma_param = $param_variables['sigma'];
 
+			$where_configs = $this->filters->getWhereclause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// compose instance
@@ -107,6 +118,17 @@ class MLOutliersController extends AbstractController
 			}
 			$result = $dbml->query("SELECT id_learner FROM aloja_ml.learners".$where_models);
 			foreach ($result as $row) $other_models[] = $row['id_learner'];
+
+			if ($instructions)
+			{
+				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
+
+				MLUtils::getIndexOutExps ($jsonResolutions, $jsonResolutionsHeader, $dbml);
+
+				$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));
+				return $this->render('mltemplate/mloutliers.html.twig', array('outexps' => $jsonResolutions, 'header_outexps' => $jsonResolutionsHeader, 'jsonData' => '[]','jsonWarns' => '[]','jsonOuts' => '[]','jsonHeader' => '[]','jsonTable' => '[]','max_p' => 0,'models' => $model_html,'instructions' => 'YES'));
+			}
 
 			if (!empty($possible_models_id))
 			{
@@ -181,7 +203,7 @@ class MLOutliersController extends AbstractController
 						$header = fgetcsv($handle, 1000, ",");
 
 						$token = 0;
-						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,sigma,outlier_code,predicted,observed) VALUES ";
+						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,dataslice,sigma,outlier_code,predicted,observed) VALUES ";
 						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
@@ -192,7 +214,7 @@ class MLOutliersController extends AbstractController
 							$specific_id = $data[4];
 
 							if ($token > 0) { $query = $query.","; } $token = 1;
-							$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
+							$query = $query."('".md5($config)."','".$current_model."','".$specific_id."','".$selected_instance_pre."','".$model_info."','".$slice_info."','".$sigma_param."','".$resolution."','".$pred_value."','".$exec_value."') ";
 						}
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 					}
@@ -283,7 +305,7 @@ class MLOutliersController extends AbstractController
 		}
 		catch(\Exception $e)
 		{
-			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () );
 			$jsonData = $jsonOuts = $jsonWarns = $jsonHeader = $jsonTable = '[]';
 			$must_wait = "NO";
 			$dbml = null;
@@ -296,6 +318,8 @@ class MLOutliersController extends AbstractController
 			'jsonHeader' => $jsonHeader,
 			'jsonTable' => $jsonTable,
 			'max_p' => min(array($max_x,$max_y)),
+			'outexps' => $jsonResolutions,
+			'header_outexps' => $jsonResolutionsHeader,
 			'must_wait' => $must_wait,
 			'models' => $model_html,
 			'models_id' => $possible_models_id,

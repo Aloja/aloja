@@ -4,7 +4,6 @@ namespace alojaweb\Filters;
 
 use \alojaweb\inc\DBUtils;
 use \alojaweb\inc\Utils;
-use \alojaweb\Container\Container;
 
 class Filters
 {
@@ -25,7 +24,6 @@ class Filters
 
     public function __construct(\alojaweb\inc\DBUtils $dbConnection) {
         $this->dbConnection = $dbConnection;
-        $container = new Container();
 
         /* In this array there are the filter names with its default options
          * that will be overwritten by the given custom defaults and options if given
@@ -64,7 +62,7 @@ class Filters
                 },
                 'parseFunction' => 'parseDatasize'),
             'scale_factor' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Scale factor: '),
-            'bench_type' => array('table' => 'execs', 'default' => ($container->in_dev() ? array():array('HiBench', 'Hadoop-Examples')), 'type' => 'selectOne', 'label' => 'Bench suite:'),
+            'bench_type' => array('table' => 'execs', 'default' => (Utils::in_dev() ? array():array('HiBench', 'Hadoop-Examples')), 'type' => 'selectOne', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);
@@ -83,7 +81,7 @@ class Filters
                     return $this->filters['id_cluster']['namesClusters'][$value];
                 },
                 'generateChoices' => function() {
-                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs(' ')." ORDER BY c.name ASC");
                     $returnChoices = array();
                     foreach($choices as $choice) {
                         $returnChoices[] = $choice['id_cluster'];
@@ -124,7 +122,7 @@ class Filters
                 }),
             'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Cluster type:'),
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Hadoop version:'),
-            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => ($container->in_dev() ? 1:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
+            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => (Utils::in_dev() ? 1:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
             'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle','label' => 'Max exec time:'),
             'datefrom' => array('table' => 'execs', 'field' => 'start_time', 'default' => null, 'type' => 'inputDatege','label' => 'Date from:'),
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
@@ -134,14 +132,13 @@ class Filters
             'filter' => array('table' => 'execs', 'field' => 'filter', 'type' => 'checkboxNegated', 'default' => 1, 'label' => 'Filter'),
             'prepares' => array('table' => 'execs', 'type' => 'checkbox', 'default' => 0, 'label' => 'Include prepares',
                 'parseFunction' => function() {
-                    $container = new Container();
                     $whereClause = "";
                     $values = 0;
                     if(isset($_GET['prepares'])) {
                         $values = 1;
                     } else {
                         $values = $this->filters['prepares']['default'];
-                        if(!$values && !$container->in_dev())
+                        if(!$values && !Utils::in_dev())
                             $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
@@ -159,11 +156,15 @@ class Filters
                 },
                 'parseFunction' => function() {
                     $choice = isset($_GET['prediction_model']) ? Utils::get_GET_stringArray('prediction_model') : array("");
+                    if($choice = array("")) {
+                        $query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions LIMIT 1";
+                        $choice = $this->dbConnection->get_rows($query)[0]['id_learner'];
+                    }
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
             ),
-            'upred' => array(
+           /* 'upred' => array(
                 'type' => 'checkbox',
                 'default' => 0,
                 'label' => 'Use predictions',
@@ -182,10 +183,42 @@ class Filters
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
+            ),*/
+            'warning' => array('field' => 'outlier', 'table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show warnings',
+                'parseFunction' => function() {
+                    $learner = $this->filters['prediction_model']['currentChoice'];
+                    $whereClause = "";
+                    $values = isset($_GET['warning']) ? 1 : 0;
+                    if($values && !empty($learner))
+                        $whereClause = " AND (ml_predictionsAlias.outlier <= $values OR ml_predictionsAlias.outlier IS NULL) ".
+                            "AND (ml_predictionsAlias.id_learner = '${learner[0]}' OR ml_predictionsAlias.id_learner IS NULL)";
+
+                    return array('currentChoice' => $values, 'whereClause' => $whereClause);
+                },
+                'filterGroup' => 'MLearning'
+            ),
+            'outlier' => array('table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show outliers',
+                'parseFunction' => function() {
+                    $learner = $this->filters['prediction_model']['currentChoice'];
+                    $whereClause = "";
+                    $values = isset($_GET['outlier']) ? 2 : 0;
+
+                    if($values && !empty($learner)) {
+                        $whereClause = " AND (ml_predictionsAlias.outlier <= 2 OR ml_predictionsAlias.outlier IS NULL) ".
+                            "AND (ml_predictionsAlias.id_learner = '${learner}' OR ml_predictionsAlias.id_learner IS NULL)";
+                        $values = 1;
+                    } else if(!empty($learner) && !isset($_GET['warning'])) {
+                        $whereClause = " AND (ml_predictionsAlias.outlier = 0 OR ml_predictionsAlias.outlier IS NULL) ".
+                            "AND (ml_predictionsAlias.id_learner = '${learner}' OR ml_predictionsAlias.id_learner IS NULL)";
+                    }
+
+                    return array('currentChoice' => $values, 'whereClause' => $whereClause);
+                },
+                'filterGroup' => 'MLearning'
             )
         );
 
-        $this->aliasesTables = array('execs' => '','clusters' => '');
+        $this->aliasesTables = array('execs' => 'e','clusters' => 'c', 'ml_predictions' => 'p');
 
         //To render groups on template. Rows are of 2 columns each. emptySpace puts an empty element on the rendered row
         $this->filterGroups = array('basic' => array(
@@ -207,60 +240,11 @@ class Filters
             ),
             'MLearning' => array(
                 'label' => 'Machine Learning',
-                'filters' => array('prediction_model','upred','uobsr'),
+                'filters' => array('prediction_model','warning','outlier'),
+               // 'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
                 'tabOpenDefault' => true
             )
         );
-    }
-
-    public function addOverrideFilters($filters) {
-        foreach($filters as $filterName => $definition) {
-            if(isset($this->filters[$filterName])) {
-                foreach($definition as $option => $value) {
-                    $this->filters[$filterName][$option] = $value;
-                }
-            } else
-                $this->filters[$filterName] = $definition;
-        }
-    }
-
-    //$filters: array of filter names
-    public function removeFilters($filters) {
-        foreach($filters as $filterName) {
-            if(isset($this->filters[$filterName]))
-                unset($this->filters[$filterName]);
-        }
-    }
-
-    public function removeFilterGroup($groupName) {
-        if(isset($this->filterGroups[$groupName])) {
-            unset($this->filterGroups[$groupName]);
-        }
-    }
-
-    public function removeFiltersFromGroup($groupName, $filters) {
-        if(isset($this->filterGroups[$groupName])) {
-            foreach($filters as $filter) {
-                if(($key = array_search($filter, $this->filterGroups[$groupName]['filters'])) !== false)
-                    unset($this->filterGroups[$groupName]['filters'][$key]);
-            }
-        }
-    }
-
-    public function addFiltersInGroup($groupName, $filters) {
-        foreach($filters as $filter) {
-            if(!in_array($filter,$this->filterGroups[$groupName]['filters']))
-                $this->filterGroups[$groupName]['filters'][] = $filter;
-        }
-    }
-
-    //Add or modify filter groups
-    public function overrideFilterGroups($filterGroups) {
-        foreach($filterGroups as $filterGroup => $options) {
-            foreach($options as $optionKey => $option) {
-                $this->filterGroups[$filterGroup][$optionKey] = $option;
-            }
-        }
     }
 
     private function parseDatasize()
@@ -284,7 +268,7 @@ class Filters
             if(array_key_exists($table, $aliasesToReplace)) {
                 $whereClause = str_replace("${table}Alias.",$aliasesToReplace[$table].'.',$whereClause);
             } else {
-                $whereClause = str_replace("${table}Alias.",$alias,$whereClause);
+                $whereClause = str_replace("${table}Alias.",$alias.'.',$whereClause);
             }
         }
         return $whereClause;
@@ -307,7 +291,7 @@ class Filters
                         $fromClause .= ' JOIN clusters USING (id_cluster) ';
                     }
                     $field = isset($definition['field']) ? $definition['field'] : $filterName;
-                    $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs() . " ORDER BY $field ASC";
+                    $queryChoices = "SELECT DISTINCT $field FROM $fromClause WHERE 1 AND valid = 1 AND filter = 0 " . DBUtils::getFilterExecs(' ') . " ORDER BY $field ASC";
                     $choices = $this->dbConnection->get_rows($queryChoices);
                     foreach($choices as $choice) {
                         $this->filters[$filterName]['choices'][] = $choice[$field];
@@ -621,8 +605,67 @@ class Filters
         return $options;
     }
 
+    public function buildFilterGroups($filterGroups) {
+        foreach($filterGroups as $filterGroup => $options) {
+            foreach($options as $optionKey => $option) {
+                $this->filterGroups[$filterGroup][$optionKey] = $option;
+            }
+        }
+    }
+
     public function setCurrentChoices($filter,$choices) {
         if(isset($this->filters[$filter]))
             $this->filters[$filter]['choices'] = $choices;
     }
+
+    public function addOverrideFilters($filters) {
+        foreach($filters as $filterName => $definition) {
+            if(isset($this->filters[$filterName])) {
+                foreach($definition as $option => $value) {
+                    $this->filters[$filterName][$option] = $value;
+                }
+            } else
+                $this->filters[$filterName] = $definition;
+        }
+    }
+
+    //$filters: array of filter names
+    public function removeFilters($filters) {
+        foreach($filters as $filterName) {
+            if(isset($this->filters[$filterName]))
+                unset($this->filters[$filterName]);
+        }
+    }
+
+    public function removeFilterGroup($groupName) {
+        if(isset($this->filterGroups[$groupName])) {
+            unset($this->filterGroups[$groupName]);
+        }
+    }
+
+    public function removeFiltersFromGroup($groupName, $filters) {
+        if(isset($this->filterGroups[$groupName])) {
+            foreach($filters as $filter) {
+                if(($key = array_search($filter, $this->filterGroups[$groupName]['filters'])) !== false)
+                    unset($this->filterGroups[$groupName]['filters'][$key]);
+            }
+        }
+    }
+
+    public function addFiltersInGroup($groupName, $filters) {
+        foreach($filters as $filter) {
+            if(!in_array($filter,$this->filterGroups[$groupName]['filters']))
+                $this->filterGroups[$groupName]['filters'][] = $filter;
+        }
+    }
+
+    //Add or modify filter groups
+    public function overrideFilterGroups($filterGroups) {
+        foreach($filterGroups as $filterGroup => $options) {
+            foreach($options as $optionKey => $option) {
+                $this->filterGroups[$filterGroup][$optionKey] = $option;
+            }
+        }
+    }
+
 }

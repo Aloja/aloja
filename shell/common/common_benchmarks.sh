@@ -286,7 +286,7 @@ validate() {
 
   if [ "$clusterType" != "PaaS" ]; then
     # Check whether we are in the right cluster
-    if ! test_in_cluster "$(hostname)" ; then
+    if [ "${checkClusterMembership}" = "1" ] && ! test_in_cluster "$(hostname)" ; then
       die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
     fi
 
@@ -486,12 +486,11 @@ set_job_config() {
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
-  LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
-  LOG="2>&1 |tee -a $LOG_PATH"
+  #LOG_PATH="$JOB_PATH/log_${JOB_NAME}.log"
+  #LOG="2>&1 |tee -a $LOG_PATH"
 
   #create dir to save files in one host
   $DSH_MASTER "mkdir -p $JOB_PATH"
-  $DSH_MASTER "touch $LOG_PATH"
 
   # Automatically log all output to file
   log_all_output "$JOB_PATH/${0##*/}"
@@ -691,8 +690,13 @@ set_monit_binaries() {
       logger "WARNING: no extra perf monitors set for Windows"
     fi
   else
-    logger "WARNING: No peformance monitors (e.g., vmstats) have been selected"
+    logger "WARNING: No peformance monitors (e.g., vmstat) have been selected"
   fi
+}
+
+# Before starting monitors always check if they are already running
+start_monit() {
+  restart_monit
 }
 
 # Stops monitors (if any) and starts them
@@ -920,7 +924,7 @@ time_cmd_master() {
   local set_bench_time="$2"
 
   exec 9>&2 # Create a new file descriptor
-  local cmd_output="$($DSH_MASTER "/usr/bin/time -f 'Bench time ${bench} %e' bash -c '$cmd'" 2>&1 |tee >(cat - >&9))"
+  local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd'" 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
 
   # Set the accurate time to the global var
