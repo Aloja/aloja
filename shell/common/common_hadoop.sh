@@ -40,6 +40,17 @@ set_hadoop_requires() {
   set_hadoop_config_folder
 }
 
+get_hadoop_aop_classpath() {
+  if [ "$HADOOP_EXTRA_JARS" ] ; then
+      # Right now jar files are hard-coded
+      echo -e "$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjtools-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/ant-1.9.6.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar\n"
+  fi
+}
+
+get_hadoop_log_dir() {
+      echo -e "$HDD/logs\n"
+}  
+
 # Helper to print a line with Hadoop requiered exports
 get_hadoop_exports() {
   local to_export
@@ -58,14 +69,12 @@ export HADOOP_YARN_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
 YARN_LOG_DIR='$HDD/logs';"
   fi
 
-  if [ "$HADOOP_EXTRA_JARS" ] ; then
-    # Right now jar files are hard-coded
-    to_export="$to_export
-export HADOOP_USER_CLASSPATH_FIRST=true;
-export HADOOP_CLASSPATH=$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjtools-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/ant-1.9.6.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar:\$HADOOP_CLASSPATH;"
-  fi
 
   echo -e "$to_export\n"
+
+
+
+
 }
 
 # Function to return job specific config
@@ -296,6 +305,8 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
+s,##HADOOP_CLASSPATH##,$(get_hadoop_aop_classpath),g;
+s,##HADOOP_LOG_DIR##,$(get_hadoop_log_dir),g;
 EOF
 }
 
