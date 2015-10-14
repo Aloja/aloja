@@ -117,7 +117,7 @@ class DBUtils
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM aloja2.execs e
         JOIN aloja2.clusters c USING (id_cluster)
-        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0 $filter_execs;";
+        WHERE $filter_execs;";
 
         return $this->get_rows($query);
     }
