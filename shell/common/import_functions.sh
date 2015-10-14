@@ -118,6 +118,8 @@ import_folder() {
 
     #get all executions details
     exec_params="$(get_exec_params "log_${folder}.log" "$folder")"
+    hadoop_version=$(extract_config_var "HADOOP_VERSION")
+    hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
 
     if [[ -z $exec_params ]] ; then
       logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"

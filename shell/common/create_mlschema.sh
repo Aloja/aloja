@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   vm_RAM decimal(10,3) DEFAULT NULL,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_prediction),
+  INDEX idx_id_exec_predictions (id_exec),
   KEY idx_bench (bench),
   KEY idx_exe_time (exe_time),
   KEY idx_bench_type (bench_type),
@@ -202,4 +203,6 @@ $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 $MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT '';"
+
+$MYSQL "CREATE INDEX idx_id_exec_predictions ON $DBML.predictions(id_exec);"
 
