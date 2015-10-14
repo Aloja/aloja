@@ -744,7 +744,7 @@ import_hadoop2_jhist() {
 	fi
 
 	values=`$CUR_DIR/../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
-	insert="INSERT INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
+	insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
 		        ON DUPLICATE KEY UPDATE
 		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
 		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
@@ -775,7 +775,7 @@ import_hadoop2_jhist() {
 			taskFinishTime=`expr $taskFinishTime / 1000`
 			values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
-			insert="INSERT INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
+			insert="INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
 							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
 
 			logger "DEBUG: $insert"
@@ -803,7 +803,7 @@ import_hadoop2_jhist() {
 			fi
 			currentTime=`expr $startTimeTS + $i`
 			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
-			insert="INSERT INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
+			insert="INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
 					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
 					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
