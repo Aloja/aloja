@@ -117,7 +117,7 @@ class DBUtils
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM aloja2.execs e
         JOIN aloja2.clusters c USING (id_cluster)
-        WHERE $filter_execs;";
+        WHERE 1 $filter_execs;";
 
         return $this->get_rows($query);
     }
