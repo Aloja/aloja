@@ -310,7 +310,7 @@ import_folder() {
             fi
             import_AOP4Hadoop_files
             #wait
-            #import_sar_files
+            import_sar_files
             wait
             import_vmstats_files
             wait
