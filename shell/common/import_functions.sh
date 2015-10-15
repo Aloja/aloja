@@ -985,7 +985,8 @@ import_AOP4Hadoop_files() {
       if [[ $(head $AOP_file_name |wc -l) -gt 1 ]] ; then
         echo "Processing AOP4Hadoop $AOP_file_name in `pwd`"
         logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
-        grep ",2:" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); match($5, /(.*:)([0-9]+):([0-9]+)$/, arr);  print "NULL,"id_exec","$1","$2","$3","$4",NULL,"arr[2]","$5}' > "$tmp_file"
+        grep ",2:" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); match($5, /(.*:)([0-9]+):([^:]+)$/, arr);  print "NULL,"id_exec","$1","$2","$3","$4",NULL,"arr[2]","$5}' > "$tmp_file"
+
         if [[ $(head $tmp_file |wc -l) -gt 0 ]] ; then
           insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
         fi
