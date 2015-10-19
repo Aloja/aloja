@@ -178,7 +178,7 @@ class Filters
                 },
                 'filterGroup' => 'MLearning'
             ),
-           /* 'upred' => array(
+            'upred' => array(
                 'type' => 'checkbox',
                 'default' => 0,
                 'label' => 'Use predictions',
@@ -193,11 +193,11 @@ class Filters
                 'default' => 1,
                 'label' => 'Use observations',
                 'parseFunction' => function() {
-                    $choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+                    $choice = (!isset($_GET['uobsr']) && $this->formIssubmitted()) ? 0 : 1;
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
-            ),*/
+            ),
             'warning' => array('field' => 'outlier', 'table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show warnings',
                 'parseFunction' => function() {
                     $learner = $this->filters['prediction_model']['currentChoice'];

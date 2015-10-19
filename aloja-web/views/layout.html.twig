@@ -281,8 +281,12 @@
 					if (filterValue != "" && filterValue != null) {
 						if (filterName[filterName.length - 1] == ']')
 							$("input[name='" + filterName + "'][value='" + filterValue + "']").prop('checked', true);
-						else
-							$("input[name='" + filterName + "']").val(filterValue);
+						else {
+							if($("input[name='" + filterName + "']").attr("type") == "checkbox")
+								$("input[name='" + filterName + "']").prop('checked',true);
+							else
+								$("input[name='" + filterName + "']").val(filterValue);
+						}
 						$("select[name='" + filterName + "']").val(filterValue);
 					}
 				}

@@ -11,28 +11,28 @@ class ConfigEvaluationsController extends AbstractController
 	public function __construct($container) {
 		parent::__construct($container);
 
-		$this->addOverrideFilters(array(
-			'upred' => array(
-				'type' => 'checkbox',
-				'default' => 0,
-				'label' => 'Use predictions',
-				'parseFunction' => function() {
-					$choice = (!isset($_GET['upred'])) ? 0 : 1;
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
-			),
-			'uobsr' => array(
-				'type' => 'checkbox',
-				'default' => 1,
-				'label' => 'Use observations',
-				'parseFunction' => function() {
-					$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
-			)
-		));
+//		$this->addOverrideFilters(array(
+//			'upred' => array(
+//				'type' => 'checkbox',
+//				'default' => 0,
+//				'label' => 'Use predictions',
+//				'parseFunction' => function() {
+//					$choice = (!isset($_GET['upred'])) ? 0 : 1;
+//					return array('whereClause' => '', 'currentChoice' => $choice);
+//				},
+//				'filterGroup' => 'MLearning'
+//			),
+//			'uobsr' => array(
+//				'type' => 'checkbox',
+//				'default' => 1,
+//				'label' => 'Use observations',
+//				'parseFunction' => function() {
+//					$choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+//					return array('whereClause' => '', 'currentChoice' => $choice);
+//				},
+//				'filterGroup' => 'MLearning'
+//			)
+//		));
 
 		$this->filters->overrideFilterGroups(array(
 			'MLearning' => array(

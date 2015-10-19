@@ -24,11 +24,11 @@ $MYSQL "DROP TABLE IF EXISTS filters_presets;"
 
 #common settings for most filters in case we are NOT in the vagrant VM
 if [ ! -d  "/vagrant" ] ; then
-  filter_common="&minexetime=50&maxexetime=5000&filters[]=valid&filters[]=filters"
+  filter_common="&uobsr=1&minexetime=50&maxexetime=5000&filters[]=valid&filters[]=filters"
   filter_ml="&bench_type[]=HiBench"
 #for vagrant allow more values
 else
-  filter_common="&minexetime=1&maxexetime=5000"
+  filter_common="&uobsr=1&minexetime=1&maxexetime=5000"
   filter_ml=""
 fi
 
