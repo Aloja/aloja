@@ -1290,7 +1290,7 @@ VALUES
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'MAP') {
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
@@ -1301,7 +1301,7 @@ VALUES
     			`MAP_OUTPUT_BYTES`,
     			`MAP_OUTPUT_MATERIALIZED_BYTES`,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'REDUCE') {
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -1313,7 +1313,7 @@ VALUES
     			`COMBINE_INPUT_RECORDS`,
     			`COMBINE_OUTPUT_RECORDS`,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'FILE-IO') {
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME,
@@ -1327,12 +1327,12 @@ VALUES
     			`BYTES_READ`,
     			`BYTES_WRITTEN`,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'DETAIL') {
-    			$query = "SELECT e.bench, e.exe_time, c.*,e.perf_details FROM aloja_logs.HDI_JOB_details c $join";
+    			$query = "SELECT e.bench, e.exe_time, c.*,e.perf_details FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'TASKS') {
     			$query = "SELECT e.bench, e.exe_time, j.job_name, c.*,e.perf_details FROM aloja_logs.HDI_JOB_tasks c
-    			JOIN aloja_logs.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
+    			JOIN aloja2.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
     		} else {
     			throw new \Exception('Unknown type!');
     		}
