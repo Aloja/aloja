@@ -59,6 +59,23 @@ CREATE TABLE IF NOT EXISTS predictions (
   vm_OS varchar(127) DEFAULT NULL,
   vm_cores int(11) DEFAULT NULL,
   vm_RAM decimal(10,3) DEFAULT NULL,
+  datasize int(11) DEFAULT 0,
+  scale_factor varchar(255) DEFAULT NULL,
+  net_maxtxkbs decimal(10,3) DEFAULT 0,
+  net_maxrxkbs decimal(10,3) DEFAULT 0,
+  net_maxtxpcks decimal(10,3) DEFAULT 0,
+  net_maxrxpcks decimal(10,3) DEFAULT 0,
+  net_maxtxcmps decimal(10,3) DEFAULT 0,
+  net_maxrxcmps decimal(10,3) DEFAULT 0,
+  net_maxrxmscts decimal(10,3) DEFAULT 0,
+  disk_maxtps decimal(10,3) DEFAULT 0,
+  disk_maxsvctm decimal(10,3) DEFAULT 0,
+  disk_maxrds decimal(10,3) DEFAULT 0,
+  disk_maxwrs decimal(10,3) DEFAULT 0,
+  disk_maxrqsz decimal(10,3) DEFAULT 0,
+  disk_maxqusz decimal(10,3) DEFAULT 0,
+  disk_maxawait decimal(10,3) DEFAULT 0,
+  disk_maxutil decimal(10,3) DEFAULT 0,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_prediction),
   KEY idx_bench (bench),
@@ -202,4 +219,14 @@ $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 $MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT '';"
+
+$MYSQL "ALTER TABLE $DBML.predictions ADD datasize int(11) DEFAULT 0,
+  ADD scale_factor varchar(255) DEFAULT NULL, ADD net_maxtxkbs decimal(10,3) DEFAULT 0,
+  ADD net_maxrxkbs decimal(10,3) DEFAULT 0, ADD net_maxtxpcks decimal(10,3) DEFAULT 0,
+  ADD net_maxrxpcks decimal(10,3) DEFAULT 0, ADD net_maxtxcmps decimal(10,3) DEFAULT 0,
+  ADD net_maxrxcmps decimal(10,3) DEFAULT 0, ADD net_maxrxmscts decimal(10,3) DEFAULT 0,
+  ADD disk_maxtps decimal(10,3) DEFAULT 0, ADD disk_maxsvctm decimal(10,3) DEFAULT 0,
+  ADD disk_maxrds decimal(10,3) DEFAULT 0, ADD disk_maxwrs decimal(10,3) DEFAULT 0,
+  ADD disk_maxrqsz decimal(10,3) DEFAULT 0, ADD disk_maxqusz decimal(10,3) DEFAULT 0,
+  ADD disk_maxawait decimal(10,3) DEFAULT 0, ADD disk_maxutil decimal(10,3) DEFAULT 0;"
 
