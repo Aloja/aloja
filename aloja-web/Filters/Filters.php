@@ -254,8 +254,8 @@ class Filters
             ),
             'MLearning' => array(
                 'label' => 'Machine Learning',
-                'filters' => array('prediction_model','warning','outlier'),
-               // 'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
+               // 'filters' => array('prediction_model','warning','outlier'),
+                'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
                 'tabOpenDefault' => true
             )
         );
