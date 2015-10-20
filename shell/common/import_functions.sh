@@ -744,7 +744,24 @@ import_hadoop2_jhist() {
 	fi
 
 	values=`$CUR_DIR/../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
-	insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${values%?}
+	dbFieldList=$($MYSQL "describe HDI_JOB_details" | tail -n+2)
+	finalValues="none"
+	while IFS=',' read -ra ADDR; do
+      for i in "${ADDR[@]}"; do
+          test=$(echo $i | cut -d= -f1)
+          if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
+            if [ "$finalValues" != "none" ]; then
+              finalValues+=",$i"
+            else
+              finalValues="$i"
+            fi
+          else
+            logger "WARNING: Field ${test} not found on table HDI_JOB_details"
+          fi
+      done
+    done <<< "$values"
+
+	insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
 		        ON DUPLICATE KEY UPDATE
 		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
 		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
@@ -775,8 +792,25 @@ import_hadoop2_jhist() {
 			taskFinishTime=`expr $taskFinishTime / 1000`
 			values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
-			insert="INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${values%?}
-							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${values%?};"
+            dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
+            finalValues="none"
+            while IFS=',' read -ra ADDR; do
+              for i in "${ADDR[@]}"; do
+                  test=$(echo $i | cut -d= -f1)
+                  if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
+                    if [ "$finalValues" != "none" ]; then
+                      finalValues+=",$i"
+                    else
+                      finalValues="$i"
+                    fi
+                  else
+                      logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
+                  fi
+              done
+            done <<< "$values"
+
+			insert="INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
+							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
 
 			logger "DEBUG: $insert"
 			$MYSQL "$insert"
@@ -796,7 +830,7 @@ import_hadoop2_jhist() {
 		done
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
-				previous=$(expr $i - 1)
+				previous=$(expr ${i} - 1)
 				map[$i]=$(expr ${map[$i]} + ${map[$previous]})
 				reduce[$i]=$(expr ${reduce[$i]} + ${reduce[$previous]})
 				waste[$i]=$(expr ${waste[$i]} + ${waste[$previous]})

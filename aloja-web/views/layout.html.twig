@@ -263,7 +263,6 @@
 				$("input[type='checkbox']").each(function () {
 					$(this).prop('checked', false);
 				});
-
 			} else {
 				var filters = url.split("?")[1];
 				filters = filters.split("&");
@@ -288,6 +287,15 @@
 								$("input[name='" + filterName + "']").val(filterValue);
 						}
 						$("select[name='" + filterName + "']").val(filterValue);
+					}
+					if(filterName == 'selected-groups') {
+						var arrayGroups = filterValue.split(",");
+						$(".addgroup").each(function() {
+							if(arrayGroups.indexOf($(this).attr("value")) > -1) {
+								$(this).addClass("active");
+							} else if($(this).hasClass("active"))
+								$(this).removeClass("active");
+						});
 					}
 				}
 			}
@@ -333,7 +341,6 @@
         	}
 
         	$(".addgroup").click(function() {
-
 		    	if($(this).hasClass("active"))
 		        	$(this).removeClass("active");
 		    	else
@@ -355,6 +362,18 @@
 				if($("input[name='outlier']").is(':checked')) {
 					$(this).prop('checked',false);
 				}
+			});
+
+			//Set initial selected group filters
+			$(".addgroup").each(function() {
+				if($(this).hasClass("active")) {
+					var currentFilters = $("input[name='selected-groups']").attr("value");
+					if(currentFilters == "")
+						currentFilters = $(this).attr("value");
+					else
+						currentFilters += ","+$(this).attr("value");
+				}
+				$("input[name='selected-groups']").attr("value",currentFilters);
 			});
 
 			{% if additionalFilters is defined %}
