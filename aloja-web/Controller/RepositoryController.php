@@ -131,6 +131,8 @@ class RepositoryController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
+            $this->filters->removeFilters(array('upred','uobsr'));
+            $this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
             $this->buildFilters(array('bench' => array('type' => 'selectMultiple', 'default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
@@ -260,6 +262,8 @@ class RepositoryController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
+            $this->filters->removeFilters(array('upred','uobsr'));
+            $this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
             $this->buildFilters(array('bench' => array('type' => 'selectMultiple', 'default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
