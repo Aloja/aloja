@@ -44,7 +44,30 @@ class CostPerfEvaluationController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-            $execs = "SELECT e.*, c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster) LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
+			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+
+            $execs = "SELECT e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
+                e.end_time,e.net,e.disk,e.bench_type,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,
+                c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+                LEFT JOIN aloja_ml.predictions p USING (id_exec)
+                WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
+
+			$mlWhere = $this->filters->getWhereClause(array('ml_predictions' => 'e'));
+
+			$execsPred = "SELECT e.id_exec,e.id_cluster,CONCAT(CONCAT(CONCAT(CONCAT('pred','_'),e.bench),'_'),c.name) as 'exec' ,e.bench,e.exe_time, e.start_time,
+                e.end_time,e.net,e.disk,e.bench_type,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.valid,e.filter,e.outlier,'null' as perf_details, 'prediction' as exec_type, 'null' as datasize,'null' as scale_factor,
+                c.* FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
+                WHERE 1 $filter_execs $mlWhere ORDER BY rand() LIMIT 500";
+
+			if($params['uobsr'] && $params['upred']) {
+				$execs = "($execs) UNION ($execsPred)";
+			} else if($params['upred']) {
+				$execs = "$execsPred";
+			}
 
             $execs = $dbUtils->get_rows($execs);
             if(!$execs)
@@ -411,7 +434,7 @@ class CostPerfEvaluationController extends AbstractController
 			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
-            $execs = $dbUtils->get_rows("SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.*,c.*
+            $execs = "SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 					LEFT JOIN aloja_ml.predictions p USING (id_exec)
 					INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
@@ -420,7 +443,29 @@ class CostPerfEvaluationController extends AbstractController
 								WHERE 1 $innerQueryWhere GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
 					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
 					WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
-					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC;");
+					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
+
+			$predExecs = "SELECT c.datanodes,'predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
+					FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
+					INNER JOIN ( SELECT c2.datanodes,'default' as 'exec_type',c2.vm_OS,c2.vm_size as vmsize,MIN(p2.exe_time) as minexe
+								from aloja_ml.predictions p2 JOIN aloja2.clusters c2 USING (id_cluster)
+								WHERE 1 ".str_replace("e2.","p2.",$innerQueryWhere)." GROUP BY c2.datanodes,exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
+					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
+					WHERE 1 $filter_execs  GROUP BY c.datanodes,exec_type,c.vm_OS,c.vm_size
+					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
+
+
+			$params = $this->filters->getFiltersSelectedChoices(array('upred','uobsr'));
+			if ($params['uobsr'] == 1 && $params['upred'] == 1)
+			{
+				$execs = "($execs) UNION ($predExecs)";
+			}
+			else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+			{
+				$execs = $predExecs;
+			}
+
+			$execs = $dbUtils->get_rows($execs);
 
             $vmSizes = array();
             $categories = array();
