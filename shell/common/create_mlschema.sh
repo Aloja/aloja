@@ -155,6 +155,9 @@ CREATE TABLE IF NOT EXISTS minconfigs_centers (
   blk_size int(11) DEFAULT NULL,
   id_cluster int(11) DEFAULT NULL,
   bench_type varchar(255) DEFAULT NULL,
+  hadoop_version varchar(127) DEFAULT NULL,
+  datasize int(11) DEFAULT 0,
+  scale_factor varchar(255) DEFAULT NULL,
   support mediumtext DEFAULT NULL,
   creation_time datetime NOT NULL,
   PRIMARY KEY (sid_minconfigs_centers),
@@ -229,4 +232,8 @@ $MYSQL "ALTER TABLE $DBML.predictions ADD datasize int(11) DEFAULT 0,
   ADD disk_maxrds decimal(10,3) DEFAULT 0, ADD disk_maxwrs decimal(10,3) DEFAULT 0,
   ADD disk_maxrqsz decimal(10,3) DEFAULT 0, ADD disk_maxqusz decimal(10,3) DEFAULT 0,
   ADD disk_maxawait decimal(10,3) DEFAULT 0, ADD disk_maxutil decimal(10,3) DEFAULT 0;"
+
+$MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD hadoop_version varchar(127) DEFAULT NULL,
+  ADD datasize int(11) DEFAULT 0,
+  ADD scale_factor varchar(255) DEFAULT NULL;"
 

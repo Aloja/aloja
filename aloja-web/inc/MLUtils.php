@@ -460,5 +460,34 @@ class MLUtils
 		$jsonPrecexps = $jsonPrecexps.']';
 		$jsonPrecexpsHeader = "[{'title':'ID'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Actions'}]";
 	}
+
+	public static function getIndexMinconfs (&$jsonMinconfs, &$jsonMinconfsHeader, $dbml)
+	{
+		$query="SELECT mj.*, COUNT(mc.sid_minconfigs_centers) AS num_centers
+			FROM (	SELECT DISTINCT m.id_minconfigs AS id_minconfigs, m.model AS model, m.is_new as is_new, m.dataslice AS advanced,
+					m.creation_time AS creation_time, COUNT(mp.sid_minconfigs_props) AS num_props, l.algorithm
+				FROM aloja_ml.minconfigs AS m LEFT JOIN aloja_ml.minconfigs_props AS mp ON m.id_minconfigs = mp.id_minconfigs, aloja_ml.learners AS l
+				WHERE l.id_learner = m.id_learner
+				GROUP BY m.id_minconfigs
+			) AS mj LEFT JOIN aloja_ml.minconfigs_centers AS mc ON mj.id_minconfigs = mc.id_minconfigs
+			WHERE mj.is_new = 0
+			GROUP BY mj.id_minconfigs
+			";
+		$rows = $dbml->query($query);
+		$jsonMinconfs = '[';
+	    	foreach($rows as $row)
+		{
+			if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
+			$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
+
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['advanced']);
+
+			$jsonMinconfs = $jsonMinconfs.(($jsonMinconfs=='[')?'':',')."['".$row['id_minconfigs']."','".$row['algorithm']."','".$model_display."','".$slice_display."','".$row['creation_time']."','".$row['num_props']."','".$row['num_centers']."',
+			'<a href=\'/mlminconfigs?".$url."\'>View</a> <a href=\'/mlclearcache?rmm=".$row['id_minconfigs']."\'>Remove</a>']";
+		}
+		$jsonMinconfs = $jsonMinconfs.']';
+		$jsonMinconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
+	}
 }
 ?>
