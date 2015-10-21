@@ -44,7 +44,6 @@ class CostPerfEvaluationController extends AbstractController
             $minExeTime = -1;
             $maxExeTime = 0;
 
-			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
 
             $execs = "SELECT e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
                 e.end_time,e.net,e.disk,e.bench_type,
@@ -63,6 +62,7 @@ class CostPerfEvaluationController extends AbstractController
                 c.* FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
                 WHERE 1 $filter_execs $mlWhere ORDER BY rand() LIMIT 500";
 
+			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
 			if($params['uobsr'] && $params['upred']) {
 				$execs = "($execs) UNION ($execsPred)";
 			} else if($params['upred']) {
@@ -134,13 +134,39 @@ class CostPerfEvaluationController extends AbstractController
 		$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 		$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 		$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
-        $query = "SELECT t.scount as count, e.*, c.* from execs e JOIN aloja2.clusters c USING (id_cluster)
+
+		$whereML = $this->filters->getWhereClause(array('ml_predictions' => 'e'));
+		$whereML = str_replace("p.","e.",$whereML);
+		$innerQueryML = str_replace("e.","e2.",$whereML);
+		$innerQueryML = str_replace("c.","c2.",$innerQueryML);
+
+        $query = "SELECT t.scount as count,e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
+                e.end_time,e.net,e.disk,e.bench_type,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,
+                c.*,c.name as 'name' from execs e JOIN aloja2.clusters c USING (id_cluster)
  				  LEFT JOIN aloja_ml.predictions p USING (id_exec)
 						INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
 									LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
 									 WHERE  1 $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
-        		  t ON e.exe_time = t.minexe WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
-        
+        		  t ON e.exe_time = t.minexe WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
+
+		$queryPredicted = "SELECT t.scount as count, e.id_exec,e.id_cluster,e.exec, CONCAT(CONCAT('pred','_'),e.bench) as 'bench',e.exe_time, e.start_time,
+                e.end_time,e.net,e.disk,e.bench_type,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.valid,e.filter,e.outlier,'null' as perf_details, 'prediction' as exec_type, 'null' as datasize,'null' as scale_factor,
+                c.*,CONCAT('pred_', c.name) as 'name' from aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
+						INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja_ml.predictions e2 JOIN aloja2.clusters c2 USING(id_cluster)
+									 WHERE  1 $innerQueryML GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
+        		  t ON e.exe_time = t.minexe WHERE 1 $filter_execs $whereML GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
+
+		$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+		if($params['uobsr'] && $params['upred']) {
+			$query = "($query) UNION ($queryPredicted)";
+		} else if($params['upred']) {
+			$query = "$queryPredicted";
+		}
+
     	try {
     		$rows = $db->get_rows($query);
     		$minCost = -1;
@@ -239,7 +265,8 @@ class CostPerfEvaluationController extends AbstractController
         					 WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
     		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
-    
+
+			
     		$execs = $dbUtils->get_rows($execs);
     		if(!$execs)
     			throw new \Exception("No results for query!");
