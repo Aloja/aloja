@@ -266,18 +266,53 @@ class RestController extends AbstractController
 
             //check if it needs to be created
             if (true ) {  //Caching of file disabled !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
-	       $query = 'SELECT DISTINCT  id_host
-			 FROM aloja_logs.SAR_cpu s
-			 JOIN aloja2.execs e USING(id_exec)
-			 JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
-			 WHERE id_exec = "'.$id_exec.'"
-			 ORDER BY ABS(id_host)
-			 LIMIT 1;';
+                $query = 'SELECT 
+                        concat(
+                        "2:",
+                        (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                        ":2:",
+                        PID,
+                        ":1:",
+                        substring(extra1, position(":1:" in extra1)+3)
+                        ) as record,
+                        substring(substring(extra1, position(":1:" in extra1)+3),1,position(":" in substring(extra1, position(":1:" in extra1)+3))-1) as timestamp
+                    From aloja_logs.AOP4Hadoop s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
+                    where id_exec = "'.$id_exec.'"
+                    order by timestamp asc;';
 
-		$low_id_rows = $dbUtils->get_rows($query);
-                if (!isset($low_id_rows)) throw new \Exception('No data returned!');
-		$lowid = $low_id_rows[0]['id_host'];
+        		$AOP4Hadoop_rows = $dbUtils->get_rows($query);
 
+
+                 $query = 'SELECT 
+                        distinct s.host_name,
+                        (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1) as task_id,
+                        PID
+                    From aloja_logs.AOP4Hadoop s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
+                    where id_exec = "'.$id_exec.'" and s.event = 11111;';
+
+                $AOP4Hadoop_jt_ids = $dbUtils->get_rows($query);
+
+
+                $query = 'SELECT 
+                        distinct 
+                            concat(
+                                "tracker_",
+                                substring(extra1, position("tracker" in extra1)+8, LENGTH(s.host_name)),
+                                "-.*$"
+                            ) as tracker_name,
+                            (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )) as task_id
+                        From aloja_logs.AOP4Hadoop s
+                        JOIN aloja2.execs e USING(id_exec) 
+                        JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = substring(extra1, position("tracker" in extra1)+8, LENGTH(s.host_name))
+                        where id_exec = "'.$id_exec.'" and s.event = 11119;';
+
+
+                $AOP4Hadoop_tt_ids = $dbUtils->get_rows($query);
+                
                 $query = 'SELECT
                     concat(
                     "2:",
@@ -298,6 +333,7 @@ class RestController extends AbstractController
                     JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
                     WHERE id_exec = "'.$id_exec.'"
                     GROUP BY date, host ORDER by date, host;';
+
 
                 $prv_rows = $dbUtils->get_rows($query);
 
@@ -547,6 +583,33 @@ VALUES
                     $prv_file .= $prv_row['prv']."\n";
                 }
 
+                foreach ($AOP4Hadoop_rows as $AOP4Hadoop_row) {
+                    $aop4h_file .= $AOP4Hadoop_row['record']."\n";
+                }
+
+                foreach ($AOP4Hadoop_jt_ids as $AOP4Hadoop_jt_id) {
+                    $aop4h_jt_ids_file .= ":".$AOP4Hadoop_jt_id['PID'].":/:".$AOP4Hadoop_jt_id['task_id'].":\n";
+                }
+                
+                foreach ($AOP4Hadoop_tt_ids as $AOP4Hadoop_tt_id) {
+                    $aop4h_tt_ids_file .= $AOP4Hadoop_tt_id['tracker_name']."/".$AOP4Hadoop_tt_id['task_id']."\n";
+                }
+
+                $replace_file='foo=`sh replace_string.sh`
+echo $foo
+eval $foo';
+
+                $replace_string_file='echo -n "cat "`ls *.tmp.aop4hadoop`" | perl"
+for line in `cat *.tmp.tt.ids`
+do
+    echo -n " -pe \"s/$line/g;\""
+done
+for line in `cat *.tmp.jt.ids`
+do
+    echo -n " -pe \"s/$line/g;\""
+done
+echo';
+
                 //create the file
                 if (!is_dir("$dir/$exec_name/")) {
                     mkdir("$dir/$exec_name/", 0777, true);
@@ -554,8 +617,14 @@ VALUES
                 file_put_contents($dir."/$exec_name/$exec_name.pcf", $pcf_file);
                 file_put_contents($dir."/$exec_name/$exec_name.row", $row_file);
                 file_put_contents($dir."/$exec_name/$exec_name.prv", $prv_file);
+                file_put_contents($dir."/$exec_name/$exec_name.tmp.aop4hadoop", $aop4h_file);
+                file_put_contents($dir."/$exec_name/$exec_name.tmp.jt.ids", $aop4h_jt_ids_file);
+                file_put_contents($dir."/$exec_name/$exec_name.tmp.tt.ids", $aop4h_tt_ids_file);
+                file_put_contents($dir."/$exec_name/replace.sh", $replace_file);
+                file_put_contents($dir."/$exec_name/replace_string.sh", $replace_string_file);
 
                 if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
+                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
                     throw new \Exception('Could not create .zip');
                 }
             }
