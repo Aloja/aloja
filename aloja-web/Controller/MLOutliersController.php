@@ -14,7 +14,7 @@ class MLOutliersController extends AbstractController
 		parent::__construct($container);
 
 		//All this screens are using this custom filters
-		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
 	}
 
 	public function mloutliersAction()

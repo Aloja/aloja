@@ -9,6 +9,14 @@ use alojaweb\inc\MLUtils;
 
 class MLSummariesController extends AbstractController
 {
+	public function __construct($container)
+	{
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
+	}
+
 	public function mlsummariesAction()
 	{
 		$displaydata = $separate_feat = $instance = $model_info = $slice_info = '';
@@ -47,7 +55,7 @@ class MLSummariesController extends AbstractController
 				},
 				'filterGroup' => 'MLearning'
 			)));
-			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true)));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Grouping Options', 'tabOpenDefault' => true)));
 
 			$where_configs = $this->filters->getWhereClause();
 
@@ -81,18 +89,17 @@ class MLSummariesController extends AbstractController
 					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
 					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
 					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
-					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version' => 'Hadoop.Version'
+					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version' => 'Hadoop.Version',
+					'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
 				);
-			    	$headers = array_keys($header_names);
-				$names = array_values($header_names);
 
 				// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query="SELECT ".implode(",",array_keys($header_names))." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
-				fputcsv($fp, $names,',','"');
+				fputcsv($fp,array_values($header_names),',','"');
 			    	foreach($rows as $row)
 				{
 					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...

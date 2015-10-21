@@ -9,11 +9,12 @@ use alojaweb\inc\MLUtils;
 
 class MLCrossvarController extends AbstractController
 {
-	public function __construct($container) {
+	public function __construct($container)
+	{
 		parent::__construct($container);
 
 		//All this screens are using this custom filters
-		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
 	}
 
 	public function mlcrossvarAction()
@@ -41,6 +42,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'datasize','scale_factor',
 							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS','FAILED_MAPS',
 							'TOTAL_REDUCES','FAILED_REDUCES','FILE_BYTES_WRITTEN','FILE_BYTES_READ',
 							'HDFS_BYTES_WRITTEN','HDFS_BYTES_READ');
@@ -52,6 +54,7 @@ class MLCrossvarController extends AbstractController
 							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
 							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Execution time',
 							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
 							'FAILED_MAPS' => 'Failed execution maps',
@@ -74,6 +77,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'datasize','scale_factor',
 							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS','FAILED_MAPS',
 							'TOTAL_REDUCES','FAILED_REDUCES','FILE_BYTES_WRITTEN','FILE_BYTES_READ',
 							'HDFS_BYTES_WRITTEN','HDFS_BYTES_READ');
@@ -85,6 +89,7 @@ class MLCrossvarController extends AbstractController
 							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
 							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Execution time',
 							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
 							'FAILED_MAPS' => 'Failed execution maps',
@@ -140,7 +145,7 @@ class MLCrossvarController extends AbstractController
 			$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
 			foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -220,8 +225,8 @@ class MLCrossvarController extends AbstractController
 			$count_var1 = $count_var2 = 0;
 			$categories1 = $categories2 = '';
 
-			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
-			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
 
 			foreach ($rows as $row)
 			{
@@ -303,6 +308,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'datasize','scale_factor',
 							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
 					},
 					'beautifier' => function($value) {
@@ -312,6 +318,7 @@ class MLCrossvarController extends AbstractController
 							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
 							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Execution time',
 							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps');
 
@@ -330,6 +337,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'datasize','scale_factor',
 							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
 					},
 					'beautifier' => function($value) {
@@ -339,6 +347,7 @@ class MLCrossvarController extends AbstractController
 							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
 							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
 							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
 						);
@@ -403,7 +412,7 @@ class MLCrossvarController extends AbstractController
 			foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -503,8 +512,8 @@ class MLCrossvarController extends AbstractController
 			$count_var1 = $count_var2 = 0;
 			$categories1 = $categories2 = '';
 
-			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
-			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
 
 			foreach ($rows as $row)
 			{
@@ -600,6 +609,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'datasize','scale_factor',
 							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
 					},
 					'beautifier' => function($value) {
@@ -609,6 +619,7 @@ class MLCrossvarController extends AbstractController
 							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
 							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
 							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps');
 
@@ -626,6 +637,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
+							'datasize','scale_factor',
 							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
 					},
 					'beautifier' => function($value) {
@@ -635,6 +647,7 @@ class MLCrossvarController extends AbstractController
 							'id_cluster' => 'Cluster','datanodes' => 'Datanodes',
 							'bench_type' => 'Benchmark Suite','vm_size' => 'VM Size','vm_cores' => 'VM cores',
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
+							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
 							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
 						);
@@ -685,7 +698,7 @@ class MLCrossvarController extends AbstractController
 			foreach ($model_info as $row) $model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -778,8 +791,8 @@ class MLCrossvarController extends AbstractController
 			$count_var1 = $count_var2 = 0;
 			$categories1 = $categories2 = '';
 
-			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
-			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type"));
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
 			foreach ($rows as $row)
 			{
 				$entry = array();
