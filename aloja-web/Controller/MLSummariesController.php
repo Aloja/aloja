@@ -76,7 +76,7 @@ class MLSummariesController extends AbstractController
 
 			$config = $model_info.' '.$separate_feat.' '.$slice_info.' SUMMARY';
 
-			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+			$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
 
 			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.summaries WHERE id_summaries = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
@@ -108,11 +108,11 @@ class MLSummariesController extends AbstractController
 				}
 
 				// launch query
-				$command = 'cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000:html=1'; #fwidth=135
+				$command = 'cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000:html=1'; #fwidth=135
 				$output = shell_exec($command);
 
 				// Save to DB
-				if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-summary.data', 'r')) !== FALSE)
+				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-summary.data', 'r')) !== FALSE)
 				{
 					$displaydata = "";
 					while (($data = fgets($handle)) !== FALSE)
@@ -130,8 +130,8 @@ class MLSummariesController extends AbstractController
 				}
 
 				// Remove temporal files
-				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-summary.data');
-				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-cache.csv');
+				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-summary.data');
+				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-cache.csv');
 			}
 
 			// Read results of the DB

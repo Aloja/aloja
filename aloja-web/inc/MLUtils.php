@@ -159,7 +159,93 @@ class MLUtils
 			$instances[] = $instance;
 
 		}
-		return $instances;
+
+		// Fetch Network values
+		$query = "SELECT MAX(n1.`maxtxkB/s`) AS maxtxkbs, MAX(n1.`maxrxkB/s`) AS maxrxkbs,
+			  	 MAX(n1.`maxtxpck/s`) AS maxtxpcks, MAX(n1.`maxrxpck/s`) AS maxrxpcks,
+				 MAX(n1.`maxtxcmp/s`) AS maxtxcmps, MAX(n1.`maxrxcmp/s`) AS maxrxcmps,
+				 MAX(n1.`maxrxmcst/s`) AS maxrxmscts,
+				 e1.net AS net, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider
+			  FROM aloja2.precal_network_metrics AS n1,
+			  	 aloja2.execs AS e1 LEFT JOIN aloja2.clusters AS c1 ON e1.id_cluster = c1.id_cluster
+			  WHERE e1.id_exec = n1.id_exec
+			  GROUP BY e1.net, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider";
+	    	$rows = $db->get_rows($query);
+		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Network.');
+
+		$netinfo = array();
+		foreach($rows as $row)
+		{
+			$id = $row['net'].'-'.$row['vm_cores'].'-'.$row['vm_RAM'].'-'.$row['vm_size'].'-'.$row['vm_OS'].'-'.$row['provider'];
+			$netinfo[$id] = $row['maxtxkbs'].','.$row['maxrxkbs'].','.$row['maxtxpcks'].','.$row['maxrxpcks'].','.$row['maxtxcmps'].','.$row['maxrxcmps'].','.$row['maxrxmscts'];
+		}
+
+		// Fetch Disk values
+		$query = "SELECT MAX(d1.maxtps) AS maxtps, MAX(d1.maxsvctm) as maxsvctm,
+				 MAX(d1.`maxrd_sec/s`) as maxrds, MAX(d1.`maxwr_sec/s`) as maxwrs,
+				 MAX(d1.maxrq_sz) as maxrqsz, MAX(d1.maxqu_sz) as maxqusz,
+				 MAX(d1.maxawait) as maxawait, MAX(d1.`max%util`) as maxutil,
+				 e2.disk AS disk, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider
+			  FROM aloja2.precal_disk_metrics AS d1,
+				 aloja2.execs AS e2 LEFT JOIN aloja2.clusters AS c1 ON e2.id_cluster = c1.id_cluster
+			  WHERE e2.id_exec = d1.id_exec
+			  GROUP BY e2.disk, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider";
+	    	$rows = $db->get_rows($query);
+		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Disks.');
+
+		$diskinfo = array();
+		foreach($rows as $row)
+		{
+			$id = $row['disk'].'-'.$row['vm_cores'].'-'.$row['vm_RAM'].'-'.$row['vm_size'].'-'.$row['vm_OS'].'-'.$row['provider'];
+			$diskinfo[$id] = $row['maxtps'].','.$row['maxsvctm'].','.$row['maxrds'].','.$row['maxwrs'].','.$row['maxrqsz'].','.$row['maxqusz'].','.$row['maxawait'].','.$row['maxutil'];
+		}
+
+		//For each instance, check NET & DISK, and expand/multiplicate
+		$instances_expanded = array();
+		foreach ($instances as $inst_n)
+		{
+			if (empty($params['net']))
+			{
+				$params['net'] = array();
+				$paramAllOptions['net'] = $filter_options['net'];
+				foreach ($paramAllOptions['net'] as $par) $params['net'][] = $par;
+			}
+
+			$netpos = array_search('net', $param_names);		// Multiple values -> decompose
+			$diskpos = array_search('disk', $param_names);		// Multiple values -> decompose
+			$corepos = array_search('vm_cores', $param_names);	// Unique value, due to decomposition by id_cluster
+			$rampos = array_search('vm_RAM', $param_names);		// Unique value, due to decomposition by id_cluster
+			$sizepos = array_search('vm_size', $param_names);	// Unique value, due to decomposition by id_cluster
+			$ospos = array_search('vm_OS', $param_names);		// Unique value, due to decomposition by id_cluster
+			$providerpos = array_search('provider', $param_names);	// Unique value, due to decomposition by id_cluster
+
+			// Combinatory effort...
+			$instances_l1 = array();
+			foreach ($params['net'] as $pnet)
+			{
+				$aux = explode(",", $inst_n);
+				$aux[$netpos] = $pnet;
+				$id = $pnet.'-'.$aux[$corepos].'-'.$aux[$rampos].'-'.$aux[$sizepos].'-'.$aux[$ospos].'-'.$aux[$providerpos];
+				if (array_key_exists($id, $netinfo)) $aux[] = $netinfo[$id];
+				else $aux[] = "0,0,0,0,0,0,0";
+				$instances_l1[] = implode(",",$aux);
+			}
+
+			foreach ($instances_l1 as $inst_d)
+			{
+				foreach ($params['disk'] as $pdisk)
+				{
+					$aux = explode(",", $inst_d);
+					$aux[$diskpos] = $pdisk;
+					$id = $pdisk.'-'.$aux[$corepos].'-'.$aux[$rampos].'-'.$aux[$sizepos].'-'.$aux[$ospos].'-'.$aux[$providerpos];
+					if (array_key_exists($id, $diskinfo)) $aux[] = $diskinfo[$id];
+					else $aux[] = "0,0,0,0,0,0,0,0";
+					$instances_expanded[] = implode(",",$aux);
+				}
+			}
+		}
+
+		return $instances_expanded;
 	}
 
 	public static function findMatchingModels ($model_info, &$possible_models, &$possible_models_id, $dbml)
