@@ -257,6 +257,12 @@ class CostPerfEvaluationController extends AbstractController
 			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
+
+			$whereML = $this->filters->getWhereClause(array('ml_predictions' => 'e'));
+			$whereML = str_replace("p.","e.",$whereML);
+			$innerQueryML = str_replace("e.","e2.",$whereML);
+			$innerQueryML = str_replace("c.","c2.",$innerQueryML);
+
     		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
     		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
     		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
@@ -264,9 +270,22 @@ class CostPerfEvaluationController extends AbstractController
       		  				LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
         					 WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
-    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
+    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
 
-			
+			$execsPred = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,CONCAT(CONCAT(CONCAT(CONCAT('pred','_'),e.bench),'_'),c.name) as 'exec', c.name as clustername,c.*
+    		  FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT MIN(e2.exe_time) minexe FROM aloja_ml.predictions e2 JOIN aloja2.clusters c2 USING(id_cluster)
+        					 WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryML GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $whereML
+    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
+
+			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+			if($params['uobsr'] && $params['upred']) {
+				$execs = "($execs) UNION ($execsPred)";
+			} else if($params['upred']) {
+				$execs = "$execsPred";
+			}
+
     		$execs = $dbUtils->get_rows($execs);
     		if(!$execs)
     			throw new \Exception("No results for query!");
@@ -349,14 +368,34 @@ class CostPerfEvaluationController extends AbstractController
 			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
-    		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
+
+			$whereML = $this->filters->getWhereClause(array('ml_predictions' => 'e'));
+			$whereML = str_replace("p.","e.",$whereML);
+			$innerQueryML = str_replace("e.","e2.",$whereML);
+			$innerQueryML = str_replace("c.","c2.",$innerQueryML);
+
+    		$execs = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.*,c.name
     		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
     		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
       		  INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
         					 LEFT JOIN aloja_ml.predictions p2 USING (id_exec) WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryWhere GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
         		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $this->whereClause
-    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC;";
-    
+    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
+
+			$execsPred = "SELECT t.scount as count, e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name,c.*,CONCAT('pred_',c.name) as name
+    		  FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
+      		  INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja_ml.predictions e2 JOIN aloja2.clusters c2 USING(id_cluster)
+        					WHERE  1 ".DBUtils::getFilterExecs('e2')." $innerQueryML GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
+        		t ON e.exe_time = t.minexe  WHERE 1 $filter_execs $whereML
+    		  GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
+
+			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+			if($params['uobsr'] && $params['upred']) {
+				$execs = "($execs) UNION ($execsPred)";
+			} else if($params['upred']) {
+				$execs = "$execsPred";
+			}
+
     		$execs = $dbUtils->get_rows($execs);
     		if(!$execs)
     			throw new \Exception("No results for query!");
