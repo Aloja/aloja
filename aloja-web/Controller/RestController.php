@@ -115,10 +115,29 @@ class RestController extends AbstractController
             }
             $whereClause = str_replace('%2F','/',$whereClause);
             
-             $query = "SELECT e.*, (e.exe_time/3600)*(c.cost_hour) as cost, c.name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, c.datanodes  FROM aloja2.execs e
+            $query = "SELECT e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
+                e.end_time,e.net,e.disk,e.bench_type,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,
+                (e.exe_time/3600)*(c.cost_hour) as cost, c.name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, c.datanodes  FROM aloja2.execs e
        	 		join aloja2.clusters c USING (id_cluster)
        	 		LEFT JOIN aloja_ml.predictions p USING (id_exec)
-      		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs()." ORDER BY e.id_exec DESC;";
+      		 	 WHERE 1 $whereClause" .DBUtils::getFilterExecs()." ORDER BY e.id_exec DESC";
+
+            $queryPredicted = "SELECT e.id_exec,e.id_cluster,e.exec,CONCAT('pred_',e.bench) AS bench,e.exe_time,e.start_time,
+                e.end_time,e.net,e.disk,e.bench_type,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.valid,e.filter,e.outlier,'null' as 'perf_details','null' as 'exec_type','null' as 'datasize','null' as 'scale_factor', (e.exe_time/3600)*(c.cost_hour) as cost, c.name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, c.datanodes  FROM aloja_ml.predictions e
+       	 		join aloja2.clusters c USING (id_cluster)
+      		 	 WHERE 1 ".$this->filters->getWhereClause(array('ml_predictions' => 'e')) .DBUtils::getFilterExecs()." ORDER BY e.id_exec DESC";
+
+            $params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+
+            //get configs first (categories)
+            if ($params['uobsr'] == 1 && $params['upred'] == 1)
+                $query = "($query) UNION ($queryPredicted)";
+            else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+                $query = "$queryPredicted";
 
              $exec_rows = $dbUtils->get_rows($query);
 
@@ -132,6 +151,7 @@ class RestController extends AbstractController
             ob_start('ob_gzhandler');
             echo json_encode(array('aaData' => $jsonData));
         } catch (\Exception $e) {
+            exit($e->getMessage());
             echo 'No data available';
         }
     }
@@ -1290,7 +1310,7 @@ VALUES
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, c.TOTAL_REDUCES, c.FAILED_REDUCES, c.job_name as CHARTS,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'MAP') {
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, JOB_ID, job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_MAPS, c.FAILED_MAPS, c.FINISHED_MAPS, `TOTAL_LAUNCHED_MAPS`,
@@ -1301,7 +1321,7 @@ VALUES
     			`MAP_OUTPUT_BYTES`,
     			`MAP_OUTPUT_MATERIALIZED_BYTES`,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'REDUCE') {
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME, c.TOTAL_REDUCES, c.FAILED_REDUCES,
@@ -1313,7 +1333,7 @@ VALUES
     			`COMBINE_INPUT_RECORDS`,
     			`COMBINE_OUTPUT_RECORDS`,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'FILE-IO') {
     			$query = "SELECT e.bench, e.exe_time, c.id_exec, c.JOB_ID, c.job_name, c.SUBMIT_TIME, c.LAUNCH_TIME,
     			c.FINISH_TIME,
@@ -1327,12 +1347,12 @@ VALUES
     			`BYTES_READ`,
     			`BYTES_WRITTEN`,
     			e.perf_details
-    			FROM HDI_JOB_details c $join";
+    			FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'DETAIL') {
-    			$query = "SELECT e.bench, e.exe_time, c.*,e.perf_details FROM aloja_logs.HDI_JOB_details c $join";
+    			$query = "SELECT e.bench, e.exe_time, c.*,e.perf_details FROM aloja2.HDI_JOB_details c $join";
     		} elseif ($type == 'TASKS') {
     			$query = "SELECT e.bench, e.exe_time, j.job_name, c.*,e.perf_details FROM aloja_logs.HDI_JOB_tasks c
-    			JOIN aloja_logs.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
+    			JOIN aloja2.HDI_JOB_details j USING(id_exec,JOB_ID) $join ";
     		} else {
     			throw new \Exception('Unknown type!');
     		}
