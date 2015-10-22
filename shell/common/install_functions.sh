@@ -603,7 +603,8 @@ sudo rm $libtiff_file"
 
       logger "INFO: Uncompressing and copying files"
       vm_execute "
-tar -C ~$(get_ssh_user) -xf '/tmp/$R_file';
+sudo rm -rf /opt/R;
+tar -C /opt -xf '/tmp/$R_file';
 rm -rf '/tmp/$R_file';
 "
 

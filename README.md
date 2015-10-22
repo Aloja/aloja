@@ -1,4 +1,4 @@
-# ALOJA Big Data benchmarking platform [![Build Status](https://travis-ci.org/Aloja/aloja.svg?branch=master)](https://travis-ci.org/Aloja/aloja)
+# ALOJA Big Data benchmarking platform 
 
 ###Quick start
 

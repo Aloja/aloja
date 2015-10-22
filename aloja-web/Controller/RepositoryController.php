@@ -36,7 +36,7 @@ class RepositoryController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters(array('bench' => array('default' => null)));
+        $this->buildFilters(array('bench' => array('type' => 'selectMultiple', 'default' => null)));
         $whereClause = $this->filters->getWhereClause();
 
 		$type = Utils::get_GET_string("pageTab");
@@ -108,7 +108,16 @@ class RepositoryController extends AbstractController
 		} else
 			$show_in_result = self::$show_in_result;
 
-        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$whereClause);
+        $params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+        $predictions = 0;
+
+        //get configs first (categories)
+        if ($params['uobsr'] == 1 && $params['upred'] == 1)
+            $predictions = 2;
+        else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+            $predictions = 1;
+
+        $discreteOptions = Utils::getExecsOptions($this->container->getDBUtils(),$predictions,$whereClause);
         return $this->render('repositoryViews/benchexecutions.html.twig',
             array(
                 'theaders' => $show_in_result,
@@ -122,7 +131,9 @@ class RepositoryController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $this->buildFilters(array('bench' => array('default' => null)));
+            $this->filters->removeFilters(array('upred','uobsr'));
+            $this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
+            $this->buildFilters(array('bench' => array('type' => 'selectMultiple', 'default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.JOB_details USING (id_exec) WHERE valid = 1");
@@ -251,7 +262,9 @@ class RepositoryController extends AbstractController
     {
         try {
             $db = $this->container->getDBUtils();
-            $this->buildFilters(array('bench' => array('default' => null)));
+            $this->filters->removeFilters(array('upred','uobsr'));
+            $this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
+            $this->buildFilters(array('bench' => array('type' => 'selectMultiple', 'default' => null)));
             $whereClause = $this->filters->getWhereClause();
 
             $benchOptions = $db->get_rows("SELECT DISTINCT bench FROM aloja2.execs e JOIN aloja2.HDI_JOB_details USING (id_exec) WHERE valid = 1");

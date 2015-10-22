@@ -29,6 +29,7 @@ class PerfDetailsController extends AbstractController
 
             //check the URL
             $execs = Utils::get_GET_intArray('execs');
+
             if(empty($execs)) {
                 $whereClause = $this->filters->getWhereClause();
                 $query = "SELECT e.id_exec FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
@@ -598,6 +599,7 @@ class PerfDetailsController extends AbstractController
                     }
                 }
             }
+
 
             if ($exec_details) {
                 $max_time = null;
