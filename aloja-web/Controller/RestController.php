@@ -266,6 +266,32 @@ class RestController extends AbstractController
 
             //check if it needs to be created
             if (true ) {  //Caching of file disabled !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
+
+                $query = 'SELECT
+                        unix_timestamp(min(date)) ts
+                        FROM aloja_logs.SAR_cpu t 
+                        WHERE id_exec = "'.$id_exec.'"
+                        order by ts asc
+                        limit 1;';
+
+                $AOP4Hadoop_initial_time_1 = $dbUtils->get_rows($query);
+
+                $query = 'SELECT
+                        (cast(substring(substring(extra1, position(":1:" in extra1)+3),1,position(":" in substring(extra1, position(":1:" in extra1)+3))-1) AS UNSIGNED)) as ts
+                        From aloja_logs.AOP4Hadoop s
+                        JOIN aloja2.execs e USING(id_exec)
+                        JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
+                        where id_exec = "'.$id_exec.'"
+                        order by ts asc
+                        limit 1;';
+
+                $AOP4Hadoop_initial_time_2 = $dbUtils->get_rows($query);
+
+                if (!isset($AOP4Hadoop_initial_time_1)) throw new \Exception('No data returned!');
+                if (!isset($AOP4Hadoop_initial_time_2)) throw new \Exception('No data returned!');
+                
+                $initial_time = min(($AOP4Hadoop_initial_time_1[0]['ts']*1000), ($AOP4Hadoop_initial_time_2[0]['ts']));
+
                 $query = 'SELECT 
                         concat(
                         "2:",
@@ -275,17 +301,16 @@ class RestController extends AbstractController
                         ":1:",
                         substring(extra1, position(":1:" in extra1)+3)
                         ) as record,
-                        substring(substring(extra1, position(":1:" in extra1)+3),1,position(":" in substring(extra1, position(":1:" in extra1)+3))-1) as timestamp
+                        (cast(substring(substring(extra1, position(":1:" in extra1)+3),1,position(":" in substring(extra1, position(":1:" in extra1)+3))-1) AS UNSIGNED) - "'.$initial_time.'") as timestamp
                     From aloja_logs.AOP4Hadoop s
                     JOIN aloja2.execs e USING(id_exec)
                     JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
                     where id_exec = "'.$id_exec.'"
                     order by timestamp asc;';
-
         		$AOP4Hadoop_rows = $dbUtils->get_rows($query);
 
 
-                 $query = 'SELECT 
+                $query = 'SELECT 
                         distinct s.host_name,
                         (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1) as task_id,
                         PID
@@ -320,8 +345,7 @@ class RestController extends AbstractController
                     ":1:",
                     (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
                     ":1:",
-                    (unix_timestamp(date) -
-                    (select unix_timestamp(min(date)) FROM aloja_logs.SAR_cpu t WHERE id_exec = "'.$id_exec.'"))*1000000000,
+                    (unix_timestamp(date)*1000 - "'.$initial_time.'")*1000,
                     ":2001:",round(AVG(`%user`)),
                     ":2002:",round(AVG(`%system`)),
                     ":2003:",round(AVG(`%steal`)),
@@ -368,8 +392,13 @@ class RestController extends AbstractController
                 }
 
                 //get the ending time
-                $end = end($prv_rows)['prv'];
-                $end = explode(':', $end);
+                $end1 = end($prv_rows)['prv'];
+                $end1 = explode(':', $end1);
+
+                $end2 = end($AOP4Hadoop_rows)['timestamp']*1000;
+                
+                $end_time = max($end1[5], $end2);
+                //throw new \Exception('1: '.$end1[5].', 2: '.$end2);
 
                 //create the Row file according to the cluster size
                 $query = 'SELECT id_host, host_name, role
@@ -381,7 +410,7 @@ class RestController extends AbstractController
 
                 $row_size = count($hosts_rows);
 
-                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$end[5].":$row_size(";
+                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$end_time.":$row_size(";
                 for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
                     $header .= "1,";
                 }
@@ -584,7 +613,9 @@ VALUES
                 }
 
                 foreach ($AOP4Hadoop_rows as $AOP4Hadoop_row) {
-                    $aop4h_file .= $AOP4Hadoop_row['record']."\n";
+                    $row=explode(':',$AOP4Hadoop_row['record']);
+                    $row[5]=$AOP4Hadoop_row['timestamp']*1000;
+                    $prv_file .= implode(":",$row)."\n";
                 }
 
                 foreach ($AOP4Hadoop_jt_ids as $AOP4Hadoop_jt_id) {
@@ -599,7 +630,7 @@ VALUES
 echo $foo
 eval $foo';
 
-                $replace_string_file='echo -n "cat "`ls *.tmp.aop4hadoop`" | perl"
+                $replace_string_file='echo -n "cat "`ls *.prv`" | perl"
 for line in `cat *.tmp.tt.ids`
 do
     echo -n " -pe \"s/$line/g;\""
@@ -623,8 +654,8 @@ echo';
                 file_put_contents($dir."/$exec_name/replace.sh", $replace_file);
                 file_put_contents($dir."/$exec_name/replace_string.sh", $replace_string_file);
 
-                if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
-                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
+                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
+                if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
                     throw new \Exception('Could not create .zip');
                 }
             }
