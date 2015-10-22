@@ -27,6 +27,28 @@
 
 		<div id="waitdiv" style="float: left; width: 100%;"></div>
 
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>&nbsp;</td><td>This tool will find the <b>Minimum Executions</b> to benchmark a <b>new</b> deployment, taking as reference the selected deployment/executions</td></tr>
+				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box):<br/>1) The executions to be filtered by chosing the value constraints per each attribute (if no value selected, all will be added to the combination)<br/>2) The method that will be used to generate the reference model for obtaining the minimum configurations to run<br/>3) Optionally, check if the generated model shall accept new values for attributes when reusing the it in the future (attempting to predict them) or fix the values, so new values for attributes will be rejected when using this model</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Find Configs</b>, and wait until the data is processed, the model created and the configurations obtained. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
+					a) A <b>chart</b> showing how the more configurations you execute, the smaller is the difference (<i>error</i>) respect the reference model with all the previously selected executions.<br/>
+					b) A <b>table</b> with the recommended minimal configurations to execute, with the capability of selecting the size of the set of recommendations (corresponding to the previous chart).
+				</td></tr>
+				</table>
+			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently created models in cache: <a id="displayText" href="javascript:toggle('learndiv','displayText');">show</a></h4><br/> 
+			<div id="learndiv" style="float: left; width: 100%; display:none;">
+				<table id="learntable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
+		</div>
+
 		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
 			<div class="panel-heading" role="tab" id="headingChartDiv">
 				<i id="ChartFG" data-toggle="collapse" data-parent="#stuffdivs" href="#chartDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
@@ -102,10 +124,38 @@
 	<script type="text/javascript" src="js/utils.js"></script>
 
 	<script type="text/javascript">
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		xTable.fnAdjustColumnSizing();
+	}
+
 	$(document).ready(function()
 	{
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
 		$('#headingadvanced').parent().hide();
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#benchDivFilter').hide(); $('#headingBenchDiv').hide();
+			$('#chartDivFilter').hide(); $('#headingChartDiv').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+
+			xTable = $('#learntable').dataTable({
+				"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+				"aaData": {{ newconfs | raw }},
+				"columns": {{ header_newconfs | raw }},
+				"columnDefs" : [],
+				"sScrollX": "100%",
+				"bScrollCollapse": true
+			});
+			return;
+		}
 
 		if ("{{must_wait}}"== "NO")
 		{

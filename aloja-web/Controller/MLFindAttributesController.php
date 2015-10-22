@@ -36,17 +36,8 @@ class MLFindAttributesController extends AbstractController
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
 
-			if (array_key_exists('dump',$_GET))
-			{
-				$dump = $_GET["dump"];
-				unset($_GET["dump"]);
-			}
-
-			if (array_key_exists('pass',$_GET))
-			{
-				$pass = $_GET["pass"];
-				unset($_GET["pass"]);
-			}
+			if (array_key_exists('dump',$_GET)) { $dump = $_GET["dump"]; unset($_GET["dump"]); }
+			if (array_key_exists('pass',$_GET)) { $pass = $_GET["pass"]; unset($_GET["pass"]); }
 
 			$this->buildFilters(array(
 			'current_model' => array(

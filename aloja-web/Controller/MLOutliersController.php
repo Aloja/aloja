@@ -32,21 +32,12 @@ class MLOutliersController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
-
+	    	
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
-		    	
-			if (array_key_exists('dump',$_GET))
-			{
-				$dump = $_GET["dump"];
-				unset($_GET["dump"]);
-			}
 
-			if (array_key_exists('register',$_GET))
-			{
-				$register = $_GET["register"];
-				unset($_GET["register"]);
-			}
+			if (array_key_exists('dump',$_GET)) { $dump = $_GET["dump"]; unset($_GET["dump"]); }
+			if (array_key_exists('register',$_GET)) { $register = $_GET["register"]; unset($_GET["register"]); }
 
 			$this->buildFilters(
 				array('current_model' => array(

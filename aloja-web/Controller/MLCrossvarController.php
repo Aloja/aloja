@@ -188,7 +188,7 @@ class MLCrossvarController extends AbstractController
 					// Call to MLPrediction, to fetch/learn model
 					$_GET['pass'] = 1;
 					$_GET["learn"] = $learn;
-					$mltc1 = new MLPredictionController();
+					$mltc1 = new MLPredictionController($this->container);
 					$mltc1->container = $this->container;
 					$ret_learn = $mltc1->mlpredictionAction();
 
@@ -475,7 +475,7 @@ class MLCrossvarController extends AbstractController
 					// Call to MLTemplates, to fetch/learn model
 					$_GET['pass'] = 1;
 					$_GET["current_model"] = $current_model;
-					$mltc1 = new MLPredictionController();
+					$mltc1 = new MLPredictionController($this->container);
 					$mltc1->container = $this->container;
 					$ret_learn = $mltc1->mlpredictionAction();
 
@@ -737,7 +737,7 @@ class MLCrossvarController extends AbstractController
 			if (empty($possible_models_id))
 			{
 				$_GET['pass'] = 1;
-				$mltc1 = new MLPredictionController(); // FIXME - Choose the default modeling algorithm
+				$mltc1 = new MLPredictionController($this->container); // FIXME - Choose the default modeling algorithm
 				$mltc1->container = $this->container;
 				$ret_learn = $mltc1->mlpredictionAction();
 
@@ -757,7 +757,7 @@ class MLCrossvarController extends AbstractController
 			if ($current_model != '')
 			{
 				$_GET['pass'] = 2;
-				$mlfa1 = new MLFindAttributesController();
+				$mlfa1 = new MLFindAttributesController($this->container);
 				$mlfa1->container = $this->container;
 				$ret_data = $mlfa1->mlfindattributesAction();
 
@@ -827,7 +827,7 @@ class MLCrossvarController extends AbstractController
 				if ($entry['z'] > $maxz) $maxz = $entry['z'];
 				if ($entry['z'] < $minz) $minz = $entry['z'];
 
-				$entry['name'] = $row['instance']; //$row['V1']." - ".$row['V2']." - ".max(100,(int)$row['V3']);
+				$entry['name'] = implode(",",array_slice(explode(",",$row['instance']),0,21)); //$row['instance']; //$row['V1']." - ".$row['V2']." - ".max(100,(int)$row['V3']);
 				$jsonData[] = $entry;
 			}
 

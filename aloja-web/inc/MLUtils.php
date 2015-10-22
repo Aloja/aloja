@@ -314,7 +314,7 @@ class MLUtils
 			}
 		}
 
-		if ($slice_info !== false)
+		if ($slice_info !== false && $slice_info != '')
 		{
 			if ($slice_info[0] == " ") $slice_info = substr($slice_info, 1);
 			$slice_array = explode(" ",$slice_info);
@@ -348,13 +348,16 @@ class MLUtils
 	{
 		$data_display = '';
 
-		if ($input[0] == " ") $input = substr($input, 1);
-		$data_array = explode(" ",$input);
-		for($i = 1; $i < count($data_array); $i = $i + 2)
+		if ($input != '')
 		{
-			$param1 = $data_array[$i-1];
-			$param2 = $data_array[$i];
-			if ($param2 != '("*")') $data_display = $data_display.' '.$param1.' '.$param2;
+			if ($input[0] == " ") $input = substr($input, 1);
+			$data_array = explode(" ",$input);
+			for($i = 1; $i < count($data_array); $i = $i + 2)
+			{
+				$param1 = $data_array[$i-1];
+				$param2 = $data_array[$i];
+				if ($param2 != '("*")') $data_display = $data_display.' '.$param1.' '.$param2;
+			}
 		}
 		if ($data_display == '') $data_display = 'No Filters';
 
@@ -488,6 +491,36 @@ class MLUtils
 		}
 		$jsonMinconfs = $jsonMinconfs.']';
 		$jsonMinconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
+	}
+
+	public static function getIndexNewconfs (&$jsonNewconfs, &$jsonNewconfsHeader, $dbml)
+	{
+		$query="SELECT mj.*, COUNT(mc.sid_minconfigs_centers) AS num_centers
+			FROM (	SELECT DISTINCT m.id_minconfigs AS id_minconfigs, m.model AS model, m.is_new as is_new, m.dataslice AS advanced,
+					m.creation_time AS creation_time, COUNT(mp.sid_minconfigs_props) AS num_props, l.algorithm
+				FROM aloja_ml.minconfigs AS m LEFT JOIN aloja_ml.minconfigs_props AS mp ON m.id_minconfigs = mp.id_minconfigs, aloja_ml.learners AS l
+				WHERE l.id_learner = m.id_learner
+				GROUP BY m.id_minconfigs
+			) AS mj LEFT JOIN aloja_ml.minconfigs_centers AS mc ON mj.id_minconfigs = mc.id_minconfigs
+			WHERE mj.is_new = 1
+			GROUP BY mj.id_minconfigs
+			";
+		$rows = $dbml->query($query);
+		$jsonNewconfs = '[';
+	    	foreach($rows as $row)
+		{
+//			$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm']);
+			$url = MLUtils::revertModelToURL($row['model'], NULL, 'presets=none&submit=&learner[]='.$row['algorithm'].'&');
+
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+//			$slice_display = MLUtils::display_models_noasts ($row['advanced']);
+			$slice_display = MLUtils::display_models_noasts (NULL);
+
+			$jsonNewconfs = $jsonNewconfs.(($jsonNewconfs=='[')?'':',')."['".$row['id_minconfigs']."','".$row['algorithm']."','".$model_display."','".$slice_display."','".$row['creation_time']."','".$row['num_props']."','".$row['num_centers']."',
+			'<a href=\'/mlnewconfigs?".$url."\'>View</a> <a href=\'/mlclearcache?rmm=".$row['id_minconfigs']."\'>Remove</a>']";
+		}
+		$jsonNewconfs = $jsonNewconfs.']';
+		$jsonNewconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
 	}
 }
 ?>
