@@ -627,10 +627,10 @@ VALUES
                 }
 
                 $replace_file='foo=`sh replace_string.sh`
-echo $foo
+#echo $foo
 eval $foo';
 
-                $replace_string_file='echo -n "cat "`ls *.prv`" | perl"
+                $replace_string_file='echo -n "cat '.$exec_name.'.tmp.prv |  tail -n +2 | sort -t \":\" -k 6n | perl"
 for line in `cat *.tmp.tt.ids`
 do
     echo -n " -pe \"s/$line/g;\""
@@ -645,14 +645,18 @@ echo';
                 if (!is_dir("$dir/$exec_name/")) {
                     mkdir("$dir/$exec_name/", 0777, true);
                 }
+                $prv_tmp_filename="$exec_name.tmp.prv";
+                $prv_filename="$exec_name.prv";
+                $replace_filename="replace.sh";
                 file_put_contents($dir."/$exec_name/$exec_name.pcf", $pcf_file);
                 file_put_contents($dir."/$exec_name/$exec_name.row", $row_file);
-                file_put_contents($dir."/$exec_name/$exec_name.prv", $prv_file);
-                file_put_contents($dir."/$exec_name/$exec_name.tmp.aop4hadoop", $aop4h_file);
+                file_put_contents($dir."/$exec_name/$prv_tmp_filename", $prv_file);
+                //file_put_contents($dir."/$exec_name/$exec_name.tmp.aop4hadoop", $aop4h_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.jt.ids", $aop4h_jt_ids_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.tt.ids", $aop4h_tt_ids_file);
                 file_put_contents($dir."/$exec_name/replace.sh", $replace_file);
                 file_put_contents($dir."/$exec_name/replace_string.sh", $replace_string_file);
+                exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename && rm  -f *.tmp.*");
 
                 //if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
                 if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
