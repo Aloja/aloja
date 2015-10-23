@@ -160,6 +160,13 @@ class MLUtils
 
 		}
 
+		return completeInstances($filters,$instances,$param_names,$params,$db);
+	}
+
+	public static function completeInstances(\alojaweb\Filters\Filters $filters, $instances, $param_names, $params, $db = null)
+	{
+		$filter_options = $filters->getFilterChoices();
+
 		// Fetch Network values
 		$query = "SELECT MAX(n1.`maxtxkB/s`) AS maxtxkbs, MAX(n1.`maxrxkB/s`) AS maxrxkbs,
 			  	 MAX(n1.`maxtxpck/s`) AS maxtxpcks, MAX(n1.`maxrxpck/s`) AS maxrxpcks,
@@ -509,12 +516,10 @@ class MLUtils
 		$jsonNewconfs = '[';
 	    	foreach($rows as $row)
 		{
-//			$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm']);
-			$url = MLUtils::revertModelToURL($row['model'], NULL, 'presets=none&submit=&learner[]='.$row['algorithm'].'&');
+			$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm']);
 
 			$model_display = MLUtils::display_models_noasts ($row['model']);
-//			$slice_display = MLUtils::display_models_noasts ($row['advanced']);
-			$slice_display = MLUtils::display_models_noasts (NULL);
+			$slice_display = MLUtils::display_models_noasts ($row['advanced']);
 
 			$jsonNewconfs = $jsonNewconfs.(($jsonNewconfs=='[')?'':',')."['".$row['id_minconfigs']."','".$row['algorithm']."','".$model_display."','".$slice_display."','".$row['creation_time']."','".$row['num_props']."','".$row['num_centers']."',
 			'<a href=\'/mlnewconfigs?".$url."\'>View</a> <a href=\'/mlclearcache?rmm=".$row['id_minconfigs']."\'>Remove</a>']";
