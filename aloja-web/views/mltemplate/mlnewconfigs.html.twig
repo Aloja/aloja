@@ -100,6 +100,7 @@
 						<li>New Model cache ID: {{id_newconf_model|raw}} &#8658; NewConfigs cache ID: {{id_newconf_result|raw}}</li>
 						<li>Instance: {{instance|raw}}</li>
 						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
 						</ul>
 					</p>
 				</div>
@@ -137,7 +138,6 @@
 	$(document).ready(function()
 	{
 		$('jsonError').innerHTML = "<p>{{message}}</p>";
-		$('#headingadvanced').parent().hide();
 
 		if ("{{instructions}}" == "YES")
 		{

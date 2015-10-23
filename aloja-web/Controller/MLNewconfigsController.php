@@ -11,10 +11,13 @@ class MLNewconfigsController extends AbstractController
 {
 	public function read_params($item_name)
 	{
-		if (isset($_GET[$item_name]))
+		if (isset($_GET[$item_name]) && $_GET[$item_name] != '')
 		{
 			$items = $_GET[$item_name];
-			if (($key = array_search('None', $items)) !== false) unset ($items[$key]);
+			if (is_array($items))
+			{
+				if (($key = array_search('None', $items)) !== false) unset ($items[$key]);
+			}
 		}
 		else $items = array();
 	
@@ -24,7 +27,7 @@ class MLNewconfigsController extends AbstractController
 	public function add_where_configs($item_name, &$where_configs)
 	{
 		$items = MLNewconfigsController::read_params($item_name);
-		if ($items) $where_configs .= ' AND '.$item_name.' IN ("'.join('","', $items).'")';
+		if ($items) $where_configs .= ' AND e.'.$item_name.' IN ("'.join('","', $items).'")';
 		return;	
 	}
 
@@ -58,7 +61,7 @@ class MLNewconfigsController extends AbstractController
 	public function mlnewconfigsAction()
 	{
 		$jsonData = $jsonHeader = $configs = $jsonNewconfs = $jsonNewconfsHeader = '[]';
-		$message = $instance = $config = $model_info = '';
+		$message = $instance = $config = $model_info = $slice_info = '';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		try
@@ -94,11 +97,23 @@ class MLNewconfigsController extends AbstractController
 				$_GET['vm_RAM'] = $params['vm_RAM'] = array('128');// $where_configs .= ' AND vm_RAM = 128';
 				$_GET['type'] = $params['type'] = array('On-premise');// $where_configs .= ' AND type = "On-premise"';
 				$_GET['provider'] = $params['provider'] = array('on-premise');// $where_configs .= ' AND provider = "on-premise"';
+
+				$_GET['datefrom'] = $params['datefrom'] = '';
+				$_GET['dateto'] = $params['dateto'] = '';
+				$_GET['maxexetime'] = $params['maxexetime'] = 20000;
+				$_GET['minexetime'] = $params['minexetime'] = 1;
 			}
 			else
 			{
 				$param_names_whereconfig = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','bench_type','hadoop_version','datasize','scale_factor');
 				foreach ($param_names_whereconfig as $p) MLNewconfigsController::add_where_configs($p,$where_configs);
+
+				$where_configs .= ((isset($_GET['datefrom']) && $_GET['datefrom'] != '')?' AND start_time >= '.$_GET['datefrom']:'').
+						  ((isset($_GET['dateto']) && $_GET['dateto'] != '')?' AND end_time <= '.$_GET['dateto']:'').
+						  ((isset($_GET['minexetime']) && $_GET['minexetime'] != '')?' AND exe_time >= '.$_GET['minexetime']:'').
+						  ((isset($_GET['maxexetime']) && $_GET['maxexetime'] != '')?' AND exe_time <= '.$_GET['maxexetime']:'').
+						  ((isset($_GET['valid']))?' AND valid = '.$_GET['valid']:'').
+						  ((isset($_GET['filter']))?' AND filter = '.$_GET['filter']:'');
 			}
 
 			// Real fetching of parameters
@@ -106,10 +121,13 @@ class MLNewconfigsController extends AbstractController
 			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			foreach ($param_names as $p) { $params[$p] = MLNewconfigsController::read_params($p); sort($params[$p]); }
 
+			$params_additional = array();
+			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
+			foreach ($param_names_additional as $p) { $params_additional[$p] = MLNewconfigsController::read_params($p); }
+
 			$learn_param = (array_key_exists('learn',$_GET))?$_GET['learn']:'regtree';
 			$param_id_cluster = $params['id_cluster']; unset($params['id_cluster']); // Exclude the param from now on
 
-			$where_configs = str_replace("id_cluster","e.id_cluster",$where_configs);
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
 			// Semi-Dummy Filters (For ModelInfo and SimpleInstance)
@@ -130,7 +148,14 @@ class MLNewconfigsController extends AbstractController
 					return array('whereClause' => '', 'currentChoice' => $choice);
 				},
 				'filterGroup' => 'MLearning'
-			)
+			),
+			'minexetime' => array('default' => 1),
+			'maxexetime' => array('default' => 20000),
+			'datefrom' => array('default' => ''),
+			'dateto' => array('default' => ''),
+			'valid' => array('default' => 1),
+			'filter' => array('default' => 1),
+			'prepares' => array('default' => 0)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('learn'))));
 
@@ -150,6 +175,7 @@ class MLNewconfigsController extends AbstractController
 					'options' => MLNewconfigsController::getFilterOptions($db)
 				);
 				foreach ($param_names as $p) $return_params[$p] = $params[$p];
+				foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
 				echo $this->container->getTwig()->render('mltemplate/mlnewconfigs.html.twig', $return_params);
 				return;
 			}
@@ -158,8 +184,10 @@ class MLNewconfigsController extends AbstractController
 			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, true, true);
 			$param_names_aux = array_diff($param_names, array('id_cluster'));
 			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names_aux, $params, true, true);
+			$instances = MLUtils::completeInstances($this->filters,array($instance), $param_names, $params, $db);
+			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
-			$config = $model_info.' '.$learn_param.' newminconfs';
+			$config = $model_info.' '.$learn_param.' '.$slice_info.' newminconfs';
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options = 'prange=0,20000'; }
 			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options ='kparam=3';}
@@ -240,11 +268,19 @@ class MLNewconfigsController extends AbstractController
 				}
 
 				// run the R processor
+				$vin = "Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor,Net.maxtxKB.s,Net.maxrxKB.s,Net.maxtxPck.s,Net.maxrxPck.s,Net.maxtxCmp.s,Net.maxrxCmp.s,Net.maxrxmsct.s,Disk.maxtps,Disk.maxsvctm,Disk.maxrd.s,Disk.maxwr.s,Disk.maxrqsz,Disk.maxqusz,Disk.maxawait,Disk.maxutil";
 				exec('cd '.getcwd().'/cache/ml; touch '.md5($config).'.lock');
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$instance.'\':saveall='.md5($config."D").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\'Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor\' >/dev/null 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >debug4.tmp 2>&1 &';
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\''.$vin.'\' >debug1.txt 2>&1 && ';
+				$count = 1;
+				foreach ($instances as $inst)
+				{
+					$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$inst.'\':saveall='.md5($config."D").'-'.($count++).':vin=\''.$vin.'\' >>debug2.txt 2>&1 && ';
+				}
+				$command = $command.' head -1 '.md5($config."D").'-1-dataset.data >'.md5($config."D").'-dataset.data 2>>debug2-1.txt && ';				
+				$command = $command.' cat '.md5($config."D").'*-dataset.data >'.md5($config."D").'-aux.data 2>>debug2-1.txt && ';
+				$command = $command.' grep -v "ID" '.md5($config."D").'*-aux.data >>'.md5($config."D").'-dataset.data 2>>debug2-1.txt && ';
+				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\''.$vin.'\' >debug3.txt 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >debug4.txt 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >debug4.tmp 2>&1 &';
 				exec($command);
 
 				sleep(2);
@@ -268,8 +304,9 @@ class MLNewconfigsController extends AbstractController
 				if ($tmp_result['id_learner'] != $learner_1) 
 				{
 					// register model to DB
-					$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm)";
-					$query = $query." VALUES ('".$learner_1."','".$instance."','".substr($model_info,1)."','".$learn_param."');";
+					$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice)";
+					$query = $query." VALUES ('".$learner_1."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."');";
+
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
 
 					// read results of the CSV and dump to DB
@@ -359,8 +396,8 @@ class MLNewconfigsController extends AbstractController
 					$i = 0;
 					while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
 					{
-						$subdata1 = array_slice($data, 0, 12);
-						$subdata2 = array_slice($data, 19, 4);
+						$subdata1 = array_slice($data, 0, 11);
+						$subdata2 = array_slice($data, 18, 4);
 						$specific_data = implode(',',array_merge($subdata1,$subdata2));
 						$specific_data = preg_replace('/,Cmp(\d+),/',',${1},',$specific_data);
 						$specific_data = preg_replace('/,Cl(\d+),/',',${1},',$specific_data);
@@ -498,11 +535,13 @@ class MLNewconfigsController extends AbstractController
 			'id_newconf_model' => md5($config.'M'),
 			'id_newconf_result' => md5($config.'R'),
 			'model_info' => $model_info,
+			'slice_info' => $slice_info,
 			'learn' => $learn_param,
 			'must_wait' => $must_wait,
 			'options' => MLNewconfigsController::getFilterOptions($db)
 		);
 		foreach ($param_names as $p) $return_params[$p] = $params[$p];
+		foreach ($param_names_additional as $p) $return_params[$p] = $params_additional[$p];
 		echo $this->container->getTwig()->render('mltemplate/mlnewconfigs.html.twig', $return_params);	
 	}
 }
