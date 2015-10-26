@@ -557,7 +557,12 @@ cd -;
 #install R packages (slow)
 install_R() {
 
-  local bootstrap_file="${FUNCNAME[0]}"
+  # temporarily change the bootstrap name for the vagrant VM to force update the R packages
+  if inside_vagrant ; then
+    local bootstrap_file="${FUNCNAME[0]}_2"
+  else
+    local bootstrap_file="${FUNCNAME[0]}"
+  fi
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Executing $bootstrap_file"
@@ -598,7 +603,8 @@ sudo rm $libtiff_file"
 
       logger "INFO: Uncompressing and copying files"
       vm_execute "
-tar -C ~$(get_ssh_user) -xf '/tmp/$R_file';
+sudo rm -rf /opt/R;
+tar -C /opt -xf '/tmp/$R_file';
 rm -rf '/tmp/$R_file';
 "
 

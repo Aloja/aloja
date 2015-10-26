@@ -19,7 +19,9 @@ class MLSummariesController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
-		    	
+
+			$this->filters->removeFilters(array('upred','uobsr'));
+			$this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
 			$this->buildFilters(array('feature' => array(
 				'type' => 'selectOne',
 				'default' => array('joined'),

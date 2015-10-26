@@ -129,8 +129,22 @@ class Filters
             'money' => array('table' => 'mixed', 'field' => '(clustersAlias.cost_hour/3600)*execsAlias.exe_time',
                     'default' => null, 'type' => 'inputNumberle','label' => 'Max cost (US$):'),
             'valid' => array('table' => 'execs', 'field' => 'valid', 'type' => 'checkbox', 'default' => 1, 'label' => 'Only valid execs'),
-            'filter' => array('table' => 'execs', 'field' => 'filter', 'type' => 'checkboxNegated', 'default' => 1, 'label' => 'Filter'),
-            'prepares' => array('table' => 'execs', 'type' => 'checkbox', 'default' => 0, 'label' => 'Include prepares',
+            'filter' => array('table' => 'execs', 'field' => 'filter', 'type' => 'checkbox', 'default' => 1, 'label' => 'Filter',
+                'parseFunction' => function() {
+                    $whereClause = "";
+                    if(isset($_GET['filter']))
+                        $values = 1;
+                    else if(!$this->formisSubmitted())
+                        $values = $this->filters['filter']['default'];
+                    else
+                        $values = 0;
+
+                    if($values)
+                        $whereClause = " AND execsAlias.filter = 0 ";
+
+                    return array('currentChoice' => $values, 'whereClause' => $whereClause);
+                }),
+            'prepares' => array('table' => 'execs', 'type' => 'checkbox', 'default' => (Utils::in_dev() ? 1 : 0), 'label' => 'Include prepares',
                 'parseFunction' => function() {
                     $whereClause = "";
                     $values = 0;
@@ -138,7 +152,7 @@ class Filters
                         $values = 1;
                     } else {
                         $values = $this->filters['prepares']['default'];
-                        if(!$values && !Utils::in_dev())
+                        if(!$values)
                             $whereClause = " AND execsAlias.bench NOT LIKE 'prep_%' ";
                     }
 
@@ -164,7 +178,7 @@ class Filters
                 },
                 'filterGroup' => 'MLearning'
             ),
-           /* 'upred' => array(
+            'upred' => array(
                 'type' => 'checkbox',
                 'default' => 0,
                 'label' => 'Use predictions',
@@ -179,11 +193,11 @@ class Filters
                 'default' => 1,
                 'label' => 'Use observations',
                 'parseFunction' => function() {
-                    $choice = (!isset($_GET['uobsr'])) ? 0 : 1;
+                    $choice = (!isset($_GET['uobsr']) && $this->formIssubmitted()) ? 0 : 1;
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
                 'filterGroup' => 'MLearning'
-            ),*/
+            ),
             'warning' => array('field' => 'outlier', 'table' => 'ml_predictions', 'type' => 'checkbox', 'default' => 0, 'label' => 'Show warnings',
                 'parseFunction' => function() {
                     $learner = $this->filters['prediction_model']['currentChoice'];
@@ -240,8 +254,8 @@ class Filters
             ),
             'MLearning' => array(
                 'label' => 'Machine Learning',
-                'filters' => array('prediction_model','warning','outlier'),
-               // 'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
+               // 'filters' => array('prediction_model','warning','outlier'),
+                'filters' => array('prediction_model','upred','uobsr','warning','outlier'),
                 'tabOpenDefault' => true
             )
         );
@@ -363,40 +377,6 @@ class Filters
                 }
             }
         }
-    }
-
-    private function parseAdvancedFilters() {
-        $alias = 'execsAlias';
-        $includePrepares = false;
-        if(isset($_GET['execsfilters'])) {
-            $filters = $_GET['execsfilters'];
-            if(in_array("valid",$filters))
-                $this->whereClause .= ' AND '.$alias.'.valid = 1 ';
-            if(in_array("prepares",$filters))
-                $includePrepares = true;
-            if(in_array("perfdetails",$filters))
-                $this->whereClause .= ' AND '.$alias.'.perf_details = 1 ';
-
-            if(in_array("outliers", $filters)) {
-                if(in_array("warnings", $filters))
-                    $this->whereClause .= " AND $alias.outlier IN (0,1,2) ";
-                else
-                    $this->whereClause .= " AND $alias.outlier IN (0,1) ";
-            }
-
-            $this->whereClause .= (in_array("filter",$filters)) ? ' AND '.$alias.'.filter = 0 ' : '';
-
-        } else if(!$this->formIsSubmitted()) {
-            $_GET['execsfilters'][] = 'valid';
-            $_GET['execsfilters'][] = 'filter';
-
-            $this->whereClause .= ' AND '.$alias.'.valid = 1 AND '.$alias.'.filter = 0 ';
-        }
-
-        if(!$includePrepares)
-            $this->whereClause .= " AND $alias.bench not like 'prep_%' AND $alias.bench_type not like 'HDI-prep%'";
-
-        $this->filters['execsfilters']['currentChoice'] = (isset($_GET['execsfilters'])) ? $_GET['execsfilters'] : "";
     }
 
     public function getFilters($screenName, $customFilters) {

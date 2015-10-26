@@ -20,8 +20,7 @@ set_hive_requires() {
 get_hive_exports() {
   local to_export
 
-  to_export="$(get_java_exports)
-    $(get_hadoop_exports)
+  to_export="$(get_hadoop_exports)
     export HIVE_VERSION='$HIVE_VERSION';
     export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
   "

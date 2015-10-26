@@ -14,10 +14,10 @@ library(session);
 
 set.seed(1234567890);
 
-source('/vagrant/aloja-web/resources/models.r');
-source('/vagrant/aloja-web/resources/searchalgs.r');
-source('/vagrant/aloja-web/resources/searchrules.r');
-source('/vagrant/aloja-web/resources/precision.r');
+source('/var/www/aloja-web/resources/models.r');
+source('/var/www/aloja-web/resources/searchalgs.r');
+source('/var/www/aloja-web/resources/searchrules.r');
+source('/var/www/aloja-web/resources/precision.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #

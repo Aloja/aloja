@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS predictions (
   exec varchar(255) DEFAULT NULL,
   bench varchar(255) DEFAULT NULL,
   exe_time decimal(20,3) DEFAULT '0',
-  start_time datetime DEFAULT NULL,
-  end_time datetime DEFAULT NULL,
+  start_time datetime DEFAULT CURRENT_TIMESTAMP,
+  end_time datetime DEFAULT CURRENT_TIMESTAMP,
   net varchar(255) DEFAULT NULL,
   disk varchar(255) DEFAULT NULL,
   bench_type varchar(255) DEFAULT NULL,
@@ -61,6 +61,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   vm_RAM decimal(10,3) DEFAULT NULL,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_prediction),
+  INDEX idx_id_exec_predictions (id_exec),
   KEY idx_bench (bench),
   KEY idx_exe_time (exe_time),
   KEY idx_bench_type (bench_type),
@@ -202,4 +203,9 @@ $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 $MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT '';"
+
+$MYSQL "CREATE INDEX idx_id_exec_predictions ON $DBML.predictions(id_exec);"
+
+$MYSQL "ALTER TABLE $DBML.predictions MODIFY start_time datetime DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.predictions MODIFY end_time datetime DEFAULT CURRENT_TIMESTAMP;"
 
