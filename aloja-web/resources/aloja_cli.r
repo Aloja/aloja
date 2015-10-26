@@ -40,7 +40,8 @@
 #	 ./aloja_cli.r -m aloja_reunion -d aloja-dataset.csv -v
 #	 ./aloja_cli.r -m aloja_diversity -d aloja-dataset.csv -p json=0 -v
 
-source("/vagrant/aloja-web/resources/functions.r");
+.libPaths(c(.libPaths(),"/opt/R/x86_64-pc-linux-gnu-library/3.2"));
+source("/var/www/aloja-web/resources/functions.r");
 options(width=as.integer(1000));
 
 ###############################################################################
