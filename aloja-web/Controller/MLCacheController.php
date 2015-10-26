@@ -52,7 +52,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.observed_trees";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing observed trees from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat,csv}';
+				$command = 'rm -f '.getcwd().'/cache/ml/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
 
@@ -64,7 +64,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rml']."' AND type='learner'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rml'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rml'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -76,7 +76,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rmm']."' AND type='minconf'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmm'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -85,7 +85,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.resolutions WHERE id_resolution='".$_GET['rmr']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a resolution from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmr'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmr'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -94,7 +94,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.summaries WHERE id_summaries='".$_GET['rms']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a summary from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rms'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rms'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -103,7 +103,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.precisions WHERE id_precision='".$_GET['rmp']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a precision from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmp'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmp'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -112,7 +112,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.observed_trees WHERE id_obstrees='".$_GET['rmo']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing an observed tree from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmo'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmo'].'*';
 				$output[] = shell_exec($command);
  			}
 

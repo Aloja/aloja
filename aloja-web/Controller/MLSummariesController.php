@@ -9,6 +9,14 @@ use alojaweb\inc\MLUtils;
 
 class MLSummariesController extends AbstractController
 {
+	public function __construct($container)
+	{
+		parent::__construct($container);
+
+		//All this screens are using this custom filters
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
+	}
+
 	public function mlsummariesAction()
 	{
 		$displaydata = $separate_feat = $instance = $model_info = $slice_info = '';
@@ -19,7 +27,9 @@ class MLSummariesController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
-		    	
+
+			$this->filters->removeFilters(array('upred','uobsr'));
+			$this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
 			$this->buildFilters(array('feature' => array(
 				'type' => 'selectOne',
 				'default' => array('joined'),
@@ -47,7 +57,7 @@ class MLSummariesController extends AbstractController
 				},
 				'filterGroup' => 'MLearning'
 			)));
-			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true)));
+			$this->buildFilterGroups(array('MLearning' => array('label' => 'Grouping Options', 'tabOpenDefault' => true)));
 
 			$where_configs = $this->filters->getWhereClause();
 
@@ -68,7 +78,7 @@ class MLSummariesController extends AbstractController
 
 			$config = $model_info.' '.$separate_feat.' '.$slice_info.' SUMMARY';
 
-			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+			$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
 
 			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.summaries WHERE id_summaries = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
@@ -81,18 +91,17 @@ class MLSummariesController extends AbstractController
 					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
 					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
 					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
-					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version' => 'Hadoop.Version'
+					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version' => 'Hadoop.Version',
+					'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
 				);
-			    	$headers = array_keys($header_names);
-				$names = array_values($header_names);
 
 				// dump the result to csv
-			    	$query="SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query="SELECT ".implode(",",array_keys($header_names))." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
-				fputcsv($fp, $names,',','"');
+				fputcsv($fp,array_values($header_names),',','"');
 			    	foreach($rows as $row)
 				{
 					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
@@ -101,11 +110,11 @@ class MLSummariesController extends AbstractController
 				}
 
 				// launch query
-				$command = 'cd '.getcwd().'/cache/query; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000:html=1'; #fwidth=135
+				$command = 'cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -m aloja_print_summaries -d '.$cache_ds.' -p '.(($separate_feat!='joined')?'sname='.$separate_feat.':':'').'fprint='.md5($config).':fwidth=1000:html=1'; #fwidth=135
 				$output = shell_exec($command);
 
 				// Save to DB
-				if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-summary.data', 'r')) !== FALSE)
+				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-summary.data', 'r')) !== FALSE)
 				{
 					$displaydata = "";
 					while (($data = fgets($handle)) !== FALSE)
@@ -123,8 +132,8 @@ class MLSummariesController extends AbstractController
 				}
 
 				// Remove temporal files
-				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-summary.data');
-				$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-cache.csv');
+				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-summary.data');
+				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-cache.csv');
 			}
 
 			// Read results of the DB

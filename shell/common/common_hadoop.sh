@@ -821,6 +821,7 @@ save_hadoop() {
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history"
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/logs"
     $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/logs"
     #logger "INFO: Deleting history files after copy to local"
 

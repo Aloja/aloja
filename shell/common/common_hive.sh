@@ -20,13 +20,12 @@ set_hive_requires() {
 get_hive_exports() {
   local to_export
 
-  to_export="$(get_java_exports)
-    $(get_hadoop_exports)
-    export HIVE_VERSION='${HIVE_VERSION}';
-    export HIVE_HOME='${HIVE_HOME}';
+  to_export="$(get_hadoop_exports)
+    export HIVE_VERSION='$HIVE_VERSION';
+    export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
   "
 
-  if [ "$EXECUTE_TPCH_HIVE" ]; then
+  if [ "$EXECUTE_TPCH" ]; then
     to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/tpch-hive';"
   fi
 
@@ -78,12 +77,13 @@ execute_hive(){
 initialize_hive_vars() {
   [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="hive.settings"
   [ ! "$HIVE_SETTINGS_FILE_PATH" ] && HIVE_SETTINGS_FILE_PATH="$HDD/hive_conf_template/${HIVE_SETTINGS_FILE}"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
+
   if [[ -z "$HIVE_VERSION" && "$(get_hadoop_major_version)" == "2" ]]; then
     HIVE_VERSION='apache-hive-1.2.1-bin'
-  elif [ -z "$HIVE_VERSIOn" ]; then
+  elif [ -z "$HIVE_VERSION" ]; then
     HIVE_VERSION='apache-hive-0.13.1-bin'
   fi
-
   HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
 }
 

@@ -109,9 +109,9 @@
                </div>
                <div id="filters" class="form-inline" style="text-align: right;">
 				  {% for exec in execs %}
-                       <input type="hidden" name="execs[]" value="{{ exec }}">
+                       <input form="configFilters" type="hidden" name="execs[]" value="{{ exec }}">
                   {% endfor %}
-                       <input type="hidden" name="metric" value="{{ metric }}">
+                       <input form="configFilters" type="hidden" name="metric" value="{{ metric }}">
                        <strong>Filters:</strong> &nbsp;&nbsp;&nbsp;
                        Hosts: <select form="configFilters" name="hosts" class="form-control">
                            <option value="Slaves" {% if hosts == 'Slaves' %}selected="selected"{% endif %}>All Slaves</option>

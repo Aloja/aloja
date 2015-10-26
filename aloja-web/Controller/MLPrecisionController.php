@@ -9,11 +9,12 @@ use alojaweb\inc\MLUtils;
 
 class MLPrecisionController extends AbstractController
 {
-	public function __construct($container) {
+	public function __construct($container)
+	{
 		parent::__construct($container);
 
 		//All this screens are using this custom filters
-		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
 	}
 
 	public function mlprecisionAction()
@@ -56,7 +57,7 @@ class MLPrecisionController extends AbstractController
 			$slice_info = MLUtils::generateDatasliceInfo($this->filters,$param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$slice_info."-precision";
-			$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
+			$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
 
 			$is_cached_mysql = $dbml->query("SELECT count(*) as num FROM aloja_ml.precisions WHERE id_precision = '".md5($config)."'");
 			$tmp_result = $is_cached_mysql->fetch();
@@ -64,8 +65,8 @@ class MLPrecisionController extends AbstractController
 
 			$eval_names = array('Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Hadoop.Version');
 
-			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+			$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
+			$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.fin');
 
 			if (!$is_cached && !$in_process && !$finished_process)
 			{
@@ -74,18 +75,17 @@ class MLPrecisionController extends AbstractController
 					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
 					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
 					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
-					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version'=>'Hadoop.Version'
+					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version'=>'Hadoop.Version',
+					'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
 				);
-				$headers = array_keys($header_names);
-				$names = array_values($header_names);
 
 			    	// dump the result to csv
-			    	$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
+			    	$query = "SELECT ".implode(",",array_keys($header_names))." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 				$fp = fopen($cache_ds, 'w');
-				fputcsv($fp, $names,',','"');
+				fputcsv($fp, array_values($header_names),',','"');
 			    	foreach($rows as $row)
 				{
 					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
@@ -94,16 +94,16 @@ class MLPrecisionController extends AbstractController
 				}
 
 				// run the R processor
-				exec('cd '.getcwd().'/cache/query ; touch '.getcwd().'/cache/query/'.md5($config).'.lock');
+				exec('cd '.getcwd().'/cache/ml ; touch '.getcwd().'/cache/ml/'.md5($config).'.lock');
 				$count = 1;
 				foreach ($eval_names as $name)
 				{
-					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_diversity -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-D-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
-					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_precision_split -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-P-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
+					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_diversity -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-D-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
+					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_precision_split -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-P-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 				}
 
 			}
-			$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/query/'.md5($config).'-*.lock | wc -w ') == 2*count($eval_names));
+			$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/ml/'.md5($config).'-*.lock | wc -w ') == 2*count($eval_names));
 
 			if ($finished_process && !$is_cached)
 			{
@@ -114,7 +114,7 @@ class MLPrecisionController extends AbstractController
 				{
 					$treated_line_d = "";
 					$treated_line_p = "";
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-D-'.$name.'.tmp', "r")) !== FALSE)
+					if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-D-'.$name.'.tmp', "r")) !== FALSE)
 					{
 						$line = fgets($handle, 1000000);
 						$treated_line_d = substr($line,5);
@@ -125,7 +125,7 @@ class MLPrecisionController extends AbstractController
 					}
 					fclose($handle);
 
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-P-'.$name.'.tmp', "r")) !== FALSE)
+					if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-P-'.$name.'.tmp', "r")) !== FALSE)
 					{
 						$line = fgets($handle, 1000000);
 						$treated_line_p = substr($line,5);
@@ -147,11 +147,11 @@ class MLPrecisionController extends AbstractController
 				}
 
 				// remove remaining locks
-				shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.lock'); 
+				shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.lock'); 
 
 				// Remove temporal files
-				shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.tmp');
-				shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.csv');
+				shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.tmp');
+				shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.csv');
 				
 				$is_cached = true;
 			}

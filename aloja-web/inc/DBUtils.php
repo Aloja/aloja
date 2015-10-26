@@ -102,13 +102,12 @@ class DBUtils
 
     public static function getFilterExecs($execsAlias = "e")
     {
-        return " AND 1=1" ;
+        //Trick to avoid bugs on empty alias
+        if($execsAlias != ' ')
+            $execsAlias = "$execsAlias.";
 
-        if (isset($_COOKIE['g']) && $_COOKIE['g'] == 'godmode') {
-            return " " ;
-        } else {
-            return " AND $execsAlias.id_cluster NOT IN (06, 16, 19, 30, 31, 33, 38) ";
-        }
+        //To test the queries, but doesn't filter rows
+        return " AND ${execsAlias}id_cluster NOT IN (select id_cluster from clusters where id_cluster = '999' OR  provider = 'notexists') " ;
     }
 
     public function get_execs($filter_execs = null)
@@ -118,7 +117,7 @@ class DBUtils
 
         $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM aloja2.execs e
         JOIN aloja2.clusters c USING (id_cluster)
-        WHERE bench_type not like 'HDI-prep%' AND bench not like 'prep_%' AND valid = 1 AND filter = 0 $filter_execs;";
+        WHERE 1 $filter_execs;";
 
         return $this->get_rows($query);
     }
