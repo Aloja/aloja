@@ -3,7 +3,6 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
 BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-
 [ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "query%g" 1 22)"
 
 # Some benchmark specific validations
@@ -84,7 +83,7 @@ execute_TPCH_query() {
 
   logger "INFO: # EXECUTING TPCH Q${query}"
 
-  execute_hive "tpch-${query}" "-f ${TPCH_HOME}/sample-tpch-queries/tpch_${1}.sql --database ${TABLE_NAME}" "time"
+  execute_hive "tpch-${query}" "-f ${TPCH_HOME}/sample-queries-tpch/tpch_${1}.sql --database ${TABLE_NAME}" "time"
 
   logger "INFO: # DONE TPCH Q${query}"
 }

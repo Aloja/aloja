@@ -30,8 +30,8 @@ CREATE TABLE IF NOT EXISTS predictions (
   exec varchar(255) DEFAULT NULL,
   bench varchar(255) DEFAULT NULL,
   exe_time decimal(20,3) DEFAULT '0',
-  start_time datetime DEFAULT NULL,
-  end_time datetime DEFAULT NULL,
+  start_time datetime DEFAULT CURRENT_TIMESTAMP,
+  end_time datetime DEFAULT CURRENT_TIMESTAMP,
   net varchar(255) DEFAULT NULL,
   disk varchar(255) DEFAULT NULL,
   bench_type varchar(255) DEFAULT NULL,
@@ -78,6 +78,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   disk_maxutil decimal(10,3) DEFAULT 0,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_prediction),
+  INDEX idx_id_exec_predictions (id_exec),
   KEY idx_bench (bench),
   KEY idx_exe_time (exe_time),
   KEY idx_bench_type (bench_type),
@@ -236,4 +237,10 @@ $MYSQL "ALTER TABLE $DBML.predictions ADD datasize int(11) DEFAULT 0,
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD hadoop_version varchar(127) DEFAULT NULL,
   ADD datasize int(11) DEFAULT 0,
   ADD scale_factor varchar(255) DEFAULT NULL;"
+
+$MYSQL "CREATE INDEX idx_id_exec_predictions ON $DBML.predictions(id_exec);"
+
+$MYSQL "ALTER TABLE $DBML.predictions MODIFY start_time datetime DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.predictions MODIFY end_time datetime DEFAULT CURRENT_TIMESTAMP;"
+
 
