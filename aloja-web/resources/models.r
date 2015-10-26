@@ -15,8 +15,12 @@ library(rpart);
 # Regression Tree M5-Prediction-like with Quadratic Regression                #
 ###############################################################################
 
-qrt.tree <- function (formula, dataset, m = 30, cp = 0.001)
+qrt.tree <- function (formula, dataset, m = 30, cp = 0.001, simple = 0)
 {
+	if (!is.numeric(m)) m <- as.numeric(m);
+	if (!is.numeric(cp)) cp <- as.numeric(cp);
+	if (!is.numeric(simple)) simple <- as.numeric(simple);
+
 	colnames(dataset) <- gsub(" ",".",colnames(dataset));
 
 	vout <- get(as.character(formula[[2]]),envir=parent.frame());
@@ -35,7 +39,8 @@ qrt.tree <- function (formula, dataset, m = 30, cp = 0.001)
 		daux <- dataset[fit$where==i,c(vout,vin)];
 		j <- nodes[i];
 
-		regs[[j]] <- lm(formula=daux[,vout] ~ . + (.)^2, data=data.frame(daux[,vin]));
+		if (simple > 0) regs[[j]] <- lm(formula=daux[,vout] ~ ., data=data.frame(daux[,vin]));
+		if (simple <= 0) regs[[j]] <- lm(formula=daux[,vout] ~ . + (.)^2, data=data.frame(daux[,vin]));
 		indexes <- c(indexes,j);
 
 		preds[[j]] <- regs[[j]]$fitted.values;
@@ -73,21 +78,16 @@ qrt.tree <- function (formula, dataset, m = 30, cp = 0.001)
 
 qrt.predict <- function (model, newdata)
 {
-	retval <- NULL;
 	colnames(newdata) <- gsub(" ",".",colnames(newdata));
 
 	fit_node <- model$rpart;
 	fit_node$frame$yval <- as.numeric(rownames(fit_node$frame));
 
-	for (i in 1:nrow(newdata))
-	{
+	sapply(1:nrow(newdata), function(i) {
 		node <- as.numeric(predict(fit_node,newdata[i,]));
-
 		pred <- as.numeric(predict(model$regs[[node]],newdata[i,]));
-		retval <- c(retval,pred);
-	}
-
-	retval;
+		pred;
+	});
 }
 
 qrt.plot.tree <- function (model, uniform = TRUE, main = "Classification Tree", use.n = FALSE, all = FALSE)
