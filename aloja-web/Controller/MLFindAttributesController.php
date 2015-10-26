@@ -106,7 +106,6 @@ class MLFindAttributesController extends AbstractController
 
 			if ($instructions)
 			{
-
 				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
 
@@ -314,6 +313,7 @@ class MLFindAttributesController extends AbstractController
 			}
 
 			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+			$instances = array();
 			if (isset($pass)) { return "-2"; }
 		}
 		$dbml = null;
@@ -328,7 +328,6 @@ class MLFindAttributesController extends AbstractController
 			'models_id' => $possible_models_id,
 			'other_models_id' => $other_models,
 			'current_model' => $current_model,
-			'message' => $message,
 			'mae' => $mae,
 			'rae' => $rae,
 			'must_wait' => $must_wait,

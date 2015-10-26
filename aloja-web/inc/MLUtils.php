@@ -160,7 +160,7 @@ class MLUtils
 
 		}
 
-		return completeInstances($filters,$instances,$param_names,$params,$db);
+		return MLUtils::completeInstances($filters,$instances,$param_names,$params,$db);
 	}
 
 	public static function completeInstances(\alojaweb\Filters\Filters $filters, $instances, $param_names, $params, $db = null)
@@ -178,7 +178,7 @@ class MLUtils
 			  WHERE e1.id_exec = n1.id_exec
 			  GROUP BY e1.net, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider";
 	    	$rows = $db->get_rows($query);
-		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Network.');
+		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Network. Metrics must be generated (enter into "Performance Metrics" page)');
 
 		$netinfo = array();
 		foreach($rows as $row)
@@ -198,7 +198,7 @@ class MLUtils
 			  WHERE e2.id_exec = d1.id_exec
 			  GROUP BY e2.disk, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider";
 	    	$rows = $db->get_rows($query);
-		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Disks.');
+		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Disks. Metrics must be generated (enter into "Performance Metrics" page)');
 
 		$diskinfo = array();
 		foreach($rows as $row)
