@@ -756,10 +756,10 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	# Debinarize datasets
-	rt$trainset <- aloja_debinarize_ds(rt$trainset,colnames(rt$ds_original),rt$ds_original);
-	rt$validset <- aloja_debinarize_ds(rt$validset,colnames(rt$ds_original),rt$ds_original);
-	rt$testset <- aloja_debinarize_ds(rt$testset,colnames(rt$ds_original),rt$ds_original);
+	# "Debinarize" datasets
+	rt$trainset <- rt$ds_original[rt$ds_original$ID %in% rt$trainset$ID,];
+	rt$validset <- rt$ds_original[rt$ds_original$ID %in% rt$validset$ID,];
+	rt$testset <- rt$ds_original[rt$ds_original$ID %in% rt$testset$ID,];
 
 	if (!is.null(saveall))
 	{
@@ -889,10 +889,10 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	# Debinarize datasets
-	rt$trainset <- aloja_debinarize_ds(rt$trainset,colnames(rt$ds_original),rt$ds_original);
-	rt$validset <- aloja_debinarize_ds(rt$validset,colnames(rt$ds_original),rt$ds_original);
-	rt$testset <- aloja_debinarize_ds(rt$testset,colnames(rt$ds_original),rt$ds_original);
+	# "Debinarize" datasets
+	rt$trainset <- rt$ds_original[rt$ds_original$ID %in% rt$trainset$ID,];
+	rt$validset <- rt$ds_original[rt$ds_original$ID %in% rt$validset$ID,];
+	rt$testset <- rt$ds_original[rt$ds_original$ID %in% rt$testset$ID,];
 
 	if (!is.null(saveall))
 	{
@@ -1095,7 +1095,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	}
 	if (weka.tree == 0)
 	{
-		rt[["model"]] <- qrt.tree(formula=vout~.,dataset=data.frame(rt$trainset[,c(vout,vin)]),m=mparam)
+		rt[["model"]] <- qrt.tree(formula=vout~.,dataset=data.frame(rt$trainset[,c(vout,vin)]),m=mparam,simple=1)
 		rt[["predtrain"]] <- rt$model$fitted.values;
 		rt[["predval"]] <- qrt.predict(model=rt$model,newdata=data.frame(rt$validset[,c(vout,vin)]));
 	} else {
@@ -1159,10 +1159,10 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	if (weka.tree == 0)
 	{
-		# Debinarize datasets
-		rt$trainset <- aloja_debinarize_ds(rt$trainset,colnames(rt$ds_original),rt$ds_original);
-		rt$validset <- aloja_debinarize_ds(rt$validset,colnames(rt$ds_original),rt$ds_original);
-		rt$testset <- aloja_debinarize_ds(rt$testset,colnames(rt$ds_original),rt$ds_original);
+		# "Debinarize" datasets
+		rt$trainset <- rt$ds_original[rt$ds_original$ID %in% rt$trainset$ID,];
+		rt$validset <- rt$ds_original[rt$ds_original$ID %in% rt$validset$ID,];
+		rt$testset <- rt$ds_original[rt$ds_original$ID %in% rt$testset$ID,];
 	}
 
 	if (!is.null(saveall))
@@ -1413,7 +1413,7 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0
 	{
 		if (weka.tree == 0)
 		{
-			ml <- qrt.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i);
+			ml <- qrt.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i,simple=1);
 			trmae <- c(trmae, ml$mae);
 		} else {
 			ml <- M5P(formula=traux[,vout] ~ .,data=data.frame(traux[,vin]), control = Weka_control(M = i));
