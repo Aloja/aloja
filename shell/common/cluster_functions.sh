@@ -47,7 +47,7 @@ vm_create_node() {
     vm_final_bootstrap "$clusterName" "pw"
   elif [ "$defaultProvider" == "rackspacecbd" ]; then
     vm_name="$clusterName"
-    #vm_provision
+    create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
   elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
