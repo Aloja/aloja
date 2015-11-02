@@ -36,7 +36,7 @@ fi
 benchmark_suite_config() {
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
-  start_hadoop
+  restart_hadoop
 }
 
 benchmark_suite_run() {
@@ -68,7 +68,9 @@ benchmark_suite_save() {
 }
 
 benchmark_suite_cleanup() {
-  stop_hadoop
+  if [ "$clusterType" != "PaaS" ]; then
+    stop_hadoop
+  fi
 }
 
 # wrapper for randomtextwriter

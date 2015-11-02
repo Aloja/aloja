@@ -6,11 +6,18 @@ source "$CUR_DIR_TMP/openstack.sh"
 vm_final_bootstrap() {
  logger "Configuring nodes.."
  vm_name=$(echo $nodeNames | cut --delimiter " " --fields 1)
+ sudoNoTty="sudo sed -i.bak 's/Defaults    requiretty/Defaults    \!requiretty/g' /etc/sudoers"
+ vm_execute "$sudoNoTty"
  vm_set_ssh
  make_fstab
-# vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo master-1 >> machines"
+ vm_local_scp "${CUR_DIR_TMP}/../../shell/postInstall_rscbd.sh" "$homePrefixAloja/$userAloja/" ""
+ vm_execute "sudo bash $homePrefixAloja/$userAloja/postInstall_rscbd.sh"
+ vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo master-1 >> machines"
  vm_execute "sudo yum -y -q install pdsh pssh git"
  vm_execute "pscp.pssh -h slaves .ssh/{config,id_rsa,id_rsa.pub} /home/pristine/.ssh/"
+ vm_execute "pscp.pssh -h slaves $homePrefixAloja/$userAloja/postInstall_rscbd.sh $homePrefixAloja/$userAloja/"
+ vm_execute "dsh -f slaves -cM -- $sudoNoTty"
+ vm_execute "dsh -f slaves -cM -- \"sudo bash $homePrefixAloja/$userAloja/postInstall_rscbd.sh\""
  vm_execute "dsh -M -f machines -Mc -- sudo yum -y -q install bwm-ng sshfs sysstat ntp"
  vm_execute "dsh -f machines -Mc -- 'mkdir -p share'"
  vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep 162.209.77.102\`' | sudo tee -a /etc/fstab > /dev/null\""
@@ -26,8 +33,8 @@ vm_final_bootstrap() {
  vm_execute "dsh -f slaves -- cat /etc/hosts >> hosts.tmp"
  vm_execute "cat hosts.tmp | cut -d: -f2 |  sed -e 's/^[ \t]*//' | sudo tee -a /etc/hosts"
  vm_execute "dsh -f slaves -cM -- \"echo '\`cat /etc/hosts\`' | sudo tee -a /etc/hosts\""
- vm_execute "pscp.pssh -r -h slaves sysstat-10.0.3/ /home/pristine"
- vm_execute "dsh -f slaves -cM -- 'cd sysstat-10.0.3 && sudo make install'"
+# vm_execute "pscp.pssh -r -h slaves sysstat-10.0.3/ /home/pristine"
+# vm_execute "dsh -f slaves -cM -- 'cd sysstat-10.0.3 && sudo make install'"
  vm_execute "sudo yum install -y -q screen"
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chown pristine /HiBench\""
 # vm_execute "sudo su hdfs -c \"hdfs dfs -chmod 1777 /mr-history\""
@@ -58,3 +65,6 @@ get_vm_id() {
     printf %02d "$id"
 }
 
+benchmark_suite_cleanup() {
+  : #Empty
+}
