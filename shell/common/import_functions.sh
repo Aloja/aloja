@@ -306,10 +306,10 @@ import_folder() {
             if [ "$hadoop_major_version" != "2" ]; then
              import_hadoop_jobs
             else
-              extract_import_hadoop2_jobs
+             extract_import_hadoop2_jobs
             fi
             import_AOP4Hadoop_files
-            #wait
+            wait
             import_sar_files
             wait
             import_vmstats_files
@@ -1011,7 +1011,12 @@ import_vmstats_files() {
 # More info at: https://github.com/Aloja/AOP4Hadoop
 import_AOP4Hadoop_files() {
   #TODO: do not hardcode this name...
-  table_name="AOP4Hadoop"
+  #v1 sample: 2015-10-15 21:24:39,751,vagrant-99-00,26106,2:vagrant-99-00:2:26106:1:1444944279751:11111:tracker_vagrant-99-01-localhost_127.0.0.1-42574
+  #v1:                    $1       $2         $3       $4                   $5
+  #v2 sample: 2015-10-15 21:24:39,751,AOPLOG,vagrant-99-00,26106,1444944279751,11111,tracker_vagrant-99-01-localhost_127.0.0.1-42574
+  #v2:                    $1       $2   $3       $4          $5        $6       $7          $8            
+
+  table_name="AOP4Hadoopv2"
   cd aloja
   for AOP_file_name in *.log ; do
     local tmp_file="tmp_${AOP_file_name}.csv"
@@ -1019,12 +1024,16 @@ import_AOP4Hadoop_files() {
       if [[ $(head $AOP_file_name |wc -l) -gt 1 ]] ; then
         echo "Processing AOP4Hadoop $AOP_file_name in `pwd`"
         logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
-        grep ",2:" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); match($5, /(.*:)([0-9]+):([^:]+)$/, arr);  print "NULL,"id_exec","$1","$2","$3","$4",NULL,"arr[2]","$5}' > "$tmp_file"
+        grep "AOPLOG" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$4","$5","$6","$7","$8}' > "$tmp_file"
 
         if [[ $(head $tmp_file |wc -l) -gt 0 ]] ; then
           insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
         fi
+      else
+        "Skipping ".$AOP_file_name." because it is empty"
       fi
+    else
+      "Skipping ".$AOP_file_name." because it doesn't exist! (??)"  
     fi
   done
   cd ..

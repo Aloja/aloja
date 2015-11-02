@@ -920,21 +920,37 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS AOP4Hadoop (
+CREATE TABLE IF NOT EXISTS AOP4Hadoopv2 (
   id_AOP4Hadoop int(11) NOT NULL AUTO_INCREMENT,
   id_exec int(11) NOT NULL,
   date datetime DEFAULT NULL,
   mili_secs int(11) DEFAULT NULL,
   host_name varchar(127) DEFAULT NULL,
   PID int(11) DEFAULT NULL,
-  moment varchar(127) DEFAULT NULL,
+  timestamp bigint unsigned DEFAULT NULL,
   event varchar(127) DEFAULT NULL,
-  extra1 varchar(255) DEFAULT NULL,
+  value varchar(255) DEFAULT NULL,
   PRIMARY KEY (id_AOP4Hadoop),
   UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event),
   KEY index2 (id_exec)
 ) ENGINE=InnoDB;
 "
+
+# CREATE TABLE IF NOT EXISTS AOP4Hadoop (
+#   id_AOP4Hadoop int(11) NOT NULL AUTO_INCREMENT,
+#   id_exec int(11) NOT NULL,
+#   date datetime DEFAULT NULL,
+#   mili_secs int(11) DEFAULT NULL,
+#   host_name varchar(127) DEFAULT NULL,
+#   PID int(11) DEFAULT NULL,
+#   moment varchar(127) DEFAULT NULL,
+#   event varchar(127) DEFAULT NULL,
+#   extra1 varchar(255) DEFAULT NULL,
+#   PRIMARY KEY (id_AOP4Hadoop),
+#   UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event),
+#   KEY index2 (id_exec)
+# ) ENGINE=InnoDB;
+
 
 ####################################################
 logger "INFO: Executing alter tables, you can IGNORE warnings"

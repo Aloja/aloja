@@ -297,21 +297,27 @@ class RestController extends AbstractController
                 $AOP4Hadoop_initial_time_1 = $dbUtils->get_rows($query);
 
                 $query = 'SELECT
-                        (cast(substring(substring(extra1, position(":1:" in extra1)+3),1,position(":" in substring(extra1, position(":1:" in extra1)+3))-1) AS UNSIGNED)) as ts
-                        From aloja_logs.AOP4Hadoop s
+                        timestamp
+                        From aloja_logs.AOP4Hadoopv2 s
                         JOIN aloja2.execs e USING(id_exec)
                         JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
                         where id_exec = "'.$id_exec.'"
-                        order by ts asc
+                        order by timestamp asc
                         limit 1;';
 
                 $AOP4Hadoop_initial_time_2 = $dbUtils->get_rows($query);
 
+
                 if (!isset($AOP4Hadoop_initial_time_1)) throw new \Exception('No data returned!');
                 if (!isset($AOP4Hadoop_initial_time_2)) throw new \Exception('No data returned!');
                 
-                $initial_time = min(($AOP4Hadoop_initial_time_1[0]['ts']*1000), ($AOP4Hadoop_initial_time_2[0]['ts']));
+                #throw new \Exception(':AOP4Hadoop_initial_time_1: '.($AOP4Hadoop_initial_time_1[0]['ts']*1000).', AOP4Hadoop_initial_time_2: '.$AOP4Hadoop_initial_time_2[0]['timestamp']);
 
+                $initial_time = min(($AOP4Hadoop_initial_time_1[0]['ts']*1000), ($AOP4Hadoop_initial_time_2[0]['timestamp']));
+
+                #throw new \Exception('s.timestamp - '.$initial_time.' From aloja_logs.AOP4Hadoopv2 s');
+
+                #   2:cpu:app:task:thread:time:type:value
                 $query = 'SELECT 
                         concat(
                         "2:",
@@ -319,10 +325,10 @@ class RestController extends AbstractController
                         ":2:",
                         PID,
                         ":1:",
-                        substring(extra1, position(":1:" in extra1)+3)
+                        s.timestamp - '.$initial_time.',":",event,":",value
                         ) as record,
-                        (cast(substring(substring(extra1, position(":1:" in extra1)+3),1,position(":" in substring(extra1, position(":1:" in extra1)+3))-1) AS UNSIGNED) - "'.$initial_time.'") as timestamp
-                    From aloja_logs.AOP4Hadoop s
+                        s.timestamp - '.$initial_time.' 
+                    From aloja_logs.AOP4Hadoopv2 s
                     JOIN aloja2.execs e USING(id_exec)
                     JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
                     where id_exec = "'.$id_exec.'"
@@ -334,7 +340,7 @@ class RestController extends AbstractController
                         distinct s.host_name,
                         (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1) as task_id,
                         PID
-                    From aloja_logs.AOP4Hadoop s
+                    From aloja_logs.AOP4Hadoopv2 s
                     JOIN aloja2.execs e USING(id_exec)
                     JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
                     where id_exec = "'.$id_exec.'" and s.event = 11111;';
@@ -346,13 +352,13 @@ class RestController extends AbstractController
                         distinct 
                             concat(
                                 "tracker_",
-                                substring(extra1, position("tracker" in extra1)+8, LENGTH(s.host_name)),
+                                substring(value, position("tracker" in value)+8, LENGTH(s.host_name)),
                                 "-.*$"
                             ) as tracker_name,
                             (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )) as task_id
-                        From aloja_logs.AOP4Hadoop s
+                        From aloja_logs.AOP4Hadoopv2 s
                         JOIN aloja2.execs e USING(id_exec) 
-                        JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = substring(extra1, position("tracker" in extra1)+8, LENGTH(s.host_name))
+                        JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = substring(value, position("tracker" in value)+8, LENGTH(s.host_name))
                         where id_exec = "'.$id_exec.'" and s.event = 11119;';
 
 
@@ -365,7 +371,7 @@ class RestController extends AbstractController
                     ":1:",
                     (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
                     ":1:",
-                    (unix_timestamp(date)*1000 - "'.$initial_time.'")*1000,
+                    (unix_timestamp(date)*1000 - "'.$initial_time.'"),
                     ":2001:",round(AVG(`%user`)),
                     ":2002:",round(AVG(`%system`)),
                     ":2003:",round(AVG(`%steal`)),
@@ -633,9 +639,10 @@ VALUES
                 }
 
                 foreach ($AOP4Hadoop_rows as $AOP4Hadoop_row) {
-                    $row=explode(':',$AOP4Hadoop_row['record']);
-                    $row[5]=$AOP4Hadoop_row['timestamp']*1000;
-                    $prv_file .= implode(":",$row)."\n";
+                    #$row=explode(':',$AOP4Hadoop_row['record']);
+                    #$row[5]=$AOP4Hadoop_row['timestamp']*1000;
+                    #$prv_file .= implode(":",$row)."\n";
+                    $prv_file .= $AOP4Hadoop_row['record']."\n";
                 }
 
                 foreach ($AOP4Hadoop_jt_ids as $AOP4Hadoop_jt_id) {
@@ -677,6 +684,7 @@ echo';
                 file_put_contents($dir."/$exec_name/replace.sh", $replace_file);
                 file_put_contents($dir."/$exec_name/replace_string.sh", $replace_string_file);
                 exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename && rm  -f *.tmp.*");
+                //exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename");
 
                 //if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
                 if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {

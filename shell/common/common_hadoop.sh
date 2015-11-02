@@ -822,6 +822,7 @@ save_hadoop() {
     #take into account naming *.date when changing dates
     #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
     #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
+    $DSH "mv $HDD/logs/aloja/hadoop.log $HDD/logs/aloja/\`hostname\`_hadoop.log 2> /dev/null"
     $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/ 2> /dev/null"
   fi
 
