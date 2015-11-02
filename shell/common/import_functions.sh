@@ -32,6 +32,38 @@ insert_DB(){
   rm "$2"
 }
 
+
+#AOP4Hadoop does not have header lines to ignore!
+insert_DB_noSkip(){
+  logger "INFO: Inserting into DB $sar_file TN $1"
+
+  if [[ $(head "$2"|wc -l) > 1 ]] ; then
+    logger "DEBUG: Loading $2 into $1"
+    logger "DEBUG: File header:\n$(head -n3 "$2")"
+
+    #tx levels READ UNCOMMITTED READ-COMMITTED
+
+    $MYSQL "
+    SET time_zone = '+00:00';
+
+# Removed due to needing super permissions
+#    SET tx_isolation = 'READ-COMMITTED';
+#    SET GLOBAL tx_isolation = 'READ-COMMITTED';
+
+    LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
+    FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
+#    IGNORE 1 LINES;
+    "
+    logger "DEBUG: Loaded $2 into $1\n"
+  else
+    logger "WARNING: empty CSV file $csv_name $(cat $csv_name)"
+  fi
+
+  # Delete the temporary file
+  rm "$2"
+}
+
+
 # Transition function to be able to import an especific folder
 # $1 folder to import
 # $2 reload caches
@@ -1027,13 +1059,14 @@ import_AOP4Hadoop_files() {
         grep "AOPLOG" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$4","$5","$6","$7","$8}' > "$tmp_file"
 
         if [[ $(head $tmp_file |wc -l) -gt 0 ]] ; then
-          insert_DB "aloja_logs.${table_name}" "$tmp_file" "" ","
+          cp $tmp_file /tmp
+          insert_DB_noSkip "aloja_logs.${table_name}" "$tmp_file" "" ","
         fi
       else
-        "Skipping ".$AOP_file_name." because it is empty"
+        echo "Skipping "$AOP_file_name" because it is empty"
       fi
     else
-      "Skipping ".$AOP_file_name." because it doesn't exist! (??)"  
+      echo "Skipping "$AOP_file_name" because it doesn't exist! (??)"  
     fi
   done
   cd ..

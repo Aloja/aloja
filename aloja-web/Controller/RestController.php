@@ -297,25 +297,43 @@ class RestController extends AbstractController
                 $AOP4Hadoop_initial_time_1 = $dbUtils->get_rows($query);
 
                 $query = 'SELECT
+                        unix_timestamp(min(date)) ts
+                        FROM aloja_logs.SAR_cpu t 
+                        WHERE id_exec = "'.$id_exec.'"
+                        order by ts desc
+                        limit 1;';
+
+                $AOP4Hadoop_final_time_1 = $dbUtils->get_rows($query);
+
+                $query = 'SELECT
                         timestamp
                         From aloja_logs.AOP4Hadoopv2 s
-                        JOIN aloja2.execs e USING(id_exec)
-                        JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
                         where id_exec = "'.$id_exec.'"
                         order by timestamp asc
                         limit 1;';
 
                 $AOP4Hadoop_initial_time_2 = $dbUtils->get_rows($query);
 
+                $query = 'SELECT
+                        timestamp
+                        From aloja_logs.AOP4Hadoopv2 s
+                        where id_exec = "'.$id_exec.'"
+                        order by timestamp desc
+                        limit 1;';
+
+                $AOP4Hadoop_final_time_2 = $dbUtils->get_rows($query);
+
 
                 if (!isset($AOP4Hadoop_initial_time_1)) throw new \Exception('No data returned!');
                 if (!isset($AOP4Hadoop_initial_time_2)) throw new \Exception('No data returned!');
                 
-                #throw new \Exception(':AOP4Hadoop_initial_time_1: '.($AOP4Hadoop_initial_time_1[0]['ts']*1000).', AOP4Hadoop_initial_time_2: '.$AOP4Hadoop_initial_time_2[0]['timestamp']);
 
+                #throw new \Exception('Initial time 1: '.($AOP4Hadoop_initial_time_1[0]['ts']*1000).', Initial time 2: '.($AOP4Hadoop_initial_time_2[0]['timestamp']));
+                
                 $initial_time = min(($AOP4Hadoop_initial_time_1[0]['ts']*1000), ($AOP4Hadoop_initial_time_2[0]['timestamp']));
-
-                #throw new \Exception('s.timestamp - '.$initial_time.' From aloja_logs.AOP4Hadoopv2 s');
+                $final_time = max(($AOP4Hadoop_final_time_1[0]['ts']*1000), ($AOP4Hadoop_final_time_2[0]['timestamp'])) - $initial_time;
+                
+                #throw new \Exception('Initial time: '.$initial_time.', final time: '.$final_time);
 
                 #   2:cpu:app:task:thread:time:type:value
                 $query = 'SELECT 
@@ -364,6 +382,16 @@ class RestController extends AbstractController
 
                 $AOP4Hadoop_tt_ids = $dbUtils->get_rows($query);
                 
+                $dbUtils->executeQuery('SET @a:=0;');
+                $query = 'SELECT @a:=@a+1 task_id, output.*
+                        FROM (
+                            select distinct PID
+                            from aloja_logs.AOP4Hadoopv2 s
+                            where id_exec = "'.$id_exec.'" and s.event = 11112
+                        ) output;';
+
+                $AOP4Hadoop_task_ids = $dbUtils->get_rows($query);
+
                 $query = 'SELECT
                     concat(
                     "2:",
@@ -417,15 +445,6 @@ class RestController extends AbstractController
                     }
                 }
 
-                //get the ending time
-                $end1 = end($prv_rows)['prv'];
-                $end1 = explode(':', $end1);
-
-                $end2 = end($AOP4Hadoop_rows)['timestamp']*1000;
-                
-                $end_time = max($end1[5], $end2);
-                //throw new \Exception('1: '.$end1[5].', 2: '.$end2);
-
                 //create the Row file according to the cluster size
                 $query = 'SELECT id_host, host_name, role
                             FROM aloja2.execs e
@@ -436,7 +455,7 @@ class RestController extends AbstractController
 
                 $row_size = count($hosts_rows);
 
-                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$end_time.":$row_size(";
+                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$final_time.":$row_size(";
                 for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
                     $header .= "1,";
                 }
@@ -589,7 +608,67 @@ EVENT_TYPE
 6   5002        Major Page faults per second
 6   5003        Pages freed per second
 
+EVENT_TYPE
+0 11111 JobTracker
+VALUES
+0 End
+1 Start
 
+EVENT_TYPE
+0 11112 TaskTracker
+VALUES
+0 End
+1 Start
+8 RunMapper
+9 RunReducer
+10 ReducerCopyPhase
+11 ReducerSortPhase
+12 ReducerReducePhase
+
+EVENT_TYPE
+0 11113 NameNode
+VALUES
+0 End
+1 Start
+
+EVENT_TYPE
+0 11114 SecondaryNameNode
+VALUES
+0 End
+1 Start
+
+EVENT_TYPE
+0 11115 DataNode
+VALUES
+0 End
+1 Start
+
+EVENT_TYPE
+0 11116 MapTask
+VALUES
+0 End
+1 Start
+
+EVENT_TYPE
+0 11117 ReduceTask
+VALUES
+0 End
+1 Start
+
+EVENT_TYPE
+0 33333 MapOutputBuffer
+VALUES
+0 End
+1 Flush
+2 SortAndSpill
+3 Sort
+4 Combine
+5 CreateSpillIndexFile
+6 TotalIndexCacheMemory
+7 SpillRecordDumped
+
+EVENT_TYPE
+0 44444 MapTaskOutputSize
 
 GRADIENT_COLOR
 0    {0,255,2}
@@ -639,18 +718,20 @@ VALUES
                 }
 
                 foreach ($AOP4Hadoop_rows as $AOP4Hadoop_row) {
-                    #$row=explode(':',$AOP4Hadoop_row['record']);
-                    #$row[5]=$AOP4Hadoop_row['timestamp']*1000;
-                    #$prv_file .= implode(":",$row)."\n";
                     $prv_file .= $AOP4Hadoop_row['record']."\n";
                 }
 
                 foreach ($AOP4Hadoop_jt_ids as $AOP4Hadoop_jt_id) {
                     $aop4h_jt_ids_file .= ":".$AOP4Hadoop_jt_id['PID'].":/:".$AOP4Hadoop_jt_id['task_id'].":\n";
                 }
-                
+
                 foreach ($AOP4Hadoop_tt_ids as $AOP4Hadoop_tt_id) {
-                    $aop4h_tt_ids_file .= $AOP4Hadoop_tt_id['tracker_name']."/".$AOP4Hadoop_tt_id['task_id']."\n";
+                    $aop4h_tt_ids_file .= ":".$AOP4Hadoop_tt_id['tracker_name']."/:".$AOP4Hadoop_tt_id['task_id']."\n";
+                }
+
+                
+                foreach ($AOP4Hadoop_task_ids as $AOP4Hadoop_task_id) {
+                    $aop4h_task_ids_file .= ":".$AOP4Hadoop_task_id['PID'].":/:".$AOP4Hadoop_task_id['task_id'].":\n";
                 }
 
                 $replace_file='foo=`sh replace_string.sh`
@@ -663,6 +744,10 @@ do
     echo -n " -pe \"s/$line/g;\""
 done
 for line in `cat *.tmp.jt.ids`
+do
+    echo -n " -pe \"s/$line/g;\""
+done
+for line in `cat *.tmp.task.ids`
 do
     echo -n " -pe \"s/$line/g;\""
 done
@@ -681,13 +766,14 @@ echo';
                 //file_put_contents($dir."/$exec_name/$exec_name.tmp.aop4hadoop", $aop4h_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.jt.ids", $aop4h_jt_ids_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.tt.ids", $aop4h_tt_ids_file);
+                file_put_contents($dir."/$exec_name/$exec_name.tmp.task.ids", $aop4h_task_ids_file);
                 file_put_contents($dir."/$exec_name/replace.sh", $replace_file);
                 file_put_contents($dir."/$exec_name/replace_string.sh", $replace_string_file);
                 exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename && rm  -f *.tmp.*");
                 //exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename");
 
-                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
-                if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
+                if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
+                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
                     throw new \Exception('Could not create .zip');
                 }
             }
