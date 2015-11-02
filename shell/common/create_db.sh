@@ -931,7 +931,7 @@ CREATE TABLE IF NOT EXISTS AOP4Hadoopv2 (
   event varchar(127) DEFAULT NULL,
   value varchar(255) DEFAULT NULL,
   PRIMARY KEY (id_AOP4Hadoop),
-  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event),
+  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event,value),
   KEY index2 (id_exec)
 ) ENGINE=InnoDB;
 "
