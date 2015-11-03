@@ -493,32 +493,59 @@ class CostPerfEvaluationController extends AbstractController
     public function nodesEvaluationAction()
     {
         $dbUtils = $this->container->getDBUtils();
-		
+		$this->buildFilters(array('scalabilityType' => array(
+			'table' => null,
+			'field' => null,
+			'label' => 'Scalability of:',
+			'default' => array('Datanodes'),
+			'type' => 'selectOne',
+			'choices' => array('Datanodes','Datasize'),
+			'generateChoices' => function() {
+				return array('Datanodes','Datasize');
+			},
+			'parseFunction' => function() {
+				$whereClause = "";
+				$values = (isset($_GET['scalabilityType'])) ? $_GET['scalabilityType'] : 'Datanodes';
+
+				return array('currentChoice' => $values, 'whereClause' => $whereClause);
+			})
+		));
+		$params = $this->filters->getFiltersSelectedChoices(array('scalabilityType'));
+		$scalabilityType = $params['scalabilityType'];
+
         try {
             $filter_execs = DBUtils::getFilterExecs();
 
 			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
-            $execs = "SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
+            $execs = "SELECT c.datanodes as 'category',e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 					LEFT JOIN aloja_ml.predictions p USING (id_exec)
-					INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
+					INNER JOIN ( SELECT c2.datanodes as 'category',e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
 								from execs e2 JOIN aloja2.clusters c2 USING (id_cluster)
 								LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
 								WHERE 1 $innerQueryWhere GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
-					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
+					AND t.category = category AND t.vmsize = c.vm_size
 					WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
 
-			$predExecs = "SELECT c.datanodes,'predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
+			$predExecs = "SELECT c.datanodes as 'category','predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
-					INNER JOIN ( SELECT c2.datanodes,'default' as 'exec_type',c2.vm_OS,c2.vm_size as vmsize,MIN(p2.exe_time) as minexe
+					INNER JOIN ( SELECT c2.datanodes as 'category','default' as 'exec_type',c2.vm_OS,c2.vm_size as vmsize,MIN(p2.exe_time) as minexe
 								from aloja_ml.predictions p2 JOIN aloja2.clusters c2 USING (id_cluster)
 								WHERE 1 ".str_replace("e2.","p2.",$innerQueryWhere)." GROUP BY c2.datanodes,exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
-					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
+					AND t.category = category AND t.vmsize = c.vm_size
 					WHERE 1 $filter_execs  GROUP BY c.datanodes,exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
+
+			if($scalabilityType == 'Datasize') {
+				$execs = str_replace("c2.datanodes", "e2.datasize",$execs);
+				$execs = str_replace("c.datanodes", "e.datasize",$execs);
+
+				$predExecs = str_replace("c2.datanodes", "p2.datasize",$predExecs);
+				$predExecs = str_replace("c.datanodes", "e.datasize",$predExecs);
+			}
 
 
 			$params = $this->filters->getFiltersSelectedChoices(array('upred','uobsr'));
@@ -539,16 +566,16 @@ class CostPerfEvaluationController extends AbstractController
             $vmOS = array();
             $execTypes = array();
             foreach ($execs as &$exec) {
-                if (!isset($dataNodes[$exec['datanodes']])) {
-                    $dataNodes[$exec['datanodes']] = 1;
-                    $categories[] = $exec['datanodes'];
+                if (!isset($dataNodes[$exec['category']])) {
+                    $dataNodes[$exec['category']] = 1;
+                    $categories[] = $exec['category'];
                 }
                 if(!isset($vmOS[$exec['vm_OS']]))
                     $vmOS[$exec['vm_OS']] = 1;
                 if(!isset($execTypes[$exec['exec_type']]))
                     $execTypes[$exec['exec_type']] = 1;
 
-                $vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
+                $vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['category']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
             }
 
             $i = 0;
@@ -587,6 +614,7 @@ class CostPerfEvaluationController extends AbstractController
             'categories' => json_encode($categories),
             'seriesData' => str_replace('"null"','null',json_encode($series)),
             'datanodess' => $datanodes,
+			'scalabilityType' => $scalabilityType
         ));
     }
 }
