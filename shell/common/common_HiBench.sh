@@ -190,55 +190,55 @@ execute_HiBench(){
 
   done
 }
-
-execute_HDI_HiBench(){
-  for bench in $(echo "$BENCH_LIST") ; do
-    #Delete previous data
-    echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
-
-    # Check if there is a custom config for this bench, and call it
-    if type "benchmark_hibench_config_${bench}" &>/dev/null
-    then
-      eval "benchmark_hibench_config_${bench}"
-    fi
-
-    #just in case check if the input file exists in hadoop
-    if [ "$DELETE_HDFS" == "0" ] ; then
-      input_exists=$($DSH_MASTER hdfs dfs -ls "/HiBench/$(get_bench_name "$bench")/Input" 2> /dev/null |grep "Found ")
-
-      if [ "$input_exists" != "" ] ; then
-        loggerb  "Input folder seems OK"
-      else
-        loggerb  "Input folder does not exist, RESET and RESTART"
-        $DSH_MASTER hdfs dfs -ls "/HiBench/$(get_bench_name "$bench")/Input"
-        DELETE_HDFS=1
-        format_nodes
-      fi
-    fi
-
-    echo "# $(date +"%H:%M:%S") STARTING $bench"
-
-      if [ "$DELETE_HDFS" == "1" ] ; then
-        if [ "$bench" != "dfsioe" ] ; then
-          execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare.sh "prep_"
-        elif [ "$bench" == "dfsioe" ] ; then
-          execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare-read.sh "prep_"
-        fi
-      else
-        loggerb  "Reusing previous RUN prepared $bench"
-      fi
-
-    loggerb  "$(date +"%H:%M:%S") RUNNING $bench"
-
-    if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
-      execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/run.sh
-    elif [ "$bench" == "hivebench" ] ; then
-      execute_hdi_hadoop hivebench_agregation ${BENCH_HIB_DIR}/hivebench/bin/run-aggregation.sh
-      execute_hdi_hadoop hivebench_join ${BENCH_HIB_DIR}/hivebench/bin/run-join.sh
-    elif [ "$bench" == "dfsioe" ] ; then
-      execute_hdi_hadoop dfsioe_read ${BENCH_HIB_DIR}/dfsioe/bin/run-read.sh
-      execute_hdi_hadoop dfsioe_write ${BENCH_HIB_DIR}/dfsioe/bin/run-write.sh
-    fi
-
-  done
-}
+#
+#execute_HDI_HiBench(){
+#  for bench in $(echo "$BENCH_LIST") ; do
+#    #Delete previous data
+#    echo "" > "$BENCH_HIB_DIR/$bench/hibench.report"
+#
+#    # Check if there is a custom config for this bench, and call it
+#    if type "benchmark_hibench_config_${bench}" &>/dev/null
+#    then
+#      eval "benchmark_hibench_config_${bench}"
+#    fi
+#
+#    #just in case check if the input file exists in hadoop
+#    if [ "$DELETE_HDFS" == "0" ] ; then
+#      input_exists=$($DSH_MASTER hdfs dfs -ls "/HiBench/$(get_bench_name "$bench")/Input" 2> /dev/null |grep "Found ")
+#
+#      if [ "$input_exists" != "" ] ; then
+#        loggerb  "Input folder seems OK"
+#      else
+#        loggerb  "Input folder does not exist, RESET and RESTART"
+#        $DSH_MASTER hdfs dfs -ls "/HiBench/$(get_bench_name "$bench")/Input"
+#        DELETE_HDFS=1
+#        format_nodes
+#      fi
+#    fi
+#
+#    echo "# $(date +"%H:%M:%S") STARTING $bench"
+#
+#      if [ "$DELETE_HDFS" == "1" ] ; then
+#        if [ "$bench" != "dfsioe" ] ; then
+#          execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare.sh "prep_"
+#        elif [ "$bench" == "dfsioe" ] ; then
+#          execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/prepare-read.sh "prep_"
+#        fi
+#      else
+#        loggerb  "Reusing previous RUN prepared $bench"
+#      fi
+#
+#    loggerb  "$(date +"%H:%M:%S") RUNNING $bench"
+#
+#    if [ "$bench" != "hivebench" ] && [ "$bench" != "dfsioe" ] ; then
+#      execute_hdi_hadoop $bench ${BENCH_HIB_DIR}/$bench/bin/run.sh
+#    elif [ "$bench" == "hivebench" ] ; then
+#      execute_hdi_hadoop hivebench_agregation ${BENCH_HIB_DIR}/hivebench/bin/run-aggregation.sh
+#      execute_hdi_hadoop hivebench_join ${BENCH_HIB_DIR}/hivebench/bin/run-join.sh
+#    elif [ "$bench" == "dfsioe" ] ; then
+#      execute_hdi_hadoop dfsioe_read ${BENCH_HIB_DIR}/dfsioe/bin/run-read.sh
+#      execute_hdi_hadoop dfsioe_write ${BENCH_HIB_DIR}/dfsioe/bin/run-write.sh
+#    fi
+#
+#  done
+#}

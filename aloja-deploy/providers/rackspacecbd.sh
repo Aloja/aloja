@@ -166,3 +166,6 @@ vm_final_bootstrap() {
   install_packages "dsh git"
 }
 
+benchmark_suite_cleanup() {
+  : #Empty
+}
