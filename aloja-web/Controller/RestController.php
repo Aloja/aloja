@@ -405,6 +405,7 @@ class RestController extends AbstractController
 
                 $AOP4Hadoop_task_ids = $dbUtils->get_rows($query);
 
+                //2:cpu:app:task:thread:time:type:value
                 $query = 'SELECT
                     concat(
                     "2:",
@@ -413,29 +414,92 @@ class RestController extends AbstractController
                     (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
                     ":1:",
                     (unix_timestamp(date)*1000 - "'.$initial_time.'"),
-                    ":2001:",round(AVG(`%user`)),
-                    ":2002:",round(AVG(`%system`)),
-                    ":2003:",round(AVG(`%steal`)),
-                    ":2004:",round(AVG(`%iowait`)),
-                    ":2005:",round(AVG(`%nice`))
+                    ":2001:",`%user`,
+                    ":2002:",`%system`,
+                    ":2003:",`%steal`,
+                    ":2004:",`%iowait`,
+                    ":2005:",`%nice`
                     ) prv
                     FROM aloja_logs.SAR_cpu s
                     JOIN aloja2.execs e USING(id_exec)
                     JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
                     WHERE id_exec = "'.$id_exec.'"
-                    GROUP BY date, host ORDER by date, host;';
+                    ORDER by date, host;';
+
+                $prv_cpu_rows = $dbUtils->get_rows($query);
+                if (!isset($prv_cpu_rows)) throw new \Exception('No data returned for prv_cpu_rows!');
 
 
-                $prv_rows = $dbUtils->get_rows($query);
+                $query = 'SELECT
+                    concat(
+                    "2:",
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                    ":1:",
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                    ":1:",
+                    (unix_timestamp(date)*1000 - "'.$initial_time.'"),
+                    ":3001:", `ldavg-1`,
+                    ":3002:", `ldavg-5`,
+                    ":3003:", `ldavg-15`
+                    ) prv
+                    FROM aloja_logs.SAR_load s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
+                    WHERE id_exec = "'.$id_exec.'"
+                    ORDER by date, host;';
 
-                if (!isset($prv_rows)) throw new \Exception('No data returned!');
+                $prv_load_rows = $dbUtils->get_rows($query);
+                if (!isset($prv_load_rows)) throw new \Exception('No data returned for prv_load_rows!');
 
+                $query = 'SELECT
+                    concat(
+                    "2:",
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                    ":1:",
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                    ":1:",
+                    (unix_timestamp(date)*1000 - "'.$initial_time.'"),
+                    ":4001:", kbmemused,
+                    ":4002:", kbmemfree
+                    ) prv
+                    FROM aloja_logs.SAR_memory_util s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
+                    WHERE id_exec = "'.$id_exec.'"
+                    ORDER by date, host;';
+
+                $prv_mem_rows = $dbUtils->get_rows($query);
+                if (!isset($prv_mem_rows)) throw new \Exception('No data returned for prv_mem_rows!');
+
+                $query = 'SELECT
+                    concat(
+                    "2:",
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                    ":1:",
+                    (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                    ":1:",
+                    (unix_timestamp(date)*1000 - "'.$initial_time.'"),
+                    ":5001:", `fault/s`,
+                    ":5002:", `majflt/s`,
+                    ":5003:", `pgfree/s`
+                    ) prv
+                    FROM aloja_logs.SAR_io_paging s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host
+                    WHERE id_exec = "'.$id_exec.'"
+                    ORDER by date, host;';
+
+                $prv_pg_fault_rows = $dbUtils->get_rows($query);
+                if (!isset($prv_pg_fault_rows)) throw new \Exception('No data returned for prv_pg_fault_rows!');
+
+
+                /*
                 #$query_job_history = 'select time, maps, reduce from JOB_job_history where id_exec = "'.$id_exec.'" ORDER by time';
                 $query_job_history = 'select date, maps, reduce FROM aloja_logs.JOB_status where id_exec = "'.$id_exec.'" ORDER by date';
 
                 $job_history_rows = $dbUtils->get_rows($query_job_history);
 
-                $test = "count ".count($prv_rows)." count2 ".count($job_history_rows);
+                //$test = "count ".count($prv_rows)." count2 ".count($job_history_rows);
 
                 if ($job_history_rows) {
                     $key_job_history = 0;
@@ -456,7 +520,23 @@ class RestController extends AbstractController
                             $key_job_history++;
                         }
                     }
-                }
+                }*/
+
+                $query = 'SELECT
+                    concat(
+                    "2:0:3:1:1:",
+                    (unix_timestamp(date)*1000 - "'.$initial_time.'"),
+                    ":1001:", `maps`,
+                    ":1002:", `reduce`,
+                    ":1003:", `shuffle`,
+                    ":1004:", `merge`,
+                    ":1005:", `waste`
+                    ) prv
+                    FROM aloja_logs.JOB_status s
+                    WHERE id_exec = "'.$id_exec.'"
+                    ORDER by date;';
+                $prv_job_history = $dbUtils->get_rows($query);
+                if (!isset($prv_job_history)) throw new \Exception('No data returned for prv_job_history!');
 
 /* 4 apps (1 CPU system / 1 hadoop daemons / Hadoop Tasks / 1 Net devices / 1 IO devices ), poner datos por CPU solo en la app de CPU system. 
    Todo el resto lo mapeamos a CPU 0.
@@ -507,14 +587,23 @@ class RestController extends AbstractController
                     $header .= "1:1,";
                 }
                 $header = substr($header,0,-1); //remove trailing ,
-                $header .= ")";
-                
+                $header .= ")";            
 
                 //APP4 -> NET devices
-                $header .= ":1(1:1)";
+                $header .= ":$NUM_NODES(";
+                for ($node_number = 1; $node_number < ($NUM_NODES+1); $node_number++) {
+                    $header .= "1:$node_number,";
+                }
+                $header = substr($header,0,-1); //remove trailing ,
+                $header .= ")";
 
                 //APP5-> IO devices
-                $header .= ":1(1:1)";
+                $header .= ":$NUM_NODES(";
+                for ($node_number = 1; $node_number < ($NUM_NODES+1); $node_number++) {
+                    $header .= "1:$node_number,";
+                }
+                $header = substr($header,0,-1); //remove trailing ,
+                $header .= ")";
 
 
 
@@ -530,7 +619,7 @@ HADOOP TASKS
 NET_DEVICES
 IO_DEVICES
 
-TASK LEVEL SIZE ".($NUM_NODES + $TASK_COUNT + $DAEMONS_COUNT + 2);
+TASK LEVEL SIZE ".($NUM_NODES*3 + $TASK_COUNT + $DAEMONS_COUNT + 2);
 
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
@@ -552,8 +641,24 @@ TASK LEVEL SIZE ".($NUM_NODES + $TASK_COUNT + $DAEMONS_COUNT + 2);
                 foreach($AOP4Hadoop_task_ids as $key_prv_row=>$prv_row) {                    
                         $row_file .="\nMR_TASK_{$prv_row['task_id']}";
                 }
-                $row_file .="\nNET_STATS";
-                $row_file .="\nIO_STATS";
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nNET_STATS_MASTER_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nNET_STATS_SLAVE_{$prv_row['host_name']}";
+                    }
+                }
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nIO_STATS_MASTER_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nIO_STATS_SLAVE_{$prv_row['host_name']}";
+                    }
+                }
+
+
+
+
 
                 $row_file .= "\n\nLEVEL NODE SIZE $NUM_NODES";
 
@@ -579,11 +684,26 @@ TASK LEVEL SIZE ".($NUM_NODES + $TASK_COUNT + $DAEMONS_COUNT + 2);
                     }
                 }
 
+
                 foreach($AOP4Hadoop_task_ids as $key_prv_row=>$prv_row) {                    
                         $row_file .="\nMR_TASK_{$prv_row['task_id']}";
                 }
-                $row_file .="\nNET_STATS";
-                $row_file .="\nIO_STATS";
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nNET_STATS_MASTER_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nNET_STATS_SLAVE_{$prv_row['host_name']}";
+                    }
+                }
+                foreach($hosts_rows as $key_prv_row=>$prv_row) {
+                    if ($prv_row['role'] == 'master') {
+                        $row_file .="\nIO_STATS_MASTER_{$prv_row['host_name']}";
+                    } else {
+                        $row_file .="\nIO_STATS_SLAVE_{$prv_row['host_name']}";
+                    }
+                }
+
+
 
                 $pcf_file =
                 'DEFAULT_OPTIONS
@@ -643,8 +763,11 @@ STATES_COLOR
 17    {255,0,96}
 
 EVENT_TYPE
-6   1001        Number of running Maps
-6   1002        Number of running Reduces
+6   1001        Number of running Map Tasks
+6   1002        Number of running Reduce Tasks
+6   1003        Number of running Shuffle Tasks
+6   1004        Number of running Merge Tasks
+6   1005        Number of running Waste Tasks
 
 EVENT_TYPE
 6   2001        CPU Usage - User (%)
@@ -655,8 +778,8 @@ EVENT_TYPE
 
 EVENT_TYPE
 6   3001        System Load Avg-1min
-6   3001        System Load Avg-5min
-6   3001        System Load Avg-15min
+6   3002        System Load Avg-5min
+6   3003        System Load Avg-15min
 
 EVENT_TYPE
 6   4001        Mem KB used
@@ -763,7 +886,19 @@ VALUES
 2      CPU Bursts';
 
                 $prv_file = $header."\n";
-                foreach ($prv_rows as $prv_row) {
+                foreach ($prv_cpu_rows as $prv_row) {
+                    $prv_file .= $prv_row['prv']."\n";
+                }
+                foreach ($prv_mem_rows as $prv_row) {
+                    $prv_file .= $prv_row['prv']."\n";
+                }
+                foreach ($prv_load_rows as $prv_row) {
+                    $prv_file .= $prv_row['prv']."\n";
+                }
+                foreach ($prv_pg_fault_rows as $prv_row) {
+                    $prv_file .= $prv_row['prv']."\n";
+                }
+                foreach ($prv_job_history as $prv_row) {
                     $prv_file .= $prv_row['prv']."\n";
                 }
 
@@ -822,11 +957,11 @@ echo';
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.task.ids", $aop4h_task_ids_file);
                 file_put_contents($dir."/$exec_name/replace.sh", $replace_file);
                 file_put_contents($dir."/$exec_name/replace_string.sh", $replace_string_file);
-                exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename && rm  -f *.tmp.*");
-                //exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename");
+                //exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename && rm  -f *.tmp.*");
+                exec("cd $dir/$exec_name &&  head -1 $prv_tmp_filename > $prv_filename && sh replace.sh >> $prv_filename");
 
-                if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
-                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
+                //if (!exec("cd $dir &&  zip -r $zip_file $exec_name && rm -rf $exec_name") || !file_exists("$dir/$zip_file")) {
+                if (!exec("cd $dir &&  zip -r $zip_file $exec_name") || !file_exists("$dir/$zip_file")) {
                     throw new \Exception('Could not create .zip');
                 }
             }
