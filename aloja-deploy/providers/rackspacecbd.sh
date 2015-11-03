@@ -2,6 +2,10 @@
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+build_dir='$HOME/share/'"${clusterName}"'/build'
+bin_dir='$HOME/share/'"${clusterName}"'/sw/bin'
+sw_dir='$HOME/share/'"${clusterName}"'/sw'
+
 #$1 cluster name
 create_cbd_cluster() {
 
@@ -163,9 +167,211 @@ get_master_name() {
 #$1 cluster name $2 use password
 vm_final_bootstrap() {
   logger "Configuring nodes..."
-  install_packages "dsh git"
+
+  old_vm_name=$vm_name
+
+  # disable CentOS/RH's crappy tty requirement for sudo
+  logger "Disabling 'requiretty' for sudo on all machines"
+  for vm_name in $(get_node_names); do
+    logger "${vm_name}..."
+    vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers" &
+  done
+
+  wait
+
+  # from here on we can use the normal vm_execute 
+  logger "Installing necessary packages on all machines"
+  for vm_name in $(get_node_names); do
+    logger "${vm_name}..."
+    vm_execute "sudo yum -y install git rsync sshfs gawk libxml2 wget curl unzip;"
+    logger "Mounting disks on ${vm_name}"
+    vm_set_ssh
+    vm_mount_disks              # mounts ~/share on all machines
+
+    if [ "$vm_name" = "master-1" ]; then
+     
+      if ! vm_build_bwm_ng; then
+        logger "WARNING: Cannot install bwm-ng on $vm_name"
+      fi
+
+      continue
+
+      if ! vm_check_install_perfmon; then
+        logger "WARNING: Performance monitor tools not installed and we were unable to install them on $vm_name"
+      fi
+    fi
+  done
+
+  wait
+
+  # restore whatever it was
+  vm_name="$old_vm_name"
 }
+
+
+# special version of vm_execute to use -t (crap), only for the first time
+vm_execute_t() {
+
+  local sshpass=files/sshpass.sh
+
+  set_shh_proxy
+
+  local sshOptions="-q -o connectTimeout=5 -o StrictHostKeyChecking=no -o ControlMaster=auto -o ControlPath=~/.ssh/%r@%h-%p -o ControlPersist=600 -o GSSAPIAuthentication=no  -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -t"
+  local result
+
+  #logger "DEBUG: vm_execute: ssh -i $(get_ssh_key) $(eval echo $sshOptions) -o PasswordAuthentication=no -o $proxyDetails $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)" "" "log to file"
+
+  #Use SSH keys
+  if [ -z "$3" ] && [ "${needPasswordPre}" != "1" ]; then
+    chmod 0600 $(get_ssh_key)
+    #echo to print special chars;
+    if [ -z "$2" ] ; then
+      ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1"
+      result=$?
+    else
+      ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1" &
+      result=$?
+    fi
+    #chmod 0644 $(get_ssh_key)
+  #Use password
+  else
+    if [ -z "$2" ] ; then
+      "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1"
+      result=$?
+    else
+      "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1" &
+      result=$?
+    fi
+  fi
+  return ${result}
+}
+
+
+
+vm_build_dsh(){
+
+  vm_execute "
+
+# download and build dsh for local use (not included in CentOS/RHEL 7)
+
+mkdir -p '${build_dir}' || exit 1
+cd '${build_dir}' || exit 1
+
+# target dir
+mkdir -p '${sw_dir}' || exit 1
+
+tarball1=libdshconfig-0.20.13.tar.gz
+tarball2=dsh-0.25.9.tar.gz
+dir1=\${tarball1%.tar.gz}
+dir2=\${tarball2%.tar.gz}
+
+wget -nv \"http://www.netfort.gr.jp/~dancer/software/downloads/\${tarball1}\" || exit 1
+wget -nv \"http://www.netfort.gr.jp/~dancer/software/downloads/\${tarball2}\" || exit 1
+
+rm -rf -- \"\${dir1}\" \"\${dir2}\" || exit 1
+
+# first, build the library
+{ tar -xf \"\${tarball1}\" && rm \"\${tarball1}\"; } || exit 1
+
+cd \"\${dir1}\" || exit 1
+
+./configure --prefix='${sw_dir}' || exit 1
+make || exit 1
+make install || exit 1
+
+# now build dsh telling it where the library is
+
+cd '${build_dir}' || exit 1
+{ tar -xf \"\${tarball2}\" && rm \"\${tarball2}\"; } || exit 1
+cd \"\${dir2}\" || exit 1
+
+CFLAGS=\"-I${sw_dir}/include\" LDFLAGS=\"-L${sw_dir}/lib\" ./configure --prefix='${sw_dir}' || exit 1
+CFLAGS=\"-I${sw_dir}/include\" LDFLAGS=\"-L${sw_dir}/lib\" make || exit 1
+make install || exit 1
+
+# we know that \$HOME/sw/bin is in our path because the deployment configures it
+
+mv '${bin_dir}'/{dsh,dsh.bin}
+
+# install wrapper to not depend on config file
+
+echo \"
+#!/bin/bash
+
+${bin_dir}/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
+\" > '${bin_dir}/dsh' || exit 1
+
+chmod +x '${bin_dir}/dsh' || exit 1
+"
+
+}
+
+vm_build_sar(){
+
+  vm_execute "
+
+# download and build sysstat for local use (included in CentOS/RHEL 7, but not the right version)
+
+mkdir -p '${build_dir}' || exit 1
+cd '${build_dir}' || exit 1
+
+tarball=sysstat-10.2.1.tar.bz2
+dir=\${tarball%.tar.bz2}
+
+wget -nv \"http://pagesperso-orange.fr/sebastien.godard/\${tarball}\" || exit 1
+
+rm -rf -- \"\${dir}\" || exit 1
+
+{ tar -xf \"\${tarball}\" && rm \"\${tarball}\"; } || exit 1
+cd \"\${dir}\" || exit 1
+
+./configure || exit 1
+make || exit 1
+
+# we know that \$HOME/sw/bin is in our path because the deployment configures it
+
+mkdir -p '${bin_dir}' || exit 1
+cp sar '${bin_dir}' || exit 1
+
+"
+
+}
+
+vm_build_bwm_ng(){
+
+  vm_execute "
+
+# download and build bwm-ng for local use (not included in CentOS/RHEL 7)
+
+set -x
+
+mkdir -p \"${build_dir}\" || exit 1
+cd \"${build_dir}\" || exit 1
+
+tarball=bwm-ng-0.6.1.tar.gz
+dir=\${tarball%.tar.gz}
+
+wget -nv \"http://www.gropp.org/bwm-ng/\${tarball}\" || exit 1
+
+rm -rf -- \"\${dir}\" || exit 1
+
+{ tar -xf \"\${tarball}\" && rm \"\${tarball}\"; } || exit 1
+cd \"\${dir}\" || exit 1
+
+./configure || exit 1
+make || exit 1
+
+# we know that \$HOME/sw/bin is in our path because the deployment configures it
+
+mkdir -p \"${bin_dir}\" || exit 1
+cp src/bwm-ng \"${bin_dir}\" || exit 1
+
+"
+
+}
+
 
 benchmark_suite_cleanup() {
   : #Empty
 }
+
