@@ -338,9 +338,7 @@ class RestController extends AbstractController
                 #   2:cpu:app:task:thread:time:type:value
                 $query = 'SELECT 
                         concat(
-                        "2:",
-                        (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
-                        ":2:",
+                        "2:0:2:",
                         PID,
                         ":1:",
                         s.timestamp - '.$initial_time.',":",event,":",value
@@ -349,9 +347,24 @@ class RestController extends AbstractController
                     From aloja_logs.AOP4Hadoopv2 s
                     JOIN aloja2.execs e USING(id_exec)
                     JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
-                    where id_exec = "'.$id_exec.'"
+                    where id_exec = "'.$id_exec.'" and event != 11112
                     order by timestamp asc;';
-        		$AOP4Hadoop_rows = $dbUtils->get_rows($query);
+        		$AOP4Hadoop_daemon_rows = $dbUtils->get_rows($query);
+
+                $query = 'SELECT 
+                        concat(
+                        "2:0:3:",
+                        PID,
+                        ":1:",
+                        s.timestamp - '.$initial_time.',":",event,":",value
+                        ) as record,
+                        s.timestamp - '.$initial_time.' 
+                    From aloja_logs.AOP4Hadoopv2 s
+                    JOIN aloja2.execs e USING(id_exec)
+                    JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
+                    where id_exec = "'.$id_exec.'" and (event = 11112 and value != 1)
+                    order by timestamp asc;';
+                $AOP4Hadoop_task_rows = $dbUtils->get_rows($query);
 
 
                 $query = 'SELECT 
@@ -387,7 +400,7 @@ class RestController extends AbstractController
                         FROM (
                             select distinct PID
                             from aloja_logs.AOP4Hadoopv2 s
-                            where id_exec = "'.$id_exec.'" and s.event = 11112
+                            where id_exec = "'.$id_exec.'" and s.event = 11112 and s.value != 1
                         ) output;';
 
                 $AOP4Hadoop_task_ids = $dbUtils->get_rows($query);
@@ -445,49 +458,79 @@ class RestController extends AbstractController
                     }
                 }
 
+/* 4 apps (1 CPU system / 1 hadoop daemons / Hadoop Tasks / 1 Net devices / 1 IO devices ), poner datos por CPU solo en la app de CPU system. 
+   Todo el resto lo mapeamos a CPU 0.
+*/
+
+                $NUM_PRV_APPS=5;
                 //create the Row file according to the cluster size
                 $query = 'SELECT id_host, host_name, role
                             FROM aloja2.execs e
                             JOIN aloja2.hosts h USING(id_cluster)
-                            WHERE id_exec = "'.$id_exec.'" order by role;';
+                            WHERE id_exec = "'.$id_exec.'" and id_host != id_cluster order by role;';
                 $hosts_rows = $dbUtils->get_rows($query);
                 if (!isset($hosts_rows)) throw new \Exception('No data returned to create the Row file!');
 
-                $row_size = count($hosts_rows);
-
-                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$final_time.":$row_size(";
-                for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
-                    $header .= "1,";
+                $NUM_NODES = count($hosts_rows);
+                
+                $header = "#Paraver (".date('d/m/y \a\t H:i')."):".$final_time.":$NUM_NODES(";
+                for ($node_number = 1; $node_number < ($NUM_NODES+1); $node_number++) {
+                    $header .= "1,"; # IMPROVE: We should have per CPU stats!
                 }
                 $header = substr($header,0,-1); //remove trailing ,
 
-                $header .= "):2";
-                $header .= ":$row_size(";
-                for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
+                $header .= "):$NUM_PRV_APPS";
+
+
+                //APP1 -> System STATS
+                $header .= ":$NUM_NODES(";
+                for ($node_number = 1; $node_number < ($NUM_NODES+1); $node_number++) {
                     $header .= "1:$node_number,";
                 }
                 $header = substr($header,0,-1); //remove trailing ,
                 $header .= ")";
 
-                // TODO adapt according to AOP4Hadoop
-                $header .= ":$row_size(";
-                for ($node_number = 1; $node_number < ($row_size+1); $node_number++) {
-                    $header .= "1:$node_number,";
+                //APP2 -> Hadoop Daemons
+                $DAEMONS_COUNT=($NUM_NODES*2);
+                $header .= ":$DAEMONS_COUNT(";
+                for ($daemon_number = 1; $daemon_number < ($DAEMONS_COUNT+1); $daemon_number++) {
+                    $header .= "1:1,";
                 }
                 $header = substr($header,0,-1); //remove trailing ,
                 $header .= ")";
-                //
+
+
+                //APP3 -> Hadoop Tasks
+                $TASK_COUNT=count($AOP4Hadoop_task_ids);
+                $header .= ":$TASK_COUNT(";
+                for ($task_number = 1; $task_number < ($TASK_COUNT+1); $task_number++) {
+                    $header .= "1:1,";
+                }
+                $header = substr($header,0,-1); //remove trailing ,
+                $header .= ")";
+                
+
+                //APP4 -> NET devices
+                $header .= ":1(1:1)";
+
+                //APP5-> IO devices
+                $header .= ":1(1:1)";
+
+
 
                 $row_file = "LEVEL CPU SIZE $row_size";
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     $row_file .= "\nCPU_{$prv_row['role']}_{$prv_row['host_name']}";
                 }
 
-                $row_file .= "\n\nLEVEL APPL SIZE 2
+                $row_file .= "\n\nLEVEL APPL SIZE $NUM_PRV_APPS
 SYSTEM STATS
-HADOOP
+HADOOP DAEMONS
+HADOOP TASKS
+NET_DEVICES
+IO_DEVICES
 
-TASK LEVEL SIZE ".($row_size*2);
+TASK LEVEL SIZE ".($NUM_NODES + $TASK_COUNT + $DAEMONS_COUNT + 2);
 
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
@@ -498,19 +541,27 @@ TASK LEVEL SIZE ".($row_size*2);
                 }
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
-                        $row_file .="\nJT+NN_{$prv_row['host_name']}";
+                        $row_file .="\nJT_{$prv_row['host_name']}";
+                        $row_file .="\nNN_{$prv_row['host_name']}";
                     } else {
-                        $row_file .="\nTT+DN_{$prv_row['host_name']}";
+                        $row_file .="\nTT_{$prv_row['host_name']}";
+                        $row_file .="\nDN_{$prv_row['host_name']}";
                     }
                 }
 
-                $row_file .= "\n\nLEVEL NODE SIZE $row_size";
+                foreach($AOP4Hadoop_task_ids as $key_prv_row=>$prv_row) {                    
+                        $row_file .="\nMR_TASK_{$prv_row['task_id']}";
+                }
+                $row_file .="\nNET_STATS";
+                $row_file .="\nIO_STATS";
+
+                $row_file .= "\n\nLEVEL NODE SIZE $NUM_NODES";
 
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     $row_file .="\n".strtoupper($prv_row['role'])."_{$prv_row['host_name']}";
                 }
 
-                $row_file .="\n\nLEVEL THREAD SIZE ".($row_size*2);
+                $row_file .="\n\nLEVEL THREAD SIZE ".($NUM_NODES + $TASK_COUNT + $DAEMONS_COUNT + 2);
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
                         $row_file .="\nSTATS_MASTER_{$prv_row['host_name']}";
@@ -520,11 +571,19 @@ TASK LEVEL SIZE ".($row_size*2);
                 }
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
-                        $row_file .="\nTHREAD-JT+NN_{$prv_row['host_name']}";
+                        $row_file .="\nJT_{$prv_row['host_name']}";
+                        $row_file .="\nNN_{$prv_row['host_name']}";
                     } else {
-                        $row_file .="\nTHREAD-TT+DN_{$prv_row['host_name']}";
+                        $row_file .="\nTT_{$prv_row['host_name']}";
+                        $row_file .="\nDN_{$prv_row['host_name']}";
                     }
                 }
+
+                foreach($AOP4Hadoop_task_ids as $key_prv_row=>$prv_row) {                    
+                        $row_file .="\nMR_TASK_{$prv_row['task_id']}";
+                }
+                $row_file .="\nNET_STATS";
+                $row_file .="\nIO_STATS";
 
                 $pcf_file =
                 'DEFAULT_OPTIONS
@@ -644,16 +703,7 @@ VALUES
 1 Start
 
 EVENT_TYPE
-0 11116 MapTask
-VALUES
-0 End
-1 Start
-
-EVENT_TYPE
-0 11117 ReduceTask
-VALUES
-0 End
-1 Start
+0 11119 HeartBeat
 
 EVENT_TYPE
 0 33333 MapOutputBuffer
@@ -717,7 +767,11 @@ VALUES
                     $prv_file .= $prv_row['prv']."\n";
                 }
 
-                foreach ($AOP4Hadoop_rows as $AOP4Hadoop_row) {
+                foreach ($AOP4Hadoop_daemon_rows as $AOP4Hadoop_row) {
+                    $prv_file .= $AOP4Hadoop_row['record']."\n";
+                }
+
+                foreach ($AOP4Hadoop_task_rows as $AOP4Hadoop_row) {
                     $prv_file .= $AOP4Hadoop_row['record']."\n";
                 }
 
@@ -763,7 +817,6 @@ echo';
                 file_put_contents($dir."/$exec_name/$exec_name.pcf", $pcf_file);
                 file_put_contents($dir."/$exec_name/$exec_name.row", $row_file);
                 file_put_contents($dir."/$exec_name/$prv_tmp_filename", $prv_file);
-                //file_put_contents($dir."/$exec_name/$exec_name.tmp.aop4hadoop", $aop4h_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.jt.ids", $aop4h_jt_ids_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.tt.ids", $aop4h_tt_ids_file);
                 file_put_contents($dir."/$exec_name/$exec_name.tmp.task.ids", $aop4h_task_ids_file);

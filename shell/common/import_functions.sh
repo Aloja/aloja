@@ -34,26 +34,17 @@ insert_DB(){
 
 
 #AOP4Hadoop does not have header lines to ignore!
-insert_DB_noSkip(){
-  logger "INFO: Inserting into DB $sar_file TN $1"
+insert_DB_AOP(){
+  logger "INFO: Inserting into DB $AOP_file_name TN $1"
 
-  if [[ $(head "$2"|wc -l) > 1 ]] ; then
+  if [[ $(head "$2"|wc -l) > 0 ]] ; then
     logger "DEBUG: Loading $2 into $1"
-    logger "DEBUG: File header:\n$(head -n3 "$2")"
-
-    #tx levels READ UNCOMMITTED READ-COMMITTED
 
     $MYSQL "
     SET time_zone = '+00:00';
 
-# Removed due to needing super permissions
-#    SET tx_isolation = 'READ-COMMITTED';
-#    SET GLOBAL tx_isolation = 'READ-COMMITTED';
-
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
-    FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
-#    IGNORE 1 LINES;
-    "
+    FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"';"
     logger "DEBUG: Loaded $2 into $1\n"
   else
     logger "WARNING: empty CSV file $csv_name $(cat $csv_name)"
@@ -1053,14 +1044,15 @@ import_AOP4Hadoop_files() {
   for AOP_file_name in *.log ; do
     local tmp_file="tmp_${AOP_file_name}.csv"
     if [ -f "$AOP_file_name" ] ; then
-      if [[ $(head $AOP_file_name |wc -l) -gt 1 ]] ; then
+      if [[ $(head $AOP_file_name |wc -l) -gt 0 ]] ; then
         echo "Processing AOP4Hadoop $AOP_file_name in `pwd`"
         logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
         grep "AOPLOG" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$4","$5","$6","$7","$8}' > "$tmp_file"
-
+        cat $tmp_file
         if [[ $(head $tmp_file |wc -l) -gt 0 ]] ; then
-          cp $tmp_file /tmp
-          insert_DB_noSkip "aloja_logs.${table_name}" "$tmp_file" "" ","
+          insert_DB_AOP "aloja_logs.${table_name}" "$tmp_file" "" ","
+        else
+          echo "Skipping "$tmp_file" because it is empty"
         fi
       else
         echo "Skipping "$AOP_file_name" because it is empty"
