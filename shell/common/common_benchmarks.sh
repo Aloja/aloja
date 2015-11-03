@@ -725,9 +725,17 @@ run_monit() {
   local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
 
   if [ "$perf_mon" == "sar" ] ; then
-    $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+    if [ "$clusterType" != "PaaS" ]; then
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+    else
+      $DSH "sar -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+    fi
   elif [ "$perf_mon" == "vmstat" ] ; then
-    $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+    if [ "$clusterType" != "PaaS" ]; then
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+    else
+      $DSH "vmstat -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+    fi
   else
     die "Specified perf mon $perf_mon not implemented"
   fi

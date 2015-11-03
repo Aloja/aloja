@@ -1121,26 +1121,30 @@ get_xml_exec_params() {
     fi
 
 	xmlFile=$(find $histFolder -type f -name *.xml | head -n 1)
-	replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
-	compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
-	maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
-	blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
-	iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
-	iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
-	compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
-	if [ "$compressionEnabled" = "false" ]; then
-		compressCodec=0
-	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
-		compressCodec=3
-	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
-		compressCodec=1
-	elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
-		compressCodec=2
-	else
-		compressCodec=0
-	fi
+	if [ "$xmlFile" ]; then
+      replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
+      compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
+      maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
+      blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
+      iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
+      iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
+      compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
+      if [ "$compressionEnabled" = "false" ]; then
+          compressCodec=0
+      elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
+          compressCodec=3
+      elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
+          compressCodec=1
+      elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
+          compressCodec=2
+      else
+          compressCodec=0
+      fi
 
-	blocksize=`expr $blocksize / 1000000`
+      blocksize=`expr $blocksize / 1000000`
+    else
+      logger "ERROR: FAILED TO IMPORT JOB, NO HISTORY SAVED"
+    fi
 }
 
 

@@ -559,7 +559,7 @@ install_R() {
 
   # temporarily change the bootstrap name for the vagrant VM to force update the R packages
   if inside_vagrant ; then
-    local bootstrap_file="${FUNCNAME[0]}_2"
+    local bootstrap_file="${FUNCNAME[0]}_3"
   else
     local bootstrap_file="${FUNCNAME[0]}"
   fi
@@ -601,11 +601,11 @@ sudo rm $libtiff_file"
       local R_file="R-x86_64-3.2-packages.tar.gz"
       aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
 
-      logger "INFO: Uncompressing and copying files"
+      logger "INFO: Uncompressing and copying R files"
       vm_execute "
 sudo rm -rf /opt/R;
-tar -C /opt -xf '/tmp/$R_file';
-rm -rf '/tmp/$R_file';
+sudo tar -C /opt -xf '/tmp/$R_file';
+sudo rm -rf '/tmp/$R_file';
 "
 
 #      logger "INFO: Updating package (will take a while if changes are found)"

@@ -18,7 +18,7 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 
 	if (nrow(ds) > 1)
 	{
-		ds_ord <- ds[do.call("order", ds[vin]),];
+		ds_ord <- ds[do.call("order", ds[,vin]),];
 
 		auxset1 <- ds_ord[1,vout];
 		auxvar1 <- NULL;
