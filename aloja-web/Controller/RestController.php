@@ -338,7 +338,9 @@ class RestController extends AbstractController
                 #   2:cpu:app:task:thread:time:type:value
                 $query = 'SELECT 
                         concat(
-                        "2:0:2:",
+                        "2:",
+                        (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                        ":2:",
                         PID,
                         ":1:",
                         s.timestamp - '.$initial_time.',":",event,":",value
@@ -353,7 +355,9 @@ class RestController extends AbstractController
 
                 $query = 'SELECT 
                         concat(
-                        "2:0:3:",
+                        "2:",
+                        (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1),
+                        ":3:",
                         PID,
                         ":1:",
                         s.timestamp - '.$initial_time.',":",event,":",value
@@ -398,9 +402,11 @@ class RestController extends AbstractController
                 $dbUtils->executeQuery('SET @a:=0;');
                 $query = 'SELECT @a:=@a+1 task_id, output.*
                         FROM (
-                            select distinct PID
-                            from aloja_logs.AOP4Hadoopv2 s
-                            where id_exec = "'.$id_exec.'" and s.event = 11112 and s.value != 1
+                            select distinct PID, (cast(substring(id_host,(LENGTH(e.id_cluster)+1)) AS UNSIGNED )+1) as host_id
+                             from aloja_logs.AOP4Hadoopv2 s
+                             JOIN aloja2.execs e USING(id_exec)
+                             JOIN aloja2.hosts h ON e.id_cluster = h.id_cluster and h.host_name = s.host_name
+                             where id_exec="'.$id_exec.'" and event=11112 and s.value != 1
                         ) output;';
 
                 $AOP4Hadoop_task_ids = $dbUtils->get_rows($query);
@@ -573,8 +579,10 @@ class RestController extends AbstractController
                 //APP2 -> Hadoop Daemons
                 $DAEMONS_COUNT=($NUM_NODES*2);
                 $header .= ":$DAEMONS_COUNT(";
+                $current_daemon = 0;
                 for ($daemon_number = 1; $daemon_number < ($DAEMONS_COUNT+1); $daemon_number++) {
-                    $header .= "1:1,";
+                    $current_daemon += $daemon_number%2;
+                    $header .= "1:".($current_daemon).",";
                 }
                 $header = substr($header,0,-1); //remove trailing ,
                 $header .= ")";
@@ -583,8 +591,11 @@ class RestController extends AbstractController
                 //APP3 -> Hadoop Tasks
                 $TASK_COUNT=count($AOP4Hadoop_task_ids);
                 $header .= ":$TASK_COUNT(";
-                for ($task_number = 1; $task_number < ($TASK_COUNT+1); $task_number++) {
+                /*for ($task_number = 1; $task_number < ($TASK_COUNT+1); $task_number++) {
                     $header .= "1:1,";
+                }*/
+                foreach ($AOP4Hadoop_task_ids as $AOP4Hadoop_task_id) {
+                    $header .= $AOP4Hadoop_task_id['task_id'].":".$AOP4Hadoop_task_id['host_id'].",";
                 }
                 $header = substr($header,0,-1); //remove trailing ,
                 $header .= ")";            
@@ -619,7 +630,7 @@ HADOOP TASKS
 NET_DEVICES
 IO_DEVICES
 
-TASK LEVEL SIZE ".($NUM_NODES*3 + $TASK_COUNT + $DAEMONS_COUNT + 2);
+TASK LEVEL SIZE ".($NUM_NODES*3 + $TASK_COUNT + $DAEMONS_COUNT);
 
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
@@ -666,7 +677,7 @@ TASK LEVEL SIZE ".($NUM_NODES*3 + $TASK_COUNT + $DAEMONS_COUNT + 2);
                     $row_file .="\n".strtoupper($prv_row['role'])."_{$prv_row['host_name']}";
                 }
 
-                $row_file .="\n\nLEVEL THREAD SIZE ".($NUM_NODES + $TASK_COUNT + $DAEMONS_COUNT + 2);
+                $row_file .="\n\nLEVEL THREAD SIZE ".($NUM_NODES*3 + $TASK_COUNT + $DAEMONS_COUNT);
                 foreach($hosts_rows as $key_prv_row=>$prv_row) {
                     if ($prv_row['role'] == 'master') {
                         $row_file .="\nSTATS_MASTER_{$prv_row['host_name']}";
