@@ -36,12 +36,8 @@ set_hadoop_requires() {
   fi
 
   if [ "$HADOOP_EXTRA_JARS" ] ; then
-    if [ "$(get_hadoop_major_version)" == "2" ]; then
-     echo ""
-    else
-      #BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
-      BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="http://autonomic.ac.upc.edu/$HADOOP_EXTRA_JARS.tar.gz"
-    fi
+    BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
+    #BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="http://autonomic.ac.upc.edu/$HADOOP_EXTRA_JARS.tar.gz"
   fi
 
   #also set the config here
@@ -50,12 +46,8 @@ set_hadoop_requires() {
 
 get_hadoop_aop_classpath() {
   if [ "$HADOOP_EXTRA_JARS" ] ; then
-    if [ "$(get_hadoop_major_version)" == "2" ]; then
-      echo -e "$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjtools-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/ant-1.9.6.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-yarn-client-2.6.1.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-mapred-client-core-2.6.1.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-hdfs-2.6.1.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-common-2.6.1.jar\n"
-    else
-      # Right now jar files are hard-coded
-      echo -e "$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjtools-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/ant-1.9.6.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-core-1.0.3.jar\n"
-    fi
+   # Right now jar files are hard-code
+   echo -e "$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjrt-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/aspectjtools-1.8.7.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/ant-1.9.6.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-yarn-client-2.7.1.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-mapred-client-core-2.7.1.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-hdfs-2.7.1.jar:$(get_local_apps_path)/$HADOOP_EXTRA_JARS/AOP4Hadoop-hadoop-common-2.7.1.jar\n"
   fi
 }
 
