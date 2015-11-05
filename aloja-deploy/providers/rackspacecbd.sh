@@ -11,12 +11,12 @@ create_cbd_cluster() {
 
   local output clusterId nodes
 
-  if [ -z "$location" ]; then
-    location="IAD"
+  if [ -z "$CBDlocation" ]; then
+    CBDlocation="IAD"
   fi
 
-  if [ -z "${clusterStack}" ]; then
-    clusterStack="HADOOP_HDP2_3"
+  if [ -z "${CBDclusterStack}" ]; then
+    CBDclusterStack="HADOOP_HDP2_3"
   fi
 
   logger "Ensuring SSH credentials are in place"
@@ -37,10 +37,10 @@ create_cbd_cluster() {
   else
     logger "Cluster $1 exists, checking whether we should resize it"
 
-    output=$(lava clusters get "${clusterId}" -f --header --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}")
+    output=$(lava clusters get "${clusterId}" -f --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
     # get number of nodes
 
-    nodes=$(awk -v vmSize="${vmSize}" '$0 ~ "\\| *slave *\\| *" vmSize " *\\|" { print $6; exit }' <<< "${output}")
+    nodes=$(awk -v CBDvmSize="${CBDvmSize}" '$0 ~ "\\| *slave *\\| *" CBDvmSize " *\\|" { print $6; exit }' <<< "${output}")
 
     logger "Cluster $1 has $nodes nodes, we want $numberOfNodes"
 
@@ -60,18 +60,18 @@ create_cbd_cluster() {
 # actually creates the cluster
 # $1=clusterName
 create_do_cbd_cluster(){
-  lava clusters create "$1" "${clusterStack}" -f --header --node-groups "slave(flavor_id=${vmSize}, count=${numberOfNodes})" --username "${userAloja}" --ssh-key "${rackspaceSshKeyName}" --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}"
+  lava clusters create "$1" "${CBDclusterStack}" -f --header --node-groups "slave(flavor_id=${CBDvmSize}, count=${numberOfNodes})" --username "${userAloja}" --ssh-key "${CBDsshKeyName}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
 }
 
 resize_do_cbd_cluster(){
-  lava clusters resize "$1" -f --header --node-groups "slave(flavor_id=${vmSize}, count=${numberOfNodes})" --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}"
+  lava clusters resize "$1" -f --header --node-groups "slave(flavor_id=${CBDvmSize}, count=${numberOfNodes})" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
 }
 
 get_cluster_id(){
 
   local output clusterId
 
-  output=$(lava clusters list -F --header --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}")
+  output=$(lava clusters list -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
   clusterId=$(awk -v name="$1" -F, 'NR>1 && $2 == name { id = $1; exit } END { print id"" }' <<< "${output}")
   echo "${clusterId}"
 }
@@ -81,21 +81,22 @@ create_cbd_credentials(){
   local keys present
 
   # check if key already present
-  keys=$(lava credentials list_ssh_keys -F --header --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}")
+  keys=$(lava credentials list_ssh_keys -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
 
-  present=$(awk -v name="${rackspaceSshKeyName}" -F, 'NR>1 && $2 == name { found = 1; exit } END { print found + 0 }' <<< "${keys}")
+  present=$(awk -v name="${CBDsshKeyName}" -F, 'NR>1 && $2 == name { found = 1; exit } END { print found + 0 }' <<< "${keys}")
 
   if [ $present -eq 1 ]; then
     # update
-    logger "Updating ssh key ${rackspaceSshKeyName}"
-    lava credentials update_ssh_key "${rackspaceSshKeyName}" "${rackspaceSshKey}" --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}"
+    logger "Updating ssh key ${CBDsshKeyName}"
+    lava credentials update_ssh_key "${CBDsshKeyName}" "${CBDsshKey}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
   else
     # create
-    logger "Creating ssh key ${rackspaceSshKeyName}"
-    lava credentials create_ssh_key "${rackspaceSshKeyName}" "${rackspaceSshKey}" --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}"
+    logger "Creating ssh key ${CBDsshKeyName}"
+    lava credentials create_ssh_key "${CBDsshKeyName}" "${CBDsshKey}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
   fi
 
 }
+
 
 # wait until the cluster is ready
 # $1=clusterId
@@ -104,7 +105,7 @@ wait_cbd_cluster(){
   local clusterId=$1 output status progress count ok=1 num=10
 
   while true; do
-    output=$(lava clusters get "${clusterId}" -f --header --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}")
+    output=$(lava clusters get "${clusterId}" -f --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
 
     status=$(awk '/ Status / && NR == 6 {print $4; exit}' <<< "${output}")
     progress=$(awk '/ Progress / && NR == 11 {print $4; exit}' <<< "${output}")
@@ -132,6 +133,8 @@ wait_cbd_cluster(){
 
 }
 
+# array to cache name to IP mappings
+declare -A nodeIP
 
 # vm_name is the name
 # clusterName
@@ -141,14 +144,38 @@ get_ssh_host() {
 
   clusterId=$(get_cluster_id "${clusterName}")
 
-  # get node data (names, public IPs)
-  while IFS=, read -r nodeId nodeName nodeRole nodeStatus nodePuIP nodePrIP; do
-    if [ "${nodeName}" = "${vm_name}" ]; then
-      echo "${nodePuIP}"
-      break
+  if [ -z "${nodeIP[$vm_name]}" ]; then
+
+    #check if the vm_name is an IP address
+    if [[ "$vm_name" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
+      local vm_IP="$vm_name"
+      local vm_ID="$vm_name"
+    else
+      #get machine details
+      local cacheFileName="rackspacecbd_hosts_${clusterName}"
+      local hosts="$(cache_get "$cacheFileName" "60")"
+
+      if [ ! "$hosts" ] ; then
+        local hosts="$(lava nodes list "${clusterId}" -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")"
+        cache_put "$cacheFileName" "$hosts"
+      fi
+
+     local vm_IP="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
+     local vm_ID="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
     fi
-  done < <(lava nodes list "${clusterId}" -F --header --user "${rackspaceUser}" --tenant "${rackspaceTenant}" --region "${location}" --api-key "${rackspaceApiKey}")
+
+    # get node data (names, public IPs)
+    while IFS=, read -r nodeId nodeName nodeRole nodeStatus nodePuIP nodePrIP; do
+      nodeIP["${nodeName}"]="${nodePuIP}"
+    done <<< "$hosts"
+  fi
+
+  echo "${nodeIP[$vm_name]}"
+
 }
+
+
+
 
 #$1 vm_name
 number_of_attached_disks() {
