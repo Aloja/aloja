@@ -621,7 +621,7 @@ get_share_location() {
 #    local fs_mount="$userAloja@al-1001.cloudapp.net:$homePrefixAloja/$userAloja/share/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
 #  fi
 
-  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
+  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,exec,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
 
   echo -e "$fs_mount"
 }
@@ -857,11 +857,21 @@ vm_set_dot_files() {
 
     vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
-    vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
+    if [ "$type" = "cluster" ]; then
+      vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
+export HISTSIZE=50000
+alias a='dsh -g a -M -c'
+alias s='dsh -g s -M -c'
+export PATH=\$HOME/share/${clusterName}/sw/bin:\$PATH" ""
+
+    else
+      vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'
 export PATH=\$HOME/share/sw/bin:\$PATH" ""
+
+    fi
 
     vm_update_template "$homePrefixAloja/$userAloja/.screenrc" "
 defscrollback 99999
