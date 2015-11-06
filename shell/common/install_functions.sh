@@ -709,7 +709,7 @@ sudo pip install --upgrade rackspace-novaclient
 }
 
 # Install Rackspace's lava python client
-# docs: http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started/content/Using_Python_lavaclient.html
+# docs: http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started-2/content/CBD_sendingAPI_Requests.html
 install_rackspace_lava_cli() {
 
   local bootstrap_file="${FUNCNAME[0]}"
