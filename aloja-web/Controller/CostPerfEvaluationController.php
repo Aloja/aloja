@@ -609,6 +609,12 @@ class CostPerfEvaluationController extends AbstractController
             $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
         }
 
+		if($scalabilityType == 'Datasize') {
+			foreach ($categories as &$category) {
+				$category = Utils::beautifyDatasize($category);
+			}
+		}
+
         return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array(
             'highcharts_js' => HighCharts::getHeader(),
             'categories' => json_encode($categories),

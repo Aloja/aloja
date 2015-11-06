@@ -68,7 +68,7 @@
                 tooltip: {
                     shared: false,
                     formatter: function() {
-                        return '<b>'+this.x + '</b> {% if scalabilityType == 'Datanodes' %}datanodes{% else %}Bytes{% endif %}<br /><span style="color: '+this.series.color+';">'+this.series.name+'</span>: <b>'+this.y+' '+this.series.options.tooltip.valueSuffix+'</b>';
+                        return '<b> '+this.x+'</b> '{% if scalabilityType == 'Datanodes' %}+'datanodes'{% endif %}+'<br /><span style="color: '+this.series.color+';">'+this.series.name+'</span>: <b>'+this.y+' '+this.series.options.tooltip.valueSuffix+'</b>';
                     }
                 },
                 credits: {

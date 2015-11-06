@@ -686,4 +686,24 @@ class Utils
         } else
             return true;
     }
+
+    public static function beautifyDatasize($value) {
+        $nDigits = strlen((string)$value);
+        $return = '';
+        if($nDigits >= 4) {
+            if($nDigits >= 8) {
+                if($nDigits >= 10) {
+                    if($nDigits >= 13) {
+                        $return = ceil(($value/1000000000000)) . ' TB';
+                    } else
+                        $return = ceil(($value/1000000000)) . ' GB';
+                } else
+                    $return = ceil(($value/1000000)) . ' MB';
+            } else
+                $return = ceil(($value/1000)) . ' KB';
+        } else
+            $return = $value . ' B';
+
+        return $return;
+    }
 }
