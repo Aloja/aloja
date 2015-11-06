@@ -40,21 +40,19 @@
 <body id="main">
 	{% block body %}
 	<div id="container"> <!-- container -->
-		<img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg" >
-		<table width="100%" style="border-bottom: 2px solid #B0BED9;" border="0">
-			<tr style="line-height: 35px;">
-				<td valign="bottom">
-					<span style="font-size: 1.5em; color: #4E6CA3;">
-						<strong>{{ title|default('ALOJA, Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
-					</span>
-				</td>
-				<td align="right">
-					<a target="blank" href="http://www.bscmsrc.eu/">
-						<img src="img/bsc-logo_trans.png" style="margin-bottom: 9px;" width="270">
-					</a>
-				</td>
-			</tr>
-		</table>
+		<img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg">
+		<div class="row" style="position: relative; min-height:6em;">
+			<div class="col-md-9" style="min-height: 6em;">
+				<span style="position: absolute; bottom: 0px; margin-left: .5em; font-size: 1.5em; color: #4E6CA3;">
+					<strong>{{ title|default('ALOJA, Hadoop Benchmark Repository and Performance Analysis Tools') }}</strong>
+				</span>
+			</div>
+			<div class="col-md-1" style="padding-left: 6em; margin-right: 0px;">
+				<a target="blank" href="http://www.bscmsrc.eu/">
+					<img src="img/bsc-logo_trans.png" style="margin-bottom: 9px;" width="270">
+				</a>
+			</div>
+	   </div>
 		<div class="modal fade" id="welcomeModal">
 			<div class="modal-dialog">
 				<div class="modal-content">
@@ -86,7 +84,7 @@
 			</div><!-- /.modal-dialog -->
 		</div><!-- /.modal -->
 		{% block navigation %}
-		<nav class="navbar navbar-default navbar-static-top" role="navigation">
+		<nav class="navbar navbar-default navbar-static-top" role="navigation" style="border-top: .15em solid #dddddd;">
 		<div class="container-fluid">
 			<!-- Brand and toggle get grouped for better mobile display -->
 			<div class="navbar-header">
