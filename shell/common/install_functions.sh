@@ -708,6 +708,38 @@ sudo pip install --upgrade rackspace-novaclient
   fi
 }
 
+# Install Rackspace's lava python client
+# docs: http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started-2/content/CBD_sendingAPI_Requests.html
+install_rackspace_lava_cli() {
+
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing Rackspace lava client"
+
+    install_packages "python-dev python-pip"
+    vm_execute "
+sudo pip install --upgrade lavaclient
+"
+
+    local test_action="$(vm_execute " \[ \$(which lava) \] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
+
 # Install script for private sharelatex VM
 install_sharelatex() {
 

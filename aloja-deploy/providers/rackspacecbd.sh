@@ -6,6 +6,11 @@ build_dir='$HOME/share/'"${clusterName}"'/build'
 bin_dir='$HOME/share/'"${clusterName}"'/sw/bin'
 sw_dir='$HOME/share/'"${clusterName}"'/sw'
 
+
+# array to cache name to IP mappings
+declare -A nodeIP
+declare -A clusterIDs
+
 #$1 cluster name
 create_cbd_cluster() {
 
@@ -57,6 +62,36 @@ create_cbd_cluster() {
   fi
 }
 
+node_delete() {
+    delete_cbd_cluster "$1"
+}
+
+#$1 cluster name
+delete_cbd_cluster() {
+
+  local output clusterId nodes
+
+  if [ -z "$CBDlocation" ]; then
+    CBDlocation="IAD"
+  fi
+
+  logger "Checking whether cluster $1 exists"
+  clusterId=$(get_cluster_id "$1")
+ 
+  if [ "${clusterId}" = "" ]; then
+    die "Cluster does not exist, terminating"
+  else
+    logger "Deleting cluster $1"
+    lava clusters delete --force "${clusterId}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+    if [ $? -eq 0 ]; then
+      logger "Successfully deleted cluster $1"
+    else
+      logger "Error deleting cluster $1, check manually"
+    fi
+  fi
+}
+
+
 # actually creates the cluster
 # $1=clusterName
 create_do_cbd_cluster(){
@@ -69,11 +104,29 @@ resize_do_cbd_cluster(){
 
 get_cluster_id(){
 
-  local output clusterId
+  local clusters count=0
 
-  output=$(lava clusters list -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
-  clusterId=$(awk -v name="$1" -F, 'NR>1 && $2 == name { id = $1; exit } END { print id"" }' <<< "${output}")
-  echo "${clusterId}"
+  if [ -z "${clusterIDs[$1]}" ]; then
+
+    # get clusters details
+    local cacheFileName="rackspacecbd_clusters"
+    local clusters="$(cache_get "$cacheFileName" "60")"
+
+    if [ ! "${clusters}" ] ; then
+      local clusters=$(lava clusters list -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
+      cache_put "$cacheFileName" "${clusters}"
+    fi
+
+    # populate clusterIDs array
+    while IFS=, read -r cID cName cState cStack cDate; do
+      ((count++))
+      [ $count -lt 2 ] && continue
+      clusterIDs["${cName}"]="${cID}"
+    done <<< "$clusters"
+  fi
+
+  echo "${clusterIDs[$clusterName]}"
+
 }
 
 create_cbd_credentials(){
@@ -133,39 +186,30 @@ wait_cbd_cluster(){
 
 }
 
-# array to cache name to IP mappings
-declare -A nodeIP
 
 # vm_name is the name
 # clusterName
 get_ssh_host() {
 
-  local clusterId
+  local clusterId count=0
 
   clusterId=$(get_cluster_id "${clusterName}")
 
   if [ -z "${nodeIP[$vm_name]}" ]; then
 
-    #check if the vm_name is an IP address
-    if [[ "$vm_name" =~ ^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$ ]]; then
-      local vm_IP="$vm_name"
-      local vm_ID="$vm_name"
-    else
-      #get machine details
-      local cacheFileName="rackspacecbd_hosts_${clusterName}"
-      local hosts="$(cache_get "$cacheFileName" "60")"
+    #get machine details
+    local cacheFileName="rackspacecbd_hosts_${clusterName}"
+    local hosts="$(cache_get "$cacheFileName" "60")"
 
-      if [ ! "$hosts" ] ; then
-        local hosts="$(lava nodes list "${clusterId}" -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")"
-        cache_put "$cacheFileName" "$hosts"
-      fi
-
-     local vm_IP="$(echo -e "$vm_details"|grep ' accessIPv4 '|awk '{print $4}')"
-     local vm_ID="$(echo -e "$vm_details"|grep ' id '|awk '{print $4}')"
+    if [ ! "$hosts" ] ; then
+      local hosts="$(lava nodes list "${clusterId}" -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")"
+      cache_put "$cacheFileName" "$hosts"
     fi
 
     # get node data (names, public IPs)
     while IFS=, read -r nodeId nodeName nodeRole nodeStatus nodePuIP nodePrIP; do
+      ((count++))
+      [ $count -lt 2 ] && continue
       nodeIP["${nodeName}"]="${nodePuIP}"
     done <<< "$hosts"
   fi
@@ -173,8 +217,6 @@ get_ssh_host() {
   echo "${nodeIP[$vm_name]}"
 
 }
-
-
 
 
 #$1 vm_name
@@ -201,18 +243,17 @@ vm_final_bootstrap() {
   logger "Disabling 'requiretty' for sudo on all machines"
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
-    vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers" &
+    vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers" 
   done
-
-  wait
 
   # from here on we can use the normal vm_execute 
   logger "Installing necessary packages on all machines"
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
-    vm_execute "sudo yum -y install git rsync sshfs gawk libxml2 wget curl unzip;"
+    vm_execute "sudo yum -y install git rsync sshfs gawk libxml2 wget curl unzip screen;"
     logger "Mounting disks on ${vm_name}"
     vm_set_ssh
+    vm_set_dot_files
     vm_mount_disks              # mounts ~/share on all machines
 
     if [ "$vm_name" = "master-1" ]; then
@@ -220,8 +261,6 @@ vm_final_bootstrap() {
       if ! vm_build_bwm_ng; then
         logger "WARNING: Cannot install bwm-ng on $vm_name"
       fi
-
-      continue
 
       if ! vm_check_install_perfmon; then
         logger "WARNING: Performance monitor tools not installed and we were unable to install them on $vm_name"
@@ -252,23 +291,11 @@ vm_execute_t() {
   if [ -z "$3" ] && [ "${needPasswordPre}" != "1" ]; then
     chmod 0600 $(get_ssh_key)
     #echo to print special chars;
-    if [ -z "$2" ] ; then
-      ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1"
-      result=$?
-    else
-      ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1" &
-      result=$?
-    fi
-    #chmod 0644 $(get_ssh_key)
-  #Use password
+    ssh -i "$(get_ssh_key)" $(eval echo "$sshOptions") -o PasswordAuthentication=no -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1"
+    result=$?
   else
-    if [ -z "$2" ] ; then
-      "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1"
-      result=$?
-    else
-      "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1" &
-      result=$?
-    fi
+    "$sshpass" "$(get_ssh_pass)" ssh $(eval echo "$sshOptions") -o "$proxyDetails" "$(get_ssh_user)"@"$(get_ssh_host)" -p "$(get_ssh_port)" "$1"
+    result=$?
   fi
   return ${result}
 }
@@ -281,8 +308,8 @@ vm_build_dsh(){
 
 # download and build dsh for local use (not included in CentOS/RHEL 7)
 
-mkdir -p '${build_dir}' || exit 1
-cd '${build_dir}' || exit 1
+mkdir -p \"${build_dir}\" || exit 1
+cd \"${build_dir}\" || exit 1
 
 # target dir
 mkdir -p '${sw_dir}' || exit 1
@@ -302,23 +329,23 @@ rm -rf -- \"\${dir1}\" \"\${dir2}\" || exit 1
 
 cd \"\${dir1}\" || exit 1
 
-./configure --prefix='${sw_dir}' || exit 1
+./configure --prefix=\"${sw_dir}\" || exit 1
 make || exit 1
 make install || exit 1
 
 # now build dsh telling it where the library is
 
-cd '${build_dir}' || exit 1
+cd \"${build_dir}\" || exit 1
 { tar -xf \"\${tarball2}\" && rm \"\${tarball2}\"; } || exit 1
 cd \"\${dir2}\" || exit 1
 
-CFLAGS=\"-I${sw_dir}/include\" LDFLAGS=\"-L${sw_dir}/lib\" ./configure --prefix='${sw_dir}' || exit 1
+CFLAGS=\"-I${sw_dir}/include\" LDFLAGS=\"-L${sw_dir}/lib\" ./configure --prefix=\"${sw_dir}\" || exit 1
 CFLAGS=\"-I${sw_dir}/include\" LDFLAGS=\"-L${sw_dir}/lib\" make || exit 1
 make install || exit 1
 
 # we know that \$HOME/sw/bin is in our path because the deployment configures it
 
-mv '${bin_dir}'/{dsh,dsh.bin}
+mv \"${bin_dir}\"/{dsh,dsh.bin}
 
 # install wrapper to not depend on config file
 
@@ -326,9 +353,9 @@ echo \"
 #!/bin/bash
 
 ${bin_dir}/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
-\" > '${bin_dir}/dsh' || exit 1
+\" > \"${bin_dir}/dsh\" || exit 1
 
-chmod +x '${bin_dir}/dsh' || exit 1
+chmod +x \"${bin_dir}/dsh\" || exit 1
 "
 
 }
@@ -339,8 +366,8 @@ vm_build_sar(){
 
 # download and build sysstat for local use (included in CentOS/RHEL 7, but not the right version)
 
-mkdir -p '${build_dir}' || exit 1
-cd '${build_dir}' || exit 1
+mkdir -p \"${build_dir}\" || exit 1
+cd \"${build_dir}\" || exit 1
 
 tarball=sysstat-10.2.1.tar.bz2
 dir=\${tarball%.tar.bz2}
@@ -357,8 +384,8 @@ make || exit 1
 
 # we know that \$HOME/sw/bin is in our path because the deployment configures it
 
-mkdir -p '${bin_dir}' || exit 1
-cp sar '${bin_dir}' || exit 1
+mkdir -p \"${bin_dir}\" || exit 1
+cp sar \"${bin_dir}\" || exit 1
 
 "
 
@@ -369,8 +396,6 @@ vm_build_bwm_ng(){
   vm_execute "
 
 # download and build bwm-ng for local use (not included in CentOS/RHEL 7)
-
-set -x
 
 mkdir -p \"${build_dir}\" || exit 1
 cd \"${build_dir}\" || exit 1
