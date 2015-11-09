@@ -490,36 +490,38 @@ class CostPerfEvaluationController extends AbstractController
     	));
     }
 
-    public function nodesEvaluationAction()
-    {
-        $dbUtils = $this->container->getDBUtils();
-		$this->buildFilters(array('scalabilityType' => array(
-			'table' => null,
-			'field' => null,
-			'label' => 'Scalability of:',
-			'default' => array('Datanodes'),
-			'type' => 'selectOne',
-			'choices' => array('Datanodes','Datasize'),
-			'generateChoices' => function() {
-				return array('Datanodes','Datasize');
-			},
-			'parseFunction' => function() {
-				$whereClause = "";
-				$values = (isset($_GET['scalabilityType'])) ? $_GET['scalabilityType'] : 'Datanodes';
+	public function nodesEvaluationAction()
+	{
+		$dbUtils = $this->container->getDBUtils();
 
-				return array('currentChoice' => $values, 'whereClause' => $whereClause);
-			})
-		));
-		$params = $this->filters->getFiltersSelectedChoices(array('scalabilityType'));
-		$scalabilityType = $params['scalabilityType'];
+		return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array_merge(array(
+			'highcharts_js' => HighCharts::getHeader()),
+			$this->nodesEvalCore("Datanodes",$dbUtils))
+		);
+	}
 
-        try {
-            $filter_execs = DBUtils::getFilterExecs();
+	public function datasizesEvaluationAction()
+	{
+		$dbUtils = $this->container->getDBUtils();
+
+		return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array_merge(array(
+				'highcharts_js' => HighCharts::getHeader()),
+				$this->nodesEvalCore("Datasize",$dbUtils))
+		);
+	}
+
+	private function nodesEvalCore($scalabilityType,$dbUtils) {
+		$categories = array();
+		$series = array();
+		$datanodes = array();
+
+		try {
+			$filter_execs = DBUtils::getFilterExecs();
 
 			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
-            $execs = "SELECT c.datanodes as 'category',e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
+			$execs = "SELECT c.datanodes as 'category',e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 					LEFT JOIN aloja_ml.predictions p USING (id_exec)
 					INNER JOIN ( SELECT c2.datanodes as 'category',e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
@@ -560,54 +562,53 @@ class CostPerfEvaluationController extends AbstractController
 
 			$execs = $dbUtils->get_rows($execs);
 
-            $vmSizes = array();
-            $categories = array();
-            $dataNodes = array();
-            $vmOS = array();
-            $execTypes = array();
-            foreach ($execs as &$exec) {
-                if (!isset($dataNodes[$exec['category']])) {
-                    $dataNodes[$exec['category']] = 1;
-                    $categories[] = $exec['category'];
-                }
-                if(!isset($vmOS[$exec['vm_OS']]))
-                    $vmOS[$exec['vm_OS']] = 1;
-                if(!isset($execTypes[$exec['exec_type']]))
-                    $execTypes[$exec['exec_type']] = 1;
+			$vmSizes = array();
+			$dataNodes = array();
+			$vmOS = array();
+			$execTypes = array();
+			foreach ($execs as &$exec) {
+				if (!isset($dataNodes[$exec['category']])) {
+					$dataNodes[$exec['category']] = 1;
+					$categories[] = $exec['category'];
+				}
+				if(!isset($vmOS[$exec['vm_OS']]))
+					$vmOS[$exec['vm_OS']] = 1;
+				if(!isset($execTypes[$exec['exec_type']]))
+					$execTypes[$exec['exec_type']] = 1;
 
-                $vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['category']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
-            }
+				$vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['category']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
+			}
 
-            $i = 0;
-            $seriesColors = array('#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
-                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
-            $series = array();
-            foreach($vmSizes as $vmSize => $value) {
-                foreach($execTypes as $execType => $typevalue) {
-                    foreach ($vmOS as $OS => $osvalue) {
-                        if (isset($vmSizes[$vmSize][$execType][$OS])) {
-                            if ($i == sizeof($seriesColors))
-                                $i = 0;
-                            $costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-                            $timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
-                            foreach ($dataNodes as $datanodes => $dvalue) {
-                                if (!isset($value[$execType][$OS][$datanodes])) {
-                                    $costSeries['data'][] = "null";
-                                    $timeSeries['data'][] = "null";
-                                } else {
-                                    $costSeries['data'][] = $value[$execType][$OS][$datanodes][1];
-                                    $timeSeries['data'][] = $value[$execType][$OS][$datanodes][0];
-                                }
-                            }
-                            $series[] = $timeSeries;
-                            $series[] = $costSeries;
-                        }
-                    }
-                }
-            }
-        } catch(\Exception $e) {
-            $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-        }
+			$i = 0;
+			$seriesColors = array('#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
+				'#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
+			foreach($vmSizes as $vmSize => $value) {
+				foreach($execTypes as $execType => $typevalue) {
+					foreach ($vmOS as $OS => $osvalue) {
+						if (isset($vmSizes[$vmSize][$execType][$OS])) {
+							if ($i == sizeof($seriesColors))
+								$i = 0;
+							$costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+							$timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+							foreach ($dataNodes as $datanode => $dvalue) {
+								$datanodes[] = $datanode;
+								if (!isset($value[$execType][$OS][$datanode])) {
+									$costSeries['data'][] = "null";
+									$timeSeries['data'][] = "null";
+								} else {
+									$costSeries['data'][] = $value[$execType][$OS][$datanode][1];
+									$timeSeries['data'][] = $value[$execType][$OS][$datanode][0];
+								}
+							}
+							$series[] = $timeSeries;
+							$series[] = $costSeries;
+						}
+					}
+				}
+			}
+		} catch(\Exception $e) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
 
 		if($scalabilityType == 'Datasize') {
 			foreach ($categories as &$category) {
@@ -615,12 +616,10 @@ class CostPerfEvaluationController extends AbstractController
 			}
 		}
 
-        return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array(
-            'highcharts_js' => HighCharts::getHeader(),
-            'categories' => json_encode($categories),
-            'seriesData' => str_replace('"null"','null',json_encode($series)),
-            'datanodess' => $datanodes,
-			'scalabilityType' => $scalabilityType
-        ));
-    }
+		return array(
+			'categories' => json_encode($categories),
+			'seriesData' => str_replace('"null"','null',json_encode($series)),
+			'datanodess' => $datanodes,
+		);
+	}
 }
