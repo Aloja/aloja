@@ -254,7 +254,7 @@ vm_final_bootstrap() {
 
     vm_execute "
 sudo chattr -i /etc/resolv.conf;
-if ! sudo grep -q 'search local' /etc/resolv.conf; then sudo echo 'search local' >> /etc/resolv.conf; fi;
+if ! sudo grep -q 'search local' /etc/resolv.conf; then echo 'search local' | sudo tee -a /etc/resolv.conf > /dev/null; fi;
 sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
 "    
 
