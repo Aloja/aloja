@@ -251,6 +251,13 @@ vm_final_bootstrap() {
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
     vm_execute "sudo yum -y install git rsync sshfs gawk libxml2 wget curl unzip screen;"
+
+    vm_execute "
+sudo chattr -i /etc/resolv.conf;
+sudo echo 'search local' >> /etc/resolv.conf;
+sudo mkdir /data1/aloja && chown pristine:pristine /data1/aloja;
+"    
+
     logger "Mounting disks on ${vm_name}"
     vm_set_ssh
     vm_set_dot_files
