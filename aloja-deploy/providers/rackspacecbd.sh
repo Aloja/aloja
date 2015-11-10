@@ -254,8 +254,8 @@ vm_final_bootstrap() {
 
     vm_execute "
 sudo chattr -i /etc/resolv.conf;
-sudo echo 'search local' >> /etc/resolv.conf;
-sudo mkdir /data1/aloja && chown pristine:pristine /data1/aloja;
+if ! sudo grep -q 'search local' /etc/resolv.conf; then sudo echo 'search local' >> /etc/resolv.conf; fi;
+sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
 "    
 
     logger "Mounting disks on ${vm_name}"
