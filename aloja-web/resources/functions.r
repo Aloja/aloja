@@ -6,7 +6,7 @@
 
 library(stringr);
 library(RWeka);
-library(devtools);
+#library(devtools);
 library(scales);
 library(reshape);
 library(nnet);
@@ -327,7 +327,7 @@ aloja_anova <- function (ds)
 # Dataset splitting functions                                                 #
 ###############################################################################
 
-aloja_split_dataset <- function (ds, vin, vout, tsplit, vsplit)
+aloja_dataset_split <- function (ds, vin, vout, tsplit, vsplit)
 {
 	retval <- list();
 
@@ -336,20 +336,17 @@ aloja_split_dataset <- function (ds, vin, vout, tsplit, vsplit)
 
 	samples <- min(nrow(aux)*tsplit,nrow(aux)-1);
 	selected <- sample(1:nrow(aux),samples);
-	ttaux <- aux[selected,];
-	ntaux <- aux[-selected,];
+	ttaux <- aux$ID[selected];
+	ntaux <- aux$ID[-selected];
 
-	retval[["tselected"]] <- selected;
-	retval[["testset"]] <- ttaux;
+	samples <- min(length(ntaux)*vsplit,length(ntaux)-1);
+	selected <- sample(1:length(ntaux),samples);
+	traux <- ntaux[selected];
+	tvaux <- ntaux[-selected];
 
-	samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
-	selected <- sample(1:nrow(ntaux),samples);
-	traux <- ntaux[selected,];
-	tvaux <- ntaux[-selected,];
-
-	retval[["rselected"]] <- selected;
 	retval[["trainset"]] <- traux;
 	retval[["validset"]] <- tvaux;
+	retval[["testset"]] <- ttaux;
 
 	retval;
 }
@@ -358,15 +355,11 @@ aloja_load_splits <- function (vin, vout, ttaux, traux, tvaux)
 {
 	retval <- list();
 
-	# Re-Factorization of Data
 	retval[["dataset"]] <- aloja_dbind(aloja_dbind(ttaux[,c("ID",vout,vin)],traux[,c("ID",vout,vin)]),tvaux[,c("ID",vout,vin)]);
 
-	retval[["testset"]] <- retval$dataset[retval$dataset[,"ID"] %in% ttaux[,"ID"],];
-	retval[["trainset"]] <- retval$dataset[retval$dataset[,"ID"] %in% traux[,"ID"],];
-	retval[["validset"]] <- retval$dataset[retval$dataset[,"ID"] %in% tvaux[,"ID"],];
-
-	retval[["tselected"]] <- rownames(retval$testset);
-	retval[["rselected"]] <- rownames(retval$trainset);
+	retval[["trainset"]] <- traux$ID;
+	retval[["validset"]] <- tvaux$ID;
+	retval[["testset"]] <- ttaux$ID;
 
 	retval;
 }
@@ -377,28 +370,24 @@ aloja_load_testsplit <- function (ds, vin, vout, ttaux, vsplit, exclusion = 0)
 
 	aux <- ds[,c("ID",vout,vin)];
 
-	if (exclusion==1) ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
-	if (exclusion==0) ntaux <- aux;
+	if (exclusion==1) ntaux <- aux$ID[!(aux$ID %in% ttaux$ID)];
+	if (exclusion==0) ntaux <- aux$ID;
 
-	samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
-	selected <- sample(1:nrow(ntaux),samples);
+	samples <- min(length(ntaux)*vsplit,length(ntaux)-1);
+	selected <- sample(1:length(ntaux),samples);
 	traux <- ntaux[selected,];
-	tvaux <- ntaux[-selected,];
+	tvaux <- ntaux[-selected];
 
-	# Re-Factorization of Data
-	retval[["dataset"]] <- aloja_dbind(aloja_dbind(ttaux,traux),tvaux);
+	retval[["dataset"]] <- aloja_dbind(aux,ttaux[,c("ID",vout,vin)]);
 
-	retval[["testset"]] <- retval$dataset[retval$dataset[,"ID"] %in% ttaux[,"ID"],];
-	retval[["trainset"]] <- retval$dataset[retval$dataset[,"ID"] %in% traux[,"ID"],];
-	retval[["validset"]] <- retval$dataset[retval$dataset[,"ID"] %in% tvaux[,"ID"],];
-
-	retval[["tselected"]] <- rownames(retval$testset);
-	retval[["rselected"]] <- rownames(retval$trainset);
+	retval[["trainset"]] <- traux;
+	retval[["validset"]] <- tvaux;
+	retval[["testset"]] <- ttaux$ID;
 
 	retval;
 }
 
-aloja_datafile_load <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tvfile = NULL, vsplit = 0.66, exclusion = 0)
+aloja_dataset_files <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tvfile = NULL, vsplit = 0.66, exclusion = 0)
 {
 	retval <- list();
 
@@ -408,27 +397,28 @@ aloja_datafile_load <- function (ds = NULL, vin, vout, ttfile, trfile = NULL, tv
 	{
 		traux <- read.table(trfile,header=T,sep=",")[,c("ID",vout,vin)];
 		tvaux <- read.table(tvfile,header=T,sep=",")[,c("ID",vout,vin)];
+
+		retval[["dataset"]] <- aloja_dbind(aloja_dbind(ttaux,traux),tvaux);
+
+		retval[["trainset"]] <- traux$ID;
+		retval[["validset"]] <- tvaux$ID;
 	} else {
 		aux <- ds[,c("ID",vout,vin)];
 
-		if (exclusion==1) ntaux <- aux[!(aux[,"ID"] %in% ttaux[,"ID"]),];
-		if (exclusion==0) ntaux <- aux;
+		if (exclusion==1) ntaux <- aux$ID[!(aux$ID %in% ttaux$ID),];
+		if (exclusion==0) ntaux <- aux$ID;
 
-		samples <- min(nrow(ntaux)*vsplit,nrow(ntaux)-1);
-		selected <- sample(1:nrow(ntaux),samples);
-		traux <- ntaux[selected,];
-		tvaux <- ntaux[-selected,];
+		samples <- min(length(ntaux)*vsplit,length(ntaux)-1);
+		selected <- sample(1:length(ntaux),samples);
+		traux <- ntaux[selected];
+		tvaux <- ntaux[-selected];
+
+		retval[["dataset"]] <- aloja_dbind(aux,ttaux);
+
+		retval[["trainset"]] <- traux;
+		retval[["validset"]] <- tvaux;
 	}
-
-	# Re-Factorization of Data
-	retval[["dataset"]] <- aloja_dbind(aloja_dbind(ttaux,traux),tvaux);
-
-	retval[["testset"]] <- retval$dataset[retval$dataset[,"ID"] %in% ttaux[,"ID"],];
-	retval[["trainset"]] <- retval$dataset[retval$dataset[,"ID"] %in% traux[,"ID"],];
-	retval[["validset"]] <- retval$dataset[retval$dataset[,"ID"] %in% tvaux[,"ID"],];
-
-	retval[["tselected"]] <- rownames(retval$testset);
-	retval[["rselected"]] <- rownames(retval$trainset);
+	retval[["testset"]] <- ttaux$ID;
 
 	retval;
 }
@@ -438,13 +428,13 @@ aloja_load_datasets <- function (ds = NULL, vin, vout, tsplit = NULL, vsplit = N
 	rt <- NULL;
 
 	if (!is.null(ttfile)) {
-		rt <- aloja_datafile_load(ds, vin, vout, ttfile, trfile, tvfile, vsplit);
+		rt <- aloja_dataset_files(ds, vin, vout, ttfile, trfile, tvfile, vsplit);
 	} else if (!is.null(ttaux) & !is.null(traux) & !is.null(tvaux)) {
 		rt <- aloja_load_splits(vin, vout, ttaux,traux,tvaux);
 	} else if (!is.null(ttaux) & is.null(tvaux) & is.null(traux))	{
 		rt <- aloja_load_testsplit(ds,vin,vout,ttaux,vsplit);
 	} else {
-		rt <- aloja_split_dataset(ds,vin,vout,tsplit,vsplit);
+		rt <- aloja_dataset_split(ds,vin,vout,tsplit,vsplit);
 	}
 
 	rt;
@@ -641,18 +631,22 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
 
+	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
+	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
+	temptt <- rt$dataset[rt$dataset$ID %in% rt$testset,];
+
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		if (nrow(rt$trainset) > 100)
+		if (nrow(temptr) > 100)
 		{
-			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt[["olstrain"]] <- temptr$ID[temptr[,vout] > mean(temptr[,vout]) + sigma * sd(temptr[,vout])];
+			temptr <- temptr[!(temptr$ID %in% rt$olstrain),];
 		}
-		if (nrow(rt$validset) > 100)
+		if (nrow(temptv) > 100)
 		{
-			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt[["olsvalid"]] <- temptv$ID[temptv[,vout] > mean(temptv[,vout]) + sigma * sd(temptv[,vout])];
+			temptv <- temptv[!(temptv$ID %in% rt$olsvalid),];
 		}
 	}
 
@@ -664,12 +658,12 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 	rt[["minout"]] <- NULL;
 	for (i in c(vout,vin))
 	{
-		divisor <- max(c(rt$trainset[,i],rt$validset[,i])); if (divisor == 0) divisor = 1e-15;
-		trauxnorm <- cbind(trauxnorm, (rt$trainset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/divisor);
-		tvauxnorm <- cbind(tvauxnorm, (rt$validset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/divisor);
-		ttauxnorm <- cbind(ttauxnorm, (rt$testset[,i]-min(c(rt$trainset[,i],rt$validset[,i])))/divisor); # Same Norm (tr,tv) as not seen before
+		divisor <- max(c(temptr[,i],temptv[,i])); if (divisor == 0) divisor = 1e-15;
+		trauxnorm <- cbind(trauxnorm, (temptr[,i]-min(c(temptr[,i],temptv[,i])))/divisor);
+		tvauxnorm <- cbind(tvauxnorm, (temptv[,i]-min(c(temptr[,i],temptv[,i])))/divisor);
+		ttauxnorm <- cbind(ttauxnorm, (temptt[,i]-min(c(temptr[,i],temptv[,i])))/divisor); # Same Norm (tr,tv) as not seen before
 		rt[["maxout"]] <- c(rt[["maxout"]],divisor);
-		rt[["minout"]] <- c(rt[["minout"]],min(c(rt$trainset[,i],rt$validset[,i])));
+		rt[["minout"]] <- c(rt[["minout"]],min(c(temptr[,i],temptv[,i])));
 		trauxnorm[is.na(trauxnorm)] <- 0;
 		tvauxnorm[is.na(tvauxnorm)] <- 0;
 		ttauxnorm[is.na(ttauxnorm)] <- 0;
@@ -687,13 +681,13 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 
 	if (is.null(ds))
 	{
-		auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
-		rt[["ds_original"]] <- auxds[,c("ID",vout,vinorig)];
+		rt[["ds_original"]] <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
 	} else {
-		rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+		rt[["ds_original"]] <- ds;
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 	
 	# Training and Validation
 	if (FALSE)
@@ -710,62 +704,57 @@ aloja_nnet <-  function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TR
 #			learnFunc="Quickprop",
 			learnFuncParams=c(decay, 0),maxit=maxit,metric="RSME",linOut=FALSE);
 	}
-	rt[["predtrain"]] <- rt$model$fitted.values;
-	rt[["predval"]] <- predict(rt$model,newdata=rt$normvalidset[,vin]);
+	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
+	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=rt$normvalidset[,vin])));
+	colnames(rt$predtrain) <- c("ID","Pred");
+	colnames(rt$predval) <- c("ID","Pred");
 	if (!is.null(prange))
 	{
-		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
-		rt$predtrain[rt$predtrain > prange[2]] <- prange[2];
-		rt$predval[rt$predval < prange[1]] <- prange[1];
-		rt$predval[rt$predval > prange[2]] <- prange[2];
+		rt$predtrain$Pred[rt$predtrain$Pred < prange[1]] <- prange[1];
+		rt$predtrain$Pred[rt$predtrain$Pred > prange[2]] <- prange[2];
+		rt$predval$Pred[rt$predval$Pred < prange[1]] <- prange[1];
+		rt$predval$Pred[rt$predval$Pred > prange[2]] <- prange[2];
 	}
-	rt[["maeval"]] <- mean(abs(rt$predval*rt$maxout[vout,1]+rt$minout[vout,1] - rt$validset[,vout]));
-	rt[["raeval"]] <- mean(abs((rt$predval*rt$maxout[vout,1]+rt$minout[vout,1] - rt$validset[,vout])/rt$validset[,vout]));
+	rt[["maeval"]] <- mean(abs(rt$predval$Pred*rt$maxout[vout,1]+rt$minout[vout,1] - temptv[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval$Pred*rt$maxout[vout,1]+rt$minout[vout,1] - temptv[,vout])/temptv[,vout]));
 	
 	if (!is.null(pngval))
 	{
 		png(paste(pngval,".png",sep=""),width=500,height=500);
-		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
+		plot(rt$predval$Pred,rt$normvalidset[,vout],main=paste("NN",length(vin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
 		abline(0,1);
 		dev.off();
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$normtestset[,vin]);
+	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=rt$normtestset[,vin])));
+	colnames(rt$predtest) <- c("ID","Pred");
 	if (!is.null(prange))
 	{
-		rt$predtest[rt$predtest < prange[1]] <- prange[1];
-		rt$predtest[rt$predtest > prange[2]] <- prange[2];
+		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
+		rt$predtest$Pred[rt$predtest$Pred > prange[2]] <- prange[2];
 	}
-	rt[["maetest"]] <- mean(abs(rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1] - rt$testset[,vout])) ;
-	rt[["raetest"]] <- mean(abs((rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1] - rt$testset[,vout])/rt$testset[,vout]));
+	rt[["maetest"]] <- mean(abs(rt$predtest$Pred*rt$maxout[vout,1]+rt$minout[vout,1] - temptt[,vout])) ;
+	rt[["raetest"]] <- mean(abs((rt$predtest$Pred*rt$maxout[vout,1]+rt$minout[vout,1] - temptt[,vout])/temptt[,vout]));
 
 	if (!is.null(pngtest))
 	{
 		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$normvalidset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
+		plot(rt$predval$Pred,rt$normvalidset[,vout],main=paste("NN",length(vin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
 		abline(0,1);
-		plot(rt$predtest,rt$normtestset[,vout],main=paste("NN 32-5-1, decay",decay,"maxit",maxit));
+		plot(rt$predtest$Pred,rt$normtestset[,vout],main=paste("NN",length(vin),"-",neurons,"- 1, decay",decay,"maxit",maxit));
 		abline(0,1);
 		dev.off();
 	}
-	#plot.nnet(rt$model);
-	#plot.nnet(rt$model$wts,rt$model$n);
 
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	# "Debinarize" datasets
-	rt$trainset <- rt$ds_original[rt$ds_original$ID %in% rt$trainset$ID,];
-	rt$validset <- rt$ds_original[rt$ds_original$ID %in% rt$validset$ID,];
-	rt$testset <- rt$ds_original[rt$ds_original$ID %in% rt$testset$ID,];
-
 	if (!is.null(saveall))
 	{
-		aloja_save_model(rt$model,tagname=saveall);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain*rt$maxout[vout,1]+rt$minout[vout,1],rt$validset,rt$predval*rt$maxout[vout,1]+rt$minout[vout,1],rt$testset,rt$predtest*rt$maxout[vout,1]+rt$minout[vout,1],testname=saveall);
+		aloja_save_predictions(rt,testname=saveall);
 	}
 
 	rt;
@@ -808,28 +797,33 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 		auxset$ntset <- NULL;
 	}
 	rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
+
+	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
+	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
+	temptt <- rt$dataset[rt$dataset$ID %in% rt$testset,];
+
 	if (is.null(ds))
 	{
-		auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
-		rt[["ds_original"]] <- auxds[,c("ID",vout,vinorig)];
+		rt[["ds_original"]] <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
 	} else {
-		rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+		rt[["ds_original"]] <- ds;
 	}
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		if (nrow(rt$trainset) > 100)
+		if (nrow(temptr) > 100)
 		{
-			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt[["olstrain"]] <- temptr$ID[temptr[,vout] > mean(temptr[,vout]) + sigma * sd(temptr[,vout])];
+			temptr <- temptr[!(temptr$ID %in% rt$olstrain),];
 		}
-		if (nrow(rt$validset) > 100)
+		if (nrow(temptv) > 100)
 		{
-			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt[["olsvalid"]] <- temptv$ID[temptv[,vout] > mean(temptv[,vout]) + sigma * sd(temptv[,vout])];
+			temptv <- temptv[!(temptv$ID %in% rt$olsvalid),];
 		}
 	}
 
@@ -842,46 +836,49 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	rt[["ppoly"]] <- ppoly;
 
 	# Training and Validation
-	if (ppoly == 1) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ ., data=data.frame(rt$trainset[,vin]));
-	if (ppoly == 2) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2, data=data.frame(rt$trainset[,vin]));
-	if (ppoly == 3) rt[["model"]] <- lm(formula=rt$trainset[,vout] ~ . + (.)^2 + (.)^3, data=data.frame(rt$trainset[,vin]));
-	rt[["predtrain"]] <- rt$model$fitted.values;
-	rt[["predval"]] <- predict(rt$model,newdata=data.frame(rt$validset));
+	if (ppoly == 1) rt[["model"]] <- lm(formula=temptr[,vout] ~ ., data=data.frame(temptr[,vin]));
+	if (ppoly == 2) rt[["model"]] <- lm(formula=temptr[,vout] ~ . + (.)^2, data=data.frame(temptr[,vin]));
+	if (ppoly == 3) rt[["model"]] <- lm(formula=temptr[,vout] ~ . + (.)^2 + (.)^3, data=data.frame(temptr[,vin]));
+	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
+	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=data.frame(temptv))));
+	colnames(rt$predtrain) <- c("ID","Pred");
+	colnames(rt$predval) <- c("ID","Pred");
 	if (!is.null(prange))
 	{
-		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
-		rt$predtrain[rt$predtrain > prange[2]] <- prange[2];
-		rt$predval[rt$predval < prange[1]] <- prange[1];
-		rt$predval[rt$predval > prange[2]] <- prange[2];
+		rt$predtrain$Pred[rt$predtrain$Pred < prange[1]] <- prange[1];
+		rt$predtrain$Pred[rt$predtrain$Pred > prange[2]] <- prange[2];
+		rt$predval$Pred[rt$predval$Pred < prange[1]] <- prange[1];
+		rt$predval$Pred[rt$predval$Pred > prange[2]] <- prange[2];
 	}
-	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
-	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
+	rt[["maeval"]] <- mean(abs(rt$predval$Pred - temptv[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval$Pred - temptv[,vout])/temptv[,vout]));
 
 	if (!is.null(pngval))
 	{
 		png(paste(pngval,".png",sep=""),width=500,height=500);
-		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
+		plot(rt$predval$Pred,temptv[,vout],main=paste("Polynomial Regression power =",ppoly));
 		abline(0,1);
 		dev.off();
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
+	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=data.frame(temptt))));
+	colnames(rt$predtest) <- c("ID","Pred");
 	if (!is.null(prange))
 	{
-		rt$predtest[rt$predtest < prange[1]] <- prange[1];
-		rt$predtest[rt$predtest > prange[2]] <- prange[2];
+		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
+		rt$predtest$Pred[rt$predtest$Pred > prange[2]] <- prange[2];
 	}
-	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
-	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
+	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,vout]));
+	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,vout])/temptt[,vout]));
 
 	if (!is.null(pngtest))
 	{
 		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$validset[,vout],main=paste("Polynomial Regression power =",ppoly));
+		plot(rt$predval$Pred,temptv[,vout],main=paste("Polynomial Regression power =",ppoly));
 		abline(0,1);
-		plot(rt$predtest,rt$testset[,vout],main=paste("Test Polynomial Regression power =",ppoly));
+		plot(rt$predtest$Pred,temptt[,vout],main=paste("Test Polynomial Regression power =",ppoly));
 		abline(0,1);
 		dev.off();
 	}
@@ -889,16 +886,10 @@ aloja_linreg <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = T
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	# "Debinarize" datasets
-	rt$trainset <- rt$ds_original[rt$ds_original$ID %in% rt$trainset$ID,];
-	rt$validset <- rt$ds_original[rt$ds_original$ID %in% rt$validset$ID,];
-	rt$testset <- rt$ds_original[rt$ds_original$ID %in% rt$testset$ID,];
-
 	if (!is.null(saveall))
 	{
-		aloja_save_model(rt$model,tagname=saveall);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt,testname=saveall);
 	}
 
 	rt;
@@ -914,22 +905,28 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	# Load and split datasets
 	rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
-	rt[["ds_original"]] <- ds[,c("ID",vout,vin)];
+
+	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
+	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
+	temptt <- rt$dataset[rt$dataset$ID %in% rt$testset,];
+
+	rt[["ds_original"]] <- ds;
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
+	rt[["varin_orig"]] <- vinorig;
 
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		if (nrow(rt$trainset) > 100)
+		if (nrow(temptr) > 100)
 		{
-			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt[["olstrain"]] <- temptr$ID[temptr[,vout] > mean(temptr[,vout]) + sigma * sd(temptr[,vout])];
+			temptr <- temptr[!(temptr$ID %in% rt$olstrain),];
 		}
-		if (nrow(rt$validset) > 100)
+		if (nrow(temptv) > 100)
 		{
-			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt[["olsvalid"]] <- temptv$ID[temptv[,vout] > mean(temptv[,vout]) + sigma * sd(temptv[,vout])];
+			temptv <- temptv[!(temptv$ID %in% rt$olsvalid),];
 		}
 	}
 
@@ -939,21 +936,23 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	# Training and Validation
 	if (is.null(kparam))
 	{
-		rt[["selected_model"]] <- aloja_knn_select(vout, vin, rt$trainset, rt$validset, c("1","2","3","5","10","25","50","100"), iparam, quiet);
+		rt[["selected_model"]] <- aloja_knn_select(vout, vin, temptr, temptv, c("1","2","3","5","10","25","50","100"), iparam, quiet);
 		kparam <- rt$selected_model$kmin;
 	}
-	rt[["model"]] <- IBk(formula=rt$trainset[,vout] ~ . , data = rt$trainset[,vin], control = Weka_control(K = kparam, I = iparam));
-	#evaluate_Weka_classifier(rt[["model"]], numFolds = 10);
-	rt[["predtrain"]] <- rt$model$predictions;
-	rt[["predval"]] <- predict(rt$model,newdata=rt$validset);
-	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
-	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
+	rt[["model"]] <- IBk(formula=temptr[,vout] ~ . , data = temptr[,vin], control = Weka_control(K = kparam, I = iparam));
+	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$predictions));
+	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=temptv)));
+	colnames(rt$predtrain) <- c("ID","Pred");
+	colnames(rt$predval) <- c("ID","Pred");
+
+	rt[["maeval"]] <- mean(abs(rt$predval$Pred - temptv[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval$Pred - temptv[,vout])/temptv[,vout]));
 
 	if (!is.null(pngval))
 	{
 		png(paste(pngval,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$validset[,vout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
+		plot(rt$predval$Pred,temptv[,vout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
 		abline(0,1);
 		if (!is.null(rt$selected_model))
 		{
@@ -965,17 +964,18 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- predict(rt$model,newdata=rt$testset);
-	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
-	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
+	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=temptt)));
+	colnames(rt$predtest) <- c("ID","Pred");
+	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,vout]));
+	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,vout])/temptt[,vout]));
 
 	if (!is.null(pngtest))
 	{
 		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation k-NN K =",kparam));
+		plot(rt$predval$Pred,temptv[,vout],main=paste("Best Validation k-NN K =",kparam));
 		abline(0,1);
-		plot(rt$predtest,rt$testset[,vout],main=paste("Test k-NN K =",kparam));
+		plot(rt$predtest$Pred,temptt[,vout],main=paste("Test k-NN K =",kparam));
 		abline(0,1);
 		dev.off();
 	}
@@ -985,15 +985,14 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	if (!is.null(saveall))
 	{
-		aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt,testname=saveall);
 	}
 
 	rt;
 }
 
-aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, mparam = NULL, exsel = NULL, prange = NULL, weka.tree = 1, quiet = 0)
+aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, pngval = NULL, pngtest = NULL, saveall = NULL, ttaux = NULL, ntaux = NULL, traux = NULL, tvaux = NULL, sigma = 3, ttfile = NULL, trfile = NULL, tvfile = NULL, mparam = NULL, prange = NULL, weka.tree = 1, quiet = 0)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -1004,13 +1003,13 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	if (!is.integer(quiet)) quiet <- as.integer(quiet);
 	if (!is.integer(weka.tree)) weka.tree <- as.integer(weka.tree);
 
+	vinorig <- vin;
 	if (weka.tree == 0)
 	{
 		# Prevent prediction startle because of singularities
 		options(warn=-1);
 
 		# Binarization of variables
-		vinorig <- vin;
 		if (is.null(ds))
 		{
 			auxset <- aloja_binarize_mixsets(vin,vout,traux=traux,ntaux=ntaux,tvaux=tvaux,ttaux=ttaux);
@@ -1039,85 +1038,78 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 		rt <- aloja_load_datasets (dsid,vin,vout,tsplit,vsplit,auxset$ttset,auxset$ntset,auxset$trset,auxset$tvset,ttfile,trfile,tvfile);
 		if (is.null(ds))
 		{
-			auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
-			rt[["ds_original"]] <- auxds[,c("ID",vout,vinorig)];
+			rt[["ds_original"]] <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
 		} else {
-			rt[["ds_original"]] <- ds[,c("ID",vout,vinorig)];
+			rt[["ds_original"]] <- ds;
 		}
 	} else {
 		rt <- aloja_load_datasets (ds,vin,vout,tsplit,vsplit,ttaux,ntaux,traux,tvaux,ttfile,trfile,tvfile);
 		if (is.null(ds))
 		{
-			auxds <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
-			rt[["ds_original"]] <- auxds[,c("ID",vout,vin)];
+			rt[["ds_original"]] <- aloja_dbind(aloja_dbind(traux,tvaux),aloja_dbind(ttaux,ntaux));
 		} else {
-			rt[["ds_original"]] <- ds[,c("ID",vout,vin)];
+			rt[["ds_original"]] <- ds;
 		}
 	}
+
+	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
+	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
+	temptt <- rt$dataset[rt$dataset$ID %in% rt$testset,];
+
 	rt[["varin"]] <- vin;
 	rt[["varout"]] <- vout;
-
-	# Example selection from a threshold, balancing outputs
-	if (!is.null(exsel))
-	{
-		ntaux <- rbind(rt$trainset,rt$validset);
-		upperaux <- ntaux[ntaux[,vout] > exsel,];
-		loweraux <- ntaux[ntaux[,vout] <= exsel,];
-
-		uppersel <- sample(1:nrow(upperaux),nrow(upperaux)*vsplit);
-		lowersel <- sample(1:nrow(loweraux),nrow(loweraux)*vsplit);
-
-		rt$trainset <- rbind(upperaux[uppersel,],loweraux[lowersel,]);
-		rt$validset <- rbind(upperaux[-uppersel,],loweraux[-lowersel,]);
-	}
+	rt[["varin_orig"]] <- vinorig;
 
 	# Remove outliers (leap of faith, as vout may not be normal) (Minimum 100 instances to compute outliers)
 	if (rmols)
 	{
-		if (nrow(rt$trainset) > 100)
+		if (nrow(temptr) > 100)
 		{
-			rt[["olstrain"]] <- rt$trainset[rt$trainset[,vout] > mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
-			rt$trainset <- rt$trainset[rt$trainset[,vout] <= mean(rt$trainset[,vout]) + sigma * sd(rt$trainset[,vout]),];
+			rt[["olstrain"]] <- temptr$ID[temptr[,vout] > mean(temptr[,vout]) + sigma * sd(temptr[,vout])];
+			temptr <- temptr[!(temptr$ID %in% rt$olstrain),];
 		}
-		if (nrow(rt$validset) > 100)
+		if (nrow(temptv) > 100)
 		{
-			rt[["olsvalid"]] <- rt$validset[rt$validset[,vout] > mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
-			rt$validset <- rt$validset[rt$validset[,vout] <= mean(rt$validset[,vout]) + sigma * sd(rt$validset[,vout]),];
+			rt[["olsvalid"]] <- temptv$ID[temptv[,vout] > mean(temptv[,vout]) + sigma * sd(temptv[,vout])];
+			temptv <- temptv[!(temptv$ID %in% rt$olsvalid),];
 		}
 	}
 
 	# Training and Validation
 	if (is.null(mparam))
 	{
-#		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree,quiet=quiet);
-		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, rt$trainset, rt$validset, c("1","2","5","10"),weka.tree=weka.tree,quiet=quiet);
+#		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, temptr, temptv, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree,quiet=quiet);
+		rt[["selected_model"]] <- aloja_m5p_select(vout, vin, temptr, temptv, c("1","2","5","10"),weka.tree=weka.tree,quiet=quiet);
 		mparam <- rt$selected_model$mmin;
 	}
 	if (weka.tree == 0)
 	{
-		rt[["model"]] <- qrt.tree(formula=vout~.,dataset=data.frame(rt$trainset[,c(vout,vin)]),m=mparam,simple=1)
-		rt[["predtrain"]] <- rt$model$fitted.values;
-		rt[["predval"]] <- qrt.predict(model=rt$model,newdata=data.frame(rt$validset[,c(vout,vin)]));
+		rt[["model"]] <- qrt.tree(formula=vout~.,dataset=data.frame(temptr[,c(vout,vin)]),m=mparam,simple=1)
+		rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
+		rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(vout,vin)]))));
 	} else {
-		rt[["model"]] <- M5P(formula=rt$trainset[,vout] ~ .,data=data.frame(rt$trainset[,vin]), control = Weka_control(M = mparam));
-		rt[["predtrain"]] <- rt$model$predictions;
-		rt[["predval"]] <- predict(rt$model,newdata=data.frame(rt$validset));
+		rt[["model"]] <- M5P(formula=temptr[,vout] ~ .,data=data.frame(temptr[,vin]), control = Weka_control(M = mparam));
+		rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$predictions));
+		rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=data.frame(temptv))));
 	}
+	colnames(rt$predtrain) <- c("ID","Pred");
+	colnames(rt$predval) <- c("ID","Pred");
+
 	if (!is.null(prange))
 	{
-		rt$predtrain[rt$predtrain < prange[1]] <- prange[1];
-		rt$predtrain[rt$predtrain > prange[2]] <- prange[2];
-		rt$predval[rt$predval < prange[1]] <- prange[1];
-		rt$predval[rt$predval > prange[2]] <- prange[2];
+		rt$predtrain$Pred[rt$predtrain$Pred < prange[1]] <- prange[1];
+		rt$predtrain$Pred[rt$predtrain$Pred > prange[2]] <- prange[2];
+		rt$predval$Pred[rt$predval$Pred < prange[1]] <- prange[1];
+		rt$predval$Pred[rt$predval$Pred > prange[2]] <- prange[2];
 	}
-	rt[["maeval"]] <- mean(abs(rt$predval - rt$validset[,vout]));
-	rt[["raeval"]] <- mean(abs((rt$predval - rt$validset[,vout])/rt$validset[,vout]));
+	rt[["maeval"]] <- mean(abs(rt$predval$Pred - temptv[,vout]));
+	rt[["raeval"]] <- mean(abs((rt$predval$Pred - temptv[,vout])/temptv[,vout]));
 
 	if (!is.null(pngval))
 	{
 		png(paste(pngval,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation M5P M = ",mparam));
+		plot(rt$predval$Pred,temptv[,vout],main=paste("Best Validation M5P M = ",mparam));
 		abline(0,1);
 		if (!is.null(rt$selected_model))
 		{
@@ -1131,25 +1123,27 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	# Testing and evaluation
 	if (weka.tree == 0)
 	{
-		rt[["predtest"]] <- qrt.predict(model=rt$model,newdata=data.frame(rt$testset[,c(vout,vin)]));
+		rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptt[,c(vout,vin)]))));
 	} else {
-		rt[["predtest"]] <- predict(rt$model,newdata=data.frame(rt$testset));
+		rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=data.frame(temptt))));
 	}
+	colnames(rt$predtest) <- c("ID","Pred");
+
 	if (!is.null(prange))
 	{
-		rt$predtest[rt$predtest < prange[1]] <- prange[1];
-		rt$predtest[rt$predtest > prange[2]] <- prange[2];
+		rt$predtest$Pred[rt$predtest$Pred < prange[1]] <- prange[1];
+		rt$predtest$Pred[rt$predtest$Pred > prange[2]] <- prange[2];
 	}
-	rt[["maetest"]] <- mean(abs(rt$predtest - rt$testset[,vout]));
-	rt[["raetest"]] <- mean(abs((rt$predtest - rt$testset[,vout])/rt$testset[,vout]));
+	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,vout]));
+	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,vout])/temptt[,vout]));
 
 	if (!is.null(pngtest))
 	{
 		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval,rt$validset[,vout],main=paste("Best Validation M5P M = ",rt$selected_model$mmin));
+		plot(rt$predval$Pred,temptv[,vout],main=paste("Best Validation M5P M = ",rt$selected_model$mmin));
 		abline(0,1);
-		plot(rt$predtest,rt$testset[,vout],main=paste("Test M5P M = ",rt$selected_model$mmin));
+		plot(rt$predtest$Pred,temptt[,vout],main=paste("Test M5P M = ",rt$selected_model$mmin));
 		abline(0,1);
 		dev.off();
 	}
@@ -1157,24 +1151,10 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 	if (quiet == 0) print(c(rt$maeval,rt$raeval));
 	if (quiet == 0) print(c(rt$maetest,rt$raetest));
 
-	if (weka.tree == 0)
-	{
-		# "Debinarize" datasets
-		rt$trainset <- rt$ds_original[rt$ds_original$ID %in% rt$trainset$ID,];
-		rt$validset <- rt$ds_original[rt$ds_original$ID %in% rt$validset$ID,];
-		rt$testset <- rt$ds_original[rt$ds_original$ID %in% rt$testset$ID,];
-	}
-
 	if (!is.null(saveall))
 	{
-		if (weka.tree == 0)
-		{
-			aloja_save_model(rt$model,tagname=saveall);
-		} else {
-			aloja_save_model(rt$model,tagname=saveall,is.weka=TRUE);
-		}
 		aloja_save_object(rt,tagname=saveall);
-		aloja_save_predictions(rt$dataset,rt$ds_original,rt$trainset,rt$predtrain,rt$validset,rt$predval,rt$testset,rt$predtest,testname=saveall);
+		aloja_save_predictions(rt,testname=saveall);
 	}
 
 	rt;
@@ -1199,7 +1179,7 @@ wrapper_predict_individual_instance <- function(idx,learned_model,vin,instances)
 	return (laux);
 }
 
-aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NULL, sfCPU = 1)
+aloja_predict_dataset <- function (learned_model, vin = NULL, ds = NULL, data_file = NULL, sfCPU = 1, saveall = NULL, ...)
 {
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
 
@@ -1209,13 +1189,18 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 		retval;
 	}
 
-	vin <- sub(' ','.',vin);
+	if (is.null(vin)) vin <- learned_model$varin_orig;
+
+	# Check variable compatibility
+	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin))
+	{
+		retval;
+	}
 
 	if (!is.null(data_file))
 	{
 		fileset <- read.table(file=data_file,header=T,sep=",");
-		daux <- aloja_dbind(learned_model$ds_original[,vin],fileset[,vin]);
-		ds <- daux[nrow(learned_model$ds_original):nrow(daux),];
+		ds <- aloja_dbind(learned_model$ds_original[0,vin],fileset[,vin]);
 	} else {
 		ds <- ds[,vin];
 	}
@@ -1234,6 +1219,14 @@ aloja_predict_dataset <- function (learned_model, vin, ds = NULL, data_file = NU
 			pred_aux <- aloja_predict_individual_instance (learned_model, vin, ds[i,]);
 			retval <- c(retval, pred_aux);
 		}
+	}
+
+	if (!is.null(saveall))
+	{
+		aux <- cbind(ds,retval);
+		colnames(aux) <- c(colnames(ds),"Prediction");
+		write.table(aux, file = paste(saveall,"-dataset.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
 	}
 	retval;
 }
@@ -1321,14 +1314,13 @@ aloja_predict_instance <- function (learned_model, vin, inst_predict, sorted = N
 
 	if (!is.null(saveall))
 	{
-		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
-		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);
-
 		aux <- do.call(rbind,strsplit(retval$Instance,","));
 		aux <- cbind(aux,retval$Prediction);
 		aux <- cbind(seq(1:nrow(aux)),aux);
 		colnames(aux) <- c("ID",vin,learned_model$varout);
 		write.table(aux, file = paste(saveall,"-dataset.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+		write.table(retval, file = paste(saveall,"-stdout.data",sep=""), sep = " ", row.names=TRUE);		#DEPRECATED?
 	}
 	retval;
 }
@@ -1345,17 +1337,17 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 		colnames(inst_aux) <- vin;
 	}
 
-	datamodel <- ds[1,learned_model$varin];
-	if (class(model_aux)[1]=="list" || class(model_aux)[1]=="lm" || class(model_aux)[1]=="nnet")
+	datamodel <- ds[0,learned_model$varin];
+	if ("list" %in% class(model_aux) || "lm" %in% class(model_aux) || "nnet" %in% class(model_aux))
 	{
 		for (name_1 in colnames(datamodel))
 		{
 			if (name_1 %in% colnames(inst_aux))
 			{
 				value_aux <- inst_aux[1,name_1];
-				class(value_aux) <- class(datamodel[1,name_1]);
+				class(value_aux) <- class(datamodel[0,name_1]);
 
-				if (class(model_aux)[1]=="nnet")
+				if ("nnet" %in% class(model_aux))
 				{
 					value_aux <- (value_aux - learned_model$minout[name_1,]) / learned_model$maxout[name_1,];
 				}
@@ -1372,12 +1364,12 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 	} else {
 		for (name_1 in colnames(datamodel))
 		{
-			if (class(datamodel[1,name_1]) == "factor")
+			if (class(datamodel[0,name_1]) == "factor")
 			{
 				datamodel[1,name_1] <- factor(inst_aux[1,name_1],levels=levels(datamodel[,name_1]));
 			} else {
 				var_aux <- inst_aux[1,name_1];
-				class(var_aux) <- class(datamodel[1,name_1]);
+				class(var_aux) <- class(datamodel[0,name_1]); #FIXME - This line produces 'inofensive' NAs...
 				datamodel[1,name_1] <- var_aux;
 			}
 		}
@@ -1385,13 +1377,13 @@ aloja_predict_individual_instance <- function (learned_model, vin, inst_predict)
 
 	options(warn=-1);
 
-	if (class(model_aux)[1]=="list")
+	if ("list" %in% class(model_aux))
 	{
 		retval <- qrt.predict(model=model_aux,newdata=data.frame(datamodel));
 	} else {
 		retval <- predict(model_aux,newdata=data.frame(datamodel));
 	}
-	if (class(model_aux)[1]=="nnet")
+	if ("nnet" %in% class(model_aux))
 	{
 		retval <- (retval * learned_model$maxout[learned_model$varout,]) + learned_model$minout[learned_model$varout,];
 	}
@@ -1519,11 +1511,23 @@ wrapper_outlier_dataset <- function(idx,ds,vin,vout,auxjoin,auxjoin_s,thres1,hdi
 	return(retval);
 }
 
-aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1)
+aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma = 3, hdistance = 3, saveall = NULL, sfCPU = 1, ...)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(hdistance)) hdistance <- as.integer(hdistance);
 	if (!is.integer(sfCPU)) sfCPU <- as.integer(sfCPU);
+
+	if (is.null(vin)) vin <- learned_model$varin_orig;
+	vout <- learned_model$varout;
+
+	# Check variable compatibility
+	if (!all(vin %in% learned_model$varin_orig) || !all(learned_model$varin_orig %in% vin))
+	{
+		retval;
+	}
+
+	# If no DS, validate against itself
+	if (is.null(ds)) ds <- learned_model$ds_original;
 
 	retval <- list();
 	retval[["resolutions"]] <- NULL;
@@ -1533,28 +1537,14 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval[["vout"]] <- vout;
 	retval[["sigma"]] <- sigma;
 	retval[["hdistance"]] <- hdistance;
-
-	# If no DS, validate against itself
-	if (is.null(ds)) ds <- learned_model$ds_original;
-
 	retval[["dataset"]] <- ds;
-	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin,ds=ds,sfCPU=sfCPU);
+	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin=vin,ds=ds,sfCPU=sfCPU);
 
 	# Compilation of datasets
-	if (all(vin %in% learned_model$varin))
-	{
-		id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
-		id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
-		colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
-		auxjoin <- id_pred;
-	} else {
-		paux <- rbind(as.matrix(learned_model$predtrain),as.matrix(learned_model$predval),as.matrix(learned_model$predtest));
-		rownames(paux) <- c(rownames(learned_model$trainset),rownames(learned_model$validset),rownames(learned_model$testset));
-		a <- paux[order(as.numeric(rownames(paux))),];
-		b <- merge(learned_model$ds_original,as.matrix(a),by="row.names",all.x=TRUE);
-		colnames(b) <- c("Row.names",colnames(learned_model$ds_original),"Pred");
-		auxjoin <- b[,c("ID",vout,vin,"Pred")];
-	}
+	id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
+	id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
+	colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
+	auxjoin <- id_pred[,c("ID",vout,vin,"Pred")];
 
 	# Compilation of errors (learning)
 	trerr <- learned_model$trainset[,vout] - learned_model$predtrain;
@@ -1634,9 +1624,11 @@ aloja_outlier_dataset <- function (learned_model, vin, vout, ds = NULL, sigma = 
 	retval;
 }
 
-aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed, display = 0, sfCPU = 1)
+aloja_outlier_instance <- function (learned_model, vin, instance, observed, display = 0, sfCPU = 1, saveall = NULL, ...)
 {
 	if (!is.integer(display)) display <- as.integer(display);
+
+	vout <- learned_model$varout;
 
 	if (length(grep(pattern="\\||\\*",instance)) > 0)
 	{
@@ -1647,7 +1639,7 @@ aloja_outlier_instance <- function (learned_model, vin, vout, instance, observed
 	}
 	colnames(comp_dataset) <- c(vin,vout);
 
-	result <- aloja_outlier_dataset (learned_model,vin,vout,ds=comp_dataset,sfCPU=sfCPU);
+	result <- aloja_outlier_dataset (learned_model,vin=vin,ds=comp_dataset,sfCPU=sfCPU,saveall=saveall);
 
 	retval <- NULL;
 	if (display == 0) retval <- result;
@@ -1750,13 +1742,13 @@ aloja_transform_instance <- function (inst_transform, pca_obj = NULL, pca_name =
 
 	if (!is.null(pca_name)) pca_obj <- aloja_load_object(pca_name);
 
-	datamodel <- pca_obj$dataset[1,pca_obj$vin];
+	datamodel <- pca_obj$dataset[0,pca_obj$vin];
 	for (name_1 in colnames(datamodel))
 	{
 		if (name_1 %in% pca_obj$vin_orig)
 		{
 			var_aux <- inst_transform[which(pca_obj$vin_orig==name_1)];
-			class(var_aux) <- class(datamodel[1,name_1]);
+			class(var_aux) <- class(datamodel[0,name_1]);
 			datamodel[1,name_1] <- var_aux;
 		} else {
 			if (length(which(inst_transform==name_1)) >= 1)
@@ -2011,7 +2003,7 @@ aloja_minimal_instances <- function (learned_model, quiet = 0, kmax = 200, step 
 	retval <- list();
 	ds <- learned_model$ds_original;
 	vout <- learned_model$varout;
-	vin <- colnames(learned_model$ds_original)[!(colnames(learned_model$ds_original) %in% c("ID",vout))];
+	vin <- learned_model$varin_orig;
 
 	# Binarization
 	dsbin <- aloja_binarize_ds(rbind(learned_model$trainset,learned_model$validset));
@@ -2193,29 +2185,32 @@ aloja_best_configurations <- function (bvectors = NULL, bvec_name = NULL)
 # Save the datasets and created models                                        #
 ###############################################################################
 
-aloja_save_predictions <- function (ds, dsorig, trdata, trpred, tvdata, tvpred, ttdata, ttpred, testname = "default")
+aloja_save_predictions <- function (results, testname = "default")
 {
-        if (length(trpred) == nrow(trdata)) traux <- cbind(trdata,trpred);
-        tvaux <- cbind(tvdata,tvpred);
-        ttaux <- cbind(ttdata,ttpred);
 
-        if (length(trpred) == nrow(trdata)) colnames(traux) <- c(colnames(trdata),"Pred.Exe.Time");
-        colnames(tvaux) <- c(colnames(tvdata),"Pred.Exe.Time");
-        colnames(ttaux) <- c(colnames(ttdata),"Pred.Exe.Time");
+	write.table(results$ds_original, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
+	write.table(results$dataset, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
 
-        write.table(ds, file = paste(testname,"-ds.csv",sep=""), sep = ",", row.names=FALSE);
-        write.table(dsorig, file = paste(testname,"-dsorig.csv",sep=""), sep = ",", row.names=FALSE);
+	traux <- merge(x = results$dataset[results$dataset$ID %in% results$trainset,c("ID",results$varout)], y = results$predtrain, by = "ID", all.x = TRUE);
+	colnames(traux) <- c("ID","Observed","Predicted");
+	write.table(traux, file = paste(testname,"-predtr.csv",sep=""), sep = ",", row.names=FALSE);
+	
+	tvaux <- merge(x = results$dataset[results$dataset$ID %in% results$validset,c("ID",results$varout)], y = results$predval, by = "ID", all.x = TRUE);
+	colnames(tvaux) <- c("ID","Observed","Predicted");
+	write.table(tvaux, file = paste(testname,"-predtv.csv",sep=""), sep = ",", row.names=FALSE);
 
-        if (length(trpred) == nrow(trdata))
-        {
-                write.table(traux, file = paste(testname,"-tr.csv",sep=""), sep = ",", row.names=FALSE);
-        } else {
-                fileConn<-file(paste(testname,"-tr.csv",sep=""));
-                writeLines("", fileConn);
-                close(fileConn);
-        }
-        write.table(tvaux, file = paste(testname,"-tv.csv",sep=""), sep = ",", row.names=FALSE);
-        write.table(ttaux, file = paste(testname,"-tt.csv",sep=""), sep = ",", row.names=FALSE);
+	ttaux <- merge(x = results$dataset[results$dataset$ID %in% results$testset,c("ID",results$varout)], y = results$predtest, by = "ID", all.x = TRUE);
+	colnames(ttaux) <- c("ID","Observed","Predicted");
+	write.table(ttaux, file = paste(testname,"-predtt.csv",sep=""), sep = ",", row.names=FALSE);
+
+	# Full predictions
+	fts1 <- cbind(results$predtrain,"tr"); colnames(fts1) <- c("ID","Pred","Code");
+	fts2 <- cbind(results$predval,"tv"); colnames(fts2) <- c("ID","Pred","Code");
+	fts3 <- cbind(results$predtest,"tt"); colnames(fts3) <- c("ID","Pred","Code");
+	aux <- rbind(fts1, fts2); aux <- rbind(aux, fts3);
+	aux <- merge(x = results$ds_original, y = aux[,c("ID","Pred","Code")], by = "ID", all.x = TRUE);
+	colnames(aux) <- c(colnames(results$ds_original),"Predicted","Code");
+	write.table(aux, file = paste(testname,"-predictions.csv",sep=""), sep = ",", row.names=FALSE);
 }
 
 aloja_save_datasets <- function (traux_0, tvaux_0, ttaux_0, name_0, algor_0)

@@ -26,56 +26,13 @@ CREATE TABLE IF NOT EXISTS learners (
 CREATE TABLE IF NOT EXISTS predictions (
   id_prediction int(11) NOT NULL AUTO_INCREMENT,
   id_exec int(11) NOT NULL,
-  id_cluster int(11) DEFAULT NULL,
-  exec varchar(255) DEFAULT NULL,
-  bench varchar(255) DEFAULT NULL,
   exe_time decimal(20,3) DEFAULT '0',
-  start_time datetime DEFAULT CURRENT_TIMESTAMP,
-  end_time datetime DEFAULT CURRENT_TIMESTAMP,
-  net varchar(255) DEFAULT NULL,
-  disk varchar(255) DEFAULT NULL,
-  bench_type varchar(255) DEFAULT NULL,
-  maps int(11) DEFAULT NULL,
-  iosf int(11) DEFAULT NULL,
-  replication int(11) DEFAULT NULL,
-  iofilebuf int(11) DEFAULT NULL,
-  comp int(11) DEFAULT NULL,
-  blk_size int(11) DEFAULT NULL,
-  zabbix_link varchar(255) DEFAULT NULL,
-  valid int(11) DEFAULT '1',
-  hadoop_version varchar(127) DEFAULT NULL,
-  filter int(11) DEFAULT '0',
   outlier int(11) DEFAULT '0',
   pred_time decimal(20,3) DEFAULT '0',
   instance varchar(255) DEFAULT NULL,
+  full_instance longtext NOT NULL DEFAULT '',
   id_learner varchar(255) DEFAULT NULL,
   predict_code int(8) DEFAULT '0',
-  name varchar(127) DEFAULT NULL,
-  type varchar(127) DEFAULT NULL,
-  datanodes int(11) DEFAULT NULL,
-  provider varchar(127) DEFAULT NULL,
-  headnodes int(11) DEFAULT NULL,
-  vm_size varchar(127) DEFAULT NULL,
-  vm_OS varchar(127) DEFAULT NULL,
-  vm_cores int(11) DEFAULT NULL,
-  vm_RAM decimal(10,3) DEFAULT NULL,
-  datasize int(11) DEFAULT 0,
-  scale_factor varchar(255) DEFAULT NULL,
-  net_maxtxkbs decimal(10,3) DEFAULT 0,
-  net_maxrxkbs decimal(10,3) DEFAULT 0,
-  net_maxtxpcks decimal(10,3) DEFAULT 0,
-  net_maxrxpcks decimal(10,3) DEFAULT 0,
-  net_maxtxcmps decimal(10,3) DEFAULT 0,
-  net_maxrxcmps decimal(10,3) DEFAULT 0,
-  net_maxrxmscts decimal(10,3) DEFAULT 0,
-  disk_maxtps decimal(10,3) DEFAULT 0,
-  disk_maxsvctm decimal(10,3) DEFAULT 0,
-  disk_maxrds decimal(10,3) DEFAULT 0,
-  disk_maxwrs decimal(10,3) DEFAULT 0,
-  disk_maxrqsz decimal(10,3) DEFAULT 0,
-  disk_maxqusz decimal(10,3) DEFAULT 0,
-  disk_maxawait decimal(10,3) DEFAULT 0,
-  disk_maxutil decimal(10,3) DEFAULT 0,
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_prediction),
   INDEX idx_id_exec_predictions (id_exec),
@@ -224,15 +181,36 @@ $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 $MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT '';"
 
-$MYSQL "ALTER TABLE $DBML.predictions ADD datasize int(11) DEFAULT 0,
-  ADD scale_factor varchar(255) DEFAULT NULL, ADD net_maxtxkbs decimal(10,3) DEFAULT 0,
-  ADD net_maxrxkbs decimal(10,3) DEFAULT 0, ADD net_maxtxpcks decimal(10,3) DEFAULT 0,
-  ADD net_maxrxpcks decimal(10,3) DEFAULT 0, ADD net_maxtxcmps decimal(10,3) DEFAULT 0,
-  ADD net_maxrxcmps decimal(10,3) DEFAULT 0, ADD net_maxrxmscts decimal(10,3) DEFAULT 0,
-  ADD disk_maxtps decimal(10,3) DEFAULT 0, ADD disk_maxsvctm decimal(10,3) DEFAULT 0,
-  ADD disk_maxrds decimal(10,3) DEFAULT 0, ADD disk_maxwrs decimal(10,3) DEFAULT 0,
-  ADD disk_maxrqsz decimal(10,3) DEFAULT 0, ADD disk_maxqusz decimal(10,3) DEFAULT 0,
-  ADD disk_maxawait decimal(10,3) DEFAULT 0, ADD disk_maxutil decimal(10,3) DEFAULT 0;"
+## DEPRECATED
+#$MYSQL "ALTER TABLE $DBML.predictions ADD datasize int(11) DEFAULT 0,
+#  ADD scale_factor varchar(255) DEFAULT NULL, ADD net_maxtxkbs decimal(10,3) DEFAULT 0,
+#  ADD net_maxrxkbs decimal(10,3) DEFAULT 0, ADD net_maxtxpcks decimal(10,3) DEFAULT 0,
+#  ADD net_maxrxpcks decimal(10,3) DEFAULT 0, ADD net_maxtxcmps decimal(10,3) DEFAULT 0,
+#  ADD net_maxrxcmps decimal(10,3) DEFAULT 0, ADD net_maxrxmscts decimal(10,3) DEFAULT 0,
+#  ADD disk_maxtps decimal(10,3) DEFAULT 0, ADD disk_maxsvctm decimal(10,3) DEFAULT 0,
+#  ADD disk_maxrds decimal(10,3) DEFAULT 0, ADD disk_maxwrs decimal(10,3) DEFAULT 0,
+#  ADD disk_maxrqsz decimal(10,3) DEFAULT 0, ADD disk_maxqusz decimal(10,3) DEFAULT 0,
+#  ADD disk_maxawait decimal(10,3) DEFAULT 0, ADD disk_maxutil decimal(10,3) DEFAULT 0;"
+## END DEPRECATED
+## FUNCTION TO CLEAR TABLE
+#$MYSQL "ALTER TABLE $DBML.predictions DROP COLUMN id_cluster,
+#  DROP COLUMN exec, DROP COLUMN bench,
+#  DROP COLUMN start_time, DROP COLUMN end_time,
+#  DROP COLUMN net, DROP COLUMN disk,
+#  DROP COLUMN bench_type, DROP COLUMN maps,
+#  DROP COLUMN iosf, DROP COLUMN replication,
+#  DROP COLUMN iofilebuf, DROP COLUMN comp,
+#  DROP COLUMN blk_size, DROP COLUMN zabbix_link,
+#  DROP COLUMN valid, DROP COLUMN hadoop_version,
+#  DROP COLUMN filter, DROP COLUMN name,
+#  DROP COLUMN type, DROP COLUMN datanodes,
+#  DROP COLUMN provider, DROP COLUMN headnodes,
+#  DROP COLUMN vm_size, DROP COLUMN vm_OS,
+#  DROP COLUMN vm_cores, DROP COLUMN vm_RAM,
+#  DROP COLUMN datasize, DROP COLUMN scale_factor;"
+## END FUNCTION TO CLEAR TABLE
+
+$MYSQL "ALTER TABLE $DBML.predictions ADD full_instance longtext NOT NULL DEFAULT '';"
 
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD hadoop_version varchar(127) DEFAULT NULL,
   ADD datasize int(11) DEFAULT 0,
@@ -242,5 +220,4 @@ $MYSQL "CREATE INDEX idx_id_exec_predictions ON $DBML.predictions(id_exec);"
 
 $MYSQL "ALTER TABLE $DBML.predictions MODIFY start_time datetime DEFAULT CURRENT_TIMESTAMP;"
 $MYSQL "ALTER TABLE $DBML.predictions MODIFY end_time datetime DEFAULT CURRENT_TIMESTAMP;"
-
 
