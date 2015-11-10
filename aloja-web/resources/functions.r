@@ -985,7 +985,7 @@ aloja_nneighbors <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols
 
 	if (!is.null(saveall))
 	{
-		aloja_save_object(rt,tagname=saveall);
+		aloja_save_object(rt,tagname=saveall,is.weka=TRUE);
 		aloja_save_predictions(rt,testname=saveall);
 	}
 
@@ -1153,7 +1153,7 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 
 	if (!is.null(saveall))
 	{
-		aloja_save_object(rt,tagname=saveall);
+		aloja_save_object(rt,tagname=saveall,is.weka=!(weka.tree==0));
 		aloja_save_predictions(rt,testname=saveall);
 	}
 
@@ -1541,17 +1541,15 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 	retval[["predictions"]] <- aloja_predict_dataset(learned_model,vin=vin,ds=ds,sfCPU=sfCPU);
 
 	# Compilation of datasets
-	id_pred <- rbind(learned_model$trainset,learned_model$validset,learned_model$testset);
-	id_pred <- cbind(id_pred,c(learned_model$predtrain,learned_model$predval,learned_model$predtest));
-	colnames(id_pred) <- c(colnames(learned_model$trainset),"Pred");
-	auxjoin <- id_pred[,c("ID",vout,vin,"Pred")];
+	aux <- rbind(learned_model$predtrain, learned_model$predval); aux <- rbind(aux, learned_model$predtest);
+	aux <- merge(x = learned_model$ds_original, y = aux[,c("ID","Pred")], by = "ID", all.x = TRUE);
+	colnames(aux) <- c(colnames(learned_model$ds_original),"Pred");
+	auxjoin <- aux[,c("ID",vout,vin,"Pred")];
 
 	# Compilation of errors (learning)
-	trerr <- learned_model$trainset[,vout] - learned_model$predtrain;
-	tverr <- learned_model$validset[,vout] - learned_model$predval;
-	tterr <- learned_model$testset[,vout] - learned_model$predtest;
-	stdev_err <- sd(c(trerr,tverr,tterr));
-	mean_err <- mean(c(trerr,tverr,tterr));
+	auxerror <- abs(auxjoin[,vout] - auxjoin[,"Pred"]);
+	stdev_err <- sd(auxerror);
+	mean_err <- mean(auxerror);
 
 	# Vectorization and Pre-calculation [Optimization]
 	thres1 <- mean_err + (stdev_err * sigma);
