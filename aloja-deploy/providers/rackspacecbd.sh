@@ -37,7 +37,7 @@ create_cbd_cluster() {
   clusterId=$(get_cluster_id "$1")
  
   if [ "${clusterId}" = "" ]; then
-    logger "Creating Linux CBD cluster $1, this can take lots of time"
+    logger "Creating Linux CBD cluster $1 in zone ${CBDlocation}, this can take lots of time"
     output=$(create_do_cbd_cluster "$1")
 
     clusterId=$(awk '/ ID / && NR == 4 {print $4; exit}' <<< "${output}")
