@@ -181,7 +181,7 @@ class MLUtils
 		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Network. Metrics must be generated (enter into "Performance Metrics" page)');
 
 		$netinfo = array();
-		foreach($rows as $row)
+		foreach ($rows as $row)
 		{
 			$id = $row['net'].'-'.$row['vm_cores'].'-'.$row['vm_RAM'].'-'.$row['vm_size'].'-'.$row['vm_OS'].'-'.$row['provider'];
 			$netinfo[$id] = $row['maxtxkbs'].','.$row['maxrxkbs'].','.$row['maxtxpcks'].','.$row['maxrxpcks'].','.$row['maxtxcmps'].','.$row['maxrxcmps'].','.$row['maxrxmscts'];
@@ -201,32 +201,72 @@ class MLUtils
 		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Disks. Metrics must be generated (enter into "Performance Metrics" page)');
 
 		$diskinfo = array();
-		foreach($rows as $row)
+		foreach ($rows as $row)
 		{
 			$id = $row['disk'].'-'.$row['vm_cores'].'-'.$row['vm_RAM'].'-'.$row['vm_size'].'-'.$row['vm_OS'].'-'.$row['provider'];
 			$diskinfo[$id] = $row['maxtps'].','.$row['maxsvctm'].','.$row['maxrds'].','.$row['maxwrs'].','.$row['maxrqsz'].','.$row['maxqusz'].','.$row['maxawait'].','.$row['maxutil'];
 		}
 
-		//For each instance, check NET & DISK, and expand/multiplicate
+		// Fetch Benchmark values
+		$reference_cluster = 21; #FIXME - Reference Cluster should come from parameter, or fixed when selected for 1st time
+		$bench_query = array(
+			'pc.`avg%user`' => 'pcavguser','pc.`max%user`' => 'pcmaxuser','pc.`min%user`' => 'pcminuser','pc.`stddev_pop%user`' => 'pcstddevpopuser','pc.`var_pop%user`' => 'pcvarpopuser','pc.`avg%nice`' => 'pcavgnice','pc.`max%nice`' => 'pcmaxnice','pc.`min%nice`' => 'pcminnice','pc.`stddev_pop%nice`' => 'pcstddevpopnice','pc.`var_pop%nice`' => 'pcvarpopnice','pc.`avg%system`' => 'pcavgsystem','pc.`max%system`' => 'pcmaxsystem','pc.`min%system`' => 'pcminsystem','pc.`stddev_pop%system`' => 'pcstddevpopsystem','pc.`var_pop%system`' => 'pcvarpopsystem','pc.`avg%iowait`' => 'pcavgiowait','pc.`max%iowait`' => 'pcmaxiowait','pc.`min%iowait`' => 'pcminiowait','pc.`stddev_pop%iowait`' => 'pcstddevpopiowait','pc.`var_pop%iowait`' => 'pcvarpopiowait','pc.`avg%steal`' => 'pcavgsteal','pc.`max%steal`' => 'pcmaxsteal','pc.`min%steal`' => 'pcminsteal','pc.`stddev_pop%steal`' => 'pcstddevpopsteal','pc.`var_pop%steal`' => 'pcvarpopsteal','pc.`avg%idle`' => 'pcavgidle','pc.`max%idle`' => 'pcmaxidle','pc.`min%idle`' => 'pcminidle','pc.`stddev_pop%idle`' => 'pcstddevpopidle','pc.`var_pop%idle`' => 'pcvarpopidle',
+			'pm.`avgkbmemfree`' => 'pmavgkbmemfree','pm.`maxkbmemfree`' => 'pmmaxkbmemfree','pm.`minkbmemfree`' => 'pmminkbmemfree','pm.`stddev_popkbmemfree`' => 'pmstddevpopkbmemfree','pm.`var_popkbmemfree`' => 'pmvarpopkbmemfree','pm.`avgkbmemused`' => 'pmavgkbmemused','pm.`maxkbmemused`' => 'pmmaxkbmemused','pm.`minkbmemused`' => 'pmminkbmemused','pm.`stddev_popkbmemused`' => 'pmstddevpopkbmemused','pm.`var_popkbmemused`' => 'pmvarpopkbmemused','pm.`avg%memused`' => 'pmavgmemused','pm.`max%memused`' => 'pmmaxmemused','pm.`min%memused`' => 'pmminmemused','pm.`stddev_pop%memused`' => 'pmstddevpopmemused','pm.`var_pop%memused`' => 'pmvarpopmemused','pm.`avgkbbuffers`' => 'pmavgkbbuffers','pm.`maxkbbuffers`' => 'pmmaxkbbuffers','pm.`minkbbuffers`' => 'pmminkbbuffers','pm.`stddev_popkbbuffers`' => 'pmstddevpopkbbuffers','pm.`var_popkbbuffers`' => 'pmvarpopkbbuffers','pm.`avgkbcached`' => 'pmavgkbcached','pm.`maxkbcached`' => 'pmmaxkbcached','pm.`minkbcached`' => 'pmminkbcached','pm.`stddev_popkbcached`' => 'pmstddevpopkbcached','pm.`var_popkbcached`' => 'pmvarpopkbcached','pm.`avgkbcommit`' => 'pmavgkbcommit','pm.`maxkbcommit`' => 'pmmaxkbcommit','pm.`minkbcommit`' => 'pmminkbcommit','pm.`stddev_popkbcommit`' => 'pmstddevpopkbcommit','pm.`var_popkbcommit`' => 'pmvarpopkbcommit','pm.`avg%commit`' => 'pmavgcommit','pm.`max%commit`' => 'pmmaxcommit','pm.`min%commit`' => 'pmmincommit','pm.`stddev_pop%commit`' => 'pmstddevpopcommit','pm.`var_pop%commit`' => 'pmvarpopcommit','pm.`avgkbactive`' => 'pmavgkbactive','pm.`maxkbactive`' => 'pmmaxkbactive','pm.`minkbactive`' => 'pmminkbactive','pm.`stddev_popkbactive`' => 'pmstddevpopkbactive','pm.`var_popkbactive`' => 'pmvarpopkbactive','pm.`avgkbinact`' => 'pmavgkbinact','pm.`maxkbinact`' => 'pmmaxkbinact','pm.`minkbinact`' => 'pmminkbinact','pm.`stddev_popkbinact`' => 'pmstddevpopkbinact','pm.`var_popkbinact`' => 'pmvarpopkbinact',
+			'pn.`avgrxpck/s`' => 'pnavgrxpcks','pn.`maxrxpck/s`' => 'pnmaxrxpcks','pn.`minrxpck/s`' => 'pnminrxpcks','pn.`stddev_poprxpck/s`' => 'pnstddevpoprxpcks','pn.`var_poprxpck/s`' => 'pnvarpoprxpcks','pn.`sumrxpck/s`' => 'pnsumrxpcks','pn.`avgtxpck/s`' => 'pnavgtxpcks','pn.`maxtxpck/s`' => 'pnmaxtxpcks','pn.`mintxpck/s`' => 'pnmintxpcks','pn.`stddev_poptxpck/s`' => 'pnstddevpoptxpcks','pn.`var_poptxpck/s`' => 'pnvarpoptxpcks','pn.`sumtxpck/s`' => 'pnsumtxpcks','pn.`avgrxkB/s`' => 'pnavgrxkBs','pn.`maxrxkB/s`' => 'pnmaxrxkBs','pn.`minrxkB/s`' => 'pnminrxkBs','pn.`stddev_poprxkB/s`' => 'pnstddevpoprxkBs','pn.`var_poprxkB/s`' => 'pnvarpoprxkBs','pn.`sumrxkB/s`' => 'pnsumrxkBs','pn.`avgtxkB/s`' => 'pnavgtxkBs','pn.`maxtxkB/s`' => 'pnmaxtxkBs','pn.`mintxkB/s`' => 'pnmintxkBs','pn.`stddev_poptxkB/s`' => 'pnstddevpoptxkBs','pn.`var_poptxkB/s`' => 'pnvarpoptxkBs','pn.`sumtxkB/s`' => 'pnsumtxkBs','pn.`avgrxcmp/s`' => 'pnavgrxcmps','pn.`maxrxcmp/s`' => 'pnmaxrxcmps','pn.`minrxcmp/s`' => 'pnminrxcmps','pn.`stddev_poprxcmp/s`' => 'pnstddevpoprxcmps','pn.`var_poprxcmp/s`' => 'pnvarpoprxcmps','pn.`sumrxcmp/s`' => 'pnsumrxcmps','pn.`avgtxcmp/s`' => 'pnavgtxcmps','pn.`maxtxcmp/s`' => 'pnmaxtxcmps','pn.`mintxcmp/s`' => 'pnmintxcmps','pn.`stddev_poptxcmp/s`' => 'pnstddevpoptxcmps','pn.`var_poptxcmp/s`' => 'pnvarpoptxcmps','pn.`sumtxcmp/s`' => 'pnsumtxcmps','pn.`avgrxmcst/s`' => 'pnavgrxmcsts','pn.`maxrxmcst/s`' => 'pnmaxrxmcsts','pn.`minrxmcst/s`' => 'pnminrxmcsts','pn.`stddev_poprxmcst/s`' => 'pnstddevpoprxmcsts','pn.`var_poprxmcst/s`' => 'pnvarpoprxmcsts','pn.`sumrxmcst/s`' => 'pnsumrxmcsts',
+			'pd.`avgtps`' => 'pdavgtps','pd.`maxtps`' => 'pdmaxtps','pd.`mintps`' => 'pdmintps','pd.`avgrd_sec/s`' => 'pdavgrdsecs','pd.`maxrd_sec/s`' => 'pdmaxrdsecs','pd.`minrd_sec/s`' => 'pdminrdsecs','pd.`stddev_poprd_sec/s`' => 'pdstddevpoprdsecs','pd.`var_poprd_sec/s`' => 'pdvarpoprdsecs','pd.`sumrd_sec/s`' => 'pdsumrdsecs','pd.`avgwr_sec/s`' => 'pdavgwrsecs','pd.`maxwr_sec/s`' => 'pdmaxwrsecs','pd.`minwr_sec/s`' => 'pdminwrsecs','pd.`stddev_popwr_sec/s`' => 'pdstddevpopwrsecs','pd.`var_popwr_sec/s`' => 'pdvarpopwrsecs','pd.`sumwr_sec/s`' => 'pdsumwrsecs','pd.`avgrq_sz`' => 'pdavgrqsz','pd.`maxrq_sz`' => 'pdmaxrqsz','pd.`minrq_sz`' => 'pdminrqsz','pd.`stddev_poprq_sz`' => 'pdstddevpoprqsz','pd.`var_poprq_sz`' => 'pdvarpoprqsz','pd.`avgqu_sz`' => 'pdavgqusz','pd.`maxqu_sz`' => 'pdmaxqusz','pd.`minqu_sz`' => 'pdminqusz','pd.`stddev_popqu_sz`' => 'pdstddevpopqusz','pd.`var_popqu_sz`' => 'pdvarpopqusz','pd.`avgawait`' => 'pdavgawait','pd.`maxawait`' => 'pdmaxawait','pd.`minawait`' => 'pdminawait','pd.`stddev_popawait`' => 'pdstddevpopawait','pd.`var_popawait`' => 'pdvarpopawait','pd.`avg%util`' => 'pdavgutil','pd.`max%util`' => 'pdmaxutil','pd.`min%util`' => 'pdminutil','pd.`stddev_pop%util`' => 'pdstddevpoputil','pd.`var_pop%util`' => 'pdvarpoputil','pd.`avgsvctm`' => 'pdavgsvctm','pd.`maxsvctm`' => 'pdmaxsvctm','pd.`minsvctm`' => 'pdminsvctm','pd.`stddev_popsvctm`' => 'pdstddevpopsvctm','pd.`var_popsvctm`' => 'pdvarpopsvctm'
+		);
+		$query = "SELECT ae.bench AS aebench,
+			 ".implode(',', array_map(function ($k, $v) { return sprintf("AVG(%s) AS '%s'", $k, $v); }, array_keys($bench_query), array_values($bench_query)))."
+			  FROM aloja2.precal_cpu_metrics AS pc, aloja2.precal_memory_metrics AS pm, aloja2.precal_network_metrics AS pn, aloja2.precal_disk_metrics AS pd, aloja2.execs AS ae
+			  WHERE pc.id_exec = pm.id_exec AND pc.id_exec = pn.id_exec AND pc.id_exec = pd.id_exec AND pc.id_exec = ae.id_exec AND ae.id_cluster = '".$reference_cluster."'
+			  GROUP BY ae.bench";
+	    	$rows = $db->get_rows($query);
+		if (empty($rows)) throw new \Exception('Error retrieving precalculated data from Benchmarks. Metrics must be generated (enter into "Performance Metrics" page)');
+
+		$benchinfo = array();
+		foreach ($rows as $row)
+		{
+			$id = $row['aebench'];
+			$aux = '';
+			foreach (array_values($bench_query) as $item) $aux = $aux.(($aux != '')?',':'').$row[$item];
+			$benchinfo[$id] = $aux;
+		}
+
+		// Generate Completed Instances
+		if (empty($params['net']))
+		{
+			$params['net'] = array();
+			$paramAllOptions['net'] = $filter_options['net'];
+			foreach ($paramAllOptions['net'] as $par) $params['net'][] = $par;
+		}
+
+		if (empty($params['disk']))
+		{
+			$params['disk'] = array();
+			$paramAllOptions['disk'] = $filter_options['disk'];
+			foreach ($paramAllOptions['disk'] as $par) $params['disk'][] = $par;
+		}
+
+		if (empty($params['bench']))
+		{
+			$params['bench'] = array();
+			$paramAllOptions['bench'] = $filter_options['bench'];
+			foreach ($paramAllOptions['bench'] as $par) $params['bench'][] = $par;
+		}
+
+		$netpos = array_search('net', $param_names);		// Multiple values -> decompose
+		$diskpos = array_search('disk', $param_names);		// Multiple values -> decompose
+		$benchpos = array_search('bench', $param_names);	// Multiple values -> decompose
+		$corepos = array_search('vm_cores', $param_names);	// Unique value, due to decomposition by id_cluster
+		$rampos = array_search('vm_RAM', $param_names);		// Unique value, due to decomposition by id_cluster
+		$sizepos = array_search('vm_size', $param_names);	// Unique value, due to decomposition by id_cluster
+		$ospos = array_search('vm_OS', $param_names);		// Unique value, due to decomposition by id_cluster
+		$providerpos = array_search('provider', $param_names);	// Unique value, due to decomposition by id_cluster
+
+		//For each instance, check NET & DISK & BENCH and expand/multiplicate (Combinatory effort...)
 		$instances_expanded = array();
 		foreach ($instances as $inst_n)
 		{
-			if (empty($params['net']))
-			{
-				$params['net'] = array();
-				$paramAllOptions['net'] = $filter_options['net'];
-				foreach ($paramAllOptions['net'] as $par) $params['net'][] = $par;
-			}
-
-			$netpos = array_search('net', $param_names);		// Multiple values -> decompose
-			$diskpos = array_search('disk', $param_names);		// Multiple values -> decompose
-			$corepos = array_search('vm_cores', $param_names);	// Unique value, due to decomposition by id_cluster
-			$rampos = array_search('vm_RAM', $param_names);		// Unique value, due to decomposition by id_cluster
-			$sizepos = array_search('vm_size', $param_names);	// Unique value, due to decomposition by id_cluster
-			$ospos = array_search('vm_OS', $param_names);		// Unique value, due to decomposition by id_cluster
-			$providerpos = array_search('provider', $param_names);	// Unique value, due to decomposition by id_cluster
-
-			// Combinatory effort...
 			$instances_l1 = array();
 			foreach ($params['net'] as $pnet)
 			{
@@ -240,6 +280,7 @@ class MLUtils
 
 			foreach ($instances_l1 as $inst_d)
 			{
+				$instances_l2 = array();
 				foreach ($params['disk'] as $pdisk)
 				{
 					$aux = explode(",", $inst_d);
@@ -247,11 +288,23 @@ class MLUtils
 					$id = $pdisk.'-'.$aux[$corepos].'-'.$aux[$rampos].'-'.$aux[$sizepos].'-'.$aux[$ospos].'-'.$aux[$providerpos];
 					if (array_key_exists($id, $diskinfo)) $aux[] = $diskinfo[$id];
 					else $aux[] = "0,0,0,0,0,0,0,0";
-					$instances_expanded[] = implode(",",$aux);
+					$instances_l2[] = implode(",",$aux);
+				}
+
+				foreach ($instances_l2 as $inst_b)
+				{
+					foreach ($params['bench'] as $pbench)
+					{
+						$aux = explode(",", $inst_b);
+						$aux[$benchpos] = $pbench;
+						$id = $aux[$benchpos];
+						if (array_key_exists($id, $benchinfo)) $aux[] = $benchinfo[$id];
+						else { $aux1 = '0'; for ($i = 0; $i < 156; $i++) $aux1 = $aux1.',0'; $aux[] = $aux1; }
+						$instances_expanded[] = implode(",",$aux);
+					}
 				}
 			}
 		}
-
 		return $instances_expanded;
 	}
 

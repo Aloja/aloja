@@ -1164,6 +1164,30 @@ aloja_regtree <- function (ds, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = 
 # Predicting methods                                                          #
 ###############################################################################
 
+aloja_predict_instance_slice <- function (learned_model, vin, vinst, inst_predict, sorted = NULL, sfCPU = 1, saveall = NULL)
+{
+	inst <- as.data.frame(t(unlist(strsplit(inst_predict,","))));
+	colnames(inst) <- vinst;
+
+	inst_aux <- inst[,vin];
+	inst_prep <- sapply(1:ncol(inst_aux), function (x) as.character(inst_aux[1,x]))
+
+	aux <- aloja_predict_instance (learned_model,vin,inst_predict=inst_prep,sfCPU=sfCPU);
+
+	unfolded_insts <- cbind(t(sapply(1:nrow(aux), function(x) unlist(strsplit(aux$Instance[x],",")))),aux$Prediction);
+	unfolded_insts <- cbind(1:nrow(aux),unfolded_insts);
+	colnames(unfolded_insts) <- c("ID",vin,"Prediction");
+
+	complete <- merge(x = inst[,vinst[!(vinst %in% vin)]], y = unfolded_insts, by = NULL);
+	retval <- complete[,c("ID",vinst,"Prediction")];
+
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-predictions.data",sep=""), sep = ",", row.names=FALSE);
+	}
+	retval;
+}
+
 wrapper_predict_dataset <- function(idx,learned_model,vin,ds)
 {
 	dummy <- "Initialize this environment, you R fucking moron!";
@@ -1618,7 +1642,6 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 		write.table(x=retval$cause,file=paste(saveall,"-cause.csv",sep=""),row.names=FALSE,col.names=FALSE);
 		write.table(x=retval$resolutions,file=paste(saveall,"-resolutions.csv",sep=""),row.names=FALSE,sep=",");
 	}
-
 	retval;
 }
 

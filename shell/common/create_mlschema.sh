@@ -25,22 +25,58 @@ CREATE TABLE IF NOT EXISTS learners (
 
 CREATE TABLE IF NOT EXISTS predictions (
   id_prediction int(11) NOT NULL AUTO_INCREMENT,
-  id_exec int(11) NOT NULL,
+  id_pred_exec int(11) DEFAULT NULL,
+  id_exec int(11) DEFAULT NULL,
   exe_time decimal(20,3) DEFAULT '0',
   outlier int(11) DEFAULT '0',
   pred_time decimal(20,3) DEFAULT '0',
   instance varchar(255) DEFAULT NULL,
   full_instance longtext NOT NULL DEFAULT '',
-  id_learner varchar(255) DEFAULT NULL,
+  id_learner varchar(255) NOT NULL,
   predict_code int(8) DEFAULT '0',
   creation_time datetime NOT NULL,
   PRIMARY KEY (id_prediction),
+  UNIQUE id_exec_learner (id_exec,id_pred_exec,id_learner),
   INDEX idx_id_exec_predictions (id_exec),
+  KEY idx_exe_time (exe_time),
+  FOREIGN KEY (id_learner) REFERENCES learners(id_learner) ON DELETE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS pred_execs (
+  id_prediction int(11) NOT NULL AUTO_INCREMENT,
+  id_cluster int(11) DEFAULT NULL,
+  exec varchar(255) DEFAULT NULL,
+  bench varchar(255) DEFAULT NULL,
+  exe_time decimal(20,3) DEFAULT NULL,
+  start_time datetime DEFAULT NULL,
+  end_time datetime DEFAULT NULL,
+  net varchar(255) DEFAULT NULL,
+  disk varchar(255) DEFAULT NULL,
+  bench_type varchar(255) DEFAULT NULL,
+  maps int(11) DEFAULT NULL,
+  iosf int(11) DEFAULT NULL,
+  replication int(11) DEFAULT NULL,
+  iofilebuf int(11) DEFAULT NULL,
+  comp int(11) DEFAULT NULL,
+  blk_size int(11) DEFAULT NULL,
+  hadoop_version varchar(127) default NULL,
+  zabbix_link varchar(255) DEFAULT NULL,
+  valid int DEFAULT 0,
+  filter int DEFAULT 0,
+  outlier int DEFAULT 0,
+  perf_details int DEFAULT 0,
+  exec_type varchar(255) DEFAULT 'default',
+  datasize decimal(20,3) DEFAULT NULL,
+  scale_factor varchar(255) DEFAULT 'N/A',
+  PRIMARY KEY (id_prediction),
   KEY idx_bench (bench),
   KEY idx_exe_time (exe_time),
   KEY idx_bench_type (bench_type),
-  FOREIGN KEY (id_learner) REFERENCES learners(id_learner) ON DELETE CASCADE
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+  KEY idx_id_cluster (id_cluster),
+  KEY idx_valid (valid),
+  KEY idx_filter (filter),
+  KEY idx_perf_details (perf_details)
+) ENGINE=InnoDB;
 
 CREATE TABLE IF NOT EXISTS trees (
   id_findattrs varchar(255) NOT NULL,
@@ -210,7 +246,10 @@ $MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT ''
 #  DROP COLUMN datasize, DROP COLUMN scale_factor;"
 ## END FUNCTION TO CLEAR TABLE
 
-$MYSQL "ALTER TABLE $DBML.predictions ADD full_instance longtext NOT NULL DEFAULT '';"
+$MYSQL "ALTER TABLE $DBML.predictions ADD full_instance longtext NOT NULL DEFAULT '',
+  ADD id_pred_exec int(11) DEFAULT NULL,
+  MODIFY id_exec int(11) DEFAULT NULL,
+  ADD CONSTRAINT id_exec_learner UNIQUE (id_exec,id_pred_exec,id_learner);";
 
 $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD hadoop_version varchar(127) DEFAULT NULL,
   ADD datasize int(11) DEFAULT 0,

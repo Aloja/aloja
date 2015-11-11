@@ -228,7 +228,7 @@ class MLPredictionController extends AbstractController
 				// read results of the CSV and dump to DB
 				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-predictions.csv', 'r')) !== FALSE)
 				{
-					$header = fgetcsv($handle, 1000, ",");
+					$header = fgetcsv($handle, 5000, ",");
 
 					$token = 0; $insertions = 0;
 					$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,pred_time,id_learner,instance,full_instance,predict_code) VALUES ";
@@ -238,7 +238,7 @@ class MLPredictionController extends AbstractController
 						$exe_time = $data[2];
 						$pred_time = $data[key(array_slice($data,-2,1,TRUE))];
 						$code = $data[key(array_slice($data,-1,1,TRUE))];
-						$full_instance = implode(",",$data);	
+						$full_instance = implode(",",array_slice($data,1,-1));
 						$specific_instance = array_merge(array($data[1]),array_slice($data, 3, 21));
 						$specific_instance = implode(",",$specific_instance);
 

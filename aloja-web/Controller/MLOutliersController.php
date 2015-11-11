@@ -255,11 +255,11 @@ class MLOutliersController extends AbstractController
 					if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv', 'r')) !== FALSE)
 					{
 
-						$header = fgetcsv($handle, 1000, ",");
+						$header = fgetcsv($handle, 5000, ",");
 
 						$token = 0;
 						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,dataslice,sigma,outlier_code,predicted,observed) VALUES ";
-						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+						while (($data = fgetcsv($handle, 5000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
 							$pred_value = ((int)$data[1] >= 100)?(int)$data[1]:100;
