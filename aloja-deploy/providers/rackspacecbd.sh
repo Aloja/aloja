@@ -435,6 +435,5 @@ benchmark_suite_cleanup() {
 }
 
 get_node_names() {
-  echo "master-1
-  $(seq -f 'slave-%0g' 1 $numberOfNodes)"
+  echo -e "master-1\n$(seq -f 'slave-%0g' 1 $numberOfNodes)"
 }
