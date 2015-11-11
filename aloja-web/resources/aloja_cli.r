@@ -122,7 +122,7 @@ options(width=as.integer(1000));
 
 	if (is.null(params$vin) && opt$method  %in% c("aloja_print_individual_summaries","aloja_print_summaries"))
 	{
-		params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor");
+		params[["vin"]] <- c("Exe.Time","Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Cluster","Cl.Name","Datanodes","VM.OS","VM.Cores","VM.RAM","Provider","VM.Size","Service.Type","Bench.Type","Hadoop.Version","Datasize","Scale.Factor");
 	}
 
 	if (opt$method  == "aloja_diversity")

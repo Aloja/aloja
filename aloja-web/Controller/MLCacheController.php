@@ -52,12 +52,18 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.observed_trees";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing observed trees from DB');
 
+				$query = "DELETE FROM aloja_ml.pred_execs";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing predicted executions from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/ml/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
 
 			if (isset($_GET['rml']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
+				$query = "DELETE FROM aloja_ml.pred_execs WHERE id_prediction IN (SELECT id_pred_execs FROM aloja_ml.predictions WHERE id_learner='".$_GET['rml']."')";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing learned executions from DB');
+
 				$query = "DELETE FROM aloja_ml.learners WHERE id_learner='".$_GET['rml']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a learner from DB');
 

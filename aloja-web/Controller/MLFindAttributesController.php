@@ -402,7 +402,7 @@ class MLFindAttributesController extends AbstractController
 				'bench' => 'Benchmark','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
 				'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version',
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Service.Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version',
 				'IFNULL(datasize,0)' =>'Datasize','scale_factor' => 'Scale.Factor'
 			);
 			$special_header_names = array('id_exec' => 'ID','exe_time' => 'Exe.Time');
