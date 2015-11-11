@@ -25,7 +25,12 @@ create_cbd_cluster() {
   fi
 
   logger "Ensuring SSH credentials are in place"
-  create_cbd_credentials 
+  create_cbd_ssh_credentials 
+
+  if [ "${CBDcloudFilesCredentials}" != "" ]; then
+    logger "Ensuring Cloud files credentials are in place"
+    create_cbd_cloudfiles_credentials 
+  fi
 
   logger "Checking whether cluster $1 already exists"
  
@@ -140,7 +145,7 @@ get_cluster_id(){
 
 }
 
-create_cbd_credentials(){
+create_cbd_ssh_credentials(){
 
   local keys present
 
@@ -160,6 +165,29 @@ create_cbd_credentials(){
   fi
 
 }
+
+create_cbd_cloudfiles_credentials(){
+
+  local creds present
+
+  # check if key already present
+  creds=$(lava credentials list_cloud_files -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
+
+  present=$(awk -v name="${CBDcloudFilesCredentials}" -F, 'NR>1 && $2 == name { found = 1; exit } END { print found + 0 }' <<< "${creds}")
+
+  if [ $present -eq 1 ]; then
+    # update
+    logger "Updating cloud files credentials ${CBDcloudFilesCredentials}"
+    lava credentials update_cloud_files "${CBDcloudFilesCredentials}" "${OS_PASSWORD}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  else
+    # create
+    logger "Creating cloud files credentials ${CBDcloudFilesCredentials} using API key"
+    lava credentials create_cloud_files "${CBDcloudFilesCredentials}" "${OS_PASSWORD}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  fi
+
+}
+
+
 
 
 # wait until the cluster is ready
