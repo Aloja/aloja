@@ -460,7 +460,9 @@ cp sar \"${bin_dir}\" || exit 1
 
 vm_build_bwm_ng(){
 
-  vm_execute "
+  if ! vm_is_available bwm-ng; then
+
+    vm_execute "
 
 # download and build bwm-ng for local use (not included in CentOS/RHEL 7)
 
@@ -484,6 +486,7 @@ mkdir -p \"${bin_dir}\" || exit 1
 cp src/bwm-ng \"${bin_dir}\" || exit 1
 
 "
+  fi
 
 }
 
