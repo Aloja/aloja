@@ -290,6 +290,12 @@ cache_get() {
   fi
 }
 
+cache_delete(){
+  local cacheFileName="$deployCacheFolderPath/${cachePrefix}${1}"
+  rm -f "$cacheFileName"
+}
+
+
 # Save env and global vars to file
 # $1 file path
 save_env() {

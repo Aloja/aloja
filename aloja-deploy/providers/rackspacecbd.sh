@@ -89,6 +89,10 @@ delete_cbd_cluster() {
       logger "Error deleting cluster $1, check manually"
     fi
   fi
+  
+  # invalidate cluster cache
+  local cacheFileName="rackspacecbd_clusters"
+  cache_delete "$cacheFileName"
 }
 
 
@@ -426,8 +430,6 @@ cd \"\${dir}\" || exit 1
 
 ./configure || exit 1
 make || exit 1
-
-# we know that \$HOME/sw/bin is in our path because the deployment configures it
 
 mkdir -p \"${bin_dir}\" || exit 1
 cp src/bwm-ng \"${bin_dir}\" || exit 1
