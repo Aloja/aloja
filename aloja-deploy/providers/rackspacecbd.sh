@@ -95,7 +95,14 @@ delete_cbd_cluster() {
 # actually creates the cluster
 # $1=clusterName
 create_do_cbd_cluster(){
-  lava clusters create "$1" "${CBDclusterStack}" -f --header --node-groups "slave(flavor_id=${CBDvmSize}, count=${numberOfNodes})" --username "${userAloja}" --ssh-key "${CBDsshKeyName}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+
+  local cloudFilesCred=
+
+  if [ "${CBDcloudFilesCredentials}" != "" ]; then
+    cloudFilesCred="--credential cloud_files=${CBDcloudFilesCredentials}"
+  fi
+
+  lava clusters create "$1" "${CBDclusterStack}" -f --header --node-groups "slave(flavor_id=${CBDvmSize}, count=${numberOfNodes})" --username "${userAloja}" --ssh-key "${CBDsshKeyName}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}" ${cloudFilesCred}
 }
 
 resize_do_cbd_cluster(){
