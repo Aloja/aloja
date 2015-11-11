@@ -24,15 +24,23 @@ create_cbd_cluster() {
     CBDclusterStack="HADOOP_HDP2_3"
   fi
 
-  logger "Ensuring SSH credentials are in place"
-  create_cbd_credentials 
+  logger "Ensuring SSH credentials are in place for region ${CBDlocation}"
+  create_cbd_ssh_credentials 
 
-  logger "Checking whether cluster $1 already exists"
+  if [ "${CBDcloudFilesCredentials}" != "" ]; then
+    logger "Ensuring Cloud files credentials are in place for region ${CBDlocation}"
+    create_cbd_cloudfiles_credentials 
+  fi
+
+  logger "Ensuring Ambari credentials are in place for region ${CBDlocation}"
+  create_cbd_ambari_credentials 
+
+  logger "Checking whether cluster $1 already exists in region ${CBDlocation}"
  
   clusterId=$(get_cluster_id "$1")
  
   if [ "${clusterId}" = "" ]; then
-    logger "Creating Linux CBD cluster $1, this can take lots of time"
+    logger "Creating Linux CBD cluster $1 in region ${CBDlocation}, this can take lots of time"
     output=$(create_do_cbd_cluster "$1")
 
     clusterId=$(awk '/ ID / && NR == 4 {print $4; exit}' <<< "${output}")
@@ -50,7 +58,7 @@ create_cbd_cluster() {
     logger "Cluster $1 has $nodes nodes, we want $numberOfNodes"
 
     if [ "${nodes}" != "${numberOfNodes}" ]; then
-      logger "Resizing cluster $1 to $numberOfNodes nodes"
+      logger "Resizing cluster $1 in region ${CBDlocation} to $numberOfNodes nodes"
       output=$(resize_do_cbd_cluster "${clusterId}")
     else
       logger "Nothing to do for cluster $1"
@@ -75,18 +83,18 @@ delete_cbd_cluster() {
     CBDlocation="IAD"
   fi
 
-  logger "Checking whether cluster $1 exists"
+  logger "Checking whether cluster $1 exists in region ${CBDlocation}"
   clusterId=$(get_cluster_id "$1")
  
   if [ "${clusterId}" = "" ]; then
     die "Cluster does not exist, terminating"
   else
-    logger "Deleting cluster $1"
+    logger "Deleting cluster $1 in region ${CBDlocation}"
     lava clusters delete --force "${clusterId}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
     if [ $? -eq 0 ]; then
-      logger "Successfully deleted cluster $1"
+      logger "Successfully deleted cluster $1 from region ${CBDlocation}"
     else
-      logger "Error deleting cluster $1, check manually"
+      logger "Error deleting cluster $1 from region ${CBDlocation}, check manually"
     fi
   fi
   
@@ -140,7 +148,7 @@ get_cluster_id(){
 
 }
 
-create_cbd_credentials(){
+create_cbd_ssh_credentials(){
 
   local keys present
 
@@ -161,6 +169,47 @@ create_cbd_credentials(){
 
 }
 
+create_cbd_cloudfiles_credentials(){
+
+  local creds present
+
+  # check if key already present
+  creds=$(lava credentials list_cloud_files -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
+
+  present=$(awk -v name="${CBDcloudFilesCredentials}" -F, 'NR>1 && $2 == name { found = 1; exit } END { print found + 0 }' <<< "${creds}")
+
+  if [ $present -eq 1 ]; then
+    # update
+    logger "Updating cloud files credentials ${CBDcloudFilesCredentials}"
+    lava credentials update_cloud_files "${CBDcloudFilesCredentials}" "${OS_PASSWORD}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  else
+    # create
+    logger "Creating cloud files credentials ${CBDcloudFilesCredentials} using API key"
+    lava credentials create_cloud_files "${CBDcloudFilesCredentials}" "${OS_PASSWORD}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  fi
+
+}
+
+create_cbd_ambari_credentials(){
+
+  local creds present
+
+  # check if key already present
+  creds=$(lava credentials list_ambari -F --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
+
+  present=$(awk -v name="${CBDambariUser}" -F, 'NR>1 && $2 == name { found = 1; exit } END { print found + 0 }' <<< "${creds}")
+
+  if [ $present -eq 1 ]; then
+    # update
+    logger "Updating ambari credentials for ${CBDambariUser}"
+    lava credentials update_ambari "${CBDambariUser}" --ambari-password "${CBDambariPassword}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  else
+    # create
+    logger "Creating ambari credentials for ${CBDambariUser}"
+    lava credentials create_ambari "${CBDambariUser}" --ambari-password "${CBDambariPassword}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  fi
+
+}
 
 # wait until the cluster is ready
 # $1=clusterId
