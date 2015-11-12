@@ -490,35 +490,64 @@ class CostPerfEvaluationController extends AbstractController
     	));
     }
 
-    public function nodesEvaluationAction()
-    {
-        $dbUtils = $this->container->getDBUtils();
-		
-        try {
-            $filter_execs = DBUtils::getFilterExecs();
+	public function nodesEvaluationAction()
+	{
+		$dbUtils = $this->container->getDBUtils();
+
+		return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array_merge(array(
+			'highcharts_js' => HighCharts::getHeader()),
+			$this->nodesEvalCore("Datanodes",$dbUtils))
+		);
+	}
+
+	public function datasizesEvaluationAction()
+	{
+		$dbUtils = $this->container->getDBUtils();
+
+		return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array_merge(array(
+				'highcharts_js' => HighCharts::getHeader()),
+				$this->nodesEvalCore("Datasize",$dbUtils))
+		);
+	}
+
+	private function nodesEvalCore($scalabilityType,$dbUtils) {
+		$categories = array();
+		$series = array();
+		$datanodes = array();
+
+		try {
+			$filter_execs = DBUtils::getFilterExecs();
 
 			$innerQueryWhere = str_replace("e.","e2.",$this->whereClause);
 			$innerQueryWhere = str_replace("c.","c2.",$innerQueryWhere);
 			$innerQueryWhere = str_replace("p.","p2.",$innerQueryWhere);
-            $execs = "SELECT c.datanodes,e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
+			$execs = "SELECT c.datanodes as 'category',e.exec_type,c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 					LEFT JOIN aloja_ml.predictions p USING (id_exec)
-					INNER JOIN ( SELECT c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
+					INNER JOIN ( SELECT c2.datanodes as 'category',e2.exec_type,c2.vm_OS,c2.vm_size as vmsize,MIN(e2.exe_time) as minexe
 								from execs e2 JOIN aloja2.clusters c2 USING (id_cluster)
 								LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
 								WHERE 1 $innerQueryWhere GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
-					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
+					AND t.category = category AND t.vmsize = c.vm_size
 					WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
 
-			$predExecs = "SELECT c.datanodes,'predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
+			$predExecs = "SELECT c.datanodes as 'category','predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
-					INNER JOIN ( SELECT c2.datanodes,'default' as 'exec_type',c2.vm_OS,c2.vm_size as vmsize,MIN(p2.exe_time) as minexe
+					INNER JOIN ( SELECT c2.datanodes as 'category','default' as 'exec_type',c2.vm_OS,c2.vm_size as vmsize,MIN(p2.exe_time) as minexe
 								from aloja_ml.predictions p2 JOIN aloja2.clusters c2 USING (id_cluster)
 								WHERE 1 ".str_replace("e2.","p2.",$innerQueryWhere)." GROUP BY c2.datanodes,exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
-					AND t.datanodes = c.datanodes AND t.vmsize = c.vm_size
+					AND t.category = category AND t.vmsize = c.vm_size
 					WHERE 1 $filter_execs  GROUP BY c.datanodes,exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
+
+			if($scalabilityType == 'Datasize') {
+				$execs = str_replace("c2.datanodes", "e2.datasize",$execs);
+				$execs = str_replace("c.datanodes", "e.datasize",$execs);
+
+				$predExecs = str_replace("c2.datanodes", "p2.datasize",$predExecs);
+				$predExecs = str_replace("c.datanodes", "e.datasize",$predExecs);
+			}
 
 
 			$params = $this->filters->getFiltersSelectedChoices(array('upred','uobsr'));
@@ -533,60 +562,64 @@ class CostPerfEvaluationController extends AbstractController
 
 			$execs = $dbUtils->get_rows($execs);
 
-            $vmSizes = array();
-            $categories = array();
-            $dataNodes = array();
-            $vmOS = array();
-            $execTypes = array();
-            foreach ($execs as &$exec) {
-                if (!isset($dataNodes[$exec['datanodes']])) {
-                    $dataNodes[$exec['datanodes']] = 1;
-                    $categories[] = $exec['datanodes'];
-                }
-                if(!isset($vmOS[$exec['vm_OS']]))
-                    $vmOS[$exec['vm_OS']] = 1;
-                if(!isset($execTypes[$exec['exec_type']]))
-                    $execTypes[$exec['exec_type']] = 1;
+			$vmSizes = array();
+			$dataNodes = array();
+			$vmOS = array();
+			$execTypes = array();
+			foreach ($execs as &$exec) {
+				if (!isset($dataNodes[$exec['category']])) {
+					$dataNodes[$exec['category']] = 1;
+					$categories[] = $exec['category'];
+				}
+				if(!isset($vmOS[$exec['vm_OS']]))
+					$vmOS[$exec['vm_OS']] = 1;
+				if(!isset($execTypes[$exec['exec_type']]))
+					$execTypes[$exec['exec_type']] = 1;
 
-                $vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['datanodes']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
-            }
+				$vmSizes[$exec['vm_size']][$exec['exec_type']][$exec['vm_OS']][$exec['category']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
+			}
 
-            $i = 0;
-            $seriesColors = array('#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
-                '#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
-            $series = array();
-            foreach($vmSizes as $vmSize => $value) {
-                foreach($execTypes as $execType => $typevalue) {
-                    foreach ($vmOS as $OS => $osvalue) {
-                        if (isset($vmSizes[$vmSize][$execType][$OS])) {
-                            if ($i == sizeof($seriesColors))
-                                $i = 0;
-                            $costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-                            $timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
-                            foreach ($dataNodes as $datanodes => $dvalue) {
-                                if (!isset($value[$execType][$OS][$datanodes])) {
-                                    $costSeries['data'][] = "null";
-                                    $timeSeries['data'][] = "null";
-                                } else {
-                                    $costSeries['data'][] = $value[$execType][$OS][$datanodes][1];
-                                    $timeSeries['data'][] = $value[$execType][$OS][$datanodes][0];
-                                }
-                            }
-                            $series[] = $timeSeries;
-                            $series[] = $costSeries;
-                        }
-                    }
-                }
-            }
-        } catch(\Exception $e) {
-            $this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
-        }
+			$i = 0;
+			$seriesColors = array('#7cb5ec', '#434348', '#90ed7d', '#f7a35c', '#8085e9',
+				'#f15c80', '#e4d354', '#2b908f', '#f45b5b', '#91e8e1');
+			foreach($vmSizes as $vmSize => $value) {
+				foreach($execTypes as $execType => $typevalue) {
+					foreach ($vmOS as $OS => $osvalue) {
+						if (isset($vmSizes[$vmSize][$execType][$OS])) {
+							if ($i == sizeof($seriesColors))
+								$i = 0;
+							$costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+							$timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+							foreach ($dataNodes as $datanode => $dvalue) {
+								$datanodes[] = $datanode;
+								if (!isset($value[$execType][$OS][$datanode])) {
+									$costSeries['data'][] = "null";
+									$timeSeries['data'][] = "null";
+								} else {
+									$costSeries['data'][] = $value[$execType][$OS][$datanode][1];
+									$timeSeries['data'][] = $value[$execType][$OS][$datanode][0];
+								}
+							}
+							$series[] = $timeSeries;
+							$series[] = $costSeries;
+						}
+					}
+				}
+			}
+		} catch(\Exception $e) {
+			$this->container->getTwig ()->addGlobal ( 'message', $e->getMessage () . "\n" );
+		}
 
-        return $this->render('costPerfEvaluationViews/nodes_evaluation.html.twig', array(
-            'highcharts_js' => HighCharts::getHeader(),
-            'categories' => json_encode($categories),
-            'seriesData' => str_replace('"null"','null',json_encode($series)),
-            'datanodess' => $datanodes,
-        ));
-    }
+		if($scalabilityType == 'Datasize') {
+			foreach ($categories as &$category) {
+				$category = Utils::beautifyDatasize($category);
+			}
+		}
+
+		return array(
+			'categories' => json_encode($categories),
+			'seriesData' => str_replace('"null"','null',json_encode($series)),
+			'datanodess' => $datanodes,
+		);
+	}
 }

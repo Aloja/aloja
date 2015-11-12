@@ -9,11 +9,12 @@ use alojaweb\inc\MLUtils;
 
 class MLFindAttributesController extends AbstractController
 {
-	public function __construct($container) {
+	public function __construct($container)
+	{
 		parent::__construct($container);
 
 		//All this screens are using this custom filters
-		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
 	}
 
 	public function mlfindattributesAction()
@@ -35,17 +36,8 @@ class MLFindAttributesController extends AbstractController
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
 
-			if (array_key_exists('dump',$_GET))
-			{
-				$dump = $_GET["dump"];
-				unset($_GET["dump"]);
-			}
-
-			if (array_key_exists('pass',$_GET))
-			{
-				$pass = $_GET["pass"];
-				unset($_GET["pass"]);
-			}
+			if (array_key_exists('dump',$_GET)) { $dump = $_GET["dump"]; unset($_GET["dump"]); }
+			if (array_key_exists('pass',$_GET)) { $pass = $_GET["pass"]; unset($_GET["pass"]); }
 
 			$this->buildFilters(array(
 			'current_model' => array(
@@ -81,7 +73,7 @@ class MLFindAttributesController extends AbstractController
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -95,7 +87,7 @@ class MLFindAttributesController extends AbstractController
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
 			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
-			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen,$db);
+			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen, $db);
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
@@ -114,7 +106,6 @@ class MLFindAttributesController extends AbstractController
 
 			if ($instructions)
 			{
-
 				$result = $dbml->query("SELECT id_learner, model, algorithm FROM aloja_ml.learners");
 				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['model']."</li>";
 
@@ -144,8 +135,8 @@ class MLFindAttributesController extends AbstractController
 
 				$tmp_file = md5($config).'.tmp';
 
-				$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-				$finished_process = $in_process && ((int)shell_exec('ls '.getcwd().'/cache/query/'.md5($config).'-*.lock | wc -w ') == count($instances));
+				$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
+				$finished_process = $in_process && ((int)shell_exec('ls '.getcwd().'/cache/ml/'.md5($config).'-*.lock | wc -w ') == count($instances));
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
@@ -155,20 +146,20 @@ class MLFindAttributesController extends AbstractController
 					$row = $result->fetch();
 					$content = $row['file'];
 
-					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$filemodel = getcwd().'/cache/ml/'.$current_model.'-object.rds';
 					$fp = fopen($filemodel, 'w');
 					fwrite($fp,$content);
 					fclose($fp);
 
 					// Run the predictor
-					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
+					exec('cd '.getcwd().'/cache/ml ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
 					$count = 1;
 					foreach ($instances as $inst)
 					{
-						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/query ; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$current_model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'Prediction\' >>'.$tmp_file.' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
+						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$current_model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'Prediction\' >>'.$tmp_file.' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					}
 				}
-				$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/query/'.md5($config).'-*.lock | wc -w ') == count($instances));
+				$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/ml/'.md5($config).'-*.lock | wc -w ') == count($instances));
 
 				if ($finished_process && !$is_cached)
 				{
@@ -176,8 +167,15 @@ class MLFindAttributesController extends AbstractController
 					$i = 0;
 					$token = 0;
 					$token_i = 0;
-					$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
-					if (($handle = fopen(getcwd().'/cache/query/'.$tmp_file, "r")) !== FALSE)
+					$query_pattern = "INSERT IGNORE INTO aloja_ml.predictions (
+						id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,
+						id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,
+						datasize,scale_factor,
+						net_maxtxkbs,net_maxrxkbs,net_maxtxpcks,net_maxrxpcks,net_maxtxcmps,net_maxrxcmps,net_maxrxmscts,
+						disk_maxtps,disk_maxsvctm,disk_maxrds,disk_maxwrs,disk_maxrqsz,disk_maxqusz,disk_maxawait, disk_maxutil,
+						pred_time,id_learner,instance,predict_code) VALUES ";
+					$query = $query_pattern;
+					if (($handle = fopen(getcwd().'/cache/ml/'.$tmp_file, "r")) !== FALSE)
 					{
 						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
 						{
@@ -199,7 +197,6 @@ class MLFindAttributesController extends AbstractController
                                                         // Insert instance values
                                                         if ($row['num'] == 0)
                                                         {
-
 								$token_i = 1;
 								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
 								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
@@ -212,7 +209,7 @@ class MLFindAttributesController extends AbstractController
 							if ($i % 100 == 0 && $token_i > 0)
 							{
 								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,pred_time,id_learner,instance,predict_code) VALUES ";
+								$query = $query_pattern;
 								$token = 0;
 								$token_i = 0;
 							}
@@ -223,7 +220,7 @@ class MLFindAttributesController extends AbstractController
 						}
 
 						// Descriptive Tree
-						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/query/'.$tmp_file.'":output=nodejson -v 2> /dev/null');
+						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/ml/'.$tmp_file.'":output=nodejson -v 2> /dev/null');
 						$tree_descriptor = substr($tree_descriptor, 5, -2);
 						$tree_descriptor = str_replace("\\\"","\"",$tree_descriptor);
 						$tree_descriptor = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor);
@@ -232,10 +229,10 @@ class MLFindAttributesController extends AbstractController
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 
 						// remove remaining locks
-						shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'*.lock'); 
+						shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.lock'); 
 
 						// Remove temporal files
-						$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.tmp');
+						$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'.tmp');
 
 						$is_cached = true;
 					}
@@ -253,7 +250,7 @@ class MLFindAttributesController extends AbstractController
 				if (isset($pass) && $pass == 2) { $dbml = null; return "2"; }
 
 				// Fetch results and compose JSON
-				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Prediction','Observed');
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Datasize','Scale.Factor','Prediction','Observed');
 				$jsonHeader = '[{title:""}';
 				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 				$jsonHeader = $jsonHeader.']';
@@ -264,7 +261,7 @@ class MLFindAttributesController extends AbstractController
 				foreach ($result as $row)
 				{
 					if ($jsonData!='[') $jsonData = $jsonData.',';
-					$jsonData = $jsonData."['".$row['num']."','".str_replace(",","','",$row['instance'])."','".$row['pred_time']."','".$row['exe_time']."']";
+					$jsonData = $jsonData."['".$row['num']."','".implode("','",array_slice(explode(",",$row['instance']),0,21))."','".$row['pred_time']."','".$row['exe_time']."']";
 				}
 				$jsonData = $jsonData.']';
 
@@ -316,6 +313,7 @@ class MLFindAttributesController extends AbstractController
 			}
 
 			$jsonData = $jsonHeader = $jsonColumns = $jsonColor = '[]';
+			$instances = array();
 			if (isset($pass)) { return "-2"; }
 		}
 		$dbml = null;
@@ -330,7 +328,6 @@ class MLFindAttributesController extends AbstractController
 			'models_id' => $possible_models_id,
 			'other_models_id' => $other_models,
 			'current_model' => $current_model,
-			'message' => $message,
 			'mae' => $mae,
 			'rae' => $rae,
 			'must_wait' => $must_wait,
@@ -374,7 +371,7 @@ class MLFindAttributesController extends AbstractController
 				return $this->render('mltemplate/mlobstrees.html.twig', array('obstrees' => $jsonObstrees, 'header_obstrees' => $jsonObstreesHeader,'jsonData' => '[]','jsonHeader' => '[]', 'instructions' => 'YES'));
 			}
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -395,17 +392,18 @@ class MLFindAttributesController extends AbstractController
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['total'] > 0);
 
-			$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-			$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+			$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
+			$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.fin');
 
-			$tmp_file = getcwd().'/cache/query/'.md5($config).'.tmp';
+			$tmp_file = getcwd().'/cache/ml/'.md5($config).'.tmp';
 
 			// get headers for csv
 			$header_names = array(
 				'bench' => 'Benchmark','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
 				'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version',
+				'IFNULL(datasize,0)' =>'Datasize','scale_factor' => 'Scale.Factor'
 			);
 			$special_header_names = array('id_exec' => 'ID','exe_time' => 'Exe.Time');
 
@@ -437,7 +435,7 @@ class MLFindAttributesController extends AbstractController
 				if (($key = array_search('id_cluster', $headers)) !== false) $headers[$key] = 'e.id_cluster';
 
 				// Execute R Engine
-				$exe_query = 'cd '.getcwd().'/cache/query;';
+				$exe_query = 'cd '.getcwd().'/cache/ml;';
 				$exe_query = $exe_query.' touch '.md5($config).'.lock;';
 				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file='.$tmp_file.':output=nodejson -v >'.md5($config).'-split.dat 2>/dev/null;';
 				$exe_query = $exe_query.' ../../resources/aloja_cli.r -m aloja_representative_tree -p method=gini:dump_file='.$tmp_file.':output=nodejson -v >'.md5($config).'-gini.dat 2>/dev/null;';
@@ -447,7 +445,7 @@ class MLFindAttributesController extends AbstractController
 
 			if (!$is_cached)
 			{
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'.fin');
+				$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.fin');
 
 				if ($finished_process)
 				{
@@ -455,7 +453,7 @@ class MLFindAttributesController extends AbstractController
 					$tree_descriptor_ordered = '';
 					try
 					{
-						$file = fopen(getcwd().'/cache/query/'.md5($config).'-split.dat', "r");
+						$file = fopen(getcwd().'/cache/ml/'.md5($config).'-split.dat', "r");
 						$tree_descriptor_ordered = fgets($file);
 						$tree_descriptor_ordered = substr($tree_descriptor_ordered, 5, -2);
 						$tree_descriptor_ordered = str_replace("\\\"","\"",$tree_descriptor_ordered);
@@ -466,7 +464,7 @@ class MLFindAttributesController extends AbstractController
 					$tree_descriptor_gini = '';
 /*					try
 					{
-						$file = fopen(getcwd().'/cache/query/'.md5($config).'-gini.dat', "r");
+						$file = fopen(getcwd().'/cache/ml/'.md5($config).'-gini.dat', "r");
 						$tree_descriptor_gini = fgets($file);
 						$tree_descriptor_gini = substr($tree_descriptor_gini, 5, -2);
 						$tree_descriptor_gini = str_replace("\\\"","\"",$tree_descriptor_gini);
@@ -477,8 +475,8 @@ class MLFindAttributesController extends AbstractController
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 
 					// Remove temporal files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.dat');
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'.fin');
+					$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-*.dat');
+					$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'.fin');
 				}
 				else
 				{
@@ -488,7 +486,7 @@ class MLFindAttributesController extends AbstractController
 			}
 
 			// Fetch results and compose JSON
-			$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Observed');
+			$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Datasize','Scale.Factor','Observed');
 			$jsonHeader = '[{title:""}';
 			foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 			$jsonHeader = $jsonHeader.']';
