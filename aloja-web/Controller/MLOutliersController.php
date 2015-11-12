@@ -9,11 +9,12 @@ use alojaweb\inc\MLUtils;
 
 class MLOutliersController extends AbstractController
 {
-	public function __construct($container) {
+	public function __construct($container)
+	{
 		parent::__construct($container);
 
 		//All this screens are using this custom filters
-		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
 	}
 
 	public function mloutliersAction()
@@ -31,21 +32,12 @@ class MLOutliersController extends AbstractController
 			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
 
 			$db = $this->container->getDBUtils();
-
+	    	
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
-		    	
-			if (array_key_exists('dump',$_GET))
-			{
-				$dump = $_GET["dump"];
-				unset($_GET["dump"]);
-			}
 
-			if (array_key_exists('register',$_GET))
-			{
-				$register = $_GET["register"];
-				unset($_GET["register"]);
-			}
+			if (array_key_exists('dump',$_GET)) { $dump = $_GET["dump"]; unset($_GET["dump"]); }
+			if (array_key_exists('register',$_GET)) { $register = $_GET["register"]; unset($_GET["register"]); }
 
 			$this->buildFilters(
 				array('current_model' => array(
@@ -85,7 +77,7 @@ class MLOutliersController extends AbstractController
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','sigma'))));
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -148,29 +140,62 @@ class MLOutliersController extends AbstractController
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['total'] > 0);
 
-				$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
-				$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
+				$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
+				$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
+				$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv');
 
 				if (!$is_cached && !$in_process && !$finished_process)
 				{
 					// get headers for csv
-					$header_names = array(
-						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
+	 				$header_names = array(
+						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
-						'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
+						'datanodes' => 'Datanodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM','c.provider' => 'Provider','c.vm_size' => 'VM.Size',
+						'type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version','IFNULL(datasize,0)' =>'Datasize','scale_factor' => 'Scale.Factor'
 					);
-					$headers = array_keys($header_names);
-					$names = array_values($header_names);
+					$added_names = array(
+						'maxtxkbs' => 'Net.maxtxKB.s','maxrxkbs' => 'Net.maxrxKB.s','maxtxpcks' => 'Net.maxtxPck.s','maxrxpcks' => 'Net.maxrxPck.s',
+						'maxtxcmps' => 'Net.maxtxCmp.s','maxrxcmps' => 'Net.maxrxCmp.s','maxrxmscts' => 'Net.maxrxmsct.s',
+						'maxtps' => 'Disk.maxtps','maxsvctm' => 'Disk.maxsvctm','maxrds' => 'Disk.maxrd.s','maxwrs' => 'Disk.maxwr.s',
+						'maxrqsz' => 'Disk.maxrqsz','maxqusz' => 'Disk.maxqusz','maxawait' => 'Disk.maxawait','maxutil' => 'Disk.maxutil'
+	 				);
 
 					// dump the result to csv
-					$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
+					$query = "SELECT ".implode(",",array_keys($header_names)).",
+						n.maxtxkbs, n.maxrxkbs, n.maxtxpcks, n.maxrxpcks, n.maxtxcmps, n.maxrxcmps, n.maxrxmscts,
+						d.maxtps, d.maxsvctm, d.maxrds, d.maxwrs, d.maxrqsz, d.maxqusz, d.maxawait, d.maxutil
+						FROM aloja2.execs AS e LEFT JOIN aloja2.clusters AS c ON e.id_cluster = c.id_cluster,
+						(
+						    SELECT  MAX(n1.`maxtxkB/s`) AS maxtxkbs, MAX(n1.`maxrxkB/s`) AS maxrxkbs,
+						    MAX(n1.`maxtxpck/s`) AS maxtxpcks, MAX(n1.`maxrxpck/s`) AS maxrxpcks,
+						    MAX(n1.`maxtxcmp/s`) AS maxtxcmps, MAX(n1.`maxrxcmp/s`) AS maxrxcmps,
+						    MAX(n1.`maxrxmcst/s`) AS maxrxmscts,
+						    e1.net AS net, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider
+						    FROM aloja2.precal_network_metrics AS n1,
+						    aloja2.execs AS e1 LEFT JOIN aloja2.clusters AS c1 ON e1.id_cluster = c1.id_cluster
+						    WHERE e1.id_exec = n1.id_exec
+						    GROUP BY e1.net, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider
+						) AS n,
+						(
+						    SELECT MAX(d1.maxtps) AS maxtps, MAX(d1.maxsvctm) as maxsvctm,
+						    MAX(d1.`maxrd_sec/s`) as maxrds, MAX(d1.`maxwr_sec/s`) as maxwrs,
+						    MAX(d1.maxrq_sz) as maxrqsz, MAX(d1.maxqu_sz) as maxqusz,
+						    MAX(d1.maxawait) as maxawait, MAX(d1.`max%util`) as maxutil,
+						    e2.disk AS disk, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider
+						    FROM aloja2.precal_disk_metrics AS d1,
+						    aloja2.execs AS e2 LEFT JOIN aloja2.clusters AS c1 ON e2.id_cluster = c1.id_cluster
+						    WHERE e2.id_exec = d1.id_exec
+						    GROUP BY e2.disk, c1.vm_cores, c1.vm_RAM, c1.vm_size, c1.vm_OS, c1.provider
+						) AS d
+						WHERE e.net = n.net AND c.vm_cores = n.vm_cores AND c.vm_RAM = n.vm_RAM AND c.vm_size = n.vm_size
+						AND c.vm_OS = n.vm_OS AND c.provider = n.provider AND e.disk = d.disk AND c.vm_cores = d.vm_cores
+						AND c.vm_RAM = d.vm_RAM AND c.vm_size = d.vm_size AND c.vm_OS = d.vm_OS AND c.provider = d.provider
+						AND hadoop_version IS NOT NULL".$where_configs.";";
 				    	$rows = $db->get_rows($query);
 					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 
 					$fp = fopen($cache_ds, 'w');
-					fputcsv($fp, $names,',','"');
+					fputcsv($fp,array_values(array_merge($header_names,$added_names)),',','"');
 				    	foreach($rows as $row)
 					{
 						$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
@@ -184,20 +209,20 @@ class MLOutliersController extends AbstractController
 					$row = $result->fetch();
 					$content = $row['file'];
 
-					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$filemodel = getcwd().'/cache/ml/'.$current_model.'-object.rds';
 					$fp = fopen($filemodel, 'w');
 					fwrite($fp,$content);
 					fclose($fp);
 
 					// launch query
-					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock');
-					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
+					exec('cd '.getcwd().'/cache/ml ; touch '.md5($config).'.lock');
+					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
 				}
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
+				$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv');
 
 				if ($finished_process && !$is_cached)
 				{
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-resolutions.csv', 'r')) !== FALSE)
+					if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv', 'r')) !== FALSE)
 					{
 
 						$header = fgetcsv($handle, 1000, ",");
@@ -220,7 +245,7 @@ class MLOutliersController extends AbstractController
 					}
 
 					// Store file model to DB
-					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$filemodel = getcwd().'/cache/ml/'.md5($config).'-object.rds';
 					$fp = fopen($filemodel, 'r');
 					$content = fread($fp, filesize($filemodel));
 					$content = addslashes($content);
@@ -230,7 +255,7 @@ class MLOutliersController extends AbstractController
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file resolution into DB');
 
 					// Remove temporary files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-*.csv');
 
 					$is_cached = true;
 				}
@@ -250,13 +275,13 @@ class MLOutliersController extends AbstractController
 
 					foreach ($result as $row)
 					{
-						$entry = array('x' => (int)$row['predicted'], 'y' => (int)$row['observed'], 'name' => $row['instance'], 'id' => (int)$row['id_exec']);
+						$entry = array('x' => (int)$row['predicted'], 'y' => (int)$row['observed'], 'name' => implode(",",array_slice(explode(",",$row['instance']),0,21)), 'id' => (int)$row['id_exec']);
 
 						if ($row['outlier_code'] == 0) $jsonData[] = $entry;
 						if ($row['outlier_code'] == 1) $jsonWarns[] = $entry;
 						if ($row['outlier_code'] == 2) $jsonOuts[] = $entry;
 
-						$jsonTable .= (($jsonTable=='')?'':',').'["'.(($row['outlier_code'] == 0)?'Legitimate':(($row['outlier_code'] == 1)?'Warning':'Outlier')).'","'.$row['predicted'].'","'.$row['observed'].'","'.str_replace(",","\",\"",$row['instance']).'","'.$row['id_exec'].'"]';						
+						$jsonTable .= (($jsonTable=='')?'':',').'["'.(($row['outlier_code'] == 0)?'Legitimate':(($row['outlier_code'] == 1)?'Warning':'Outlier')).'","'.$row['predicted'].'","'.$row['observed'].'","'.str_replace(",","\",\"",implode(",",array_slice(explode(",",$row['instance']),0,21))).'","'.$row['id_exec'].'"]';						
 					}
 
 					$query_var = "SELECT MAX(predicted) as max_x, MAX(observed) as max_y FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000";
@@ -265,7 +290,7 @@ class MLOutliersController extends AbstractController
 					$max_x = $row['max_x'];
 					$max_y = $row['max_y'];
 
-					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','ID');
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Data.Size','Scale.Factor','ID');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';

@@ -205,3 +205,23 @@ function showCorrectClusters(providerClusters) {
 		});
 	}
 }
+
+function calculateDatasize(value) {
+	var nDigits = value.toString().length;
+	var retorn = '';
+	if(nDigits >= 4) {
+		if(nDigits >= 8) {
+			if(nDigits >= 10) {
+				if(nDigits >= 13) {
+					retorn =  Math.ceil((value/1000000000000)).toString() + ' TB';
+				} else
+					retorn =  Math.ceil((value/1000000000)).toString() + ' GB';
+			} else
+				retorn = Math.ceil((value/1000000)).toString() + ' MB';
+		} else
+			retorn = Math.ceil((value/1000)).toString() + ' KB';
+	} else
+		retorn = value.toString() + ' B';
+
+	return retorn;
+}

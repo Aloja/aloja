@@ -80,6 +80,31 @@
 				</div>
 				<div class="row">
 					<div class="col-md-6">
+						Data Size:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+						<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+							<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+								{% for selopt in options['datasize'] %}
+								{% if selopt['datasize'] is not null %}
+								<input type="checkbox" name="datasize[]" value="{{ selopt['datasize'] }}" {% if selopt['datasize'] in datasize %}checked{% endif %}>&nbsp;{{ selopt['datasize'] }}<br />
+								{% endif %}
+								{% endfor %}
+							</div>
+						</div>
+					</div>
+					<div class="col-md-6">
+						Scale Factor:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
+						<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
+							<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
+							{% for selopt in options['scale_factor'] %}
+							<input type="checkbox" name="scale_factor[]" value="{{ selopt['scale_factor'] }}" {% if selopt['scale_factor'] in scale_factor %}checked{% endif %}>&nbsp;{{ selopt['scale_factor'] }}<br />
+							{% endfor %}
+							</div>
+						</div>
+					</div>
+				</div>
+				<hr/>
+				<div class="row">
+					<div class="col-md-6">
 						Maps:&nbsp;&nbsp;<span class="selectAll glyphicon glyphicon-plus" alt="Select all" title="Select all" src="img/plus.png" style="padding: 2px; cursor: pointer;"></span>&nbsp;&nbsp;<span class="deselectAll glyphicon-minus" alt="Deselect all" title="Deselect all" src="img/minus.png" style="padding: 2px; cursor: pointer;" /></span><br />
 						<div class="panel panel-default" style="overflow-y: scroll; height: 6.7em;">
 							<div class="panel-body" style="padding: 0; margin: 0; margin-left: .5em;">
@@ -190,6 +215,43 @@
 	</div>
 
 	<div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
+		<div class="panel-heading" role="tab" id="headingAdvancedFilters">
+			<i id="advancedFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
+			<h4 class="panel-title">
+				<a data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" aria-expanded="true" aria-controls="advancedFilters">Sample Data-set Advanced filters</a>
+			</h4>
+		</div>
+		<div id="advancedFilters" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingAdvancedFilters">
+			<div class="panel-body">
+				<input type="checkbox" name="filters[]" value="valid" {% if filters is defined and 'valid' in filters %}checked{% endif %}> Only valid execs<br />
+				<input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter<br />
+				<input type="checkbox" name="filters[]" value="prepares" {% if filters is defined and 'prepares' in filters %}checked{% endif %}> Include prepares<br />
+				<input type="checkbox" name="filters[]" value="perfdetails" {% if filters is defined and 'perfdetails' in filters %}checked{% endif %}>Only execs with perf details<br />
+{#				<input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
+{#				<input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
+				<input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
+				<input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
+				<div class="row">
+					<div class="col-md-6">
+						From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd"" />
+					</div>
+					<div class="col-md-6">
+						To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd"" />
+					</div>
+				</div>
+				<div class="row">
+					<div class="col-md-6">
+						Min exe time: <input type="text" name="minexetime" class="form-control" value="{{ minexetime }}" />
+					</div>
+					<div class="col-md-6">
+						Max exe time: <input type="text" name="maxexetime" class="form-control" value="{{ maxexetime }}" />
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
 		<div class="panel-heading" role="tab" id="headingNewClusterFilter">
 			<i id="NewClusterFilterGlyphon" data-toggle="collapse" data-parent="#accordion" href="#NewClusterFilter" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
       			<h4 class="panel-title">
@@ -292,43 +354,6 @@
 					</div>
 					<div class="col-md-6">
 						<!-- Se vende Ford Fiesta en perfecto estado -->
-					</div>
-				</div>
-			</div>
-		</div>
-	</div>
-
-	<div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
-		<div class="panel-heading" role="tab" id="headingAdvancedFilters">
-			<i id="advancedFiltersGlyphon" data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" class="indicator glyphicon glyphicon-chevron-down pull-right"></i>
-			<h4 class="panel-title">
-				<a data-toggle="collapse" data-parent="#accordion" href="#advancedFilters" aria-expanded="true" aria-controls="advancedFilters">Advanced filters</a>
-			</h4>
-		</div>
-		<div id="headingadvanced" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingAdvancedFilters">
-			<div class="panel-body">
-				<input type="checkbox" name="filters[]" value="valid" {% if filters is defined and 'valid' in filters %}checked{% endif %}> Only valid execs<br />
-				<input type="checkbox" name="filters[]" value="filters" {% if filters is defined and 'filters' in filters %}checked{% endif %}> Filter<br />
-				<input type="checkbox" name="filters[]" value="prepares" {% if filters is defined and 'prepares' in filters %}checked{% endif %}> Include prepares<br />
-				<input type="checkbox" name="filters[]" value="perfdetails" {% if filters is defined and 'perfdetails' in filters %}checked{% endif %}>Only execs with perf details<br />
-{#				<input type="checkbox" name="filters[]" value="outliers" {% if filters is defined and 'outliers' in filters %}checked{% endif %}> Show outliers<br />#}
-{#				<input type="checkbox" name="filters[]" value="warnings" style="margin-left: 1em;" {% if filters is defined and 'warnings' in filters %}checked{% endif %}> Show warnings#}
-				<input type="text" id="allunchecked" name="allunchecked" value="{{ allunchecked }}" style="opacity: 0; position: absolute; left:999999px;" >
-				<input type="hidden" name="selected-groups" value="{% if selectedGroups is defined and selectedGroups is not null %}{{ selectedGroups | join(',') }}{% endif %}" />
-				<div class="row">
-					<div class="col-md-6">
-						From: <input type="text" name="datefrom" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ datefrom }}" />
-					</div>
-					<div class="col-md-6">
-						To: <input type="text" name="dateto" class="datepicker form-control" data-date-format="yyyy/mm/dd" value="{{ dateto }}" />
-					</div>
-				</div>
-				<div class="row">
-					<div class="col-md-6">
-						Min exe time: <input type="text" name="minexetime" class="form-control" value="{{ minexetime }}" />
-					</div>
-					<div class="col-md-6">
-						Max exe time: <input type="text" name="maxexetime" class="form-control" value="{{ maxexetime }}" />
 					</div>
 				</div>
 			</div>

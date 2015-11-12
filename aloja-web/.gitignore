@@ -1,5 +1,6 @@
 #Ignore files exclusive for aloja-web
 logs/*
+cache/ml/*
 cache/query/*
 cache/twig/*
 cache/prv/*
