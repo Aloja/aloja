@@ -1212,7 +1212,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../config ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../config"  "$homePrefixAloja/$userAloja/share"
   vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
   #vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 

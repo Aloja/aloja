@@ -95,8 +95,9 @@ aloja_representative_tree <- function (vin, vout = "Prediction", method = "order
 				predicted_instances <- (read.table(dump_file,sep="",header=FALSE,stringsAsFactors=FALSE))[,c(2,3)];
 				colnames(predicted_instances) <- c("Instance",vout);
 				b <- sapply(predicted_instances$Instance,function(x) strsplit(x,","));
-				b <- as.data.frame(t(matrix(unlist(b),nrow=length(vin))));
-				b <- cbind(b,predicted_instances[,vout]);
+				nattrs <- nchar(predicted_instances$Instance[1]) - nchar(gsub(",","",predicted_instances$Instance[1])) + 1;
+				b <- as.data.frame(t(matrix(unlist(b),nrow=nattrs)));
+				b <- cbind(b[,1:length(vin)],predicted_instances[,vout]);
 				colnames(b) <- c(vin,vout);
 			}
 		}
