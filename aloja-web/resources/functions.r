@@ -434,12 +434,12 @@ aloja_prepare_datasets <- function (vin, vout, tsplit = NULL, vsplit = NULL,
 		if (nrow(temptr) > 100)
 		{
 			retval[["olstrain"]] <- temptr$ID[temptr[,vout] > mean(temptr[,vout]) + sigma * sd(temptr[,vout])];
-			retval$trainset <- retval$trainset[!(retval$trainset$ID %in% retval$olstrain)];
+			retval$trainset <- retval$trainset[!(retval$trainset %in% retval$olstrain)];
 		}
 		if (nrow(temptv) > 100)
 		{
 			retval[["olsvalid"]] <- temptv$ID[temptv[,vout] > mean(temptv[,vout]) + sigma * sd(temptv[,vout])];
-			retval$validset <- retval$validset[!(retval$validset$ID %in% retval$olsvalid)];
+			retval$validset <- retval$validset[!(retval$validset %in% retval$olsvalid)];
 		}
 	}
 
