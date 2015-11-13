@@ -29,7 +29,7 @@ if [ ! -d  "/vagrant" ] ; then
 #for vagrant allow more values
 else
   filter_common="&uobsr=1&minexetime=1&maxexetime=5000"
-  filter_ml=""
+  filter_ml="&bench_type[]=HiBench"
 fi
 
 filter_HiBench_Terasort_8d_2015="$filter_common&bench_type[]=HiBench&bench[]=terasort&datanodes[]=8&datefrom=2015/01/01"

@@ -97,7 +97,7 @@ vm_install_base_packages() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican" "update" #wamerican is for hivebench
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng" "update" #wamerican is for hivebench
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -559,7 +559,7 @@ install_R() {
 
   # temporarily change the bootstrap name for the vagrant VM to force update the R packages
   if inside_vagrant ; then
-    local bootstrap_file="${FUNCNAME[0]}_2"
+    local bootstrap_file="${FUNCNAME[0]}_3"
   else
     local bootstrap_file="${FUNCNAME[0]}"
   fi
@@ -601,11 +601,11 @@ sudo rm $libtiff_file"
       local R_file="R-x86_64-3.2-packages.tar.gz"
       aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
 
-      logger "INFO: Uncompressing and copying files"
+      logger "INFO: Uncompressing and copying R files"
       vm_execute "
 sudo rm -rf /opt/R;
-tar -C /opt -xf '/tmp/$R_file';
-rm -rf '/tmp/$R_file';
+sudo tar -C /opt -xf '/tmp/$R_file';
+sudo rm -rf '/tmp/$R_file';
 "
 
 #      logger "INFO: Updating package (will take a while if changes are found)"
@@ -707,6 +707,38 @@ sudo pip install --upgrade rackspace-novaclient
     logger "$bootstrap_file already configured"
   fi
 }
+
+# Install Rackspace's lava python client
+# docs: http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started-2/content/CBD_sendingAPI_Requests.html
+install_rackspace_lava_cli() {
+
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing Rackspace lava client"
+
+    install_packages "python-dev python-pip"
+    vm_execute "
+sudo pip install --upgrade lavaclient
+"
+
+    local test_action="$(vm_execute " \[ \$(which lava) \] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
 
 # Install script for private sharelatex VM
 install_sharelatex() {

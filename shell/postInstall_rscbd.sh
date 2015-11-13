@@ -27,9 +27,8 @@ installDsh() {
  fi
 }
 
-installDsh
-
 sudo sed -i.bak 's/Defaults    requiretty/Defaults    !requiretty/g' /etc/sudoers
+installDsh
 cp /etc/hadoop/conf/slaves /home/pristine/slaves; cp /home/pristine/slaves /home/pristine/machines && echo master-1 >> /home/pristine/machines
 wget http://pagesperso-orange.fr/sebastien.godard/sysstat-10.0.3.tar.bz2
 tar -jxf sysstat-10.0.3.tar.bz2
