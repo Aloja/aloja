@@ -217,18 +217,20 @@ vm_final_bootstratp() {
 
 cluster_final_boostrap() {
 
-  local hosts_fragment
+:
 
-  hosts_fragment=$(
-  cluster_execute 'ip -4 -o addr show' |\
-  awk '/inet 127\.0\.0\.1/{ next; }
-
-  { host = substr($1, 1, length($1) - 1)
-    ip = $5; sub(/\/.*/, "", ip)
-    print ip "  " host
-  }')
-
-  echo "$hosts_fragment"
+#  local hosts_fragment
+#
+#  hosts_fragment=$(
+#  cluster_execute 'ip -4 -o addr show' |\
+#  awk '/inet 127\.0\.0\.1/{ next; }
+#
+#  { host = substr($1, 1, length($1) - 1)
+#    ip = $5; sub(/\/.*/, "", ip)
+#    print ip "  " host
+#  }')
+#
+#  echo "$hosts_fragment"
 
 }
 
@@ -293,7 +295,7 @@ vm_final_bootstrap() {
 
 vm_set_statics_hosts() {
 
-  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] || [ "$clusterName" == "al-35" ]; then
+  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] ; then
     logger "WARN: Setting statics hosts file for cluster"
     vm_update_template "/etc/hosts" "$(get_static_hostnames)" "secured_file"
   else
@@ -324,16 +326,6 @@ get_static_hostnames() {
 10.32.0.20	al-29-06
 10.32.0.21	al-29-07
 10.32.0.22	al-29-08
-
-10.32.0.46      al-35-08
-10.32.0.45      al-35-07
-10.32.0.44      al-35-06
-10.32.0.38      al-35-05
-10.32.0.37      al-35-04
-10.32.0.36      al-35-03
-10.32.0.206     al-35-02
-10.32.0.53      al-35-01
-10.32.0.52      al-35-00
 "
 
 }
