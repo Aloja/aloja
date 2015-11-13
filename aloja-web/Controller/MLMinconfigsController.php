@@ -230,11 +230,31 @@ class MLMinconfigsController extends AbstractController
 				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-predictions.csv', 'r')) !== FALSE)
 				{
 					$header = fgetcsv($handle, 5000, ",");
-
-					$token = 0; $insertions = 0;
-					$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,exe_time,pred_time,id_learner,instance,full_instance,predict_code) VALUES ";
 					while (($data = fgetcsv($handle, 5000, ",")) !== FALSE)
 					{
+						// INSERT INTO DB <INSTANCE>
+						$selected = array_merge(array_slice($data,1,10),array_slice($data,18,4));
+						$selected_inst = implode("','",$selected);
+						$selected_inst = preg_replace('/,\'Cmp(\d+)\',/',',\'${1}\',',$selected_inst);
+						$selected_inst = preg_replace('/,\'Cl(\d+)\',/',',\'${1}\',',$selected_inst);
+						$query_i = "INSERT IGNORE INTO aloja_ml.pred_execs (bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,bench_type,hadoop_version,datasize,scale_factor,start_time,end_time) VALUES ";
+						$query_i = $query_i."('".$selected_inst."',now(),now())";
+						if ($dbml->query($query_i) === FALSE) throw new \Exception('Error when saving into DB');
+
+						// GET REFERENCE IDs
+						$where_clauses = '1=1';
+						$where_names = array("bench","net","disk","maps","iosf","replication","iofilebuf","comp","blk_size","id_cluster","bench_type","hadoop_version","datasize","scale_factor");
+						$selcount = 0;
+						foreach($where_names as $wn) $where_clauses = $where_clauses.' AND '.$wn.' = \''.$selected[$selcount++].'\'';
+						$where_clauses = preg_replace('/\'Cmp(\d+)\'/','\'${1}\'',$where_clauses);
+						$where_clauses = preg_replace('/\'Cl(\d+)\'/','\'${1}\'',$where_clauses);
+
+						$query = "SELECT id_prediction FROM aloja_ml.pred_execs WHERE ".$where_clauses.' LIMIT 1';
+						$result = $dbml->query($query);
+						$row = $result->fetch();
+						$predid = (is_null($row['id_prediction']))?0:$row['id_prediction'];
+
+						// INSERT INTO DB <PREDICTIONS>
 						$id_exec = $data[0];
 						$exe_time = $data[2];
 						$pred_time = $data[key(array_slice($data,-2,1,TRUE))];
@@ -243,11 +263,8 @@ class MLMinconfigsController extends AbstractController
 						$specific_instance = array_merge(array($data[1]),array_slice($data, 3, 21));
 						$specific_instance = implode(",",$specific_instance);
 
-						if ($token != 0) { $query = $query.","; } $token = 1; $insertions = 1;
-						$query = $query."('".$id_exec."','".$exe_time."','".$pred_time."','".md5($config)."','".$specific_instance."','".$full_instance."','".(($code=='tt')?3:(($code=='tv')?2:1))."') ";								
-					}
-					if ($insertions > 0)
-					{
+						$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,id_pred_exec,exe_time,pred_time,id_learner,instance,full_instance,predict_code) VALUES ";
+						$query = $query."('".$id_exec."','".$predid."','".$exe_time."','".$pred_time."','".md5($config)."','".$specific_instance."','".$full_instance."','".(($code=='tt')?3:(($code=='tv')?2:1))."') ";								
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
 					}
 					fclose($handle);
