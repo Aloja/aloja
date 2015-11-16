@@ -49,7 +49,7 @@ fi
 
 # size of each file in MB
 if [ ! "$DFSIO_FILE_SIZE" ]; then
-  DFSIO_FILE_SIZE="$(( BENCH_DATA_SIZE / DFSIO_NUM_FILES ))"
+  DFSIO_FILE_SIZE="$(( BENCH_DATA_SIZE / DFSIO_NUM_FILES / 1000000 ))" #in MBs
 fi
 
 # Configure and start Hadoop

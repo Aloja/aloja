@@ -182,6 +182,9 @@ class MLPrecisionController extends AbstractController
 				$jsonDiversity = "[".implode(",",$diversity)."]";
 				$jsonPrecisions = "[".implode(",",$precisions)."]";
 
+				$jsonDiversity = str_replace("aceback available","",$jsonDiversity);
+				$jsonDiversity = str_replace(",",",",$jsonDiversity);
+
 				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Target','Exe.Time','Support');
 				$jsonHeaderDiv = '[';
 				foreach ($header as $title)
