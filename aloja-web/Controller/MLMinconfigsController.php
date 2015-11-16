@@ -318,7 +318,7 @@ class MLMinconfigsController extends AbstractController
 				$content = addslashes($content);
 				fclose($fp);
 
-				$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file,reference) VALUES ('".md5($config.'R')."','minconf','".$content."','".md5($config)."');";
+				$query = "INSERT INTO aloja_ml.model_storage (id_hash,type,file) VALUES ('".md5($config.'R')."','minconf','".$content."');";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file minconf into DB');
 
 				// Remove temporal files
