@@ -297,6 +297,9 @@ class MLNewconfigsController extends AbstractController
 				fputcsv($fp,array_values(array_merge($exec_names,$net_names,$disk_names,$bench_names)),',','"');
 			    	foreach($rows as $row) fputcsv($fp, array_values($row),',','"');
 
+				// Check we have enough values
+				if (count($rows) < 10) throw new \Exception('WARNING: Too few samples selected to learn ('.count($rows).'). Change your filter to use a wider data slice.');
+
 				// run the R processor
 				$vin = "Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Service.Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor";
 				$vin = $vin.",".implode(",",array_values($net_names)).",".implode(",",array_values($disk_names)).",".implode(",",array_values($bench_names));

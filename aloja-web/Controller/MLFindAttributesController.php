@@ -205,16 +205,13 @@ class MLFindAttributesController extends AbstractController
 							$row = $result->fetch();
 							$execid = (is_null($row['id_exec']))?0:$row['id_exec'];
 							$exectime = (is_null($row['AVG']))?0:$row['AVG'];
-
+							
 							// INSERT INTO DB <PREDICTION>
 							$full_instance = implode(",",array_slice($line,1,-1));
 							$current_instance = implode(",",array_slice($line,1,21));
-							$query = "INSERT INTO aloja_ml.predictions (id_exec,id_pred_exec,exe_time,pred_time,id_learner,instance,full_instance,predict_code) VALUES ";
+							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,id_pred_exec,exe_time,pred_time,id_learner,instance,full_instance,predict_code) VALUES ";
 							$query = $query."('".$execid."','".$predid."','".$exectime."','".$predicted."','".$current_model."','".$current_instance."','".$full_instance."',0) ";
-							$query = $query."ON DUPLICATE KEY UPDATE id_pred_exec = '".$predid."'";
-
 							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-
 						}
 						fclose($handle);
 

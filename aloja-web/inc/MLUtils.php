@@ -424,12 +424,13 @@ class MLUtils
 		return $data_display;
 	}
 
-	public static function getIndexModels (&$jsonLearners, &$jsonLearningHeader, $dbml)
+	public static function getIndexModels (&$jsonLearners, &$jsonLearningHeader, $dbml, $includeconfigs = FALSE)
 	{
 		$query="SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
 				l.creation_time AS creation_time, l.model AS model, l.dataslice AS advanced,
 				COUNT(p.id_prediction) AS num_preds
-			FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner
+			FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner".
+			(($includeconfigs)?" ":" WHERE l.id_learner NOT IN (SELECT DISTINCT id_learner FROM aloja_ml.minconfigs) ")."
 			GROUP BY l.id_learner
 			";
 

@@ -202,6 +202,9 @@ class MLMinconfigsController extends AbstractController
 				fputcsv($fp,array_values(array_merge($exec_names,$net_names,$disk_names,$bench_names)),',','"');
 			    	foreach($rows as $row) fputcsv($fp, array_values($row),',','"');
 
+				// Check we have enough values
+				if (count($rows) < 10) throw new \Exception('WARNING: Too many few samples selected to learn ('.count($rows).'). Change your filter to use a wider data slice.');
+
 				// run the R processor
 				exec('cd '.getcwd().'/cache/ml; touch '.md5($config).'.lock');
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' >/dev/null 2>&1 && ';
