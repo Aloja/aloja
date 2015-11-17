@@ -240,9 +240,13 @@ get_tmp_disk() {
 }
 
 # Simple helper to append the tmp disk path
+# $1 disk name
 get_all_disks() {
-  local all_disks="$(get_specified_disks "$disk")
-$(get_tmp_disk "$disk")"
+  local disk_name="$1"
+  [ ! "$disk_name" ] && die "No disk specified to get_all_disks(). Cannot continue."
+
+  local all_disks="$(get_specified_disks "$disk_name")
+$(get_tmp_disk "$disk_name")"
 
   #remove duplicate lines
   all_disks="$(remove_duplicate_lines "$all_disks")"
@@ -305,7 +309,7 @@ validate() {
     fi
 
     # Iterate all defined and tmp disks to see if we can write to them
-    local disks="$(get_all_disks)"
+    local disks="$(get_all_disks "$disk" )"
     for disk_tmp in $disks ; do
       logger "DEBUG: testing write permissions in $disk_tmp"
       local touch_file="$disk_tmp/aloja.touch"
@@ -316,8 +320,15 @@ validate() {
       touch "$touch_file" || die "Cannot write files in $disk_tmp"
       rm "$touch_file" || die "Cannot delete files in $disk_tmp"
     done
+  fi
+
+  if [ "$clusterType" != "PaaS" ]; then
+    # Check whether we are in the right cluster
+    if ! test_in_cluster "$(hostname)" ; then
+      die "host $(hostname) does not belong to specified cluster $clusterName\nMake sure you run this script from within a cluster"
+    fi
   else
-    logger "INFO: Skipping validations"
+    logger "INFO: Skipping some validations in PaaS"
   fi
 }
 
@@ -750,7 +761,7 @@ run_monit() {
 stop_monit(){
   if [ "$BENCH_PERF_MONITORS" ] ; then
     if [ "$vmType" != "windows" ]; then
-      logger "INFO: Stoping monit (in case necesary)"
+      logger "INFO: Stoping monit (in case necessary)"
       for perf_mon in $BENCH_PERF_MONITORS ; do
         local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
         $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
@@ -816,32 +827,8 @@ prepare_folder(){
   local disk="$1"
 
   logger "INFO: INFO: Preparing benchmark run dirs"
-  local disks="$(get_all_disks) "
 
-  if [ "$DELETE_HDFS" == "1" ] ; then
-    logger "INFO: INFO: Deleting previous run files of disk config: $disk in: $(get_aloja_dir "$PORT_PREFIX")"
-    local all_disks_cmd
-    for disk_tmp in $disks ; do
-      local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
-      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path"
-
-      #check if we had problems deleting a folder
-      #test_directory_not_exists "$disk_full_path"
-      all_disks_cmd+="[ ! -d '$disk_full_path' ] && "
-    done
-
-    if ! test_nodes "${all_disks_cmd:0:(-3)}" "ERROR" ; then
-      die "Cannot delete directory(ies)"
-    else
-      logger "DEBUG: Previous files succesfully deleted"
-    fi
-
-  else
-    logger "INFO: INFO: Deleting only the log dir"
-    for disk_tmp in $disks ; do
-      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*"
-    done
-  fi
+  delete_bench_local_folder "$disk"
 
   #set the main path for the benchmark
   HDD="$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
@@ -866,6 +853,40 @@ $($DSH "ls -lah '$HDD/../'; ls -lah '$HDD_TMP/../' " )
   # specify which binaries to use for monitoring
   set_monit_binaries
 }
+
+# Cleanup after a benchmark suite run, and before starting one
+# $1 disk name
+delete_bench_local_folder() {
+  local disk_name="$1"
+  [ ! "$disk_name" ] && die "No disk specified to delete_bench_local_folder(). Cannot continue."
+
+  local disks="$(get_all_disks "$disk_name")"
+
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    logger "INFO: INFO: Deleting previous run files of disk config: $disk_name in: $(get_aloja_dir "$PORT_PREFIX")"
+    local all_disks_cmd
+    for disk_tmp in $disks ; do
+      local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
+      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path"
+
+      #check if we had problems deleting a folder
+      #test_directory_not_exists "$disk_full_path"
+      all_disks_cmd+="[ ! -d '$disk_full_path' ] && "
+    done
+
+    if ! test_nodes "${all_disks_cmd:0:(-3)}" "ERROR" ; then
+      die "Cannot delete directory(ies)"
+    else
+      logger "DEBUG: Previous files succesfully deleted"
+    fi
+  else
+    logger "INFO: INFO: Deleting only the log dir"
+    for disk_tmp in $disks ; do
+      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*"
+    done
+  fi
+}
+
 
 set_omm_killer() {
   logger "WARNING: OOM killer might not set for benchmark"
@@ -947,4 +968,52 @@ save_disk_usage() {
   $DSH "df -h" 2>&1 >> $JOB_PATH/disk.log
   echo "# Checking hadoop folder space $1" >> $JOB_PATH/disk.log
   $DSH "du -sh $HDD/*" 2>&1 >> $JOB_PATH/disk.log
+}
+
+check_bench_list() {
+  if [ ! "$BENCH_LIST" ] ; then
+    BENCH_LIST="$BENCH_ENABLED"
+  else
+    for bench_tmp in $BENCH_LIST ; do
+      if ! inList "$BENCH_ENABLED" "$bench_tmp" ; then
+        die "Benchmark $bench_tmp not enabled in BENCH_ENABLED. Enabled: $BENCH_ENABLED"
+      fi
+    done
+  fi
+}
+
+# Returns and iterable list of defined benchmark validations
+# $1 bench list
+# $2 validates list
+get_bench_validates() {
+  local bench_list="$1"
+  local bench_validates="$2"
+  local enabled_validates
+
+  for bench_validate in $bench_validates ; do
+    if inList "$bench_list" "$bench_validate" ; then
+      enabled_validates+="$bench_validate "
+#    else
+#      logger "DEBUG: not in list $bench_validate list $bench_list"
+    fi
+  done
+
+  echo -e "${enabled_validates:0:(-1)}" #remove the trailing space
+}
+
+# Removes validates from the list (if any)
+# $1 bench list
+# $2 validates list
+remove_bench_validates() {
+  local bench_list="$1"
+  local bench_validates="$2"
+  local no_validates
+
+  for bench_tmp in $bench_list ; do
+    if ! inList "$bench_validates" "$bench_tmp" ; then
+      no_validates+="$bench_tmp "
+    fi
+  done
+
+  echo -e "${no_validates:0:(-1)}" #remove the trailing space
 }

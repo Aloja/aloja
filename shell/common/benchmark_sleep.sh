@@ -43,5 +43,6 @@ benchmark_suite_save() {
 }
 
 benchmark_suite_cleanup() {
-  logger "DEBUG: No custom cleanup needed for $BENCH_SUITE"
+  logger "INFO: Cleaning up local bench dirs"
+  delete_bench_local_folder "$DISK"
 }

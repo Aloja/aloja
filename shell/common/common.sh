@@ -193,14 +193,20 @@ remove_duplicate_lines() {
   echo -e "$(echo -e "$string"|sort -u)"
 }
 
-#$1 list $2 element
+# Returns true if needle is in hay stack
+# $1 hay stack (list)
+# $2 needle (element)
 inList() {
+  local hay_stack="$1"
+  local needle="$2"
   local found="1" #error code in shell
 
-  for element in $1 ; do
-    if [ "$2" == "$element" ] ; then
+  for element in $hay_stack ; do
+    if [ "$needle" == "$element" ] ; then
       local found="0" #success
       break
+#    else
+#      logger "DEBUG: not in list $element needle $needle list $hay_stack"
     fi
   done
 

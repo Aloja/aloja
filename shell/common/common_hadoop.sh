@@ -95,7 +95,7 @@ get_hadoop_job_config() {
     job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
   fi
 
-  echo -e "$job_config"
+  echo -e "${job_config:1}" #remove leading space
 }
 
 
@@ -390,7 +390,7 @@ cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
   done
 
   if [ "$DELETE_HDFS" == "1" ] ; then
-    format_HDFS "$(get_hadoop_major_version)"
+    format_HDFS
   else
     logger "INFO: Deleting previous Job history files (in case necessary)"
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
@@ -425,26 +425,39 @@ get_hadoop_major_version() {
 }
 
 # Formats the HDFS and NameNode for both Hadoop versions
-# $1 $HADOOP_VERSION
 format_HDFS(){
   if [ "$clusterType" == "PaaS" ]; then
      $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
      $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
   else
-    local hadoop_version="$1"
-    logger "INFO: Formating HDFS and NameNode dirs"
+  local hadoop_version="$(get_hadoop_major_version)"
+  logger "INFO: Formating HDFS and NameNode dirs"
 
     if [ "$(get_hadoop_major_version)" == "1" ]; then
-      $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop namenode -format"
-      $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop datanode -format"
+      $DSH_MASTER "
+  $HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop namenode -format;
+  $HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hadoop datanode -format;"
+  
     elif [ "$(get_hadoop_major_version)" == "2" ] ; then
-      $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
-      $DSH_MASTER "$HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
+      $DSH_MASTER "
+  $HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs namenode -format;
+  $HADOOP_EXPORTS yes Y | $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
+  
     else
       die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
     fi
+  fi   
+}
+
+# Deletes from HDFS if DELETE_HDFS is set
+# $1 bench name
+# $2 path to folder
+clean_HDFS() {
+  if [ "$DELETE_HDFS" == "1" ] ; then
+    hadoop_delete_path "$1" "$2"
   fi
 }
+
 
 # Just an alias
 start_hadoop() {
