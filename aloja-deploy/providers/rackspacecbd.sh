@@ -495,3 +495,15 @@ benchmark_suite_cleanup() {
 get_node_names() {
   echo -e "master-1\n$(seq -f 'slave-%0g' 1 $numberOfNodes)"
 }
+
+#alias
+get_slaves_names() {
+   echo -e $(seq -f 'slave-%0g' 1 $numberOfNodes)
+}
+
+#$1 node name
+get_vm_id() {
+   #nodename: slave-1
+   vmId="$(echo $1 | cut -d- -f2)"
+   printf "%02d" $vmId
+}
