@@ -55,6 +55,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.pred_execs";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing predicted executions from DB');
 
+				$query = "DELETE FROM aloja_ml.variable_weights";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing variable weights from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/ml/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
@@ -224,6 +227,19 @@ class MLCacheController extends AbstractController
 			$jsonObstrees = $jsonObstrees.']';
 			$jsonObstreesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 
+			// Compilation of Variable Weights on Cache
+			$query="SELECT id_varweights, model, dataslice, creation_time
+				FROM aloja_ml.variable_weights
+				";
+			$rows = $dbml->query($query);
+			$jsonVarweights = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonVarweights = $jsonVarweights.(($jsonVarweights=='[')?'':',')."['".$row['id_varweights']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmv=".$row['id_varweights']."\'>Remove</a>']";
+			}
+			$jsonVarweights = $jsonVarweights.']';
+			$jsonVarweightsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
+
 			$dbml = null;
 		}
 		catch(Exception $e)
@@ -245,7 +261,9 @@ class MLCacheController extends AbstractController
 				'precisions' => $jsonPrecisions,
 				'header_precisions' => $jsonPrecisionsHeader,
 				'obstrees' => $jsonObstrees,
-				'header_obstrees' => $jsonObstreesHeader
+				'header_obstrees' => $jsonObstreesHeader,
+				'varweights' => $jsonVarweights,
+				'header_varweights' => $jsonVarweightsHeader
 			)
 		);
 	}

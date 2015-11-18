@@ -18,6 +18,7 @@ source('/var/www/aloja-web/resources/models.r');
 source('/var/www/aloja-web/resources/searchalgs.r');
 source('/var/www/aloja-web/resources/searchrules.r');
 source('/var/www/aloja-web/resources/precision.r');
+source('/var/www/aloja-web/resources/relations.r');
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #

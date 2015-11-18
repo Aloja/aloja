@@ -1,0 +1,213 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %} {{ parent() }}
+	<style type="text/css">
+        @import "js/datatables.new/media/css/demo_table.css";
+        @import "js/datatables.new/media/css/jquery.dataTables.css";
+        @import "js/datatables.new/extensions/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables.new/extensions/TableTools/media/css/TableTools.css";
+        @import "js/datatables.new/extensions/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x: auto;
+	    float: left;
+            width: 100%;
+        }
+	</style>
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify"><b>Variable Weights</b>: This tool stuff....</p>
+		<hr />
+	</div>
+	<div id="contentdiv" style="float: left; width: 68%;">
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+<!--				<tr><td width='50px'>&nbsp;</td><td>This tool will <b>find relations</b> amongs the best "X" percent (faster executions) from the selected ones</td></tr>
+				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box):<br/>1) The values for each attribute to select the data to examine (if no value selected, all values will be added)<br/>2) The model that will be used to classify the executions.</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Find Anomalies</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
+					a) A <b>chart</b> displaying the observed time of the executions vs. the predicted time by the model. In colors, the executions will be classified as <b>legitimate</b>, <b>warning</b> or <b>outlier</b>. The far a point is from the line x=y, the higher are the chances to be an outlier or a warning.<br/> 
+					b) A <b>table</b> with the executions, classified each one as legitimate, warning or outlier.<br/>
+					c) A <b>button</b> to accept the classification results, and tag the executions in the DataBase.
+				</td></tr>-->
+				<tr><td width='50px'>&nbsp;</td><td>TODO</td></tr>
+				</table>
+			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently slices analized: <a id="displayText" href="javascript:toggle('varweightsexpsdiv','displayText');">show</a></h4><br/> 
+			<div id="varweightsexpsdiv" style="float: left; width: 100%; display:none;">
+				<table id="varweightsexpstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
+		</div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingVarweightDiv">
+				<i id="VarweightFG" data-toggle="collapse" data-parent="#stuffdivs" href="#varweightDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#varweightDivFilter" aria-expanded="true" aria-controls="varweightDivFilter">
+						Influence of Variables
+					</a>
+				</h4>
+			</div>
+			<div id="varweightDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingVarweightDiv">
+				<div class="panel-body" id="varweightdiv">
+					<table id="varweightstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>
+						<ul>
+						<li>Search cache ID: {{id_variableweight|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div style="float: right; width: 30%;">
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+
+	var jsondata = JSON.parse('{{ jsonData | raw }}');
+	var jsonHeader = {{ jsonHeader | raw }};
+
+	/* Parse functions */
+
+	function parsedata (data)
+	{
+		var dataarray = Object.keys(jsondata).map(function(k)
+		{
+			return Object.keys(jsondata[k]).map(function(j)
+			{
+				if (j == "Slope" && jsondata[k][j] != "")
+				{
+					var keys = Object.keys(jsondata[k][j]);
+					var slopes = keys.map(function(i) { return jsondata[k][j][i]; });
+					if (keys.indexOf("dsin") == 0) return "<li>&#955;: " + parseFloat(slopes[0]).toFixed(2) + "</li>";
+
+					var aux1 = keys.map(function(i) { return i.replace("dsin=","") + ": " + parseFloat(jsondata[k][j][i]).toFixed(2); });
+					return "<li>" + aux1.join("</li><li>") + "</li>";
+				}
+				else if (j == "Intercept" && jsondata[k][j] != "")
+				{
+					return parseFloat(jsondata[k][j]).toFixed(2);
+				}
+				else return jsondata[k][j];
+			});
+		});
+
+		var retval = [];
+		for (var i = 0; i < dataarray.length; i++)
+		{
+			if (dataarray[i][4] != "Only one Class or Value")
+			{
+				retval.push(dataarray[i]);
+			}
+		}
+		return retval;
+	}
+
+	/* Extra functions */
+
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		if (xTable) xTable.fnAdjustColumnSizing();
+	}
+
+	/* Main Loading Document */
+
+	$(document).ready(function()
+	{
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Find Weights');
+		$("#submitForm").html('Find Weights');
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#varweightDivFilter').hide(); $('#headingVarweightDiv').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+
+			var varweightsexps = {{ varweightsexps | raw }};
+			var varweightsexps_header = {{ header_varweightsexps | raw }};
+
+			if (varweightsexps != [])
+			{
+				xTable = $('#varweightsexpstable').dataTable({
+					"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+					"aaData": varweightsexps,
+					"columns": varweightsexps_header,
+					"columnDefs" : [],
+					"sScrollX": "100%",
+					"bScrollCollapse": true
+				});
+			}
+			return;
+		}
+
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#controls').show();
+			$('#waitdiv').hide();
+
+			var dataarray = parsedata(jsondata);
+
+			auxTable = $("#varweightstable").dataTable({
+				"data": dataarray,
+				"columns": jsonHeader,
+				"columnDefs": [{"targets": [4],"visible": false,"searchable": false}]
+			});
+		}
+		else
+		{
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+
+			$('#varweightDivFilter').hide(); $('#headingVarweightDiv').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}	
+	});
+    </script>
+{% endblock %}
