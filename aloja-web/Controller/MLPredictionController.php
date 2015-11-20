@@ -43,11 +43,11 @@ class MLPredictionController extends AbstractController
 				'default' => array('regtree'),
 				'label' => 'Learning method: ',
 				'generateChoices' => function() {
-					return array('regtree','nneighbours','nnet','polyreg');
+					return array('regtree','nneighbours','nnet','polyreg','supportvms');
 				},
 				'beautifier' => function($value) {
 					$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
-						'nnet' => 'NNets','polyreg' => 'PolyReg-3');
+						'nnet' => 'NNets','polyreg' => 'PolyReg-3','supportvms' => 'Support Vector Machines');
 					return $labels[$value];
 				},
 				'parseFunction' => function() {
@@ -98,9 +98,10 @@ class MLPredictionController extends AbstractController
 			$learn_options = 'saveall='.md5($config);
 
 			if ($learn_param == 'regtree') { $learn_method = 'aloja_regtree'; $learn_options .= ':prange=0,20000'; }
-			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3';}
+			else if ($learn_param == 'nneighbours') { $learn_method = 'aloja_nneighbors'; $learn_options .=':kparam=3'; }
 			else if ($learn_param == 'nnet') { $learn_method = 'aloja_nnet'; $learn_options .= ':prange=0,20000'; }
 			else if ($learn_param == 'polyreg') { $learn_method = 'aloja_linreg'; $learn_options .= ':ppoly=3:prange=0,20000'; }
+			else if ($learn_param == 'supportvms') { $learn_method = 'aloja_supportvms'; $learn_options .= ':prange=0,20000'; }
 
 			$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
 
