@@ -137,7 +137,7 @@ options(width=as.integer(1000));
 		params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
 	}
 
-	if (opt$method  == "aloja_variable_relations")
+	if (opt$method  %in% c("aloja_variable_relations","aloja_variable_quicklm"))
 	{
 		if (is.null(opt$vout)) params[["vout"]] <- "Exe.Time";
 		if (is.null(opt$vin)) params[["vin"]] <- c("Net","Disk","Maps","IO.SFac","Rep","Comp","IO.FBuf","Blk.size","Datanodes","VM.Cores","VM.RAM");

@@ -61,7 +61,15 @@
 			</div>
 			<div id="varweightDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingVarweightDiv">
 				<div class="panel-body" id="varweightdiv">
+					<h4>By paired relations:</h4>
 					<table id="varweightstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+				</div>
+				<div class="panel-body" id="linregdiv">
+					<h4>By linear regression:</h4>
+					<table id="linregtable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+					<p>Note: variables that are "categorical" (e.g. "ETH/IB") have always a case with "-". In that case, it is just the non-application of the other cases factors.<br/>
+					   Note: If Error is bigger than variable ranges per coeficients dismiss this IMMEDIATELY, and try a more specific data-slice or follow other methods.</p>
+					<div id="linregstuff"></div>
 				</div>
 			</div>
 
@@ -104,6 +112,8 @@
 
 	var jsondata = JSON.parse('{{ jsonData | raw }}');
 	var jsonHeader = {{ jsonHeader | raw }};
+
+	var jsonLinreg = JSON.parse('{{ jsonLinreg | raw }}');
 
 	/* Parse functions */
 
@@ -198,6 +208,24 @@
 				"columns": jsonHeader,
 				"columnDefs": [{"targets": [4],"visible": false,"searchable": false}]
 			});
+
+			var keys = Object.keys(jsonLinreg['Regression']);
+			var coefarray = [keys.map(function(k){return (jsonLinreg['Regression'][k]=='NA')?"-":parseFloat(jsonLinreg['Regression'][k]).toFixed(2);})];
+			var headarray = [];
+			for (var i = 0; i < keys.length; i ++) headarray.push(JSON.parse('{"title":"' + keys[i] + '"}'));
+
+			linregTable = $("#linregtable").dataTable({
+				"data": coefarray,
+				"columns": headarray,
+				"sScrollX": "100%",
+				"bScrollCollapse": true,
+				"paging": false,
+				"ordering": false,
+				"info": false,
+				"searching": false
+			});
+			$('#linregstuff').append("<p><b>MAE</b>: " + jsonLinreg['MAE'] + " <b>RAE</b>: " + jsonLinreg['RAE'] + "</p>");
+			if (jsonLinreg['RAE'] > 1) $('#linregstuff').append("<p align='center' style='color:red'>&#9888; THIS DATA DOES NOT SEEM TO FOLLOW A LINEAR RELATION. DISMISS THIS LINEAR MODEL AND GUIDE YOUR EXECUTIONS BY OTHER METHODS!</p>");
 		}
 		else
 		{

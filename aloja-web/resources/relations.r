@@ -92,3 +92,44 @@ aloja_variable_relations <- function (ds, vin, vout, minsamples = 100, saveall =
 	retval;
 }
 
+aloja_variable_quicklm <- function (ds, vin, vout, saveall = NULL, quiet = 1, sample = 1)
+{
+	if (!is.numeric(sample)) sample <- as.numeric(sample);
+	if (sample < 0) { sample <- 1; print("WARNING: Invalid sample ratio"); }
+
+	retval <- list();
+
+	dsbin <- aloja_binarize_ds(ds[,c("ID",vin,vout)]);
+
+	if (sample < 1)
+	{
+		ssize <- ceil(nrow(ds) * sample);
+		km1 <- kmeans(dsbin[,(!colnames(dsbin) %in% c("ID"))],centers=ssize);
+		dsbin <- as.data.frame(km1$centers);
+	}
+
+	retval[["ds_original"]] <- ds;
+	retval[["dataset"]] <- dsbin;
+	retval[["model"]] <- lm(dsbin[,vout] ~ ., data=dsbin[,(!colnames(dsbin) %in% c("ID",vout))]);
+
+	retval[["mae"]] <- mean(abs(retval$model$fitted.values - dsbin[,vout]));
+	retval[["rae"]] <- mean(abs((retval$model$fitted.values - dsbin[,vout])/dsbin[,vout]));
+	retval[["coefs"]] <- t(retval$model$coefficients);
+	retval[["sample"]] <- sample;
+
+	jaux <- NULL;
+	for (j in 1:length(retval$coefs)) jaux <- paste(jaux,',"',colnames(retval$coefs)[j],'":"',retval$coefs[j],'"',sep="");
+	retval[["json"]] <- paste('{"Regression":{',substring(jaux,2),'},"MAE":',retval$mae,',"RAE":',retval$rae,',"Sample":',retval$sample,'}',sep="");
+
+	if (!is.null(saveall))
+	{
+		fileConn <- file(paste(saveall,"-json.dat",sep=""));
+		writeLines(retval$json, fileConn);
+		close(fileConn);
+
+		aloja_save_object(retval,tagname=saveall);
+	}
+
+	retval;
+}
+

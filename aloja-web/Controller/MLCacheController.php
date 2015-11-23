@@ -125,6 +125,15 @@ class MLCacheController extends AbstractController
 				$output[] = shell_exec($command);
  			}
 
+			if (isset($_GET['rmv']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM aloja_ml.variable_weights WHERE id_varweights='".$_GET['rmv']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing variable weights from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmv'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
 			// Compilation of Learners on Cache
 			$query="SELECT v.*, COUNT(t.id_findattrs) as num_trees
 				FROM (	SELECT s.*, COUNT(r.id_resolution) AS num_resolutions

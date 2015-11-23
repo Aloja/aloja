@@ -20,7 +20,7 @@ class MLWeightController extends AbstractController
 	public function mlvariableweightAction()
 	{
 		$config = $instance = $model_info = $slice_info = '';
-		$jsonData = $jsonHeader = '[]';
+		$jsonData = $jsonHeader = $jsonLinreg = '[]';
 		$jsonVarweightsExps = $jsonVarweightsExpsHeader = '[]';
 		$must_wait = "NO";
 		try
@@ -62,7 +62,7 @@ class MLWeightController extends AbstractController
 			if ($instructions)
 			{
 				MLUtils::getIndexVarweightsExps ($jsonVarweightsExps, $jsonVarweightsExpsHeader, $dbml);
-				return $this->render('mltemplate/mlvariableweight.html.twig', array('varweightsexps' => $jsonVarweightsExps, 'header_varweightsexps' => $jsonVarweightsExpsHeader,'jsonData' => '[]','jsonHeader' => '[]','instructions' => 'YES'));
+				return $this->render('mltemplate/mlvariableweight.html.twig', array('varweightsexps' => $jsonVarweightsExps, 'header_varweightsexps' => $jsonVarweightsExpsHeader,'jsonData' => '[]','jsonLinreg' => '[]','jsonHeader' => '[]','instructions' => 'YES'));
 			}
 
 			$params = array();
@@ -187,7 +187,7 @@ class MLWeightController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/ml ; touch '.getcwd().'/cache/ml/'.md5($config).'.lock');
-				exec('cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m aloja_variable_relations -p saveall="'.md5($config).'" >/dev/null 2>&1; rm -f '.getcwd().'/cache/ml/'.md5($config).'.lock; touch '.md5($config).'.fin" > /dev/null 2>&1 -p 1 &');
+				exec('cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m aloja_variable_relations -p saveall="'.md5($config).'-vr" >/dev/null 2>&1; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m  aloja_variable_quicklm -p saveall="'.md5($config).'-lm:sample=1" >/dev/null 2>&1; rm -f '.getcwd().'/cache/ml/'.md5($config).'.lock; touch '.md5($config).'.fin" > /dev/null 2>&1 -p 1 &');
 			}
 
 			$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
@@ -206,17 +206,25 @@ class MLWeightController extends AbstractController
 			if (!$is_cached) 
 			{
 				// read results of the CSV and dump to DB
-				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-json.dat', 'r')) !== FALSE)
+				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-vr-json.dat', 'r')) !== FALSE)
 				{
 					$jsonData = fgets($handle, 5000);
 					$jsonData = trim(preg_replace('/\s+/', ' ', $jsonData));
 					fclose($handle);
 				}
-				else throw new \Exception("R result files [json] not found. Check if R is working properly");
+				else throw new \Exception("R result files [vr-json] not found. Check if R is working properly");
+
+				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-lm-json.dat', 'r')) !== FALSE)
+				{
+					$jsonLinreg = fgets($handle, 5000);
+					$jsonLinreg = trim(preg_replace('/\s+/', ' ', $jsonLinreg));
+					fclose($handle);
+				}
+				else throw new \Exception("R result files [lm-json] not found. Check if R is working properly");
 
 				// register model to DB
-				$query = "INSERT IGNORE INTO aloja_ml.variable_weights (id_varweights,instance,model,dataslice,varweight_code)";
-				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$slice_info."','".$jsonData."');";
+				$query = "INSERT IGNORE INTO aloja_ml.variable_weights (id_varweights,instance,model,dataslice,varweight_code,linreg_code)";
+				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$slice_info."','".$jsonData."','".$jsonLinreg."');";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving rules into DB');
 
 				// Remove temporal files
@@ -227,9 +235,10 @@ class MLWeightController extends AbstractController
 			}
 			else
 			{
-				$cached_result = $dbml->query("SELECT varweight_code FROM aloja_ml.variable_weights WHERE id_varweights = '".md5($config)."'");
+				$cached_result = $dbml->query("SELECT varweight_code, linreg_code FROM aloja_ml.variable_weights WHERE id_varweights = '".md5($config)."'");
 				$tmp_result = $cached_result->fetch();
 				$jsonData = $tmp_result['varweight_code'];
+				$jsonLinreg = $tmp_result['linreg_code'];
 			}
 			$jsonHeader = '[{title:"Description"},{title:"Reference"},{title:"Intercept"},{title:"Relations"},{title:"Message"}]';
 		}
@@ -245,6 +254,7 @@ class MLWeightController extends AbstractController
 		$return_params = array(
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
+			'jsonLinreg' => $jsonLinreg,
 			'varweightsexps' => $jsonVarweightsExps,
 			'header_varweightsexps' => $jsonVarweightsExpsHeader,
 			'must_wait' => $must_wait,
