@@ -285,6 +285,18 @@ get_extra_fstab() {
   echo -e "$create_string"
 }
 
+# make sure /dev/sdb1 is ext4, not NTFS
+
+get_extra_mount_disks(){
+
+  echo "
+if mount | grep -q '/dev/sdb1 on /mnt'; then
+  sudo umount /mnt
+  sudo mkfs.ext4 /dev/sdb1
+  sudo mount /mnt
+fi
+  "
+}
 
 vm_final_bootstrap() {
 
