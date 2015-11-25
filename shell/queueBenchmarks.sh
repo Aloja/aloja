@@ -50,6 +50,8 @@ do
                                     do
                                         for HADOOP_VERSION in $RUN_HADOOP_VERSIONS
                                         do
+                                            export HADOOP_VERSION=$HADOOP_VERSION
+                                            export BENCH_DATA_SIZE=$BENCH_DATA_SIZE
                                             bash $RUN_BENCHS_BIN -C$clusterName -b $BENCH -z $BLOCK_SIZE -c $COMPRESS_TYPE -I $IO_FILE -i $IO_FACTOR -m $MAX_MAPS -r $REPLICATION -n $NET -d $DISK
                                         done
                                     done
