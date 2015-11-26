@@ -20,7 +20,7 @@ class MLWeightController extends AbstractController
 	public function mlvariableweightAction()
 	{
 		$config = $instance = $model_info = $slice_info = '';
-		$jsonData = $jsonHeader = $jsonLinreg = '[]';
+		$jsonData = $jsonHeader = $jsonLinreg = $jsonRegtree = '[]';
 		$jsonVarweightsExps = $jsonVarweightsExpsHeader = '[]';
 		$must_wait = "NO";
 		try
@@ -37,27 +37,7 @@ class MLWeightController extends AbstractController
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
 
-/*TODO			$this->buildFilters(array(
-			'percent' => array(
-				'type' => 'selectOne',
-				'default' => array('20%'),
-				'label' => 'Top split: ',
-				'generateChoices' => function() {
-					$retval = array();
-					foreach (range(0, 100, 10) as $rg) $retval[] = $rg.'%';
-					return $retval;
-				},
-				'parseFunction' => function() {
-					$choice = isset($_GET['percent']) ? $_GET['percent'] : array('20%');
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
-			)
-			));*/
-
 			$this->buildFilters();
-
-//TODO			$this->buildFilterGroups(array('MLearning' => array('label' => 'Pattern Mining', 'tabOpenDefault' => true, 'filters' => array('percent'))));
 
 			if ($instructions)
 			{
@@ -74,9 +54,6 @@ class MLWeightController extends AbstractController
 			$param_names_additional = array('datefrom','dateto','minexetime','maxexetime','valid','filter'); // Order is important
 			$params_additional = $this->filters->getFiltersSelectedChoices($param_names_additional);
 
-//TODO			$rulesParams = $this->filters->getFiltersSelectedChoices(array('percent'));
-//TODO			$rules_percent = $rulesParams['percent'];
-
 			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
@@ -86,8 +63,6 @@ class MLWeightController extends AbstractController
 			$slice_info = MLUtils::generateDatasliceInfo($this->filters, $param_names_additional, $params_additional);
 
 			$config = $model_info.' '.$slice_info.' vars';
-//TODO			$config = $model_info.' '.$rules_percent.' '.$slice_info.' rules';
-//TODO			$rules_options = 'percent="'.$rules_percent.'":quiet=1';
 
 			$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
 
@@ -187,7 +162,7 @@ class MLWeightController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/ml ; touch '.getcwd().'/cache/ml/'.md5($config).'.lock');
-				exec('cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m aloja_variable_relations -p saveall="'.md5($config).'-vr" >/dev/null 2>&1; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m  aloja_variable_quicklm -p saveall="'.md5($config).'-lm:sample=1" >/dev/null 2>&1; rm -f '.getcwd().'/cache/ml/'.md5($config).'.lock; touch '.md5($config).'.fin" > /dev/null 2>&1 -p 1 &');
+				exec('cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m aloja_variable_relations -p saveall="'.md5($config).'-vr" >/dev/null 2>&1; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m  aloja_variable_quicklm -p saveall="'.md5($config).'-lm:sample=1" >/dev/null 2>&1; '.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m  aloja_variable_quickrt -p saveall="'.md5($config).'-rt:sample=1" >/dev/null 2>&1; rm -f '.getcwd().'/cache/ml/'.md5($config).'.lock; touch '.md5($config).'.fin" > /dev/null 2>&1 -p 1 &');
 			}
 
 			$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
@@ -222,9 +197,17 @@ class MLWeightController extends AbstractController
 				}
 				else throw new \Exception("R result files [lm-json] not found. Check if R is working properly");
 
+				if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-rt-json.dat', 'r')) !== FALSE)
+				{
+					$jsonRegtree = fgets($handle, 20000);
+					$jsonRegtree = trim(preg_replace('/\s+/', ' ', $jsonRegtree));
+					fclose($handle);
+				}
+				else throw new \Exception("R result files [rt-json] not found. Check if R is working properly");
+
 				// register model to DB
-				$query = "INSERT IGNORE INTO aloja_ml.variable_weights (id_varweights,instance,model,dataslice,varweight_code,linreg_code)";
-				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$slice_info."','".$jsonData."','".$jsonLinreg."');";
+				$query = "INSERT IGNORE INTO aloja_ml.variable_weights (id_varweights,instance,model,dataslice,varweight_code,linreg_code,regtree_code)";
+				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$slice_info."','".$jsonData."','".$jsonLinreg."','".$jsonRegtree."');";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving rules into DB');
 
 				// Remove temporal files
@@ -235,10 +218,11 @@ class MLWeightController extends AbstractController
 			}
 			else
 			{
-				$cached_result = $dbml->query("SELECT varweight_code, linreg_code FROM aloja_ml.variable_weights WHERE id_varweights = '".md5($config)."'");
+				$cached_result = $dbml->query("SELECT varweight_code, linreg_code, regtree_code FROM aloja_ml.variable_weights WHERE id_varweights = '".md5($config)."'");
 				$tmp_result = $cached_result->fetch();
 				$jsonData = $tmp_result['varweight_code'];
 				$jsonLinreg = $tmp_result['linreg_code'];
+				$jsonRegtree = $tmp_result['regtree_code'];
 			}
 			$jsonHeader = '[{title:"Description"},{title:"Reference"},{title:"Intercept"},{title:"Relations"},{title:"Message"}]';
 		}
@@ -255,6 +239,7 @@ class MLWeightController extends AbstractController
 			'jsonData' => $jsonData,
 			'jsonHeader' => $jsonHeader,
 			'jsonLinreg' => $jsonLinreg,
+			'jsonRegtree' => $jsonRegtree,
 			'varweightsexps' => $jsonVarweightsExps,
 			'header_varweightsexps' => $jsonVarweightsExpsHeader,
 			'must_wait' => $must_wait,

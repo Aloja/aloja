@@ -208,6 +208,7 @@ CREATE TABLE IF NOT EXISTS variable_weights (
   dataslice longtext NOT NULL,
   varweight_code longtext NOT NULL,
   linreg_code longtext NOT NULL,
+  regtree_code longtext NOT NULL,
   creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_varweights),
   INDEX idx_instance (instance)

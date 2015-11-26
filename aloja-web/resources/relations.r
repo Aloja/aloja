@@ -92,10 +92,9 @@ aloja_variable_relations <- function (ds, vin, vout, minsamples = 100, saveall =
 	retval;
 }
 
-aloja_variable_quicklm <- function (ds, vin, vout, saveall = NULL, quiet = 1, sample = 1)
+aloja_variable_quicklm <- function (ds, vin, vout, saveall = NULL, sample = 1)
 {
-	if (!is.numeric(sample)) sample <- as.numeric(sample);
-	if (sample < 0) { sample <- 1; print("WARNING: Invalid sample ratio"); }
+	if (!is.numeric(sample)) sample <- as.numeric(sample); if (sample < 0 || sample > 1) { sample <- 1; print("WARNING: Invalid sample ratio"); }
 
 	retval <- list();
 
@@ -126,6 +125,49 @@ aloja_variable_quicklm <- function (ds, vin, vout, saveall = NULL, quiet = 1, sa
 		fileConn <- file(paste(saveall,"-json.dat",sep=""));
 		writeLines(retval$json, fileConn);
 		close(fileConn);
+
+		aloja_save_object(retval,tagname=saveall);
+	}
+
+	retval;
+}
+
+aloja_variable_quickrt <- function (ds, vin, vout, saveall = NULL, mparam = 5, simple = 1, sample = 1)
+{
+	if (!is.integer(mparam)) mparam <- as.integer(mparam);
+	if (!is.integer(simple)) simple <- as.integer(simple); if (simple < 0 || simple > 1) { simple <- 1; print("WARNING: Invalid simple parameter"); }
+	if (!is.numeric(sample)) sample <- as.numeric(sample); if (sample < 0 || sample > 1) { sample <- 1; print("WARNING: Invalid sample ratio"); }
+
+	retval <- list();
+
+	dsbin <- aloja_binarize_ds(ds[,c("ID",vin,vout)]);
+
+	if (sample < 1)
+	{
+		ssize <- ceil(nrow(ds) * sample);
+		km1 <- kmeans(dsbin[,(!colnames(dsbin) %in% c("ID"))],centers=ssize);
+		dsbin <- as.data.frame(km1$centers);
+	}
+
+	retval[["ds_original"]] <- ds;
+	retval[["dataset"]] <- dsbin;
+	retval[["model"]] <- qrt.tree(formula=vout ~ .,dataset=dsbin[,(!colnames(dsbin) %in% c("ID"))],m=mparam,simple=simple);
+
+	retval[["mae"]] <- retval$model$mae;
+	retval[["rae"]] <- retval$model$rae;
+
+	retval[["sample"]] <- sample;
+	retval[["json"]] <- qrt.json(retval$model);
+
+	if (!is.null(saveall))
+	{
+		fileConn <- file(paste(saveall,"-json.dat",sep=""));
+		writeLines(retval$json, fileConn);
+		close(fileConn);
+
+		png(paste(saveall,"-tree.png",sep=""),width=1000,height=500);
+		qrt.plot.tree(retval$model);
+		dev.off();
 
 		aloja_save_object(retval,tagname=saveall);
 	}
