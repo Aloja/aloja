@@ -42,7 +42,7 @@ class MLWeightController extends AbstractController
 			if ($instructions)
 			{
 				MLUtils::getIndexVarweightsExps ($jsonVarweightsExps, $jsonVarweightsExpsHeader, $dbml);
-				return $this->render('mltemplate/mlvariableweight.html.twig', array('varweightsexps' => $jsonVarweightsExps, 'header_varweightsexps' => $jsonVarweightsExpsHeader,'jsonData' => '[]','jsonLinreg' => '[]','jsonHeader' => '[]','instructions' => 'YES'));
+				return $this->render('mltemplate/mlvariableweight.html.twig', array('varweightsexps' => $jsonVarweightsExps, 'header_varweightsexps' => $jsonVarweightsExpsHeader,'jsonData' => '[]','jsonLinreg' => '[]','jsonRegtree' => '[]','jsonHeader' => '[]','instructions' => 'YES'));
 			}
 
 			$params = array();

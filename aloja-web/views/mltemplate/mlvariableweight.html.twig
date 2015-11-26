@@ -19,7 +19,7 @@
 		<p></p>
 	</div>
 	<div id="introduction" style="float: left; width: 100%;">
-		<p style="text-align:justify"><b>Variable Weights</b>: This tool does stuff....</p>
+		<p style="text-align:justify"><b>Feature Relevance</b>: This tool displays the relevance of features (e.g. maps, disk, net...) in relation to the Executions Time from the selected executions.</p>
 		<hr />
 	</div>
 	<div id="contentdiv" style="float: left; width: 68%;">
@@ -30,16 +30,17 @@
 			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
 				<h4 class="panel-title">Instructions:</h4>
 				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
-<!--				<tr><td width='50px'>&nbsp;</td><td>This tool will <b>find relations</b> amongs the best "X" percent (faster executions) from the selected ones</td></tr>
+				<tr><td width='50px'>&nbsp;</td><td>This tool displays the <b>relevance of features</b> (e.g. maps, disk, net...) in relation to the Executions Time from the selected executions</td></tr>
 				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box):<br/>1) The values for each attribute to select the data to examine (if no value selected, all values will be added)<br/>2) The model that will be used to classify the executions.</td></tr>
-				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Find Anomalies</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Find Weights</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
 				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
 				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
-					a) A <b>chart</b> displaying the observed time of the executions vs. the predicted time by the model. In colors, the executions will be classified as <b>legitimate</b>, <b>warning</b> or <b>outlier</b>. The far a point is from the line x=y, the higher are the chances to be an outlier or a warning.<br/> 
-					b) A <b>table</b> with the executions, classified each one as legitimate, warning or outlier.<br/>
-					c) A <b>button</b> to accept the classification results, and tag the executions in the DataBase.
-				</td></tr>-->
-				<tr><td width='50px'>&nbsp;</td><td>TODO</td></tr>
+					a) A <b>table</b> displaying how each feature affects to the execution time, in average and independently of the other features.
+					In numerical features, the increment of time per each increment of the features is shown. In case of class features, a class will be taken as reference (the values for the other classes will be the difference respect the reference).<br/>
+					b) A <b>linear regression</b> approximating a fitting, and displaying the weights given per features. Note that if the relation is not linear, the error displayed will be high, and the model should be avoided.<br/>
+					c) A <b>regression tree</b> approximating a piece-wise fitting, and displaying the set of regressions. Note that if the relation is not piece-wise predictable, the error displayed will be high, and the model should be avoided.<br/>
+					d) A <b>calculator</b> for predicting configurations, based on the above created linear model and regression tree.
+				</td></tr>
 				</table>
 			</p>
 			<hr/>
