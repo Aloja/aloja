@@ -28,31 +28,34 @@ fi
 [ ! "$RUN_BENCHS_BIN" ] && RUN_BENCHS_BIN="$ALOJA_REPO_PATH/aloja-bench/run_benchs.sh"
 [ ! "$RUN_BLOCK_SIZES" ] && RUN_BLOCK_SIZES="67108864 33554432 134217728 268435456"
 
-for DISK in $RUN_DISK_LIST
-do
-    for NET in $RUN_NET_LIST
+if [ "$clusterType" != "PaaS" ]; then
+
+    for DISK in $RUN_DISK_LIST
     do
-        for REPLICATION in $RUN_REPLICATION_LIST
+        for NET in $RUN_NET_LIST
         do
-            for MAX_MAPS in $RUN_CONTAINERS_NUMBER
+            for REPLICATION in $RUN_REPLICATION_LIST
             do
-                for IO_FACTOR in $RUN_IOFACTOR
+                for MAX_MAPS in $RUN_CONTAINERS_NUMBER
                 do
-                    for IO_FILE in $RUN_IOFILE
+                    for IO_FACTOR in $RUN_IOFACTOR
                     do
-                        for BENCH in $RUN_BENCHS_LIST
+                        for IO_FILE in $RUN_IOFILE
                         do
-                            for COMPRESS_TYPE in $RUN_COMPRESSION_LIST
+                            for BENCH in $RUN_BENCHS_LIST
                             do
-                                for BLOCK_SIZE in $RUN_BLOCK_SIZES
+                                for COMPRESS_TYPE in $RUN_COMPRESSION_LIST
                                 do
-                                    for BENCH_DATA_SIZE in $RUN_BENCH_DATASIZES
+                                    for BLOCK_SIZE in $RUN_BLOCK_SIZES
                                     do
-                                        for HADOOP_VERSION in $RUN_HADOOP_VERSIONS
+                                        for BENCH_DATA_SIZE in $RUN_BENCH_DATASIZES
                                         do
-                                            export HADOOP_VERSION=$HADOOP_VERSION
-                                            export BENCH_DATA_SIZE=$BENCH_DATA_SIZE
-                                            bash $RUN_BENCHS_BIN -C$clusterName -b $BENCH -z $BLOCK_SIZE -c $COMPRESS_TYPE -I $IO_FILE -i $IO_FACTOR -m $MAX_MAPS -r $REPLICATION -n $NET -d $DISK
+                                            for HADOOP_VERSION in $RUN_HADOOP_VERSIONS
+                                            do
+                                                export HADOOP_VERSION=$HADOOP_VERSION
+                                                export BENCH_DATA_SIZE=$BENCH_DATA_SIZE
+                                                bash $RUN_BENCHS_BIN -C$clusterName -b $BENCH -z $BLOCK_SIZE -c $COMPRESS_TYPE -I $IO_FILE -i $IO_FACTOR -m $MAX_MAPS -r $REPLICATION -n $NET -d $DISK
+                                            done
                                         done
                                     done
                                 done
@@ -63,4 +66,15 @@ do
             done
         done
     done
-done
+
+else
+  #Default PaaS executions
+    for BENCH in $RUN_BENCHS_LIST
+    do
+        for BENCH_DATA_SIZE in $RUN_BENCH_DATASIZES
+        do
+            export BENCH_DATA_SIZE=$BENCH_DATA_SIZE
+            bash $RUN_BENCHS_BIN -C$clusterName -b $BENCH
+        done
+    done
+fi
