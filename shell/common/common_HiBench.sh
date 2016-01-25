@@ -68,6 +68,9 @@ get_HiBench_exports() {
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
     local hadoop_config="$BENCH_HADOOP_DIR/etc/hadoop"
     local hadoop_examples_jar="$BENCH_HADOOP_DIR/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar"
+    if [ "$defaultProvider" == "rackspacecbd" ]; then
+      hadoop_examples_jar="/usr/hdp/current/hadoop-mapreduce-client/hadoop-mapreduce-examples-*.jar"
+    fi
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi

@@ -426,10 +426,10 @@ get_hadoop_major_version() {
 
 # Formats the HDFS and NameNode for both Hadoop versions
 format_HDFS(){
-  if [ "$clusterType" == "PaaS" ]; then
-     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
-     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
-  else
+  if [ "$clusterType" != "PaaS" ]; then
+#     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
+#     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
+#  else
   local hadoop_version="$(get_hadoop_major_version)"
   logger "INFO: Formating HDFS and NameNode dirs"
 
@@ -858,6 +858,7 @@ save_hadoop() {
 	    hdfs dfs -rm -r "/mr-history"
 	    hdfs dfs -expunge
     fi
+    $DSH "cp -r /var/log/hadoop $JOB_PATH/$1/ 2> /dev/null"
   else
     #we cannot move hadoop files
     #take into account naming *.date when changing dates
