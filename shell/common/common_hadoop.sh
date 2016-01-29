@@ -416,6 +416,9 @@ get_hadoop_major_version() {
   elif [[ "$hadoop_string" == *"p-1"* ]] ; then
     major_version="1"
   elif [[ "$hadoop_string" == *"p-2"* ]] ; then
+    major_version="2
+  #backwards compatibility with old runs
+  elif [ "$hadoop_string" == "hadoop2" ]; then
     major_version="2"
   else
     die "Cannot determine Hadoop major version.  Supplied version $hadoop_string"
