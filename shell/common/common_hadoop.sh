@@ -410,13 +410,13 @@ get_hadoop_major_version() {
     local hadoop_string="$HADOOP_VERSION"
   fi
 
-  local major_version
+  local major_version=""
   if [ "$clusterType" == "PaaS" ]; then
     major_version="2"
   elif [[ "$hadoop_string" == *"p-1"* ]] ; then
     major_version="1"
   elif [[ "$hadoop_string" == *"p-2"* ]] ; then
-    major_version="2
+    major_version="2"
   #backwards compatibility with old runs
   elif [ "$hadoop_string" == "hadoop2" ]; then
     major_version="2"
