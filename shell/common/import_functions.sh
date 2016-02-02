@@ -575,6 +575,11 @@ get_exec_params() {
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     local exec_type=$(extract_config_var "EXEC_TYPE")
     local datasize=$(extract_config_var "BENCH_DATA_SIZE")
+    #compatibility with legacy runs
+    if [[ $datasize == "" ]]; then
+       datasize=0
+    fi
+
     local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
