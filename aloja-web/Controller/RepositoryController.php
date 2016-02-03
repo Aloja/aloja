@@ -37,10 +37,11 @@ class RepositoryController extends AbstractController
     {
         $dbUtils = $this->container->getDBUtils();
         $this->buildFilters(array(
-            'bench' => array('type' => 'selectMultiple', 'default' => null),
+            'bench' => array('default' => null),
             'bench_type' => array('type' => 'selectMultiple', 'default' => array('HiBench'))
-        ));
-        
+            )
+        );
+
         $whereClause = $this->filters->getWhereClause();
 
 		$type = Utils::get_GET_string("pageTab");
