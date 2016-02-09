@@ -1016,9 +1016,6 @@ $MYSQL "alter table execs
     add column exec_type varchar(255) default 'default';"
 
 $MYSQL "alter table execs
-    add column datasize int(11) default NULL;"
-
-$MYSQL "alter table execs
     modify column datasize bigint default NULL;"
 
 $MYSQL "alter table execs
@@ -1089,8 +1086,8 @@ update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = '
 
 ##Datasize and scale factor
 $MYSQL "
-update ignore aloja2.execs set datasize = NULL;
-update ignore aloja2.execs set scale_factor = 'N/A';
+update ignore aloja2.execs set datasize = NULL where datasize < 1;
+update ignore aloja2.execs set scale_factor = 'N/A' where datasize < 1;
 
 update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_READ where c.type != 'PaaS' and bench != 'terasort';
 update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_READ where c.type = 'PaaS' and bench != 'terasort';
