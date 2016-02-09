@@ -421,7 +421,7 @@ get_hadoop_major_version() {
   elif [ "$hadoop_string" == "hadoop2" ]; then
     major_version="2"
   else
-    die "Cannot determine Hadoop major version.  Supplied version $hadoop_string"
+    logger "WARNING: Cannot determine Hadoop major version.  Supplied version $hadoop_string"
   fi
 
   echo -e "$major_version"
