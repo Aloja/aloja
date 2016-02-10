@@ -78,21 +78,34 @@ aloja_genalg_evaluate <- function (string=c())
 # Algorithms to decompose search results into Decision Trees                  #
 ###############################################################################
 
-aloja_representative_tree <- function (predicted_instances = NULL, vin, method = "ordered", pred_file = NULL, dump_file = NULL, output = NULL, ...)
+aloja_representative_tree <- function (vin, vout = "Prediction", method = "ordered", ds = NULL, predicted_instances = NULL, pred_file = NULL, dump_file = NULL, output = NULL, saveall = NULL, rm.negs = 1, ...)
 {
-	if (is.null(predicted_instances) && is.null(pred_file) && is.null(dump_file)) return (NULL);
-	if (is.null(predicted_instances) && !is.null(pred_file)) predicted_instances <- read.table(paste(pred_file,"-predictions.data",sep=""),sep=",",header=TRUE,stringsAsFactors=FALSE);
-	if (is.null(predicted_instances) && !is.null(dump_file))
+	if (is.null(ds))
 	{
-		predicted_instances <- (read.table(dump_file,sep="",header=FALSE,stringsAsFactors=FALSE))[,c(2,3)];
-		colnames(predicted_instances) <- c("Instance","Prediction");
+		if (is.null(predicted_instances))
+		{
+			if (is.null(pred_file) && is.null(dump_file)) return (NULL);
+			if (!is.null(pred_file))
+			{
+				predicted_instances <- read.table(paste(pred_file,"-predictions.data",sep=""),sep=",",header=TRUE,stringsAsFactors=FALSE);
+				b <- predicted_instances[,c(vin,vout)];
+			}
+			if (!is.null(dump_file))
+			{
+				predicted_instances <- (read.table(dump_file,sep="",header=FALSE,stringsAsFactors=FALSE))[,c(2,3)];
+				colnames(predicted_instances) <- c("Instance",vout);
+				b <- sapply(predicted_instances$Instance,function(x) strsplit(x,","));
+				nattrs <- nchar(predicted_instances$Instance[1]) - nchar(gsub(",","",predicted_instances$Instance[1])) + 1;
+				b <- as.data.frame(t(matrix(unlist(b),nrow=nattrs)));
+				b <- cbind(b[,1:length(vin)],predicted_instances[,vout]);
+				colnames(b) <- c(vin,vout);
+			}
+		}
+	} else {
+		b <- ds[,c(vin,vout)];
 	}
-
-	b <- sapply(predicted_instances$Instance,function(x) strsplit(x,","));
-	b <- as.data.frame(t(matrix(unlist(b),nrow=length(vin))));
-	b <- cbind(b,predicted_instances$Prediction);
-	colnames(b) <- c(vin,"Prediction");
-	bord <- b[order(b$Prediction),];
+	if (rm.negs == 1) b <- b[b[,vout] > 0,];
+	bord <- b[order(b[,vout]),];
 
 	#daux <- rpart(Prediction ~., data = bord, parms=list(split='gini'));
 	#daux <- rpart(Prediction ~., data = baux, control=rpart.control(minsplit = 2), parms=list(split='gini')); var1 <- rownames(daux$splits)[1];
@@ -102,12 +115,12 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 	{
 		gini <- function(x, unbiased = FALSE)
 		{
-		    n <- length(x)
-		    mu <- mean(x)
-		    N <- if (unbiased) n * (n - 1) else n * n
+		    n <- length(x);
+		    mu <- mean(x);
+		    if (unbiased) { N <- n * (n - 1); } else { N <- n * n; }
 		    ox <- x[order(x)];
-		    dsum <- drop(crossprod(2 * 1:n - n - 1,  ox))
-		    dsum / (mu * N)
+		    dsum <- drop(crossprod(2 * 1:n - n - 1,  ox));
+		    dsum / (mu * N);
 		}
 	
 		impurities <- NULL;
@@ -127,7 +140,7 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 		impurity_root - impurity_sum ;
 	}
 	
-	attrib_search <- function (baux,level=0,method="ordered")
+	attrib_search <- function (baux,method="ordered")
 	{
 		retval <- NULL;
 		if (nrow(baux) > 1)
@@ -135,7 +148,7 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 			var1 <- NULL;
 			if (method == "ordered") # Using "ordered changes" method
 			{
-				ns <- colnames(baux)[!colnames(baux) %in% "Prediction"];
+				ns <- colnames(baux)[!colnames(baux) %in% vout];
 
 				changes <- NULL;
 				chnames <- NULL;
@@ -161,18 +174,18 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 
 			} else if (method == "gini") # Using gini improvement
 			{
-				ns <- colnames(baux)[!colnames(baux) %in% "Prediction"];
-				daux <- sapply(ns, function(x) gini_improvement(baux,x,"Prediction"));
+				ns <- colnames(baux)[!colnames(baux) %in% vout];
+				daux <- sapply(ns, function(x) gini_improvement(baux,x,vout));
 				var1 <- (names(daux)[which(daux==max(daux))])[1];
 			}
 
 			if (!is.null(var1))
 			{
 				retval <- list();
-				for (i in levels(baux[,var1])) # TODO - Executar en Ordre
+				for (i in levels(as.factor(baux[,var1]))) # TODO - Executar en Ordre
 				{
 					bnext <- baux[baux[,var1]==i,];
-					retaux <- attrib_search(bnext,level=level+1,method=method);
+					retaux <- attrib_search(bnext,method=method);
 
 					if (!is.list(retaux)) # FIXME - R is.nan() can't handle lists... :(
 					{
@@ -181,10 +194,10 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 				}
 				if (length(retval) == 0) retval <- NaN;
 			} else {
-				retval <- round(mean(baux$Prediction));
+				retval <- round(mean(baux[,vout]));
 			}
 		} else {
-			retval <- round(mean(baux$Prediction));
+			retval <- round(mean(baux[,vout]));
 		}
 		retval;
 	}
@@ -196,6 +209,11 @@ aloja_representative_tree <- function (predicted_instances = NULL, vin, method =
 	if (!is.null(output) && output=="ascii") retval <- aloja_repress_tree_ascii (ctree);
 	if (!is.null(output) && output=="html") retval <- aloja_repress_tree_html (ctree);
 	if (!is.null(output) && output=="nodejson") retval <- aloja_repress_tree_nodejson (ctree);
+
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-reptree.data",sep=""), col.names=FALSE, row.names=FALSE);
+	}
 
 	retval;	
 }

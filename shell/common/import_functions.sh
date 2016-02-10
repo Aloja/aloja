@@ -411,6 +411,9 @@ get_filter_sql() {
   echo "
 #Re-updates filters for the whole DB, normally it is done after each insert
 
+#exec type not set
+update ignore aloja2.execs SET exec_type = 'default' WHERE exec_type = '' OR exec_type IS NULL;
+
 #filter, execs that don't have any Hadoop details
 
 update ignore aloja2.execs SET filter = 0;
@@ -485,7 +488,7 @@ update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = '
 );
 
 update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' and e2.bench NOT IN ('teragen','randomtextwriter') GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
-
+update ignore aloja2.execs SET exec_type = 'default' WHERE id_exec = '$1' AND exec_type = '' OR exec_type IS NULL;
 
 "
 
@@ -575,6 +578,11 @@ get_exec_params() {
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     local exec_type=$(extract_config_var "EXEC_TYPE")
     local datasize=$(extract_config_var "BENCH_DATA_SIZE")
+    #compatibility with legacy runs
+    if [[ $datasize == "" ]]; then
+       datasize=0
+    fi
+
     local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then

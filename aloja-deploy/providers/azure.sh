@@ -217,19 +217,20 @@ vm_final_bootstratp() {
 
 cluster_final_boostrap() {
 
-  local hosts_fragment
+  local hosts_fragment old_vm
 
-  hosts_fragment=$(
-  cluster_execute 'ip -4 -o addr show' |\
-  awk '/inet 127\.0\.0\.1/{ next; }
+  logger "Getting machine/IP list for cluster ${clusterName}"
 
-  { host = substr($1, 1, length($1) - 1)
-    ip = $5; sub(/\/.*/, "", ip)
-    print ip "  " host
-  }')
+  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
 
-  echo "$hosts_fragment"
+  old_vm=${vm_name}
 
+  for vm_name in $(get_node_names); do  
+    logger "Updating /etc/hosts"
+    vm_update_template "/etc/hosts" "${hosts_fragment}" "secured_file"
+  done
+
+  vm_name=${old_vm}
 }
 
 #interactive SSH
@@ -283,6 +284,18 @@ get_extra_fstab() {
   echo -e "$create_string"
 }
 
+# make sure /dev/sdb1 is ext4, not NTFS
+
+get_extra_mount_disks(){
+
+  echo "
+if mount | grep -q '/dev/sdb1 on /mnt'; then
+  sudo umount /mnt
+  sudo mkfs.ext4 /dev/sdb1
+  sudo mount /mnt
+fi
+  "
+}
 
 vm_final_bootstrap() {
 
@@ -293,7 +306,7 @@ vm_final_bootstrap() {
 
 vm_set_statics_hosts() {
 
-  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] || [ "$clusterName" == "al-35" ]; then
+  if [ "$clusterName" == "al-26" ] || [ "$clusterName" == "al-29" ] ; then
     logger "WARN: Setting statics hosts file for cluster"
     vm_update_template "/etc/hosts" "$(get_static_hostnames)" "secured_file"
   else
@@ -324,16 +337,6 @@ get_static_hostnames() {
 10.32.0.20	al-29-06
 10.32.0.21	al-29-07
 10.32.0.22	al-29-08
-
-10.32.0.46      al-35-08
-10.32.0.45      al-35-07
-10.32.0.44      al-35-06
-10.32.0.38      al-35-05
-10.32.0.37      al-35-04
-10.32.0.36      al-35-03
-10.32.0.206     al-35-02
-10.32.0.53      al-35-01
-10.32.0.52      al-35-00
 "
 
 }
