@@ -217,21 +217,20 @@ vm_final_bootstratp() {
 
 cluster_final_boostrap() {
 
-:
+  local hosts_fragment old_vm
 
-#  local hosts_fragment
-#
-#  hosts_fragment=$(
-#  cluster_execute 'ip -4 -o addr show' |\
-#  awk '/inet 127\.0\.0\.1/{ next; }
-#
-#  { host = substr($1, 1, length($1) - 1)
-#    ip = $5; sub(/\/.*/, "", ip)
-#    print ip "  " host
-#  }')
-#
-#  echo "$hosts_fragment"
+  logger "Getting machine/IP list for cluster ${clusterName}"
 
+  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
+
+  old_vm=${vm_name}
+
+  for vm_name in $(get_node_names); do  
+    logger "Updating /etc/hosts"
+    vm_update_template "/etc/hosts" "${hosts_fragment}" "secured_file"
+  done
+
+  vm_name=${old_vm}
 }
 
 #interactive SSH
@@ -285,6 +284,18 @@ get_extra_fstab() {
   echo -e "$create_string"
 }
 
+# make sure /dev/sdb1 is ext4, not NTFS
+
+get_extra_mount_disks(){
+
+  echo "
+if mount | grep -q '/dev/sdb1 on /mnt'; then
+  sudo umount /mnt
+  sudo mkfs.ext4 /dev/sdb1
+  sudo mount /mnt
+fi
+  "
+}
 
 vm_final_bootstrap() {
 

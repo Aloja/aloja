@@ -156,7 +156,10 @@ class Filters
                     $choice = isset($_GET['prediction_model']) ? Utils::get_GET_stringArray('prediction_model') : array("");
                     if($choice = array("")) {
                         $query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions LIMIT 1";
-                        $choice = $this->dbConnection->get_rows($query)[0]['id_learner'];
+                        $choice = $this->dbConnection->get_rows($query);
+                        if($choice) {
+                            $choice = $choice[0]['id_learner'];
+                        }
                     }
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
@@ -553,7 +556,8 @@ class Filters
             //If select one get only the first one
             if($this->filters[$filterName]['type'] == 'selectOne' &&
                 is_array($this->filters[$filterName]['currentChoice']))
-                $values[$filterName] = $values[$filterName][0];
+                if($values[$filterName])
+                    $values[$filterName] = $values[$filterName][0];
         }
 
         return $values;

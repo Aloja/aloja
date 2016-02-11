@@ -8,7 +8,7 @@ BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.
 # Some benchmark specific validations
 [ ! "$TPCH_SCALE_FACTOR" ] && die "TPCH_SCALE_FACTOR is not set, cannot continue"
 
-[ "$(get_hadoop_major_version)" != "2" ] && die "Need to use Hadoop v2"
+[ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for TPCH-hive"
 
 
 # Load Hadoop functions
