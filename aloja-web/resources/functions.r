@@ -11,6 +11,8 @@ library(scales);
 library(reshape);
 library(nnet);
 library(session);
+library(kknn); # NEW
+library(e1071); # NEW
 
 set.seed(1234567890);
 
@@ -577,7 +579,7 @@ aloja_debinarize_instance <- function (ds, vin, binstance)
 # Learning methods                                                            #
 ###############################################################################
 
-aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, sigma = 3, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0)
+aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, decay = 5e-4, neurons = 3, maxit = 1000, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -590,7 +592,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rmo
 
 	# Load and process datasets
 	rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=TRUE,sigma=3);
+		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=TRUE,sigma=sigma);
 
 	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
 	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
@@ -667,7 +669,7 @@ aloja_nnet <-  function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rmo
 	rt;
 }
 
-aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, sigma = 3, ppoly = 1, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0)
+aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, ppoly = 1, prange = NULL, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -681,7 +683,7 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rm
 
 	# Load and process datasets
 	rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=FALSE,sigma=3);
+		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
 
 	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
 	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
@@ -755,7 +757,7 @@ aloja_linreg <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rm
 	rt;
 }
 
-aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, sigma = 3, kparam = NULL, iparam = TRUE, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0)
+aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, kparam = 3, iparam = FALSE, kernel = "triangular", saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
@@ -765,7 +767,7 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 
 	# Load and process datasets
 	rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=3);
+		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
 
 	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
 	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
@@ -773,16 +775,18 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 
 	rt[["kparam"]] <- kparam;
 	rt[["iparam"]] <- iparam;
+	if (iparam) { rt[["kernel"]] <- "inv"; } else { rt[["kernel"]] <- kernel; }
 
 	# Training and Validation
-	if (is.null(kparam))
-	{
-		rt[["selected_model"]] <- aloja_knn_select(rt$varout, rt$varin, temptr, temptv, c("1","2","3","5","10","25","50","100"), iparam, quiet);
-		kparam <- rt$selected_model$kmin;
-	}
-	rt[["model"]] <- IBk(formula=temptr[,rt$varout] ~ . , data = temptr[,rt$varin], control = Weka_control(K = kparam, I = iparam));
-	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$predictions));
-	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=temptv)));
+	rcol <- names(temptr[, sapply(temptr, function(v) var(v, na.rm=TRUE)==0)]);
+	temptr <- temptr[complete.cases(temptr),!names(temptr) %in% rcol];
+	rvarin <- rt$varin[!rt$varin %in% rcol];
+
+	rt[["model"]] <- train.kknn(formula=temptr[,rt$varout] ~ ., data=temptr[,c(rvarin,rt$varout)], kmax = rt$kparam, distance = 1, kernel = rt$kernel);
+	rt[["bestk"]] <- rt$model$best.parameters$k;
+
+	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values[[rt$bestk]][1:nrow(temptr)]));
+	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=temptv[,c(rvarin,rt$varout)])));
 	colnames(rt$predtrain) <- c("ID","Pred");
 	colnames(rt$predval) <- c("ID","Pred");
 
@@ -793,19 +797,13 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	{
 		png(paste(pngval,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval$Pred,temptv[,rt$varout],main=paste("K-NN K =",kparam,ifelse(iparam,"Weight = Inv.Dist.","")));
+		plot(rt$predval$Pred,temptv[,rt$varout],main=paste("K-NN K =",rt$bestk,ifelse(iparam,"Weight = Inv.Dist.","")));
 		abline(0,1);
-		if (!is.null(rt$selected_model))
-		{
-			plot(rt$selected_model$trmae,ylim=c(min(c(rt$selected_model$trmae,rt$selected_model$tvmae)),max(rt$selected_model$trmae,rt$selected_model$tvmae)),main="Error vs K");
-			points(rt$selected_model$tvmae,col="red");
-			legend("topleft",pch=1,c("trmae","tvmae"),col=c("black","red"));
-		}
 		dev.off();
 	}
 
 	# Testing and evaluation
-	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=temptt)));
+	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=temptt[,c(rvarin,rt$varout)])));
 	colnames(rt$predtest) <- c("ID","Pred");
 	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,rt$varout]));
 	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,rt$varout])/temptt[,rt$varout]));
@@ -814,9 +812,9 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 	{
 		png(paste(pngtest,".png",sep=""),width=1000,height=500);
 		par(mfrow=c(1,2));
-		plot(rt$predval$Pred,temptv[,rt$varout],main=paste("Best Validation k-NN K =",kparam));
+		plot(rt$predval$Pred,temptv[,rt$varout],main=paste("Best Validation k-NN K =",rt$bestk));
 		abline(0,1);
-		plot(rt$predtest$Pred,temptt[,rt$varout],main=paste("Test k-NN K =",kparam));
+		plot(rt$predtest$Pred,temptt[,rt$varout],main=paste("Test k-NN K =",rt$bestk));
 		abline(0,1);
 		dev.off();
 	}
@@ -826,14 +824,81 @@ aloja_nneighbors <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66
 
 	if (!is.null(saveall))
 	{
-		aloja_save_object(rt,tagname=saveall,is.weka=TRUE);
+		aloja_save_object(rt,tagname=saveall);
 		aloja_save_predictions(rt,testname=saveall);
 	}
 
 	rt;
 }
 
-aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, rmols = TRUE, sigma = 3, mparam = NULL, prange = NULL, weka.tree = 1, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0)
+aloja_supportvms <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
+{
+	# Fix parameter class in case of CLI string input
+	if (!is.numeric(tsplit)) tsplit <- as.numeric(tsplit);
+	if (!is.numeric(vsplit)) vsplit <- as.numeric(vsplit);
+	if (!is.integer(sigma)) sigma <- as.integer(sigma);
+
+	# Load and process datasets
+	rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
+		ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
+
+	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
+	temptv <- rt$dataset[rt$dataset$ID %in% rt$validset,];
+	temptt <- rt$dataset[rt$dataset$ID %in% rt$testset,];
+
+	# Training and Validation
+	rcol <- names(temptr[, sapply(temptr, function(v) var(v, na.rm=TRUE)==0)]);
+	temptr <- temptr[complete.cases(temptr),!names(temptr) %in% rcol];
+	rvarin <- rt$varin[!rt$varin %in% rcol];
+
+	rt[["model"]] <- svm(formula=temptr[,rt$varout] ~ ., data=temptr[,c(rvarin,rt$varout)]);
+	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted));
+	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],predict(rt$model,newdata=temptv[,c(rvarin,rt$varout)])));
+	colnames(rt$predtrain) <- c("ID","Pred");
+	colnames(rt$predval) <- c("ID","Pred");
+
+	rt[["maeval"]] <- mean(abs(rt$predval$Pred - temptv[,rt$varout]));
+	rt[["raeval"]] <- mean(abs((rt$predval$Pred - temptv[,rt$varout])/temptv[,rt$varout]));
+
+	if (!is.null(pngval))
+	{
+		png(paste(pngval,".png",sep=""),width=1000,height=500);
+		par(mfrow=c(1,2));
+		plot(rt$predval$Pred,temptv[,rt$varout],main="SVMs");
+		abline(0,1);
+		dev.off();
+	}
+
+	# Testing and evaluation
+	rt[["predtest"]] <- as.data.frame(cbind(temptt[,"ID"],predict(rt$model,newdata=temptt[,c(rvarin,rt$varout)])));
+	colnames(rt$predtest) <- c("ID","Pred");
+	rt[["maetest"]] <- mean(abs(rt$predtest$Pred - temptt[,rt$varout]));
+	rt[["raetest"]] <- mean(abs((rt$predtest$Pred - temptt[,rt$varout])/temptt[,rt$varout]));
+
+	if (!is.null(pngtest))
+	{
+		png(paste(pngtest,".png",sep=""),width=1000,height=500);
+		par(mfrow=c(1,2));
+		plot(rt$predval$Pred,temptv[,rt$varout],main="SVMs");
+		abline(0,1);
+		plot(rt$predtest$Pred,temptt[,rt$varout],main="Test SVMs");
+		abline(0,1);
+		dev.off();
+	}
+
+	if (quiet == 0) print(c(rt$maeval,rt$raeval));
+	if (quiet == 0) print(c(rt$maetest,rt$raetest));
+
+	if (!is.null(saveall))
+	{
+		aloja_save_object(rt,tagname=saveall);
+		aloja_save_predictions(rt,testname=saveall);
+	}
+
+	rt;
+}
+
+aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, sigma = 3, mparam = NULL, prange = NULL, weka.tree = 1, saveall = NULL, pngval = NULL, pngtest = NULL, ttaux = NULL, traux = NULL, tvaux = NULL, ttfile = NULL, trfile = NULL, tvfile = NULL, quiet = 0, ...)
 {
 	# Fix parameter class in case of CLI string input
 	if (!is.null(prange)) prange <- as.numeric(prange);
@@ -851,10 +916,10 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, r
 		options(warn=-1);
 
 		rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-			ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=FALSE,sigma=3);
+			ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=TRUE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
 	} else {
 		rt <- aloja_prepare_datasets (vin,vout,tsplit=tsplit,vsplit=vsplit,ds=ds,ttaux=ttaux,traux=traux,tvaux=tvaux,
-			ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=3);
+			ttfile=ttfile,trfile=trfile,tvfile=tvfile,exclusion=0,binarize=FALSE,rm.outs=TRUE,normalize=FALSE,sigma=sigma);
 	}
 
 	temptr <- rt$dataset[rt$dataset$ID %in% rt$trainset,];
@@ -864,13 +929,12 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, r
 	# Training and Validation
 	if (is.null(mparam))
 	{
-#		rt[["selected_model"]] <- aloja_m5p_select(rt$varout, rt$varin, temptr, temptv, c("1","2","5","10","25","50","75","100","150","200"),weka.tree=weka.tree,quiet=quiet);
 		rt[["selected_model"]] <- aloja_m5p_select(rt$varout, rt$varin, temptr, temptv, c("1","2","5","10"),weka.tree=weka.tree,quiet=quiet);
 		mparam <- rt$selected_model$mmin;
 	}
 	if (weka.tree == 0)
 	{
-		rt[["model"]] <- qrt.tree(formula=rt$varout~.,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1)
+		rt[["model"]] <- qrt.tree(formula=varout~.,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
 		rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
 		rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)]))));
 	} else {
@@ -1242,37 +1306,6 @@ aloja_m5p_select <- function (vout, vin, traux, tvaux, mintervals, weka.tree = 0
 	retval[["tvmae"]] <- tvmae;
 	retval[["mmin"]] <- mmin;
 	retval[["mintervals"]] <- mintervals;
-	
-	retval;
-}
-
-aloja_knn_select <- function (vout, vin, traux, tvaux, kintervals, iparam, quiet = 1)
-{
-	trmae <- NULL;
-	tvmae <- NULL;
-	kmin <- 0;
-	kminmae <- 9e+15;
-	off_threshold <- 1e-4;
-	for (i in kintervals)
-	{
-		ml <- IBk(formula=traux[,vout] ~ .,data=data.frame(traux[,vin]), control = Weka_control(K = i, I = iparam));
-		mae <- mean(abs(ml$predictions - traux[,vout]));
-		trmae <- c(trmae,mae);
-
-		prediction <- predict(ml,newdata=data.frame(tvaux));
-		mae <- mean(abs(prediction - tvaux[,vout]));
-		tvmae <- c(tvmae,mae);
-
-		if (mae < kminmae - off_threshold) { kmin <- i; kminmae <- mae; }
-	}
-	if (quiet == 0) print (paste("Selected K:",kmin));	
-
-	retval <- list();
-	retval[["trmae"]] <- trmae;
-	retval[["tvmae"]] <- tvmae;
-	retval[["kmin"]] <- kmin;
-	retval[["kintervals"]] <- kintervals;
-	retval[["inverse"]] <- iparam;
 	
 	retval;
 }
