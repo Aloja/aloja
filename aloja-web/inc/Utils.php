@@ -25,7 +25,7 @@ class Utils
             'net' => 'e', 'disk' => 'e','replication' => 'e',
             'iofilebuf' => 'e', 'blk_size' => 'e', 'iosf' => 'e', 'vm_size' => 'c',
             'vm_cores' => 'c', 'vm_RAM' => 'c', 'vm_OS' => 'c', 'datanodes' => 'c', 'hadoop_version' => 'e',
-            'type' => 'c');
+            'type' => 'c', 'datasize' => 'e');
 
         $concatConfig = "";
         foreach($items as $item) {
@@ -461,8 +461,12 @@ class Utils
             $disks = substr($diskShort,2).' HDFS in SATA /tmp to SSD';
         else if(preg_match("/^RS([0-9]+)/",$diskShort))
             $disks = substr($diskShort,2).' HDFS in Remote(s) /tmp to SSD';
-        else
+        else if(preg_match("/^HD/",$diskShort))
             $disks = substr($diskShort,2).' SATA drives';
+        else if($diskShort == 'SaaS')
+            $disks = 'SaaS managed (unknown)';
+        else
+            $disks = 'N/A';
 
         return $disks;
     }
