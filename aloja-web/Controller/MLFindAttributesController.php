@@ -156,6 +156,7 @@ class MLFindAttributesController extends AbstractController
 					$count = 1;
 					foreach ($instances as $inst)
 					{
+						// FIXME - Prepare to crash if model comes from "legacy"...
 						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -m aloja_predict_instance_slice -l '.$current_model.' -p inst_predict=\''.$inst.'\':saveall=\''.md5($config).'-'.($count).'\' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					}
 
