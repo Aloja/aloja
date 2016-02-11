@@ -620,6 +620,7 @@ class CostPerfEvaluationController extends AbstractController
 			'categories' => json_encode($categories),
 			'seriesData' => str_replace('"null"','null',json_encode($series)),
 			'datanodess' => $datanodes,
+			'scalabilityType' => $scalabilityType
 		);
 	}
 }

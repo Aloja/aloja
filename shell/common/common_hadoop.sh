@@ -410,15 +410,18 @@ get_hadoop_major_version() {
     local hadoop_string="$HADOOP_VERSION"
   fi
 
-  local major_version
+  local major_version=""
   if [ "$clusterType" == "PaaS" ]; then
     major_version="2"
   elif [[ "$hadoop_string" == *"p-1"* ]] ; then
     major_version="1"
   elif [[ "$hadoop_string" == *"p-2"* ]] ; then
     major_version="2"
+  #backwards compatibility with old runs
+  elif [ "$hadoop_string" == "hadoop2" ]; then
+    major_version="2"
   else
-    die "Cannot determine Hadoop major version.  Supplied version $hadoop_string"
+    logger "WARNING: Cannot determine Hadoop major version.  Supplied version $hadoop_string"
   fi
 
   echo -e "$major_version"
@@ -426,10 +429,10 @@ get_hadoop_major_version() {
 
 # Formats the HDFS and NameNode for both Hadoop versions
 format_HDFS(){
-  if [ "$clusterType" == "PaaS" ]; then
-     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
-     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
-  else
+  if [ "$clusterType" != "PaaS" ]; then
+#     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs namenode -format"
+#     $DSH_MASTER "echo Y | sudo $BENCH_HADOOP_DIR/bin/hdfs datanode -format"
+#  else
   local hadoop_version="$(get_hadoop_major_version)"
   logger "INFO: Formating HDFS and NameNode dirs"
 
@@ -858,6 +861,7 @@ save_hadoop() {
 	    hdfs dfs -rm -r "/mr-history"
 	    hdfs dfs -expunge
     fi
+    $DSH "cp -r /var/log/hadoop $JOB_PATH/$1/ 2> /dev/null"
   else
     #we cannot move hadoop files
     #take into account naming *.date when changing dates
