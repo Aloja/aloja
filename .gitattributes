@@ -1,2 +1,12 @@
 # Respect unix line endings on Windows
-* text eol=lf
+*.sh text eol=lf
+*.txt text eol=lf
+*.php text eol=lf
+*.xml text eol=lf
+*.yml text eol=lf
+*.t text eol=lf
+*.js text eol=lf
+*.html text eol=lf
+*.css text eol=lf
+*.md text eol=lf
+*.json text eol=lf

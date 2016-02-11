@@ -407,7 +407,7 @@ class PerfDetailsController extends AbstractController
                                         id_exec, host, date,
                                         max(`avgrq-sz`) `avgrq-sz`,
                                         max(`avgqu-sz`) `avgqu-sz`
-                                        from SAR_block_devices d WHERE id_exec = '$exec'
+                                        from aloja_logs.SAR_block_devices d WHERE id_exec = '$exec'
                                         GROUP BY date, host
                                     ) t $where $group_by;",
                         'fields'    => array('avg-req-size', 'avg-queue-size'),
