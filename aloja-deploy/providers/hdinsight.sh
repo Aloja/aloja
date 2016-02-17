@@ -141,6 +141,7 @@ vm_final_bootstrap() {
  vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
+ vm_execute "dsh -M -f machines -Mc -- 'mkdir /mnt/aloja'"
 }
 
 #$1 cluster name
