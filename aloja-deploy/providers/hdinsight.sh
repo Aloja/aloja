@@ -124,10 +124,10 @@ node_connect() {
 vm_final_bootstrap() {
  logger "Configuring nodes..."
 #vm_set_ssh
- vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo \"`hostname`\" >> machines"
+ vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo \"$(get_master_name)\" >> machines"
  install_packages "sshpass dsh pssh git"
  if [ ! -z $2 ]; then
-  vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
+  vm_execute "parallel-scp -h slaves .ssh/{id_rsa,id_rsa.pub} /home/pristine/.ssh/"
  else
   vm_execute "while read i; do echo \$i; sshpass -p '$passwordAloja' scp -o StrictHostKeyChecking=no .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key,authorized_keys} $userAloja@\$i:/home/pristine/.ssh; done</home/pristine/slaves"
  fi
@@ -135,10 +135,6 @@ vm_final_bootstrap() {
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
  vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-us.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
  vm_execute "dsh -f slaves -cM -- sudo mount -a"
-#vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
-# vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
-# vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
- vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
  vm_execute "dsh -M -f machines -Mc -- 'mkdir /mnt/aloja'"
@@ -152,7 +148,8 @@ node_delete() {
 }
 
 get_master_name() {
-    hostname
+    nameCluster="$(echo $clusterName | cut -d- -f1)"
+    echo "hn0-$nameCluster"
 }
 
 get_node_names() {
