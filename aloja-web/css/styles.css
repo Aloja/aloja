@@ -3,6 +3,11 @@ body, html {
 	font-size: 1em;
 }
 
+div p.bottom-align {
+    position: absolute;
+    bottom: 0;
+}
+
 #right {
     height: 100%;
 }
