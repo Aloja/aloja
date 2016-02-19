@@ -1,21 +1,21 @@
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MSR hadoop.bsc.es
-# 2015-01-14
-# Implementation of Quadratic (or linear) Regression Tree method recursive-partition-like
+# ALOJA-BSC-MSR aloja.bsc.es
+# 2016-02-20
+# Implementation of Quadratic (or Linear) Regression Tree method recursive-partition-like
 
 # Usage:
-#	mtree <- qrt.tree(formula = target ~ .,dataset = dataframe);
+#	mtree <- qrt.tree(formula = target ~ .,dataset = dataframe, simple = 0);
 #	prediction <- qrt.predict(model = mtree, newdata = dataframe);
 #	qrt.plot.tree(mtree);
 
-library(rpart);
+library(rpart);	# Recursive Partition Trees
 
 ###############################################################################
-# Regression Tree M5-Prediction-like with Quadratic Regression                #
+# Regression Tree M5-Prediction-like with Linear/Quadratic Regression         #
 ###############################################################################
 
-qrt.tree <- function (formula, dataset, m = 30, cp = 0.001, simple = 0)
+qrt.tree <- function (formula, dataset, m = 30, cp = 0.001, simple = 1)
 {
 	if (!is.numeric(m)) m <- as.numeric(m);
 	if (!is.numeric(cp)) cp <- as.numeric(cp);
@@ -151,4 +151,40 @@ qrt.json <- function (model)
 
 	jaux;
 }
+
+###############################################################################
+# Fine-tunning parameters for QRT                                             #
+###############################################################################
+
+qrt.select <- function (vout, vin, traux, tvaux, mintervals, quiet = 1, simple = 1, ...)
+{
+	trmae <- NULL;
+	tvmae <- NULL;
+	mmin <- 0;
+	mminmae <- 9e+15;
+	off_threshold <- 1e-4;
+	for (i in mintervals)
+	{
+		ml <- qrt.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i,simple=simple);
+		trmae <- c(trmae, ml$mae);
+
+		prediction <- qrt.predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));
+
+		mae <- mean(abs(prediction - tvaux[,vout]));
+		tvmae <- c(tvmae,mae);
+
+		if (mae < mminmae - off_threshold) { mmin <- i; mminmae <- mae; }
+		if (quiet == 0) print(paste("[INFO]",i,mae,mmin,mminmae));
+	}
+	if (quiet == 0) print (paste("Selected M:",mmin));	
+
+	retval <- list();
+	retval[["trmae"]] <- trmae;
+	retval[["tvmae"]] <- tvmae;
+	retval[["mmin"]] <- mmin;
+	retval[["mintervals"]] <- mintervals;
+	
+	retval;
+}
+
 

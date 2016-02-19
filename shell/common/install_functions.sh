@@ -581,21 +581,18 @@ install_R() {
 sudo dpkg -i ./$libtiff_file;
 sudo rm $libtiff_file"
 
-      logger "INFO: Installing R dependencies (JAVA)"
-      install_packages "libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk"
+      logger "INFO: Installing R dependencies"
+      install_packages "libxml2-dev libcurl4-openssl-dev gsettings-desktop-schemas"
 
       logger "INFO: Installing R core and available packages in repo"
-      local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-bitops r-cran-boot r-cran-class r-cran-cluster"
-      R_packages="$R_packages r-cran-codetools r-cran-foreign r-cran-kernsmooth r-cran-lattice r-cran-mass r-cran-matrix"
-      R_packages="$R_packages r-cran-mgcv r-cran-nlme r-cran-nnet r-cran-rpart r-cran-spatial r-cran-survival r-recommended"
-      R_packages="$R_packages r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-evaluate"
-      R_packages="$R_packages r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer"
-      R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
-      R_packages="$R_packages r-cran-rms r-cran-ggplot2"
+      local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-boot r-cran-class r-cran-cluster r-doc-html"		# BASE
+      R_packages="$R_packages r-cran-codetools r-cran-foreign r-cran-kernsmooth r-cran-lattice r-cran-mass r-cran-matrix"	# BASE
+      R_packages="$R_packages r-cran-mgcv r-cran-nlme r-cran-nnet r-cran-rpart r-cran-spatial r-cran-survival r-recommended"	# BASE
+      R_packages="$R_packages r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-foreach r-cran-gtable r-cran-ggplot2"	# DEPENDENCIES
+      R_packages="$R_packages r-cran-iterators r-cran-labeling r-cran-munsell r-cran-plyr r-cran-rcpp r-cran-rcolorbrewer"	# DEPENDENCIES
+      R_packages="$R_packages r-cran-reshape r-cran-rms r-cran-scales r-cran-stringr"						# DEPENDENCIES
 
       install_packages "$R_packages"
-
-      vm_execute "sudo R CMD javareconf"
 
       logger "INFO: Downloading precompiled R binary updates (to save time)"
       local R_file="R-x86_64-3.2-packages.tar.gz"
@@ -607,25 +604,6 @@ sudo rm -rf /opt/R;
 sudo tar -C /opt -xf '/tmp/$R_file';
 sudo rm -rf '/tmp/$R_file';
 "
-
-#      logger "INFO: Updating package (will take a while if changes are found)"
-#      vm_execute "
-#cat <<- EOF > /tmp/packages.r
-##!/usr/bin/env Rscript
-#
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-#
-## For all Ubuntu releases until 14.04
-#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-#'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
-#
-##update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-#
-#EOF
-#
-#sudo chmod a+x /tmp/packages.r
-#sudo /tmp/packages.r
-#"
 
       local test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
 

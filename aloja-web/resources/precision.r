@@ -1,6 +1,6 @@
 
 # Josep Ll. Berral-García
-# ALOJA-BSC-MSR hadoop.bsc.es
+# ALOJA-BSC-MSR aloja.bsc.es
 # 2015-07-14
 # Comparision functions library for ALOJA-ML
 
