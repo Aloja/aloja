@@ -8,7 +8,7 @@ vm_create_storage_account() {
         logger "Creating storage account $1"
         azure storage account create "$1" -s "$subscriptionID" -l "$3" --type "$2"  
     else
-        logger "WARNING: Storage account $1 already exists, skipping.."
+        logger "WARN: Storage account $1 already exists, skipping.."
     fi
     storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
 }
@@ -19,7 +19,7 @@ vm_create_storage_container() {
         logger "Creating container $2 on storage $1"
         azure storage container create -a "$1" -k "$3" "$2"
     else
-        logger "WARNING: Container $2 already exists on $1, skipping.."
+        logger "WARN: Container $2 already exists on $1, skipping.."
     fi
 }
 
@@ -68,23 +68,25 @@ wait_hdi_cluster() {
 
 #$1 cluster name
 create_hdi_cluster() {
- if [ -z "$storageAccount" ]; then
-    storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
- fi
- if [ -z "$location" ]; then
-    location="South Central US"
- fi
-
- vm_create_storage_account "$storageAccount" "LRS" "$location"
- vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
- logger "Creating Linux HDI cluster $1"
-     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
-    --storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-    --location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
-    --sshPassword "$passwordAloja" -s "$subscriptionID"
-
-  wait_hdi_cluster $1
-  ssh-keygen -f "~/.ssh/known_hosts" -R $(get_ssh_host)
+  logger "WARN: clusters can't be deployed through this script due to azure-cli not updated, skipping deploy stage"
+#Commented until azure cli is updated, DO NOT DELETE
+# if [ -z "$storageAccount" ]; then
+#    storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
+# fi
+# if [ -z "$location" ]; then
+#    location="South Central US"
+# fi
+#
+# vm_create_storage_account "$storageAccount" "LRS" "$location"
+# vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
+# logger "Creating Linux HDI cluster $1"
+#     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
+#    --storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
+#    --location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
+#    --sshPassword "$passwordAloja" -s "$subscriptionID"
+#
+#  wait_hdi_cluster $1
+#  ssh-keygen -f "~/.ssh/known_hosts" -R $(get_ssh_host)
 }
 
 #$1 vm_name
@@ -112,7 +114,7 @@ get_ssh_port() {
 
 #1 $vm_name
 node_connect() {
-  logger "Connecting to azure subscription $subscriptionID"
+  logger "INFO: Connecting to azure subscription $subscriptionID"
   if [ "$vmType" != "windows" ] ; then
     vm_connect
   else
@@ -122,7 +124,7 @@ node_connect() {
 
 #$1 cluster name $2 use password
 vm_final_bootstrap() {
- logger "Configuring nodes..."
+ logger "INFO: Configuring nodes..."
 #vm_set_ssh
  vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo \"$(get_master_name)\" >> machines"
  install_packages "sshpass dsh pssh git"
