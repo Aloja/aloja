@@ -53,7 +53,7 @@ create_cbd_cluster() {
     output=$(lava clusters get "${clusterId}" -f --header --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}")
     # get number of nodes
 
-    nodes=$(awk -v CBDvmSize="${CBDvmSize}" '$0 ~ "\\| *slave *\\| *" CBDvmSize " *\\|" { print $6; exit }' <<< "${output}")
+    nodes=$(awk -v vmSize="${vmSize}" '$0 ~ "\\| *slave *\\| *" vmSize " *\\|" { print $6; exit }' <<< "${output}")
 
     logger "Cluster $1 has $nodes nodes, we want $numberOfNodes"
 
@@ -114,11 +114,11 @@ create_do_cbd_cluster(){
     cloudFilesCred="--credential cloud_files=${CBDcloudFilesCredentials}"
   fi
 
-  lava clusters create "$1" "${CBDclusterStack}" -f --header --node-groups "slave(flavor_id=${CBDvmSize}, count=${numberOfNodes})" --username "${userAloja}" --ssh-key "${CBDsshKeyName}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}" ${cloudFilesCred}
+  lava clusters create "$1" "${CBDclusterStack}" -f --header --node-groups "slave(flavor_id=${vmSize}, count=${numberOfNodes})" --username "${userAloja}" --ssh-key "${CBDsshKeyName}" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}" ${cloudFilesCred}
 }
 
 resize_do_cbd_cluster(){
-  lava clusters resize "$1" -f --header --node-groups "slave(flavor_id=${CBDvmSize}, count=${numberOfNodes})" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
+  lava clusters resize "$1" -f --header --node-groups "slave(flavor_id=${vmSize}, count=${numberOfNodes})" --user "${OS_USERNAME}" --tenant "${OS_TENANT_NAME}" --region "${CBDlocation}" --api-key "${OS_PASSWORD}"
 }
 
 get_cluster_id(){

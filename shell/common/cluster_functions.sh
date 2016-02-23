@@ -40,6 +40,7 @@ vm_create_node() {
   if [ "$defaultProvider" == "hdinsight" ]; then
     vm_name="$clusterName"
     status=$(hdi_cluster_check_create "$clusterName")
+
     if [ $status -eq 0 ]; then
       create_hdi_cluster "$clusterName"
     fi
@@ -50,7 +51,7 @@ vm_create_node() {
     create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
   elif [ "$vmType" != 'windows' ] ; then
-    requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
+    requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
 
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
@@ -78,7 +79,7 @@ vm_create_node() {
 vm_create_connect() {
 
   #test first if machines are accessible via SSH to save time
-  if ! wait_vm_ssh_ready "1" ; then
+  if ! vm_exists "${1}" || ! wait_vm_ssh_ready "1" ; then
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
     vm_check_attach_disks "$1"
@@ -692,11 +693,13 @@ wait_vm_ready() {
 
     #sleep 1
   done
+
 }
 
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
+
   logger "INFO: Checking SSH status of VM $vm_name: $(get_ssh_user)@$(get_ssh_host):$(get_ssh_port)"
 
   waitStartTime="$(date +%s)"
@@ -714,6 +717,7 @@ wait_vm_ssh_ready() {
       break #just in case
     else
       logger " VM $vm_name is down. Waiting for: $waitElapsedTime s. $tries attempts. Output: $test_action"
+
       if [ "$tries" == "2" ] ; then
         vm_start "$vm_name"
       elif [ "$tries" == "100" ] ; then
@@ -862,7 +866,7 @@ vm_set_dot_files() {
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'
-export PATH=\$HOME/share/${clusterName}/sw/bin:\$PATH" ""
+export PATH=\$HOME/share/sw/bin:\$PATH" ""
 
     else
       vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
