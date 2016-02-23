@@ -10,7 +10,7 @@ vm_create_storage_account() {
     else
         logger "WARNING: Storage account $1 already exists, skipping.."
     fi
-    storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
+    storageAccountKey=$(azure storage account keys list $1 | grep Primary | cut -d" " -f6)
 }
 
 #$1 storage account name $2 container name $3 storage account key
@@ -68,20 +68,22 @@ wait_hdi_cluster() {
 
 #$1 cluster name
 create_hdi_cluster() {
- if [ -z "$storageAccount" ]; then
-    storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
- fi
- if [ -z "$location" ]; then
+  if [ -z "$storageAccount" ]; then
+    storageAccount="$(echo "$vmSize" | awk '{print tolower($0)}')`echo "$clusterName" | cut -d- -f1`"
+  fi
+  if [ -z "$location" ]; then
     location="South Central US"
- fi
+  fi
 
- vm_create_storage_account "$storageAccount" "LRS" "$location"
- vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
- logger "Creating Linux HDI cluster $1"
-     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
-    --storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-    --location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
-    --sshPassword "$passwordAloja" -s "$subscriptionID"
+  vm_create_storage_account "$storageAccount" "LRS" "$location"
+  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
+  logger "Creating Linux HDI cluster $1"
+
+  set -x
+
+  azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" --storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" --location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" --sshPassword "$passwordAloja" -s "$subscriptionID"
+
+  echo "end"; exit
 
   wait_hdi_cluster $1
   ssh-keygen -f "~/.ssh/known_hosts" -R $(get_ssh_host)
