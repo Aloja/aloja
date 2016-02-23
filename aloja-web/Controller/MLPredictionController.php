@@ -22,6 +22,7 @@ class MLPredictionController extends AbstractController
 		$message = $instance = $error_stats = $config = $model_info = $slice_info = '';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
+		$is_legacy = 0;
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -128,6 +129,7 @@ class MLPredictionController extends AbstractController
 					{
 						throw new \Exception('No data matches with your critteria.');
 					}
+					$is_legacy = 1;
 				}
 
 				$fp = fopen($cache_ds, 'w');
@@ -160,8 +162,8 @@ class MLPredictionController extends AbstractController
 			if (!$is_cached) 
 			{
 				// register model to DB
-				$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice)";
-				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."');";
+				$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice,legacy)";
+				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."','".$is_legacy."');";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving model into DB');
 
 				// read results of the CSV and dump to DB

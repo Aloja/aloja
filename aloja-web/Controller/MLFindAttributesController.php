@@ -140,6 +140,13 @@ class MLFindAttributesController extends AbstractController
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
+					// Check for Legacy
+					$query = "SELECT legacy FROM aloja_ml.learners WHERE id_learner='".$current_model."';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$legacy_params = "";
+					if ($row['legacy'] == 1) $legacy_params = ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+
 					// Retrieve file model from DB
 					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";
 					$result = $dbml->query($query);
@@ -156,8 +163,7 @@ class MLFindAttributesController extends AbstractController
 					$count = 1;
 					foreach ($instances as $inst)
 					{
-						// FIXME - Prepare to crash if model comes from "legacy"...
-						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -m aloja_predict_instance_slice -l '.$current_model.' -p inst_predict=\''.$inst.'\':saveall=\''.md5($config).'-'.($count).'\' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
+						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -m aloja_predict_instance_slice -l '.$current_model.' -p inst_predict=\''.$inst.'\':saveall=\''.md5($config).'-'.($count).'\''.$legacy_params .' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					}
 
 				}

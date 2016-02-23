@@ -128,7 +128,7 @@ class MLCacheController extends AbstractController
 					FROM (	SELECT j.*, COUNT(m.id_minconfigs) AS num_minconfigs
 						FROM (	SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
 								l.creation_time AS creation_time, l.model AS model, l.dataslice AS advanced,
-								COUNT(p.id_prediction) AS num_preds
+								COUNT(p.id_prediction) AS num_preds, l.legacy AS legacy,
 							FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner
 							GROUP BY l.id_learner
 						) AS j LEFT JOIN aloja_ml.minconfigs AS m ON j.id_learner = m.id_learner
@@ -145,10 +145,10 @@ class MLCacheController extends AbstractController
 				if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
 				$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
 
-				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
+				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','"$row['legacy']"','<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
 			}
 			$jsonLearners = $jsonLearners.']';
-			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Actions'}]";
+			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Is Legacy'},{'title':'Actions'}]";
 
 			// Compilation of Minconfs on Cache
 			$query="SELECT mj.*, COUNT(mc.sid_minconfigs_centers) AS num_centers

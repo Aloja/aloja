@@ -25,6 +25,7 @@ class MLOutliersController extends AbstractController
 		$jsonResolutions = $jsonResolutionsHeader = '[]';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
+		$is_legacy = 0;
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -126,8 +127,8 @@ class MLOutliersController extends AbstractController
 
 			if (!empty($possible_models_id))
 			{
-				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
-				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
+				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `legacy` = 0 THEN 'NO.LEGACY' ELSE 'LEGACY' END as is_legacy, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']." : ".$row['is_legacy']."</li>";
 
 				if ($current_model == "")
 				{
@@ -148,13 +149,24 @@ class MLOutliersController extends AbstractController
 
 				if (!$is_cached && !$in_process && !$finished_process)
 				{
+					$query = "SELECT legacy FROM aloja_ml.learners WHERE id_learner='".$current_model."';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$is_legacy = $row['legacy'];
+
 					// dump the result to csv
 					$file_header = "";
-					$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
-				    	$rows = $db->get_rows ( $query );
-					if (empty($rows))
+					if ($is_legacy == 0)
 					{
-						// Try legacy
+						$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
+					    	$rows = $db->get_rows ( $query );
+						if (empty($rows))
+						{
+							throw new \Exception('No data matches with your critteria.');
+						}
+					}
+					else
+					{
 						$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
 						$learn_options .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 					    	$rows = $db->get_rows ( $query );

@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS learners (
   dataslice longtext NOT NULL,
   algorithm varchar(255) NOT NULL,
   creation_time datetime NOT NULL,
+  legacy int(11) DEFAULT 0,
   PRIMARY KEY (sid_learner),
   UNIQUE KEY id_learner_UNIQUE (id_learner),
   KEY idx_instance (instance)
@@ -216,6 +217,7 @@ $MYSQL "ALTER TABLE $DBML.precisions ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.summaries ADD dataslice longtext NOT NULL;"
 $MYSQL "ALTER TABLE $DBML.minconfigs ADD dataslice longtext NOT NULL DEFAULT '';"
 $MYSQL "ALTER TABLE $DBML.resolutions ADD dataslice longtext NOT NULL DEFAULT '';"
+$MYSQL "ALTER TABLE $DBML.learners ADD legacy int(11) DEFAULT 0;"
 
 ## DEPRECATED
 #$MYSQL "ALTER TABLE $DBML.predictions ADD datasize int(11) DEFAULT 0,
