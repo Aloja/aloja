@@ -8,7 +8,7 @@ vm_create_storage_account() {
         logger "Creating storage account $1"
         azure storage account create "$1" -s "$subscriptionID" -l "$3" --type "$2"  
     else
-        logger "WARNING: Storage account $1 already exists, skipping.."
+        logger "WARN: Storage account $1 already exists, skipping.."
     fi
     storageAccountKey=$(azure storage account keys list $1 | grep Primary | cut -d" " -f6)
 }
@@ -19,7 +19,7 @@ vm_create_storage_container() {
         logger "Creating container $2 on storage $1"
         azure storage container create -a "$1" -k "$3" "$2"
     else
-        logger "WARNING: Container $2 already exists on $1, skipping.."
+        logger "WARN: Container $2 already exists on $1, skipping.."
     fi
 }
 
@@ -114,7 +114,7 @@ get_ssh_port() {
 
 #1 $vm_name
 node_connect() {
-  logger "Connecting to azure subscription $subscriptionID"
+  logger "INFO: Connecting to azure subscription $subscriptionID"
   if [ "$vmType" != "windows" ] ; then
     vm_connect
   else
@@ -124,12 +124,12 @@ node_connect() {
 
 #$1 cluster name $2 use password
 vm_final_bootstrap() {
- logger "Configuring nodes..."
+ logger "INFO: Configuring nodes..."
 #vm_set_ssh
- vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo headnode0 >> machines"
+ vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo \"$(get_master_name)\" >> machines"
  install_packages "sshpass dsh pssh git"
  if [ ! -z $2 ]; then
-  vm_execute "parallel-scp -h slaves .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key} /home/pristine/.ssh/"
+  vm_execute "parallel-scp -h slaves .ssh/{id_rsa,id_rsa.pub} /home/pristine/.ssh/"
  else
   vm_execute "while read i; do echo \$i; sshpass -p '$passwordAloja' scp -o StrictHostKeyChecking=no .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key,authorized_keys} $userAloja@\$i:/home/pristine/.ssh; done</home/pristine/slaves"
  fi
@@ -137,12 +137,9 @@ vm_final_bootstrap() {
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
  vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-us.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
  vm_execute "dsh -f slaves -cM -- sudo mount -a"
-#vm_execute "dsh -f slaves -cM -- \"sshfs 'pristine@aloja.cloudapp.net:/home/pristine/share' '/home/pristine/share'\""
-# vm_execute "cd share; git clone https://github.com/Aloja/aloja.git ."
-# vm_execute "dsh -f slaves -cM -- \"sudo echo $(hostname -i) headnode0 | sudo tee --append /etc/hosts > /dev/null\""
- vm_execute "hdfs dfs -copyToLocal /example/jars/hadoop-mapreduce-examples.jar hadoop-mapreduce-examples.jar"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
+ vm_execute "dsh -M -f machines -Mc -- 'mkdir /mnt/aloja'"
 }
 
 #$1 cluster name
@@ -153,7 +150,8 @@ node_delete() {
 }
 
 get_master_name() {
-    echo "headnode0"    
+    nameCluster="$(echo $clusterName | cut -d- -f1)"
+    echo "hn0-$nameCluster"
 }
 
 get_node_names() {

@@ -44,8 +44,8 @@ vm_create_node() {
     if [ $status -eq 0 ]; then
       create_hdi_cluster "$clusterName"
     fi
-    vm_provision "pw"
-    vm_final_bootstrap "$clusterName" "pw"
+    vm_provision
+    vm_final_bootstrap "$clusterName"
   elif [ "$defaultProvider" == "rackspacecbd" ]; then
     vm_name="$clusterName"
     create_cbd_cluster "$clusterName"

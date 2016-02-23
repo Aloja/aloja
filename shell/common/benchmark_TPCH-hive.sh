@@ -8,7 +8,7 @@ BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.
 # Some benchmark specific validations
 [ ! "$TPCH_SCALE_FACTOR" ] && die "TPCH_SCALE_FACTOR is not set, cannot continue"
 
-[ "$(get_hadoop_major_version)" != "2" ] && die "Need to use Hadoop v2"
+[ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for TPCH-hive"
 
 
 # Load Hadoop functions
@@ -18,6 +18,7 @@ set_hadoop_requires
 
 benchmark_suite_config() {
   [ ! "$TPCH_DATA_DIR" ] && export TPCH_DATA_DIR=/tpch/tpch-generate
+
   BENCH_SAVE_PREPARE_LOCATION="${BENCH_LOCAL_DIR}${TPCH_DATA_DIR}"
 
   EXECUTE_TPCH_HIVE=true
@@ -107,7 +108,13 @@ generate_TPCH_data() {
   fi
 
   logger "INFO: PREPARING DIR TO GENERATE TPC-H DATA"
-  time_cmd_master "$(get_hadoop_exports) ${BENCH_HADOOP_DIR}/bin/hdfs dfs -mkdir -p ${TPCH_DATA_DIR}"
+  if [[ "$defaultProvider" == "rackspacecbd" ]]; then
+    logger "DEBUG: rackspace CBD creating data dir with hdfs user"
+    sudo su hdfs -c "hdfs dfs -mkdir -p ${TPCH_DATA_DIR}"
+    sudo su hdfs -c "hdfs dfs -chown pristine ${TPCH_DATA_DIR}"
+  else
+    time_cmd_master "$(get_hadoop_exports) ${BENCH_HADOOP_DIR}/bin/hdfs dfs -mkdir -p ${TPCH_DATA_DIR}"
+  fi
 
   logger "INFO: # GENERATING TPCH DATA WITH SCALE FACTOR ${SCALE}"
   logger "DEBUG: COMMAND: $(get_hadoop_exports) cd ${TPCH_HOME}/tpch-gen && ${BENCH_HADOOP_DIR}/bin/hadoop jar target/*.jar $(get_hadoop_job_config) -d ${TPCH_DATA_DIR}/${SCALE}/ -s ${SCALE}"
