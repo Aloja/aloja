@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS learners (
   model longtext NOT NULL,
   dataslice longtext NOT NULL,
   algorithm varchar(255) NOT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   legacy int(11) DEFAULT 0,
   PRIMARY KEY (sid_learner),
   UNIQUE KEY id_learner_UNIQUE (id_learner),
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS predictions (
   full_instance longtext NOT NULL DEFAULT '',
   id_learner varchar(255) NOT NULL,
   predict_code int(8) DEFAULT '0',
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_prediction),
   UNIQUE id_exec_learner (id_exec,id_pred_exec,id_learner),
   INDEX idx_id_exec_predictions (id_exec),
@@ -49,8 +49,8 @@ CREATE TABLE IF NOT EXISTS pred_execs (
   exec varchar(255) DEFAULT NULL,
   bench varchar(255) DEFAULT NULL,
   exe_time decimal(20,3) DEFAULT NULL,
-  start_time datetime DEFAULT NULL,
-  end_time datetime DEFAULT NULL,
+  start_time datetime DEFAULT NULL DEFAULT CURRENT_TIMESTAMP,
+  end_time datetime DEFAULT NULL DEFAULT CURRENT_TIMESTAMP,
   net varchar(255) DEFAULT NULL,
   disk varchar(255) DEFAULT NULL,
   bench_type varchar(255) DEFAULT NULL,
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS trees (
   instance varchar(255) NOT NULL,
   model longtext NOT NULL,
   tree_code longtext NOT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_findattrs),
   KEY idx_instance (instance),
   FOREIGN KEY (id_learner) REFERENCES learners(id_learner) ON DELETE CASCADE
@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS resolutions (
   outlier_code int(8) DEFAULT 0,
   predicted int(11) DEFAULT 0,
   observed int(11) DEFAULT 0,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (sid_resolution),
   KEY idx_instance (instance),
   FOREIGN KEY (id_learner) REFERENCES learners(id_learner) ON DELETE CASCADE
@@ -116,7 +116,7 @@ CREATE TABLE IF NOT EXISTS minconfigs (
   model longtext NOT NULL,
   dataslice longtext NOT NULL DEFAULT '',
   is_new int(1) NOT NULL DEFAULT 0,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_minconfigs),
   KEY idx_instance (instance),
   FOREIGN KEY (id_learner) REFERENCES learners(id_learner) ON DELETE CASCADE
@@ -128,7 +128,7 @@ CREATE TABLE IF NOT EXISTS minconfigs_props (
   cluster int(11) NOT NULL,
   MAE decimal(20,3) DEFAULT NULL,
   RAE decimal(20,3) DEFAULT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (sid_minconfigs_props),
   FOREIGN KEY (id_minconfigs) REFERENCES minconfigs(id_minconfigs) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -154,7 +154,7 @@ CREATE TABLE IF NOT EXISTS minconfigs_centers (
   datasize int(11) DEFAULT 0,
   scale_factor varchar(255) DEFAULT NULL,
   support mediumtext DEFAULT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (sid_minconfigs_centers),
   FOREIGN KEY (id_minconfigs) REFERENCES minconfigs(id_minconfigs) ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -165,7 +165,7 @@ CREATE TABLE IF NOT EXISTS summaries (
   model longtext NOT NULL,
   dataslice longtext NOT NULL,
   summary longtext NOT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_summaries),
   KEY idx_instance (instance)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -174,7 +174,7 @@ CREATE TABLE IF NOT EXISTS model_storage (
   id_hash varchar(255) NOT NULL,
   type varchar(255) NOT NULL,
   file MEDIUMBLOB NOT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_hash)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS precisions (
   diversity longtext NOT NULL,
   precisions longtext NOT NULL,
   discvar varchar(255) NOT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_precision,discvar)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 
@@ -197,7 +197,7 @@ CREATE TABLE IF NOT EXISTS observed_trees (
   dataslice longtext NOT NULL,
   tree_code_split longtext NOT NULL,
   tree_code_gain longtext NOT NULL,
-  creation_time datetime NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (id_obstrees),
   KEY idx_instance (instance)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
@@ -259,6 +259,20 @@ $MYSQL "ALTER TABLE $DBML.minconfigs_centers ADD hadoop_version varchar(127) DEF
 
 $MYSQL "CREATE INDEX idx_id_exec_predictions ON $DBML.predictions(id_exec);"
 
-$MYSQL "ALTER TABLE $DBML.predictions MODIFY start_time datetime DEFAULT CURRENT_TIMESTAMP;"
-$MYSQL "ALTER TABLE $DBML.predictions MODIFY end_time datetime DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.pred_execs MODIFY start_time datetime DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.pred_execs MODIFY end_time datetime DEFAULT CURRENT_TIMESTAMP;"
+
+$MYSQL "ALTER TABLE $DBML.predictions MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.learners MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.trees MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.resolutions MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.minconfigs MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.minconfigs_props MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.minconfigs_centers MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.summaries MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.model_storage MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.precisions MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+$MYSQL "ALTER TABLE $DBML.observed_trees MODIFY creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP;"
+
+
 
