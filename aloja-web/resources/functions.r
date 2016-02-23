@@ -4,18 +4,18 @@
 # 2016-02-20
 # Function library for ALOJA-ML
 
-library(stringr);	# String management
-library(nnet);		# NNets
-library(kknn);		# k-NN
-library(e1071);		# SVMs
-library(RSNNS);		# NNets (2)
-library(snowfall);	# Parallelism
+suppressMessages(library(stringr));	# String management
+suppressMessages(library(nnet));	# NNets
+suppressMessages(library(kknn));	# k-NN
+suppressMessages(library(e1071));	# SVMs
+suppressMessages(library(RSNNS));	# NNets (2)
+suppressMessages(library(snowfall));	# Parallelism
 
 set.seed(1234567890);
 
-source('models.r');		# Prediction, Outliers, MinConfs...
-source('searchtrees.r');	# Representative Trees
-source('precision.r');		# Precision and Comparison
+source('/var/www/aloja-web/resources/models.r');	# Prediction, Outliers, MinConfs...
+source('/var/www/aloja-web/resources/searchtrees.r');	# Representative Trees
+source('/var/www/aloja-web/resources/precision.r');	# Precision and Comparison
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
@@ -795,7 +795,7 @@ aloja_regtree <- function (ds = NULL, vin, vout, tsplit = 0.25, vsplit = 0.66, s
 		rt[["selected_model"]] <- qrt.select(rt$varout, rt$varin, temptr, temptv, c("1","2","5","10"),quiet=quiet,simple=1);
 		mparam <- rt$selected_model$mmin;
 	}
-	rt[["model"]] <- qrt.tree(formula=rt$varout~.,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
+	rt[["model"]] <- qrt.tree(varout=rt$varout,dataset=data.frame(temptr[,c(rt$varout,rt$varin)]),m=mparam,simple=1);
 	rt[["predtrain"]] <- as.data.frame(cbind(temptr[,"ID"],rt$model$fitted.values));
 	rt[["predval"]] <- as.data.frame(cbind(temptv[,"ID"],qrt.predict(model=rt$model,newdata=data.frame(temptv[,c(rt$varout,rt$varin)]))));
 

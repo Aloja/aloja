@@ -5,27 +5,24 @@
 # Implementation of Quadratic (or Linear) Regression Tree method recursive-partition-like
 
 # Usage:
-#	mtree <- qrt.tree(formula = target ~ .,dataset = dataframe, simple = 0);
+#	mtree <- qrt.tree(varout = target.name, dataset = dataframe, simple = 0);
 #	prediction <- qrt.predict(model = mtree, newdata = dataframe);
 #	qrt.plot.tree(mtree);
 
-library(rpart);	# Recursive Partition Trees
+suppressMessages(library(rpart));	# Recursive Partition Trees
 
 ###############################################################################
 # Regression Tree M5-Prediction-like with Linear/Quadratic Regression         #
 ###############################################################################
 
-qrt.tree <- function (formula, dataset, m = 30, cp = 0.001, simple = 1)
+qrt.tree <- function (varout, dataset, m = 30, cp = 0.001, simple = 1)
 {
 	if (!is.numeric(m)) m <- as.numeric(m);
 	if (!is.numeric(cp)) cp <- as.numeric(cp);
 	if (!is.numeric(simple)) simple <- as.numeric(simple);
 
-	colnames(dataset) <- gsub(" ",".",colnames(dataset));
-
-	vout <- get(as.character(formula[[2]]),envir=parent.frame());
-	vin <- if (as.character(formula[[3]]) == ".") colnames(dataset)[(!colnames(dataset) %in% vout)] else as.character(formula[[3]]);
-
+	vout <- varout;
+	vin <- colnames(dataset)[(!colnames(dataset) %in% vout)];
 	dataset <- dataset[,c(vout,vin)];
 
 	fit <- rpart(formula=dataset[,vout]~.,data=dataset[,vin],method="anova",control=rpart.control(minsplit=as.integer(m),cp=as.numeric(cp)));
@@ -54,8 +51,8 @@ qrt.tree <- function (formula, dataset, m = 30, cp = 0.001, simple = 1)
 
 	err_data <- data.frame(strsplit(unlist(err_branch)," "));
 	err_data <- apply(err_data, 1, function(x) as.numeric(x));
-	auxid <- err_data[,1];
-	err_data <- if (nrow(err_data)==1) t(data.frame(err_data[,-1])) else data.frame(err_data[,-1]);
+	auxid <- if (is.null(nrow(err_data))) 1 else err_data[,1];
+	err_data <- if (is.null(nrow(err_data))) t(data.frame(err_data[-1])) else data.frame(err_data[,-1]);
 	colnames(err_data) <- c("Instances","MAE","MAPE");
 	rownames(err_data) <- auxid;
 	retval[["error_branch"]] <- err_data;	
@@ -165,7 +162,7 @@ qrt.select <- function (vout, vin, traux, tvaux, mintervals, quiet = 1, simple =
 	off_threshold <- 1e-4;
 	for (i in mintervals)
 	{
-		ml <- qrt.tree(formula=vout~.,dataset=data.frame(traux[,c(vout,vin)]),m=i,simple=simple);
+		ml <- qrt.tree(varout=vout,dataset=data.frame(traux[,c(vout,vin)]),m=i,simple=simple);
 		trmae <- c(trmae, ml$mae);
 
 		prediction <- qrt.predict(model=ml,newdata=data.frame(tvaux[,c(vout,vin)]));

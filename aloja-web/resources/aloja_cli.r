@@ -28,9 +28,9 @@
 #	 ./aloja_cli.r -m aloja_reunion -d aloja-dataset.csv -v
 #	 ./aloja_cli.r -m aloja_diversity -d aloja-dataset.csv -p json=0 -v
 
-#.libPaths(c(.libPaths(),"/opt/R/x86_64-pc-linux-gnu-library/3.2"));
-source("functions.r");
-#options(error = function() traceback());
+.libPaths(c(.libPaths(),"/opt/R/x86_64-pc-linux-gnu-library/3.2"));
+source("/var/www/aloja-web/resources/functions.r");
+options(error = function() traceback());
 options(width=as.integer(1000));
 
 ###############################################################################
