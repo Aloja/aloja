@@ -99,7 +99,7 @@ create_hdi_cluster() {
      --defaultStorageAccountKey "$storageAccountKey" --defaultStorageContainer "$storageAccount" \
      --workerNodeCount "$numberOfNodes" --headNodeSize "$headnodeSize" --workerNodeSize "$vmSize" \
      --location "$location" --resource-group "$resourceGroup" \
-     --userName "$userAloja" --password "$passwordAloja" \
+     --userName "ambari" --password "$passwordAloja" \
      --sshUserName "$userAloja" --sshPublicKey "$(get_ssh_public_key)" --sshPassword "$passwordAloja" \
      --subscription "$subscriptionID"
 
