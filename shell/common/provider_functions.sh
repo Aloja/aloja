@@ -98,6 +98,11 @@ node_start() {
   logger "WARNING: Function node_start not implemented or not necessary for provider"
 }
 
+cluster_do_pre(){
+  :
+  # not needed by default
+}
+
 
 ### gets
 
