@@ -113,4 +113,7 @@ prepare_hive_config() {
   if [ ! -z "$REDUCES_MB" ]; then
       $DSH "echo 'set mapreduce.reduce.memory.mb=${REDUCES_MB};' >> ${HIVE_SETTINGS_FILE_PATH}"
   fi
+  if  [[ "$defaultProvider" == "rackspacecbd" ]]; then
+    $DSH "echo 'set hive.metastore.warehouse.dir=/user/${userAloja}/warehouse;' >> ${HIVE_SETTINGS_FILE_PATH}"
+  fi
 }

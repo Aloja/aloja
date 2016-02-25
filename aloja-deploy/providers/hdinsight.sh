@@ -6,11 +6,11 @@
 vm_create_storage_account() {
     if [ -z "$(azure storage account list "$1" | grep "$1")" ]; then
         logger "Creating storage account $1"
-        azure storage account create "$1" -s "$subscriptionID" -l "$3" --type "$2"  
+        azure storage account create "$1" -g "$resourceGroup" -s "$subscriptionID" -l "$3" --type "$2"
     else
         logger "WARNING: Storage account $1 already exists, skipping.."
     fi
-    storageAccountKey=`azure storage account keys list $1 | grep Primary | cut -d" " -f6`
+    storageAccountKey=`azure storage account keys list -g "$resourceGroup" $1 | grep Primary | cut -d" " -f6`
 }
 
 #$1 storage account name $2 container name $3 storage account key
@@ -32,9 +32,9 @@ hdi_cluster_check_create() {
      fi
 }
 
-#$1 cluster name
+#$1 cluster name $2 resource group
 hdi_cluster_check_delete() {
-    if [ ! -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
+    if [ ! -z "$(azure hdinsight cluster list -g "$2" | grep "$1")" ] ; then
         return 0
      else
         logger "ERROR: cluster name doesn't exists!"
@@ -42,9 +42,9 @@ hdi_cluster_check_delete() {
      fi
 }
 
-#$1 cluster name  $2 vm OS
+#$1 cluster name  $2 resourceGroup
 get_cluster_status() {
-   echo $(azure hdinsight cluster show "$1" "$2" | grep State | cut -d: -f3 | sed 's/\ //g')
+   echo $(azure hdinsight cluster show -g "$2" "$1" | grep State | cut -d: -f3 | sed 's/\ //g')
   # if [ ! -z "$(azure hdinsight cluster show "$1" "$2" | grep Running)" ]; then
    #  echo "Running"
   # else
@@ -55,7 +55,7 @@ get_cluster_status() {
 #$1 cluster name
 wait_hdi_cluster() {
   for tries in {1..900}; do
-    currentStatus="$(get_cluster_status "$1" "$vmType" )"
+    currentStatus="$(get_cluster_status "$1" "$resourceGroup" )"
     waitElapsedTime="$(( $(date +%s) - waitStartTime ))"
     if [ "$currentStatus" == "Running" ] ; then
       logger " Cluster $1 is ready!"
@@ -66,8 +66,23 @@ wait_hdi_cluster() {
   done
 }
 
+#$1 mode to be in
+azure_cli_switch_mode() {
+ output=$(azure config list | grep mode | grep $1)
+ exitCode=$?
+ if [ "$exitCode"  = 1 ]; then
+     logger "INFO: Switching azure cli to $1"
+     azure config mode $1
+ else
+     logger "DEBUG: Azure cli in mode $1"
+ fi
+}
+
 #$1 cluster name
 create_hdi_cluster() {
+
+ azure_cli_switch_mode "arm"
+
  if [ -z "$storageAccount" ]; then
     storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
@@ -78,10 +93,15 @@ create_hdi_cluster() {
  vm_create_storage_account "$storageAccount" "LRS" "$location"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
-     azure hdinsight cluster create --clusterName "$1" --osType "$vmType" --storageAccountName "${storageAccount}.blob.core.windows.net" \
-    --storageAccountKey "$storageAccountKey" --storageContainer "$storageAccount" --dataNodeCount "$numberOfNodes" \
-    --location "$location" --userName "$userAloja" --password "$passwordAloja" --sshUserName "$userAloja" \
-    --sshPassword "$passwordAloja" -s "$subscriptionID"
+
+     azure hdinsight cluster create --clusterName "$1" --osType "$vmType"  --clusterType "$clusterType" \
+     --version "$hdiVersion" --defaultStorageAccountName "${storageAccount}.blob.core.windows.net" \
+     --defaultStorageAccountKey "$storageAccountKey" --defaultStorageContainer "$storageAccount" \
+     --workerNodeCount "$numberOfNodes" --headNodeSize "$headnodeSize" --workerNodeSize "$vmSize" \
+     --location "$location" --resource-group "$resourceGroup" \
+     --userName "ambari" --password "$passwordAloja" \
+     --sshUserName "$userAloja" --sshPublicKey "$(get_ssh_public_key)" --sshPassword "$passwordAloja" \
+     --subscription "$subscriptionID"
 
   wait_hdi_cluster $1
   ssh-keygen -f "~/.ssh/known_hosts" -R $(get_ssh_host)
@@ -101,6 +121,10 @@ get_ssh_key() {
  echo "$CONF_DIR/../../secure/keys/id_rsa"
 }
 
+get_ssh_public_key() {
+ cat "$CONF_DIR/../../secure/keys/id_rsa.pub"
+}
+
 get_ssh_host() {
     echo "${clusterName}-ssh.azurehdinsight.net"
 }
@@ -112,7 +136,7 @@ get_ssh_port() {
 
 #1 $vm_name
 node_connect() {
-  logger "Connecting to azure subscription $subscriptionID"
+  logger "INFO: Connecting to azure subscription $subscriptionID"
   if [ "$vmType" != "windows" ] ; then
     vm_connect
   else
@@ -122,7 +146,7 @@ node_connect() {
 
 #$1 cluster name $2 use password
 vm_final_bootstrap() {
- logger "Configuring nodes..."
+ logger "INFO: Configuring nodes..."
 #vm_set_ssh
  vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo \"$(get_master_name)\" >> machines"
  install_packages "sshpass dsh pssh git"
@@ -142,8 +166,8 @@ vm_final_bootstrap() {
 
 #$1 cluster name
 node_delete() {
-    hdi_cluster_check_delete $1
-    azure hdinsight cluster delete "$1" "South Central US" "$vmType"
+    hdi_cluster_check_delete $1 "$resourceGroup"
+    azure hdinsight cluster delete -g "$resourceGroup" "$1"
     ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
 }
 
