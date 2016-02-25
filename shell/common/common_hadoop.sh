@@ -609,8 +609,8 @@ wait"
   fi
 
   if [ "$open_port" ] && [ "$dont_retry" ] ; then
-    logger "ERROR: Please manually stop running Hadoop instances"
-    #die "Please manually stop running Hadoop instances"
+    #logger "ERROR: Please manually stop running Hadoop instances"
+    die "Please manually stop running Hadoop instances"
   elif [ "$open_port" ] && [ ! "$retry" ] ; then
     stop_hadoop "dont_retry"
   else
