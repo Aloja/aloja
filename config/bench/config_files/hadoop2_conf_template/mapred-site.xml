@@ -19,6 +19,11 @@
  <value>##MASTER##:##PORT_PREFIX##9888</value>
 </property>
 <property>
+    <name>mapreduce.jobhistory.admin.address</name>
+    <value>##MASTER##:##PORT_PREFIX##0033</value>
+</property>
+
+<property>
     <name>mapreduce.jobtracker.jobhistory.location</name>
     <value>##LOG_DIR##</value>
 </property>
