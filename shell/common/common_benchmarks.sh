@@ -87,7 +87,7 @@ get_options() {
         ;;
       m)
         MAX_MAPS=$OPTARG
-        ((MAX_MAPS > 0 && MAX_MAPS < 33)) || usage
+        ((MAX_MAPS > 0)) || usage
         ;;
       i)
         IO_FACTOR=$OPTARG

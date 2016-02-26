@@ -769,7 +769,7 @@ import_hadoop2_jhist() {
       done
     done <<< "$values"
 
-	insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
+	local insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
 		        ON DUPLICATE KEY UPDATE
 		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
 		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
@@ -778,10 +778,15 @@ import_hadoop2_jhist() {
 	$MYSQL "$insert"
 
     local result=`$MYSQL "select count(*) FROM aloja_logs.JOB_status JOIN aloja2.execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+
+
 	if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
-		waste=()
-		reduce=()
-		map=()
+		local waste=()
+		local reduce=()
+		local map=()
+		local insert_tasks insert_status
+
+
 		for i in `seq 0 1 $totalTime`; do
 			waste[$i]=0
 			reduce[$i]=0
@@ -817,11 +822,9 @@ import_hadoop2_jhist() {
               done
             done <<< "$values"
 
-			insert="INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
-							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
-
-			logger "DEBUG: $insert"
-			$MYSQL "$insert"
+			insert_tasks="$insert_tasks
+INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
+  ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
 
 			normalStartTime=`expr $taskStartTime - $startTimeTS`
 			normalFinishTime=`expr $taskFinishTime - $startTimeTS`
@@ -836,6 +839,10 @@ import_hadoop2_jhist() {
 				reduce[$normalFinishTime]=$(expr ${reduce[$normalFinishTime]} - 1)
 			fi
 		done
+
+    logger "DEBUG: Inserting into HDI_JOB_tasks"
+    $MYSQL "$insert_tasks"
+
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
 				previous=$(expr ${i} - 1)
@@ -845,13 +852,14 @@ import_hadoop2_jhist() {
 			fi
 			currentTime=`expr $startTimeTS + $i`
 			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
-			insert="INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
-					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
-					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
+			insert_status="$insert_status
+INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
+  VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
+	ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
-			logger "DEBUG: $insert"
-			$MYSQL "$insert"
 		done
+		logger "DEBUG: Inserting into JOB_status"
+		$MYSQL "$insert"
 	fi
 	#cleaning
 	rm tasks.out
