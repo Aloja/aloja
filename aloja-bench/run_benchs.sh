@@ -44,15 +44,18 @@ logger  "INFO: Starting $BENCH_SUITE benchmark"
 
 benchmark_suite_run
 
+#bench suite specifics
 benchmark_suite_save
 
 logger  "INFO: $(date +"%H:%M:%S") DONE $bench"
 
-
 ########################################################
 end_time=$(date '+%s')
 
+# Clean suite specific things
 benchmark_suite_cleanup
+# Cleans the local bench folder from nodes
+clean_bench_local_folder
 
 # Save env vars and globals
 save_env "$JOB_PATH/config.sh"
@@ -68,6 +71,11 @@ if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
 
   import_from_folder "$JOB_NAME" "reload_caches"
   logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
+fi
+
+if [ "$BENCH_LEAVE_SERVICES" ] ; then
+ logger "INFO: Printing exports needed to use running services.  You might need them not only in the master node."
+ print_exports
 fi
 
 logger "INFO: Size and path: $(du -h $JOB_PATH|tail -n 1)"
