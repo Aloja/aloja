@@ -344,11 +344,8 @@ prepare_hadoop_config(){
   $DSH "
 $(get_perl_exports)
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-env.sh;
-/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/core-site.xml;
-/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hdfs-site.xml;
-/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/mapred-site.xml
-/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics.properties
-/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/hadoop-metrics2.properties
+/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/*.xml;
+/usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/*.properties
 
 echo -e '$master_name' > $HADOOP_CONF_DIR/masters;
 echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;"
