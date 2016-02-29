@@ -42,8 +42,9 @@ $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-l list of benchmarks <space separated string>]
 [-c compression <0 (dissabled)|1|2|3>]
 [-z <block size in bytes>]
-[-s (save prepare)]
-[-N (don't delete files)]
+[-s save prepare]
+[-N don't delete files]
+[-S leave services running (implies -N)]
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
 
@@ -57,7 +58,7 @@ get_options() {
 
   OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
-  while getopts "h?:C:b:r:n:d:m:i:p:l:I:c:z:sN:D:t" opt; do
+  while getopts "h?:C:b:r:n:d:m:i:p:l:I:c:z:s:D:tNS" opt; do
       case "$opt" in
       h|\?)
         usage
@@ -132,7 +133,11 @@ get_options() {
         EXEC_TYPE=$OPTARG
         ;;
       N)
-        DELETE_HDFS=0
+        DELETE_HDFS=""
+        ;;
+      S)
+        BENCH_LEAVE_SERVICES="1"
+        DELETE_HDFS=""
         ;;
       D)
         LIMIT_DATA_NODES=$OPTARG
@@ -585,16 +590,16 @@ mkdir -p '$(get_base_tarballs_path)' && wget --progress=dot -e dotbytes=10M '${B
 if [ ! -d '$(get_local_apps_path)/$required_file' ] ; then
   mkdir -p '$(get_local_apps_path)/';
   cd '$(get_local_apps_path)/';
-  echo 'DEBUG: need to uncompress $(get_base_tarballs_path)/$base_name';
+  echo 'DEBUG: need to uncompress $(get_base_tarballs_path)/$base_name to $(get_local_apps_path)/$required_file';
   if [[ '$base_name' == *'.tar.gz' ]] ; then
-    tar -xzf '$(get_base_tarballs_path)/$base_name';
+    tar -xzf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   elif [[ '$base_name' == *'.tar.bz2' ]] ; then
-    tar -xjf '$(get_base_tarballs_path)/$base_name';
+    tar -xjf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   else
     echo 'ERROR: unknown file extension for $base_name';
   fi
 else
-  : #echo 'INFO: local dir $(get_local_apps_path)/$required_file exists'
+  echo 'DEBUG: local dir $(get_local_apps_path)/$required_file exists'
 fi
 "
     done
@@ -779,29 +784,20 @@ stop_monit(){
   wait #for the bg processes
 }
 
+# $1 bench name
 save_bench() {
+  [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
+
   logger "INFO: Saving benchmark $1"
 
   # TODO make sure the dir is created previously (sleep bench case)
   $DSH "mkdir -p $JOB_PATH/$1;"
 
   # Save the perf mon logs
-  $DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
+  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
 
-  if [ "$clusterType" == "PaaS" ]; then
-    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$1"
-  fi
-  #we cannot move hadoop files
-  #take into account naming *.date when changing dates
-  #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
-  #$DSH "cp -r $HDD/logs/* $JOB_PATH/$1/"
-  #$DSH "cp $HDD/logs/job*.xml $JOB_PATH/$1/"
-  #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1"
-  #cp "${BENCH_HIB_DIR}$bench/hibench.report" "$JOB_PATH/$1/"
-
-  #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
-  #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH"
-  #pending, delete
+  # Move al files, but not dirs
+  $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \;"
 
   logger "INFO: Compresing and deleting $1"
 
@@ -868,6 +864,7 @@ delete_bench_local_folder() {
 
   local disks="$(get_all_disks "$disk_name")"
 
+  # Delete when not specified (default)
   if [ "$DELETE_HDFS" == "1" ] ; then
     logger "INFO: INFO: Deleting previous run files of disk config: $disk_name in: $(get_aloja_dir "$PORT_PREFIX")"
     local all_disks_cmd
@@ -895,7 +892,7 @@ delete_bench_local_folder() {
 
 
 set_omm_killer() {
-  logger "WARNING: OOM killer might not set for benchmark"
+  logger "WARNING: OOM killer might not be set for benchmark"
   #Example: echo 15 > proc/<pid>/oom_adj significantly increase the likelihood that process <pid> will be OOM killed.
   #pgrep apache2 |sudo xargs -I %PID sh -c 'echo 10 > /proc/%PID/oom_adj'
 }
@@ -959,7 +956,7 @@ time_cmd_master() {
   local set_bench_time="$2"
 
   exec 9>&2 # Create a new file descriptor
-  local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd'" 2>&1 |tee >(cat - >&9))"
+  local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd' |tee $HDD/${bench}.out" 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
 
   # Set the accurate time to the global var
@@ -967,6 +964,12 @@ time_cmd_master() {
     BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
     logger "DEBUG: BENCH_TIME=$BENCH_TIME"
   fi
+
+  # Print warning if error of the last command (TODO: implement better)
+#  local last_cmd="$($DSH_MASTER "echo \$PIPESTATUS ")"
+#  if [[ "$last_cmd" > 0 ]] ; then
+#    logger "WARNING: last command exited with non-zero status. Please check manually"
+#  fi
 }
 
 save_disk_usage() {
@@ -1022,4 +1025,33 @@ remove_bench_validates() {
   done
 
   echo -e "${no_validates:0:(-1)}" #remove the trailing space
+}
+
+# Cleans the local bench folder from nodes
+clean_bench_local_folder() {
+  if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
+    logger "INFO: Cleaning up local bench dirs"
+    delete_bench_local_folder "$DISK"
+  else
+    logger "WARNING: Leaving local folders in each node as specified, you should delete them MANUALLY"
+  fi
+}
+
+# To avoid perl warnings in certain systems (ubuntu 12 at least)
+get_perl_exports() {
+  local export_perl="
+export LC_CTYPE=en_US.UTF-8;
+export LC_ALL=en_US.UTF-8;
+"
+  echo -e "$export_perl"
+}
+
+# Outputs needed exports for running services (-S option)
+print_exports() {
+  logger "INFO: Printing Java exports (if any)"
+  function_call get_java_exports "DEBUG"
+  logger "INFO: Printing Hadoop exports (if any)"
+  function_call get_hadoop_exports "DEBUG"
+  logger "INFO: Printing Hive exports (if any)"
+  function_call get_hive_exports "DEBUG"
 }
