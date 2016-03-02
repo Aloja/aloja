@@ -184,4 +184,3 @@ qrt.select <- function (vout, vin, traux, tvaux, mintervals, quiet = 1, simple =
 	retval;
 }
 
-

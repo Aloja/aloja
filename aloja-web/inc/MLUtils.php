@@ -682,5 +682,23 @@ class MLUtils
 
 		return $query;
 	}
+
+	public static function getIndexVarweightsExps (&$jsonVarweights, &$jsonVarweightsHeader, $dbml)
+	{
+		$query="SELECT id_varweights, model, dataslice, creation_time FROM aloja_ml.variable_weights";
+		$rows = $dbml->query($query);
+		$jsonVarweights = '[';
+	    	foreach($rows as $row)
+		{
+			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&');
+
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['dataslice']);
+
+			$jsonVarweights = $jsonVarweights.(($jsonVarweights=='[')?'':',')."['".$row['id_varweights']."','".$model_display."','".$slice_display."','".$row['creation_time']."','<a href=\'/mlvariableweight?".$url."\'>View</a> <a href=\'/mlclearcache?rmv=".$row['id_varweights']."\'>Remove</a>']";
+		}
+		$jsonVarweights = $jsonVarweights.']';
+		$jsonVarweightsHeader = "[{'title':'ID'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Actions'}]";
+	}
 }
 ?>

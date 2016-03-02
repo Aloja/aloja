@@ -201,6 +201,19 @@ CREATE TABLE IF NOT EXISTS observed_trees (
   PRIMARY KEY (id_obstrees),
   KEY idx_instance (instance)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
+
+CREATE TABLE IF NOT EXISTS variable_weights (
+  id_varweights varchar(255) NOT NULL,
+  instance varchar(255) NOT NULL,
+  model longtext NOT NULL,
+  dataslice longtext NOT NULL,
+  varweight_code longtext NOT NULL,
+  linreg_code longtext NOT NULL,
+  regtree_code longtext NOT NULL,
+  creation_time datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (id_varweights),
+  INDEX idx_instance (instance)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8;
 "
 
 $MYSQL "ALTER TABLE $DBML.learners MODIFY model longtext NOT NULL;"

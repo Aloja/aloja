@@ -16,6 +16,7 @@ set.seed(1234567890);
 source('/var/www/aloja-web/resources/models.r');	# Prediction, Outliers, MinConfs...
 source('/var/www/aloja-web/resources/searchtrees.r');	# Representative Trees
 source('/var/www/aloja-web/resources/precision.r');	# Precision and Comparison
+source('/var/www/aloja-web/resources/relations.r');	# Variable Weighting
 
 ###############################################################################
 # Read datasets and prepare them for usage                                    #
