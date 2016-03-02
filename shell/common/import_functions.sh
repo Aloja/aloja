@@ -795,32 +795,38 @@ import_hadoop2_jhist() {
 
 		runnignTime=`expr $finishTimeTS - $startTimeTS`
 		read -a tasks <<< `$CUR_DIR/../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
-		for task in "${tasks[@]}" ; do
-			taskId=`echo $task | sed 's/"/\ /g'`
-			taskStatus=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out`
-			taskType=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out`
-			taskStartTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
-			taskFinishTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
-			taskStartTime=`expr $taskStartTime / 1000`
-			taskFinishTime=`expr $taskFinishTime / 1000`
-			values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
-            dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
-            finalValues="none"
-            while IFS=',' read -ra ADDR; do
-              for i in "${ADDR[@]}"; do
-                  test=$(echo $i | cut -d= -f1)
-                  if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
-                    if [ "$finalValues" != "none" ]; then
-                      finalValues+=",$i"
-                    else
-                      finalValues="$i"
-                    fi
+		dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
+
+		# TODO this loop is very slow, ading & and wait to parallelize a bit
+		for task in "${tasks[@]}" ; do
+			# try to pa
+			taskId="$(echo $task | sed 's/"/\ /g')" &
+			taskStatus="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out)" &
+			taskType="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out)" &
+			taskStartTime="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out)" &
+			taskFinishTime="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out)" &
+			taskStartTime="$(expr $taskStartTime / 1000)" &
+			taskFinishTime="$(expr $taskFinishTime / 1000)" &
+			values="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g')" &
+
+      wait
+      
+          finalValues="none"
+          while IFS=',' read -ra ADDR; do
+            for i in "${ADDR[@]}"; do
+                test=$(echo $i | cut -d= -f1)
+                if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
+                  if [ "$finalValues" != "none" ]; then
+                    finalValues+=",$i"
                   else
-                      logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
+                    finalValues="$i"
                   fi
-              done
-            done <<< "$values"
+                else
+                    logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
+                fi
+            done
+          done <<< "$values"
 
 			insert_tasks="$insert_tasks
 INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
