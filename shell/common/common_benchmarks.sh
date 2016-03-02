@@ -196,7 +196,7 @@ get_specified_disks() {
   local disk="$1"
   local dir
 
-  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] ; then
+  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ]; then
     dir="${BENCH_DISKS["$disk"]}"
   elif [[ "$disk" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -217,7 +217,7 @@ get_specified_disks() {
 get_tmp_disk() {
   local dir
 
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] ; then
     dir="${BENCH_DISKS["$DISK"]}"
   elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -227,6 +227,10 @@ get_tmp_disk() {
       dir="${BENCH_DISKS["HDD"]}"
     elif [ "$disks_type" == "HS" ] ; then
       dir="${BENCH_DISKS["SSD"]}"
+    elif [ "$disks_type" == "ST" ] ; then
+      dir="${BENCH_DISKS["TMP"]}"
+    elif [ "$disks_type" == "SR" ] ; then
+      dir="${BENCH_DISKS["TMP_RAM"]}"
     else
       dir="${BENCH_DISKS["${disks_type}1"]}"
     fi
@@ -257,7 +261,7 @@ $(get_tmp_disk "$disk_name")"
 # Retuns the main benchmkar path (useful for multidisk setups)
 # $1 disk type
 get_initial_disk() {
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] ; then
     local dir="${BENCH_DISKS["$DISK"]}"
   elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -310,6 +314,8 @@ validate() {
 
     # Iterate all defined and tmp disks to see if we can write to them
     local disks="$(get_all_disks "$disk" )"
+    logger "DEBUG: testing write permissions for mount(s) for config $disk: $(nl2char "$disks" " ")"
+
     for disk_tmp in $disks ; do
       logger "DEBUG: testing write permissions in $disk_tmp"
       local touch_file="$disk_tmp/aloja.touch"

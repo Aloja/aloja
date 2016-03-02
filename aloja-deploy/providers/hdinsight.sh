@@ -23,6 +23,11 @@ vm_create_storage_container() {
     fi
 }
 
+#$1 storage account name $2 resource group
+vm_delete_storage_account() {
+    azure storage account delete -q -g "$2" "$1"
+}
+
 #$1 cluster name
 hdi_cluster_check_create() {
     if [ -z "$(azure hdinsight cluster list | grep "$1")" ] ; then
@@ -94,7 +99,7 @@ create_hdi_cluster() {
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
 
-     azure hdinsight cluster create --clusterName "$1" --osType "$vmType"  --clusterType "$clusterType" \
+     azure hdinsight cluster create --clusterName "$1" --osType "$vmType"  --clusterType "$hdiType" \
      --version "$hdiVersion" --defaultStorageAccountName "${storageAccount}.blob.core.windows.net" \
      --defaultStorageAccountKey "$storageAccountKey" --defaultStorageContainer "$storageAccount" \
      --workerNodeCount "$numberOfNodes" --headNodeSize "$headnodeSize" --workerNodeSize "$vmSize" \
@@ -166,9 +171,14 @@ vm_final_bootstrap() {
 
 #$1 cluster name
 node_delete() {
+    if [ -z "$storageAccount" ]; then
+        storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
+    fi
+
     hdi_cluster_check_delete $1 "$resourceGroup"
     azure hdinsight cluster delete -g "$resourceGroup" "$1"
     ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
+    vm_delete_storage_account "$storageAccount" "$resourceGroup"
 }
 
 get_master_name() {
