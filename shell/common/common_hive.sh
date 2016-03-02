@@ -115,7 +115,7 @@ s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
 s,##JAVA_AM_XMX##,$JAVA_AM_XMX,g;
-s,##LOG_DIR##,$HDD/hadoop_logs,g;
+s,##LOG_DIR##,$HDD/hive_logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$master_name,g;
 s,##NAMENODE##,$master_name,g;
@@ -200,24 +200,30 @@ save_hive() {
   # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
-    $DSH "cp -r /var/log/hive $JOB_PATH/$1/hive_logs" #2> /dev/null
+    $DSH "cp -r /var/log/hive $JOB_PATH/$1/hive_logs/" #2> /dev/null
+
+    # Save Hive conf
+    $DSH_MASTER "cd /etc/hive; tar -cjf $JOB_PATH/hive_conf.tar.bz2 conf"
   else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$1/hive_logs " #2> /dev/null
+      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ " #2> /dev/null
     else
-      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$1/hive_logs " #2> /dev/null
+      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ " #2> /dev/null
     fi
+
+    # Save Hive conf
+    $DSH_MASTER "cd $HDD/; tar -cjf $JOB_PATH/hive_conf.tar.bz2 hive_conf"
   fi
 
   logger "INFO: Compresing and deleting hadoop configs for $1"
 
-#  $DSH_MASTER "
-#cd $JOB_PATH;
-#if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
-#  tar -cjf $JOB_PATH/hadoop_host_conf.tar.bz2 conf_*;
-#  rm -rf conf_*;
-#fi
-#"
+  $DSH_MASTER "
+cd $JOB_PATH;
+if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
+  tar -cjf $JOB_PATH/hadoop_host_conf.tar.bz2 conf_*;
+  rm -rf conf_*;
+fi
+"
 
   # save hadoop and defaults
   save_hadoop "$1"
