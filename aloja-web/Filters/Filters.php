@@ -485,7 +485,7 @@ class Filters
 
         //Getting scale factors per bench
         $scaleFactors = array();
-        $benchsScaleFactors = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,scale_factor FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,datasize ORDER BY bench ASC ");
+        $benchsScaleFactors = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,scale_factor FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,scale_factor ORDER BY bench ASC ");
         foreach($benchsScaleFactors as $row) {
             $scaleFactor = $row['scale_factor'];
             $scaleFactors[$row['bench_type']][$row['bench']][] = $scaleFactor;
