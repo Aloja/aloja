@@ -46,7 +46,7 @@ class Filters
                 },
                 'parseFunction' => 'parseDatasize'),
             'scale_factor' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Scale factor: '),
-            'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectOne', 'label' => 'Bench suite:'),
+            'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectMultiple', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);

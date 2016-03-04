@@ -30,33 +30,36 @@ class MLSummariesController extends AbstractController
 
 			$this->filters->removeFilters(array('upred','uobsr'));
 			$this->filters->removeFIltersFromGroup("MLearning",array('upred','uobsr'));
-			$this->buildFilters(array('feature' => array(
-				'type' => 'selectOne',
-				'default' => array('joined'),
-				'label' => 'Separate by: ',
-				'generateChoices' => function() {
-					return array('joined','Benchmark','Net',
-						'Disk','Maps','IO.SFac',
-						'Rep','IO.FBuf','Comp',
-						'Blk.size','Cluster'
-					);
-				},
-				'beautifier' => function($value) {
-					$labels = array('joined' => 'None','Benchmark' => 'Benchmarks',
-						'Net' => 'Networks', 'Disk' => 'Disks','Maps' => 'Maps',
-						'IO.SFac' => 'IO Sort Factor', 'Rep' => 'Replication',
-						'Rep' => 'Replication','IO.FBuf' => 'IO File Buffer',
-						'Comp' => 'Compressions', 'Blk.size' => 'Block sizes',
-						'Cluster' => 'Clusters'
-					);
-					return $labels[$value];
-				},
-				'parseFunction' => function() {
-					$choice = isset($_GET['feature']) ? $_GET['feature'] : array('joined');
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
-			)));
+			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
+				'feature' => array(
+					'type' => 'selectOne',
+					'default' => array('joined'),
+					'label' => 'Separate by: ',
+					'generateChoices' => function() {
+						return array('joined','Benchmark','Net',
+							'Disk','Maps','IO.SFac',
+							'Rep','IO.FBuf','Comp',
+							'Blk.size','Cluster'
+						);
+					},
+					'beautifier' => function($value) {
+						$labels = array('joined' => 'None','Benchmark' => 'Benchmarks',
+							'Net' => 'Networks', 'Disk' => 'Disks','Maps' => 'Maps',
+							'IO.SFac' => 'IO Sort Factor', 'Rep' => 'Replication',
+							'Rep' => 'Replication','IO.FBuf' => 'IO File Buffer',
+							'Comp' => 'Compressions', 'Blk.size' => 'Block sizes',
+							'Cluster' => 'Clusters'
+						);
+						return $labels[$value];
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['feature']) ? $_GET['feature'] : array('joined');
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
+				)
+			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Grouping Options', 'tabOpenDefault' => true)));
 
 			$where_configs = $this->filters->getWhereClause();

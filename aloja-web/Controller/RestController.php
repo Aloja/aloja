@@ -43,7 +43,6 @@ class RestController extends AbstractController
             $dbUtils = $this->container->getDBUtils();
             $this->buildFilters(array(
                 'bench' => array('default' => null),
-                'bench_type' => array('type' => 'selectMultiple', 'default' => array('HiBench'))
             ));
             $whereClause = $this->filters->getWhereClause();
 

@@ -108,7 +108,7 @@ create_hdi_cluster() {
      --sshUserName "$userAloja" --sshPublicKey "$(get_ssh_public_key)" --sshPassword "$passwordAloja" \
      --subscription "$subscriptionID"
 
-  wait_hdi_cluster $1
+ # wait_hdi_cluster $1
   ssh-keygen -f "~/.ssh/known_hosts" -R $(get_ssh_host)
 }
 
