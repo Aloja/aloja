@@ -89,7 +89,12 @@ create_hdi_cluster() {
  azure_cli_switch_mode "arm"
 
  if [ -z "$storageAccount" ]; then
-    storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
+    vm_size=$vmSize
+    if [[ $vmSize == *"Standard_"* ]]; then
+      vm_size="$(echo $vmSize | cut -d_ -f2)"
+    fi
+
+    storageAccount="$(echo $vm_size | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
  if [ -z "$location" ]; then
     location="South Central US"
