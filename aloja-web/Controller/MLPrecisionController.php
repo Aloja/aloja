@@ -33,7 +33,7 @@ class MLPrecisionController extends AbstractController
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
 
-			$this->buildFilters();
+			$this->buildFilters(array('bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne')));
 
 			if ($instructions)
 			{

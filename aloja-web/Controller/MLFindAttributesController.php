@@ -40,36 +40,37 @@ class MLFindAttributesController extends AbstractController
 			if (array_key_exists('pass',$_GET)) { $pass = $_GET["pass"]; unset($_GET["pass"]); }
 
 			$this->buildFilters(array(
-			'current_model' => array(
-				'type' => 'selectOne',
-				'default' => null,
-				'label' => 'Model to use: ',
-				'generateChoices' => function() {
-					return array();
-				},
-				'parseFunction' => function() {
-					$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
-			), 'unseen' => array(
-				'type' => 'checkbox',
-				'default' => 1,
-				'label' => 'Predict with unseen atributes &#9888;',
-				'parseFunction' => function() {
-					$choice = (isset($_GET['unseen']) && !isset($_GET['unseen'])) ? 0 : 1;
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
-			), 'minexetime' => array(
-				'default' => 0
-			), 'valid' => array(
-				'default' => 0
-			), 'filter' => array(
-				'default' => 0
-			), 'prepares' => array(
-				'default' => 1
-			)
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
+				'current_model' => array(
+					'type' => 'selectOne',
+					'default' => null,
+					'label' => 'Model to use: ',
+					'generateChoices' => function() {
+						return array();
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
+				), 'unseen' => array(
+					'type' => 'checkbox',
+					'default' => 1,
+					'label' => 'Predict with unseen atributes &#9888;',
+					'parseFunction' => function() {
+						$choice = (isset($_GET['unseen']) && !isset($_GET['unseen'])) ? 0 : 1;
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
+				), 'minexetime' => array(
+					'default' => 0
+				), 'valid' => array(
+					'default' => 0
+				), 'filter' => array(
+					'default' => 0
+				), 'prepares' => array(
+					'default' => 1
+				)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','unseen'))));
 
@@ -359,6 +360,7 @@ class MLFindAttributesController extends AbstractController
 			$instructions = count($_GET) <= 1;
 
 			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
 				'minexetime' => array('default' => 0),
 				'valid' => array('default' => 0),
 				'filter' => array('default' => 0),
