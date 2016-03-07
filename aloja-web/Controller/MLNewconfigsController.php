@@ -242,6 +242,7 @@ class MLNewconfigsController extends AbstractController
 				$vin = "Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Service.Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor";
 				if ($is_legacy == 0) $vin = $vin.",".implode(",",array_values($net_names)).",".implode(",",array_values($disk_names)).",".implode(",",array_values($bench_names));
 				exec('cd '.getcwd().'/cache/ml; touch '.md5($config).'.lock');
+				if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\''.$vin.'\' >debug1.txt 2>&1 && ';
 				$count = 1;
 				foreach ($instances as $inst)
@@ -275,6 +276,8 @@ class MLNewconfigsController extends AbstractController
 				$tmp_result = $is_cached_mysql->fetch();
 				if ($tmp_result['id_learner'] != $learner_1) 
 				{
+					if (file_exists(getcwd().'/cache/ml/'.md5($config).'.legacy')) $is_legacy = 1;
+
 					// register model to DB
 					$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice,legacy)";
 					$query = $query." VALUES ('".$learner_1."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."','".$is_legacy."');";
@@ -328,6 +331,7 @@ class MLNewconfigsController extends AbstractController
 
 					// Remove temporal files
 					$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.$learner_1.'*.{dat,csv}');
+					$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.legacy');
 				}
 			}
 

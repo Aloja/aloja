@@ -145,6 +145,7 @@ class MLMinconfigsController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/ml; touch '.md5($config).'.lock');
+				if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
@@ -162,6 +163,8 @@ class MLMinconfigsController extends AbstractController
 			$tmp_result = $is_cached_mysql->fetch();
 			if ($tmp_result['id_learner'] != md5($config)) 
 			{
+				if (file_exists(getcwd().'/cache/ml/'.md5($config).'.legacy')) $is_legacy = 1;
+
 				// register model to DB
 				$query = "INSERT INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice,legacy)";
 				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."','".$is_legacy."');";
@@ -215,6 +218,7 @@ class MLMinconfigsController extends AbstractController
 				// Remove temporal files
 				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.csv');
 				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.dat');
+				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.legacy');
 			}
 
 			// Save minconfigs to DB, with props and centers

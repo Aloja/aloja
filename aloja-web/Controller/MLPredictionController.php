@@ -141,6 +141,7 @@ class MLPredictionController extends AbstractController
 
 				// run the R processor
 				exec('cd '.getcwd().'/cache/ml ; touch '.getcwd().'/cache/ml/'.md5($config).'.lock');
+				if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
 				exec('cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/queue -c "'.getcwd().'/resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' > /dev/null 2>&1; rm -f '.getcwd().'/cache/ml/'.md5($config).'.lock; touch '.md5($config).'.fin" > /dev/null 2>&1 -p 1 &');
 			}
 
@@ -161,6 +162,8 @@ class MLPredictionController extends AbstractController
 
 			if (!$is_cached) 
 			{
+				if (file_exists(getcwd().'/cache/ml/'.md5($config).'.legacy')) $is_legacy = 1;
+
 				// register model to DB
 				$query = "INSERT IGNORE INTO aloja_ml.learners (id_learner,instance,model,algorithm,dataslice,legacy)";
 				$query = $query." VALUES ('".md5($config)."','".$instance."','".substr($model_info,1)."','".$learn_param."','".$slice_info."','".$is_legacy."');";
@@ -225,6 +228,7 @@ class MLPredictionController extends AbstractController
 				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.csv');
 				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.fin');
 				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.dat');
+				$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.legacy');
 			}
 
 			// Retrieve results from DB
