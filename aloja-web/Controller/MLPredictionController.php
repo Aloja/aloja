@@ -21,6 +21,7 @@ class MLPredictionController extends AbstractController
 		$jsonExecs = $jsonLearners = $jsonLearningHeader = '[]';
 		$message = $instance = $error_stats = $config = $model_info = $slice_info = '';
 		$max_x = $max_y = 0;
+		$min_x = $min_y = 9E10;
 		$must_wait = 'NO';
 		$is_legacy = 0;
 		try
@@ -246,6 +247,8 @@ class MLPredictionController extends AbstractController
 
 				if ((int)$row['exe_time'] > $max_y) $max_y = (int)$row['exe_time'];
 				if ((int)$row['pred_time'] > $max_x) $max_x = (int)$row['pred_time'];
+				if ((int)$row['exe_time'] < $min_y) $min_y = (int)$row['exe_time'];
+				if ((int)$row['pred_time'] < $min_x) $min_x = (int)$row['pred_time'];
 				$count++;
 			}
 
@@ -286,6 +289,7 @@ class MLPredictionController extends AbstractController
 			'learners' => $jsonLearners,
 			'header_learners' => $jsonLearningHeader,
 			'max_p' => min(array($max_x,$max_y)),
+			'min_p' => max(array($min_x,$min_y)),
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,
