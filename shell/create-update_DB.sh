@@ -32,7 +32,7 @@ logger "Updating aloja2.clusters  and hosts"
 
 for clusterConfigFile in $configFolderPath/cluster_* ; do
 
-  id_cluster="${clusterConfigFile:(-7):2}"
+  id_cluster="$(get_cluster_id "$clusterConfigFile")"
   logger "DEBUG: Loading $clusterConfigFile with ID $id_cluster"
 
   #TODO this check wont work for old folders with numeric values at the end, need another strategy
