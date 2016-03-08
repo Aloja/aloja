@@ -37,6 +37,7 @@ class MLParamevalController extends AbstractController
 			}
 
 			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
 				'current_model' => array(
 					'type' => 'selectOne',
 					'default' => null,

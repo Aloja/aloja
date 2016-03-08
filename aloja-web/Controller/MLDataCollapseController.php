@@ -14,6 +14,7 @@ class MLDataCollapseController extends AbstractController
 
 		//All this screens are using this custom filters
 		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->buildFilters(array('bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne')));
 	}
 
 	/* This function is half 'Shut Down' until some re-logics are done */
