@@ -122,13 +122,14 @@ class MLMinconfigsController extends AbstractController
 			{
 				// dump the result to csv
 				$file_header = "";
+				$legacy_options = "";
 				$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows))
 				{
 					// Try legacy
 					$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
-					$learn_options .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					$legacy_options = ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 				    	$rows = $db->get_rows ( $query );
 					if (empty($rows))
 					{
@@ -147,7 +148,7 @@ class MLMinconfigsController extends AbstractController
 				// run the R processor
 				exec('cd '.getcwd().'/cache/ml; touch '.md5($config).'.lock');
 				if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.' >/dev/null 2>&1 && ';
+				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.$legacy_options.' >/dev/null 2>&1 && ';
 				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config).' -p saveall='.md5($config.'R').':kmax=200 >/dev/null 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >/dev/null 2>&1 &';
 				exec($command);
 			}

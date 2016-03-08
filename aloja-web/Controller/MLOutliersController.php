@@ -36,7 +36,7 @@ class MLOutliersController extends AbstractController
 			$reference_cluster = $this->container->get('config')['ml_refcluster'];
 
 			$db = $this->container->getDBUtils();
-	    	
+
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
 
@@ -157,6 +157,7 @@ class MLOutliersController extends AbstractController
 
 					// dump the result to csv
 					$file_header = "";
+					$learn_options = "";
 					if ($is_legacy == 0)
 					{
 						$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
@@ -169,12 +170,12 @@ class MLOutliersController extends AbstractController
 					else
 					{
 						$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
-						$learn_options .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 					    	$rows = $db->get_rows ( $query );
 						if (empty($rows))
 						{
 							throw new \Exception('No data matches with your critteria.');
 						}
+						$learn_options .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 					}
 
 					$fp = fopen($cache_ds, 'w');
@@ -194,7 +195,7 @@ class MLOutliersController extends AbstractController
 
 					// launch query
 					exec('cd '.getcwd().'/cache/ml ; touch '.md5($config).'.lock');
-					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
+					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).$learn_options.' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
 				}
 				$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv');
 
@@ -332,7 +333,6 @@ class MLOutliersController extends AbstractController
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'sigma' => $sigma_param,
-			'message' => $message,
 			'instance' => $instance,
 		);
 		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));

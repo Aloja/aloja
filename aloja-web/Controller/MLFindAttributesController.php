@@ -146,7 +146,8 @@ class MLFindAttributesController extends AbstractController
 					$result = $dbml->query($query);
 					$row = $result->fetch();
 					$legacy_params = "";
-					if ($row['legacy'] == 1) $legacy_params = ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					if ($row['legacy'] == 1) $legacy_params .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					if ($row['legacy'] == 1) $legacy_params .= ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 
 					// Retrieve file model from DB
 					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";
@@ -161,6 +162,7 @@ class MLFindAttributesController extends AbstractController
 
 					// Run the predictor
 					exec('cd '.getcwd().'/cache/ml ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
+					if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
 					$count = 1;
 					foreach ($instances as $inst)
 					{
@@ -172,6 +174,9 @@ class MLFindAttributesController extends AbstractController
 
 				if ($finished_process && !$is_cached)
 				{
+					if (file_exists(getcwd().'/cache/ml/'.md5($config).'.legacy')) $is_legacy = 1;
+					if ($is_legacy == 1) $legacy_params = ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+
 					shell_exec('cd '.getcwd().'/cache/ml/; head -n 1 '.md5($config).'-1-predictions.data > '.md5($config).'-predictions.data');
 					for ($i = 0; $i < count($instances); $i++)
 					{
@@ -224,7 +229,7 @@ class MLFindAttributesController extends AbstractController
 						fclose($handle);
 
 						// Descriptive Tree
-						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file="'.getcwd().'/cache/ml/'.md5($config).'":output=nodejson:vout="Prediction" -v 2> /dev/null');
+						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file="'.getcwd().'/cache/ml/'.md5($config).'":output=nodejson:vout="Prediction"'.$legacy_params.' -v 2> /dev/null');
 						$tree_descriptor = substr($tree_descriptor, 5, -2);
 						$tree_descriptor = str_replace("\\\"","\"",$tree_descriptor);
 						$tree_descriptor = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor);
@@ -236,6 +241,7 @@ class MLFindAttributesController extends AbstractController
 					// remove remaining locks and temporal files
 					shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.lock'); 
 					shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.data');
+					shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.legacy');
 
 					$is_cached = true;
 				}
@@ -547,7 +553,6 @@ class MLFindAttributesController extends AbstractController
 			'jsonHeader' => $jsonHeader,
 			'obstrees' => $jsonObstrees,
 			'header_obstrees' => $jsonObstreesHeader,
-			'message' => $message,
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,

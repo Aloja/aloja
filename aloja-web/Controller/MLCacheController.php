@@ -155,7 +155,7 @@ class MLCacheController extends AbstractController
 		    	foreach($rows as $row)
 			{
 				if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
-				$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
+				$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learn[]='.$row['algorithm'].'&'.$umodel);
 
 				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','".$row['legacy']."','<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
 			}

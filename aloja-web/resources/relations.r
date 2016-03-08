@@ -151,7 +151,7 @@ aloja_variable_quickrt <- function (ds, vin, vout, saveall = NULL, mparam = 5, s
 
 	retval[["ds_original"]] <- ds;
 	retval[["dataset"]] <- dsbin;
-	retval[["model"]] <- qrt.tree(formula=vout ~ .,dataset=dsbin[,(!colnames(dsbin) %in% c("ID"))],m=mparam,simple=simple);
+	retval[["model"]] <- qrt.tree(varout=vout,dataset=dsbin[,(!colnames(dsbin) %in% c("ID"))],m=mparam,simple=simple);
 
 	retval[["mae"]] <- retval$model$mae;
 	retval[["rae"]] <- retval$model$rae;

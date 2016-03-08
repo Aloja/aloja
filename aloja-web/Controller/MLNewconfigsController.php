@@ -65,6 +65,7 @@ class MLNewconfigsController extends AbstractController
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
 		$is_legacy = 0;
+		$max_size_instances = 128;
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -215,15 +216,18 @@ class MLNewconfigsController extends AbstractController
 			// Create Models and Predictions
 			if (!$is_cached && !$in_process && !$finished_process)
 			{
+				if (sizeof($instances) > $max_size_instances) throw new \Exception('Too many possible combinations. Reduce the filter options (Bench,Net,Disk).');
+
 				// dump the result to csv
 				$file_header = "";
+				$legacy_options = "";
 				$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows))
 				{
 					// Try legacy
 					$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
-					$learn_options .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					$legacy_options = ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 				    	$rows = $db->get_rows ( $query );
 					if (empty($rows))
 					{
@@ -241,14 +245,22 @@ class MLNewconfigsController extends AbstractController
 
 				// run the R processor
 				$vin = "Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Service.Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor";
-				if ($is_legacy == 0) $vin = $vin.",".implode(",",array_values($net_names)).",".implode(",",array_values($disk_names)).",".implode(",",array_values($bench_names));
 				exec('cd '.getcwd().'/cache/ml; touch '.md5($config).'.lock');
-				if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
+				if ($is_legacy == 0)
+				{
+					$exec_names = $net_names = $disk_names = $bench_names = "";
+					MLUtils::getNames ($exec_names,$net_names,$disk_names,$bench_names);
+					$vin = $vin.",".implode(",",array_values($net_names)).",".implode(",",array_values($disk_names)).",".implode(",",array_values($bench_names));
+				}
+				else
+				{
+					exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
+				}
 				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\''.$vin.'\' >debug1.txt 2>&1 && ';
 				$count = 1;
 				foreach ($instances as $inst)
 				{
-					$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$inst.'\':saveall='.md5($config."D").'-'.($count++).':vin=\''.$vin.'\' >>debug2.txt 2>&1 && ';
+					$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$inst.'\':saveall='.md5($config."D").'-'.($count++).':vin=\''.$vin.'\''.$legacy_options.' >>debug2.txt 2>&1 && ';
 				}
 				$command = $command.' head -1 '.md5($config."D").'-1-dataset.data >'.md5($config."D").'-dataset.data 2>>debug2-1.txt && ';				
 				$command = $command.' cat '.md5($config."D").'*-dataset.data >'.md5($config."D").'-aux.data 2>>debug2-1.txt && ';
