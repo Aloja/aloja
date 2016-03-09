@@ -471,6 +471,29 @@ CREATE TABLE IF NOT EXISTS \`precal_network_metrics\` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
+# TODO add these fields
+#20160302_155418 31424: WARNING: Field FAILED_REDUCES not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field FINISHED_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field JOB_PRIORITY not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field LAUNCH_TIME not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MB_MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MB_MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field RACK_LOCAL_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field SLOTS_MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field SLOTS_MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field SUBMIT_TIME not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_LAUNCHED_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_LAUNCHED_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field USER not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field VCORES_MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field VCORES_MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field job_name not found on table HDI_JOB_tasks
+
+
 ####################################################
 logger "INFO: Creating DB aloja_logs and tables (if needed)"
 
@@ -957,6 +980,9 @@ $MYSQL "alter table execs
  add column  \`JAVA_XMS\` bigint DEFAULT NULL,
   add column  \`JAVA_XMX\` bigint DEFAULT NULL;"
 
+
+$MYSQL "alter table execs add column  \`run_num\` int DEFAULT 1;"
+
 $MYSQL "alter table aloja_logs.VMSTATS
  add column st decimal(20,3) DEFAULT NULL;"
 
@@ -1122,8 +1148,11 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 
-#Azure DW (SaaS)
-source_file "$ALOJA_REPO_PATH/shell/common/create_SaaS.sh"
+# Azure DW (SaaS)
+source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
+
+# Update perf aggregates
+source_file "$ALOJA_REPO_PATH/shell/common/DB/update_precal_metrics.sh"
 
 #$MYSQL "
 #
