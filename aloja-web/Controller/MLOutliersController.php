@@ -40,39 +40,41 @@ class MLOutliersController extends AbstractController
 			if (array_key_exists('register',$_GET)) { $register = $_GET["register"]; unset($_GET["register"]); }
 
 			$this->buildFilters(
-				array('current_model' => array(
-					'type' => 'selectOne',
-					'default' => null,
-					'label' => 'Model to use: ',
-					'generateChoices' => function() {
-						return array();
-					},
-					'parseFunction' => function() {
-						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
-						return array('whereClause' => '', 'currentChoice' => $choice);
-					},
-					'filterGroup' => 'MLearning',
-				),
-				'sigma' => array(
-					'type' => 'inputNumber',
-					'default' => 1,
-					'label' => 'Sigmas: ',
-					'parseFunction' => function() {
-						$choice = isset($_GET['sigma']) ? $_GET['sigma'] : 1;
-						return array('whereClause' => '', 'currentChoice' => $choice);
-					},
-					'max' => 3,
-					'min' => 1,
-					'filterGroup' => 'MLearning'
-				), 'minexetime' => array(
-					'default' => 0
-				), 'valid' => array(
-					'default' => 0
-				), 'filter' => array(
-					'default' => 0
-				), 'prepares' => array(
-					'default' => 1
-				)
+				array(
+					'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
+					'current_model' => array(
+						'type' => 'selectOne',
+						'default' => null,
+						'label' => 'Model to use: ',
+						'generateChoices' => function() {
+							return array();
+						},
+						'parseFunction' => function() {
+							$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+							return array('whereClause' => '', 'currentChoice' => $choice);
+						},
+						'filterGroup' => 'MLearning',
+					),
+					'sigma' => array(
+						'type' => 'inputNumber',
+						'default' => 1,
+						'label' => 'Sigmas: ',
+						'parseFunction' => function() {
+							$choice = isset($_GET['sigma']) ? $_GET['sigma'] : 1;
+							return array('whereClause' => '', 'currentChoice' => $choice);
+						},
+						'max' => 3,
+						'min' => 1,
+						'filterGroup' => 'MLearning'
+					), 'minexetime' => array(
+						'default' => 0
+					), 'valid' => array(
+						'default' => 0
+					), 'filter' => array(
+						'default' => 0
+					), 'prepares' => array(
+						'default' => 1
+					)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','sigma'))));
 
