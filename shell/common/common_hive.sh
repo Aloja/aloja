@@ -44,7 +44,7 @@ get_hive_cmd() {
   local hive_settings_file
   [ "$HIVE_SETTINGS_FILE" ] && hive_settings_file="-i $HIVE_SETTINGS_FILE"
 
-  hive_cmd="$hive_exports\n$HIVE_HOME/bin/hive $hive_settings_file"
+  hive_cmd="$hive_exports\ncd '$HDD_TMP';\n$HIVE_HOME/bin/hive $hive_settings_file"
 
   echo -e "$hive_cmd"
 }
@@ -180,10 +180,10 @@ $(get_perl_exports)
 create_hive_folders() {
   if [ ! "$BENCH_KEEP_FILES" ] ; then
     logger "INFO: Creating Hive default folders in HDFS"
-    execute_hadoop_new "Hive folders" "fs -mkdir /tmp/hive /user/hive/warehouse"
-    execute_hadoop_new "Hive folders" "fs -chmod 777 /tmp/hive"
+    execute_hadoop_new "Hive folders" "fs -mkdir -p /tmp/hive /user/hive/warehouse"
+    execute_hadoop_new "Hive folders" "fs -chmod 777 /tmp/hive /user/hive/warehouse"
     #execute_hadoop_new "Hive folders" "fs -chmod g+w /tmp"
-    execute_hadoop_new "Hive folders" "fs -chmod g+w /user/hive/warehouse"
+    #execute_hadoop_new "Hive folders" "fs -chmod g+w /user/hive/warehouse"
   fi
 }
 

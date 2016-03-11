@@ -3,7 +3,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
 #BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-[ ! "$BENCH_LIST" ] && BENCH_LIST="hive-now"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="hive-now create-database"
 
 #[ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for TPCH-hive"
 
@@ -35,8 +35,6 @@ benchmark_suite_run() {
     # Validate (eg. teravalidate)
     function_call "benchmark_validate_$bench"
 
-    benchmark_validate_hive-now
-
     # Clean-up HDFS space (in case necessary)
     #clean_HDFS "$bench_name" "$BENCH_SUITE"
 
@@ -61,12 +59,33 @@ benchmark_hive-now() {
 }
 
 benchmark_validate_hive-now() {
-  local bench_name="${FUNCNAME[0]##*benchmark_validate_}"
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
   local file_content="$(get_local_file "$bench.out")"
 
-  if [ "$file_content" ] ; then
+  if [[ "$file_content" =~ "$(date +"%Y-%m-%d")" ]] ; then
+    logger "INFO: $bench_name OK"
+  else
+    logger "WARNING: $bench_name KO. Content:\n$file_content"
+  fi
+}
+
+benchmark_create-database() {
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  logger "INFO: Running $bench_name"
+
+  execute_hive "$bench_name" '-e "CREATE DATABASE testdb;"' "time"
+}
+
+benchmark_validate_create-database() {
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  logger "INFO: Running $bench_name"
+
+  local show_output="$(execute_hive "$bench_name" '-e "SHOW DATABASES;"' "time")"
+
+
+  if [[ "$show_output" =~ "testdb" ]] ; then
     logger "INFO: $bench_name OK"
   else
     logger "WARNING: $bench_name KO. Content:\n$file_content"
