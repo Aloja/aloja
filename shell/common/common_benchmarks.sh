@@ -133,11 +133,11 @@ get_options() {
         EXEC_TYPE=$OPTARG
         ;;
       N)
+        BENCH_KEEP_FILES="1"
         DELETE_HDFS=""
         ;;
       S)
         BENCH_LEAVE_SERVICES="1"
-        DELETE_HDFS=""
         ;;
       D)
         LIMIT_DATA_NODES=$OPTARG
@@ -543,6 +543,15 @@ get_apps_path() {
   echo -e "aplic2/apps"
 }
 
+# Get the main path for the benchmark
+get_local_bench_path() {
+  echo -e "$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+}
+
+get_local_tmp_path() {
+  echo -e "$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+}
+
 get_local_apps_path() {
   echo -e "$BENCH_LOCAL_DIR/$(get_apps_path)"
 }
@@ -797,7 +806,12 @@ save_bench() {
   #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
 
   # Move al files, but not dirs
-  $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \;"
+  if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \;"
+  else
+    logger "WARNING: Requested to leave services running, leaving local benchfiles too"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$1/ \;"
+  fi
 
   logger "INFO: Compresing and deleting $1"
 
@@ -833,9 +847,9 @@ prepare_folder(){
   delete_bench_local_folder "$disk"
 
   #set the main path for the benchmark
-  HDD="$(get_initial_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+  HDD="$(get_local_bench_path)"
   #for hadoop tmp dir
-  HDD_TMP="$(get_tmp_disk "$DISK")/$(get_aloja_dir "$PORT_PREFIX")"
+  HDD_TMP="$(get_local_tmp_path)"
 
   logger "INFO: Creating bench main dir at: $HDD (and tmp dir: $HDD_TMP)"
 
@@ -1054,4 +1068,34 @@ print_exports() {
   function_call get_hadoop_exports "DEBUG"
   logger "INFO: Printing Hive exports (if any)"
   function_call get_hive_exports "DEBUG"
+}
+
+# Create a file for the query, and returns the full path
+# $1 file name
+# $2 content
+create_local_file() {
+  local file_name="$1"
+  local file_content="$2"
+
+  local local_file_path="$(get_local_bench_path)/$file_name"
+
+  # Crate a file
+  $DSH_MASTER "cat > $local_file_path <<EOF
+$file_content
+EOF"
+
+  echo -e "$local_file_path"
+}
+
+# Create a file for the query, and returns the full path
+# $1 file name (relative to bench dir)
+get_local_file() {
+  local file_name="$1"
+
+  local local_file_path="$(get_local_bench_path)/$file_name"
+
+  # Crate a file
+  local file_content="$($DSH_MASTER "cat '$local_file_path'")"
+
+  echo -e "$file_content"
 }

@@ -4,10 +4,12 @@ set_hadoop_requires
 
 # Sets the required files to download/copy
 set_hive_requires() {
+  [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION SPECIFIED"
+
   if [ "$(get_hadoop_major_version)" == "2" ]; then
-    BENCH_REQUIRED_FILES["apache-hive-1.2.1-bin"]="http://www-us.apache.org/dist/hive/hive-1.2.1/apache-hive-1.2.1-bin.tar.gz"
+    BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
   else
-    BENCH_REQUIRED_FILES["apache-hive-1.2.1-bin"]="http://www-us.apache.org/dist/hive/hive-1.2.1/apache-hive-1.2.1-bin.tar.gz"
+    BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
     #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
   fi
 
@@ -82,12 +84,6 @@ execute_hive(){
 initialize_hive_vars() {
   [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
   #[ ! "$HIVE_SETTINGS_FILE_PATH" ] && HIVE_SETTINGS_FILE_PATH="$HDD/hive_conf_template/${HIVE_SETTINGS_FILE}"
-
-  if [[ -z "$HIVE_VERSION" && "$(get_hadoop_major_version)" == "2" ]]; then
-    HIVE_VERSION='apache-hive-1.2.1-bin'
-  elif [ -z "$HIVE_VERSION" ]; then
-    HIVE_VERSION='apache-hive-0.13.1-bin'
-  fi
 
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS
 hive_conf_template"
@@ -182,12 +178,13 @@ $(get_perl_exports)
 
 # Creates required Hive folders in HDFS
 create_hive_folders() {
-  logger "INFO: Creating Hive folders in HDFS"
-
-  execute_hadoop_new "Hive folders" "fs -mkdir /tmp"
-  execute_hadoop_new "Hive folders" "fs -mkdir /user/hive/warehouse"
-  execute_hadoop_new "Hive folders" "fs -chmod g+w /tmp"
-  execute_hadoop_new "Hive folders" "fs -chmod g+w /user/hive/warehouse"
+  if [ ! "$BENCH_KEEP_FILES" ] ; then
+    logger "INFO: Creating Hive default folders in HDFS"
+    execute_hadoop_new "Hive folders" "fs -mkdir /tmp/hive /user/hive/warehouse"
+    execute_hadoop_new "Hive folders" "fs -chmod 777 /tmp/hive"
+    #execute_hadoop_new "Hive folders" "fs -chmod g+w /tmp"
+    execute_hadoop_new "Hive folders" "fs -chmod g+w /user/hive/warehouse"
+  fi
 }
 
 # $1 bench

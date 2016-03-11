@@ -9,7 +9,6 @@ set_hive_requires
 
 
 benchmark_suite_config() {
-
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
   start_hadoop
@@ -36,6 +35,8 @@ benchmark_suite_run() {
     # Validate (eg. teravalidate)
     function_call "benchmark_validate_$bench"
 
+    benchmark_validate_hive-now
+
     # Clean-up HDFS space (in case necessary)
     #clean_HDFS "$bench_name" "$BENCH_SUITE"
 
@@ -59,3 +60,15 @@ benchmark_hive-now() {
   execute_hive "$bench_name" '-e "SELECT from_unixtime(unix_timestamp());"' "time"
 }
 
+benchmark_validate_hive-now() {
+  local bench_name="${FUNCNAME[0]##*benchmark_validate_}"
+  logger "INFO: Running $bench_name"
+
+  local file_content="$(get_local_file "$bench.out")"
+
+  if [ "$file_content" ] ; then
+    logger "INFO: $bench_name OK"
+  else
+    logger "WARNING: $bench_name KO. Content:\n$file_content"
+  fi
+}
