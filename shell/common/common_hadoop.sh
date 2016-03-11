@@ -583,7 +583,7 @@ restart_hadoop(){
 stop_hadoop(){
   local dont_retry="$1"
 
-  if [ "$clusterType=" != "PaaS" ]; then
+  if [ "$clusterType=" != "PaaS" ] && [ "$DELETE_HDFS" == "1" ]; then
     if [ ! "$dont_retry" ] ; then
       logger "INFO: Stop Hadoop"
     else
@@ -643,6 +643,10 @@ wait"
     else
       logger "INFO: Stop Hadoop ready"
     fi
+  elif [ "$clusterType=" == "PaaS" ] ; then
+    logger "INFO: In PaaS mode, not stoping Hadoop"
+  else
+    logger "WARNING: Not stopping Hadoop (as requested with -N)"
   fi
 }
 
