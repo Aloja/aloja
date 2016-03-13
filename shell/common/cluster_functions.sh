@@ -1038,8 +1038,7 @@ check_bootstraped() {
   fi
 
   if [ $result -eq 255 ]; then
-    logger "ERROR: cannot check bootstrap file status (SSH error?)"
-    exit 1
+    die "cannot check bootstrap file status (SSH error?)"
   fi
 
   #set lock

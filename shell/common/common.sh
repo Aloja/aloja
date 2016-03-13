@@ -344,14 +344,19 @@ inside_vagrant() {
 }
 
 # Returns the id of the cluster
+# This function is here as it is needed from the start 
 # $1 cluster file name. Format cluster_al-70.conf
-get_cluster_id(){
-  local cluster_id="$1"
-  [ "$cluster_id" ] || die "No string passed to get_cluster_id()"
-  cluster_id="${cluster_id##*-}" #remove innitial part
-  cluster_id="${cluster_id:0:(-5)}" #remove extension
+get_id_cluster(){
+  local id_cluster="$1"
+  [ "$id_cluster" ] || die "No string passed to get_id_cluster()"
+  id_cluster="${id_cluster##*-}" #remove innitial part
 
-  [[ $cluster_id =~ ^-?[0-9]+$ ]] || logger "WARNING: Cannot retrieve numeric cluster id got $cluster_id from $1"
+  # Check if it has the .conf extension
+  if [ "${id_cluster:(-5)}" = ".conf" ] ; then
+    id_cluster="${id_cluster:0:(-5)}" #remove extension
+  fi
 
-  echo -e "$cluster_id"
+  [[ $id_cluster =~ ^-?[0-9]+$ ]] || logger "WARNING: Cannot retrieve numeric cluster id got $id_cluster from $1"
+
+  echo -e "$id_cluster"
 }
