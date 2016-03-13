@@ -807,7 +807,7 @@ save_bench() {
 
   # Move al files, but not dirs
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \;"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \; 2> /dev/null"
   else
     logger "WARNING: Requested to leave services running, leaving local benchfiles too"
     $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$1/ \;"
