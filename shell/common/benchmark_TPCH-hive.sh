@@ -1,19 +1,16 @@
 # TPC-Hive version
+TPCH_DIR="tpch-hive-fixed"
+
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
-BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "query%g" 1 22)"
+BENCH_REQUIRED_FILES["$TPCH_DIR"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$TPCH_DIR.tar.gz"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "query%g" -s " " 1 22)"
 
 # Some benchmark specific validations
 [ ! "$TPCH_SCALE_FACTOR" ] && die "TPCH_SCALE_FACTOR is not set, cannot continue"
 
 [ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for TPCH-hive"
-
-
-# Load Hadoop functions
-source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
-set_hadoop_requires
 
 
 benchmark_suite_config() {
@@ -22,14 +19,14 @@ benchmark_suite_config() {
   BENCH_SAVE_PREPARE_LOCATION="${BENCH_LOCAL_DIR}${TPCH_DATA_DIR}"
 
   EXECUTE_TPCH_HIVE=true
-  TPCH_HOME=$(get_local_apps_path)/tpch-hive
+  TPCH_HOME=$(get_local_apps_path)/$TPCH_DIR
 
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
+  start_hadoop
+
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
-
-  start_hadoop
 }
 
 benchmark_suite_run() {
@@ -40,24 +37,23 @@ benchmark_suite_run() {
     generate_TPCH_data "prep_tpch" "$TPCH_SCALE_FACTOR"
   else
     logger "INFO: Reusing previous RUN TPCH data"
-    #deleting old history files
-    logger "INFO: delete old history files"
   fi
 
   for query in $BENCH_LIST ; do
     logger "INFO: RUNNING QUERY $query"
-    execute_TPCH_query "$query"
+    #execute_TPCH_query "$query"
+    execute_TPCH_query_fixed "$query"
   done
 
   logger "INFO: DONE executing $BENCH_SUITE"
 }
 
 benchmark_suite_save() {
-  : # Empty
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
 }
 
 benchmark_suite_cleanup() {
-  stop_hadoop
+  clean_hadoop
 }
 
 get_tpch_exports() {
@@ -66,7 +62,7 @@ get_tpch_exports() {
   to_export="$(get_java_exports)
     $(get_hadoop_exports)
     $(get_hive_exports)
-    export TPCH_SOURCE_DIR='$(get_local_apps_path)/tpch-hive';
+    export TPCH_SOURCE_DIR='$(get_local_apps_path)/$TPCH_DIR';
     export TPCH_HOME='$TPCH_SOURCE_DIR';"
 
   echo -e "$to_export\n"
@@ -89,19 +85,35 @@ execute_TPCH_query() {
   logger "INFO: # DONE TPCH Q${query}"
 }
 
+# $1 query number
+# $2 table name
+execute_TPCH_query_fixed() {
+
+  local query=$1
+  TABLE_NAME="tpch_bin_flat_orc_${TPCH_SCALE_FACTOR}"
+  if [ ! -z $2 ]; then
+    TABLE_NAME="$2"
+  fi
+
+  logger "INFO: Running TPCH $query"
+  execute_hive "tpch-${query}" "-f ${TPCH_HOME}/queries-fixed/tpch_${1}.sql --database ${TABLE_NAME}" "time"
+}
+
 # $2 scale factor
 generate_TPCH_data() {
   SCALE=$2
-  EXP=$(get_hive_exports)
+
+  local java_path="$(get_local_apps_path)/$BENCH_JAVA_VERSION"
+
+  EXP="$(get_hive_exports)"
   DATA_GENERATOR="tpch-setup.sh $2 $TPCH_DATA_DIR"
 
   if [ ! -f "${TPCH_HOME}/tpch-gen/target/tpch-gen-1.0-SNAPSHOT.jar" ]; then
     logger "INFO: Building TPCH data generator"
-    logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && bash tpch-build.sh"
-    time_cmd_master "$EXP cd ${TPCH_HOME} && bash tpch-build.sh" "$time_exec"
+    logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && PATH=\$PATH:$java_path/bin bash tpch-build.sh"
+    time_cmd_master "$EXP cd ${TPCH_HOME} && PATH=\$PATH:$java_path/bin bash tpch-build.sh" "$time_exec"
      if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-      logger "INFO: ERROR WHEN BUILDING DATA GENERATOR FOR TCPH, exiting..."
-      exit 1;
+      die "FAILED BUILDING DATA GENERATOR FOR TCPH, exiting..."
      fi
   else
     logger "INFO: Data generator already built, skipping..."
@@ -127,29 +139,37 @@ generate_TPCH_data() {
   TABLES="part partsupp supplier customer orders lineitem nation region"
   BUCKETS=13
   # Create the optimized tables.
-  i=1
+
   total=8
   DATABASE=tpch_bin_partitioned_orc_${SCALE}
-  for t in ${TABLES}
-  do
-          logger "INFO: Optimizing table $t ($i/$total)."
-          COMMAND="-f ${TPCH_HOME}/ddl-tpch/bin_flat/${t}.sql \
-              -d DB=tpch_bin_flat_orc_${SCALE} \
-              -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
-              -d FILE=orc"
-          execute_hive "prep_tpch_table_${t}" "$COMMAND" "time"
-          i=`expr $i + 1`
-  done
+# i=1
+#  for t in ${TABLES}
+#  do
+#          logger "INFO: Optimizing table $t ($i/$total)."
+#          COMMAND="-f ${TPCH_HOME}/ddl-tpch/bin_flat/${t}.sql \
+#              -d DB=tpch_bin_flat_orc_${SCALE} \
+#              -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
+#              -d FILE=orc"
+#          execute_hive "prep_tpch_table_${t}" "$COMMAND" "time"
+#          i="$((i + 1))"
+#  done
+
+  COMMAND="
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/part.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/partsupp.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/supplier.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/customer.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/orders.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/lineitem.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/nation.sql \
+ -f ${TPCH_HOME}/ddl-tpch/bin_flat/region.sql \
+ -d DB=tpch_bin_flat_orc_${SCALE} \
+ -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
+ -d FILE=orc"
+
+  logger "INFO: Optimizing tables: $TABLES"
+  execute_hive "prep_tpch_tables" "$COMMAND" "time"
 
   logger "INFO: Data loaded into database ${DATABASE}"
-
-#OLD CODE
-#  logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && /usr/bin/time -f 'Time data generator %e' $DATA_GENERATOR"
-#  time_cmd_master "$EXP cd ${TPCH_HOME} && bash $DATA_GENERATOR" "$time_exec"
-
-#  if [ "${PIPESTATUS[0]}" -ne 0 ]; then
-#    logger "INFO: ERROR: GENERATING DATA FAILED, exiting..."
-#    exit 1
-#  fi
 }
 
