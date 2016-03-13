@@ -28,7 +28,7 @@ export HIVE_CONF_DIR=$HIVE_CONF_DIR;
 "
 
   if [ "$EXECUTE_TPCH" ]; then
-    to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/tpch-hive';"
+    to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
   fi
 
   echo -e "$to_export\n"
@@ -203,9 +203,9 @@ save_hive() {
     $DSH_MASTER "cd /etc/hive; tar -cjf $JOB_PATH/hive_conf.tar.bz2 conf"
   else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ " #2> /dev/null
+      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ 2> /dev/null"
     else
-      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ " #2> /dev/null
+      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ 2> /dev/null"
     fi
 
     # Save Hive conf
