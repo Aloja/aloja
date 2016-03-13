@@ -95,7 +95,9 @@ create_hdi_cluster() {
     location="South Central US"
  fi
 
- vm_create_storage_account "$storageAccount" "LRS" "$location"
+ [ ! "$azureStorageType" ] && die "azureStorageType is not set!"
+
+ vm_create_storage_account "$storageAccount" "$azureStorageType" "$location"
  vm_create_storage_container "$storageAccount" "$storageAccount" "$storageAccountKey"
  logger "Creating Linux HDI cluster $1"
 
