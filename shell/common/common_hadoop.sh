@@ -58,7 +58,7 @@ export HADOOP_OPTS='$HADOOP_OPTS';"
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     to_export="$to_export
 export HADOOP_YARN_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
-YARN_LOG_DIR='$HDD/hadoop_logs';"
+export YARN_LOG_DIR='$HDD/hadoop_logs';"
   fi
 
   if [ "$HADOOP_EXTRA_JARS" ] ; then
@@ -177,26 +177,6 @@ initialize_hadoop_vars() {
     update_traps "stop_hadoop; stop_monit;" "update_logger"
   fi
  fi
-
-#logger "INFO: DEBUG: userAloja=$userAloja
-#DEBUG: BENCH_SHARE_DIR=$BENCH_SHARE_DIR
-#BENCH_LOCAL_DIR=$BENCH_LOCAL_DIR
-#BENCH_SOURCE_DIR=$BENCH_SOURCE_DIR
-#BENCH_SAVE_PREPARE_LOCATION=$BENCH_SAVE_PREPARE_LOCATION
-#HADOOP_VERSION=$HADOOP_VERSION
-#DEBUG: JAVA_HOME=$JAVA_HOME
-#JAVA_XMS=$JAVA_XMS JAVA_XMX=$JAVA_XMX
-#PHYS_MEM=$PHYS_MEM
-#NUM_CORES=$NUM_CORES
-#CONTAINER_MIN_MB=$CONTAINER_MIN_MB
-#CONTAINER_MAX_MB=$CONTAINER_MAX_MB
-#MAPS_MB=$MAPS_MB
-#AM_MB=$AM_MB
-#JAVA_AM_XMS=$JAVA_AM_XMS
-#JAVA_AM_XMX=$JAVA_AM_XMX
-#REDUCES_MB=$REDUCES_MB
-#Master node: $master_name "
-
 }
 
 get_hadoop_ports() {
