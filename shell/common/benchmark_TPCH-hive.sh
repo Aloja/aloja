@@ -1,4 +1,7 @@
 # TPC-Hive version
+[ ! "$TPCH_SCALE_FACTOR" ] &&  TPCH_SCALE_FACTOR=2 #2 GB min size
+BENCH_DATA_SIZE="((TPCH_SCALE_FACTOR * 1024 * 1024 * 1024))"
+
 TPCH_DIR="tpch-hive-fixed"
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
@@ -142,30 +145,17 @@ generate_TPCH_data() {
 
   total=8
   DATABASE=tpch_bin_partitioned_orc_${SCALE}
-# i=1
-#  for t in ${TABLES}
-#  do
-#          logger "INFO: Optimizing table $t ($i/$total)."
-#          COMMAND="-f ${TPCH_HOME}/ddl-tpch/bin_flat/${t}.sql \
-#              -d DB=tpch_bin_flat_orc_${SCALE} \
-#              -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
-#              -d FILE=orc"
-#          execute_hive "prep_tpch_table_${t}" "$COMMAND" "time"
-#          i="$((i + 1))"
-#  done
+  COMMAND=""
+  for t in ${TABLES} ; do
+    COMMAND="$COMMAND ${TPCH_HOME}/ddl-tpch/bin_flat/${t}.sql"
+  done
 
-  COMMAND="
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/part.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/partsupp.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/supplier.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/customer.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/orders.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/lineitem.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/nation.sql \
- -f ${TPCH_HOME}/ddl-tpch/bin_flat/region.sql \
- -d DB=tpch_bin_flat_orc_${SCALE} \
- -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
- -d FILE=orc"
+  $DSH_MASTER "cat $COMMAND > ${TPCH_HOME}/ddl-tpch/bin_flat/all.sql"
+
+  COMMAND="-f ${TPCH_HOME}/ddl-tpch/bin_flat/all.sql \
+    -d DB=tpch_bin_flat_orc_${SCALE} \
+    -d SOURCE=tpch_text_${SCALE} -d BUCKETS=${BUCKETS} \
+    -d FILE=orc"
 
   logger "INFO: Optimizing tables: $TABLES"
   execute_hive "prep_tpch_tables" "$COMMAND" "time"
