@@ -595,7 +595,7 @@ sudo rm $libtiff_file"
       install_packages "$R_packages"
 
       logger "INFO: Downloading precompiled R binary updates (to save time)"
-      local R_file="R-x86_64-3.2-packages.tar.gz"
+      local R_file="R-x86_64-3.2.2-packages.tar.gz"
       aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
 
       logger "INFO: Uncompressing and copying R files"
