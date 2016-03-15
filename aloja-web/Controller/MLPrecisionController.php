@@ -24,11 +24,7 @@ class MLPrecisionController extends AbstractController
 		$jsonPrecexps = $jsonPrecexpsHeader = '[]';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-			$dbml->setAttribute(\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE, 1024*1024*50);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 		    	$db = $this->container->getDBUtils();
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
@@ -72,13 +68,8 @@ class MLPrecisionController extends AbstractController
 			if (!$is_cached && !$in_process && !$finished_process)
 			{
 				// get headers for csv
-				$header_names = array(
-					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
-					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
-					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
-					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Service.Type','e.bench_type' => 'Bench.Type','CONCAT("V",LEFT(REPLACE(e.hadoop_version,"-",""),1))'=>'Hadoop.Version',
-					'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
-				);
+				$header_names = array();
+				MLUtils::getSimpleHeaders ($header_names);
 
 			    	// dump the result to csv
 			    	$query = "SELECT ".implode(",",array_keys($header_names))." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";

@@ -26,14 +26,10 @@ class MLMinconfigsController extends AbstractController
 		$is_legacy = 0;
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-			$dbml->setAttribute(\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE, 1024*1024*50);
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$db = $this->container->getDBUtils();
 
 			$reference_cluster = $this->container->get('config')['ml_refcluster'];
-
-			$db = $this->container->getDBUtils();
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
@@ -131,10 +127,7 @@ class MLMinconfigsController extends AbstractController
 					$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
 					$legacy_options = ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 				    	$rows = $db->get_rows ( $query );
-					if (empty($rows))
-					{
-						throw new \Exception('No data matches with your critteria.');
-					}
+					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
 					$is_legacy = 1;
 				}
 

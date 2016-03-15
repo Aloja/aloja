@@ -582,6 +582,24 @@ class MLUtils
 		$jsonNewconfsHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Properties'},{'title':'Centers'},{'title':'Actions'}]";
 	}
 
+	public static function getIndexVarweightsExps (&$jsonVarweights, &$jsonVarweightsHeader, $dbml)
+	{
+		$query="SELECT id_varweights, model, dataslice, creation_time FROM aloja_ml.variable_weights";
+		$rows = $dbml->query($query);
+		$jsonVarweights = '[';
+	    	foreach($rows as $row)
+		{
+			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&');
+
+			$model_display = MLUtils::display_models_noasts ($row['model']);
+			$slice_display = MLUtils::display_models_noasts ($row['dataslice']);
+
+			$jsonVarweights = $jsonVarweights.(($jsonVarweights=='[')?'':',')."['".$row['id_varweights']."','".$model_display."','".$slice_display."','".$row['creation_time']."','<a href=\'/mlvariableweight?".$url."\'>View</a> <a href=\'/mlclearcache?rmv=".$row['id_varweights']."\'>Remove</a>']";
+		}
+		$jsonVarweights = $jsonVarweights.']';
+		$jsonVarweightsHeader = "[{'title':'ID'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Actions'}]";
+	}
+
 	public static function getLegacyQuery (&$names,$where_configs)
 	{
 		$header_names = array(
@@ -596,6 +614,17 @@ class MLUtils
 		$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
 
 		return $query;
+	}
+
+	public static function getSimpleHeaders (&$header_names)
+	{
+		$header_names = array(
+			'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
+			'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
+			'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
+			'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Service.Type','e.bench_type' => 'Bench.Type','CONCAT("V",LEFT(REPLACE(e.hadoop_version,"-",""),1))'=>'Hadoop.Version',
+			'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
+		);
 	}
 
 	public static function getNames (&$exec_names,&$net_names,&$disk_names,&$bench_names)
@@ -690,22 +719,13 @@ class MLUtils
 		return $query;
 	}
 
-	public static function getIndexVarweightsExps (&$jsonVarweights, &$jsonVarweightsHeader, $dbml)
+	public static function getMLDBConnection ($db_conn_chain, $mysql_user, $mysql_pwd)
 	{
-		$query="SELECT id_varweights, model, dataslice, creation_time FROM aloja_ml.variable_weights";
-		$rows = $dbml->query($query);
-		$jsonVarweights = '[';
-	    	foreach($rows as $row)
-		{
-			$url = MLUtils::revertModelToURL($row['model'], $row['dataslice'], 'presets=none&submit=&');
-
-			$model_display = MLUtils::display_models_noasts ($row['model']);
-			$slice_display = MLUtils::display_models_noasts ($row['dataslice']);
-
-			$jsonVarweights = $jsonVarweights.(($jsonVarweights=='[')?'':',')."['".$row['id_varweights']."','".$model_display."','".$slice_display."','".$row['creation_time']."','<a href=\'/mlvariableweight?".$url."\'>View</a> <a href=\'/mlclearcache?rmv=".$row['id_varweights']."\'>Remove</a>']";
-		}
-		$jsonVarweights = $jsonVarweights.']';
-		$jsonVarweightsHeader = "[{'title':'ID'},{'title':'Attribute Selection'},{'title':'Advanced Filters'},{'title':'Creation'},{'title':'Actions'}]";
+		$dbml = new \PDO($db_conn_chain, $mysql_user, $mysql_pwd);
+	        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
+	        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
+		$dbml->setAttribute(\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE, 1024*1024*50);
+		return $dbml;
 	}
 }
 ?>

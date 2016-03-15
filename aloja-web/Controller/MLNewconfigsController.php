@@ -68,14 +68,11 @@ class MLNewconfigsController extends AbstractController
 		$max_size_instances = 128;
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-			$dbml->setAttribute(\PDO::MYSQL_ATTR_MAX_BUFFER_SIZE, 1024*1024*50);
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
+			$db = $this->container->getDBUtils();
 
 			$reference_cluster = $this->container->get('config')['ml_refcluster'];
 
-			$db = $this->container->getDBUtils();
 		    	$where_configs = '';
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
