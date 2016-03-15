@@ -20,6 +20,7 @@ class MLSummariesController extends AbstractController
 	public function mlsummariesAction()
 	{
 		$displaydata = $separate_feat = $instance = $model_info = $slice_info = '';
+		$param_names = $param_names_additional = array();
 		try
 		{
 			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
