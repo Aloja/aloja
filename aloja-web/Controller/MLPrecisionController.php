@@ -45,7 +45,7 @@ class MLPrecisionController extends AbstractController
 			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -64,7 +64,7 @@ class MLPrecisionController extends AbstractController
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
-			$eval_names = array('Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Hadoop.Version');
+			$eval_names = array('Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Hadoop.Version','Datasize','Scale.Factor');
 
 			$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
 			$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.fin');
@@ -185,7 +185,7 @@ class MLPrecisionController extends AbstractController
 				$jsonDiversity = str_replace("aceback available","",$jsonDiversity);
 				$jsonDiversity = str_replace(",",",",$jsonDiversity);
 
-				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Target','Exe.Time','Support');
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Datasize','Scale.Factor','Target','Exe.Time','Support');
 				$jsonHeaderDiv = '[';
 				foreach ($header as $title)
 				{

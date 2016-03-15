@@ -115,7 +115,7 @@ options(width=as.integer(1000));
 
 	if (opt$method  == "aloja_diversity")
 	{
-		if (is.null(params$vin)) params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size");
+		if (is.null(params$vin)) params[["vin"]] <- c("Benchmark","Net","Disk","Maps","IO.SFac","Rep","IO.FBuf","Comp","Blk.size","Datasize","Scale.Factor");
 		if (is.null(params$vdisc)) params[["vdisc"]] <- "Cl.Name";
 		if (is.null(params$vout)) params[["vout"]] <- "Exe.Time";
 	}
