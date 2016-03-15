@@ -41,18 +41,18 @@
 	{% block body %}
 	<div id="container"> <!-- container -->
 		{#<img style="position: absolute; top: 20; left: 0; border: 0; z-index: -1;" src="img/banner_BSC23.jpeg">#}
-		<div class="row" style="position: relative; min-height:6em;">
-			<div class="col-md-4" style="padding-left: 0em; margin-right: 0em; margin-left: 1.4em; bottom: 0.6em; width: 200px;">
+		<div class="row" style="padding-bottom: 5px; display: flex; display: -ms-flexbox; display: -webkit-flex; display: -webkit-box;">
+			<div class="col-md-2" style="width: 200px;">
 					<img src="img/logo/aloja.png" style="" width="200">
 			</div>
-			<div class="col-md-6" style="min-height: 6em;">
-				<span style="position: absolute; bottom: 25px; margin-left: 0em; text-align: center; font-size: 1.5em; color: grey; ">
-					<strong>{{ title|default('Big Data Benchmark Repository and Performance Analysis') }}</strong>
-				</span>
+			<div class="col-md-8">
+				<p class="bottom-align" style="font-size: 1.5em; color: grey; font-weight: bold;">
+					{{ title|default('Big Data Benchmark Repository and Performance Analysis') }}
+				</p>
 			</div>
-			<div class="col-md-1" style="margin-left: 0em; margin-right: 0px;">
+			<div class="col-md-2" >
 				<a target="blank" href="http://www.bscmsrc.eu/">
-					<img src="img/bsc-logo_trans.png" style="margin-bottom: 9px;" width="270">
+					<img src="img/bsc-logo_trans.png" width="270">
 				</a>
 			</div>
 	   </div>

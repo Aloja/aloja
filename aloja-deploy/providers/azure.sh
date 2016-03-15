@@ -60,7 +60,7 @@ vm_create() {
             --vm-name "$1" \
             --vm-size "$vmSize" \
             `#--location 'West Europe'` \
-            --affinity-group "$affinityGroup" \
+            --location "$azureLocation" \
             --virtual-network-name "$virtualNetworkName" \
             `#--subnet-names "$subnetNames"` \
             --ssh "$ssh_port" \
@@ -91,7 +91,7 @@ vm_create() {
           --vm-name "$1" \
           --vm-size "$vmSize" \
           `#--location 'West Europe'` \
-          --affinity-group "$affinityGroup" \
+          --location "$azureLocation" \
           --virtual-network-name "$virtualNetworkName" \
           --subnet-names "$subnetNames" \
           --rdp "$ssh_port" \

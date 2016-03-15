@@ -177,8 +177,7 @@ import_folder() {
         if [[  $folder == *_az ]] ; then
           id_cluster="2"
         else
-
-          id_cluster="${folder:(-2):2}"
+          id_cluster="$(get_cluster_id "$folder")"
 
           clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
           source $clusterConfigFile
@@ -769,7 +768,7 @@ import_hadoop2_jhist() {
       done
     done <<< "$values"
 
-	insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
+	local insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
 		        ON DUPLICATE KEY UPDATE
 		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
 		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
@@ -778,10 +777,15 @@ import_hadoop2_jhist() {
 	$MYSQL "$insert"
 
     local result=`$MYSQL "select count(*) FROM aloja_logs.JOB_status JOIN aloja2.execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+
+
 	if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
-		waste=()
-		reduce=()
-		map=()
+		local waste=()
+		local reduce=()
+		local map=()
+		local insert_tasks insert_status
+
+
 		for i in `seq 0 1 $totalTime`; do
 			waste[$i]=0
 			reduce[$i]=0
@@ -790,38 +794,42 @@ import_hadoop2_jhist() {
 
 		runnignTime=`expr $finishTimeTS - $startTimeTS`
 		read -a tasks <<< `$CUR_DIR/../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
+
+		dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
+
+		# TODO this loop is very slow, ading & and wait to parallelize a bit
 		for task in "${tasks[@]}" ; do
-			taskId=`echo $task | sed 's/"/\ /g'`
-			taskStatus=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out`
-			taskType=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out`
-			taskStartTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
-			taskFinishTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
-			taskStartTime=`expr $taskStartTime / 1000`
-			taskFinishTime=`expr $taskFinishTime / 1000`
-			values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+			# try to pa
+			taskId="$(echo $task | sed 's/"/\ /g')" &
+			taskStatus="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out)" &
+			taskType="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out)" &
+			taskStartTime="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out)" &
+			taskFinishTime="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out)" &
+			taskStartTime="$(expr $taskStartTime / 1000)" &
+			taskFinishTime="$(expr $taskFinishTime / 1000)" &
+			values="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g')" &
 
-            dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
-            finalValues="none"
-            while IFS=',' read -ra ADDR; do
-              for i in "${ADDR[@]}"; do
-                  test=$(echo $i | cut -d= -f1)
-                  if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
-                    if [ "$finalValues" != "none" ]; then
-                      finalValues+=",$i"
-                    else
-                      finalValues="$i"
-                    fi
+      wait
+      
+          finalValues="none"
+          while IFS=',' read -ra ADDR; do
+            for i in "${ADDR[@]}"; do
+                test=$(echo $i | cut -d= -f1)
+                if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
+                  if [ "$finalValues" != "none" ]; then
+                    finalValues+=",$i"
                   else
-                      logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
+                    finalValues="$i"
                   fi
-              done
-            done <<< "$values"
+                else
+                    logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
+                fi
+            done
+          done <<< "$values"
 
-			insert="INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
-							ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
-
-			logger "DEBUG: $insert"
-			$MYSQL "$insert"
+			insert_tasks="$insert_tasks
+INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
+  ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
 
 			normalStartTime=`expr $taskStartTime - $startTimeTS`
 			normalFinishTime=`expr $taskFinishTime - $startTimeTS`
@@ -836,6 +844,10 @@ import_hadoop2_jhist() {
 				reduce[$normalFinishTime]=$(expr ${reduce[$normalFinishTime]} - 1)
 			fi
 		done
+
+    logger "DEBUG: Inserting into HDI_JOB_tasks"
+    $MYSQL "$insert_tasks"
+
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
 				previous=$(expr ${i} - 1)
@@ -845,13 +857,14 @@ import_hadoop2_jhist() {
 			fi
 			currentTime=`expr $startTimeTS + $i`
 			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
-			insert="INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
-					VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
-					ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
+			insert_status="$insert_status
+INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
+  VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
+	ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
-			logger "DEBUG: $insert"
-			$MYSQL "$insert"
 		done
+		logger "DEBUG: Inserting into JOB_status"
+		$MYSQL "$insert"
 	fi
 	#cleaning
 	rm tasks.out

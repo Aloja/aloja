@@ -529,7 +529,7 @@ class CostPerfEvaluationController extends AbstractController
 								LEFT JOIN aloja_ml.predictions p2 USING (id_exec)
 								WHERE 1 $innerQueryWhere GROUP BY c2.datanodes,e2.exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
 					AND t.category = category AND t.vmsize = c.vm_size
-					WHERE 1 $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
+					WHERE 1 $this->whereClause $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
 
 			$predExecs = "SELECT c.datanodes as 'category','predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
@@ -538,7 +538,7 @@ class CostPerfEvaluationController extends AbstractController
 								from aloja_ml.predictions p2 JOIN aloja2.clusters c2 USING (id_cluster)
 								WHERE 1 ".str_replace("e2.","p2.",$innerQueryWhere)." GROUP BY c2.datanodes,exec_type,c2.vm_OS,c2.vm_size ) t ON t.minexe = e.exe_time
 					AND t.category = category AND t.vmsize = c.vm_size
-					WHERE 1 $filter_execs  GROUP BY c.datanodes,exec_type,c.vm_OS,c.vm_size
+					WHERE 1 $this->whereClause $filter_execs  GROUP BY c.datanodes,exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
 
 			if($scalabilityType == 'Datasize') {

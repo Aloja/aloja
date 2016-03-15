@@ -34,23 +34,25 @@ class MLMinconfigsController extends AbstractController
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
 		    	
-			$this->buildFilters(array('learn' => array(
-				'type' => 'selectOne',
-				'default' => array('regtree'),
-				'label' => 'Learning method: ',
-				'generateChoices' => function() {
-					return array('regtree','nneighbours','nnet','polyreg','supportvms');
-				},
-				'beautifier' => function($value) {
-					$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
-						'nnet' => 'NNets','polyreg' => 'PolyReg-3','supportvms' => 'Support Vector Machines');
-					return $labels[$value];
-				},
-				'parseFunction' => function() {
-					$choice = isset($_GET['learn']) ? $_GET['learn'] : array('regtree');
-					return array('whereClause' => '', 'currentChoice' => $choice);
-				},
-				'filterGroup' => 'MLearning'
+			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
+				'learn' => array(
+					'type' => 'selectOne',
+					'default' => array('regtree'),
+					'label' => 'Learning method: ',
+					'generateChoices' => function() {
+						return array('regtree','nneighbours','nnet','polyreg','supportvms');
+					},
+					'beautifier' => function($value) {
+						$labels = array('regtree' => 'Regression Tree','nneighbours' => 'k-NN',
+							'nnet' => 'NNets','polyreg' => 'PolyReg-3','supportvms' => 'Support Vector Machines');
+						return $labels[$value];
+					},
+					'parseFunction' => function() {
+						$choice = isset($_GET['learn']) ? $_GET['learn'] : array('regtree');
+						return array('whereClause' => '', 'currentChoice' => $choice);
+					},
+					'filterGroup' => 'MLearning'
 			), 'umodel' => array(
 				'type' => 'checkbox',
 				'default' => 1,

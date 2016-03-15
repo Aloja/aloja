@@ -35,6 +35,7 @@ class MLCrossvarController extends AbstractController
 			}
 
 			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
 				'variable2' => array(
 					'type' => 'selectOne', 'default' => array('exe_time'), 'table' => 'execs',
 					'label' => 'Variable 2: ',
@@ -298,6 +299,7 @@ class MLCrossvarController extends AbstractController
 			$db = $this->container->getDBUtils();
 		    	
 			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
 				'variable2' => array(
 					'type' => 'selectOne', 'default' => array('net'), 'table' => 'execs',
 					'label' => 'Variable 2: ',
@@ -595,6 +597,7 @@ class MLCrossvarController extends AbstractController
 			$db = $this->container->getDBUtils();
 
 			$this->buildFilters(array(
+				'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
 				'variable2' => array(
 					'type' => 'selectOne', 'default' => array('net'), 'table' => 'execs',
 					'label' => 'Variable 2: ',
