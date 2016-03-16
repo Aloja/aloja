@@ -141,8 +141,8 @@ get_hadoop_conf_dir() {
 initialize_hadoop_vars() {
 
  if [ "$clusterType" == "PaaS" ]; then
-  BENCH_HADOOP_DIR="/usr/hdp/current/hadoop-client" #execution dir
 
+  BENCH_HADOOP_DIR="/usr/hdp/current/hadoop-client" #execution dir for HDP add other ones
   HADOOP_CONF_DIR="/etc/hadoop/conf"
   HADOOP_EXPORTS=""
 
@@ -170,12 +170,17 @@ initialize_hadoop_vars() {
     HADOOP_VERSION="${HADOOP_VERSION}-instr"
   fi
 
-  #make sure all spawned background jobs and services are stoped or killed when done
-  if [ "$INSTRUMENTATION" == "1" ] ; then
-    update_traps "stop_hadoop; stop_monit; stop_sniffer;" "update_logger"
+  if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
+    #make sure all spawned background jobs and services are stoped or killed when done
+    if [ "$INSTRUMENTATION" == "1" ] ; then
+      update_traps "stop_hadoop; stop_monit; stop_sniffer;" "update_logger"
+    else
+      update_traps "stop_hadoop; stop_monit;" "update_logger"
+    fi
   else
-    update_traps "stop_hadoop; stop_monit;" "update_logger"
+    update_traps "echo 'WARNING: leaving services running as requested (stop manually).';"
   fi
+
  fi
 }
 
@@ -710,16 +715,25 @@ $(get_hadoop_exports)"
 get_hadoop_cmd() {
   local hadoop_exports
   local hadoop_cmd
+  local hadoop_bin
 
-  #TODO refactor
-  if [ "$EXECUTE_HIBENCH" ] ; then
-    hadoop_exports="$(get_HiBench_exports)
-$(get_hadoop_exports)"
+  # if in PaaS use the bin in PATH
+  if [ "$clusterType" == "PaaS" ]; then
+    hadoop_exports=""
+    hadoop_bin="hadoop"
   else
-    hadoop_exports="$(get_hadoop_exports)"
+    #TODO refactor
+    if [ "$EXECUTE_HIBENCH" ] ; then
+      hadoop_exports="$(get_HiBench_exports)
+$(get_hadoop_exports)"
+    else
+      hadoop_exports="$(get_hadoop_exports)"
+    fi
+
+    hadoop_bin="$BENCH_HADOOP_DIR/bin/hadoop"
   fi
 
-  hadoop_cmd="$hadoop_exports\n$BENCH_HADOOP_DIR/bin/hadoop"
+  hadoop_cmd="$hadoop_exports\n$hadoop_bin"
 
   echo -e "$hadoop_cmd"
 }
@@ -728,12 +742,15 @@ $(get_hadoop_exports)"
 # $1 benchmark name
 # $2 command
 # $3 if to time exec
+# $4 chdir (optional) if supplied it will do a cd to that path
 execute_hadoop_new(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
+  local chdir
+  [ "$4" ] && local chdir="cd $4; "
 
-  local hadoop_cmd="$(get_hadoop_cmd) $cmd"
+  local hadoop_cmd="${chdir}$(get_hadoop_cmd) $cmd"
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then

@@ -1,5 +1,5 @@
--- set hive.log.dir=##LOG_DIR##;
--- set hive.exec.local.scratchdir=##TMP_DIR##;
+set hive.log.dir=##LOG_DIR##;
+set hive.exec.local.scratchdir=##TMP_DIR##;
 -- set hive.metastore.uris=thrift://localhost:##PORT_PREFIX##9083;
 
 -- set mapreduce.map.memory.mb=##MAPS_MB##;
@@ -48,10 +48,16 @@ set hive.stats.autogather=true;
 set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DummyTxnManager;
 set hive.txn.max.open.batch=1000;
 set hive.txn.timeout=300;
+
 set hive.vectorized.execution.enabled=true;
+set hive.vectorized.execution.reduce.enabled = true;
 set hive.vectorized.groupby.checkinterval=1024;
 set hive.vectorized.groupby.flush.percent=1;
 set hive.vectorized.groupby.maxentries=1024;
+
+set hive.cbo.enable=true;
+set hive.stats.fetch.column.stats=true;
+set hive.stats.fetch.partition.stats=true;
 
 set hive.auto.convert.join.noconditionaltask=false;
 set hive.auto.convert.join=false;
