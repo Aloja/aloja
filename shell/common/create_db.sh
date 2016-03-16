@@ -1212,6 +1212,10 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 
 # Azure DW (SaaS)
+
+$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and
+(exec_type='DW_manual' OR exec_type='ADLA_manual' OR exec_type='ADLS_manual') ;"
+
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
 
 # Update perf aggregates
