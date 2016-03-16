@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+logger "INFO: deleting incorrect values"
+$MYSQL "DELETE from aloja2.precal_cpu_metrics where \`avg%iowait\` > 100;"
+
+>>>>>>> master
 #CPU
 logger "INFO: Updating CPU aggregates for new execs"
 
@@ -17,7 +23,7 @@ INSERT INTO aloja2.precal_cpu_metrics(id_exec,
  AVG(s.\`%steal\`), MAX(s.\`%steal\`), MIN(s.\`%steal\`), STDDEV_POP(s.\`%steal\`), VAR_POP(s.\`%steal\`),
  AVG(s.\`%idle\`), MAX(s.\`%idle\`), MIN(s.\`%idle\`), STDDEV_POP(s.\`%idle\`), VAR_POP(s.\`%idle\`)
  FROM aloja2.execs e JOIN aloja_logs.SAR_cpu s USING (id_exec)
- WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_cpu_metrics) GROUP BY (e.id_exec);"
+ WHERE e.id_exec NOT IN (SELECT id_exec FROM precal_cpu_metrics) and \`%iowait\` <= 100 GROUP BY (e.id_exec);"
 
 
 #MEM
@@ -102,3 +108,7 @@ SELECT e.id_exec,
   WHERE id_exec NOT IN (SELECT id_exec FROM precal_network_metrics) AND 1 GROUP BY (e.id_exec);"
 
 logger "INFO: Done updating performance aggregates"
+
+#logger "INFO: deleting incorrect values"
+#$MYSQL "DELETE from aloja_logs.SAR_cpu where \`%iowait\` > 100;"
+#logger "INFO: done deleting incorrect values"

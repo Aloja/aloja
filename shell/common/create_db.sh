@@ -471,29 +471,6 @@ CREATE TABLE IF NOT EXISTS \`precal_network_metrics\` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
-# TODO add these fields
-#20160302_155418 31424: WARNING: Field FAILED_REDUCES not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field FINISHED_MAPS not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field JOB_PRIORITY not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field LAUNCH_TIME not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field MB_MILLIS_MAPS not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field MB_MILLIS_REDUCES not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field MILLIS_MAPS not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field MILLIS_REDUCES not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field RACK_LOCAL_MAPS not found on table HDI_JOB_tasks
-#20160302_155418 31424: WARNING: Field SLOTS_MILLIS_MAPS not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field SLOTS_MILLIS_REDUCES not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field SUBMIT_TIME not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field TOTAL_LAUNCHED_MAPS not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field TOTAL_LAUNCHED_REDUCES not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field TOTAL_MAPS not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field TOTAL_REDUCES not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field USER not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field VCORES_MILLIS_MAPS not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field VCORES_MILLIS_REDUCES not found on table HDI_JOB_tasks
-#20160302_155419 31424: WARNING: Field job_name not found on table HDI_JOB_tasks
-
-
 ####################################################
 logger "INFO: Creating DB aloja_logs and tables (if needed)"
 
@@ -1213,10 +1190,31 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 
 # Azure DW (SaaS)
 
-$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and
-(exec_type='DW_manual' OR exec_type='ADLA_manual' OR exec_type='ADLS_manual') ;"
+$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and (exec_type='DW_manual' OR exec_type='ADLA_manual' OR exec_type='ADLS_manual') ;"
 
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
+
+# Create aggregate ALL for TPC-H
+$MYSQL "
+INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps)
+select
+  c.id_cluster,
+  if (exec_type='DW_manual',
+      CONCAT(substring(exec, 1, locate('/', exec)),'ALL'),
+      CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL')
+  ) exec2,
+  'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
+  'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',datanodes
+from execs e join clusters c using (id_cluster)
+where bench_type = 'TPC-H' and bench != 'ALL' and c.type = 'SaaS' and exe_time > 1
+group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',1,0)
+having count(*) = 22 order by exec2; #161"
+
+# Fix for ML tools
+$MYSQL "UPDATE execs SET hadoop_version='0', maps=0, iosf=0, replication=1, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"
+
+
+
 
 # Update perf aggregates
 source_file "$ALOJA_REPO_PATH/shell/common/DB/update_precal_metrics.sh"
