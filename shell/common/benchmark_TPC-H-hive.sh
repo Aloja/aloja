@@ -114,7 +114,7 @@ generate_TPCH_data() {
   if [ ! -f "${TPCH_HOME}/tpch-gen/target/tpch-gen-1.0-SNAPSHOT.jar" ]; then
     logger "INFO: Building TPCH data generator"
     logger "DEBUG: COMMAND: $EXP cd ${TPCH_HOME} && PATH=\$PATH:$java_path/bin bash tpch-build.sh"
-    time_cmd_master "$EXP cd ${TPCH_HOME} && PATH=\$PATH:$java_path/bin bash tpch-build.sh" "$time_exec"
+    time_cmd_master "$EXP cd ${TPCH_HOME} && PATH=\$PATH:$java_path/bin bash tpch-build.sh" "time_exec"
      if [ "${PIPESTATUS[0]}" -ne 0 ]; then
       die "FAILED BUILDING DATA GENERATOR FOR TCPH, exiting..."
      fi
@@ -128,6 +128,7 @@ generate_TPCH_data() {
     sudo su hdfs -c "hdfs dfs -mkdir -p ${TPCH_DATA_DIR}"
     sudo su hdfs -c "hdfs dfs -chown pristine ${TPCH_DATA_DIR}"
   else
+    hadoop_delete_path "Delete_previous_dir" "${TPCH_DATA_DIR}"
     time_cmd_master "$(get_hadoop_exports) ${BENCH_HADOOP_DIR}/bin/hdfs dfs -mkdir -p ${TPCH_DATA_DIR}"
   fi
 

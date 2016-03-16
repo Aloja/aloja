@@ -939,6 +939,38 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   \`WRONG_REDUCE\` bigint(20) DEFAULT NULL,
   \`CHECKSUM\` varchar(255) DEFAULT NULL,
   \`NUM_FAILED_MAPS\` varchar(255) DEFAULT NULL,
+
+\`job_name\` varchar(255) DEFAULT NULL,
+\`CREATED_FILES\` bigint(20) DEFAULT NULL,
+\`DESERIALIZE_ERRORS\` varchar(255) DEFAULT NULL,
+\`FAILED_REDUCES\` bigint(20) DEFAULT NULL,
+\`FINISHED_MAPS\` bigint(20) DEFAULT NULL,
+\`JOB_PRIORITY\` bigint(20) DEFAULT NULL,
+\`LAUNCH_TIME\` varchar(255) DEFAULT NULL,
+\`MB_MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`MB_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+\`MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+\`NUM_KILLED_MAPS\` bigint(20) DEFAULT NULL,
+\`NUM_KILLED_REDUCES\` bigint(20) DEFAULT NULL,
+\`OTHER_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
+\`RACK_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
+\`RECORDS_IN\` bigint(20) DEFAULT NULL,
+\`RECORDS_OUT_INTERMEDIATE\` bigint(20) DEFAULT NULL,
+\`SKEWJOINFOLLOWUPJOBS\` varchar(255) DEFAULT NULL,
+\`SLOTS_MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`SLOTS_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+\`SUBMIT_TIME\` varchar(255) DEFAULT NULL,
+\`TOTAL_LAUNCHED_MAPS\` bigint(20) DEFAULT NULL,
+\`TOTAL_LAUNCHED_REDUCES\` bigint(20) DEFAULT NULL,
+\`TOTAL_MAPS\` bigint(20) DEFAULT NULL,
+\`TOTAL_REDUCES\` bigint(20) DEFAULT NULL,
+\`USER\` varchar(255) DEFAULT NULL,
+\`VCORES_MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`VCORES_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+
+
+
   PRIMARY KEY (\`hdi_job_task_id\`),
   UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -1027,6 +1059,37 @@ $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_LARGE_READ_OPS bigi
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_LARGE_WRITE_OPS bigint DEFAULT NULL;"
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_READ_OPS bigint DEFAULT NULL;"
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_WRITE_OPS bigint DEFAULT NULL;"
+
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`job_name\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`CREATED_FILES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`DESERIALIZE_ERRORS\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`FAILED_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`FINISHED_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`JOB_PRIORITY\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`LAUNCH_TIME\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MB_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MB_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`NUM_KILLED_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`NUM_KILLED_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`OTHER_LOCAL_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`RACK_LOCAL_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`RECORDS_IN\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`RECORDS_OUT_INTERMEDIATE\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SKEWJOINFOLLOWUPJOBS\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SLOTS_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SLOTS_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SUBMIT_TIME\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_LAUNCHED_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_LAUNCHED_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`USER\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`VCORES_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`VCORES_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+
+
 
 $MYSQL "alter table aloja2.clusters  add column cost_remote int DEFAULT 0"
 $MYSQL "alter table aloja2.clusters  add column cost_SSD int DEFAULT 0"

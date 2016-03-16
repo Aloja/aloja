@@ -4,7 +4,7 @@ set_hadoop_requires
 
 # Sets the required files to download/copy
 set_hive_requires() {
-  [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION SPECIFIED"
+  [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION specified"
 
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
@@ -17,7 +17,7 @@ set_hive_requires() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
 
-# Helper to print a line with Hadoop requiered exports
+# Helper to print a line with requiered exports
 get_hive_exports() {
   local to_export
 
@@ -38,13 +38,21 @@ export HIVE_CONF_DIR=$HIVE_CONF_DIR;
 get_hive_cmd() {
   local hive_exports
   local hive_cmd
-
-  hive_exports="$(get_hive_exports)"
-
+  local hive_bin
   local hive_settings_file
+
+  # if in PaaS use the bin in PATH and no exports
+  if [ "$clusterType" == "PaaS" ]; then
+    hive_bin="hive"
+    hive_exports=""
+  else
+    hive_exports="$(get_hive_exports)"
+    local hive_bin="$HIVE_HOME/bin/hive"
+  fi
+
   [ "$HIVE_SETTINGS_FILE" ] && hive_settings_file="-i $HIVE_SETTINGS_FILE"
 
-  hive_cmd="$hive_exports\ncd '$HDD_TMP';\n$HIVE_HOME/bin/hive $hive_settings_file"
+  hive_cmd="$hive_exports\n$hive_bin $hive_settings_file" #\ncd '$HDD_TMP';
 
   echo -e "$hive_cmd"
 }
@@ -82,8 +90,6 @@ execute_hive(){
 }
 
 initialize_hive_vars() {
-  [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
-  #[ ! "$HIVE_SETTINGS_FILE_PATH" ] && HIVE_SETTINGS_FILE_PATH="$HDD/hive_conf_template/${HIVE_SETTINGS_FILE}"
 
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS
 hive_conf_template"
@@ -94,6 +100,8 @@ hive_conf_template"
   else
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
     HIVE_CONF_DIR="$HDD/hive_conf"
+    # Only set a default hive.settings when not in PaaS
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
   fi
 }
 
