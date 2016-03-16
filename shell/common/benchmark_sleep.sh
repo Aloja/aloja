@@ -1,9 +1,10 @@
 # Sample, simple, benchmark of sleep for a number of seconds
 # in this case the benchmark suite has only one benchmark
 
+bench="sleep"
 
 benchmark_suite_config() {
-  logger "DEBUG: No custom config needed for $BENCH_SUITE"
+  logger "DEBUG: No custom ${FUNCNAME[0]} needed for $BENCH_SUITE"
 }
 
 benchmark_suite_run() {
@@ -35,14 +36,16 @@ benchmark_suite_run() {
   set_bench_end "$BENCH_SUITE"
   stop_monit
 
+  # Save results for this bench
+  save_bench "$bench"
+
   logger "INFO: DONE executing $BENCH_SUITE"
 }
 
 benchmark_suite_save() {
-  save_bench "$BENCH_SUITE"
+  logger "DEBUG: No custom ${FUNCNAME[0]} defined for $BENCH_SUITE"
 }
 
 benchmark_suite_cleanup() {
-  logger "INFO: Cleaning up local bench dirs"
-  delete_bench_local_folder "$DISK"
+  logger "DEBUG: No custom ${FUNCNAME[0]} defined for $BENCH_SUITE"
 }

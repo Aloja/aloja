@@ -15,8 +15,10 @@ get_java_home(){
 }
 
 get_java_exports() {
-  local java_path="$(get_local_apps_path)/$BENCH_JAVA_VERSION"
-  echo -e "export JAVA_HOME='$java_path';"
+  if [ "$clusterType" != "PaaS" ]; then #on PaaS use the system version
+    local java_path="$(get_local_apps_path)/$BENCH_JAVA_VERSION"
+    echo -e "export JAVA_HOME='$java_path';"
+  fi
 }
 
 # Sets the JAVA_HOME for the benchmark

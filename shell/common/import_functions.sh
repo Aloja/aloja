@@ -177,7 +177,7 @@ import_folder() {
         if [[  $folder == *_az ]] ; then
           id_cluster="2"
         else
-          id_cluster="$(get_cluster_id "$folder")"
+          id_cluster="$(get_id_cluster "$folder")"
 
           clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
           source $clusterConfigFile
