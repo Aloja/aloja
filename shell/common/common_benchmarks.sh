@@ -155,6 +155,49 @@ get_options() {
 
 }
 
+
+# Temple functions, reimplement in benchmark if needed
+
+benchmark_suite_config() {
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+}
+
+# Iterate the specified benchmarks in the suite
+benchmark_suite_run() {
+  logger "INFO: Running $BENCH_SUITE"
+
+  for bench in $BENCH_LIST ; do
+
+    bench_input_dir="$BENCH_SUITE/$bench/input"
+    bench_output_dir="$BENCH_SUITE/$bench/output"
+
+    # Prepare run (in case defined)
+    function_call "benchmark_prepare_$bench"
+
+    # Bench Run
+    function_call "benchmark_$bench"
+
+    # Validate (eg. teravalidate)
+    function_call "benchmark_validate_$bench"
+
+    # Clean-up HDFS space (in case necessary)
+    #clean_HDFS "$bench_name" "$BENCH_SUITE"
+
+  done
+
+  logger "INFO: DONE executing $BENCH_SUITE"
+}
+
+benchmark_suite_save() {
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+}
+
+benchmark_suite_cleanup() {
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+}
+
+########## END TEMPLATE FUNCTIONS
+
 loggerb(){
   stamp=$(date '+%s')
   echo "${stamp} : $1"
@@ -512,7 +555,7 @@ set_job_config() {
   #LOG="2>&1 |tee -a $LOG_PATH"
 
   #create dir to save files in one host
-  $DSH_MASTER "mkdir -p $JOB_PATH"
+  $DSH_MASTER "mkdir -p $JOB_PATH;"
 
   # Automatically log all output to file
   log_all_output "$JOB_PATH/${0##*/}"
@@ -581,6 +624,12 @@ install_requires() {
       logger "INFO: Checking if to download/copy $required_file"
       local base_name="${BENCH_REQUIRED_FILES["$required_file"]##*/}"
 
+      # For github repos, add other exceptions to file names that might repeat here
+      if [[ "$base_name" =~ "master."* ]] ; then
+        # Use the array key index name
+        base_name="${required_file}.${base_name#*.}"
+      fi
+
       # test if we need to download first to share dir
       local test_action="$($DSH_MASTER "[ -f '$(get_base_tarballs_path)/$base_name' ] && echo '$testKey'")"
       if [[ ! "$test_action" == *"$testKey"* ]] ; then
@@ -604,6 +653,8 @@ if [ ! -d '$(get_local_apps_path)/$required_file' ] ; then
     tar -xzf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   elif [[ '$base_name' == *'.tar.bz2' ]] ; then
     tar -xjf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
+  elif [[ '$base_name' == *'.zip' ]] ; then
+    unzip -q -o '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   else
     echo 'ERROR: unknown file extension for $base_name';
   fi
@@ -990,7 +1041,7 @@ save_disk_usage() {
   echo "# Checking disk space with df $1" >> $JOB_PATH/disk.log
   $DSH "df -h" 2>&1 >> $JOB_PATH/disk.log
   echo "# Checking hadoop folder space $1" >> $JOB_PATH/disk.log
-  $DSH "du -sh $HDD/*" 2>&1 >> $JOB_PATH/disk.log
+  $DSH "du -sh $HDD/* 2> /dev/null"  >> $JOB_PATH/disk.log
 }
 
 check_bench_list() {
