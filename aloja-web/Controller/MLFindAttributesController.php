@@ -25,6 +25,8 @@ class MLFindAttributesController extends AbstractController
 		$jsonFAttrs = $jsonFAttrsHeader = '[]';
 		$mae = $rae = 0;
 		$must_wait = 'NO';
+		$legacy_params = "";
+		$is_legacy = 0;
 		try
 		{
 			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
@@ -84,8 +86,11 @@ class MLFindAttributesController extends AbstractController
 
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
-			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
-			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen, $db);
+			if (!$instructions)
+			{
+				$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
+				$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen, $db);
+			}
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
@@ -142,9 +147,12 @@ class MLFindAttributesController extends AbstractController
 					$query = "SELECT legacy FROM aloja_ml.learners WHERE id_learner='".$current_model."';";
 					$result = $dbml->query($query);
 					$row = $result->fetch();
-					$legacy_params = "";
-					if ($row['legacy'] == 1) $legacy_params .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
-					if ($row['legacy'] == 1) $legacy_params .= ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					if ($row['legacy'] == 1) 
+					{
+						$legacy_params .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+						$legacy_params .= ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+						$is_legacy = 1;
+					}
 
 					// Retrieve file model from DB
 					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";

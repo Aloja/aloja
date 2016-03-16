@@ -218,13 +218,13 @@ class MLNewconfigsController extends AbstractController
 				// dump the result to csv
 				$file_header = "";
 				$legacy_options = "";
-				$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
+ 				$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
 			    	$rows = $db->get_rows ( $query );
 				if (empty($rows))
 				{
 					// Try legacy
 					$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
-					$legacy_options = ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					$legacy_options .= ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
 				    	$rows = $db->get_rows ( $query );
 					if (empty($rows))
 					{
@@ -253,18 +253,28 @@ class MLNewconfigsController extends AbstractController
 				{
 					exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
 				}
-				$command = getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\''.$vin.'\' >debug1.txt 2>&1 && ';
+				$command = 'cd '.getcwd().'/cache/ml; ../../resources/aloja_cli.r -d '.$cache_ds.' -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."F").':vin=\''.$vin.'\' >'.md5($config).'-debug1.txt 2>&1 && ';
 				$count = 1;
 				foreach ($instances as $inst)
 				{
-					$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$inst.'\':saveall='.md5($config."D").'-'.($count++).':vin=\''.$vin.'\''.$legacy_options.' >>debug2.txt 2>&1 && ';
+					$command = $command.'../../resources/aloja_cli.r -m aloja_predict_instance -l '.md5($config."F").' -p inst_predict=\''.$inst.'\':saveall='.md5($config."D").'-'.($count++).':vin=\''.$vin.'\''.$legacy_options.' >>'.md5($config).'-debug2.txt 2>&1 && ';
 				}
-				$command = $command.' head -1 '.md5($config."D").'-1-dataset.data >'.md5($config."D").'-dataset.data 2>>debug2-1.txt && ';				
-				$command = $command.' cat '.md5($config."D").'*-dataset.data >'.md5($config."D").'-aux.data 2>>debug2-1.txt && ';
-				$command = $command.' grep -v "ID" '.md5($config."D").'*-aux.data >>'.md5($config."D").'-dataset.data 2>>debug2-1.txt && ';
-				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\''.$vin.'\' >debug3.txt 2>&1 && ';
-				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >debug4.txt 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin" >debug4.tmp 2>&1 &';
-				exec($command);
+				$command = $command.' head -1 '.md5($config."D").'-1-dataset.data >'.md5($config."D").'-dataset.data 2>>'.md5($config).'-debug2-1.txt && ';				
+				$command = $command.' cat '.md5($config."D").'*-dataset.data >'.md5($config."D").'-aux.data 2>>'.md5($config).'-debug2-1.txt && ';
+				$command = $command.' grep -v "ID" '.md5($config."D").'*-aux.data >>'.md5($config."D").'-dataset.data 2>>'.md5($config).'-debug2-1.txt && ';
+				$command = $command.'../../resources/aloja_cli.r -d '.md5($config."D").'-dataset.data -m '.$learn_method.' -p '.$learn_options.':saveall='.md5($config."M").':vin=\''.$vin.'\' >'.md5($config).'-debug3.txt 2>&1 && ';
+				$command = $command.'../../resources/aloja_cli.r -m aloja_minimal_instances -l '.md5($config."M").' -p saveall='.md5($config.'R').':kmax=200 >'.md5($config).'-debug4.txt 2>&1; rm -f '.md5($config).'.lock; touch '.md5($config).'.fin';
+
+				//Put $command in a script. Set the script to execute in queue
+				$file_script = '/run/shm/'.md5($config).'-script.sh';
+				$fp2 = fopen($file_script, 'w');
+				fwrite($fp2, "#!/bin/bash\n");
+				fwrite($fp2, $command);
+				fclose($fp2);
+				exec('chmod a+x '.$file_script);
+
+				$command_script = getcwd().'/resources/queue -c "'.$file_script.'" >'.md5($config).'-debug0.tmp 2>&1 &';
+				exec($command_script);
 
 				sleep(2);
 			}
@@ -449,6 +459,8 @@ class MLNewconfigsController extends AbstractController
 				exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.csv');
 				exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.dat');
 				exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.fin');
+				exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.txt');
+				exec('rm -f /run/shm/'.md5($config).'*.sh');
 			}
 
 			// Retrieve minconfig progression results from DB

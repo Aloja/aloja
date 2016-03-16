@@ -1200,8 +1200,8 @@ aloja_outlier_dataset <- function (learned_model, vin = NULL, ds = NULL, sigma =
 
 	# Compilation of errors (learning)
 	auxerror <- abs(auxjoin[,vout] - auxjoin[,"Pred"]);
-	stdev_err <- sd(auxerror);
-	mean_err <- mean(auxerror);
+	stdev_err <- sd(auxerror,na.rm=TRUE);
+	mean_err <- mean(auxerror,na.rm=TRUE);
 
 	# Vectorization and Pre-calculation [Optimization]
 	thres1 <- mean_err + (stdev_err * sigma);

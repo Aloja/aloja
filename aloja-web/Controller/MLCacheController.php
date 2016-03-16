@@ -91,6 +91,9 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.resolutions WHERE id_resolution='".$_GET['rmr']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a resolution from DB');
 
+				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rmr']."' AND type='resolution'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
+
 				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmr'].'*';
 				$output[] = shell_exec($command);
  			}

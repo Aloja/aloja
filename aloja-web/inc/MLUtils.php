@@ -606,7 +606,7 @@ class MLUtils
 			'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 			'replication' => 'Rep','iofilebuf' => 'IO.FBuf','CONCAT("Cmp",comp)' => 'Comp','blk_size' => 'Blk.size','CONCAT("Cl",e.id_cluster)' => 'Cluster',
 			'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM','provider' => 'Provider','vm_size' => 'VM.Size',
-			'type' => 'Type','bench_type' => 'Bench.Type','hadoop_version'=>'Hadoop.Version','IFNULL(datasize,0)' =>'Datasize','scale_factor' => 'Scale.Factor'
+			'type' => 'Type','bench_type' => 'Bench.Type','CONCAT("V",LEFT(REPLACE(hadoop_version,"-",""),1))'=>'Hadoop.Version','IFNULL(datasize,0)' =>'Datasize','scale_factor' => 'Scale.Factor'
 		);
 		$headers = array_keys($header_names);
 		$names = array_values($header_names);
