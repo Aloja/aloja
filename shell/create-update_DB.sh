@@ -25,6 +25,7 @@ logger "INFO: Creating/Updating DB aloja2"
 source "$CUR_DIR/common/create_db.sh"
 logger "INFO: Creating/Updating DB aloja_ml"
 source "$CUR_DIR/common/create_mlschema.sh"
+source "$CUR_DIR/common/update_mlschema.sh"
 logger "INFO: Regenerating presets"
 source "$CUR_DIR/common/create_presets_schema.sh"
 
