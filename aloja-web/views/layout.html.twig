@@ -167,8 +167,8 @@
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlminconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlminconfigs') }}">Minimal Configurations</a></li>
 				<li {% if selected is defined and selected == 'mlnewconfigs' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlnewconfigs') }}">New Cluster Configurations</a></li>
-				<li class="divider"></li>
-				<li {% if selected is defined and selected == 'mlcrossvar3dfa' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3dfa') }}">Predicted-Space Visualization</a></li>
+				<!--<li class="divider"></li>
+				<li {% if selected is defined and selected == 'mlcrossvar3dfa' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar3dfa') }}">Predicted-Space Visualization</a></li>-->
 				{% if not PROD %}
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlclearcache' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlclearcache') }}">Clear Cache ML</a></li>
