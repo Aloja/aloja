@@ -19,8 +19,7 @@ get_hadoop_config_folder() {
 }
 
 set_hadoop_config_folder() {
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS
-    $(get_hadoop_config_folder)"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $(get_hadoop_config_folder)"
 }
 
 # Sets the required files to download/copy

@@ -91,8 +91,7 @@ execute_hive(){
 
 initialize_hive_vars() {
 
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS
-hive_conf_template"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
 
   if [ "$clusterType" == "PaaS" ]; then
     HIVE_HOME="/usr/bin/hive"
