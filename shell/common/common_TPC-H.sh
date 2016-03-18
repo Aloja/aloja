@@ -1,6 +1,9 @@
 # Common functions for different TPC-H implementations
 # Based on Hadoop and Hive
 
+source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
+set_hive_requires
+
 [ ! "$TPCH_SCALE_FACTOR" ] &&  TPCH_SCALE_FACTOR=2 #2 GB min size
 BENCH_DATA_SIZE="$((TPCH_SCALE_FACTOR * 1024 * 1024 * 1024))" #in bytes
 
@@ -16,7 +19,7 @@ TPCH_DB_NAME="tpch_${BENCH_FILE_FORMAT}_${TPCH_SCALE_FACTOR}"
 
 
 D2F_folder_name="D2F-Bench-master"
-BENCH_REQUIRED_FILES["$D2F_folder_name"]="https://github.com/Aloja/D2F-Bench/archive/master.zip"
+BENCH_REQUIRED_FILES["$D2F_folder_name"]="http://github.com/Aloja/D2F-Bench/archive/master.zip"
 D2F_local_dir="$(get_local_apps_path)/$D2F_folder_name"
 
 
@@ -27,6 +30,19 @@ benchmark_suite_config() {
 
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
+}
+
+benchmark_suite_run() {
+  logger "INFO: Running $BENCH_SUITE"
+
+  tpc-h_datagen
+
+  for query in $BENCH_LIST ; do
+    logger "INFO: RUNNING $query"
+    execute_query_pig "$query"
+  done
+
+  logger "INFO: DONE executing $BENCH_SUITE"
 }
 
 # Build the datagen from sources, it should only be needed the first time the bench is run

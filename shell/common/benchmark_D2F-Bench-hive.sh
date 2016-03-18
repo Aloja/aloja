@@ -1,15 +1,11 @@
 # TPC-H benchmark from Todor Ivanov https://github.com/t-ivanov/D2F-Bench/
 # Hive version
 # Benchmark to test Hive installation and configurations
-source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
-set_hive_requires
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_TPC-H.sh"
 
 benchmark_suite_run() {
   logger "INFO: Running $BENCH_SUITE"
-
-logger "DEBUG: -------------- $BENCH_DATA_SIZE BD"
 
   tpc-h_datagen
 
