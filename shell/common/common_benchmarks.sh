@@ -1105,7 +1105,7 @@ get_local_file() {
 rsync_extenal() {
   if [ "$remoteFileServer" ] ; then
     local job_folder="$1"
-    local job_folder_full_path="$(get_repo_path)/jobs_$clusterName/$job_folder"
+    local job_folder_full_path="$(get_repo_path)jobs_$clusterName/$job_folder"
 
     if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
