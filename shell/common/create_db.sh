@@ -916,6 +916,7 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   \`WRONG_REDUCE\` bigint(20) DEFAULT NULL,
   \`CHECKSUM\` varchar(255) DEFAULT NULL,
   \`NUM_FAILED_MAPS\` varchar(255) DEFAULT NULL,
+  \`DATA_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
 
 \`job_name\` varchar(255) DEFAULT NULL,
 \`CREATED_FILES\` bigint(20) DEFAULT NULL,
@@ -1058,7 +1059,7 @@ $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_REDUCES\` bigint
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`USER\` varchar(255) DEFAULT NULL;"
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`VCORES_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`VCORES_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
-
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`DATA_LOCAL_MAPS\` bigint(20) DEFAULT NULL;"
 
 
 $MYSQL "alter table aloja2.clusters  add column cost_remote int DEFAULT 0"
