@@ -491,7 +491,7 @@ $node_output"
 
 # Tests if defined nodes are accesible vis SSH
 test_nodes_connection() {
-  logger "INFO: INFO: Testing connectivity to nodes"
+  logger "INFO: Testing connectivity to nodes"
   if test_nodes "hostname" ; then
     logger "INFO: INFO: All $(get_num_nodes) nodes are accesible via SSH"
   else
