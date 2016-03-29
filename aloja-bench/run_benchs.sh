@@ -73,6 +73,9 @@ if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
   logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
 fi
 
+# Check if and rsync result to external source
+rsync_extenal "$JOB_NAME"
+
 if [ "$BENCH_LEAVE_SERVICES" ] ; then
  logger "INFO: Printing exports needed to use running services.  You might need them not only in the master node."
  print_exports
