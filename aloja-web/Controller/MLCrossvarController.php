@@ -226,8 +226,8 @@ class MLCrossvarController extends AbstractController
 			$count_var1 = $count_var2 = 0;
 			$categories1 = $categories2 = '';
 
-			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
-			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","hadoop_version","scale_factor"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","hadoop_version","scale_factor"));
 
 			foreach ($rows as $row)
 			{
@@ -295,10 +295,7 @@ class MLCrossvarController extends AbstractController
 		$must_wait = 'NO';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 			$db = $this->container->getDBUtils();
 		    	
 			$this->buildFilters(array(
@@ -310,8 +307,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
-							'datasize','scale_factor',
-							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
+							'datasize','scale_factor','provider','vm_OS','exe_time','pred_time');
 					},
 					'beautifier' => function($value) {
 						$labels = array('bench' => 'Benchmark','net' => 'Network','disk' => 'Disk',
@@ -322,7 +318,7 @@ class MLCrossvarController extends AbstractController
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
 							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Execution time',
-							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps');
+							'pred_time' => 'Prediction time');
 
 						return $labels[$value];
 					},
@@ -339,8 +335,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
-							'datasize','scale_factor',
-							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
+							'datasize','scale_factor','provider','vm_OS','exe_time','pred_time');
 					},
 					'beautifier' => function($value) {
 						$labels = array('bench' => 'Benchmark','net' => 'Network','disk' => 'Disk',
@@ -351,8 +346,7 @@ class MLCrossvarController extends AbstractController
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
 							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
-							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
-						);
+							'pred_time' => 'Prediction time');
 
 						return $labels[$value];
 					},
@@ -450,10 +444,12 @@ class MLCrossvarController extends AbstractController
 			{
 				if ($param_predict == 1)
 				{
-					$whereClauseML = str_replace("exe_time","pred_time",$where_configs);
+					$whereClauseML = str_replace("e.exe_time","p.pred_time",$where_configs);
 					$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
 					$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
-						FROM aloja_ml.predictions as p
+						FROM aloja_ml.pred_execs AS e LEFT JOIN (
+							SELECT id_pred_exec, instance, id_learner, pred_time FROM aloja_ml.predictions
+						) AS p ON p.id_pred_exec = e.id_prediction
 						WHERE p.id_learner ='".$current_model."' ".$whereClauseML."
 						GROUP BY p.instance
 						ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
@@ -514,8 +510,8 @@ class MLCrossvarController extends AbstractController
 			$count_var1 = $count_var2 = 0;
 			$categories1 = $categories2 = '';
 
-			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
-			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","hadoop_version","scale_factor"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","hadoop_version","scale_factor"));
 
 			foreach ($rows as $row)
 			{
@@ -597,10 +593,7 @@ class MLCrossvarController extends AbstractController
 		$must_wait = 'NO';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 			$db = $this->container->getDBUtils();
 
 			$this->buildFilters(array(
@@ -612,8 +605,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
-							'datasize','scale_factor',
-							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
+							'datasize','scale_factor','provider','vm_OS','exe_time','pred_time');
 					},
 					'beautifier' => function($value) {
 						$labels = array('bench' => 'Benchmark','net' => 'Network','disk' => 'Disk',
@@ -624,7 +616,7 @@ class MLCrossvarController extends AbstractController
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
 							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
-							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps');
+							'pred_time' => 'Prediction time');
 
 						return $labels[$value];
 					},
@@ -640,8 +632,7 @@ class MLCrossvarController extends AbstractController
 						return array('bench','net','disk','maps','iosf','replication',
 							'iofilebuf','comp','blk_size','id_cluster','datanodes',
 							'bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version',
-							'datasize','scale_factor',
-							'provider','vm_OS','exe_time','pred_time','TOTAL_MAPS');
+							'datasize','scale_factor','provider','vm_OS','exe_time','pred_time');
 					},
 					'beautifier' => function($value) {
 						$labels = array('bench' => 'Benchmark','net' => 'Network','disk' => 'Disk',
@@ -652,8 +643,7 @@ class MLCrossvarController extends AbstractController
 							'vm_RAM' => 'VM RAM','type' => 'Cluster type','hadoop_version' => 'Hadoop Version',
 							'datasize' => 'Data Size','scale_factor' => 'Scale Factor',
 							'provider' => 'Provider','vm_OS' => 'VM OS','exe_time' => 'Exeuction time',
-							'pred_time' => 'Prediction time','TOTAL_MAPS' => 'Total execution maps',
-						);
+							'pred_time' => 'Prediction time');
 
 						return $labels[$value];
 					},
@@ -777,10 +767,12 @@ class MLCrossvarController extends AbstractController
 			}
 
 			// Get stuff from the DB
-			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(e.pred_time) as V3, e.instance
-				FROM aloja_ml.predictions as e
-				WHERE e.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
-				GROUP BY e.instance
+			$query="SELECT ".$cross_var1." AS V1, ".$cross_var2." AS V2, AVG(p.pred_time) as V3, p.instance
+				FROM aloja_ml.pred_execs AS e LEFT JOIN (
+					SELECT id_pred_exec, instance, id_learner, pred_time FROM aloja_ml.predictions
+				) AS p ON p.id_pred_exec = e.id_prediction
+				WHERE p.id_learner ".(($current_model != '')?"='".$current_model."'":"IN (SELECT id_learner FROM aloja_ml.trees WHERE model='".$model_info."')").$where_configs."
+				GROUP BY p.instance
 				ORDER BY RAND() LIMIT 5000;"; // FIXME - CLUMPSY PATCH FOR BYPASS THE BUG FROM HIGHCHARTS... REMEMBER TO ERASE THIS LINE WHEN THE BUG IS SOLVED
 	  	  	$rows = $db->get_rows($query);
 			if (empty($rows))
@@ -794,8 +786,8 @@ class MLCrossvarController extends AbstractController
 			$count_var1 = $count_var2 = 0;
 			$categories1 = $categories2 = '';
 
-			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
-			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","scale_factor"));
+			$var1_categorical = in_array($cross_var1, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","hadoop_version","scale_factor"));
+			$var2_categorical = in_array($cross_var2, array("net","disk","bench","vm_OS","provider","vm_size","type","bench_type","hadoop_version","scale_factor"));
 			foreach ($rows as $row)
 			{
 				$entry = array();

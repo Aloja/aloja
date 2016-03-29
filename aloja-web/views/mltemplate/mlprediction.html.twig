@@ -136,7 +136,7 @@
 	    		        },
 	    		        series: [
 					{name: 'Exe time', color: 'rgba(223, 83, 83, .5)', data: {{ jsonExecs | raw }}	},
-					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[50, 50], [{{max_p|raw}}, {{max_p|raw}}]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
+					{type: 'line', name: 'Regression Line', showInLegend: false, color: '#AAA', data: [[{{min_p|raw}},{{min_p|raw}}], [{{max_p|raw}}, {{max_p|raw}}]], marker: {enabled: false}, states: {hover: {lineWidth: 0}}, enableMouseTracking: false }
 				]
 			});
 		}
