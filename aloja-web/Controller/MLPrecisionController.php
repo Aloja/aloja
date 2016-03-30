@@ -24,10 +24,7 @@ class MLPrecisionController extends AbstractController
 		$jsonPrecexps = $jsonPrecexpsHeader = '[]';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-		        $dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-		        $dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 		    	$db = $this->container->getDBUtils();
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
@@ -44,7 +41,7 @@ class MLPrecisionController extends AbstractController
 			$where_configs = $this->filters->getWhereClause();
 			$where_configs = str_replace("AND .","AND ",$where_configs);
 
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','bench_type','vm_size','vm_cores','vm_RAM','type','hadoop_version','provider','vm_OS'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -63,7 +60,7 @@ class MLPrecisionController extends AbstractController
 			$tmp_result = $is_cached_mysql->fetch();
 			$is_cached = ($tmp_result['num'] > 0);
 
-			$eval_names = array('Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Hadoop.Version');
+			$eval_names = array('Cl.Name','Datanodes','Headnodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Hadoop.Version','Datasize','Scale.Factor');
 
 			$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
 			$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.fin');
@@ -71,13 +68,8 @@ class MLPrecisionController extends AbstractController
 			if (!$is_cached && !$in_process && !$finished_process)
 			{
 				// get headers for csv
-				$header_names = array(
-					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
-					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
-					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
-					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version'=>'Hadoop.Version',
-					'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
-				);
+				$header_names = array();
+				MLUtils::getSimpleHeaders ($header_names);
 
 			    	// dump the result to csv
 			    	$query = "SELECT ".implode(",",array_keys($header_names))." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster LEFT JOIN aloja_ml.predictions p USING (id_exec) WHERE e.hadoop_version IS NOT NULL".$where_configs.";";
@@ -101,7 +93,6 @@ class MLPrecisionController extends AbstractController
 					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_diversity -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-D-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -d '.md5($config).'-cache.csv -m aloja_precision_split -p vdisc="'.$name.'":noout=1:json=1 -v > '.md5($config).'-P-'.$name.'.tmp 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 				}
-
 			}
 			$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/ml/'.md5($config).'-*.lock | wc -w ') == 2*count($eval_names));
 
@@ -185,7 +176,7 @@ class MLPrecisionController extends AbstractController
 				$jsonDiversity = str_replace("aceback available","",$jsonDiversity);
 				$jsonDiversity = str_replace(",",",",$jsonDiversity);
 
-				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Target','Exe.Time','Support');
+				$header = array('Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Datasize','Scale.Factor','Target','Exe.Time','Support');
 				$jsonHeaderDiv = '[';
 				foreach ($header as $title)
 				{

@@ -72,3 +72,8 @@ mlobstrees:
     pattern: "/mlobstrees"
     controller: "alojaweb\\Controller\\MLFindAttributesController::mlobservedtreesAction"
     screenName: "mlobstrees"
+
+mlvariableweight:
+    pattern: "/mlvariableweight"
+    controller: "alojaweb\\Controller\\MLWeightController::mlvariableweightAction"
+    screenName: "mlvariableweight"

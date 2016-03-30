@@ -1,5 +1,5 @@
 # Josep Ll. Berral-García
-# ALOJA-BSC-MSR hadoop.bsc.es
+# ALOJA-BSC-MSR aloja.bsc.es
 # 2015-07-14
 # Comparision functions library for ALOJA-ML
 
@@ -7,7 +7,7 @@
 # Precision and comparision tools                                             #
 ###############################################################################
 
-aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
+aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3, saveall = NULL, ...)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(noout)) noout <- as.integer(noout);
@@ -47,31 +47,41 @@ aloja_precision <- function (ds, vin, vout, noout = 0, sigma = 3)
 	}
 	colnames(retval) <- c("Diversity","Population","Unprecision","Stats [Mean]","Stats [StDev]","Stats [Max]","Stats [Min]");
 
+	if (!is.null(saveall))
+	{
+		write.table(retval, file = paste(saveall,"-precision.data",sep=""), sep = ",", row.names=FALSE);
+	}
+
 	retval;
 }
 
-aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, json = 0)
+aloja_precision_split <- function (ds, vin, vout, vdisc, noout = 0, sigma = 3, json = 0, saveall = NULL, ...)
 {
 	if (!is.integer(json)) json <- as.integer(json);
+
+	if (vdisc %in% vin) vin <- vin[!(vin %in% vdisc)];
 
 	auxlist <- list();
 	for (i in unique(ds[[vdisc]]))
 	{
 		auxlist[[as.character(i)]] <- aloja_precision(ds[ds[,vdisc]==i,],vin,vout,noout=noout, sigma=sigma);	
 	}
-	retval <- do.call(rbind.data.frame, auxlist);
+	prectable <- do.call(rbind.data.frame, auxlist);
 
-	if (json > 0)
+	h <- apply(prectable,1,function(i) paste("'",paste(i,collapse="','"),"'",sep=""));
+	j <- sapply(names(h),function(i) paste("['",i,"',",h[i],"]",sep=""));
+	precjson <- paste("[",paste(j,collapse=","),"]",sep="");
+
+	if (!is.null(saveall))
 	{
-		h <- apply(retval,1,function(i) paste("'",paste(i,collapse="','"),"'",sep=""));
-		j <- sapply(names(h),function(i) paste("['",i,"',",h[i],"]",sep=""));
-		retval <- paste("[",paste(j,collapse=","),"]",sep="");
+		write.table(prectable, file = paste(saveall,"-precsplit.data",sep=""), sep = ",", row.names=FALSE);
+		write(precjson, file = paste(saveall,"-precsplit.json",sep=""));
 	}
 
-	retval;
+	if (json > 0) { return(precjson); } else { return(prectable); }
 }
 
-aloja_reunion <- function (ds, vin, vout, ...)
+aloja_reunion <- function (ds, vin, ...)
 {
 	retval <- list();
 
@@ -79,10 +89,10 @@ aloja_reunion <- function (ds, vin, vout, ...)
 
 	if (nrow(ds) > 1)
 	{
-		ds_ord <- ds[do.call("order", ds[vin]),];
+		ds_ord <- ds[do.call("order", ds[,vin]),];
 
 		numsets <- 0;
-		auxid1 <- ds_ord[1,vout];
+		auxid1 <- ds_ord[1,"ID"];
 		for (i in 2:nrow(ds_ord))
 		{
 			if (all(ds_ord[i-1,vin] == ds_ord[i,vin]))
@@ -99,59 +109,65 @@ aloja_reunion <- function (ds, vin, vout, ...)
 					numsets <- numsets + 1;
 					retval[[numsets]] <- auxid1;
 				}
-				auxid1 <- ds_ord[i,vout];
+				auxid1 <- ds_ord[i,"ID"];
 			}
 		}
 	}
 	retval;
 }
 
-aloja_diversity <- function (ds, vin, vout, vdisc, json = 0, noout = 0, sigma = 3)
+aloja_diversity <- function (ds, vin, vout, vdisc, json = 0, noout = 0, sigma = 3, saveall = NULL, ...)
 {
 	if (!is.integer(sigma)) sigma <- as.integer(sigma);
 	if (!is.integer(noout)) noout <- as.integer(noout);
 
+	if (vdisc %in% vin) vin <- vin[!(vin %in% vdisc)];
+
 	if (noout > 0) ds <- ds[ds[,vout] < mean(ds[,vout]) + sigma * sd(ds[,vout]) & ds[,vout] > mean(ds[,vout]) - sigma * sd(ds[,vout]),];
 
 	retval <- list();
+	supcount <- NULL;
 
 	icount <- 0;
-	a <- aloja_reunion(ds,vin,vout);
+	a <- aloja_reunion(ds,vin);
 	for (i in 1:length(a))
 	{
 		if (length(unique(ds[ds$ID %in% a[[i]],vdisc])) > 1)
 		{
 			aux_common <- unique(ds[ds$ID %in% a[[i]],vin]);
-			aux_new <- t(sapply(unique(ds[ds$ID %in% a[[i]],vdisc]), function(x) c(as.character(x),mean(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,vout]),nrow(ds[ds$ID %in% a[[i]] & ds[[vdisc]] == x,]))));
+			aux_new <- t(sapply(unique(ds[ds$ID %in% a[[i]],vdisc]), function(x) c(as.character(x),mean(ds[ds$ID %in% a[[i]] & ds[,vdisc] == x,vout]),nrow(ds[ds$ID %in% a[[i]] & ds[,vdisc] == x,]))));
 
 			res <- cbind(aux_common, aux_new);
 			colnames(res) <- c(vin,vdisc,vout,"Support");
 
 			icount <- icount + 1;
 			retval[[icount]] <- res;
+			supcount <- c(supcount, max(as.numeric(as.character(res$Support))));
 		}
 	}
+	if (length(supcount) > 0) retval <- retval[order(as.vector(supcount),decreasing=T)];
 
-	retval <- retval[order(sapply(1:length(retval),function(x) max(as.numeric(as.character(retval[[x]]$Support)))),decreasing=T)];
-
-	if (json > 0)
+	retjson <- NULL;
+	if (length(retval) > 0)
 	{
-		if (length(retval) > 0)
+		auxvar1 <- retval;
+		for (i in 1:length(auxvar1))
 		{
-			auxvar1 <- retval;
-			retval <- NULL;
-			for (i in 1:length(auxvar1))
-			{
-				a <- apply(auxvar1[[i]],1,function(x) paste("'",paste(as.character(x),collapse="','"),"'",sep=""));
-				auxinst <- paste("[",paste("[",paste(a,collapse="],["),"]",sep=""),"]",sep="");
-				retval <- c(retval,auxinst);
-			}
-			retval <- paste("[",paste(retval,collapse=","),"]",sep="");
-		} else {
-			retval <- "[]";
+			a <- apply(auxvar1[[i]],1,function(x) paste("'",paste(as.character(x),collapse="','"),"'",sep=""));
+			auxinst <- paste("[",paste("[",paste(a,collapse="],["),"]",sep=""),"]",sep="");
+			retjson <- c(retjson,auxinst);
 		}
+		retjson <- paste("[",paste(retjson,collapse=","),"]",sep="");
+	} else {
+		retjson <- "[]";
 	}
 
-	retval;
+	if (!is.null(saveall))
+	{
+		aloja_save_object(retval,tagname=saveall);
+		write(retjson, file = paste(saveall,"-diversity.json",sep=""));
+	}
+
+	if (json > 0) { return(retjson); } else { return(retval); }
 }
 

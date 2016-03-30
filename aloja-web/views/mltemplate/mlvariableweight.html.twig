@@ -1,0 +1,535 @@
+{% extends "layout.html.twig" %} 
+{% block stylesheet %} {{ parent() }}
+	<style type="text/css">
+        @import "js/datatables.new/media/css/demo_table.css";
+        @import "js/datatables.new/media/css/jquery.dataTables.css";
+        @import "js/datatables.new/extensions/ColReorder/media/css/ColReorder.css";
+        @import "js/datatables.new/extensions/TableTools/media/css/TableTools.css";
+        @import "js/datatables.new/extensions/ColVis/media/css/ColVis.css";
+        .scrollStyle
+        {
+            overflow-x: auto;
+	    float: left;
+            width: 100%;
+        }
+	</style>
+{% endblock %}
+{% block content %}
+	<div id="jsonError" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
+		<p></p>
+	</div>
+	<div id="introduction" style="float: left; width: 100%;">
+		<p style="text-align:justify"><b>Feature Relevance</b>: This tool displays the relevance of features (e.g. maps, disk, net...) in relation to the Executions Time from the selected executions.</p>
+		<hr />
+	</div>
+	<div id="contentdiv" style="float: left; width: 68%;">
+
+		<div id="waitdiv" style="float: left; width: 100%;"></div>
+
+		<div id="instructions" style="float: left; width: 100%; display: none">
+			<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: justify;'>
+				<h4 class="panel-title">Instructions:</h4>
+				<table width="100%" style="border-collapse:separate; border-spacing:1em;">
+				<tr><td width='50px'>&nbsp;</td><td>This tool displays the <b>relevance of features</b> (e.g. maps, disk, net...) in relation to the Executions Time from the selected executions</td></tr>
+				<tr><td width='50px' valign="top">1 -</td><td>Select from the <b>Filters Box</b> (right box):<br/>1) The values for each attribute to select the data to examine (if no value selected, all values will be added)<br/>2) The model that will be used to classify the executions.</td></tr>
+				<tr><td width='50px' valign="top">2 -</td><td>Click on <b>Find Weights</b>, and wait until the data is processed. Take into account that the bigger the data-set selected, the longer can take to process.</td></tr>
+				<tr><td width='50px' valign="top">3 -</td><td><b>Wait</b> until the navigator refreshes, and processes the received data.</td></tr>
+				<tr><td width='50px' valign="top">4 -</td><td>Results will appear as:<br/>
+					a) A <b>table</b> displaying how each feature affects to the execution time, in average and independently of the other features.
+					In numerical features, the increment of time per each increment of the features is shown. In case of class features, a class will be taken as reference (the values for the other classes will be the difference respect the reference).<br/>
+					b) A <b>linear regression</b> approximating a fitting, and displaying the weights given per features. Note that if the relation is not linear, the error displayed will be high, and the model should be avoided.<br/>
+					c) A <b>regression tree</b> approximating a piece-wise fitting, and displaying the set of regressions. Note that if the relation is not piece-wise predictable, the error displayed will be high, and the model should be avoided.<br/>
+					d) A <b>calculator</b> for predicting configurations, based on the above created linear model and regression tree.
+				</td></tr>
+				</table>
+			</p>
+			<hr/>
+			<hr/>
+			<h4 class="panel-title">Recently slices analized: <a id="displayText" href="javascript:toggle('varweightsexpsdiv','displayText');">show</a></h4><br/> 
+			<div id="varweightsexpsdiv" style="float: left; width: 100%; display:none;">
+				<table id="varweightsexpstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+			</div>
+		</div>
+
+		<div class="row panel-group" id="stuffdivs" role="tablist" aria-multiselectable="true">
+			<div class="panel-heading" role="tab" id="headingVarweightDiv">
+				<i id="VarweightFG" data-toggle="collapse" data-parent="#stuffdivs" href="#varweightDivFilter" class="indicator glyphicon glyphicon-chevron-up pull-right"></i>
+				<h4 class="panel-title">
+					<a data-toggle="collapse" data-parent="#stuffdivs" href="#varweightDivFilter" aria-expanded="true" aria-controls="varweightDivFilter">
+						Influence of Variables
+					</a>
+				</h4>
+			</div>
+			<div id="varweightDivFilter" class="panel-collapse collapse in filtersTab" role="tabpanel" aria-labelledby="headingVarweightDiv">
+				<div class="panel-body" id="varweightdiv">
+					<h4>By paired relations:</h4>
+					<table id="varweightstable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+				</div>
+				<div class="panel-body" id="linregdiv">
+					<h4>By linear regression:</h4>
+					<table id="linregtable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+					<p>Note: variables that are "categorical" (e.g. "ETH/IB") have always a case with "-". In that case, it is just the non-application of the other cases factors.<br/>
+					   Note: If Error is bigger than variable ranges per coeficients dismiss this IMMEDIATELY, and try a more specific data-slice or follow other methods.</p>
+					<div id="linregstuff"></div>
+				</div>
+				<div class="panel-body" id="regtreediv">
+					<h4>By piece-wise regression:</h4>
+					<div class="panel-body" >
+						<script src="js/treant-js-master/vendor/raphael.js"></script>
+						<script src="js/treant-js-master/Treant.js"></script>
+
+						<link rel="stylesheet" href="js/treant-js-master/Treant.css">
+						<style type="text/css">
+						pre,form,fieldset,input,textarea,p,blockquote,th,td { margin:0; padding:0; }
+						table { border-collapse:collapse; border-spacing:0; }
+						fieldset,img { border:0; }
+						address,caption,cite,code,dfn,em,strong,th,var { font-style:normal; font-weight:normal; }
+						caption,th { text-align:left; }
+						q:before,q:after { content:''; }
+						abbr,acronym { border:0; }
+
+						body { background: #fff;  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif; }
+
+						.tree { height: 600px; width: 100%; margin: 5px; margin: 15px auto; border: 3px solid #DDD; border-radius: 3px; }
+
+						.tennis-draw { font-size: 10px; width: 100px; }
+
+						.tennis-draw.winner { height: 38px; }
+						.tennis-draw.winner .node-name { padding-left: 10px; margin-top: 1px; display: block; }
+
+						.tennis-draw .node-name { padding: 2px; white-space: pre; color: #00AFF0; }
+						.tennis-draw .node-desc { padding: 2px; color: #999; }
+
+						.tennis-draw.first-draw .node-title,
+						.tennis-draw.first-draw .node-name,
+						.tennis-draw.first-draw img { position: absolute; top: -8px; }
+						.tennis-draw.first-draw:hover img { width: 20px; top: -12px; }
+
+						.tennis-draw.first-draw { width: 165px; height: 20px; }
+						.tennis-draw.first-draw img { margin: 3px 4px 0 0; left: 25px; }
+						.tennis-draw.first-draw .node-title { margin-top: 3px; }
+						.tennis-draw.first-draw .node-name { width: 113px; padding-left: 50px; }
+						.tennis-draw.first-draw.bye .node-name { color: #999; }
+						</style>
+
+						<div class="tree" id="treedescriptor"></div>
+					</div>
+					<p>Note: Upper branch is for "YES".</p>
+					<p>Note: In class variables "&lt;0.5" means "IS NOT" (like, e.g., "HDD = 0" means "IS NOT HDD", and "HDD = 1" means "IS HDD").</p>
+					<p>Note: Values under branch are the average time of branch and the number of observations to build the branch. Values next to regression are leaf MAE and RAE.</p>
+					<br />
+					<table id="regtreetable" cellpadding="0" cellspacing="0" border="0" class="display" width="100%"><thead></thead></table>
+					<div id="regtreestuff"></div>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingCalc">
+				<i id="CalcFG" data-toggle="collapse" data-parent="#stuffdivs" href="#calcFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#calcFilter" aria-expanded="true" aria-controls="calcFilter">
+						Quick Calculator
+					</a>
+				</h4>
+			</div>
+			<div id="calcFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingCalc">
+				<div class="panel-body">
+					<p>This calculates the Execution Time from the model learned from YOUR selected data-slice from filters.</p>
+					<p>INSTRUCTIONS: Introduce (numerically) a configuration to be calculated. The class variables, e.g. "HDD", must be introduced as "0 = NO / 1 = YES"; and when selecting one, its alternatives (e.g. HDD vs SSD, HD2, ...) must be set to "0", otherwhise the calculation will be WRONG.</p>
+					<br/>
+					<form id='calcform' action="#">
+						<table width='100%'><tr>
+						<td width='50%'>
+							<table id='calctable' width='100%'></table>
+						</td><td width='50%' valign='top'>
+							<button id='calcbutton' type='button' onclick="calculate();" value='calculate' class='btn btn-primary'>Calculate</button>
+							<br/><br/>
+							<div id="calcresults" style='border:1px solid #000; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px;'>Expected Execution Time: - [LinReg]</div>
+							<br/><br/>
+							<div id="calcresults2" style='border:1px solid #000; padding-top: 10px; padding-right: 10px; padding-bottom: 10px; padding-left: 10px;'>Expected Execution Time: - [RegTree]</div>
+						</td>
+						</tr></table>
+					</form>
+				</div>
+			</div>
+
+			<div class="panel-heading" role="tab" id="headingModelInfo">
+				<i id="ModelInfoFG" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" class="indicator glyphicon glyphicon-chevron-down pull-right collapsed"></i>
+				<h4 class="panel-title">
+					<a class="collapsed" data-toggle="collapse" data-parent="#stuffdivs" href="#modelInfoFilter" aria-expanded="true" aria-controls="modelInfoFilter">
+						Model Information
+					</a>
+				</h4>
+			</div>
+			<div id="modelInfoFilter" class="panel-collapse collapse filtersTab" role="tabpanel" aria-labelledby="headingModelInfo">
+				<div class="panel-body">
+					<p>
+						<ul>
+						<li>Search cache ID: {{id_variableweight|raw}}</li>
+						<li>Instance: {{instance|raw}}</li>
+						<li>Model Info: {{model_info|raw}}</li>
+						<li>Advanced Filters: {{slice_info|raw}}</li>
+						</ul>
+					</p>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<div style="float: right; width: 30%;">
+	{% include 'common/config_filters.html.twig' %}
+	</div>
+	<div style="clear: both;"></div>
+{% endblock %}
+{% block javascript %} {{ parent() }}
+	<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/FixedHeader/js/dataTables.fixedHeader.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColReorder/js/dataTables.colReorder.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/TableTools/js/dataTables.tableTools.min.js"></script>
+	<script type="text/javascript" language="javascript" src="js/datatables.new/extensions/ColVis/js/dataTables.colVis.min.js"></script>
+	<script type="text/javascript" src="js/utils.js"></script>
+	<script type="text/javascript">
+
+	var jsondata = JSON.parse('{{ jsonData | raw }}');
+	var jsonHeader = {{ jsonHeader | raw }};
+
+	var jsonLinreg = JSON.parse('{{ jsonLinreg | raw }}');
+	var jsonRegtree = {{ jsonRegtree | raw }};
+
+	/* Parse functions */
+
+	function parsedata (data)
+	{
+		var dataarray = Object.keys(jsondata).map(function(k)
+		{
+			return Object.keys(jsondata[k]).map(function(j)
+			{
+				if (j == "Slope" && jsondata[k][j] != "")
+				{
+					var keys = Object.keys(jsondata[k][j]);
+					var slopes = keys.map(function(i) { return jsondata[k][j][i]; });
+					if (keys.indexOf("dsin") == 0) return "<li>&#955;: " + parseFloat(slopes[0]).toFixed(2) + "</li>";
+
+					var aux1 = keys.map(function(i) { return i.replace("dsin=","") + ": " + parseFloat(jsondata[k][j][i]).toFixed(2); });
+					return "<li>" + aux1.join("</li><li>") + "</li>";
+				}
+				else if (j == "Intercept" && jsondata[k][j] != "")
+				{
+					return parseFloat(jsondata[k][j]).toFixed(2);
+				}
+				else return jsondata[k][j];
+			});
+		});
+
+		var retval = [];
+		for (var i = 0; i < dataarray.length; i++)
+		{
+			if (dataarray[i][4] != "Only one Class or Value")
+			{
+				retval.push(dataarray[i]);
+			}
+		}
+		return retval;
+	}
+
+	function parsetree (tree, level = 0)
+	{
+		if (level == 0)
+		{
+			tree["text"]["desc"] = "" + parseFloat(tree["yval"]).toFixed(0) + "s (" + tree["n"] + " obs)";
+			if ("children" in tree) tree["children"] = parsetree(tree["children"], level + 1);
+		}
+		else
+		{
+			for (var i = 0; i < tree.length; i++)
+			{
+				if ("children" in tree[i])
+				{
+					tree[i]["text"]["desc"] = "" + parseFloat(tree[i]["yval"]).toFixed(0) + "s (" + tree[i]["n"] + " obs)";
+					tree[i]["children"] = parsetree(tree[i]["children"], level + 1);
+				}
+				else
+				{
+					tree[i]["text"]["desc"] = "" + parseFloat(tree[i]["yval"]).toFixed(0) + "s (" + tree[i]["n"] + " obs)";
+					tree[i]["text"]["name"] = "LR-" + tree[i]["leaf"];
+					tree[i]["text"]["name"] += " (" + parseFloat(tree[i]["mae"]).toFixed(0) + ";" + parseFloat(tree[i]["mape"]).toFixed(2) + ")";
+				}
+			}
+		}
+		return tree;
+	}
+
+	function parseLR (tree, level = 0)
+	{
+		var retval = [];
+		if (level == 0)
+		{
+			if ("children" in tree) retval = parseLR(tree["children"], level + 1);
+			else
+			{
+				raux = tree["regression"];
+				retval = [tree["leaf"]];
+				retval = [retval.concat(Object.keys(raux).map(function(i) { if (raux[i] == "NA") return "-"; else return raux[i]; }))];
+			}
+		}
+		else
+		{
+			for (var i = 0; i < tree.length; i++)
+			{
+				if ("children" in tree[i])
+				{
+					child_array = parseLR(tree[i]["children"], level + 1);
+					retval = retval.concat(child_array);
+				}
+				else
+				{
+					raux = tree[i]["regression"];
+					retaux = [tree[i]["leaf"]];
+					retval = retval.concat([retaux.concat(Object.keys(raux).map(function(i) { if (raux[i] == "NA") return "-"; else return raux[i]; }))]);
+				}
+			}
+		}
+		return retval;
+	}
+
+	function globalError (tree, target, level = 0)
+	{
+		var retval = 0;
+		if ("children" in tree)
+		{
+			for (var i = 0; i < tree["children"].length; i++)
+			{
+				retval = retval + globalError(tree["children"][i], target, level + 1);
+			}
+		}
+		else retval = parseFloat(tree[target]) * parseFloat(tree["n"]);
+
+		if (level == 0) retval = retval / parseFloat(tree["n"]);
+
+		return retval;
+	}
+
+	/* Drawing functions */
+
+	function drawpaired ()
+	{
+		var dataarray = parsedata(jsondata);
+		auxTable = $("#varweightstable").dataTable({
+			"data": dataarray,
+			"columns": jsonHeader,
+			"columnDefs": [{"targets": [4],"visible": false,"searchable": false}]
+		});
+	}
+
+	function drawlinreg ()
+	{
+		var keys = Object.keys(jsonLinreg['Regression']);
+		var coefarray = [keys.map(function(k){return (jsonLinreg['Regression'][k]=='NA')?"-":parseFloat(jsonLinreg['Regression'][k]).toFixed(2);})];
+		var headarray = [];
+		for (var i = 0; i < keys.length; i ++) headarray.push(JSON.parse('{"title":"' + keys[i] + '"}'));
+
+		linregTable = $("#linregtable").dataTable({
+			"data": coefarray,
+			"columns": headarray,
+			"sScrollX": "100%",
+			"bScrollCollapse": true,
+			"paging": false,
+			"ordering": false,
+			"info": false,
+			"searching": false
+		});
+		$('#linregstuff').append("<p><b>MAE</b>: " + jsonLinreg['MAE'] + " <b>RAE</b>: " + jsonLinreg['RAE'] + "</p>");
+		if (jsonLinreg['RAE'] > 1) $('#linregstuff').append("<p align='center' style='color:red'>&#9888; THIS DATA DOES NOT SEEM TO FOLLOW A LINEAR RELATION. DISMISS THIS LINEAR MODEL AND GUIDE YOUR EXECUTIONS BY OTHER METHODS!</p>");
+	}
+
+	function drawregtree ()
+	{
+		var ptree = parsetree(jsonRegtree);
+		var tree_structure = {
+			chart: {
+				container: "#treedescriptor",
+				levelSeparation:    15,
+				siblingSeparation:  15,
+				subTeeSeparation:   15,
+				rootOrientation: "WEST",
+				node: {
+					HTMLclass: "tennis-draw",
+					drawLineThrough: true
+				},
+				connectors: {
+					type: "straight",
+					style: { "stroke-width": 2, "stroke": "#ccc" }
+				}
+			},
+			nodeStructure: ptree
+		};
+		new Treant(tree_structure);
+
+		var keys = Object.keys(jsonLinreg['Regression']);
+		var headarray = [{title:"LinReg"}];
+		for (var i = 0; i < keys.length; i ++) headarray.push(JSON.parse('{"title":"' + keys[i] + '"}'));
+
+		var mae = globalError(jsonRegtree,"mae");
+		var rae = globalError(jsonRegtree,"mape");
+
+		regsarray = parseLR(jsonRegtree);
+		regtreeTable = $("#regtreetable").dataTable({
+			"data": regsarray,
+			"columns": headarray,
+			"columnDefs": [ { "targets": "_all", "orderable": false }, { "targets": 0, "orderable": true } ],
+			"sScrollX": "100%",
+			"bScrollCollapse": true,
+			"paging": true,
+			"info": false,
+			"searching": false
+		});
+
+		$('#regtreestuff').append("<p><b>MAE</b>: " + mae + " <b>RAE</b>: " + rae + "</p>");
+		if (rae > 1) $('#regtreestuff').append("<p align='center' style='color:red'>&#9888; THIS DATA DOES NOT SEEM TO BE PIECE-WISE PREDICTABLE. DISMISS THIS TREE MODEL AND GUIDE YOUR EXECUTIONS BY OTHER METHODS!</p>");
+	}
+
+	function drawcalculator ()
+	{
+		var keys = Object.keys(jsonLinreg['Regression']);
+		for (k in keys)
+		{
+			if (keys[k] != "(Intercept)") $('#calctable').append("<tr><td><label>"+keys[k]+"</label></td><td><input id='"+keys[k]+"-input' class='calcinput' value='0'></input></td></tr>");
+		}
+	}
+
+	/* Operating functions */
+
+	function calculate ()
+	{
+		calculate_linreg ();
+		calculate_regtree ();
+	}
+
+	function calculate_linreg ()
+	{
+		var lraux = jsonLinreg['Regression'];
+		var addition = parseFloat(lraux['(Intercept)']);
+
+		var eForm = document.forms["calcform"].getElementsByClassName("calcinput");
+		for (var i = 0; i < eForm.length; i++)
+		{
+			var value = eForm[i].value;
+			var variable = eForm[i].id.replace("-input",""); ;
+			if (lraux[variable] != 'NA') addition = addition + parseFloat(value) * parseFloat(lraux[variable]);
+		}
+		if (addition < 100) addition = '< 100'; else addition = parseFloat(addition).toFixed(0)
+		$('#calcresults')[0].innerHTML = "<p>Expected Execution Time: <b>" + addition + "</b> seconds [LinReg]";
+		$('#calcresults')[0].innerHTML += "<br>MAE: " + parseFloat(jsonLinreg['MAE']).toFixed(0) + "s RAE: " + parseFloat(jsonLinreg['RAE']).toFixed(5) + "</p>";
+	}
+
+	function calculate_regtree ()
+	{
+		var current = jsonRegtree;
+		var lraux = null;
+		var treelog = '';
+		var keep_going = true;
+		while (keep_going)
+		{
+			if ("children" in current)
+			{
+				var inputname = current['var'] + '-input';
+				var inputvalue = document.getElementById(inputname).value;
+
+				var decision = (inputvalue >= current['split']);
+				if (current['relation'] == -1) decision = !decision;
+				treelog += inputname + ': ' + inputvalue + ' ' + ((current['relation'] == -1)?'<':'>=') + ' ' + current['split'] + ' -> ' + decision + '<br>';
+				if (decision) current = current['children'][0]; else current = current['children'][1];
+			}
+			else
+			{
+				lraux = current['regression'];
+				treelog += 'Regression: Exe.Time = ' + lraux['(Intercept)'];
+				for (e in lraux) if (lraux[e] != 'NA' && e != '(Intercept)') treelog += ' + ' + e + ' * ' + lraux[e];
+				keep_going = false;
+			}
+		}
+
+		var addition = parseFloat(lraux['(Intercept)']);
+
+		var eForm = document.forms["calcform"].getElementsByClassName("calcinput");
+		for (var i = 0; i < eForm.length; i++)
+		{
+			var value = eForm[i].value;
+			var variable = eForm[i].id.replace("-input",""); ;
+			if (lraux[variable] != 'NA') addition = addition + parseFloat(value) * parseFloat(lraux[variable]);
+		}
+		if (addition < 100) addition = '< 100'; else addition = parseFloat(addition).toFixed(0)
+		$('#calcresults2')[0].innerHTML = "<p>" + treelog;
+		$('#calcresults2')[0].innerHTML += "<br>Expected Execution Time: <b>" + addition + "</b> seconds [RegTree]";
+		$('#calcresults2')[0].innerHTML += "<br>MAE: " +  parseFloat(current['mae']).toFixed(0) + "s RAE: " + parseFloat(current['mape']).toFixed(5) + " N: " + current['n'] + " observations in same branch</p>";
+	}
+
+	/* Extra functions */
+
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+
+		if (xTable) xTable.fnAdjustColumnSizing();
+	}
+
+	/* Main Loading Document */
+
+	$(document).ready(function()
+	{
+		$('jsonError').innerHTML = "<p>{{message}}</p>";
+
+		document.getElementById('submit').id = 'submitForm';
+		$('#submitForm').attr('value', 'Find Weights');
+		$("#submitForm").html('Find Weights');
+
+		$('#MLearning').parent().hide();
+
+		if ("{{instructions}}" == "YES")
+		{
+			$('#instructions').show();
+			$('#varweightDivFilter').hide(); $('#headingVarweightDiv').hide();
+			$('#calcFilter').hide(); $('#headingCalc').hide();
+			$('#modelInfoFilter').hide(); $('#headingModelInfo').hide();
+
+			var varweightsexps = {{ varweightsexps | raw }};
+			var varweightsexps_header = {{ header_varweightsexps | raw }};
+
+			if (varweightsexps != [])
+			{
+				xTable = $('#varweightsexpstable').dataTable({
+					"lengthMenu": [[5, 25, 50, 100, -1], [5, 25, 50, 100, "All"]],
+					"aaData": varweightsexps,
+					"columns": varweightsexps_header,
+					"columnDefs" : [],
+					"sScrollX": "100%",
+					"bScrollCollapse": true
+				});
+			}
+			return;
+		}
+
+		if ("{{must_wait}}"== "NO")
+		{
+			$('#waitdiv').hide();
+
+			drawpaired();
+			drawlinreg();
+			drawregtree();
+			drawcalculator();
+		}
+		else
+		{
+			$('#waitdiv')[0].innerHTML = "<p style='float: left; width: 100%; margin-top: 50px; vertical-align: middle; text-align: center; font-weight: bold; color: #000; background-color: #80ff80'>Your query is being processed. Please wait</p>";
+
+			$('#varweightDivFilter').hide(); $('#headingVarweightDiv').hide();
+			$('#calcFilter').hide(); $('#headingCalc').hide();
+			$('#modelInfoFilter').show(); $('#headingModelInfo').hide();
+
+			setInterval( function() { window.location.reload(); }, 300000 );
+		}	
+	});
+    </script>
+{% endblock %}

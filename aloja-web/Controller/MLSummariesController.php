@@ -20,12 +20,10 @@ class MLSummariesController extends AbstractController
 	public function mlsummariesAction()
 	{
 		$displaydata = $separate_feat = $instance = $model_info = $slice_info = '';
+		$param_names = $param_names_additional = array();
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 			$db = $this->container->getDBUtils();
 
 			$this->filters->removeFilters(array('upred','uobsr'));
@@ -94,7 +92,7 @@ class MLSummariesController extends AbstractController
 					'e.id_exec' => 'ID','e.bench' => 'Benchmark','e.exe_time' => 'Exe.Time','e.net' => 'Net','e.disk' => 'Disk','e.maps' => 'Maps','e.iosf' => 'IO.SFac',
 					'e.replication' => 'Rep','e.iofilebuf' => 'IO.FBuf','e.comp' => 'Comp','e.blk_size' => 'Blk.size','e.id_cluster' => 'Cluster','c.name' => 'Cl.Name',
 					'c.datanodes' => 'Datanodes','c.headnodes' => 'Headnodes','c.vm_OS' => 'VM.OS','c.vm_cores' => 'VM.Cores','c.vm_RAM' => 'VM.RAM',
-					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Type','e.bench_type' => 'Bench.Type','e.hadoop_version' => 'Hadoop.Version',
+					'c.provider' => 'Provider','c.vm_size' => 'VM.Size','c.type' => 'Service.Type','e.bench_type' => 'Bench.Type','e.hadoop_version' => 'Hadoop.Version',
 					'IFNULL(e.datasize,0)' =>'Datasize','e.scale_factor' => 'Scale.Factor'
 				);
 
