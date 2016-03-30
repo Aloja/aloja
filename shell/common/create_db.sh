@@ -1200,7 +1200,7 @@ INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,be
 select
   c.id_cluster,
   if (exec_type='DW_manual',
-      CONCAT(substring(exec, 1, locate('/', exec)),'ALL'),
+      CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
       CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL')
   ) exec2,
   'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
@@ -1208,7 +1208,7 @@ select
 from execs e join clusters c using (id_cluster)
 where bench_type = 'TPC-H' and bench != 'ALL' and c.type = 'SaaS' and exe_time > 1
 group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',1,0)
-having count(*) = 22 order by exec2; #161"
+having count(*) = 22 order by exec2;"
 
 # Fix for ML tools
 $MYSQL "UPDATE execs SET hadoop_version='0', maps=0, iosf=0, replication=1, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"

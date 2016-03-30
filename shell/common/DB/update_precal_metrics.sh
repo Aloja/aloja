@@ -1,9 +1,7 @@
-<<<<<<< HEAD
-=======
 logger "INFO: deleting incorrect values"
 $MYSQL "DELETE from aloja2.precal_cpu_metrics where \`avg%iowait\` > 100;"
 
->>>>>>> master
+
 #CPU
 logger "INFO: Updating CPU aggregates for new execs"
 
