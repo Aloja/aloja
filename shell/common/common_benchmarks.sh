@@ -565,7 +565,7 @@ set_job_config() {
   logger "INFO: Conf: $CONF"
   logger "INFO: Benchmark Suite: $BENCH_SUITE"
   logger "INFO: Benchmarks to execute: $BENCH_LIST"
-  logger "DEBUG: DSH: $DSH\n"
+  #logger "DEBUG: DSH: $DSH\n"
   #logger "INFO: DSH_C: $DSH_C"
   #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
 }
