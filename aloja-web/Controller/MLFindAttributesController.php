@@ -25,12 +25,11 @@ class MLFindAttributesController extends AbstractController
 		$jsonFAttrs = $jsonFAttrsHeader = '[]';
 		$mae = $rae = 0;
 		$must_wait = 'NO';
+		$legacy_params = "";
+		$is_legacy = 0;
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 		    	$db = $this->container->getDBUtils();
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
@@ -87,8 +86,11 @@ class MLFindAttributesController extends AbstractController
 
 			// compose instance
 			$model_info = MLUtils::generateModelInfo($this->filters,$param_names, $params, $unseen);
-			$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
-			$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen, $db);
+			if (!$instructions)
+			{
+				$instance = MLUtils::generateSimpleInstance($this->filters,$param_names, $params, $unseen);
+				$instances = MLUtils::generateInstances($this->filters,$param_names, $params, $unseen, $db);
+			}
 
 			// Model for filling
 			MLUtils::findMatchingModels($model_info, $possible_models, $possible_models_id, $dbml);
@@ -141,6 +143,17 @@ class MLFindAttributesController extends AbstractController
 
 				if (!$in_process && !$finished_process && !$is_cached)
 				{
+					// Check for Legacy
+					$query = "SELECT legacy FROM aloja_ml.learners WHERE id_learner='".$current_model."';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					if ($row['legacy'] == 1) 
+					{
+						$legacy_params .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+						$legacy_params .= ':vinst=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+						$is_legacy = 1;
+					}
+
 					// Retrieve file model from DB
 					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";
 					$result = $dbml->query($query);
@@ -154,90 +167,88 @@ class MLFindAttributesController extends AbstractController
 
 					// Run the predictor
 					exec('cd '.getcwd().'/cache/ml ; touch '.md5($config).'.lock ; rm -f '.$tmp_file);
+					if ($is_legacy == 1) exec('touch '.getcwd().'/cache/ml/'.md5($config).'.legacy');
 					$count = 1;
 					foreach ($instances as $inst)
 					{
-						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -m aloja_predict_instance -l '.$current_model.' -p inst_predict=\''.$inst.'\' -v | grep -v \'Prediction\' >>'.$tmp_file.' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
+						exec(getcwd().'/resources/queue -d -c "cd '.getcwd().'/cache/ml ; ../../resources/aloja_cli.r -m aloja_predict_instance_slice -l '.$current_model.' -p inst_predict=\''.$inst.'\':saveall=\''.md5($config).'-'.($count).'\''.$legacy_params .' 2>/dev/null; touch '.md5($config).'-'.($count++).'.lock" >/dev/null 2>&1 &');
 					}
+
 				}
 				$finished_process = ((int)shell_exec('ls '.getcwd().'/cache/ml/'.md5($config).'-*.lock | wc -w ') == count($instances));
 
 				if ($finished_process && !$is_cached)
 				{
-					// Read results and dump to DB
-					$i = 0;
-					$token = 0;
-					$token_i = 0;
-					$query_pattern = "INSERT IGNORE INTO aloja_ml.predictions (
-						id_exec,exe_time,bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,
-						id_cluster,datanodes,vm_OS,vm_cores,vm_RAM,provider,vm_size,type,bench_type,hadoop_version,
-						datasize,scale_factor,
-						net_maxtxkbs,net_maxrxkbs,net_maxtxpcks,net_maxrxpcks,net_maxtxcmps,net_maxrxcmps,net_maxrxmscts,
-						disk_maxtps,disk_maxsvctm,disk_maxrds,disk_maxwrs,disk_maxrqsz,disk_maxqusz,disk_maxawait, disk_maxutil,
-						pred_time,id_learner,instance,predict_code) VALUES ";
-					$query = $query_pattern;
-					if (($handle = fopen(getcwd().'/cache/ml/'.$tmp_file, "r")) !== FALSE)
+					if (file_exists(getcwd().'/cache/ml/'.md5($config).'.legacy')) $is_legacy = 1;
+					if ($is_legacy == 1) $legacy_params = ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+
+					shell_exec('cd '.getcwd().'/cache/ml/; head -n 1 '.md5($config).'-1-predictions.data > '.md5($config).'-predictions.data');
+					for ($i = 0; $i < count($instances); $i++)
 					{
-						while (($line = fgets($handle, 1000)) !== FALSE && $i < 1000) // FIXME - Mysql install current limitation
+						shell_exec('cd '.getcwd().'/cache/ml/; tail -n +2 '.md5($config).'-'.($i+1).'-predictions.data >> '.md5($config).'-predictions.data');
+					}
+
+					if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-predictions.data', "r")) !== FALSE)
+					{
+						$header = fgetcsv($handle, 5000, ",");
+						while (($line = fgetcsv($handle, 5000, ",")) !== FALSE)
 						{
 							if ($line=='') break;
 
-							// Fetch Real Value
-							$inst_aux = preg_split("/\s+/", $line);
-							$query_var = "SELECT AVG(exe_time) as AVG, id_exec, outlier FROM aloja_ml.predictions WHERE instance = '".$inst_aux[1]."' AND predict_code > 0";
-							$result = $dbml->query($query_var);
+							// INSERT INTO DB <INSTANCE>
+							$selected = array_merge(array_slice($line,1,10),array_slice($line,18,4));
+							$selected_inst = implode("','",$selected);
+							$selected_inst = preg_replace('/,\'Cmp(\d+)\',/',',\'${1}\',',$selected_inst);
+							$selected_inst = preg_replace('/,\'Cl(\d+)\',/',',\'${1}\',',$selected_inst);
+							$predicted = implode('',array_slice($line,-1,1));
+							$query = "INSERT IGNORE INTO aloja_ml.pred_execs (bench,net,disk,maps,iosf,replication,iofilebuf,comp,blk_size,id_cluster,bench_type,hadoop_version,datasize,scale_factor,start_time,end_time) VALUES ";
+							$query = $query."('".$selected_inst."',now(),now())";
+							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
+
+							// GET REFERENCE IDs
+							$where_clauses = '1=1';
+							$where_names = array("bench","net","disk","maps","iosf","replication","iofilebuf","comp","blk_size","id_cluster","bench_type","hadoop_version","datasize","scale_factor");
+							$selcount = 0;
+							foreach($where_names as $wn) $where_clauses = $where_clauses.' AND '.$wn.' = \''.$selected[$selcount++].'\'';
+							$where_clauses = preg_replace('/\'Cmp(\d+)\'/','\'${1}\'',$where_clauses);
+							$where_clauses = preg_replace('/\'Cl(\d+)\'/','\'${1}\'',$where_clauses);
+
+							$query = "SELECT id_prediction FROM aloja_ml.pred_execs WHERE ".$where_clauses.' LIMIT 1';
+							$result = $dbml->query($query);
 							$row = $result->fetch();
+							$predid = (is_null($row['id_prediction']))?0:$row['id_prediction'];
 
-							$realexecval = (is_null($row['AVG']) || $row['outlier'] == 2)?0:$row['AVG'];
-							$realid_exec = (is_null($row['id_exec']) || $row['outlier'] == 2)?0:$row['id_exec'];
-
-							$query_var = "SELECT count(*) as num FROM aloja_ml.predictions WHERE instance = '".$inst_aux[1]."' AND id_learner = '".$current_model."'";
-                                                        $result = $dbml->query($query_var);
-                                                        $row = $result->fetch();
-
-                                                        // Insert instance values
-                                                        if ($row['num'] == 0)
-                                                        {
-								$token_i = 1;
-								$selected_instance = preg_replace('/,Cmp(\d+),/',',${1},',$inst_aux[1]);
-								$selected_instance = preg_replace('/,Cl(\d+),/',',${1},',$selected_instance);
-								if ($token > 0) { $query = $query.","; } $token = 1;
-								$query = $query."('".$realid_exec."','".$realexecval."','".str_replace(",","','",$selected_instance)."','".$inst_aux[2]."','".$current_model."','".$inst_aux[1]."','0') ";
-							}
-
-							$i++;
-
-							if ($i % 100 == 0 && $token_i > 0)
-							{
-								if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
-								$query = $query_pattern;
-								$token = 0;
-								$token_i = 0;
-							}
-						}
-						if ($token_i > 0)
-						{
+							$query = "SELECT id_exec, AVG(exe_time) as AVG FROM aloja2.execs WHERE ".$where_clauses.' GROUP BY id_exec LIMIT 1';
+							$result = $dbml->query($query);
+							$row = $result->fetch();
+							$execid = (is_null($row['id_exec']))?0:$row['id_exec'];
+							$exectime = (is_null($row['AVG']))?0:$row['AVG'];
+							
+							// INSERT INTO DB <PREDICTION>
+							$full_instance = implode(",",array_slice($line,1,-1));
+							$current_instance = implode(",",array_slice($line,1,21));
+							$query = "INSERT IGNORE INTO aloja_ml.predictions (id_exec,id_pred_exec,exe_time,pred_time,id_learner,instance,full_instance,predict_code) VALUES ";
+							$query = $query."('".$execid."','".$predid."','".$exectime."','".$predicted."','".$current_model."','".$current_instance."','".$full_instance."',0) ";
 							if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving into DB');
 						}
+						fclose($handle);
 
 						// Descriptive Tree
-						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:dump_file="'.getcwd().'/cache/ml/'.$tmp_file.'":output=nodejson -v 2> /dev/null');
+						$tree_descriptor = shell_exec(getcwd().'/resources/aloja_cli.r -m aloja_representative_tree -p method=ordered:pred_file="'.getcwd().'/cache/ml/'.md5($config).'":output=nodejson:vout="Prediction"'.$legacy_params.' -v 2> /dev/null');
 						$tree_descriptor = substr($tree_descriptor, 5, -2);
 						$tree_descriptor = str_replace("\\\"","\"",$tree_descriptor);
 						$tree_descriptor = str_replace("desc:\"\"","desc:\"---\"",$tree_descriptor);
-						$query = "INSERT INTO aloja_ml.trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
+						$query = "INSERT IGNORE INTO aloja_ml.trees (id_findattrs,id_learner,instance,model,tree_code) VALUES ('".md5($config)."','".$current_model."','".$instance."','".$model_info."','".$tree_descriptor."')";
 
 						if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
-
-						// remove remaining locks
-						shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.lock'); 
-
-						// Remove temporal files
-						$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'.tmp');
-
-						$is_cached = true;
 					}
-					fclose($handle);
+
+					// remove remaining locks and temporal files
+					shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.lock'); 
+					shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.data');
+					shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'*.legacy');
+
+					$is_cached = true;
 				}
 
 				if (!$is_cached)
@@ -256,7 +267,11 @@ class MLFindAttributesController extends AbstractController
 				foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 				$jsonHeader = $jsonHeader.']';
 
-				$query = "SELECT @i:=@i+1 as num, instance, AVG(pred_time) as pred_time, AVG(exe_time) as exe_time FROM aloja_ml.predictions AS e, (SELECT @i:=0) d WHERE id_learner='".$current_model."' ".$where_configs." GROUP BY instance";
+				$query = "SELECT @i:=@i+1 as num, p.instance, AVG(p.pred_time) as pred_time, AVG(p.exe_time) as exe_time
+					  FROM aloja_ml.predictions AS p, aloja_ml.pred_execs as e, (SELECT @i:=0) AS d
+					  WHERE p.id_pred_exec = e.id_prediction AND p.id_learner='".$current_model."' ".$where_configs."
+					  GROUP BY p.instance";
+
 				$result = $dbml->query($query);
 				$jsonData = '[';
 				foreach ($result as $row)
@@ -350,10 +365,7 @@ class MLFindAttributesController extends AbstractController
 		$must_wait = 'NO';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 		    	$db = $this->container->getDBUtils();
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
@@ -404,7 +416,7 @@ class MLFindAttributesController extends AbstractController
 				'bench' => 'Benchmark','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
 				'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
 				'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version',
+				'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Service.Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version',
 				'IFNULL(datasize,0)' =>'Datasize','scale_factor' => 'Scale.Factor'
 			);
 			$special_header_names = array('id_exec' => 'ID','exe_time' => 'Exe.Time');
@@ -426,6 +438,8 @@ class MLFindAttributesController extends AbstractController
 				{
 					$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
 					$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
+
+					$row['bench'] = str_replace(" ","_",$row['bench']);		// Problem with ADW and ADL with spaces in tags...
 
 					$line = '';
 					foreach ($headers as $hn) $line = $line.(($line != '')?',':'').$row[$hn];
@@ -473,7 +487,8 @@ class MLFindAttributesController extends AbstractController
 						fclose($file);
 					} catch (\Exception $e) { throw new \Exception ("Error on retrieving result file. Check that R is working properly."); }
 */
-					$query = "INSERT INTO aloja_ml.observed_trees (id_obstrees,instance,model,dataslice,tree_code_split,tree_code_gain) VALUES ('".md5($config)."','".$instance."','".$model_info."','".$slice_info."','".$tree_descriptor_ordered."','".$tree_descriptor_gini."')";
+					$query = "INSERT INTO aloja_ml.observed_trees (id_obstrees,instance,model,dataslice,tree_code_split,tree_code_gain) VALUES ";
+					$query = $query."('".md5($config)."','".$instance."','".$model_info."','".$slice_info."','".$tree_descriptor_ordered."','".$tree_descriptor_gini."')";
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving tree into DB');
 
 					// Remove temporal files
@@ -542,7 +557,6 @@ class MLFindAttributesController extends AbstractController
 			'jsonHeader' => $jsonHeader,
 			'obstrees' => $jsonObstrees,
 			'header_obstrees' => $jsonObstreesHeader,
-			'message' => $message,
 			'must_wait' => $must_wait,
 			'instance' => $instance,
 			'model_info' => $model_info,

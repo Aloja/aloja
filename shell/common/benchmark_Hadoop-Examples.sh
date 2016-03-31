@@ -90,18 +90,7 @@ benchmark_suite_save() {
 }
 
 benchmark_suite_cleanup() {
-   
-  if [ "$clusterType" != "PaaS" ]; then
-    stop_hadoop
-  fi
- 
-  # Check if to leave running the Hadoop Daemons
-  if [ "$DELETE_HDFS" == "1" ] ; then
-    stop_hadoop
-  fi
-
-  logger "INFO: Cleaning up local bench dirs"
-  delete_bench_local_folder "$DISK"
+  clean_hadoop
 }
 
 # wrapper for randomtextwriter

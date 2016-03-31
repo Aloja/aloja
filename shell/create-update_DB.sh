@@ -25,6 +25,7 @@ logger "INFO: Creating/Updating DB aloja2"
 source "$CUR_DIR/common/create_db.sh"
 logger "INFO: Creating/Updating DB aloja_ml"
 source "$CUR_DIR/common/create_mlschema.sh"
+source "$CUR_DIR/common/update_mlschema.sh"
 logger "INFO: Regenerating presets"
 source "$CUR_DIR/common/create_presets_schema.sh"
 
@@ -32,7 +33,7 @@ logger "Updating aloja2.clusters  and hosts"
 
 for clusterConfigFile in $configFolderPath/cluster_* ; do
 
-  id_cluster="$(get_cluster_id "$clusterConfigFile")"
+  id_cluster="$(get_id_cluster "$clusterConfigFile")"
   logger "DEBUG: Loading $clusterConfigFile with ID $id_cluster"
 
   #TODO this check wont work for old folders with numeric values at the end, need another strategy

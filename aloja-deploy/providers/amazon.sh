@@ -30,7 +30,7 @@ export AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}"
 export AWS_DEFAULT_REGION="${awsRegion}"
 
 if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ] || [ -z "${AWS_DEFAULT_REGION}" ]; then
-  die "AWS credentials or default region not set, make sure they are defined in config"
+  logger "WARNING: AWS credentials or default region not set, make sure they are defined in config"
 fi
 
 

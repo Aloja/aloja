@@ -490,14 +490,42 @@ vm_local_scp() {
   fi
 }
 
-#$1 source files $2 destination $3 extra options
+# Rsync to a VM
+# $1 source files $2 destination $3 extra options
 #$vm_ssh_port must be set first
 vm_rsync() {
     set_shh_proxy
 
-    logger "RSynching: $1 To: $2"
+    logger "RSynching from Local dir: $1 To: $2"
     #eval is for parameter expansion  --progress --copy-links
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+}
+
+# Rsync from a VM
+# $1 source path(s)
+# $2 destination host + path
+# $3 destination port
+# $4 extra SHH options (optional)
+# $5 SHH proxy (optional)
+vm_rsync_from() {
+    local source="$1"
+    local destination="$2"
+    local destination_port="$3"
+    local extra_options="$4"
+    local proxy
+
+    if [ "$5" ] ; then
+      proxy="ProxyCommand=$5"
+    else
+      proxy="ProxyCommand=none"
+    fi
+
+    logger "RSynching from $vmName: $source To external: $destination"
+
+    #eval is for parameter expansion
+    logger "DEBUG: rsync -avur --partial --force  -e 'ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
+
+    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
 }
 
 get_master_name() {
@@ -1038,8 +1066,7 @@ check_bootstraped() {
   fi
 
   if [ $result -eq 255 ]; then
-    logger "ERROR: cannot check bootstrap file status (SSH error?)"
-    exit 1
+    die "cannot check bootstrap file status (SSH error?)"
   fi
 
   #set lock

@@ -12,7 +12,7 @@ source "$ALOJA_REPO_PATH/shell/common/include_benchmarks.sh"
 
 logger  "INFO: configs loaded, ready to start"
 
-# 2.) Validate and initialize run
+# Validate and initialize run
 
 # Check we meet basics and we can continue
 validate "$DISK"
@@ -38,21 +38,24 @@ benchmark_suite_config
 start_time=$(date '+%s')
 
 ########################################################
-logger  "INFO: Starting $BENCH_SUITE benchmark"
+logger  "INFO: Starting $BENCH_SUITE benchmark suite"
 
 # Benchmark stages
 
 benchmark_suite_run
 
+#bench suite specifics
 benchmark_suite_save
 
 logger  "INFO: $(date +"%H:%M:%S") DONE $bench"
 
-
 ########################################################
 end_time=$(date '+%s')
 
+# Clean suite specific things
 benchmark_suite_cleanup
+# Cleans the local bench folder from nodes
+clean_bench_local_folder
 
 # Save env vars and globals
 save_env "$JOB_PATH/config.sh"
@@ -66,8 +69,16 @@ if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
   logger "INFO: Auto importing run to ALOJA-WEB"
   source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
 
-  import_from_folder "$JOB_NAME" "reload_caches"
+  import_from_folder "$JOB_NAME" #"reload_caches"
   logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
+fi
+
+# Check if and rsync result to external source
+rsync_extenal "$JOB_NAME"
+
+if [ "$BENCH_LEAVE_SERVICES" ] ; then
+ logger "INFO: Printing exports needed to use running services.  You might need them not only in the master node."
+ print_exports
 fi
 
 logger "INFO: Size and path: $(du -h $JOB_PATH|tail -n 1)"
