@@ -1190,7 +1190,7 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 
 # Azure DW (SaaS)
 
-$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and (exec_type='DW_manual' OR exec_type='ADLA_manual' OR exec_type='ADLS_manual') ;"
+$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and exec_type like '%_manual';"
 
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
 
@@ -1199,15 +1199,16 @@ $MYSQL "
 INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps)
 select
   c.id_cluster,
-  if (exec_type='DW_manual',
-      CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
-      CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL')
+  if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+      (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+          CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'))
+      )
   ) exec2,
   'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
   'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',datanodes
 from execs e join clusters c using (id_cluster)
-where bench_type = 'TPC-H' and bench != 'ALL' and c.type = 'SaaS' and exe_time > 1
-group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',1,0)
+where bench_type = 'TPC-H' and bench != 'ALL' and c.type = 'SaaS' and exe_time > 0.0001
+group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',0,if (exec_type='ADLA_manual',1,2))
 having count(*) = 22 order by exec2;"
 
 # Fix for ML tools
