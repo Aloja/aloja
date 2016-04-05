@@ -1212,7 +1212,7 @@ group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',0,if (
 having count(*) = 22 order by exec2;"
 
 # Fix for ML tools
-$MYSQL "UPDATE execs SET hadoop_version='0', maps=0, iosf=0, replication=1, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"
+$MYSQL "UPDATE execs SET hadoop_version='0', iosf=0, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"
 
 
 
