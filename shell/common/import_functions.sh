@@ -381,7 +381,7 @@ ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster
 
     for nodeName in $(get_slaves_names) ; do
       sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave'
-ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
     done
 
     echo -e "$sql\n"
