@@ -376,10 +376,12 @@ ON DUPLICATE KEY UPDATE
       provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
     local nodeName="$(get_master_name)"
-    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+    sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master'
+ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
 
     for nodeName in $(get_slaves_names) ; do
-      sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+      sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave'
+ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
     done
 
     echo -e "$sql\n"
