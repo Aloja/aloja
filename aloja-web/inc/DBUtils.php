@@ -51,7 +51,7 @@ class DBUtils
     {
         $md5_sql = md5($sql.http_build_query($params, '', ','));
         $file_path = "{$this->container['config']['db_cache_path']}/CACHE_$md5_sql.sql";
-
+echo "SQL: $sql </br>\n\n";
         if ($this->container['env'] == 'dev' || $_SERVER['HTTP_HOST'] == 'localhost' || (isset($_GET['NO_CACHE']) && strlen($_GET['NO_CACHE']) > 0)) {
             $use_cache = false;
         } else {
