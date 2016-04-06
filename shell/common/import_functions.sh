@@ -720,6 +720,7 @@ get_job_confs() {
 
 #$1 job jhist $2 do not run aloja-tools.jar (already having tasks.out and globals.out)
 import_hadoop2_jhist() {
+return 1
     if [ -z $2 ]; then
         java -cp "$CUR_DIR/../aloja-tools/lib/aloja-tools.jar" alojatools.JhistToJSON $1 tasks.out globals.out
     fi
@@ -799,6 +800,7 @@ import_hadoop2_jhist() {
 
 		# TODO this loop is very slow, ading & and wait to parallelize a bit
 		for task in "${tasks[@]}" ; do
+
 			# try to pa
 			taskId="$(echo $task | sed 's/"/\ /g')" &
 			taskStatus="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out)" &
@@ -846,7 +848,11 @@ INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_e
 		done
 
     logger "DEBUG: Inserting into HDI_JOB_tasks"
-    $MYSQL "$insert_tasks"
+    #create a tmp file as command it is too long sometimes
+    local tmp_file="$(mktemp)"
+    echo -e "$insert_tasks" > "$tmp_file"
+    $MYSQL "$(< "$tmp_file")"
+    rm -f "$tmp_file"
 
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then

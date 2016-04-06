@@ -29,22 +29,22 @@ source "$CUR_DIR/common/update_mlschema.sh"
 logger "INFO: Regenerating presets"
 source "$CUR_DIR/common/create_presets_schema.sh"
 
-logger "Updating aloja2.clusters  and hosts"
+logger "INFO: Updating aloja2.clusters and hosts"
 
 for clusterConfigFile in $configFolderPath/cluster_* ; do
+  if [[ ! "$clusterConfigFile" = *"defaults.conf" ]] ; then
+    id_cluster="$(get_id_cluster "$clusterConfigFile")"
+    logger "DEBUG: Loading $clusterConfigFile with ID $id_cluster"
 
-  id_cluster="$(get_id_cluster "$clusterConfigFile")"
-  logger "DEBUG: Loading $clusterConfigFile with ID $id_cluster"
-
-  #TODO this check wont work for old folders with numeric values at the end, need another strategy
-  #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
-  if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
-    sql_tmp="$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
-    $MYSQL "$sql_tmp"
-  else
-    logger "DEBUG: Invalid config file $clusterConfigFile with ID $id_cluster"
+    #TODO this check wont work for old folders with numeric values at the end, need another strategy
+    #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
+    if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
+      sql_tmp="$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
+      $MYSQL "$sql_tmp"
+    else
+      logger "DEBUG: Invalid config file $clusterConfigFile with ID $id_cluster"
+    fi
   fi
-
 done
 
 #update filters in the whole DB (slow)

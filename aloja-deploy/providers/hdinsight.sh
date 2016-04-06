@@ -178,37 +178,37 @@ vm_final_bootstrap() {
 
 #$1 cluster name
 node_delete() {
-    if [ -z "$storageAccount" ]; then
-        storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
-    fi
+  if [ -z "$storageAccount" ]; then
+      storageAccount="$(echo $vmSize | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
+  fi
 
-    hdi_cluster_check_delete $1 "$resourceGroup"
-    azure hdinsight cluster delete -g "$resourceGroup" "$1"
-    ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
-    vm_delete_storage_account "$storageAccount" "$resourceGroup"
+  hdi_cluster_check_delete $1 "$resourceGroup"
+  azure hdinsight cluster delete -g "$resourceGroup" "$1"
+  ssh-keygen -f "/home/acall/.ssh/known_hosts" -R "$1"-ssh.azurehdinsight.net
+  vm_delete_storage_account "$storageAccount" "$resourceGroup"
 }
 
 get_master_name() {
-    nameCluster="$(echo $clusterName | cut -d- -f1)"
-    echo "hn0-$nameCluster"
+  nameCluster="$(echo $clusterName | cut -d- -f1)"
+  echo "hn0-$nameCluster"
 }
 
 get_node_names() {
-    cat /home/pristine/machines 
+  cat /home/pristine/machines
 }
 
 get_slaves_names() {
-    local nodes=`expr $numberOfNodes - 1`
-    local node_names
-    for i in `seq 0 $nodes` ; do
-        node_names="${node_names}\nworkernode${i}"
-    done
-    echo -e "$node_names"
+  local nodes="$((numberOfNodes - 1))"
+  local node_names
+  for i in $(seq 0 $nodes) ; do
+      node_names="${node_names}\nworkernode${i}"
+  done
+  echo -e "$node_names"
 }
 
 #$1 node_name, expects workernode{id}
 get_vm_id() {
-    local id=$(echo "$1" | grep -oP "[0-9]+")
-    id=`expr ${id} + 1`
-    printf %02d "$id"
+  local id="$(echo "$1" | grep -oP "[0-9]+"|head -n +1)" #head is used as grep can return more than one line
+  id="$((id + 1))"
+  printf %02d "$id"
 }
