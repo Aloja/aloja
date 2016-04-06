@@ -29,9 +29,10 @@ export AWS_ACCESS_KEY_ID="${aws_access_key_id}"
 export AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}"
 export AWS_DEFAULT_REGION="${awsRegion}"
 
-if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ] || [ -z "${AWS_DEFAULT_REGION}" ]; then
-  logger "WARNING: AWS credentials or default region not set, make sure they are defined in config"
-fi
+# This error needs to be revised to work from different starting points
+#if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ] || [ -z "${AWS_DEFAULT_REGION}" ]; then
+#  die "AWS credentials or default region not set, make sure they are defined in config"
+#fi
 
 
 awsAmi="ami-548acf3e"
