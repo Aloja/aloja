@@ -649,7 +649,7 @@ if [ ! -d '$(get_local_apps_path)/$required_file' ] ; then
   mkdir -p '$(get_local_apps_path)/';
   cd '$(get_local_apps_path)/';
   echo 'DEBUG: need to uncompress $(get_base_tarballs_path)/$base_name to $(get_local_apps_path)/$required_file';
-  if [[ '$base_name' == *'.tar.gz' ]] ; then
+  if [[ '$base_name' == *'.tar.gz' || '$base_name' == *'.tgz' ]] ; then
     tar -xzf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   elif [[ '$base_name' == *'.tar.bz2' ]] ; then
     tar -xjf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';

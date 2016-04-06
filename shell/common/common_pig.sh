@@ -20,7 +20,7 @@ get_pig_exports() {
 export PIG_VERSION='$PIG_VERSION';
 export PIG_HOME='$(get_local_apps_path)/${PIG_VERSION}';
 export PIG_CONF_DIR=$(get_local_apps_path)/${PIG_VERSION}/conf;
-export PIG_LOG_dir=$(get_local_bench_path)/pig_logs;
+export PIG_LOG_DIR=$(get_local_bench_path)/pig_logs;
 "
 
   echo -e "$to_export\n"
