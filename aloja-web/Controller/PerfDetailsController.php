@@ -147,10 +147,11 @@ class PerfDetailsController extends AbstractController
                 $where_sampling_BWM = "round(unix_timestamp/$detail)";
                 $group_by_BWM = " GROUP BY $where_sampling_BWM ORDER by unix_timestamp";
 
+                // TODO: Temporarily changing to use min(date) time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,
                 $charts[$exec] = array(
                     'job_status' => array(
                         'metric'    => "ALL",
-                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,
+                        'query'     => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.JOB_status WHERE id_exec = '$exec'))) time,
                         maps map,shuffle,merge,reduce,waste FROM aloja_logs.JOB_status
                         WHERE id_exec = '$exec' $date_where GROUP BY job_name, date ORDER by job_name, time;",
                         'fields'    => array('map', 'shuffle', 'reduce', 'waste', 'merge'),
@@ -162,7 +163,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'cpu' => array(
                         'metric'    => "CPU",
-                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%user`) `%user`, $aggr(`%system`) `%system`, $aggr(`%steal`) `%steal`, $aggr(`%iowait`)
+                        'query'     => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_cpu WHERE id_exec = '$exec'))) time, $aggr(`%user`) `%user`, $aggr(`%system`) `%system`, $aggr(`%steal`) `%steal`, $aggr(`%iowait`)
                         `%iowait`, $aggr(`%nice`) `%nice` FROM aloja_logs.SAR_cpu $where $group_by;",
                         'fields'    => array('%user', '%system', '%steal', '%iowait', '%nice'),
                         'title'     => "CPU Utilization ($aggr_text, $hosts) $exec_title ",
@@ -173,7 +174,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'load' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_load WHERE id_exec = '$exec'))) time, $aggr(`ldavg-1`) `ldavg-1`, $aggr(`ldavg-5`) `ldavg-5`, $aggr(`ldavg-15`) `ldavg-15`
                         FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('ldavg-15', 'ldavg-5', 'ldavg-1'),
                         'title'     => "CPU Load Average ($aggr_text, $hosts) $exec_title ",
@@ -184,7 +185,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'load_queues' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`runq-sz`) `runq-sz`, $aggr(`blocked`) `blocked`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_load WHERE id_exec = '$exec'))) time, $aggr(`runq-sz`) `runq-sz`, $aggr(`blocked`) `blocked`
                         FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('runq-sz', 'blocked'),
                         'title'     => "CPU Queues ($aggr_text, $hosts) $exec_title ",
@@ -195,7 +196,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'load_tasks' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`plist-sz`) `plist-sz` FROM aloja_logs.SAR_load $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_load WHERE id_exec = '$exec'))) time, $aggr(`plist-sz`) `plist-sz` FROM aloja_logs.SAR_load $where $group_by;",
                         'fields'    => array('plist-sz'),
                         'title'     => "Number of tasks for CPUs ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'Number of tasks for CPUs '."($aggr_text, $hosts)",
@@ -205,7 +206,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'switches' => array(
                         'metric'    => "CPU",
-                        'query'     => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM aloja_logs.SAR_switches $where $group_by;",
+                        'query'     => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_switches WHERE id_exec = '$exec'))) time, $aggr(`proc/s`) `proc/s`, $aggr(`cswch/s`) `cswch/s` FROM aloja_logs.SAR_switches $where $group_by;",
                         'fields'    => array('proc/s', 'cswch/s'),
                         'title'     => "CPU Context Switches ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Context Switches'." ($aggr_text, $hosts)",
@@ -215,7 +216,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'interrupts' => array(
                         'metric'    => "CPU",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`intr/s`) `intr/s` FROM aloja_logs.SAR_interrupts $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_interrupts WHERE id_exec = '$exec'))) time, $aggr(`intr/s`) `intr/s` FROM aloja_logs.SAR_interrupts $where $group_by;",
                         'fields'    => array('intr/s'),
                         'title'     => "CPU Interrupts ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'CPU Interrupts '."($aggr_text, $hosts)",
@@ -225,7 +226,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'memory_util' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbmemfree)*1024 kbmemfree, $aggr(kbmemused)*1024 kbmemused
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_memory_util WHERE id_exec = '$exec'))) time,  $aggr(kbmemfree)*1024 kbmemfree, $aggr(kbmemused)*1024 kbmemused
                         FROM aloja_logs.SAR_memory_util $where $group_by;",
                         'fields'    => array('kbmemfree', 'kbmemused'),
                         'title'     => "Memory Utilization ($aggr_text, $hosts) $exec_title ",
@@ -236,7 +237,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'memory_util_det' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time,  $aggr(kbbuffers)*1024 kbbuffers,  $aggr(kbcommit)*1024 kbcommit, $aggr(kbcached)*1024 kbcached,
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_memory_util WHERE id_exec = '$exec'))) time,  $aggr(kbbuffers)*1024 kbbuffers,  $aggr(kbcommit)*1024 kbcommit, $aggr(kbcached)*1024 kbcached,
                         $aggr(kbactive)*1024 kbactive, $aggr(kbinact)*1024 kbinact
                         FROM aloja_logs.SAR_memory_util $where $group_by;",
                         'fields'    => array('kbcached', 'kbbuffers', 'kbinact', 'kbcommit',  'kbactive'), //
@@ -247,7 +248,7 @@ class PerfDetailsController extends AbstractController
                         'negative'  => false,
                     ),
                     //            'memory_util3' => array(
-                    //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
+                    //                'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_memory_util WHERE id_exec = '$exec'))) time, $aggr(`%memused`) `%memused`, $aggr(`%commit`) `%commit` FROM SAR_memory_util $where $group_by;",
                     //                'fields'    => array('%memused', '%commit',),
                     //                'title'     => "Memory Utilization % ($aggr_text, $hosts) $exec_title ",
                     //                'percentage'=> true,
@@ -256,7 +257,7 @@ class PerfDetailsController extends AbstractController
                     //            ),
                     'memory' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_memory WHERE id_exec = '$exec'))) time, $aggr(`frmpg/s`) `frmpg/s`, $aggr(`bufpg/s`) `bufpg/s`, $aggr(`campg/s`) `campg/s`
                     FROM aloja_logs.SAR_memory $where $group_by;",
                         'fields'    => array('frmpg/s','bufpg/s','campg/s'),
                         'title'     => "Memory Stats ($aggr_text, $hosts) $exec_title ",
@@ -267,7 +268,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'io_pagging_disk' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_io_paging WHERE id_exec = '$exec'))) time, $aggr(`pgpgin/s`)*1024 `pgpgin/s`, $aggr(`pgpgout/s`)*1024 `pgpgout/s`
                                     FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('pgpgin/s', 'pgpgout/s'),
                         'title'     => "I/O Paging IN/OUT to disk ($aggr_text, $hosts) $exec_title ",
@@ -278,7 +279,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'io_pagging' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_io_paging WHERE id_exec = '$exec'))) time, $aggr(`fault/s`) `fault/s`, $aggr(`majflt/s`) `majflt/s`, $aggr(`pgfree/s`) `pgfree/s`,
                                 $aggr(`pgscank/s`) `pgscank/s`, $aggr(`pgscand/s`) `pgscand/s`, $aggr(`pgsteal/s`) `pgsteal/s`
                                     FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('fault/s', 'majflt/s', 'pgfree/s', 'pgscank/s', 'pgscand/s', 'pgsteal/s'),
@@ -290,7 +291,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'io_pagging_vmeff' => array(
                         'metric'    => "Memory",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%vmeff`) `%vmeff` FROM aloja_logs.SAR_io_paging $where $group_by;",
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_io_paging WHERE id_exec = '$exec'))) time, $aggr(`%vmeff`) `%vmeff` FROM aloja_logs.SAR_io_paging $where $group_by;",
                         'fields'    => array('%vmeff'),
                         'title'     => "I/O Paging %vmeff ($aggr_text, $hosts) $exec_title ",
                         'group_title' => 'I/O Paging %vmeff'." ($aggr_text, $hosts)",
@@ -300,7 +301,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'io_transactions' => array(
                         'metric'    => "Disk",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_io_rate WHERE id_exec = '$exec'))) time, $aggr(`tps`) `tp/s`, $aggr(`rtps`) `read tp/s`, $aggr(`wtps`) `write tp/s`
                                                         FROM aloja_logs.SAR_io_rate $where $group_by;",
                         'fields'    => array('tp/s', 'read tp/s', 'write tp/s'),
                         'title'     => "I/O Transactions/s ($aggr_text, $hosts) $exec_title ",
@@ -311,7 +312,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'io_bytes' => array(
                         'metric'    => "Disk",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_io_rate WHERE id_exec = '$exec'))) time, $aggr(`bread/s`)/(1024) `KB_read/s`, $aggr(`bwrtn/s`)/(1024) `KB_wrtn/s`
                                             FROM aloja_logs.SAR_io_rate $where $group_by;",
                         'fields'    => array('KB_read/s', 'KB_wrtn/s'),
                         'title'     => "KB R/W ($aggr_text, $hosts) $exec_title ",
@@ -323,7 +324,7 @@ class PerfDetailsController extends AbstractController
                     // All fields
                     //            'block_devices' => array(
                     //                'metric'    => "Disk",
-                    //                'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, #$aggr(`tps`) `tps`, $aggr(`rd_sec/s`) `rd_sec/s`, $aggr(`wr_sec/s`) `wr_sec/s`,
+                    //                'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_block_devices WHERE id_exec = '$exec'))) time, #$aggr(`tps`) `tps`, $aggr(`rd_sec/s`) `rd_sec/s`, $aggr(`wr_sec/s`) `wr_sec/s`,
                     //                                   $aggr(`avgrq-sz`) `avgrq-sz`, $aggr(`avgqu-sz`) `avgqu-sz`, $aggr(`await`) `await`,
                     //                                   $aggr(`svctm`) `svctm`, $aggr(`%util`) `%util`
                     //                            FROM (
@@ -348,7 +349,7 @@ class PerfDetailsController extends AbstractController
                     //            ),
                     'block_devices_util' => array(
                         'metric'    => "Disk",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`%util_SUM`) `%util_SUM`, $aggr(`%util_MAX`) `%util_MAX`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_block_devices WHERE id_exec = '$exec'))) time, $aggr(`%util_SUM`) `%util_SUM`, $aggr(`%util_MAX`) `%util_MAX`
             FROM (
                 select
                 id_exec, host, date,
@@ -366,7 +367,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'block_devices_await' => array(
                         'metric'    => "Disk",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`await_SUM`) `await_SUM`, $aggr(`await_MAX`) `await_MAX`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_block_devices WHERE id_exec = '$exec'))) time, $aggr(`await_SUM`) `await_SUM`, $aggr(`await_MAX`) `await_MAX`
                     FROM (
                     select
                     id_exec, host, date,
@@ -384,7 +385,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'block_devices_svctm' => array(
                         'metric'    => "Disk",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`svctm_SUM`) `svctm_SUM`, $aggr(`svctm_MAX`) `svctm_MAX`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_block_devices WHERE id_exec = '$exec'))) time, $aggr(`svctm_SUM`) `svctm_SUM`, $aggr(`svctm_MAX`) `svctm_MAX`
                                         FROM (
                                         select
                                         id_exec, host, date,
@@ -402,7 +403,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'block_devices_queues' => array(
                         'metric'    => "Disk",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`avgrq-sz`) `avg-req-size`, $aggr(`avgqu-sz`) `avg-queue-size`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_block_devices WHERE id_exec = '$exec'))) time, $aggr(`avgrq-sz`) `avg-req-size`, $aggr(`avgqu-sz`) `avg-queue-size`
                                         FROM (
                                         select
                                         id_exec, host, date,
@@ -455,7 +456,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'net_devices_kbs' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_net_devices WHERE id_exec = '$exec'))) time, $aggr(if(IFACE != 'lo', `rxkB/s`, NULL))/1024 `rxMB/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txMB/s_NET`
                         FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_NET', 'txMB/s_NET'),
                         'title'     => "MB/s received and transmitted ($aggr_text, $hosts) $exec_title ",
@@ -466,7 +467,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'net_devices_kbs_local' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_net_devices WHERE id_exec = '$exec'))) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxMB/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txMB/s_LOCAL`
                         FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxMB/s_LOCAL', 'txMB/s_LOCAL'),
                         'title'     => "MB/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
@@ -477,7 +478,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'net_devices_pcks' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_net_devices WHERE id_exec = '$exec'))) time, $aggr(if(IFACE != 'lo', `rxpck/s`, NULL))/1024 `rxpck/s_NET`, $aggr(if(IFACE != 'lo', `txkB/s`, NULL))/1024 `txpck/s_NET`
                                             FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxpck/s_NET', 'txpck/s_NET'),
                         'title'     => "Packets/s received and transmitted ($aggr_text, $hosts) $exec_title ",
@@ -488,7 +489,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'net_devices_pcks_local' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_net_devices WHERE id_exec = '$exec'))) time, $aggr(if(IFACE =  'lo', `rxkB/s`, NULL))/1024 `rxpck/s_LOCAL`, $aggr(if(IFACE = 'lo', `txkB/s`, NULL))/1024 `txpck/s_LOCAL`
                                             FROM aloja_logs.SAR_net_devices $where AND IFACE not IN ('') $group_by;",
                         'fields'    => array('rxpck/s_LOCAL', 'txpck/s_LOCAL'),
                         'title'     => "Packets/s received and transmitted LOCAL ($aggr_text, $hosts) $exec_title ",
@@ -499,7 +500,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'net_sockets_pcks' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`totsck`) `totsck`,
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_net_sockets WHERE id_exec = '$exec'))) time, $aggr(`totsck`) `totsck`,
                                                 $aggr(`tcpsck`) `tcpsck`,
                                                     $aggr(`udpsck`) `udpsck`,
                                                     $aggr(`rawsck`) `rawsck`,
@@ -515,7 +516,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'net_erros' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(date, '{$exec_details[$exec]['start_time']}')) time, $aggr(`rxerr/s`) `rxerr/s`,
+                        'query' => "SELECT time_to_sec(timediff(date, (select min(date) from aloja_logs.SAR_net_errors WHERE id_exec = '$exec'))) time, $aggr(`rxerr/s`) `rxerr/s`,
                                                             $aggr(`txerr/s`) `txerr/s`,
                                                             $aggr(`coll/s`) `coll/s`,
                                                             $aggr(`rxdrop/s`) `rxdrop/s`,
@@ -534,7 +535,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'bwm_in_out_total' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),(select min(date) from aloja_logs.BWM2 WHERE id_exec = '$exec'))) time,
                                                                             $aggr(`bytes_in`)/(1024*1024) `MB_in`,
                                                                                 $aggr(`bytes_out`)/(1024*1024) `MB_out`
                                                                                 FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
@@ -547,7 +548,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'bwm_packets_total' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),(select min(date) from aloja_logs.BWM2 WHERE id_exec = '$exec'))) time,
                                                                                         $aggr(`packets_in`) `packets_in`,
                                                                                         $aggr(`packets_out`) `packets_out`
                                                                                             FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
@@ -560,7 +561,7 @@ class PerfDetailsController extends AbstractController
                     ),
                     'bwm_errors_total' => array(
                         'metric'    => "Network",
-                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),'{$exec_details[$exec]['start_time']}')) time,
+                        'query' => "SELECT time_to_sec(timediff(FROM_UNIXTIME(unix_timestamp),(select min(date) from aloja_logs.BWM2 WHERE id_exec = '$exec'))) time,
                                             $aggr(`errors_in`) `errors_in`,
                                             $aggr(`errors_out`) `errors_out`
                                             FROM aloja_logs.BWM2 $where_BWM AND iface_name = 'total' $group_by_BWM;",
