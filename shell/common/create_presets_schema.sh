@@ -40,8 +40,8 @@ filter_HiBench_Terasort_WordCount_Sort_8d_2015="$filter_common&bench_type[]=HiBe
 $MYSQL "DELETE FROM filter_presets;"
 
 #benchexecs
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('All Benchmarks','Benchmark Executions','/benchexecutions?$filter_common',1,'All benchmarks are listed with this preset');"
-$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('2015+ Benchmarks','Benchmark Executions','benchexecs?datefrom=2015%2F01%2F01$filter_common',0,'All benchmarks from 2015');"
+#$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('All Benchmarks','Benchmark Executions','/benchexecutions?$filter_common',1,'All benchmarks are listed with this preset');"
+#$MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('2015+ Benchmarks','Benchmark Executions','benchexecs?datefrom=2015%2F01%2F01$filter_common',0,'All benchmarks from 2015');"
 
 #bestconfig
 $MYSQL "INSERT INTO filter_presets (short_name,selected_tool,URL,default_preset,description) VALUES ('Best from ALL','Best configuration','/bestconfig?$filter_common',1,'Best config for all executions without applying filters');"
