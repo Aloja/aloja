@@ -1107,12 +1107,12 @@ rsync_extenal() {
     local job_folder="$1"
     local job_folder_full_path="$(get_repo_path)jobs_$clusterName/$job_folder"
 
-    if [ ! -d "$job_folder_full_path" ] ; then
+#    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
       vm_rsync_from "$(get_repo_path)/jobs_$clusterName/$job_folder" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
-    else
-      logger "WARNING: path $job_folder_full_path is not a directory"
-    fi
+#    else
+#      logger "WARNING: path $job_folder_full_path is not a directory"
+#    fi
   else
     logger "DEBUG: No remote file server defined to send results"
   fi
