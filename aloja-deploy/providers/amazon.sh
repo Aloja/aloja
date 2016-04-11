@@ -322,7 +322,7 @@ cluster_final_boostrap() {
 
   logger "Getting machine/IP list for cluster ${clusterName}"
 
-  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
+  hosts_fragment=$(aws --output text ec2 describe-instances --query 'Reservations[*].Instances[?Tags[?Key == `clustername` && Value == `'"${clusterName}"'`] && State.Name != `terminated`].[PrivateDnsName,PrivateIpAddress,Placement.AvailabilityZone,Tags[?Key == `name`].Value]' | awk 'NR%2 == 0 { print prev "\t" $0; next } { prev = $0 }' | awk '{print $2, $1, $4}')
 
   old_vm=${vm_name}
 
