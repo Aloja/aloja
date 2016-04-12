@@ -986,6 +986,38 @@ time_cmd_master() {
 #  fi
 }
 
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_cmd(){
+  local bench="$1"
+  local cmd="$2"
+  local time_exec="$3"
+
+  local cmd="$(get_hive_cmd) $cmd"
+
+  # Start metrics monitor (if needed)
+  if [ "$time_exec" ] ; then
+    save_disk_usage "BEFORE"
+    restart_monit
+    set_bench_start "$bench"
+  fi
+
+  logger "DEBUG: command:\n$cmd"
+
+  # Run the command and time it
+  time_cmd_master "$cmd" "$time_exec"
+
+  # Stop metrics monitors and save bench (if needed)
+  if [ "$time_exec" ] ; then
+    set_bench_end "$bench"
+    stop_monit
+    save_disk_usage "AFTER"
+    save_bench "$bench"
+  fi
+}
+
 save_disk_usage() {
   echo "# Checking disk space with df $1" >> $JOB_PATH/disk.log
   $DSH "df -h" 2>&1 >> $JOB_PATH/disk.log
