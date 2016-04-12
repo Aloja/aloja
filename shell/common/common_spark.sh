@@ -47,8 +47,14 @@ execute_spark(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
+  local spark_cmd
 
-  local spark_cmd="$(get_spark_cmd)$cmd"
+  # if in PaaS use the bin in PATH and no exports
+  if [ "$clusterType" == "PaaS" ]; then
+    spark_cmd="$cmd"
+  else
+    spark_cmd="$(get_spark_cmd)$cmd"
+  fi
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
@@ -57,7 +63,7 @@ execute_spark(){
     set_bench_start "$bench"
   fi
 
-  logger "DEBUG: Pig command:\n$spark_cmd"
+  logger "DEBUG: Spark command:\n$spark_cmd"
 
   # Run the command and time it
   time_cmd_master "$spark_cmd" "$time_exec"
@@ -79,4 +85,10 @@ initialize_spark_vars() {
     SPARK_HOME="$(get_local_apps_path)/${SPARK_VERSION}"
     SPARK_CONF_DIR="$(get_local_apps_path)/${SPARK_VERSION}/conf"
   fi
+}
+
+# $1 bench name
+save_spark() {
+  logger "WARNING: missing to implement a proper save_spark()"
+  save_hive
 }
