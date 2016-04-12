@@ -1,5 +1,8 @@
 # Helper functions for running benchmarks
 
+#globals
+BENCH_CURRENT_NUM_RUN="0"
+
 # Outputs a list of defined benchmark suites separated by spaces
 get_bench_suites() {
   local defined_benchs=""
@@ -174,14 +177,27 @@ benchmark_suite_run() {
     # Prepare run (in case defined)
     function_call "benchmark_prepare_$bench"
 
-    # Bench Run
-    function_call "benchmark_$bench"
+    BENCH_CURRENT_NUM_RUN="1" #reset the global counter
 
-    # Validate (eg. teravalidate)
-    function_call "benchmark_validate_$bench"
+    # Iterate at least one time
+    while true; do
+      [ "$BENCH_NUM_RUNS" ] && logger "Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
+      # Bench Run
+      function_call "benchmark_$bench"
 
-    # Clean-up HDFS space (in case necessary)
-    #clean_HDFS "$bench_name" "$BENCH_SUITE"
+      # Validate (eg. teravalidate)
+      function_call "benchmark_validate_$bench"
+
+      # Clean-up HDFS space (in case necessary)
+      #clean_HDFS "$bench_name" "$BENCH_SUITE"
+
+      # Check if requested to iterate multiple times
+      if [ ! "$BENCH_NUM_RUNS" ] || [[ "$BENCH_CURRENT_NUM_RUN" -ge "$BENCH_NUM_RUNS" ]] ; then
+        break
+      else
+        BENCH_CURRENT_NUM_RUN="$((BENCH_CURRENT_NUM_RUN + 1))"
+      fi
+    done
 
   done
 
@@ -844,34 +860,50 @@ stop_monit(){
   wait #for the bg processes
 }
 
+# Return the bench name with the run number on the name
+# $1 bench_name
+get_bench_name_num() {
+  local bench_name="$1"
+
+  if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
+    echo -e "${bench_name}_$BENCH_CURRENT_NUM_RUN"
+  else
+    echo -e "$bench_name"
+  fi
+
+}
+
 # $1 bench name
 save_bench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
-  logger "INFO: Saving benchmark $1"
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_num "$bench_name")"
+
+  logger "INFO: Saving benchmark $bench_name_num"
 
   # TODO make sure the dir is created previously (sleep bench case)
-  $DSH "mkdir -p $JOB_PATH/$1;"
+  $DSH "mkdir -p $JOB_PATH/$bench_name_num;"
 
   # Save the perf mon logs
-  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
+  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$bench_name_num/ 2> /dev/null"
 
   # Move al files, but not dirs
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \; 2> /dev/null"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
   else
     logger "WARNING: Requested to leave services running, leaving local benchfiles too"
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$1/ \;"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$bench_name_num/ \;"
   fi
 
-  logger "INFO: Compresing and deleting $1"
+  logger "INFO: Compresing and deleting $bench_name_num"
 
-  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;"
+  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num;"
   #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
-  $DSH_MASTER "rm -rf $JOB_PATH/$1"
+  $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
 
-  logger "INFO: Done saving benchmark $1"
+  logger "INFO: Done saving benchmark $bench_name_num"
 }
 
 # Return the total number of nodes starting at one (to include the master node)

@@ -872,36 +872,39 @@ hadoop_delete_path() {
 #  save_hadoop "${3}${1}"
 #}
 
-# $1 bench
+# $1 bench name
 save_hadoop() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_num "$bench_name")"
+
   # Just in case make sure dir is created first
-  $DSH "mkdir -p $JOB_PATH/$1;"
+  $DSH "mkdir -p $JOB_PATH/$bench_name_num;"
 
   # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
         sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
-        hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$1"
+        hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num"
         sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
         sudo su hdfs -c "hdfs dfs -expunge"
     else
-	    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$1"
+	    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num"
 	    hdfs dfs -rm -r "/mr-history"
 	    hdfs dfs -expunge
     fi
-    $DSH "cp -r /var/log/hadoop $JOB_PATH/$1/ 2> /dev/null"
+    $DSH "cp -r /var/log/hadoop $JOB_PATH/$bench_name_num/ 2> /dev/null"
   else
     #we cannot move hadoop files
     #take into account naming *.date when changing dates
-    #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
-    #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
+    #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$bench_name_num/"
+    #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$bench_name_num/ 2> /dev/null"
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp -r $HDD/hadoop_logs/* $JOB_PATH/$1/ " #2> /dev/null
+      $DSH "cp -r $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     else
-      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$1/ " #2> /dev/null
+      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     fi
   fi
 
@@ -909,7 +912,7 @@ save_hadoop() {
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
     ##Copy history logs
     logger "INFO: Getting mapreduce job history logs from HDFS"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$1"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$bench_name_num"
     $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history"
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
@@ -921,8 +924,8 @@ save_hadoop() {
   fi
 
   if [[ "EXECUTE_HIBENCH" == "true" ]]; then
-    #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$1"
-    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$1/"
+    #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$bench_name_num"
+    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$bench_name_num/"
   fi
 
   #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
@@ -932,10 +935,10 @@ save_hadoop() {
   # Save sysstat data for instrumentation
   if [ "$INSTRUMENTATION" == "1" ] ; then
     $DSH "mkdir -p $JOB_PATH/traces"
-    $DSH "cp $JOB_PATH/$1/sar*.sar $JOB_PATH/traces/"
+    $DSH "cp $JOB_PATH/$bench_name_num/sar*.sar $JOB_PATH/traces/"
   fi
 
-  logger "INFO: Compresing and deleting hadoop configs for $1"
+  logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
 
   $DSH_MASTER "
 cd $JOB_PATH;
@@ -946,7 +949,7 @@ fi
 "
 
   # save defaults
-  save_bench "$1"
+  save_bench "$bench_name"
 }
 
 
