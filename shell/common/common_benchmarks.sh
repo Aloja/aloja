@@ -1069,6 +1069,27 @@ time_cmd_master() {
 #  fi
 }
 
+# Runs the given command in the whole clusterwrapped "in time"
+# Creates a file descriptor to return output in realtime as well as keeping it
+# in a var to extract its time
+# $1 the command
+# $2 set bench time
+time_cmd() {
+  local cmd="$1"
+  local set_bench_time="$2"
+
+  exec 9>&2 # Create a new file descriptor
+  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
+  9>&- # Close the file descriptor
+
+  # Set the accurate time to the global var
+  if [ "$set_bench_time" ] ; then
+    # TODO get for slowest node
+    BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
+    logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+  fi
+}
+
 # Performs the actual benchmark execution
 # $1 benchmark name
 # $2 command
@@ -1077,8 +1098,6 @@ execute_cmd(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
-
-  local cmd="$(get_hive_cmd) $cmd"
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
@@ -1090,7 +1109,7 @@ execute_cmd(){
   logger "DEBUG: command:\n$cmd"
 
   # Run the command and time it
-  time_cmd_master "$cmd" "$time_exec"
+  time_cmd "$cmd" "$time_exec"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
