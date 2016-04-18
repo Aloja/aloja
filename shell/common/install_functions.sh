@@ -23,7 +23,8 @@ install_packages() {
         logger "INFO: Updating repo for $vmOSType $vmOSTypeVersion"
         vm_execute "
 export DEBIAN_FRONTEND=noninteractive;
-sudo apt-get update -m;
+#sudo apt-get update -m;
+sudo apt-get update;
   " || return $?
       fi
 
