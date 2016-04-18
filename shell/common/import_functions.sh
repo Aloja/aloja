@@ -1145,6 +1145,8 @@ hit_page() {
 
 # $1 host name
 refresh_web_caches() {
+logger "WARNING: Refresh caches disabled for now... "
+return 1 #disabled for now...
   local host_name="$1"
   
   [ "$host_name" ] || die "No hostname supplied"
