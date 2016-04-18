@@ -287,25 +287,18 @@ get_master_name() {
 vm_final_bootstrap() {
   logger "Configuring nodes..."
 
-  old_vm_name=$vm_name
+#yum install --enablerepo=epel fuse-sshfs
 
-  # disable CentOS/RH's crappy tty requirement for sudo
-  logger "Disabling 'requiretty' for sudo on all machines"
-  for vm_name in $(get_node_names); do
-    logger "${vm_name}..."
-    vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers" 
-  done
+  old_vm_name=$vm_name
 
   # from here on we can use the normal vm_execute 
   logger "Installing necessary packages on all machines"
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
-    vm_execute "sudo yum -y install git rsync sshfs gawk libxml2 wget curl unzip screen;"
+    vm_execute "sudo yum install -y --enablerepo=epel git rsync sshfs gawk libxml2 wget curl unzip screen bwm-ng;"
 
     vm_execute "
-sudo chattr -i /etc/resolv.conf;
-if ! sudo grep -q 'search local' /etc/resolv.conf; then echo 'search local' | sudo tee -a /etc/resolv.conf > /dev/null; fi;
-sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
+sudo mkdir -p /mnt/aloja && sudo chown -R hadoop: /mnt/aloja;
 "    
 
     logger "Mounting disks on ${vm_name}"
@@ -313,7 +306,7 @@ sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
     vm_set_dot_files
     vm_mount_disks              # mounts ~/share on all machines
 
-    if [ "$vm_name" = "master-1" ]; then
+    if [ "$vm_name" = "$(get_master_name)" ]; then
      
       if ! vm_build_bwm_ng; then
         logger "WARNING: Cannot install bwm-ng on $vm_name"
