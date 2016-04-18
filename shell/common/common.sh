@@ -360,3 +360,9 @@ get_id_cluster(){
 
   echo -e "$id_cluster"
 }
+
+# Return only numeric part of string
+# $1 string
+only_numbers() {
+  echo -e "$(echo -e "$1"| sed 's/[^0-9]*//g')"
+}

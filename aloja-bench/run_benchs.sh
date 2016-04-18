@@ -12,7 +12,7 @@ source "$ALOJA_REPO_PATH/shell/common/include_benchmarks.sh"
 
 logger  "INFO: configs loaded, ready to start"
 
-# 2.) Validate and initialize run
+# Validate and initialize run
 
 # Check we meet basics and we can continue
 validate "$DISK"
@@ -38,7 +38,7 @@ benchmark_suite_config
 start_time=$(date '+%s')
 
 ########################################################
-logger  "INFO: Starting $BENCH_SUITE benchmark"
+logger  "INFO: Starting $BENCH_SUITE benchmark suite"
 
 # Benchmark stages
 
@@ -69,7 +69,7 @@ if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
   logger "INFO: Auto importing run to ALOJA-WEB"
   source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
 
-  import_from_folder "$JOB_NAME" "reload_caches"
+  import_from_folder "$JOB_NAME" #"reload_caches"
   logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
 fi
 

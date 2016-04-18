@@ -1,5 +1,8 @@
 # Helper functions for running benchmarks
 
+#globals
+BENCH_CURRENT_NUM_RUN="0"
+
 # Outputs a list of defined benchmark suites separated by spaces
 get_bench_suites() {
   local defined_benchs=""
@@ -154,6 +157,62 @@ get_options() {
   [ "$1" = "--" ] && shift
 
 }
+
+
+# Temple functions, reimplement in benchmark if needed
+
+benchmark_suite_config() {
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+}
+
+# Iterate the specified benchmarks in the suite
+benchmark_suite_run() {
+  logger "INFO: Running $BENCH_SUITE"
+
+  for bench in $BENCH_LIST ; do
+
+    bench_input_dir="$BENCH_SUITE/$bench/input"
+    bench_output_dir="$BENCH_SUITE/$bench/output"
+
+    # Prepare run (in case defined)
+    function_call "benchmark_prepare_$bench"
+
+    BENCH_CURRENT_NUM_RUN="1" #reset the global counter
+
+    # Iterate at least one time
+    while true; do
+      [ "$BENCH_NUM_RUNS" ] && logger "Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
+      # Bench Run
+      function_call "benchmark_$bench"
+
+      # Validate (eg. teravalidate)
+      function_call "benchmark_validate_$bench"
+
+      # Clean-up HDFS space (in case necessary)
+      #clean_HDFS "$bench_name" "$BENCH_SUITE"
+
+      # Check if requested to iterate multiple times
+      if [ ! "$BENCH_NUM_RUNS" ] || [[ "$BENCH_CURRENT_NUM_RUN" -ge "$BENCH_NUM_RUNS" ]] ; then
+        break
+      else
+        BENCH_CURRENT_NUM_RUN="$((BENCH_CURRENT_NUM_RUN + 1))"
+      fi
+    done
+
+  done
+
+  logger "INFO: DONE executing $BENCH_SUITE"
+}
+
+benchmark_suite_save() {
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+}
+
+benchmark_suite_cleanup() {
+  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+}
+
+########## END TEMPLATE FUNCTIONS
 
 loggerb(){
   stamp=$(date '+%s')
@@ -448,7 +507,7 @@ $node_output"
 
 # Tests if defined nodes are accesible vis SSH
 test_nodes_connection() {
-  logger "INFO: INFO: Testing connectivity to nodes"
+  logger "INFO: Testing connectivity to nodes"
   if test_nodes "hostname" ; then
     logger "INFO: INFO: All $(get_num_nodes) nodes are accesible via SSH"
   else
@@ -512,7 +571,7 @@ set_job_config() {
   #LOG="2>&1 |tee -a $LOG_PATH"
 
   #create dir to save files in one host
-  $DSH_MASTER "mkdir -p $JOB_PATH"
+  $DSH_MASTER "mkdir -p $JOB_PATH;"
 
   # Automatically log all output to file
   log_all_output "$JOB_PATH/${0##*/}"
@@ -522,7 +581,7 @@ set_job_config() {
   logger "INFO: Conf: $CONF"
   logger "INFO: Benchmark Suite: $BENCH_SUITE"
   logger "INFO: Benchmarks to execute: $BENCH_LIST"
-  logger "DEBUG: DSH: $DSH\n"
+  #logger "DEBUG: DSH: $DSH\n"
   #logger "INFO: DSH_C: $DSH_C"
   #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
 }
@@ -581,6 +640,12 @@ install_requires() {
       logger "INFO: Checking if to download/copy $required_file"
       local base_name="${BENCH_REQUIRED_FILES["$required_file"]##*/}"
 
+      # For github repos, add other exceptions to file names that might repeat here
+      if [[ "$base_name" =~ "master."* ]] ; then
+        # Use the array key index name
+        base_name="${required_file}.${base_name#*.}"
+      fi
+
       # test if we need to download first to share dir
       local test_action="$($DSH_MASTER "[ -f '$(get_base_tarballs_path)/$base_name' ] && echo '$testKey'")"
       if [[ ! "$test_action" == *"$testKey"* ]] ; then
@@ -600,10 +665,12 @@ if [ ! -d '$(get_local_apps_path)/$required_file' ] ; then
   mkdir -p '$(get_local_apps_path)/';
   cd '$(get_local_apps_path)/';
   echo 'DEBUG: need to uncompress $(get_base_tarballs_path)/$base_name to $(get_local_apps_path)/$required_file';
-  if [[ '$base_name' == *'.tar.gz' ]] ; then
+  if [[ '$base_name' == *'.tar.gz' || '$base_name' == *'.tgz' ]] ; then
     tar -xzf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   elif [[ '$base_name' == *'.tar.bz2' ]] ; then
     tar -xjf '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
+  elif [[ '$base_name' == *'.zip' ]] ; then
+    unzip -q -o '$(get_base_tarballs_path)/$base_name' || rm '$(get_base_tarballs_path)/$base_name';
   else
     echo 'ERROR: unknown file extension for $base_name';
   fi
@@ -793,34 +860,50 @@ stop_monit(){
   wait #for the bg processes
 }
 
+# Return the bench name with the run number on the name
+# $1 bench_name
+get_bench_name_num() {
+  local bench_name="$1"
+
+  if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
+    echo -e "${bench_name}_$BENCH_CURRENT_NUM_RUN"
+  else
+    echo -e "$bench_name"
+  fi
+
+}
+
 # $1 bench name
 save_bench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
-  logger "INFO: Saving benchmark $1"
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_num "$bench_name")"
+
+  logger "INFO: Saving benchmark $bench_name_num"
 
   # TODO make sure the dir is created previously (sleep bench case)
-  $DSH "mkdir -p $JOB_PATH/$1;"
+  $DSH "mkdir -p $JOB_PATH/$bench_name_num;"
 
   # Save the perf mon logs
-  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
+  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$bench_name_num/ 2> /dev/null"
 
   # Move al files, but not dirs
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \; 2> /dev/null"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
   else
     logger "WARNING: Requested to leave services running, leaving local benchfiles too"
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$1/ \;"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$bench_name_num/ \;"
   fi
 
-  logger "INFO: Compresing and deleting $1"
+  logger "INFO: Compresing and deleting $bench_name_num"
 
-  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;"
+  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num;"
   #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
-  $DSH_MASTER "rm -rf $JOB_PATH/$1"
+  $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
 
-  logger "INFO: Done saving benchmark $1"
+  logger "INFO: Done saving benchmark $bench_name_num"
 }
 
 # Return the total number of nodes starting at one (to include the master node)
@@ -986,6 +1069,27 @@ time_cmd_master() {
 #  fi
 }
 
+# Runs the given command in the whole clusterwrapped "in time"
+# Creates a file descriptor to return output in realtime as well as keeping it
+# in a var to extract its time
+# $1 the command
+# $2 set bench time
+time_cmd() {
+  local cmd="$1"
+  local set_bench_time="$2"
+
+  exec 9>&2 # Create a new file descriptor
+  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
+  9>&- # Close the file descriptor
+
+  # Set the accurate time to the global var
+  if [ "$set_bench_time" ] ; then
+    # TODO get for slowest node
+    BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
+    logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+  fi
+}
+
 # Performs the actual benchmark execution
 # $1 benchmark name
 # $2 command
@@ -994,8 +1098,6 @@ execute_cmd(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
-
-  local cmd="$(get_hive_cmd) $cmd"
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
@@ -1007,7 +1109,7 @@ execute_cmd(){
   logger "DEBUG: command:\n$cmd"
 
   # Run the command and time it
-  time_cmd_master "$cmd" "$time_exec"
+  time_cmd "$cmd" "$time_exec"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
@@ -1022,7 +1124,7 @@ save_disk_usage() {
   echo "# Checking disk space with df $1" >> $JOB_PATH/disk.log
   $DSH "df -h" 2>&1 >> $JOB_PATH/disk.log
   echo "# Checking hadoop folder space $1" >> $JOB_PATH/disk.log
-  $DSH "du -sh $HDD/*" 2>&1 >> $JOB_PATH/disk.log
+  $DSH "du -sh $HDD/* 2> /dev/null"  >> $JOB_PATH/disk.log
 }
 
 check_bench_list() {
