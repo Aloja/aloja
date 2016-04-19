@@ -50,6 +50,10 @@ vm_create_node() {
     vm_name="$clusterName"
     create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
+  elif [ "$defaultProvider" == "amazonemr" ]; then
+    vm_name="$clusterName"
+    #create_cbd_cluster "$clusterName"
+    vm_final_bootstrap "$clusterName"  
   elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
 

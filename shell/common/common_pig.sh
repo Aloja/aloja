@@ -79,3 +79,9 @@ initialize_pig_vars() {
     PIG_CONF_DIR="$(get_local_apps_path)/${PIG_VERSION}/conf"
   fi
 }
+
+# $1 bench name
+save_pig() {
+  logger "WARNING: missing to implement a proper save_pig()"
+  save_hive
+}

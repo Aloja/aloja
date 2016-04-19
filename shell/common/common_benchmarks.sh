@@ -1,5 +1,8 @@
 # Helper functions for running benchmarks
 
+#globals
+BENCH_CURRENT_NUM_RUN="0"
+
 # Outputs a list of defined benchmark suites separated by spaces
 get_bench_suites() {
   local defined_benchs=""
@@ -174,14 +177,27 @@ benchmark_suite_run() {
     # Prepare run (in case defined)
     function_call "benchmark_prepare_$bench"
 
-    # Bench Run
-    function_call "benchmark_$bench"
+    BENCH_CURRENT_NUM_RUN="1" #reset the global counter
 
-    # Validate (eg. teravalidate)
-    function_call "benchmark_validate_$bench"
+    # Iterate at least one time
+    while true; do
+      [ "$BENCH_NUM_RUNS" ] && logger "Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
+      # Bench Run
+      function_call "benchmark_$bench"
 
-    # Clean-up HDFS space (in case necessary)
-    #clean_HDFS "$bench_name" "$BENCH_SUITE"
+      # Validate (eg. teravalidate)
+      function_call "benchmark_validate_$bench"
+
+      # Clean-up HDFS space (in case necessary)
+      #clean_HDFS "$bench_name" "$BENCH_SUITE"
+
+      # Check if requested to iterate multiple times
+      if [ ! "$BENCH_NUM_RUNS" ] || [[ "$BENCH_CURRENT_NUM_RUN" -ge "$BENCH_NUM_RUNS" ]] ; then
+        break
+      else
+        BENCH_CURRENT_NUM_RUN="$((BENCH_CURRENT_NUM_RUN + 1))"
+      fi
+    done
 
   done
 
@@ -844,34 +860,50 @@ stop_monit(){
   wait #for the bg processes
 }
 
+# Return the bench name with the run number on the name
+# $1 bench_name
+get_bench_name_num() {
+  local bench_name="$1"
+
+  if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
+    echo -e "${bench_name}_$BENCH_CURRENT_NUM_RUN"
+  else
+    echo -e "$bench_name"
+  fi
+
+}
+
 # $1 bench name
 save_bench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
-  logger "INFO: Saving benchmark $1"
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_num "$bench_name")"
+
+  logger "INFO: Saving benchmark $bench_name_num"
 
   # TODO make sure the dir is created previously (sleep bench case)
-  $DSH "mkdir -p $JOB_PATH/$1;"
+  $DSH "mkdir -p $JOB_PATH/$bench_name_num;"
 
   # Save the perf mon logs
-  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$1/ 2> /dev/null"
+  #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$bench_name_num/ 2> /dev/null"
 
   # Move al files, but not dirs
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$1/ \; 2> /dev/null"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
   else
     logger "WARNING: Requested to leave services running, leaving local benchfiles too"
-    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$1/ \;"
+    $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$bench_name_num/ \;"
   fi
 
-  logger "INFO: Compresing and deleting $1"
+  logger "INFO: Compresing and deleting $bench_name_num"
 
-  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$1.tar.bz2 $1;"
+  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num;"
   #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
-  $DSH_MASTER "rm -rf $JOB_PATH/$1"
+  $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
 
-  logger "INFO: Done saving benchmark $1"
+  logger "INFO: Done saving benchmark $bench_name_num"
 }
 
 # Return the total number of nodes starting at one (to include the master node)
@@ -1037,6 +1069,57 @@ time_cmd_master() {
 #  fi
 }
 
+# Runs the given command in the whole clusterwrapped "in time"
+# Creates a file descriptor to return output in realtime as well as keeping it
+# in a var to extract its time
+# $1 the command
+# $2 set bench time
+time_cmd() {
+  local cmd="$1"
+  local set_bench_time="$2"
+
+  exec 9>&2 # Create a new file descriptor
+  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
+  9>&- # Close the file descriptor
+
+  # Set the accurate time to the global var
+  if [ "$set_bench_time" ] ; then
+    # TODO get for slowest node
+    BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
+    logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+  fi
+}
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_cmd(){
+  local bench="$1"
+  local cmd="$2"
+  local time_exec="$3"
+
+  # Start metrics monitor (if needed)
+  if [ "$time_exec" ] ; then
+    save_disk_usage "BEFORE"
+    restart_monit
+    set_bench_start "$bench"
+  fi
+
+  logger "DEBUG: command:\n$cmd"
+
+  # Run the command and time it
+  time_cmd "$cmd" "$time_exec"
+
+  # Stop metrics monitors and save bench (if needed)
+  if [ "$time_exec" ] ; then
+    set_bench_end "$bench"
+    stop_monit
+    save_disk_usage "AFTER"
+    save_bench "$bench"
+  fi
+}
+
 save_disk_usage() {
   echo "# Checking disk space with df $1" >> $JOB_PATH/disk.log
   $DSH "df -h" 2>&1 >> $JOB_PATH/disk.log
@@ -1158,12 +1241,12 @@ rsync_extenal() {
     local job_folder="$1"
     local job_folder_full_path="$(get_repo_path)jobs_$clusterName/$job_folder"
 
-    if [ ! -d "$job_folder_full_path" ] ; then
+#    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
-      vm_rsync_from "$(get_repo_path)/jobs_$clusterName/$job_folder" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
-    else
-      logger "WARNING: path $job_folder_full_path is not a directory"
-    fi
+      vm_rsync_from "$(get_repo_path)/jobs_${clusterName}${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
+#    else
+#      logger "WARNING: path $job_folder_full_path is not a directory"
+#    fi
   else
     logger "DEBUG: No remote file server defined to send results"
   fi

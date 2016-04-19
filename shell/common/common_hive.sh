@@ -6,13 +6,14 @@ set_hadoop_requires
 set_hive_requires() {
   [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION specified"
 
-  if [ "$(get_hadoop_major_version)" == "2" ]; then
-    BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
-  else
-    BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
-    #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
+  if [ "$clusterType" != "PaaS" ]; then
+    if [ "$(get_hadoop_major_version)" == "2" ]; then
+      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+    else
+      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
+    fi
   fi
-
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
@@ -21,17 +22,21 @@ set_hive_requires() {
 get_hive_exports() {
   local to_export
 
-  to_export="$(get_hadoop_exports)
+ if [ "$clusterType" == "PaaS" ]; then
+  : # Empty
+ else
+    to_export="$(get_hadoop_exports)
 export HIVE_VERSION='$HIVE_VERSION';
 export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
 export HIVE_CONF_DIR=$HIVE_CONF_DIR;
 "
 
-  if [ "$EXECUTE_TPCH" ]; then
-    to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
-  fi
+    if [ "$EXECUTE_TPCH" ]; then
+      to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
+    fi
 
-  echo -e "$to_export\n"
+    echo -e "$to_export\n"
+  fi
 }
 
 # Returns the the path to the hadoop binary with the proper exports
@@ -198,28 +203,31 @@ create_hive_folders() {
 save_hive() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_num "$bench_name")"
+
   # Create the hive logs dir
-  $DSH "mkdir -p $JOB_PATH/$1/hive_logs;"
+  $DSH "mkdir -p $JOB_PATH/$bench_name_num/hive_logs;"
 
   # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
-    $DSH "cp -r /var/log/hive $JOB_PATH/$1/hive_logs/" #2> /dev/null
+    $DSH "cp -r /var/log/hive $JOB_PATH/$bench_name_num/hive_logs/" #2> /dev/null
 
     # Save Hive conf
     $DSH_MASTER "cd /etc/hive; tar -cjf $JOB_PATH/hive_conf.tar.bz2 conf"
   else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ 2> /dev/null"
+      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$bench_name_num/hive_logs/ 2> /dev/null"
     else
-      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$1/hive_logs/ 2> /dev/null"
+      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$bench_name_num/hive_logs/ 2> /dev/null"
     fi
 
     # Save Hive conf
     $DSH_MASTER "cd $HDD/; tar -cjf $JOB_PATH/hive_conf.tar.bz2 hive_conf"
   fi
 
-  logger "INFO: Compresing and deleting hadoop configs for $1"
+  logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
 
   $DSH_MASTER "
 cd $JOB_PATH;
@@ -230,5 +238,5 @@ fi
 "
 
   # save hadoop and defaults
-  save_hadoop "$1"
+  save_hadoop "$bench_name"
 }
