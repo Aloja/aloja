@@ -71,7 +71,11 @@ import_from_folder() {
     install_packages "mysql-client" "update"
   fi
 
-  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
+  # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
+  if ! inside_vagrant && [ "$(hostname)" != "aloja-web" ] ; then
+    MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
+  fi
+
   MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
   DB="aloja2"
   MYSQL_CREATE="sudo mysql $MYSQL_ARGS -e " #do not include DB name in case it doesn't exist yet
@@ -172,7 +176,7 @@ import_folder() {
         exec="${folder}/${bench_folder}"
 
         #insert config and get ID_exec
-        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
+        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder\"")
 
         if [[  $folder == *_az ]] ; then
           id_cluster="2"
@@ -188,6 +192,7 @@ import_folder() {
           #&& [[ $id_cluster =~ ^-?[0-9]+$ ]]
           if [ -f "$clusterConfigFile" ]  ; then
              source $clusterConfigFile
+             #logger "DEBUG: SQL $(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
             $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
           else
             logger "WARNING: cannot find clusterConfigFile in: $clusterConfigFile"
@@ -249,7 +254,7 @@ import_folder() {
                     scale_factor=VALUES(scale_factor);"
           fi
 
-          #logger "DEBUG: $insert"
+          #logger "DEBUG: SQL:\n $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_major_version" == "2" ]; then
