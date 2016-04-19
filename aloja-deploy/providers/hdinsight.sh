@@ -167,6 +167,10 @@ vm_final_bootstrap() {
  else
   vm_execute "while read i; do echo \$i; sshpass -p '$passwordAloja' scp -o StrictHostKeyChecking=no .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key,authorized_keys} $userAloja@\$i:/home/pristine/.ssh; done</home/pristine/slaves"
  fi
+
+ vm_execute "parallel-scp -h slaves ~/machines ~/slaves /home/pristine/"
+ vm_execute "dsh -M -f machines -Mc -- 'mkdir -p ~/.dsh/group; rm ~/.dsh/group/{a,s}; cp ~/{machines,slaves} ~/.dsh/group/; mv ~/.dsh/group/machines ~/.dsh/group/a; mv ~/.dsh/group/slaves ~/.dsh/group/s;'"
+
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
  vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-us.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
