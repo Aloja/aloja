@@ -180,16 +180,19 @@ import_folder() {
           id_cluster="$(get_id_cluster "$folder")"
 
           clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
-          source $clusterConfigFile
 
           logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
 
           #TODO this check wont work for old folders with numeric values at the end, need another strategy
           #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
-          if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
+          #&& [[ $id_cluster =~ ^-?[0-9]+$ ]]
+          if [ -f "$clusterConfigFile" ]  ; then
+             source $clusterConfigFile
             $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
           else
-            id_cluster="1"
+            logger "WARNING: cannot find clusterConfigFile in: $clusterConfigFile"
+            break
+            #id_cluster="1"
           fi
         fi
 
