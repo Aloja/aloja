@@ -78,11 +78,6 @@ tpc-h_cmd_datagen() {
   # Generate the data
   time_cmd_master "cd $D2F_local_dir/tpch/tpch-gen/target/tools; $D2F_local_dir/tpch/tpch-gen/target/tools/dbgen -b $D2F_local_dir/tpch/tpch-gen/target/tools/dists.dss -vf -s $scale_factor; "
 
-  # Remove the file extension
-  #time_cmd_master "cd $D2F_local_dir/tpch/tpch-gen/target/tools; find -type f -name '*.tbl' | while read f; do mv \"\$f\" \"\${f%.tbl}\"; done" "time"
-  #execute_hadoop_new "$bench_name" "fs -moveFromLocal $D2F_local_dir/tpch/tpch-gen/target/tools/{customer,lineitem,nation,orders,part,partsupp,region,supplier} $TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR/"
-  #time_cmd_master "cd $D2F_local_dir/tpch/tpch-gen/target/tools; mv customer.tbl customer; mv lineitem.tbl lineitem; mv nation.tbl nation; mv orders.tbl orders; mv part.tbl part; mv partsupp.tbl partsupp; mv region.tbl region; mv supplier.tbl supplier;"
-
   # Move the files to HDFS
   hadoop_delete_path "$bench_name" "$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR"
   execute_hadoop_new "$bench_name" "fs -mkdir -p $TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR/{customer,lineitem,nation,orders,part,partsupp,region,supplier}"
@@ -135,10 +130,17 @@ tpc-h_validate_load() {
   logger "INFO: attempting to validate load and optimize to DB: $TPCH_DB_NAME"
   local db_stats="$(execute_hadoop_new "$bench_name" "fs -du /apps/hive/warehouse/tpch_orc_${TPCH_SCALE_FACTOR}.db" 2>1)"
 
-  db_stats="$(echo -e "$db_stats"|grep 'warehouse'|grep -v '-du')" # remove extra lines
+  #db_stats="$(echo -e "$db_stats"|grep 'warehouse'|grep -v '-du')" # remove extra lines
 
   logger "INFO: DB stats = $db_stats";
   logger "INFO: num tables = $(echo -e "$db_stats" |wc -l)";
+}
+
+tpc-h_delete_dbgen(){
+  if [ ! "$BENCH_KEEP_FILES" == "1" ] && [ ! "$BENCH_LEAVE_SERVICES" "1"  ] ; then
+    logger "INFO: deleting original DBGEN files to save space"
+    hadoop_delete_path "$bench_name" "$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR"
+  fi
 }
 
 tpc-h_datagen() {
@@ -161,6 +163,9 @@ tpc-h_datagen() {
 
     # Try to validate data creatation
     tpc-h_validate_load
+
+    # Delete source files
+    tpc-h_delete_dbgen
 
     logger "INFO: Data loaded and optimized into database $TPCH_DB_NAME"
   else
