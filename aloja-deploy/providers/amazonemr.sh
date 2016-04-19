@@ -466,5 +466,7 @@ get_slaves_names() {
 get_vm_id() {
    #nodename: slave-1
    vmId="$(echo $1 | cut -d- -f2)"
-   printf "%02d" $vmId
+   #printf "%02d" $vmId
+   # here we get IPs, return last part
+   echo -e "${vmId##*\.}"
 }
