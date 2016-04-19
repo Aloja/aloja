@@ -1,4 +1,5 @@
-#!/bin/bash
+# Need to install lava client from: https://github.com/rackerlabs/python-lavaclient
+# with instructions from http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started/content/installing_Client.html
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -40,7 +41,7 @@ create_cbd_cluster() {
   clusterId=$(get_cluster_id "$1")
  
   if [ "${clusterId}" = "" ]; then
-    logger "Creating Linux CBD cluster $1 in region ${CBDlocation}, this can take lots of time"
+    logger "Creating Linux CBD cluster $1 in region ${CBDlocation}, this can take a long time..."
     output=$(create_do_cbd_cluster "$1")
 
     clusterId=$(awk '/ ID / && NR == 4 {print $4; exit}' <<< "${output}")
