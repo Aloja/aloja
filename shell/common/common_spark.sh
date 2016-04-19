@@ -6,7 +6,9 @@ set_hadoop_requires
 set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
-  BENCH_REQUIRED_FILES["$SPARK_VERSION"]="http://apache.rediris.es/spark/spark-1.6.1/$SPARK_VERSION.tgz"
+  if [ "$clusterType" != "PaaS" ]; then
+    BENCH_REQUIRED_FILES["$SPARK_VERSION"]="http://apache.rediris.es/spark/spark-1.6.1/$SPARK_VERSION.tgz"
+  fi
 
   #also set the config here
   #BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark_conf_template"
@@ -16,7 +18,10 @@ set_spark_requires() {
 get_spark_exports() {
   local to_export
 
-  to_export="$(get_hadoop_exports)
+  if [ "$clusterType" == "PaaS" ]; then
+    : # Empty
+  else
+    to_export="$(get_hadoop_exports)
 export SPARK_VERSION='$SPARK_VERSION';
 export SPARK_HOME='$(get_local_apps_path)/${SPARK_VERSION}';
 export SPARK_CONF_DIR=$(get_local_apps_path)/${SPARK_VERSION}/conf;
@@ -24,7 +29,8 @@ export SPARK_LOG_DIR=$(get_local_bench_path)/spark_logs;
 export SPARK_CLASSPATH=\$($(get_local_apps_path)/${HADOOP_VERSION}/bin/hadoop classpath);
 "
 
-  echo -e "$to_export\n"
+    echo -e "$to_export\n"
+  fi
 }
 
 # Returns the the path to the hadoop binary with the proper exports
@@ -89,6 +95,11 @@ initialize_spark_vars() {
 
 # $1 bench name
 save_spark() {
+  [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
+
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_num "$bench_name")"
+
   logger "WARNING: missing to implement a proper save_spark()"
-  save_hive
+  save_hive "$bench_name"
 }

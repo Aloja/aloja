@@ -24,6 +24,7 @@ set_hadoop_config_folder() {
 
 # Sets the required files to download/copy
 set_hadoop_requires() {
+ if [ "$clusterType" != "PaaS" ]; then
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     BENCH_REQUIRED_FILES["$HADOOP_VERSION"]="http://archive.apache.org/dist/hadoop/core/$HADOOP_VERSION/$HADOOP_VERSION.tar.gz"
   else
@@ -33,6 +34,7 @@ set_hadoop_requires() {
   if [ "$HADOOP_EXTRA_JARS" ] ; then
     BENCH_REQUIRED_FILES["HADOOP_EXTRA_JARS"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/$HADOOP_EXTRA_JARS.tar.gz"
   fi
+ fi
 
   #also set the config here
   set_hadoop_config_folder

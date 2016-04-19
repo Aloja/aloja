@@ -6,13 +6,14 @@ set_hadoop_requires
 set_hive_requires() {
   [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION specified"
 
-  if [ "$(get_hadoop_major_version)" == "2" ]; then
-    BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
-  else
-    BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
-    #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
+  if [ "$clusterType" != "PaaS" ]; then
+    if [ "$(get_hadoop_major_version)" == "2" ]; then
+      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+    else
+      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
+    fi
   fi
-
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
@@ -21,17 +22,21 @@ set_hive_requires() {
 get_hive_exports() {
   local to_export
 
-  to_export="$(get_hadoop_exports)
+ if [ "$clusterType" == "PaaS" ]; then
+  : # Empty
+ else
+    to_export="$(get_hadoop_exports)
 export HIVE_VERSION='$HIVE_VERSION';
 export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
 export HIVE_CONF_DIR=$HIVE_CONF_DIR;
 "
 
-  if [ "$EXECUTE_TPCH" ]; then
-    to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
-  fi
+    if [ "$EXECUTE_TPCH" ]; then
+      to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
+    fi
 
-  echo -e "$to_export\n"
+    echo -e "$to_export\n"
+  fi
 }
 
 # Returns the the path to the hadoop binary with the proper exports
