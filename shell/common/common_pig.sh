@@ -19,7 +19,8 @@ get_pig_exports() {
   to_export="$(get_hadoop_exports)
 export PIG_VERSION='$PIG_VERSION';
 export PIG_HOME='$(get_local_apps_path)/${PIG_VERSION}';
-export PIG_CONF_DIR=$PIG_CONF_DIR;
+export PIG_CONF_DIR=$(get_local_apps_path)/${PIG_VERSION}/conf;
+export PIG_LOG_DIR=$(get_local_bench_path)/pig_logs;
 "
 
   echo -e "$to_export\n"
@@ -32,7 +33,7 @@ get_pig_cmd() {
 
   pig_exports="$(get_pig_exports)"
 
-  pig_cmd="$pig_exports\n$PIG_HOME/bin/pig "
+  pig_cmd="$pig_exports\n$(get_local_apps_path)/${PIG_VERSION}/bin/pig "
 
   echo -e "$pig_cmd"
 }
@@ -77,4 +78,10 @@ initialize_pig_vars() {
     PIG_HOME="$(get_local_apps_path)/${PIG_VERSION}"
     PIG_CONF_DIR="$(get_local_apps_path)/${PIG_VERSION}/conf"
   fi
+}
+
+# $1 bench name
+save_pig() {
+  logger "WARNING: missing to implement a proper save_pig()"
+  save_hive
 }

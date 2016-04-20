@@ -42,8 +42,6 @@ if [ "$clusterType" != "PaaS" ] && [ ! "$vm_name" ]; then
     #fi
 
   done
-
-  echo qqqqqqqqqqqqqq; exit
 	
   wait #wait for the last one in case we launch in parallel
 

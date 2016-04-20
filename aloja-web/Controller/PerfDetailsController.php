@@ -131,6 +131,7 @@ class PerfDetailsController extends AbstractController
 
                 //$end_time = get_exec_details($exec, 'init_time');
 
+                # TODO check date problems (ie. id_exec =115259 seems to have a different timezone)
                 $date_where     = " AND date BETWEEN '{$exec_details[$exec]['start_time']}' and '{$exec_details[$exec]['end_time']}' ";
 
                 $where          = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') $date_where";

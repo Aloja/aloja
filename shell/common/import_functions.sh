@@ -71,7 +71,11 @@ import_from_folder() {
     install_packages "mysql-client" "update"
   fi
 
-  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
+  # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
+  if ! inside_vagrant && [ "$(hostname)" != "aloja-web" ] ; then
+    MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
+  fi
+
   MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
   DB="aloja2"
   MYSQL_CREATE="sudo mysql $MYSQL_ARGS -e " #do not include DB name in case it doesn't exist yet
@@ -172,7 +176,7 @@ import_folder() {
         exec="${folder}/${bench_folder}"
 
         #insert config and get ID_exec
-        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
+        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder\"")
 
         if [[  $folder == *_az ]] ; then
           id_cluster="2"
@@ -180,16 +184,20 @@ import_folder() {
           id_cluster="$(get_id_cluster "$folder")"
 
           clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
-          source $clusterConfigFile
 
           logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
 
           #TODO this check wont work for old folders with numeric values at the end, need another strategy
           #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
-          if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
+          #&& [[ $id_cluster =~ ^-?[0-9]+$ ]]
+          if [ -f "$clusterConfigFile" ]  ; then
+             source $clusterConfigFile
+             #logger "DEBUG: SQL $(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
             $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
           else
-            id_cluster="1"
+            logger "WARNING: cannot find clusterConfigFile in: $clusterConfigFile"
+            break
+            #id_cluster="1"
           fi
         fi
 
@@ -246,7 +254,7 @@ import_folder() {
                     scale_factor=VALUES(scale_factor);"
           fi
 
-          #logger "DEBUG: $insert"
+          #logger "DEBUG: SQL:\n $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_major_version" == "2" ]; then
@@ -376,10 +384,12 @@ ON DUPLICATE KEY UPDATE
       provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
     local nodeName="$(get_master_name)"
-    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+    sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master'
+ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
 
     for nodeName in $(get_slaves_names) ; do
-      sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+      sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave'
+ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
     done
 
     echo -e "$sql\n"
@@ -720,6 +730,7 @@ get_job_confs() {
 
 #$1 job jhist $2 do not run aloja-tools.jar (already having tasks.out and globals.out)
 import_hadoop2_jhist() {
+return 1
     if [ -z $2 ]; then
         java -cp "$CUR_DIR/../aloja-tools/lib/aloja-tools.jar" alojatools.JhistToJSON $1 tasks.out globals.out
     fi
@@ -799,6 +810,7 @@ import_hadoop2_jhist() {
 
 		# TODO this loop is very slow, ading & and wait to parallelize a bit
 		for task in "${tasks[@]}" ; do
+
 			# try to pa
 			taskId="$(echo $task | sed 's/"/\ /g')" &
 			taskStatus="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out)" &
@@ -846,7 +858,11 @@ INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_e
 		done
 
     logger "DEBUG: Inserting into HDI_JOB_tasks"
-    $MYSQL "$insert_tasks"
+    #create a tmp file as command it is too long sometimes
+    local tmp_file="$(mktemp)"
+    echo -e "$insert_tasks" > "$tmp_file"
+    $MYSQL "$(< "$tmp_file")"
+    rm -f "$tmp_file"
 
 		for i in `seq 0 1 $totalTime`; do
 			if [ $i -gt 0 ]; then
@@ -1137,6 +1153,8 @@ hit_page() {
 
 # $1 host name
 refresh_web_caches() {
+logger "WARNING: Refresh caches disabled for now... "
+return 1 #disabled for now...
   local host_name="$1"
   
   [ "$host_name" ] || die "No hostname supplied"

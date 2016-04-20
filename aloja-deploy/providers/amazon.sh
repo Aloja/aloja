@@ -29,9 +29,10 @@ export AWS_ACCESS_KEY_ID="${aws_access_key_id}"
 export AWS_SECRET_ACCESS_KEY="${aws_secret_access_key}"
 export AWS_DEFAULT_REGION="${awsRegion}"
 
-if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ] || [ -z "${AWS_DEFAULT_REGION}" ]; then
-  die "AWS credentials or default region not set, make sure they are defined in config"
-fi
+# This error needs to be revised to work from different starting points
+#if [ -z "${AWS_ACCESS_KEY_ID}" ] || [ -z "${AWS_SECRET_ACCESS_KEY}" ] || [ -z "${AWS_DEFAULT_REGION}" ]; then
+#  die "AWS credentials or default region not set, make sure they are defined in config"
+#fi
 
 
 awsAmi="ami-548acf3e"
@@ -321,7 +322,7 @@ cluster_final_boostrap() {
 
   logger "Getting machine/IP list for cluster ${clusterName}"
 
-  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
+  hosts_fragment=$(aws --output text ec2 describe-instances --query 'Reservations[*].Instances[?Tags[?Key == `clustername` && Value == `'"${clusterName}"'`] && State.Name != `terminated`].[PrivateDnsName,PrivateIpAddress,Placement.AvailabilityZone,Tags[?Key == `name`].Value]' | awk 'NR%2 == 0 { print prev "\t" $0; next } { prev = $0 }' | awk '{print $2, $1, $4}')
 
   old_vm=${vm_name}
 

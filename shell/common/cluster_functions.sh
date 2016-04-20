@@ -50,6 +50,10 @@ vm_create_node() {
     vm_name="$clusterName"
     create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
+  elif [ "$defaultProvider" == "amazonemr" ]; then
+    vm_name="$clusterName"
+    #create_cbd_cluster "$clusterName"
+    vm_final_bootstrap "$clusterName"  
   elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
 
@@ -496,7 +500,7 @@ vm_local_scp() {
 vm_rsync() {
     set_shh_proxy
 
-    logger "RSynching from Local dir: $1 To: $2"
+    logger "INFO: RSynching from Local dir: $1 To: $2"
     #eval is for parameter expansion  --progress --copy-links
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
@@ -520,7 +524,7 @@ vm_rsync_from() {
       proxy="ProxyCommand=none"
     fi
 
-    logger "RSynching from $vmName: $source To external: $destination"
+    logger "INFO: RSynching from $(hostname): $source To external: $destination"
 
     #eval is for parameter expansion
     logger "DEBUG: rsync -avur --partial --force  -e 'ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"

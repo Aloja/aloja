@@ -119,9 +119,10 @@ vm_final_bootstrap() {
   logger "INFO: making sure minerva-100 config is up to date"
   vm_execute "
 sudo apt-get -y remove hadoop puppet;
-sudo apt-get -y remove libvirt-bin libvirt0;
 sudo apt-get -y autoremove;
 "
+
+#sudo apt-get -y remove libvirt-bin libvirt0;
 
 #logger "INFO: Recreating /etc/hosts with IB names for $(get_vm_IB_hostname $vm_name)"
 #vm_update_template "/etc/hosts" "$(get_IB_hostnames)" "secured_file"

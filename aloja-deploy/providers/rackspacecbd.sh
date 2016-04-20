@@ -1,4 +1,5 @@
-#!/bin/bash
+# Need to install lava client from: https://github.com/rackerlabs/python-lavaclient
+# with instructions from http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started/content/installing_Client.html
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -40,7 +41,7 @@ create_cbd_cluster() {
   clusterId=$(get_cluster_id "$1")
  
   if [ "${clusterId}" = "" ]; then
-    logger "Creating Linux CBD cluster $1 in region ${CBDlocation}, this can take lots of time"
+    logger "Creating Linux CBD cluster $1 in region ${CBDlocation}, this can take a long time..."
     output=$(create_do_cbd_cluster "$1")
 
     clusterId=$(awk '/ ID / && NR == 4 {print $4; exit}' <<< "${output}")
@@ -294,6 +295,7 @@ get_master_name() {
 }
 
 #$1 cluster name $2 use password
+# TODO: this funct is call on all vms, should remove vm loops
 vm_final_bootstrap() {
   logger "Configuring nodes..."
 
@@ -324,7 +326,7 @@ sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
     vm_mount_disks              # mounts ~/share on all machines
 
     if [ "$vm_name" = "master-1" ]; then
-     
+
       if ! vm_build_bwm_ng; then
         logger "WARNING: Cannot install bwm-ng on $vm_name"
       fi

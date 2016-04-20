@@ -1,5 +1,5 @@
-set hive.log.dir=##LOG_DIR##;
-set hive.exec.local.scratchdir=##TMP_DIR##;
+-- set hive.log.dir=##LOG_DIR##;
+-- set hive.exec.local.scratchdir=##TMP_DIR##;
 -- set hive.metastore.uris=thrift://localhost:##PORT_PREFIX##9083;
 
 -- set mapreduce.map.memory.mb=##MAPS_MB##;
