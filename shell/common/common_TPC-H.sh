@@ -5,7 +5,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
 [ ! "$TPCH_SCALE_FACTOR" ] &&  TPCH_SCALE_FACTOR=1 #1 GB min size
-BENCH_DATA_SIZE="$((TPCH_SCALE_FACTOR * 1024 * 1024 * 1024))" #in bytes
+BENCH_DATA_SIZE="$((TPCH_SCALE_FACTOR * 1000000000 ))" #in bytes
 
 
 TPCH_HDFS_DIR="/tmp/tpch-generate"
