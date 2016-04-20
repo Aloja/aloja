@@ -1191,9 +1191,17 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 
 # Azure DW (SaaS)
 
-$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and exec_type like '%_manual';"
+$MYSQL "delete from execs where bench_type='TPC-H' and exec_type like '%_manual';"
 
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
+
+# Fix for some datasizes
+$MYSQL "
+update execs set datasize = 1000000000 where datasize = 1073741824;
+update execs set datasize = 10000000000 where datasize = 10737418240;
+update execs set datasize = 100000000000 where datasize = 107374182400;
+update execs set datasize = 1000000000000 where datasize = 1073741824000;
+"
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
@@ -1202,14 +1210,17 @@ select
   c.id_cluster,
   if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
       (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
-          CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'))
+           (if (exec_type='RS_manual',  CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+                CONCAT(substring(exec, 1, locate('/',exec)), 'ALL' ) )
+           ))
       )
   ) exec2,
   'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
   'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',datanodes
 from execs e join clusters c using (id_cluster)
-where bench_type = 'TPC-H' and bench != 'ALL' and c.type = 'SaaS' and exe_time > 0.0001
-group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',0,if (exec_type='ADLA_manual',1,2))
+where bench_type = 'TPC-H' and bench not IN ('ALL', 'query -optimize', 'query -text', 'query op_datagen') and exe_time > 0.0001
+      and exec_type != 'default'
+group by run_num,exec_type,datasize, exec2
 having count(*) = 22 order by exec2;"
 
 # Fix for ML tools
