@@ -1203,6 +1203,21 @@ update execs set datasize = 100000000000 where datasize = 107374182400;
 update execs set datasize = 1000000000000 where datasize = 1073741824000;
 "
 
+# Fix scale factors
+$MYSQL "update execs set scale_factor = round(datasize/1000000000) where (scale_factor is null OR scale_factor=0) and datasize >= 1000000000;"
+
+# Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 20secs
+$MYSQL "delete from execs where exe_time  <=20 and bench_type = 'TPC-H' and datasize >= 10000000000
+and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
+
+# Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 40secs in minerva
+$MYSQL "delete from execs where exe_time  <=40 and bench_type = 'TPC-H' and datasize >= 10000000000
+and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
+
+# Delete too fast results (failed runs) on TPC-H where >=100GB and <= than 80secs in minerva
+$MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
+and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
+
 # Create aggregate ALL for TPC-H
 $MYSQL "
 INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps)
