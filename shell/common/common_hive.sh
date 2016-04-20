@@ -158,6 +158,12 @@ prepare_hive_config() {
 
   if [ "$clusterType" == "PaaS" ]; then
     logger "INFO: in PaaS mode, not changing Hive system config"
+
+    #For CBD at least
+    time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+    #just in case
+    time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+
   else
     logger "INFO: Preparing Hive run specific config"
     $DSH "mkdir -p $(get_hive_conf_dir) $HDD/hive_logs; cp -r $(get_local_configs_path)/hive1_conf_template/* $(get_hive_conf_dir);"
@@ -194,13 +200,6 @@ create_hive_folders() {
     logger "INFO: Creating Hive default folders in HDFS"
     execute_hadoop_new "Hive folders" "fs -mkdir -p /tmp/hive /user/hive/warehouse"
     execute_hadoop_new "Hive folders" "fs -chmod 777 /tmp/hive /user/hive/warehouse"
-
-    if [ "$clusterType" == "PaaS" ]; then
-      #For CBD at least
-      time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/"
-      #just in case
-      time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/"
-    fi
     #execute_hadoop_new "Hive folders" "fs -chmod g+w /tmp"
     #execute_hadoop_new "Hive folders" "fs -chmod g+w /user/hive/warehouse"
   fi
