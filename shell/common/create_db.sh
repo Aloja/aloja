@@ -1193,6 +1193,7 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 
 $MYSQL "delete from execs where bench_type='TPC-H' and exec_type like '%_manual';"
 
+source_file "$ALOJA_REPO_PATH/shell/common/DB/create_D2F.sh"
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
 
 # Fix for some datasizes
