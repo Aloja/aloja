@@ -210,7 +210,7 @@ save_hive() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
   local bench_name="$1"
-  local bench_name_num="$(get_bench_name_num "$bench_name")"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   # Create the hive logs dir
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/hive_logs;"

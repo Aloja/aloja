@@ -181,7 +181,7 @@ benchmark_suite_run() {
 
     # Iterate at least one time
     while true; do
-      [ "$BENCH_NUM_RUNS" ] && logger "Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
+      [ "$BENCH_NUM_RUNS" ] && logger "INFO: Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
       # Bench Run
       function_call "benchmark_$bench"
 
@@ -581,7 +581,7 @@ set_job_config() {
   logger "INFO: Conf: $CONF"
   logger "INFO: Benchmark Suite: $BENCH_SUITE"
   logger "INFO: Benchmarks to execute: $BENCH_LIST"
-  #logger "DEBUG: DSH: $DSH\n"
+  logger "DEBUG: DSH: $DSH\n"
   #logger "INFO: DSH_C: $DSH_C"
   #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
 }
@@ -852,6 +852,11 @@ stop_monit(){
       for perf_mon in $BENCH_PERF_MONITORS ; do
         local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
         $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
+
+        # TODO this is something temporal for PaaS clusters
+        if [ "$clusterType" == "PaaS" ]; then
+          $DSH "killall -9 sadc; killall -9 vmstat;"   2> /dev/null  &
+        fi
       done
       #logger "DEBUG: perf monitors ready"
     fi
@@ -862,15 +867,37 @@ stop_monit(){
 
 # Return the bench name with the run number on the name
 # $1 bench_name
-get_bench_name_num() {
+get_bench_name_with_num() {
   local bench_name="$1"
 
   if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
-    echo -e "${bench_name}_$BENCH_CURRENT_NUM_RUN"
+    echo -e "${bench_name}__$BENCH_CURRENT_NUM_RUN"
   else
     echo -e "$bench_name"
   fi
 
+}
+
+# Returns the iteration number (if any)
+# $1 bench_name
+get_bench_iteration() {
+  local bench_name="$1"
+
+  if [[ "$bench_name" = *'__'* ]] ; then
+    local bench_postfix="${bench_name##*__}"
+    local bench_number="$(only_numbers "$bench_postfix")"
+
+    if [ "$bench_postfix" ] && [ "$bench_number" ] ; then
+      echo -e "$bench_number"
+    fi
+  fi
+}
+
+# Strips the run number ie __3 from the bench name
+# $1 bench_name
+get_bench_name() {
+  local bench_name="$1"
+  echo -e "${bench_name%%__*}"
 }
 
 # $1 bench name
@@ -878,7 +905,7 @@ save_bench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
   local bench_name="$1"
-  local bench_name_num="$(get_bench_name_num "$bench_name")"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   logger "INFO: Saving benchmark $bench_name_num"
 
@@ -1009,9 +1036,10 @@ calc_exec_time() {
 # Starts the timer for measuring benchmark time
 # $1 bench name
 set_bench_start() {
-  local bench_name="$1"
+  [ ! "$1" ] && die "benchmark name not set"
+  local bench_name="$(get_bench_name_with_num "$1")"
 
-  BENCH_TIME="" #reset global variable
+  BENCH_TIME="0" #reset global variable
 
   if [ "$bench_name" ] ; then
     EXEC_START["$bench_name"]="$(timestamp)"
@@ -1024,12 +1052,14 @@ set_bench_start() {
 # Starts the timer for measuring benchmark time
 # $1 bench name
 set_bench_end() {
+  [ ! "$1" ] && die "benchmark name not set"
+
   local end_exec="$(timestamp)"
-  local bench_name="$1"
+  local bench_name="$(get_bench_name_with_num "$1")"
 
   if [ "$bench_name" ] && [ "${EXEC_START["$bench_name"]}" ] ; then
     # Test if we already have the accurate time calculated, if not calculate it
-    if [ ! "$BENCH_TIME" ] ; then
+    if [ ! "$BENCH_TIME" ] || [ "$BENCH_TIME" == "0" ] ; then
       local start_exec="${EXEC_START["$bench_name"]}"
       local total_secs="$(calc_exec_time $start_exec $end_exec)"
       EXEC_TIME["$bench_name"]="$total_secs"
@@ -1252,3 +1282,4 @@ rsync_extenal() {
   fi
 
 }
+

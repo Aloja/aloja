@@ -98,7 +98,7 @@ save_spark() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
   local bench_name="$1"
-  local bench_name_num="$(get_bench_name_num "$bench_name")"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   logger "WARNING: missing to implement a proper save_spark()"
   save_hive "$bench_name"
