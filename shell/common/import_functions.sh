@@ -72,7 +72,7 @@ import_from_folder() {
   fi
 
   # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
-  if ! inside_vagrant && [ "$(hostname)" != "aloja-web" ] ; then
+  if ! inside_vagrant || [ "$(hostname)" != "aloja-web" ] ; then
     MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
   fi
 
@@ -204,6 +204,15 @@ import_folder() {
         if [ "$exec_values" ] ; then
           folder_OK="$(( folder_OK + 1 ))"
 
+          # Here we check if the name contains the iteration number and change it before saving it to DB
+          local run_num="$(get_bench_iteration "$bench_folder")"
+          if [ "$run_num" ] ; then
+            exec_values="${exec_values/$bench_folder/$(get_bench_name "$bench_folder")}"
+          else
+            run_num="1"
+          fi
+
+logger"FN $bench_folder RN $run_num EV $exec_values"
           # Legacy config, taken from folder and log
           if [ "${name:15:6}" == "_conf_" ]; then
             insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
@@ -229,8 +238,8 @@ import_folder() {
                     exec_type=VALUES(exec_type);"
           # New style, with more db fields
           else
-            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor)
-                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,run_num)
+                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values,'$run_num')
                   ON DUPLICATE KEY UPDATE
                     id_cluster=VALUES(id_cluster),
                     exec=VALUES(exec),

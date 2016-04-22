@@ -5,6 +5,8 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
 [ ! "$TPCH_SCALE_FACTOR" ] &&  TPCH_SCALE_FACTOR=1 #1 GB min size
+[ ! "$TPCH_USE_LOCAL_FACTOR" ] && TPCH_USE_LOCAL_FACTOR="" #set to a scale factor to use the local DBGEN instead of the M/R version
+
 BENCH_DATA_SIZE="$((TPCH_SCALE_FACTOR * 1000000000 ))" #in bytes
 
 
@@ -130,7 +132,7 @@ tpc-h_validate_load() {
   logger "INFO: attempting to validate load and optimize to DB: $TPCH_DB_NAME"
   local db_stats="$(execute_hadoop_new "$bench_name" "fs -du /apps/hive/warehouse/tpch_orc_${TPCH_SCALE_FACTOR}.db" 2>1)"
 
-  #db_stats="$(echo -e "$db_stats"|grep 'warehouse'|grep -v '-du')" # remove extra lines
+  #db_stats="$(echo -e "$db_stats"|grep 'warehouse'|grep -v '-du')" # remove extra linesTPCH_USE_LOCAL_FACTOR
 
   logger "INFO: DB stats = $db_stats";
   logger "INFO: num tables = $(echo -e "$db_stats" |wc -l)";
@@ -151,6 +153,8 @@ tpc-h_datagen() {
     # Generate the data
     if [ "$TPCH_SCALE_FACTOR" == "1" ] ; then
       tpc-h_cmd_datagen "1"
+    elif [[ "$TPCH_USE_LOCAL_FACTOR" > 0 ]] ; then
+      tpc-h_cmd_datagen "$TPCH_USE_LOCAL_FACTOR"
     else
       tpc-h_hadoop_datagen
     fi

@@ -69,6 +69,9 @@ if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
   logger "INFO: Auto importing run to ALOJA-WEB"
   source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
 
+  # TODO it should not be necessary to include the hadoop file to import
+  source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
+
   import_from_folder "$JOB_NAME" #"reload_caches"
   logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
 fi
