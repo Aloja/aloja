@@ -295,7 +295,7 @@ vm_final_bootstrap() {
   logger "Installing necessary packages on all machines"
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
-    vm_execute "sudo yum install -y --enablerepo=epel git rsync sshfs gawk libxml2 wget curl unzip screen bwm-ng;"
+    vm_execute "sudo yum install -y --enablerepo=epel git rsync fuse-sshfs gawk libxml2 wget curl unzip screen bwm-ng;"
 
     vm_execute "
 sudo mkdir -p /mnt/aloja && sudo chown -R hadoop: /mnt/aloja;
