@@ -1219,6 +1219,9 @@ and id_cluster IN (select id_cluster from clusters where provider='minerva100');
 $MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
 and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
 
+# Delete old tpch tests
+$MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
+
 # Create aggregate ALL for TPC-H
 $MYSQL "
 INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps)
