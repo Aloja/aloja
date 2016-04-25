@@ -76,6 +76,10 @@ Try the sample presets or change the filters to see different examples.
 				<td>{{ cluster }}</td>
 			</tr>
 			<tr>
+				<th>Run number</th>
+				<td>{{ run_num }}</td>
+			</tr>
+			<tr>
 				<th>PARAVER {{ makeTooltip('Download files to view execution details with PARAVER analysis tool.') | raw }}</th>
 				<td><a href="{{ path('export2prv') }}?id_exec={{ bestexec['id_exec'] }}">PARAVER</a></td>
 			</tr>

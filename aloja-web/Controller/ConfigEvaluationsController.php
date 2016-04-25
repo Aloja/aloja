@@ -70,6 +70,7 @@ class ConfigEvaluationsController extends AbstractController
 			 concat($concat_config) conf, e.bench as bench,
 			 avg(e.exe_time) AVG_exe_time,
 			 min(e.exe_time) MIN_exe_time,
+			 max(e.exe_time) MAX_exe_time,
 			 (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
 			 'none'
 			 from aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
@@ -317,7 +318,7 @@ class ConfigEvaluationsController extends AbstractController
 				'net' => 'e', 'disk' => 'e','replication' => 'e',
 				'iofilebuf' => 'e', 'blk_size' => 'e', 'iosf' => 'e', 'vm_size' => 'c',
 				'vm_cores' => 'c', 'vm_ram' => 'c', 'datanodes' => 'c', 'hadoop_version' => 'e',
-				'type' => 'c');
+				'type' => 'c', 'scale_factor' => 'e', 'run_num' => 'e');
 
 			$minExecsFilter = "";
 			if($minExecs > 0)
