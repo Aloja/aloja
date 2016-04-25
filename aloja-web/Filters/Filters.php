@@ -82,6 +82,7 @@ class Filters
                         return $value;
                 }),
             'replication' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Replication (r):'),
+            'run_num' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Run Num:'),
             'iosf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O sort factor (I):'),
             'iofilebuf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O file buffer:',
                 'beautifier' => function($value) {
@@ -106,7 +107,7 @@ class Filters
                 }),
             'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Cluster type:'),
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Hadoop version:'),
-            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => (Utils::in_dev() ? 1:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
+            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => (Utils::in_dev() ? 0.001:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
             'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle','label' => 'Max exec time:'),
             'datefrom' => array('table' => 'execs', 'field' => 'start_time', 'default' => null, 'type' => 'inputDatege','label' => 'Date from:'),
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
@@ -236,7 +237,7 @@ class Filters
                 'tabOpenDefault' => false),
             'advanced' => array(
                 'label' => 'Advanced filters',
-                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime'),
+                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime','run_num'),
                 'tabOpenDefault' => false
             ),
             'MLearning' => array(

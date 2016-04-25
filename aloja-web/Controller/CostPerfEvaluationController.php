@@ -48,7 +48,7 @@ class CostPerfEvaluationController extends AbstractController
             $execs = "SELECT e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
                 e.end_time,e.net,e.disk,e.bench_type,
                 e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
-                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,
+                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,e.run_num,
                 c.* FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
                 LEFT JOIN aloja_ml.predictions p USING (id_exec)
                 WHERE 1 $filter_execs $this->whereClause ORDER BY rand() LIMIT 500";
@@ -58,7 +58,7 @@ class CostPerfEvaluationController extends AbstractController
 			$execsPred = "SELECT e.id_exec,e.id_cluster,CONCAT(CONCAT(CONCAT(CONCAT('pred','_'),e.bench),'_'),c.name) as 'exec' ,e.bench,e.exe_time, e.start_time,
                 e.end_time,e.net,e.disk,e.bench_type,
                 e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
-                e.valid,e.filter,e.outlier,'null' as perf_details, 'prediction' as exec_type, 'null' as datasize,'null' as scale_factor,
+                e.valid,e.filter,e.outlier,'null' as perf_details, 'prediction' as exec_type, 'null' as datasize,'null' as scale_factor,'null' as run_num,
                 c.* FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
                 WHERE 1 $filter_execs $mlWhere ORDER BY rand() LIMIT 500";
 
@@ -143,7 +143,7 @@ class CostPerfEvaluationController extends AbstractController
         $query = "SELECT t.scount as count,e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
                 e.end_time,e.net,e.disk,e.bench_type,
                 e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
-                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,
+                e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,e.run_num,
                 c.*,c.name as 'name' from execs e JOIN aloja2.clusters c USING (id_cluster)
  				  LEFT JOIN aloja_ml.predictions p USING (id_exec)
 						INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
@@ -154,7 +154,7 @@ class CostPerfEvaluationController extends AbstractController
 		$queryPredicted = "SELECT t.scount as count, e.id_exec,e.id_cluster,e.exec, CONCAT(CONCAT('pred','_'),e.bench) as 'bench',e.exe_time, e.start_time,
                 e.end_time,e.net,e.disk,e.bench_type,
                 e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
-                e.valid,e.filter,e.outlier,'null' as perf_details, 'prediction' as exec_type, 'null' as datasize,'null' as scale_factor,
+                e.valid,e.filter,e.outlier,'null' as perf_details, 'prediction' as exec_type, 'null' as datasize,'null' as scale_factor,'null' as run_num,
                 c.*,CONCAT('pred_', c.name) as 'name' from aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
 						INNER JOIN (SELECT count(*) as scount, MIN(e2.exe_time) minexe FROM aloja_ml.predictions e2 JOIN aloja2.clusters c2 USING(id_cluster)
 									 WHERE  1 $innerQueryML GROUP BY c2.name,e2.net,e2.disk ORDER BY c2.name ASC)
@@ -263,7 +263,7 @@ class CostPerfEvaluationController extends AbstractController
 			$innerQueryML = str_replace("e.","e2.",$whereML);
 			$innerQueryML = str_replace("c.","c2.",$innerQueryML);
 
-    		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec, c.name as clustername,c.* 
+    		$execs = "SELECT e.exe_time,e.net,e.disk,e.bench,e.bench_type,e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.hadoop_version,e.exec,e.run_num, c.name as clustername,c.*
     		  FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
     		  LEFT JOIN aloja_ml.predictions p USING (id_exec)
       		  INNER JOIN (SELECT MIN(e2.exe_time) minexe FROM aloja2.execs e2 JOIN aloja2.clusters c2 USING(id_cluster)
