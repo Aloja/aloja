@@ -1196,6 +1196,12 @@ $MYSQL "delete from execs where bench_type='TPC-H' and exec_type like '%_manual'
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_D2F.sh"
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
 
+# Add missing exec for RS q 18
+#$MYSQL "INSERT IGNORE INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num) VALUES (111,'1461594822_S100GB-Q18-P1','query 18',420.000,'2016-04-25 16:33:42',DATE_ADD(start_time,INTERVAL 420.000 SECOND),'ETH','SaaS','TPC-H','RS_manual',100000000000,100,1,0,0,1,1);"
+
+# Fix for run nums (ie. query__2)
+$MYSQL "update ignore execs set run_num= substring(bench, locate('__', bench)+2), bench=substring(bench, 1, locate('__', bench)-1)  where bench like '%\_\_%';"
+
 # Fix for some datasizes
 $MYSQL "
 update execs set datasize = 1000000000 where datasize = 1073741824;
@@ -1206,36 +1212,41 @@ update execs set datasize = 1000000000000 where datasize = 1073741824000;
 
 # Fix scale factors
 $MYSQL "update execs set scale_factor = round(datasize/1000000000) where (scale_factor is null OR scale_factor=0) and datasize >= 1000000000;"
-
-# Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 20secs
-$MYSQL "delete from execs where exe_time  <=20 and bench_type = 'TPC-H' and datasize >= 10000000000
-and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
-
-# Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 40secs in minerva
-$MYSQL "delete from execs where exe_time  <=40 and bench_type = 'TPC-H' and datasize >= 10000000000
-and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
-
-# Delete too fast results (failed runs) on TPC-H where >=100GB and <= than 80secs in minerva
-$MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
-and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
-
-# Delete old tpch tests
-$MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
+#
+## Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 20secs
+#$MYSQL "delete from execs where exe_time  <=20 and bench_type = 'TPC-H' and datasize >= 10000000000
+#and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
+#
+## Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 40secs in minerva
+#$MYSQL "delete from execs where exe_time  <=40 and bench_type = 'TPC-H' and datasize >= 10000000000
+#and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
+#
+## Delete too fast results (failed runs) on TPC-H where >=100GB and <= than 80secs in minerva
+#$MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
+#and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
+#
+## Delete too fast results (emr-117 and hdil8-A3-114)
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual';"
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual';;"
+#
+#
+## Delete old tpch tests
+#$MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
-INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps)
+INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
 select
   c.id_cluster,
   if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
-      (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+      (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_R',replication,'_',run_num,'/ALL'),
            (if (exec_type='RS_manual',  CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
-                CONCAT(substring(exec, 1, locate('/',exec)), 'ALL' ) )
+                CONCAT(substring(exec, 1, locate('/',exec)-1),'_',run_num,'/ALL' ) )
            ))
       )
   ) exec2,
   'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
-  'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',datanodes
+  'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',maps,run_num,replication
 from execs e join clusters c using (id_cluster)
 where bench_type = 'TPC-H' and bench not IN ('ALL', 'query -optimize', 'query -text', 'query op_datagen') and exe_time > 0.0001
       and exec_type != 'default'
