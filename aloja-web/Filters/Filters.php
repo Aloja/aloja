@@ -65,7 +65,7 @@ class Filters
                     return $this->filters['id_cluster']['namesClusters'][$value];
                 },
                 'generateChoices' => function() {
-                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs(' ')." ORDER BY c.name ASC");
+                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,3,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs(' ')." ORDER BY c.name ASC");
                     $returnChoices = array();
                     foreach($choices as $choice) {
                         $returnChoices[] = $choice['id_cluster'];
