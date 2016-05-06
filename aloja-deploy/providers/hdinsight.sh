@@ -6,17 +6,20 @@
 vm_create_storage_account() {
     if [ -z "$(azure storage account list "$1" | grep "$1")" ]; then
         logger "Creating storage account $1"
-        azure storage account create "$1" -g "$resourceGroup" -s "$subscriptionID" -l "$3" --type "$2"
+        azure storage account create "$1" -g "$resourceGroup" -s "$subscriptionID" -l "$3" --sku-name "$2" --kind "Storage"
     else
         logger "WARNING: Storage account $1 already exists, skipping.."
     fi
-    storageAccountKey=`azure storage account keys list -g "$resourceGroup" $1 | grep Primary | cut -d" " -f6`
+    logger "INFO: retrieving storage account key"
+    storageAccountKey="$(azure storage account keys list -g "$resourceGroup" $1 | grep 'key1' | awk '{print $3}')"
+
+    [ ! "$storageAccountKey" ] && logger "WARNING: Empty storage account key"
 }
 
 #$1 storage account name $2 container name $3 storage account key
 vm_create_storage_container() {
     if [ -z "$(azure storage container list -a "$1" -k "$3" | grep "$2")" ]; then
-        logger "Creating container $2 on storage $1"
+        logger "Creating container $2 on storage $1 with key $3"
         azure storage container create -a "$1" -k "$3" "$2"
     else
         logger "WARNING: Container $2 already exists on $1, skipping.."
