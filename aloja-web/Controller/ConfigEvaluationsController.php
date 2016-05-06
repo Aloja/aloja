@@ -71,7 +71,7 @@ class ConfigEvaluationsController extends AbstractController
 			 avg(e.exe_time) AVG_exe_time,
 			 min(e.exe_time) MIN_exe_time,
 			 max(e.exe_time) MAX_exe_time,
-			 (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
+			 (select AVG(exe_time) FROM aloja2.execs ea JOIN aloja2.clusters ca using (id_cluster) WHERE 1 ".str_replace('c.','ca.',str_replace('e.','ea.',$whereClause)).") AVG_ALL_exe_time,
 			 'none'
 			 from aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 			 LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
@@ -121,6 +121,7 @@ class ConfigEvaluationsController extends AbstractController
 			$count += $row_config['num'];
 			$confOrders[] = $row_config['conf'];
 		}
+
 		$series = '';
 		$bench = '';
 		if ($rows) {
@@ -147,7 +148,8 @@ class ConfigEvaluationsController extends AbstractController
 				$series .= "['{$row['conf']}',".
 					//round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
 					//round(($row['AVG_exe_time']), 3).
-					round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
+					round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //For average
+					//round(($row['AVG_ALL_exe_time']/$row['MIN_exe_time']), 3). //For min
 					"],";
 				$seriesIndex++;
 			}
@@ -160,7 +162,8 @@ class ConfigEvaluationsController extends AbstractController
 				'highcharts_js' => HighCharts::getHeader(),
 				'categories' => $categories,
 				'series' => $series,
-				'models' => $model_html
+				'models' => $model_html,
+				'count' => $count,
 			)
 		);
 	}

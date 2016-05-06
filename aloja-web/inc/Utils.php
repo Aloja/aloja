@@ -33,11 +33,15 @@ class Utils
 	    		if ($concatConfig) $concatConfig .= ",'_',";
 	    	
 	    		if ($item == 'id_cluster') {
-	    			$concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,' datanodes'))";
+	    			$concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,'nodes'))";
 	    		} elseif ($item == 'iofilebuf') {
 	    			$confPrefix = 'I';
 	    		} elseif ($item == 'vm_OS') {
                     $confPrefix = 'OS';
+                } elseif ($item == 'datasize') {
+                    $confPrefix = 'S';
+                } elseif ($item == 'run_num') {
+                    $confPrefix = 'Run';
                 } else {
 	    			$confPrefix = $item;
 	    		}
@@ -534,7 +538,6 @@ class Utils
     }
     
     public static function getExecutionCost($exec, $clusterCosts) {
-
         $costHour = $clusterCosts['costsHour'][$exec['id_cluster']];
         $costRemote = $clusterCosts['costsRemote'][$exec['id_cluster']];
         $costSSD = $clusterCosts['costsSSD'][$exec['id_cluster']];
@@ -578,7 +581,18 @@ class Utils
     	
     	//To get the cost
         //convert the cluster cost + additions from per hour to per second, then just multiply by number of seconds it took
-        $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
+
+        // ADLA tests
+        if (isset($_GET['cluster_hours'])) {
+            if(in_array($exec['id_cluster'], array(101, 102, 103))) {
+                $cost = (($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))) * $_GET['cluster_hours'];
+            } else {
+                $cost = (($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))) * 168;
+            }
+        // Normal
+        } else {
+            $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
+        }
 
     	return $cost;
     }

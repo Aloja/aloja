@@ -212,7 +212,7 @@ import_folder() {
             run_num="1"
           fi
 
-logger"FN $bench_folder RN $run_num EV $exec_values"
+logger "INFO: $bench_folder RN $run_num EV $exec_values"
           # Legacy config, taken from folder and log
           if [ "${name:15:6}" == "_conf_" ]; then
             insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
