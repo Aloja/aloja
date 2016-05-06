@@ -19,6 +19,7 @@
 		},
 		title: {
 			text: 'Average speedup by config group to average execution time by benchmark',
+			//text: 'Maximum speedup by config group (min exe time) to average execution time',
 			align: 'center'
 		},
 		subtitle: {
@@ -111,7 +112,7 @@
 	</br></br>
 	<div id="navigation">
 	{% include 'common/group_filters.html.twig' %}
-	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
+	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: 600px;"></div>
 		<div style="width: 30%; float: right;">
 		{% include 'common/config_filters.html.twig' %}
 		</div>
