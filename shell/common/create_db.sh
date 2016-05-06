@@ -1226,12 +1226,12 @@ $MYSQL "update execs set scale_factor = round(datasize/1000000000) where (scale_
 #and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
 #
 ## Delete too fast results (emr-117 and hdil8-A3-114)
-#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual';"
-#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual';;"
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
 #
-#
-## Delete old tpch tests
-#$MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
+
+# Delete old tpch tests
+$MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
