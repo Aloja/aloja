@@ -548,6 +548,7 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 					WHERE 1 $this->whereClause $filter_execs  GROUP BY c.datanodes,e.exec_type,c.vm_OS,c.vm_size
 					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
 
+
 			$predExecs = "SELECT c.datanodes as 'category','predicted' as 'exec_type',c.vm_OS,c.vm_size,(e.exe_time * (c.cost_hour/3600)) as cost,e.exe_time,c.*
 					FROM aloja_ml.predictions e JOIN aloja2.clusters c USING (id_cluster)
 					INNER JOIN ( SELECT c2.datanodes as 'category','default' as 'exec_type',c2.vm_OS,c2.vm_size as vmsize,MIN(p2.exe_time) as minexe
