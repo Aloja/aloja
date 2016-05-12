@@ -14,12 +14,11 @@
 	$(document).ready(function() {
 	var chart = new Highcharts.Chart({
 		chart: {
-			type: 'bar',
+			type: 'column',
 			renderTo: 'chart'
 		},
 		title: {
-			text: 'Average speedup by config group to average execution time by benchmark',
-			//text: 'Maximum speedup by config group (min exe time) to average execution time',
+			text: 'Average execution time by config group and benchmark',
 			align: 'center'
 		},
 		subtitle: {
@@ -29,38 +28,30 @@
 			categories: [{{ categories|raw }}],
 			title: {
 				text: 'Configuration group'
-			}
+			},
+            labels: {
+                rotation: -45,
+            },
 		},
 		yAxis: {
-			min: 0,
+			//min: 0,
 			//max: 1,
 			title: {
 				useHTML: true,
-				text: '&#8678; Slower &nbsp;&nbsp;&nbsp; Execution time Speedup over average for benchmark (more is better) &nbsp;&nbsp;&nbsp; Faster &#8680;',
-				//align: 'high'
+				text: '&#8678; Faster &nbsp;&nbsp;&nbsp; Execution time average in seconds by group &nbsp;&nbsp;&nbsp; Slower &#8680;',
+//				align: 'high'
 			},
 			labels: {
 				overflow: 'justify'
 			},
-			plotBands: [
-				{
-					from: 0,
-					to: 1,
-					color: 'rgba(255, 170, 213, .2)'
-				},
-				{
-					from: 1,
-					to: 1000,
-					color: 'rgba(100, 170, 255, .2)'
-				}]
-		        },
+		},
 			tooltip: {
 				//valueSuffix: ' millions'
 			},
 			plotOptions: {
-				bar: {
+				column: {
 					dataLabels: {
-					enabled: true
+					enabled: true,
 				}
 			},
 			series: {
@@ -101,11 +92,8 @@
     {% endblock %}
     {% block content %}
 	<div id="intro_text">
-		This tool shows the <strong><a href="https://en.wikipedia.org/wiki/Speedup" target="_blank">speedup</a></strong>
-		(higher is better) over the average from the selected data slice (filters).  The values are normalized.
-		</br>
-		Over 1 (in light blue), it presents an improvement.
-		Below 1 (light red), is a decrease in performance.
+		This tool shows the benchmark execution time in seconds for each group
+		(lower is better) for the selected data slice (filters).
 		</br>
 		To use this tool, first select the group criteria, and the filter (data slice).
 	</div>
