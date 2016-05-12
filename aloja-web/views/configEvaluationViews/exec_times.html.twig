@@ -1,0 +1,118 @@
+{% extends "layout.html.twig" %}
+{% block javascript %}
+	{{ parent() }}
+    {{ highcharts_js|raw }}
+    <script>
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
+	$(document).ready(function() {
+	var chart = new Highcharts.Chart({
+		chart: {
+			type: 'column',
+			renderTo: 'chart'
+		},
+		title: {
+			text: 'Average execution time by config group and benchmark',
+			align: 'center'
+		},
+		subtitle: {
+			text: 'From {{ count }} distinct runs'
+		},
+		xAxis: {
+			categories: [{{ categories|raw }}],
+			title: {
+				text: 'Configuration group'
+			},
+            labels: {
+                rotation: -45,
+            },
+		},
+		yAxis: {
+			//min: 0,
+			//max: 1,
+			title: {
+				useHTML: true,
+				text: '&#8678; Faster &nbsp;&nbsp;&nbsp; Execution time average in seconds by group &nbsp;&nbsp;&nbsp; Slower &#8680;',
+//				align: 'high'
+			},
+			labels: {
+				overflow: 'justify'
+			},
+		},
+			tooltip: {
+				//valueSuffix: ' millions'
+			},
+			plotOptions: {
+				column: {
+					dataLabels: {
+					enabled: true,
+				}
+			},
+			series: {
+				cursor: 'pointer',
+				point: {
+					events: {
+						click: function () {
+							var id = this.series.options.data[this.x][0];
+							id = id.replace(new RegExp('_', 'g'), ' ');
+							top.location.href = "{{ path('benchexecutions') }}?search="+id;
+						}
+					}
+				}
+			},
+		},
+		legend: {
+			layout: 'vertical',
+			align: 'right',
+			verticalAlign: 'top',
+			x: -5,
+			y: 100,
+			floating: true,
+			borderWidth: 1,
+			backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
+			shadow: true,
+			title: {
+				text: ':: Drag Legend ::'
+			},
+			draggable: true
+		},
+		credits: {
+			enabled: false
+		},
+		series: [{{ series|raw }}]
+	});
+	});
+    </script>
+    {% endblock %}
+    {% block content %}
+	<div id="intro_text">
+		This tool shows the benchmark execution time in seconds for each group
+		(lower is better) for the selected data slice (filters).
+		</br>
+		To use this tool, first select the group criteria, and the filter (data slice).
+	</div>
+	</br></br>
+	<div id="navigation">
+	{% include 'common/group_filters.html.twig' %}
+	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: 600px;"></div>
+		<div style="width: 30%; float: right;">
+		{% include 'common/config_filters.html.twig' %}
+		</div>
+		<div style="clear: both;"></div>
+		<hr />
+		<div id="options">
+			Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+			<div id="footer" style="display: none; float: left; width: 100%;">	
+				<div style="float: left; width: 70%;">
+					<ul>{{models | raw}}</ul>
+				</div>
+			</div>
+		</div>
+        </div>
+    {% endblock %}
