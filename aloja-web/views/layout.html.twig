@@ -123,7 +123,9 @@
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Config Evaluations <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
 				<li {% if selected is defined and selected == 'Best configuration' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestconfig') }}">Overall Best Configuration</a></li>
-				<li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement</a></li>
+     			  <li {% if selected is defined and selected == 'Execution Times' %}class="active"{% endif %}><a class="navlink" href="{{ path('exec_times') }}">Configuration Improvement</a></li>
+					  <li {% if selected is defined and selected == 'Config Improvement' %}class="active"{% endif %}><a class="navlink" href="{{ path('configimprovement') }}">Configuration Improvement (Speedup)</a></li>
+
 				<li {% if selected is defined and selected == 'Parameter Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('parameval') }}">Parameter Evaluation</a></li>
 				<li class="divider"></li>
 				<li {% if selected is defined and selected == 'mlcrossvar' %}class="active"{% endif %}><a class="navlink" href="{{ path('mlcrossvar') }}">Variable Visualization</a></li>
