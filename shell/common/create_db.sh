@@ -1212,10 +1212,10 @@ update execs set datasize = 1000000000000 where datasize = 1073741824000;
 
 # Fix scale factors
 $MYSQL "update execs set scale_factor = round(datasize/1000000000) where (scale_factor is null OR scale_factor=0) and datasize >= 1000000000;"
-
-# Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 20secs
-$MYSQL "delete from execs where exe_time  <=20 and bench_type = 'TPC-H' and datasize >= 10000000000
-and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
+#
+## Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 20secs
+#$MYSQL "delete from execs where exe_time  <=20 and bench_type = 'TPC-H' and datasize >= 10000000000
+#and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
 
 # Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 40secs in minerva
 $MYSQL "delete from execs where exe_time  <=40 and bench_type = 'TPC-H' and datasize >= 10000000000
@@ -1229,6 +1229,11 @@ and id_cluster IN (select id_cluster from clusters where provider='minerva100');
 $MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
 $MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
 
+# Delete terribly slow results in ADLA scale 100 query 5
+$MYSQL "delete from execs where id_cluster in (103) and bench='query 5' and scale_factor=100 and exe_time > 35000;"
+
+# Set partitioning to 26 (when 1 for default ADLA distribution)
+$MYSQL "update execs SET replication = 25 where exec_type= 'ADLA_manual' and replication = 1;"
 
 # Delete old tpch tests
 $MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
@@ -1245,10 +1250,10 @@ select
            ))
       )
   ) exec2,
-  'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
+  'query ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
   'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',maps,run_num,replication
 from execs e join clusters c using (id_cluster)
-where bench_type = 'TPC-H' and bench not IN ('ALL', 'query -optimize', 'query -text', 'query op_datagen') and exe_time > 0.0001
+where bench_type = 'TPC-H' and bench not IN ('query ALL', 'query -optimize', 'query -text', 'query op_datagen') and exe_time > 0.0001
       and exec_type != 'default'
 group by run_num,exec_type,datasize, exec2
 having count(*) = 22 order by exec2;"
