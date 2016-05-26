@@ -1260,6 +1260,7 @@ having count(*) = 22 order by exec2;"
 
 # Fix for ML tools
 $MYSQL "UPDATE execs SET hadoop_version='0', iosf=0, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"
+$MYSQL "UPDATE execs SET replication='1' WHERE (replication IS NULL) and bench_type='TPC-H';"
 
 
 
