@@ -1201,6 +1201,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
 
 # Fix for run nums (ie. query__2)
 $MYSQL "update ignore execs set run_num= substring(bench, locate('__', bench)+2), bench=substring(bench, 1, locate('__', bench)-1)  where bench like '%\_\_%';"
+$MYSQL "update ignore execs SET run_num=substring(exec, locate('__', exec)+2) where exec like '%/%\_\_%';"
 
 # Fix for some datasizes
 $MYSQL "
@@ -1212,7 +1213,7 @@ update execs set datasize = 1000000000000 where datasize = 1073741824000;
 
 # Fix scale factors
 $MYSQL "update execs set scale_factor = round(datasize/1000000000) where (scale_factor is null OR scale_factor=0) and datasize >= 1000000000;"
-#
+
 ## Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 20secs
 #$MYSQL "delete from execs where exe_time  <=20 and bench_type = 'TPC-H' and datasize >= 10000000000
 #and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
@@ -1225,9 +1226,9 @@ and id_cluster IN (select id_cluster from clusters where provider='minerva100');
 $MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
 and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
 
-# Delete too fast results (emr-117 and hdil8-A3-114)
-$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
-$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
+## Delete too fast results (emr-117 and hdil8-A3-114)
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
 
 # Delete terribly slow results in ADLA scale 100 query 5
 $MYSQL "delete from execs where id_cluster in (103) and bench='query 5' and scale_factor=100 and exe_time > 35000;"
@@ -1237,6 +1238,10 @@ $MYSQL "update execs SET replication = 25 where exec_type= 'ADLA_manual' and rep
 
 # Delete old tpch tests
 $MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
+
+# Delete invalid emr results
+# Delete old tpch tests
+$MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_type = 'TPC-H';"
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
