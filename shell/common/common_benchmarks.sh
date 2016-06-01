@@ -260,7 +260,7 @@ get_specified_disks() {
   local disk="$1"
   local dir
 
-  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ]; then
+  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ] || [ "$disk" == "NFS" ]; then
     dir="${BENCH_DISKS["$disk"]}"
   elif [[ "$disk" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -281,7 +281,7 @@ get_specified_disks() {
 get_tmp_disk() {
   local dir
 
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ]  || [ "$1" == "NFS" ]; then
     dir="${BENCH_DISKS["$DISK"]}"
   elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -295,6 +295,8 @@ get_tmp_disk() {
       dir="${BENCH_DISKS["TMP"]}"
     elif [ "$disks_type" == "SR" ] ; then
       dir="${BENCH_DISKS["TMP_RAM"]}"
+    elif [ "$disks_type" == "NFS" ] ; then # on NFS use local as /tmp
+      dir="${BENCH_DISKS["HDD"]}"
     else
       dir="${BENCH_DISKS["${disks_type}1"]}"
     fi
@@ -322,10 +324,10 @@ $(get_tmp_disk "$disk_name")"
   echo -e "$all_disks"
 }
 
-# Retuns the main benchmkar path (useful for multidisk setups)
+# Retuns the main benchmkark path (useful for multidisk setups)
 # $1 disk type
 get_initial_disk() {
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] || [ "$1" == "NFS" ] ; then
     local dir="${BENCH_DISKS["$DISK"]}"
   elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
