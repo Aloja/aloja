@@ -289,6 +289,7 @@ make || exit 1
 
 mkdir -p \$HOME/share/sw/bin || exit 1
 cp sar \$HOME/share/sw/bin || exit 1
+cp sadc \$HOME/share/sw/bin || exit 1
 
 "
 
