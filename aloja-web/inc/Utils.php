@@ -33,7 +33,8 @@ class Utils
 	    		if ($concatConfig) $concatConfig .= ",'_',";
 	    	
 	    		if ($item == 'id_cluster') {
-	    			$concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,'nodes'))";
+	    			//$concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,'nodes'))";
+                    $concatConfig .= "c.vm_size";
 	    		} elseif ($item == 'iofilebuf') {
 	    			$confPrefix = 'I';
 	    		} elseif ($item == 'vm_OS') {
@@ -42,13 +43,21 @@ class Utils
                     $confPrefix = 'S';
                 } elseif ($item == 'run_num') {
                     $confPrefix = 'Run';
+                } elseif ($item == 'maps') {
+                    $confPrefix = 'AUs';
+                } elseif ($item == 'replication') {
+                    $confPrefix = 'Dists';
                 } else {
 	    			$confPrefix = $item;
 	    		}
-	    	
+
+                $prefixes = array ('maps', 'replication');
+
 	    		//avoid alphanumeric fields
-	    		if ($item != 'id_cluster' && !in_array($item, array('net', 'disk'))) {
-	    			$concatConfig .= "'".$confPrefix."', ${aliases[$item]}.$item";
+	    		if (!in_array($item, $prefixes) && $item != 'id_cluster' && !in_array($item, array('net', 'disk'))) {
+                    $concatConfig .= "'" . $confPrefix . "', ${aliases[$item]}.$item";
+                } else if (in_array($item, $prefixes)) {
+                        $concatConfig .= "${aliases[$item]}.$item ,'$confPrefix'";
 	    		} else if($item != 'id_cluster') {
 	    			$concatConfig .= " ${aliases[$item]}.$item";
 	    		}

@@ -117,7 +117,7 @@ class ConfigEvaluationsController extends AbstractController
 		$count = 0;
 		$confOrders = array();
 		foreach ($rows_config as $row_config) {
-			$categories .= "'{$row_config['conf']} #{$row_config['num']}',";
+			$categories .= "'{$row_config['conf']} ({$row_config['num']})',";
 			$count += $row_config['num'];
 			$confOrders[] = $row_config['conf'];
 		}
@@ -200,6 +200,7 @@ class ConfigEvaluationsController extends AbstractController
 
 		try {
 			$concat_config = Utils::getConfig($this->filters->getGroupFilters());
+
 			$filter_execs = DBUtils::getFilterExecs();
 			$order_conf = 'LENGTH(conf), conf';
 			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
@@ -237,6 +238,7 @@ class ConfigEvaluationsController extends AbstractController
 			}
 
 			$rows_config = $db->get_rows($query);
+
 			$height = 600;
 			if (count($rows_config) > 4) {
 				$num_configs = count($rows_config);
@@ -293,7 +295,7 @@ class ConfigEvaluationsController extends AbstractController
 		$count = 0;
 		$confOrders = array();
 		foreach ($rows_config as $row_config) {
-			$categories .= "'{$row_config['conf']} #{$row_config['num']}',";
+			$categories .= "'{$row_config['conf']} ({$row_config['num']})',";
 			$count += $row_config['num'];
 			$confOrders[] = $row_config['conf'];
 		}
