@@ -618,7 +618,7 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 								}
 							}
 							$series[] = $timeSeries;
-							$series[] = $costSeries;
+							//$series[] = $costSeries;
 						}
 					}
 				}
