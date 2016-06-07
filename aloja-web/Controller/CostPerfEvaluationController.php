@@ -155,7 +155,7 @@ class CostPerfEvaluationController extends AbstractController
                 e.end_time,e.net,e.disk,e.bench_type,
                 e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
                 e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,e.run_num,
-                c.*,c.name as 'name' from execs e JOIN aloja2.clusters c USING (id_cluster)
+                c.*,c.vm_size as 'name' from execs e JOIN aloja2.clusters c USING (id_cluster)
  				  LEFT JOIN aloja_ml.predictions p USING (id_exec)
 WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c.name ASC";
 
@@ -238,7 +238,8 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
     			'select_multiple_benchs' => false,
                 'bestExecs' => $bestExecs,
 				'clusterCosts' => $this->clusterCosts,
-				'clusters' => $clusters
+				'clusters' => $clusters,
+				'highcharts_js' => HighCharts::getHeader(),
     		));
     }
     
