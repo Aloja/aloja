@@ -780,7 +780,7 @@ set_monit_binaries() {
         logger "INFO: Setting up perfomance monitor: $perf_mon"
         perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
         if [ "$perf_mon_bin_path" ] ; then
-          logger "INFO: Copying $perf_mon binary to $perf_mon_bench_path"
+          logger "INFO: Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
           $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
         else
           die "Cannot find $perf_mon binary on the system"
@@ -826,7 +826,7 @@ run_monit() {
 
   if [ "$perf_mon" == "sar" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
-      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null  &" & #2>&1
     else
       $DSH "sar -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
     fi
@@ -836,9 +836,50 @@ run_monit() {
     else
       $DSH "vmstat -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
     fi
+  # iotop, requires sudo and interval only 1 sec supported
+  elif [ "$perf_mon" == "iotop" ] ; then
+    if [ -z "$noSudo" ] || [ "$BENCH_PERF_INTERVAL" == "1" ]; then
+      if [ "$clusterType" != "PaaS" ]; then
+        local iotop_log="$HDD/iotop-\$(hostname).log"
+        $DSH "touch $iotop_log; sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -btoqqk >> $iotop_log &" &
+      else
+        $DSH "touch $iotop_log; sudo iotop  >> $iotop_log &" &
+      fi
+    else
+      logger "WARNING: iotop requires root and sudo is disabled for cluster OR BENCH_PERF_INTERVAL != 1 (set to: $BENCH_PERF_INTERVAL), skipping..."
+    fi
+  # dstat
+  elif [ "$perf_mon" == "dstat" ] ; then
+     # Removed for ubuntu
+     # -T --cpu-adv --top-cpu-adv -l -d --aio --disk-avgqu --disk-avgrq --disk-svctm --disk-tps --disk-util --disk-wait --top-bio-adv --top-io-adv --md-status -n --net-packets  -gimprsy --cpu-use --fs --top-int --top-latency -ipc -lock --mem-adv --top-mem --raw --unix --vm-adv --bits --nocolor --noheader --profile --power --proc-count --thermal --noheaders
+     #--cpu-adv --disk-avgqu --disk-avgrq --disk-svctm --disk-wait --md-status  --cpu-use --mem-adv --vm-adv --bits --thermal
+
+    if [ "$clusterType" != "PaaS" ]; then
+      local dstat_log="$HDD/dstat-\$(hostname).log"
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+    else
+      $DSH "dstat -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+    fi
+  # perf
+  elif [ "$perf_mon" == "perf" ] ; then
+
+    # Enable CPU trace data (if we have root)
+    if [ -z "$noSudo" ] ; then
+      $DSH "sudo echo '0' > /proc/sys/kernel/perf_event_paranoid"
+    fi
+
+    # TODO: https://github.com/intel-hadoop/PAT/blob/master/PAT/WORKER_scripts/instruments/perf
+
+  elif [ "$perf_mon" == "vmstat" ] ; then
+    if [ "$clusterType" != "PaaS" ]; then
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+    else
+      $DSH "vmstat -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+    fi
   else
     die "Specified perf mon $perf_mon not implemented"
   fi
+
 
   wait #for the bg processes
 
