@@ -93,12 +93,12 @@ aloja_wget() {
 
 # install the base packages for VMs
 vm_install_base_packages() {
-  local bootstrap_file="${FUNCNAME[0]}"
+  local bootstrap_file="${FUNCNAME[0]}_1"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng" "update" #wamerican is for hivebench
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop" "update" #wamerican is for hivebench
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -119,7 +119,7 @@ vm_install_extra_packages() {
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing extra packages for for VM $vm_name "
 
-      install_packages "screen vim mc git iotop htop;"
+      install_packages "screen vim mc git htop;"
 
       local test_action="$(vm_execute "vim --version |grep 'VIM - Vi IMproved' && echo '$testKey'")"
       if [[ "$test_action" == *"$testKey"* ]] ; then
