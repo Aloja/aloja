@@ -1226,6 +1226,9 @@ and id_cluster IN (select id_cluster from clusters where provider='minerva100');
 $MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
 and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
 
+# Delete too fast restuls for CBD 8 1-30 500GB
+$MYSQL "delete from execs where id_cluster = 126 and scale_factor =500;"
+
 ## Delete too fast results (emr-117 and hdil8-A3-114)
 #$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
 #$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS');"
@@ -1251,7 +1254,9 @@ select
   if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
       (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_R',replication,'_',run_num,'/ALL'),
            (if (exec_type='RS_manual',  CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+                (if (exec_type='BQ_manual',  CONCAT('20160301_TPCH_BQ_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
                 CONCAT(substring(exec, 1, locate('/',exec)-1),'_',run_num,'/ALL' ) )
+                ))
            ))
       )
   ) exec2,
