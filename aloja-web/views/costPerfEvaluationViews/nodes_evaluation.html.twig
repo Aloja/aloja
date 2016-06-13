@@ -77,6 +77,11 @@
                 legend: {
                     layout: 'horizontal'
                 },
+                plotOptions: {
+                    series: {
+                        connectNulls: true
+                    }
+                },
                 series: {{ seriesData | raw }}
             });
 
