@@ -101,8 +101,10 @@ import_from_folder() {
 # Imports the given folder into ALOJA-WEB
 # TODO old code moved here need refactoring
 # $1 folder to import
+# $2 export to PAT
 import_folder() {
   local folder="$1"
+  local export_to_PAT="$2"
 
   #filter folders by date
   min_date="20120101"
@@ -115,6 +117,9 @@ import_folder() {
   logger "INFO: Iterating folder\t$folder CP: $(pwd)"
 
   folder_time="$(date --utc --date "${folder:0:8}" +%s)"
+
+  PAT_folder="PAT_$folder"
+  PAT_start_ts="$folder_time"
 
   if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
     logger "INFO: Entering folder\t$folder"
@@ -380,7 +385,12 @@ get_insert_cluster_sql() {
     source "$clusterConfigFile"
 
     #load the providers specific functions and overrrides
-    providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/${defaultProvider}.sh"
+
+    if [ "$defaultProvider" == "azure_ADLA" ] ; then
+      providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/azure.sh"
+    else
+      providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/${defaultProvider}.sh"
+    fi
 
     source "$providerFunctionsFile"
 
@@ -969,6 +979,9 @@ import_hadoop_jobs() {
 }
 
 import_sar_files() {
+  logger "INFO: Importing SAR files in: $(pwd)"
+#shopt -s nullglob
+logger "DEBUG: LS: $(ls -lah)"
   for sar_file in sar*.sar ; do
     if [[ $(head $sar_file |wc -l) > 1 ]] ; then
 
@@ -1012,6 +1025,24 @@ import_sar_files() {
                         \$2=\"id;id_exec;\" \$2; print \$2} \
                NR > 1  {\$1=\"NULL;${id_exec};\"\$1;  print }" > "$csv_name"
 
+        if [ "$PAT_ts" ] ; then
+          # PAT export
+          if [ "$table_name" == "SAR_cpu" ] ; then
+            local hostn="${sar_file:4:-4}"
+            logger "INFO: Exporting to PAT cpustat host: $hostn"
+            local PAT_ts="$PAT_ts"
+            local PAT_host_foler="../../$PAT_folder/instruments/$hostn"
+            #rm -rf "$PAT_host_foler" 2> /dev/null
+            mkdir -p "$PAT_host_foler"
+            #awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_foler/vmstat"
+
+            $sadf -d "$sar_file" -- $sar_command |\
+            awk -F ';' "NR == 1 {\$1=\$2=\$3=\$4=\"\"; print \"HostName TimeStamp CPU\" \$0} \
+                        NR > 1 {\$1=\$2=\$3=\$4=\"\"; print \"$hostn \" ($PAT_ts + NR-1) \" ALL\" \$0}" > "$PAT_host_foler/cpustat"
+          fi
+        fi
+
+
           if [ "$PARALLEL_INSERTS" ] ; then
             insert_DB "aloja_logs.${table_name}" "$csv_name" "" ";" &
           else
@@ -1040,6 +1071,16 @@ import_vmstats_files() {
       logger "INFO: Inserting into DB $vmstats_file TN $table_name"
 
       tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp_${vmstats_file}.csv
+
+      if [ "$PAT_ts" ] ; then
+        # PAT export
+        logger "INFO: Exporting to PAT host: $hostn"
+        local PAT_ts="$PAT_ts"
+        local PAT_host_foler="../../$PAT_folder/instruments/$hostn"
+        #rm -rf "$PAT_host_foler" 2> /dev/null
+        mkdir -p "$PAT_host_foler"
+        awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_foler/vmstat"
+      fi
 
       if [ "$PARALLEL_INSERTS" ] ; then
         insert_DB "aloja_logs.${table_name}" "tmp_${vmstats_file}.csv" "" "," &
