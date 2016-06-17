@@ -54,6 +54,7 @@ vm_create() {
       #azure_create_group "$affinityGroup" "$azureLocation"
       #azure_create_vnet  "$virtualNetworkName" "$affinityGroup"
 
+      azure config mode asm;
       azure vm create \
             -s "$subscriptionID" \
             --connect "$dnsName" `#Deployment name` \
@@ -71,6 +72,7 @@ vm_create() {
             "$userAloja" "$passwordAloja"
     #no virtual network preference
     else
+      azure config mode asm;
       azure vm create \
             -s "$subscriptionID" \
             --connect "$dnsName" `#Deployment name` \
@@ -85,6 +87,7 @@ vm_create() {
   else
     logger "Creating Windows VM $1 with RDP port $ssh_port..."
 
+    azure config mode asm;
     azure vm create \
           -s "$subscriptionID" \
           --connect "$dnsName" `#Deployment name` \
