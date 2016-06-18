@@ -1243,8 +1243,11 @@ $MYSQL "update execs SET replication = 25 where exec_type= 'ADLA_manual' and rep
 $MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
 
 # Delete invalid emr results
-# Delete old tpch tests
 $MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_type = 'TPC-H';"
+
+# Delete invalid CBD results
+$MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_type = 'TPC-H';"
+
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
@@ -1263,10 +1266,35 @@ select
   'query ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
   'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',maps,run_num,replication
 from execs e join clusters c using (id_cluster)
-where bench_type = 'TPC-H' and bench not IN ('query ALL', 'query -optimize', 'query -text', 'query op_datagen') and exe_time > 0.0001
+where bench_type = 'TPC-H' and bench not IN ('query ALL', 'query -optimize', 'query -text', 'query op_datagen')
+and bench not like '%_c%' and exe_time > 0.0001
       and exec_type != 'default'
 group by run_num,exec_type,datasize, exec2
-having count(*) = 22 order by exec2;"
+having count(*) = 22 order by exec2;
+
+#Concurrency numbers for D2F
+INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
+select
+  c.id_cluster,
+  if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+      (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_R',replication,'_',run_num,'/ALL'),
+           (if (exec_type='RS_manual',  CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+                (if (exec_type='BQ_manual',  CONCAT('20160301_TPCH_BQ_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+                CONCAT(substring(exec, 1, locate('/',exec)-1),'_',run_num,'/ALL' ) )
+                ))
+           ))
+      )
+  ) exec2,
+  'query ALLc',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
+  'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',maps,run_num,replication
+from execs e join clusters c using (id_cluster)
+where bench_type = 'TPC-H' and bench not IN ('query ALL', 'query -optimize', 'query -text', 'query op_datagen')
+and bench like '%_c%' and exe_time > 0.0001 and exec_type = 'D2F_manual'
+      and exec_type != 'default'
+group by run_num,exec_type,datasize, exec2
+having count(*) = 22 order by exec2;
+
+"
 
 # Fix for ML tools
 $MYSQL "UPDATE execs SET hadoop_version='0', iosf=0, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"
