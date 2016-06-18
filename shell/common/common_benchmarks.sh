@@ -909,15 +909,21 @@ stop_monit(){
 }
 
 # Return the bench name with the run number on the name
+# and the concurrency number if applicable
 # $1 bench_name
 get_bench_name_with_num() {
   local bench_name="$1"
+  local new_bench_name="$bench_name" #return same if not modified
+
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    new_bench_name="${bench_name}_c$BENCH_CONCURRENCY"
+  fi
 
   if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
-    echo -e "${bench_name}__$BENCH_CURRENT_NUM_RUN"
-  else
-    echo -e "$bench_name"
+    new_bench_name="${new_bench_name}__$BENCH_CURRENT_NUM_RUN"
   fi
+
+  echo -e "$new_bench_name"
 
 }
 
@@ -1116,6 +1122,25 @@ set_bench_end() {
   fi
 }
 
+# Checks if command needs to be executed concurrently
+# $1 cmd
+concurrent_run() {
+  local cmd="$1"
+
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    local cmd_tmp
+    for (( i=0; i<$BENCH_CONCURRENCY; i++)) ; do
+      cmd_tmp+="$cmd &
+"
+    done
+
+    cmd="${cmd_tmp:0:(-1)}
+wait"
+  fi
+
+  echo -e "$cmd"
+}
+
 # Runs the given command wrapped "in time"
 # Creates a file descriptor to return output in realtime as well as keeping it
 # in a var to extract its time
@@ -1125,6 +1150,12 @@ time_cmd_master() {
   local cmd="$1"
   local set_bench_time="$2"
 
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    cmd="$(concurrent_run "$cmd")"
+    logger "INFO: executing with $BENCH_CONCURRENCY of concurrency"
+    logger "DEBUG: Concurrent cmd: $cmd"
+  fi
+
   exec 9>&2 # Create a new file descriptor
   local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd' |tee $HDD/${bench}.out" 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
@@ -1132,7 +1163,11 @@ time_cmd_master() {
   # Set the accurate time to the global var
   if [ "$set_bench_time" ] ; then
     BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
-    logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+    if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+      logger "DEBUG: BENCH_TIME=$BENCH_TIME # with $BENCH_CONCURRENCY concurrency "
+    else
+      logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+    fi
   fi
 
   # Print warning if error of the last command (TODO: implement better)
@@ -1150,6 +1185,12 @@ time_cmd_master() {
 time_cmd() {
   local cmd="$1"
   local set_bench_time="$2"
+
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    cmd="$(concurrent_run "$cmd")"
+    logger "INFO: executing with $BENCH_CONCURRENCY of concurrency"
+    logger "DEBUG: Concurrent cmd: $cmd"
+  fi
 
   exec 9>&2 # Create a new file descriptor
   local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
@@ -1174,7 +1215,7 @@ execute_cmd(){
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
-    save_disk_usage "BEFORE"
+    #save_disk_usage "BEFORE"
     restart_monit
     set_bench_start "$bench"
   fi
@@ -1188,7 +1229,7 @@ execute_cmd(){
   if [ "$time_exec" ] ; then
     set_bench_end "$bench"
     stop_monit
-    save_disk_usage "AFTER"
+    #save_disk_usage "AFTER"
     save_bench "$bench"
   fi
 }
