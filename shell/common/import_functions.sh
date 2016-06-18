@@ -1242,3 +1242,34 @@ return 1 #disabled for now...
 #  hit_page "http://$host_name/dbscan"
 #  hit_page "http://$host_name/dbscanexecs"
 }
+
+# Sends commands to MySQL every 300 lines (default)
+# $1 full text
+# $2 number of lines to split the command
+exec_by_lines() {
+  local text="$1"
+  local lines="$2"
+
+  [ ! "$lines" ] && lines=300 # Default
+
+  local group=""
+  local it=0
+  while read -r text_line ; do
+
+    group+="
+$text_line"
+
+    it_num="$((it_num+1))"
+    # Separate every 100 lines
+
+    if ((it_num % lines == 0)) ; then
+      logger "INFO: sending  $lines lines to MySQL"
+      $MYSQL "$group"
+      group=""
+    fi
+
+  done <<< "$text"
+
+  logger "INFO: sending FINAL lines to MySQL"
+  $MYSQL "$group"
+}
