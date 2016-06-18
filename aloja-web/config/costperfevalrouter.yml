@@ -32,4 +32,4 @@ datasizeseval:
 coresseval:
     pattern: "/coreseval"
     controller: "alojaweb\\Controller\\CostPerfEvaluationController::coresEvaluationAction"
-    screenName: "Scalability by core"
+    screenName: "Cores Scalability"
