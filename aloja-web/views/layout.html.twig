@@ -138,9 +138,9 @@
 			<li class="dropdown">
 		          <a href="#" class="navlink dropdown-toggle" data-toggle="dropdown">Cost/Perf Evaluation <span class="caret"></span></a>
 		          <ul class="dropdown-menu" role="menu">
-                    <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf scalability of VMs</a></li>
-					<li {% if selected is defined and selected == 'Datasizes Scalability' %}class="active"{% endif %}><a class="navlink" href="{{ path('datasizeseval') }}">Cost/Perf scalability of Datasizes</a></li>
-					  <li {% if selected is defined and selected == 'Cores Scalability' %}class="active"{% endif %}><a class="navlink" href="{{ path('coreseval') }}">Cost/Perf scalability by Cores</a></li>
+                    <li {% if selected is defined and selected == 'Number of Nodes Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('nodeseval') }}">Cost/Perf scalability by VMs</a></li>
+					<li {% if selected is defined and selected == 'Datasizes Scalability' %}class="active"{% endif %}><a class="navlink" href="{{ path('datasizeseval') }}">Cost/Perf scalability by data size</a></li>
+					  <li {% if selected is defined and selected == 'Cores Scalability' %}class="active"{% endif %}><a class="navlink" href="{{ path('coreseval') }}">Cost/Perf scalability by cores</a></li>
 			        <li {% if selected is defined and selected == 'Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('costperfeval') }}">Cost/Perf Evaluation of execs</a></li>
 			        <li {% if selected is defined and selected == 'Best Clusters Cost Evaluation' %}class="active"{% endif %}><a class="navlink" href="{{ path('bestcostperfclustereval') }}">Cost/Perf Evaluation of clusters</a></li>
 			        <li {% if selected is defined and selected == 'Cost-Effectiveness of clusters' %}class="active"{% endif %}><a class="navlink" href="{{ path('clustercosteffectiveness') }}">Cost-Effectiveness of clusters</a></li>
