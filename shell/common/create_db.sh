@@ -1229,9 +1229,9 @@ and id_cluster IN (select id_cluster from clusters where provider='minerva100');
 # Delete too fast restuls for CBD 8 1-30 500GB
 $MYSQL "delete from execs where id_cluster = 126 and scale_factor =500 and start_time < '2016-06-15';;"
 
-# Delete too fast results (emr-117 and hdil8-A3-114)
-$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS') and start_time < '2016-06-15';;"
-$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS') and start_time < '2016-06-15';;"
+## Delete too fast results (emr-117 and hdil8-A3-114)
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS') and start_time < '2016-06-15';;"
+#$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 21' < 200 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS') and start_time < '2016-06-15';;"
 
 # Delete terribly slow results in ADLA scale 100 query 5
 $MYSQL "delete from execs where id_cluster in (103) and bench='query 5' and scale_factor=100 and exe_time > 35000;"
@@ -1241,6 +1241,9 @@ $MYSQL "update execs SET replication = 25 where exec_type= 'ADLA_manual' and rep
 
 # Delete old tpch tests
 $MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
+
+# Delete failed runs (no datagen) from IaaS clusters
+$MYSQL "delete from execs where id_cluster IN (8, 41) and bench_type = 'TPC-H' and start_time < '2016-06-21 07:00';"
 
 ## Delete invalid emr results
 $MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_type = 'TPC-H' and start_time < '2016-06-15';"
