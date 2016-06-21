@@ -605,19 +605,19 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 
 				//Change VM names for SaaS tests
 				if($scalabilityType != 'Datasize') {
-					if (strstr($exec['vm_size'], 'DWU')) {
+					if (strstr($exec['vm_size'],'DWU')) {
 						$vm_name = preg_replace('/\d+DWU/', 'DWU', $exec['vm_size']); //for DW
-					} else if (strstr($exec['vm_size'], 'RS')) {
-						$vm_name = preg_replace('/RS-+\d+/', 'RS-', $exec['vm_size']);
-					} else if (strstr($exec['vm_size'], 'EMR')) {
-						$vm_name = preg_replace('/EMR-+\d+/', 'EMR-', $exec['vm_size']);
-					} else if (strstr($exec['vm_size'], 'CBD')) {
-						$vm_name = preg_replace('/CBD-+\d+/', 'CBD-', $exec['vm_size']);
-					} else if (strstr($exec['vm_size'], 'HDI')) {
-						$vm_name = preg_replace('/HDI-+\d+/', 'HDI-', $exec['vm_size']);
-					} else if (strstr($exec['vm_size'], 'AU')) {
-						$vm_name = preg_replace('/\d+AU/', 'AU', $exec['vm_size']);
-					} else if (strstr($exec['vm_size'], 'M100')) {
+					} else if (strstr($exec['vm_size'],'RS')){
+						$vm_name = preg_replace('/RS-+\d+/', 'RS-',  $exec['vm_size']);
+					} else if (strstr($exec['vm_size'],'EMR')){
+						$vm_name = preg_replace('/EMR-+\d+/', 'EMR-',  $exec['vm_size']);
+					} else if (strstr($exec['vm_size'],'CBD')){
+						$vm_name = substr($exec['vm_size'],0, 14);
+					} else if (strstr($exec['vm_size'],'HDI')){
+						$vm_name = substr($exec['vm_size'],0, 6);
+					} else if (strstr($exec['vm_size'],'AU')){
+						$vm_name = preg_replace('/\d+AU/', 'AU',  $exec['vm_size']);
+					} else if (strstr($exec['vm_size'],'M100')){
 						$vm_name = 'M100';
 					} else {
 						$vm_name = $exec['vm_size'];
@@ -638,8 +638,8 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 						if (isset($vmSizes[$vmSize][$execType][$OS])) {
 							if ($i == sizeof($seriesColors))
 								$i = 0;
-							$costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-							$timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+							$costSeries = array('name' => "$vmSize ", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+							$timeSeries = array('name' => "$vmSize ", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
 							foreach ($dataNodes as $datanode => $dvalue) {
 								$datanodes[] = $datanode;
 								if (!isset($value[$execType][$OS][$datanode])) {
@@ -737,9 +737,9 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 				} else if (strstr($exec['vm_size'],'EMR')){
 					$vm_name = preg_replace('/EMR-+\d+/', 'EMR-',  $exec['vm_size']);
 				} else if (strstr($exec['vm_size'],'CBD')){
-					$vm_name = preg_replace('/CBD-+\d+/', 'CBD-',  $exec['vm_size']);
+					$vm_name = substr($exec['vm_size'],0, 14);
 				} else if (strstr($exec['vm_size'],'HDI')){
-					$vm_name = preg_replace('/HDI-+\d+/', 'HDI-',  $exec['vm_size']);
+					$vm_name = substr($exec['vm_size'],0, 6);
 				} else if (strstr($exec['vm_size'],'AU')){
 					$vm_name = preg_replace('/\d+AU/', 'AU',  $exec['vm_size']);
 				} else if (strstr($exec['vm_size'],'M100')){
@@ -760,8 +760,8 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 					foreach ($vmOS as $OS => $osvalue) {
 						if (isset($vmSizes[$vmSize][$execType][$OS])) {
 							if ($i == sizeof($seriesColors)) $i = 0;
-							$costSeries = array('name' => "$vmSize $execType $OS Run cost", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
-							$timeSeries = array('name' => "$vmSize $execType $OS Run execution time", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
+							$costSeries = array('name' => "$vmSize", 'type' => 'spline', 'dashStyle' => 'longdash', 'yAxis' => 0, 'data' => array(), 'tooltip' => array('valueSuffix' => ' US$'), 'color' => $seriesColors[$i]);
+							$timeSeries = array('name' => "$vmSize", 'type' => 'spline', 'yAxis' => 1, 'data' => array(), 'tooltip' => array('valueSuffix' => ' s'), 'color' => $seriesColors[$i++]);
 							foreach ($dataNodes as $datanode => $dvalue) {
 								$datanodes[] = $datanode;
 								if (!isset($value[$execType][$OS][$datanode])) {
