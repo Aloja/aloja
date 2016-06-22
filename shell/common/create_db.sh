@@ -1245,11 +1245,19 @@ $MYSQL "delete from execs where id_cluster =12 and bench_type = 'TPC-H';"
 # Delete failed runs (no datagen) from IaaS clusters
 $MYSQL "delete from execs where id_cluster IN (8, 41) and bench_type = 'TPC-H' and start_time < '2016-06-21 07:00';"
 
-## Delete invalid emr results
+# Delete invalid emr results
 $MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_type = 'TPC-H' and start_time < '2016-06-15';"
-#
-## Delete invalid CBD results
-#$MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_type = 'TPC-H' and start_time < '2016-06-01';"
+$MYSQL "delete from execs where id_cluster =116 and scale_factor >= 100 and bench_type = 'TPC-H' and start_time < '2016-06-15' and exe_time < 250 and bench in ('query 1');"
+
+# Delete failed CBD results
+$MYSQL "delete from execs where id_cluster =120 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 50 and bench in ('query 1', 'query 2');"
+
+# Delete failed a3 8nodes results
+$MYSQL "delete from execs where id_cluster =114 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 100 and bench in ('query 3', 'query 5');"
+
+
+# Merged duplicated CBD results
+$MYSQL "update execs set id_cluster =126 where id_cluster =166;"
 
 # Change id cluster for incorrect runs
 $MYSQL "update execs SET id_cluster=97 where id_cluster=96 and start_time > '2016-06-15';"
