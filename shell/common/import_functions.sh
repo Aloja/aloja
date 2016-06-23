@@ -1243,14 +1243,14 @@ return 1 #disabled for now...
 #  hit_page "http://$host_name/dbscanexecs"
 }
 
-# Sends commands to MySQL every 300 lines (default)
+# Sends commands to MySQL every 250 lines (default)
 # $1 full text
 # $2 number of lines to split the command
 exec_by_lines() {
   local text="$1"
   local lines="$2"
 
-  [ ! "$lines" ] && lines=300 # Default
+  [ ! "$lines" ] && lines=250 # Default
 
   local group=""
   local it=0
