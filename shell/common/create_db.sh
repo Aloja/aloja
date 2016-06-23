@@ -1302,7 +1302,7 @@ select
   'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',maps,run_num,replication
 from execs e join clusters c using (id_cluster)
 where bench_type = 'TPC-H' and bench not IN ('query ALL', 'query -optimize', 'query -text', 'query op_datagen')
-and bench like '%_c%' and exe_time > 0.0001 and exec_type = 'D2F_manual'
+and bench like '%_c%' and exe_time > 0.0001
       and exec_type != 'default'
 group by run_num,exec_type,datasize, exec2
 having count(*) = 22 order by exec2;
