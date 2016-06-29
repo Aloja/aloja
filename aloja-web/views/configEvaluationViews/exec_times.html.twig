@@ -1,0 +1,170 @@
+{% extends "layout.html.twig" %}
+{% block javascript %}
+	{{ parent() }}
+    {{ highcharts_js|raw }}
+    <script>
+	function toggle(divid, textid)
+	{
+		var ele = document.getElementById(divid);
+		var text = document.getElementById(textid);
+		if (ele.style.display == "block") { ele.style.display = "none"; text.innerHTML = "show"; }
+		else { ele.style.display = "block"; text.innerHTML = "hide"; }
+	}
+
+	$(document).ready(function() {
+	var chart = new Highcharts.Chart({
+		chart: {
+			type: 'column',
+			renderTo: 'chart',
+            style: {
+                //fontFamily: 'monospace',
+                font: '12px Verdana',
+                color: '#1A1A1A'
+            },
+            spacingBottom: 0,
+//			width: 800,
+//			height: 600,
+		},
+		exporting: {
+			allowHTML: true,
+//			sourceWidth: 800,
+//			sourceHeight: 600,
+//			// scale: 2 (default)
+////			chartOptions: {
+////				subtitle: null
+////			}
+		},
+		title: {
+			text: 'AVG execution time in secs by config group and benchmark',
+			align: 'center',
+            style: {
+                //fontFamily: 'monospace',
+                font: 'bold 16px Verdana',
+                color: '#1A1A1A'
+            },
+		},
+		subtitle: {
+			text: 'From {{ count }} distinct runs.  Plot bars shows MAX and MIN'
+		},
+		xAxis: {
+			categories: [{{ categories|raw }}],
+			title: {
+				text: 'Config group'
+			},
+            labels: {
+                useHTML: false,
+                //rotation: -30,
+                autoRotation: [-10, -20, -30, -40, -50, -60, -70, -80, -90],
+                //autoRotationLimit: 100,
+                //staggerLines: 2,
+                style: {
+                    color: '#1A1A1A',
+                    font: 'bold 10px Verdana'
+                },
+            },
+		},
+		yAxis: {
+			//min: 0,
+			//max: 1,
+			title: {
+				useHTML: false,
+				text:
+                '← Faster ' +
+                '\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 ' +
+                'Average execution time in seconds' +
+                '\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 ' +
+                'Slower →',
+				align: 'low'
+			},
+            labels: {
+                //overflow: 'justify',
+                //rotation: -30,
+                style: {
+                    color: '#1A1A1A',
+                    font: 'bold 10px Verdana'
+                },
+            },
+		},
+			tooltip: {
+				//valueSuffix: ' millions'
+			},
+			plotOptions: {
+				column: {
+					dataLabels: {
+					enabled: true,
+				}
+			},
+			series: {
+				cursor: 'pointer',
+				point: {
+					events: {
+						click: function () {
+							var id = this.series.options.data[this.x][0];
+							id = id.replace(new RegExp('_', 'g'), ' ');
+							top.location.href = "{{ path('benchexecutions') }}?search="+id;
+						}
+					}
+				}
+			},
+		},
+		legend: {
+			layout: 'vertical',
+			align: 'right',
+			verticalAlign: 'top',
+			x: -5,
+			y: 100,
+			floating: true,
+			borderWidth: 1,
+			backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
+			shadow: true,
+			title: {
+				//text: ':: Drag Legend ::'
+                text: ':: Bench(s) ::',
+                style: {
+                    color: '#1A1A1A',
+                    font: 'bold 11px Verdana'
+                },
+			},
+			draggable: true,
+            itemStyle: {
+                color: '#1A1A1A',
+                fontWeight: '',
+                font: 'Verdana',
+                fontSize: '11px',
+            },
+
+		},
+		credits: {
+			enabled: false
+		},
+		series: [{{ series|raw }}]
+	});
+	});
+    </script>
+    {% endblock %}
+    {% block content %}
+	<div id="intro_text">
+		This tool shows the benchmark execution time in seconds for each group
+		(lower is better) for the selected data slice (filters).
+		</br>
+		To use this tool, first select the group criteria, and the filter (data slice).
+	</div>
+	</br></br>
+	<div id="navigation">
+	{% include 'common/group_filters.html.twig' %}
+	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; width: 800px; height: 600px; "></div>
+		<div style="width: 30%; float: right;">
+		{% include 'common/config_filters.html.twig' %}
+		</div>
+		<div style="clear: both;"></div>
+		<hr />
+		<div id="options">
+			Model information and control: <a id="displayText2" href="javascript:toggle('footer','displayText2');">show</a>
+			<div id="footer" style="display: none; float: left; width: 100%;">
+				<div style="float: left; width: 70%;">
+					<ul>{{models | raw}}</ul>
+				</div>
+			</div>
+		</div>
+        </div>
+    {% endblock %}

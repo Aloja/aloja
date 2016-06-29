@@ -4,20 +4,21 @@
 # Downalod the Hadoop examples jar
 # we use the same jar for all executions of the same MR API version, to compare the same code
 BENCH_REQUIRED_FILES["Hadoop-Examples"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/Hadoop-Examples.tar.gz"
-#BENCH_REQUIRED_FILES["Hadoop-Tests"]="http://repo1.maven.org/maven2/org/apache/hadoop/hadoop-common/2.7.1/hadoop-common-2.7.1-tests.jar"
 
+# List of allowed benchmarks (for validation)
+BENCH_ENABLED="wordcount terasort teravalidate dfsio sort grep"
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="wordcount terasort teravalidate"
+# Check supplied benchmarks
+check_bench_list
+
+# list of benchmarks that require a previous benchmark run
+BENCH_VALIDATES="teravalidate"
+# if a validate is specified, we add it to a different list so that we don't iterate it later
+BENCH_VALIDATES="$(get_bench_validates "$BENCH_LIST" "$BENCH_VALIDATES")"
+BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_VALIDATES")"
 
 # Some benchmark specific validations
 [ ! "$BENCH_DATA_SIZE" ] && die "BENCH_DATA_SIZE is not set, cannot continue"
-
-
-# regular expression for grep
-if [ ! "$GREP_REGEX" ]; then
-  GREP_REGEX=".oo." 
-fi
-
 
 # Load Hadoop functions
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
@@ -33,16 +34,34 @@ else
   tests_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-test-1.2.1.jar"
 fi
 
+# Benchmark specific globals
+
+# regular expression for grep
+if [ ! "$GREP_REGEX" ]; then
+  GREP_REGEX=".oo."
+fi
+
+# TestDFSIO input parameters
+# number of files to write/read
+if [ ! "$DFSIO_NUM_FILES" ]; then
+  DFSIO_NUM_FILES="10"
+fi
+
+# size of each file in MB
+if [ ! "$DFSIO_FILE_SIZE" ]; then
+  DFSIO_FILE_SIZE="$(( BENCH_DATA_SIZE / DFSIO_NUM_FILES / 1000000 ))" #in MBs
+fi
+
+# Configure and start Hadoop
 benchmark_suite_config() {
   initialize_hadoop_vars
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
-  restart_hadoop
+  start_hadoop
 }
 
+# Iterate the specified benchmarks in the suite
 benchmark_suite_run() {
   logger "INFO: Running $BENCH_SUITE"
-
-  local bench_suite_validates="$(get_bench_validates)"
 
   for bench in $BENCH_LIST ; do
 
@@ -58,6 +77,9 @@ benchmark_suite_run() {
     # Validate (eg. teravalidate)
     function_call "benchmark_validate_$bench"
 
+    # Clean-up HDFS space (in case necessary)
+    clean_HDFS "$bench_name" "$BENCH_SUITE"
+
   done
 
   logger "INFO: DONE executing $BENCH_SUITE"
@@ -68,9 +90,7 @@ benchmark_suite_save() {
 }
 
 benchmark_suite_cleanup() {
-  if [ "$clusterType" != "PaaS" ]; then
-    stop_hadoop
-  fi
+  clean_hadoop
 }
 
 # wrapper for randomtextwriter
@@ -148,13 +168,20 @@ benchmark_teravalidate() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  local teravalidate_input_dir="$bench_output_dir"
-  local teravalidate_output_dir="$BENCH_SUITE/$bench/validate_output"
+  # Check if it was selected
+  if inList "$BENCH_VALIDATES" "$bench_name" ; then
+    logger "INFO: Running $bench_name"
 
-  logger "INFO: making sure $bench_output_dir dir is empty first"
-  hadoop_delete_path "$bench_name" "$teravalidate_output_dir"
+    local teravalidate_input_dir="$bench_output_dir"
+    local teravalidate_output_dir="$BENCH_SUITE/$bench/validate_output"
 
-  execute_hadoop_new "$bench_name" "jar $examples_jar teravalidate $(get_hadoop_job_config) $teravalidate_input_dir $teravalidate_output_dir" "time"
+    logger "INFO: making sure $bench_output_dir dir is empty first"
+    hadoop_delete_path "$bench_name" "$teravalidate_output_dir"
+
+    execute_hadoop_new "$bench_name" "jar $examples_jar teravalidate $(get_hadoop_job_config) $teravalidate_input_dir $teravalidate_output_dir" "time"
+  else
+    logger "INFO: not running validation, $bench_name not especified in BENCH_LIST"
+  fi
 }
 
 # wrapper for sort
@@ -178,23 +205,8 @@ benchmark_sort() {
 
 # wrapper for TestDFSIO prepare
 benchmark_prepare_dfsio() {
-  
-  logger "INFO: Nothing to prepare for $bench_name"
-
-  # TestDFSIO input parameters
-  # number of files to write/read
-  if [ ! "$DFSIO_NUM_FILES" ]; then
-    DFSIO_NUM_FILES="10" 
-  fi
-
-  # size of each file in MB
-  if [ ! "$DFSIO_FILE_SIZE" ]; then
-    DFSIO_FILE_SIZE="10" 
-  fi
   # execute the write dfsio to generate files for the read dfsio
   benchmark_dfsio_write
-  benchmark_dfsio_read
-  
 }
 
 # wrapper for TestDFSIO
@@ -205,11 +217,12 @@ benchmark_dfsio_write() {
   logger "INFO: making sure $bench_output_dir dir is empty first"
   hadoop_delete_path "$bench_name" "$bench_output_dir"
 
-  #local extra_configs
-  # extra_configs+=" -outKey org.apache.hadoop.io.Text"
-  # extra_configs+=" -outValue org.apache.hadoop.io.Text"
-
   execute_hadoop_new "$bench_name" "jar $tests_jar TestDFSIO $(get_hadoop_job_config) -write -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE $bench_output_dir" "time"
+}
+
+# wrapper for TestDFSIO read
+benchmark_dfsio() {
+  benchmark_dfsio_read
 }
 
 benchmark_dfsio_read() {
@@ -218,10 +231,6 @@ benchmark_dfsio_read() {
 
   logger "INFO: making sure $bench_output_dir dir is empty first"
   hadoop_delete_path "$bench_name" "$bench_output_dir"
-
-  #local extra_configs
-  # extra_configs+=" -outKey org.apache.hadoop.io.Text"
-  # extra_configs+=" -outValue org.apache.hadoop.io.Text"
 
   execute_hadoop_new "$bench_name" "jar $tests_jar TestDFSIO $(get_hadoop_job_config) -read -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE $bench_output_dir" "time"
 }

@@ -471,6 +471,29 @@ CREATE TABLE IF NOT EXISTS \`precal_network_metrics\` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 "
 
+# TODO add these fields
+#20160302_155418 31424: WARNING: Field FAILED_REDUCES not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field FINISHED_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field JOB_PRIORITY not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field LAUNCH_TIME not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MB_MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MB_MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field RACK_LOCAL_MAPS not found on table HDI_JOB_tasks
+#20160302_155418 31424: WARNING: Field SLOTS_MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field SLOTS_MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field SUBMIT_TIME not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_LAUNCHED_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_LAUNCHED_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field TOTAL_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field USER not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field VCORES_MILLIS_MAPS not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field VCORES_MILLIS_REDUCES not found on table HDI_JOB_tasks
+#20160302_155419 31424: WARNING: Field job_name not found on table HDI_JOB_tasks
+
+
 ####################################################
 logger "INFO: Creating DB aloja_logs and tables (if needed)"
 
@@ -916,6 +939,39 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   \`WRONG_REDUCE\` bigint(20) DEFAULT NULL,
   \`CHECKSUM\` varchar(255) DEFAULT NULL,
   \`NUM_FAILED_MAPS\` varchar(255) DEFAULT NULL,
+  \`DATA_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
+
+\`job_name\` varchar(255) DEFAULT NULL,
+\`CREATED_FILES\` bigint(20) DEFAULT NULL,
+\`DESERIALIZE_ERRORS\` varchar(255) DEFAULT NULL,
+\`FAILED_REDUCES\` bigint(20) DEFAULT NULL,
+\`FINISHED_MAPS\` bigint(20) DEFAULT NULL,
+\`JOB_PRIORITY\` bigint(20) DEFAULT NULL,
+\`LAUNCH_TIME\` varchar(255) DEFAULT NULL,
+\`MB_MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`MB_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+\`MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+\`NUM_KILLED_MAPS\` bigint(20) DEFAULT NULL,
+\`NUM_KILLED_REDUCES\` bigint(20) DEFAULT NULL,
+\`OTHER_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
+\`RACK_LOCAL_MAPS\` bigint(20) DEFAULT NULL,
+\`RECORDS_IN\` bigint(20) DEFAULT NULL,
+\`RECORDS_OUT_INTERMEDIATE\` bigint(20) DEFAULT NULL,
+\`SKEWJOINFOLLOWUPJOBS\` varchar(255) DEFAULT NULL,
+\`SLOTS_MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`SLOTS_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+\`SUBMIT_TIME\` varchar(255) DEFAULT NULL,
+\`TOTAL_LAUNCHED_MAPS\` bigint(20) DEFAULT NULL,
+\`TOTAL_LAUNCHED_REDUCES\` bigint(20) DEFAULT NULL,
+\`TOTAL_MAPS\` bigint(20) DEFAULT NULL,
+\`TOTAL_REDUCES\` bigint(20) DEFAULT NULL,
+\`USER\` varchar(255) DEFAULT NULL,
+\`VCORES_MILLIS_MAPS\` bigint(20) DEFAULT NULL,
+\`VCORES_MILLIS_REDUCES\` bigint(20) DEFAULT NULL,
+
+
+
   PRIMARY KEY (\`hdi_job_task_id\`),
   UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -969,6 +1025,13 @@ $MYSQL "alter table execs
 $MYSQL "alter table execs
  add column  \`valid\` int DEFAULT '1';"
 
+$MYSQL "alter table execs
+ add column  \`JAVA_XMS\` bigint DEFAULT NULL,
+  add column  \`JAVA_XMX\` bigint DEFAULT NULL;"
+
+
+$MYSQL "alter table execs add column  \`run_num\` int DEFAULT 1;"
+
 $MYSQL "alter table aloja_logs.VMSTATS
  add column st decimal(20,3) DEFAULT NULL;"
 
@@ -1014,6 +1077,37 @@ $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_LARGE_WRITE_OPS big
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_READ_OPS bigint DEFAULT NULL;"
 $MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN HDFS_WRITE_OPS bigint DEFAULT NULL;"
 
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`job_name\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`CREATED_FILES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`DESERIALIZE_ERRORS\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`FAILED_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`FINISHED_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`JOB_PRIORITY\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`LAUNCH_TIME\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MB_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MB_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`NUM_KILLED_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`NUM_KILLED_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`OTHER_LOCAL_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`RACK_LOCAL_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`RECORDS_IN\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`RECORDS_OUT_INTERMEDIATE\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SKEWJOINFOLLOWUPJOBS\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SLOTS_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SLOTS_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`SUBMIT_TIME\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_LAUNCHED_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_LAUNCHED_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`TOTAL_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`USER\` varchar(255) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`VCORES_MILLIS_MAPS\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`VCORES_MILLIS_REDUCES\` bigint(20) DEFAULT NULL;"
+$MYSQL "alter table aloja_logs.HDI_JOB_tasks ADD COLUMN \`DATA_LOCAL_MAPS\` bigint(20) DEFAULT NULL;"
+
+
 $MYSQL "alter table aloja2.clusters  add column cost_remote int DEFAULT 0"
 $MYSQL "alter table aloja2.clusters  add column cost_SSD int DEFAULT 0"
 $MYSQL "alter table aloja2.clusters  add column cost_IB int DEFAULT 0"
@@ -1030,9 +1124,6 @@ $MYSQL "alter table hosts
 
 $MYSQL "alter table execs
     add column exec_type varchar(255) default 'default';"
-
-$MYSQL "alter table execs
-    add column datasize int(11) default NULL;"
 
 $MYSQL "alter table execs
     modify column datasize bigint default NULL;"
@@ -1105,8 +1196,8 @@ update ignore aloja2.execs JOIN clusters c USING (id_cluster) set bench_type = '
 
 ##Datasize and scale factor
 $MYSQL "
-update ignore aloja2.execs set datasize = NULL;
-update ignore aloja2.execs set scale_factor = 'N/A';
+update ignore aloja2.execs set datasize = NULL where datasize < 1;
+update ignore aloja2.execs set scale_factor = 'N/A' where datasize < 1;
 
 update ignore aloja2.execs e JOIN JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.HDFS_BYTES_READ where c.type != 'PaaS' and bench != 'terasort';
 update ignore aloja2.execs e JOIN HDI_JOB_details d USING (id_exec) JOIN clusters c USING (id_cluster) set e.datasize = d.WASB_BYTES_READ where c.type = 'PaaS' and bench != 'terasort';
@@ -1137,6 +1228,36 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427432130','terasort',32974,'ETH','RR1','HiBench',32,1,1,0);
 #insert ignore into execs(id_cluster,exec,bench,exe_time,net,disk,bench_type,maps,valid,hadoop_version,perf_details) values(38,'terasort_1427439529','terasort',8720,'ETH','RR1','HiBench',32,1,1,0);
 
+# Azure DW (SaaS)
+
+$MYSQL "delete from execs where disk='SaaS' and bench_type='TPC-H' and (exec_type='DW_manual' OR exec_type='ADLA_manual' OR exec_type='ADLS_manual') ;"
+
+source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
+
+# Create aggregate ALL for TPC-H
+$MYSQL "
+INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps)
+select
+  c.id_cluster,
+  if (exec_type='DW_manual',
+      CONCAT(substring(exec, 1, locate('/', exec)),'ALL'),
+      CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL')
+  ) exec2,
+  'ALL',SUM(exe_time),start_time,DATE_ADD(start_time, INTERVAL SUM(exe_time) SECOND),
+  'ETH','SaaS','TPC-H',exec_type,datasize,scale_factor,'1','0','0',datanodes
+from execs e join clusters c using (id_cluster)
+where bench_type = 'TPC-H' and bench != 'ALL' and c.type = 'SaaS' and exe_time > 1
+group by run_num,exec_type,datasize,id_cluster, if (exec_type='DW_manual',1,0)
+having count(*) = 22 order by exec2; #161"
+
+# Fix for ML tools
+$MYSQL "UPDATE execs SET hadoop_version='0', maps=0, iosf=0, replication=1, iofilebuf=0, comp=0, blk_size=0 WHERE (hadoop_version IS NULL OR maps IS NULL) and bench_type='TPC-H';"
+
+
+
+
+# Update perf aggregates
+source_file "$ALOJA_REPO_PATH/shell/common/DB/update_precal_metrics.sh"
 
 #$MYSQL "
 #

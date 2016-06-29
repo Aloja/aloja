@@ -6,9 +6,8 @@ source include/include_deploy.sh
 
 if [ "$clusterType" != "PaaS" ]; then
  #Sequential Node deploy
- for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
 
-  vm_name="${clusterName}-${vm_id}"
+ for vm_name in $(get_node_names) ; do
 
   logger "Atempting to delete node $vm_name..."
   node_delete "$vm_name"

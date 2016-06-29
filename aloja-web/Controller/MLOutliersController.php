@@ -9,11 +9,12 @@ use alojaweb\inc\MLUtils;
 
 class MLOutliersController extends AbstractController
 {
-	public function __construct($container) {
+	public function __construct($container)
+	{
 		parent::__construct($container);
 
 		//All this screens are using this custom filters
-		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier'));
+		$this->removeFilters(array('prediction_model','upred','uobsr','warning','outlier','money'));
 	}
 
 	public function mloutliersAction()
@@ -24,68 +25,61 @@ class MLOutliersController extends AbstractController
 		$jsonResolutions = $jsonResolutionsHeader = '[]';
 		$max_x = $max_y = 0;
 		$must_wait = 'NO';
+		$is_legacy = 0;
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 			$db = $this->container->getDBUtils();
+
+			$reference_cluster = $this->container->get('config')['ml_refcluster'];
 
 			// FIXME - This must be counted BEFORE building filters, as filters inject rubbish in GET when there are no parameters...
 			$instructions = count($_GET) <= 1;
-		    	
-			if (array_key_exists('dump',$_GET))
-			{
-				$dump = $_GET["dump"];
-				unset($_GET["dump"]);
-			}
 
-			if (array_key_exists('register',$_GET))
-			{
-				$register = $_GET["register"];
-				unset($_GET["register"]);
-			}
+			if (array_key_exists('dump',$_GET)) { $dump = $_GET["dump"]; unset($_GET["dump"]); }
+			if (array_key_exists('register',$_GET)) { $register = $_GET["register"]; unset($_GET["register"]); }
 
 			$this->buildFilters(
-				array('current_model' => array(
-					'type' => 'selectOne',
-					'default' => null,
-					'label' => 'Model to use: ',
-					'generateChoices' => function() {
-						return array();
-					},
-					'parseFunction' => function() {
-						$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
-						return array('whereClause' => '', 'currentChoice' => $choice);
-					},
-					'filterGroup' => 'MLearning',
-				),
-				'sigma' => array(
-					'type' => 'inputNumber',
-					'default' => 1,
-					'label' => 'Sigmas: ',
-					'parseFunction' => function() {
-						$choice = isset($_GET['sigma']) ? $_GET['sigma'] : 1;
-						return array('whereClause' => '', 'currentChoice' => $choice);
-					},
-					'max' => 3,
-					'min' => 1,
-					'filterGroup' => 'MLearning'
-				), 'minexetime' => array(
-					'default' => 0
-				), 'valid' => array(
-					'default' => 0
-				), 'filter' => array(
-					'default' => 0
-				), 'prepares' => array(
-					'default' => 1
-				)
+				array(
+					'bench_type' => array('default' => array('HiBench'), 'type' => 'selectOne'),
+					'current_model' => array(
+						'type' => 'selectOne',
+						'default' => null,
+						'label' => 'Model to use: ',
+						'generateChoices' => function() {
+							return array();
+						},
+						'parseFunction' => function() {
+							$choice = isset($_GET['current_model']) ? $_GET['current_model'] : array("");
+							return array('whereClause' => '', 'currentChoice' => $choice);
+						},
+						'filterGroup' => 'MLearning',
+					),
+					'sigma' => array(
+						'type' => 'inputNumber',
+						'default' => 1,
+						'label' => 'Sigmas: ',
+						'parseFunction' => function() {
+							$choice = isset($_GET['sigma']) ? $_GET['sigma'] : 1;
+							return array('whereClause' => '', 'currentChoice' => $choice);
+						},
+						'max' => 3,
+						'min' => 1,
+						'filterGroup' => 'MLearning'
+					), 'minexetime' => array(
+						'default' => 0
+					), 'valid' => array(
+						'default' => 0
+					), 'filter' => array(
+						'default' => 0
+					), 'prepares' => array(
+						'default' => 1
+					)
 			));
 			$this->buildFilterGroups(array('MLearning' => array('label' => 'Machine Learning', 'tabOpenDefault' => true, 'filters' => array('current_model','sigma'))));
 
 			$params = array();
-			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version'); // Order is important
+			$param_names = array('bench','net','disk','maps','iosf','replication','iofilebuf','comp','blk_size','id_cluster','datanodes','vm_OS','vm_cores','vm_RAM','provider','vm_size','type','bench_type','hadoop_version','datasize','scale_factor'); // Order is important
 			$params = $this->filters->getFiltersSelectedChoices($param_names);
 			foreach ($param_names as $p) if (!is_null($params[$p]) && is_array($params[$p])) sort($params[$p]);
 
@@ -132,8 +126,8 @@ class MLOutliersController extends AbstractController
 
 			if (!empty($possible_models_id))
 			{
-				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
-				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']."</li>";
+				$result = $dbml->query("SELECT id_learner, model, algorithm, CASE WHEN `legacy` = 0 THEN 'NO.LEGACY' ELSE 'LEGACY' END as is_legacy, CASE WHEN `id_learner` IN ('".implode("','",$possible_models_id)."') THEN 'COMPATIBLE' ELSE 'NOT MATCHED' END AS compatible FROM aloja_ml.learners");
+				foreach ($result as $row) $model_html = $model_html."<li>".$row['id_learner']." => ".$row['algorithm']." : ".$row['compatible']." : ".$row['model']." : ".$row['is_legacy']."</li>";
 
 				if ($current_model == "")
 				{
@@ -148,35 +142,43 @@ class MLOutliersController extends AbstractController
 				$tmp_result = $is_cached_mysql->fetch();
 				$is_cached = ($tmp_result['total'] > 0);
 
-				$cache_ds = getcwd().'/cache/query/'.md5($config).'-cache.csv';
-				$in_process = file_exists(getcwd().'/cache/query/'.md5($config).'.lock');
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
+				$cache_ds = getcwd().'/cache/ml/'.md5($config).'-cache.csv';
+				$in_process = file_exists(getcwd().'/cache/ml/'.md5($config).'.lock');
+				$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv');
 
 				if (!$is_cached && !$in_process && !$finished_process)
 				{
-					// get headers for csv
-					$header_names = array(
-						'id_exec' => 'ID','bench' => 'Benchmark','exe_time' => 'Exe.Time','net' => 'Net','disk' => 'Disk','maps' => 'Maps','iosf' => 'IO.SFac',
-						'replication' => 'Rep','iofilebuf' => 'IO.FBuf','comp' => 'Comp','blk_size' => 'Blk.size','e.id_cluster' => 'Cluster',
-						'datanodes' => 'Datanodes','vm_OS' => 'VM.OS','vm_cores' => 'VM.Cores','vm_RAM' => 'VM.RAM',
-						'provider' => 'Provider','vm_size' => 'VM.Size','type' => 'Type','bench_type' => 'Bench.Type','hadoop_version' => 'Hadoop.Version'
-					);
-					$headers = array_keys($header_names);
-					$names = array_values($header_names);
+					$query = "SELECT legacy FROM aloja_ml.learners WHERE id_learner='".$current_model."';";
+					$result = $dbml->query($query);
+					$row = $result->fetch();
+					$is_legacy = $row['legacy'];
 
 					// dump the result to csv
-					$query = "SELECT ".implode(",",$headers)." FROM aloja2.execs e LEFT JOIN aloja2.clusters c ON e.id_cluster = c.id_cluster WHERE hadoop_version IS NOT NULL".$where_configs.";";
-				    	$rows = $db->get_rows($query);
-					if (empty($rows)) throw new \Exception('No data matches with your critteria.');
+					$file_header = "";
+					$learn_options = "";
+					if ($is_legacy == 0)
+					{
+						$query = MLUtils::getQuery($file_header,$reference_cluster,$where_configs);
+					    	$rows = $db->get_rows ( $query );
+						if (empty($rows))
+						{
+							throw new \Exception('No data matches with your critteria.');
+						}
+					}
+					else
+					{
+						$query = MLUtils::getLegacyQuery ($file_header,$where_configs);
+					    	$rows = $db->get_rows ( $query );
+						if (empty($rows))
+						{
+							throw new \Exception('No data matches with your critteria.');
+						}
+						$learn_options .= ':vin=Benchmark,Net,Disk,Maps,IO.SFac,Rep,IO.FBuf,Comp,Blk.size,Cluster,Datanodes,VM.OS,VM.Cores,VM.RAM,Provider,VM.Size,Type,Bench.Type,Hadoop.Version,Datasize,Scale.Factor';
+					}
 
 					$fp = fopen($cache_ds, 'w');
-					fputcsv($fp, $names,',','"');
-				    	foreach($rows as $row)
-					{
-						$row['id_cluster'] = "Cl".$row['id_cluster'];	// Cluster is numerically codified...
-						$row['comp'] = "Cmp".$row['comp'];		// Compression is numerically codified...
-						fputcsv($fp, array_values($row),',','"');
-					}
+					fputcsv($fp,$file_header,',','"');
+				    	foreach($rows as $row) fputcsv($fp, array_values($row),',','"');
 
 					// Retrieve file model from DB
 					$query = "SELECT file FROM aloja_ml.model_storage WHERE id_hash='".$current_model."' AND type='learner';";
@@ -184,27 +186,27 @@ class MLOutliersController extends AbstractController
 					$row = $result->fetch();
 					$content = $row['file'];
 
-					$filemodel = getcwd().'/cache/query/'.$current_model.'-object.rds';
+					$filemodel = getcwd().'/cache/ml/'.$current_model.'-object.rds';
 					$fp = fopen($filemodel, 'w');
 					fwrite($fp,$content);
 					fclose($fp);
 
 					// launch query
-					exec('cd '.getcwd().'/cache/query ; touch '.md5($config).'.lock');
-					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/query ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
+					exec('cd '.getcwd().'/cache/ml ; touch '.md5($config).'.lock');
+					exec(getcwd().'/resources/queue -c "cd '.getcwd().'/cache/ml ; '.getcwd().'/resources/aloja_cli.r -m aloja_outlier_dataset -d '.$cache_ds.' -l '.$current_model.' -p sigma='.$sigma_param.':hdistance=3:saveall='.md5($config).$learn_options.' > /dev/null 2>&1 ; rm -f '.md5($config).'.lock" > /dev/null 2>&1 &');
 				}
-				$finished_process = file_exists(getcwd().'/cache/query/'.md5($config).'-resolutions.csv');
+				$finished_process = file_exists(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv');
 
 				if ($finished_process && !$is_cached)
 				{
-					if (($handle = fopen(getcwd().'/cache/query/'.md5($config).'-resolutions.csv', 'r')) !== FALSE)
+					if (($handle = fopen(getcwd().'/cache/ml/'.md5($config).'-resolutions.csv', 'r')) !== FALSE)
 					{
 
-						$header = fgetcsv($handle, 1000, ",");
+						$header = fgetcsv($handle, 5000, ",");
 
 						$token = 0;
 						$query = "REPLACE INTO aloja_ml.resolutions (id_resolution,id_learner,id_exec,instance,model,dataslice,sigma,outlier_code,predicted,observed) VALUES ";
-						while (($data = fgetcsv($handle, 1000, ",")) !== FALSE)
+						while (($data = fgetcsv($handle, 5000, ",")) !== FALSE)
 						{
 							$resolution = $data[0];
 							$pred_value = ((int)$data[1] >= 100)?(int)$data[1]:100;
@@ -220,7 +222,7 @@ class MLOutliersController extends AbstractController
 					}
 
 					// Store file model to DB
-					$filemodel = getcwd().'/cache/query/'.md5($config).'-object.rds';
+					$filemodel = getcwd().'/cache/ml/'.md5($config).'-object.rds';
 					$fp = fopen($filemodel, 'r');
 					$content = fread($fp, filesize($filemodel));
 					$content = addslashes($content);
@@ -230,7 +232,7 @@ class MLOutliersController extends AbstractController
 					if ($dbml->query($query) === FALSE) throw new \Exception('Error when saving file resolution into DB');
 
 					// Remove temporary files
-					$output = shell_exec('rm -f '.getcwd().'/cache/query/'.md5($config).'-*.csv');
+					$output = shell_exec('rm -f '.getcwd().'/cache/ml/'.md5($config).'-*.csv');
 
 					$is_cached = true;
 				}
@@ -250,13 +252,13 @@ class MLOutliersController extends AbstractController
 
 					foreach ($result as $row)
 					{
-						$entry = array('x' => (int)$row['predicted'], 'y' => (int)$row['observed'], 'name' => $row['instance'], 'id' => (int)$row['id_exec']);
+						$entry = array('x' => (int)$row['predicted'], 'y' => (int)$row['observed'], 'name' => implode(",",array_slice(explode(",",$row['instance']),0,21)), 'id' => (int)$row['id_exec']);
 
 						if ($row['outlier_code'] == 0) $jsonData[] = $entry;
 						if ($row['outlier_code'] == 1) $jsonWarns[] = $entry;
 						if ($row['outlier_code'] == 2) $jsonOuts[] = $entry;
 
-						$jsonTable .= (($jsonTable=='')?'':',').'["'.(($row['outlier_code'] == 0)?'Legitimate':(($row['outlier_code'] == 1)?'Warning':'Outlier')).'","'.$row['predicted'].'","'.$row['observed'].'","'.str_replace(",","\",\"",$row['instance']).'","'.$row['id_exec'].'"]';						
+						$jsonTable .= (($jsonTable=='')?'':',').'["'.(($row['outlier_code'] == 0)?'Legitimate':(($row['outlier_code'] == 1)?'Warning':'Outlier')).'","'.$row['predicted'].'","'.$row['observed'].'","'.str_replace(",","\",\"",implode(",",array_slice(explode(",",$row['instance']),0,21))).'","'.$row['id_exec'].'"]';						
 					}
 
 					$query_var = "SELECT MAX(predicted) as max_x, MAX(observed) as max_y FROM aloja_ml.resolutions WHERE id_resolution = '".md5($config)."' LIMIT 5000";
@@ -265,7 +267,7 @@ class MLOutliersController extends AbstractController
 					$max_x = $row['max_x'];
 					$max_y = $row['max_y'];
 
-					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','ID');
+					$header = array('Prediction','Observed','Benchmark','Net','Disk','Maps','IO.SFS','Rep','IO.FBuf','Comp','Blk.Size','Cluster','Datanodes','VM.OS','VM.Cores','VM.RAM','Provider','VM.Size','Type','Bench.Type','Version','Data.Size','Scale.Factor','ID');
 					$jsonHeader = '[{title:""}';
 					foreach ($header as $title) $jsonHeader = $jsonHeader.',{title:"'.$title.'"}';
 					$jsonHeader = $jsonHeader.']';
@@ -329,7 +331,6 @@ class MLOutliersController extends AbstractController
 			'model_info' => $model_info,
 			'slice_info' => $slice_info,
 			'sigma' => $sigma_param,
-			'message' => $message,
 			'instance' => $instance,
 		);
 		$this->filters->setCurrentChoices('current_model',array_merge($possible_models_id,array('---Other models---'),$other_models));

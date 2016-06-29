@@ -21,5 +21,15 @@ bestcostperfclustereval:
 
 nodeseval:
     pattern: "/nodeseval"
-    controller: "alojaweb\\Controller\\CostPerfEvaluationController::NodesEvaluationAction"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::nodesEvaluationAction"
     screenName: "Number of Nodes Evaluation"
+
+datasizeseval:
+    pattern: "/datasizeseval"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::datasizesEvaluationAction"
+    screenName: "Datasizes Scalability"
+
+coreseval:
+    pattern: "/coreseval"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::coresEvaluationAction"
+    screenName: "Cores Scalability"

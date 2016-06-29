@@ -8,18 +8,14 @@
     </style>
   {% endblock %}
   {% block content %}
-		<div class="inside" style="margin: 1em auto; width: 80%">
-
+		<div class="inside table-responsive" style="margin: 1em auto; width: 95%;">
             <a href="https://github.com/Aloja/aloja" target="_blank">
                 <img style="position: absolute; top: 80; right: 0; border: 0;" src="https://camo.githubusercontent.com/38ef81f8aca64bb9a64448d0d70f1308ef5341ab/68747470733a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6461726b626c75655f3132313632312e706e67" alt="Fork me on GitHub" data-canonical-src="https://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png">
             </a>
-
             <table>
                 <tr>
                     <td>
                         <p>
-                            <br/>
-
                         <div id="warning_testing" class="alert alert-danger" role="alert" style="display: none; text-align: center; font-weight: bold;">
 						<h5><strong>This is NOT a production server. 
 							This contains testing functionalities that may have bugs, and data may be outdated.
@@ -51,149 +47,127 @@
                     </td>
                 </tr>
             </table>
-
-          <table id="about" class="table table-stripped" style="width: 90%">
-           <thead>
-             <th>Section</th>
-             <th>Description</th>
-             <th></th>
-           </thead>
-           <tbody>
-               <tr>
-                   <td style="white-space: nowrap;"><b>Video DEMO of ALOJA</b></td>
-                   <td>
-                       Brief video showcasting ALOJA's main online features (a bit outdated).
-                   </td>
-                   <td>
-                       <a class="popup-youtube" href="https://www.youtube.com/watch?v=Wym1BYZhilQ"><img src="img/videocaption.jpeg" /></a>
-                   </td>
-               </tr>
-               <tr>
-                 <td style="white-space: nowrap;"><a href="{{ path('benchexecutions') }}"><b>Benchmark Executions</b></a></td>
-                 <td>
-                     This sections presents the benchmark execution repository.
-                     It features more than 30,000
-                     executions and counting.</br>
-                     This tool allows you to browse, filter, search, and select distinct executions to compare and
-                     analyse its execution details.
-                 </td>
-                 <td>
-                   <a class="image-popup-vertical-fit" href="img/screenshots/datatable.jpeg">
-                      <img src="img/screenshots/datatable.jpeg" style="width: 80%;" />
-                   </a>
-                 </td>
-               </tr>
-               <tr>
-                   <td><a href="{{ path('counters') }}"><b>Hadoop Job Counters</b></a></td>
-                   <td>
-                       The Hadoop Job Counters sections allows to browse the counters output at each of the Hadoop
-                       executions, filter them, and to order by a specific counter the selected runs (or all).
-                        </br>
-                       The section presents the summary of all the Job execution counters,
-                       Map and Reduce specific counters, and the I/O subsystem counters.
-                       </br>
-                       It also features the details by task: to understand the running time of each Map or Reduce
-                       process.
-                   </td>
-                   <td>
-                       <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
-                           <img src="img/screenshots/counters.jpeg" style="width: 90%;" />
+            <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                       <div class="col-md-8" style="white-space: nowrap;"><b>Video DEMO of ALOJA</b>
+                           Brief video showcasting ALOJA's main online features (a bit outdated).</br>
+                           You can also see our presentation at <a href="http://video.fosdem.org/2016/aw1126/automating-big-data-benchmarking-for-different-architectures.mp4" target="_blank">FOSDEM 2016 here</a>
+                       </div>
+                       <div class="col-md-4">
+                           <a class="popup-youtube" href="https://www.youtube.com/watch?v=Wym1BYZhilQ"><img src="img/videocaption.jpeg" /></a>
+                       </div>
+            </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                     <div class="col-md-8" style="white-space: nowrap;"><a href="{{ path('benchexecutions') }}"><b>Benchmark Executions</b></a><br />
+                         This sections presents the benchmark execution repository.
+                         It features more than 30,000
+                         executions and counting.</br>
+                         This tool allows you to browse, filter, search, and select distinct executions to compare and
+                         analyse its execution details.
+                     </div>
+                     <div class="col-md-4">
+                       <a class="image-popup-vertical-fit" href="img/screenshots/datatable.jpeg">
+                          <img src="img/screenshots/datatable.jpeg" style="width: 80%;" />
                        </a>
-                   </td>
-               </tr>
-               <tr>
-               	<td style="white-space: nowrap;"><a href="{{ path('bestconfig') }}"><b>Best Configuration</b></a></td>
-               	<td>
-               	This section allows the user to see the best configuration found for a given benchmark. It also allows to find it filtering some parameters such as kind of cluster, number of mappers, block size, etcetera.
-               	</td>
-               	<td>
-                   <a class="image-popup-vertical-fit" href="img/screenshots/bestconfig.jpeg">
-                      <img src="img/screenshots/bestconfig.jpeg" style="width: 80%;" />
-                   </a>
-                 </td>
-               </tr>
-               <tr>
-                 <td>
-                   <a href="{{ path('configimprovement') }}"><b>Config improvement</b></a>
-                 </td>
-                 <td>
-                   The Configuration Improvement sections evaluates the SPEED-UP improvement by different Hardware
-                     and Software configurations of the Hadoop executions.</br>
-                     The page allows to filter and group
-                     results according to their execution configurations.
-                 </td>
-                 <td>
-                   <a class="image-popup-vertical-fit" href="img/screenshots/configimprovement.png">
-                      <img src="img/screenshots/configimprovement.png" style="width: 60%;" />
-                   </a>
-                 </td>
-               </tr>
-               <tr>
-                 <td>
-                    <a href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}"><b>Cost/Perf Evaluation</b></a>
-                 </td>
-                 <td>
-                   The Cost/Performance evaluation tool, presents a cloud of points of the different Hadoop
-                     executions and evaluates the cost-effectiveness of both:</br>
-                     </br>
-                     - the Hardware e.g., SSDs, InfiniBand </br>
-                     - to the Hadoop configuration e.g., Number of concurrent mappers, replication, or compression.
+                     </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                       <div class="col-md-8"><a href="{{ path('counters') }}"><b>Hadoop Job Counters</b></a><br />
+                           The Hadoop Job Counters sections allows to browse the counters output at each of the Hadoop
+                           executions, filter them, and to order by a specific counter the selected runs (or all).
+                            </br>
+                           The section presents the summary of all the Job execution counters,
+                           Map and Reduce specific counters, and the I/O subsystem counters.
+                           </br>
+                           It also features the details by task: to understand the running time of each Map or Reduce
+                           process.
+                       </div>
+                       <div class="col-md-4">
+                           <a class="image-popup-vertical-fit" href="img/screenshots/counters.jpeg">
+                               <img src="img/screenshots/counters.jpeg" style="width: 90%;" />
+                           </a>
+                       </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                    <div class="col-md-8" style="white-space: nowrap;"><a href="{{ path('bestconfig') }}"><b>Best Configuration</b></a><br />
+                    This section allows the user to see the best configuration found for a given benchmark. It also allows to find it filtering some parameters such as kind of cluster, number of mappers, block size, etcetera.
+                    </div>
+                    <div class="col-md-4">
+                       <a class="image-popup-vertical-fit" href="img/screenshots/bestconfig.jpeg">
+                          <img src="img/screenshots/bestconfig.jpeg" style="width: 80%;" />
+                       </a>
+                     </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                     <div class="col-md-8">
+                       <a href="{{ path('configimprovement') }}"><b>Config improvement</b></a><br />
+                       The Configuration Improvement sections evaluates the SPEED-UP improvement by different Hardware
+                         and Software configurations of the Hadoop executions.</br>
+                         The page allows to filter and group
+                         results according to their execution configurations.
+                     </div>
+                     <div class="col-md-4">
+                       <a class="image-popup-vertical-fit" href="img/screenshots/configimprovement.png">
+                          <img src="img/screenshots/configimprovement.png" style="width: 60%;" />
+                       </a>
+                     </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                     <div class="col-md-8">
+                        <a href="{{ path('costperfeval', {'benchs[]': 'terasort'}) }}"><b>Cost/Perf Evaluation</b></a>
+                        <br />
+                       The Cost/Performance evaluation tool, presents a cloud of points of the different Hadoop
+                         executions and evaluates the cost-effectiveness of both:</br>
+                         </br>
+                         - the Hardware e.g., SSDs, InfiniBand </br>
+                         - to the Hadoop configuration e.g., Number of concurrent mappers, replication, or compression.
 
-                 </td>
-                 <td>
-                   <a class="image-popup-vertical-fit" href="img/screenshots/costs.jpeg">
-                      <img src="img/screenshots/costs.jpeg" style="width: 60%;" />
-                   </a>
-                 </td>
-               </tr>
-               <tr>
-                 <td>
-                   <a href="{{ path('parameval') }}"><b>Parameter Evaluation</b></a>
-                 </td>
-                 <td>
-                   The Parameter Evaluation presents a column chart to see how much time it took executions to ran for each possible value of a selected parameter. In the
-       			   picture an example of how the number of mappers affect the execution time is given.
-                 </td>
-                 <td>
-                     <a class="image-popup-vertical-fit" href="img/screenshots/parameval.jpg">
-                        <img  src="img/screenshots/parameval.jpg" style="width: 90%;" />
-                     </a>
-                 </td>
-               </tr>
-               <tr>
-                 <td>
-                   <a href="{{ path('perfcharts', {'random': '1'}) }}"><b>Performance Charts</b></a>
-                 </td>
-                 <td>
-                   The Performance Charts sections allows first to get a visual glance at the full Hadoop execution
-                     of the selected runs by analyzing each of the Hadoop phases: map, merge, shuffle, and reduce.
-                   It also allows to dig deeper into the performance metrics and results for the executions,
-                     in order to understand the amount of resources use, and contrast visually the difference
-                     between the selected executions. </br>
-                     Analysing: CPU utilization, # of processes and context switches, Memory and Paging, Networking,
-                     and the I/O subsystem.
-                 </td>
-                 <td>
-                     <a class="image-popup-vertical-fit" href="img/screenshots/charts1.jpeg">
-                        <img  src="img/screenshots/charts1.jpeg" style="width: 90%;" />
-                     </a>
-                 </td>
-               </tr>
-               <tr>
-                 <td>
-                   <a href="{{ path('metrics') }}"><b>Performance Metrics</b></a>
-                 </td>
-                 <td>
-                   The Performance Metrics section shows all the performance metrics collected during benchmark's executions, allowing the user to see how many CPU, Network, I/O and Memory was used.
-                 </td>
-                 <td>
-                     <a class="image-popup-vertical-fit" href="img/screenshots/perfmetrics.jpg">
-                        <img  src="img/screenshots/perfmetrics.jpg" style="width: 90%;" />
-                     </a>
-                 </td>
-               </tr>
-           </tbody>
-          </table>
+                     </div>
+                     <div class="col-md-4">
+                       <a class="image-popup-vertical-fit" href="img/screenshots/costs.jpeg">
+                          <img src="img/screenshots/costs.jpeg" style="width: 60%;" />
+                       </a>
+                     </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                     <div class="col-md-8">
+                       <a href="{{ path('parameval') }}"><b>Parameter Evaluation</b></a><br />
+                       The Parameter Evaluation presents a column chart to see how much time it took executions to ran for each possible value of a selected parameter. In the
+                       picture an example of how the number of mappers affect the execution time is given.
+                     </div>
+                     <div class="col-md-4">
+                         <a class="image-popup-vertical-fit" href="img/screenshots/parameval.jpg">
+                            <img  src="img/screenshots/parameval.jpg" style="width: 90%;" />
+                         </a>
+                     </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                     <div class="col-md-8">
+                       <a href="{{ path('perfcharts', {'random': '1'}) }}"><b>Performance Charts</b></a><br />
+                       The Performance Charts sections allows first to get a visual glance at the full Hadoop execution
+                         of the selected runs by analyzing each of the Hadoop phases: map, merge, shuffle, and reduce.
+                       It also allows to dig deeper into the performance metrics and results for the executions,
+                         in order to understand the amount of resources use, and contrast visually the difference
+                         between the selected executions. </br>
+                         Analysing: CPU utilization, # of processes and context switches, Memory and Paging, Networking,
+                         and the I/O subsystem.
+                     </div>
+                     <div class="col-md-4">
+                         <a class="image-popup-vertical-fit" href="img/screenshots/charts1.jpeg">
+                            <img  src="img/screenshots/charts1.jpeg" style="width: 90%;" />
+                         </a>
+                     </div>
+                   </div>
+                   <div class="row"  style="margin-top: 2em; margin-bottom: 1em;  border-top: 1px solid #dddddd;">
+                     <div class="col-md-8">
+                       <a href="{{ path('metrics') }}"><b>Performance Metrics</b></a><br />
+                       The Performance Metrics section shows all the performance metrics collected during benchmark's executions, allowing the user to see how many CPU, Network, I/O and Memory was used.
+                     </div>
+                     <div class="col-md-4">
+                         <a class="image-popup-vertical-fit" href="img/screenshots/perfmetrics.jpg">
+                            <img  src="img/screenshots/perfmetrics.jpg" style="width: 90%;" />
+                         </a>
+                     </div>
+                   </div>
 		</div>
    {% endblock %}
 

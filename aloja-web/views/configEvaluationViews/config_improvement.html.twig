@@ -15,31 +15,74 @@
 	var chart = new Highcharts.Chart({
 		chart: {
 			type: 'bar',
-			renderTo: 'chart'
+			renderTo: 'chart',
+            style: {
+                //fontFamily: 'monospace',
+                font: '12px Verdana',
+                color: '#1A1A1A'
+            },
+            spacingBottom: 0,
+//			width: 800,
+//			height: 600,
+		},
+		exporting: {
+			allowHTML: true,
+//			sourceWidth: 800,
+//			sourceHeight: 600,
+//			// scale: 2 (default)
+////			chartOptions: {
+////				subtitle: null
+////			}
 		},
 		title: {
-			text: 'Average speedup by config group to average execution time by benchmark',
-			align: 'center'
+			text: 'AVG speedup by config group and benchmark to the average',
+			align: 'center',
+            style: {
+                //fontFamily: 'monospace',
+                font: 'bold 16px Verdana',
+                color: '#1A1A1A'
+            },
 		},
 		subtitle: {
-			text: 'From {{ count }} distinct executions'
+			text: 'From {{ count }} distinct runs.  Plot bars shows MAX and MIN'
 		},
 		xAxis: {
 			categories: [{{ categories|raw }}],
 			title: {
-				text: 'Configuration group'
-			}
+				text: 'Config group'
+			},
+            labels: {
+                useHTML: false,
+                //rotation: -30,
+                autoRotation: [-10, -20, -30, -40, -50, -60, -70, -80, -90],
+                //autoRotationLimit: 100,
+                //staggerLines: 2,
+                style: {
+                    color: '#1A1A1A',
+                    font: 'bold 10px Verdana'
+                },
+            },
 		},
 		yAxis: {
 			min: 0,
 			//max: 1,
 			title: {
-				useHTML: true,
-				text: '&#8678; Slower &nbsp;&nbsp;&nbsp; Execution time Speedup over average for benchmark (more is better) &nbsp;&nbsp;&nbsp; Faster &#8680;',
+				useHTML: false,
+				text:
+				'← Faster ' +
+				'\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 ' +
+				'Average execution time in seconds' +
+				'\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0\u00a0 ' +
+				'Slower →',
 				//align: 'high'
 			},
 			labels: {
-				overflow: 'justify'
+                //overflow: 'justify',
+                //rotation: -30,
+                style: {
+                    color: '#1A1A1A',
+                    font: 'bold 10px Verdana'
+			},
 			},
 			plotBands: [
 				{
@@ -49,7 +92,7 @@
 				},
 				{
 					from: 1,
-					to: 10,
+					to: 1000,
 					color: 'rgba(100, 170, 255, .2)'
 				}]
 		        },
@@ -86,9 +129,21 @@
 			backgroundColor: (Highcharts.theme && Highcharts.theme.legendBackgroundColor || '#FFFFFF'),
 			shadow: true,
 			title: {
-				text: ':: Drag Legend ::'
+				//text: ':: Drag Legend ::'
+                text: ':: Bench(s) ::',
+                style: {
+                    color: '#1A1A1A',
+                    font: 'bold 11px Verdana'
 			},
-			draggable: true
+			},
+			draggable: true,
+            itemStyle: {
+                color: '#1A1A1A',
+                fontWeight: '',
+                font: 'Verdana',
+                fontSize: '11px',
+            },
+
 		},
 		credits: {
 			enabled: false
@@ -111,7 +166,7 @@
 	</br></br>
 	<div id="navigation">
 	{% include 'common/group_filters.html.twig' %}
-	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; height: {{ height }}px;"></div>
+	<div id="chart" style="width: 50%; margin: 0 auto; margin-left: 10%; float: left; width: 800px; height: 600px; "></div>
 		<div style="width: 30%; float: right;">
 		{% include 'common/config_filters.html.twig' %}
 		</div>

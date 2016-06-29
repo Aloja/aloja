@@ -36,7 +36,7 @@
                 xAxis: [{
                     categories: {{ categories | raw }},
                     title: {
-                        text: 'Number of datanodes'
+                        text: {% if scalabilityType == 'Datanodes' %}'Number of datanodes'{% else %}'Datasize'{% endif %}
                     }
                 }],
                 yAxis: [{ // Primary yAxis
@@ -68,7 +68,7 @@
                 tooltip: {
                     shared: false,
                     formatter: function() {
-                        return '<b>'+this.x + '</b> datanodes<br /><span style="color: '+this.series.color+';">'+this.series.name+'</span>: <b>'+this.y+' '+this.series.options.tooltip.valueSuffix+'</b>';
+                        return '<b> '+this.x+'</b> '{% if scalabilityType == 'Datanodes' %}+'datanodes'{% endif %}+'<br /><span style="color: '+this.series.color+';">'+this.series.name+'</span>: <b>'+this.y+' '+this.series.options.tooltip.valueSuffix+'</b>';
                     }
                 },
                 credits: {
@@ -76,6 +76,11 @@
                 },
                 legend: {
                     layout: 'horizontal'
+                },
+                plotOptions: {
+                    series: {
+                        connectNulls: true
+                    }
                 },
                 series: {{ seriesData | raw }}
             });
@@ -99,7 +104,7 @@
            <div id="navigation">
                 {# include 'common/group_filters.html.twig' #}
            		<div style="float: left; margin: 0 auto; margin-left: 5%; width: 60%;">
-	               <div id="chart"></div>
+	               <div id="chart" style="width: 800px; height: 800px;"></div>
 	            </div>
                 <div style="width: 30%; float: right;">
                     {% include "common/config_filters.html.twig" %}
