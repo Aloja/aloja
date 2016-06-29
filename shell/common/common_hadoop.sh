@@ -911,20 +911,12 @@ save_hadoop() {
   else
     #we cannot move hadoop files
     #take into account naming *.date when changing dates
-<<<<<<< HEAD
-    #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$1/"
-    #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$1/ 2> /dev/null"
-    $DSH "mv $HDD/logs/aloja/hadoop.log $HDD/logs/aloja/\`hostname\`_hadoop.log 2> /dev/null"
-    $DSH "cp -r $HDD/logs/* $JOB_PATH/$1/ 2> /dev/null"
-=======
-    #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$bench_name_num/"
     #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$bench_name_num/ 2> /dev/null"
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
       $DSH "cp -r $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     else
       $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     fi
->>>>>>> master
   fi
 
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
