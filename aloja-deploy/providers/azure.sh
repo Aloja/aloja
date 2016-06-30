@@ -166,7 +166,13 @@ get_vm_ssh_port() {
       local vm_ssh_port_tmp="2${clusterID}${vm_id}"
 
       if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-        local node_ssh_port="2${clusterID}${vm_id}"
+        # Don't prefix with 2 ids with more than 2 digits
+        if [ "$clusterID" -gt 99 ] ; then
+          node_ssh_port="${clusterID}${vm_id}"
+        else
+          node_ssh_port="2${clusterID}${vm_id}"
+        fi
+
         break #just return one
       fi
     done
