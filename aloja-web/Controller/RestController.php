@@ -291,7 +291,7 @@ class RestController extends AbstractController
 
             //check if it needs to be created
             if (true ) {  //Caching of file disabled !(file_exists($full_name) && is_readable($full_name) && file_exists($full_name))) {
-
+		echo "YOh bitch"
                 $query = 'SELECT
                         unix_timestamp(min(date)) ts
                         FROM aloja_logs.SAR_cpu t 

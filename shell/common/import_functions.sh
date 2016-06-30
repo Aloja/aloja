@@ -42,7 +42,6 @@ insert_DB_AOP(){
 
     $MYSQL "
     SET time_zone = '+00:00';
-
     LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
     FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"';"
     logger "DEBUG: Loaded $2 into $1\n"
@@ -94,11 +93,7 @@ import_from_folder() {
     install_packages "mysql-client" "update"
   fi
 
-  # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
-  if ! inside_vagrant || [ "$(hostname)" != "aloja-web" ] ; then
-    MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
-  fi
-
+  MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
   MYSQL_ARGS="$MYSQL_CREDENTIALS --local-infile -f -b --show-warnings -B" #--show-warnings -B
   DB="aloja2"
   MYSQL_CREATE="sudo mysql $MYSQL_ARGS -e " #do not include DB name in case it doesn't exist yet
@@ -124,25 +119,20 @@ import_from_folder() {
 # Imports the given folder into ALOJA-WEB
 # TODO old code moved here need refactoring
 # $1 folder to import
-# $2 export to PAT
 import_folder() {
   local folder="$1"
-  local export_to_PAT="$2"
 
   #filter folders by date
   min_date="20120101"
   min_time="$(date --utc --date "$min_date" +%s)"
 
-	[ "$folder" ] || die "Empty folder supplied to import_folder()"
+  [ "$folder" ] || die "Empty folder supplied to import_folder()"
 
   folder_OK="0"
   cd "$BASE_DIR" #make sure we come back to the starting folder
   logger "INFO: Iterating folder\t$folder CP: $(pwd)"
 
   folder_time="$(date --utc --date "${folder:0:8}" +%s)"
-
-  PAT_folder="PAT_$folder"
-  PAT_start_ts="$folder_time"
 
   if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
     logger "INFO: Entering folder\t$folder"
@@ -204,43 +194,31 @@ import_folder() {
         exec="${folder}/${bench_folder}"
 
         #insert config and get ID_exec
-        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder\"")
+        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder")
 
         if [[  $folder == *_az ]] ; then
           id_cluster="2"
         else
-          id_cluster="$(get_id_cluster "$folder")"
+
+          id_cluster="${folder:(-2):2}"
 
           clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+          source $clusterConfigFile
 
           logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
 
           #TODO this check wont work for old folders with numeric values at the end, need another strategy
           #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
-          #&& [[ $id_cluster =~ ^-?[0-9]+$ ]]
-          if [ -f "$clusterConfigFile" ]  ; then
-             source $clusterConfigFile
-             #logger "DEBUG: SQL $(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
+          if [ -f "$clusterConfigFile" ] && [[ $id_cluster =~ ^-?[0-9]+$ ]] ; then
             $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
           else
-            logger "WARNING: cannot find clusterConfigFile in: $clusterConfigFile"
-            break
-            #id_cluster="1"
+            id_cluster="1"
           fi
         fi
 
         if [ "$exec_values" ] ; then
           folder_OK="$(( folder_OK + 1 ))"
 
-          # Here we check if the name contains the iteration number and change it before saving it to DB
-          local run_num="$(get_bench_iteration "$bench_folder")"
-          if [ "$run_num" ] ; then
-            exec_values="${exec_values/$bench_folder/$(get_bench_name "$bench_folder")}"
-          else
-            run_num="1"
-          fi
-
-logger "INFO: $bench_folder RN $run_num EV $exec_values"
           # Legacy config, taken from folder and log
           if [ "${name:15:6}" == "_conf_" ]; then
             insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
@@ -266,8 +244,8 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
                     exec_type=VALUES(exec_type);"
           # New style, with more db fields
           else
-            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,run_num)
-                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values,'$run_num')
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor)
+                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
                   ON DUPLICATE KEY UPDATE
                     id_cluster=VALUES(id_cluster),
                     exec=VALUES(exec),
@@ -291,7 +269,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
                     scale_factor=VALUES(scale_factor);"
           fi
 
-          #logger "DEBUG: SQL:\n $insert"
+          #logger "DEBUG: $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_major_version" == "2" ]; then
@@ -350,7 +328,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
             if [ "$hadoop_major_version" != "2" ]; then
              import_hadoop_jobs
             else
-             extract_import_hadoop2_jobs
+              extract_import_hadoop2_jobs
             fi
             import_AOP4Hadoop_files
             wait
@@ -408,12 +386,7 @@ get_insert_cluster_sql() {
     source "$clusterConfigFile"
 
     #load the providers specific functions and overrrides
-
-    if [ "$defaultProvider" == "azure_ADLA" ] ; then
-      providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/azure.sh"
-    else
-      providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/${defaultProvider}.sh"
-    fi
+    providerFunctionsFile="$CUR_DIR_TMP/../../aloja-deploy/providers/${defaultProvider}.sh"
 
     source "$providerFunctionsFile"
 
@@ -426,12 +399,10 @@ ON DUPLICATE KEY UPDATE
       provider='$defaultProvider', datanodes='$numberOfNodes', headnodes='1', vm_size='$vmSize', vm_OS='$vmType', vm_cores='$vmCores', vm_RAM='$vmRAM', description='$clusterDescription';\n"
 
     local nodeName="$(get_master_name)"
-    sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master'
-ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
+    sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='master';\n"
 
     for nodeName in $(get_slaves_names) ; do
-      sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave'
-ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
+      sql+="insert ignore into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
     done
 
     echo -e "$sql\n"
@@ -461,9 +432,6 @@ move2done() {
 get_filter_sql() {
   echo "
 #Re-updates filters for the whole DB, normally it is done after each insert
-
-#exec type not set
-update ignore aloja2.execs SET exec_type = 'default' WHERE exec_type = '' OR exec_type IS NULL;
 
 #filter, execs that don't have any Hadoop details
 
@@ -539,7 +507,7 @@ update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = '
 );
 
 update ignore aloja2.execs e INNER JOIN (SELECT id_exec,IFNULL(SUM(js.reduce),0) as 'suma' FROM aloja2.execs e2 left JOIN aloja_logs.JOB_status js USING (id_exec) WHERE e2.id_exec = '$1' AND  e2.bench NOT LIKE 'prep%' and e2.bench NOT IN ('teragen','randomtextwriter') GROUP BY id_exec) i using(id_exec) SET valid = 0 WHERE e.id_exec = '$1' AND  suma < 1;
-update ignore aloja2.execs SET exec_type = 'default' WHERE id_exec = '$1' AND exec_type = '' OR exec_type IS NULL;
+
 
 "
 
@@ -629,11 +597,6 @@ get_exec_params() {
     local blk_size=$(extract_config_var "BLOCK_SIZE")
     local exec_type=$(extract_config_var "EXEC_TYPE")
     local datasize=$(extract_config_var "BENCH_DATA_SIZE")
-    #compatibility with legacy runs
-    if [[ $datasize == "" ]]; then
-       datasize=0
-    fi
-
     local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
@@ -717,16 +680,16 @@ get_id_exec_conf_params(){
 }
 
 insert_conf_params_DB(){
-	job_name=$3;
-	id_exec=$2;
-	params=$1;
-	for param in $params ; do
-		param_name=$(echo $param | cut -d= -f1)
-		param_value=$(echo $param | cut -d= -f2)
-		insert="INSERT INTO execs_conf_parameters (id_execs_conf_parameters, id_exec, job_name, parameter_name, parameter_value)
-			VALUES(NULL, $id_exec, \"$job_name\", \"$param_name\", \"$param_value\" );"
-		$MYSQL "$insert";
-	done
+  job_name=$3;
+  id_exec=$2;
+  params=$1;
+  for param in $params ; do
+    param_name=$(echo $param | cut -d= -f1)
+    param_value=$(echo $param | cut -d= -f2)
+    insert="INSERT INTO execs_conf_parameters (id_execs_conf_parameters, id_exec, job_name, parameter_name, parameter_value)
+      VALUES(NULL, $id_exec, \"$job_name\", \"$param_name\", \"$param_value\" );"
+    $MYSQL "$insert";
+  done
 }
 
 get_job_confs() {
@@ -772,7 +735,6 @@ get_job_confs() {
 
 #$1 job jhist $2 do not run aloja-tools.jar (already having tasks.out and globals.out)
 import_hadoop2_jhist() {
-return 1
     if [ -z $2 ]; then
         java -cp "$CUR_DIR/../aloja-tools/lib/aloja-tools.jar" alojatools.JhistToJSON $1 tasks.out globals.out
     fi
@@ -790,23 +752,23 @@ return 1
 
     ##In hadoop 2 usually some bench names are cut or capitalized
     if [[ "$jobName" =~ "word" ]]; then
-	    jobName="wordcount"
-	fi
+      jobName="wordcount"
+  fi
 
-	if [ "$jobName" == "random-text-writer" ]; then
-		jobName="prep_wordcount"
-	fi
-	if [[ "$jobName" =~ "TeraGen" ]]; then
-		jobName="prep_terasort"
-	fi
-	if [[ "$jobName" =~ "TeraSort" ]]; then
-		jobName="terasort"
-	fi
+  if [ "$jobName" == "random-text-writer" ]; then
+    jobName="prep_wordcount"
+  fi
+  if [[ "$jobName" =~ "TeraGen" ]]; then
+    jobName="prep_terasort"
+  fi
+  if [[ "$jobName" =~ "TeraSort" ]]; then
+    jobName="terasort"
+  fi
 
-	values=`$CUR_DIR/../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
-	dbFieldList=$($MYSQL "describe HDI_JOB_details" | tail -n+2)
-	finalValues="none"
-	while IFS=',' read -ra ADDR; do
+  values=`$CUR_DIR/../aloja-tools/jq -S '' globals.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
+  dbFieldList=$($MYSQL "describe HDI_JOB_details" | tail -n+2)
+  finalValues="none"
+  while IFS=',' read -ra ADDR; do
       for i in "${ADDR[@]}"; do
           test=$(echo $i | cut -d= -f1)
           if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
@@ -821,112 +783,93 @@ return 1
       done
     done <<< "$values"
 
-	local insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
-		        ON DUPLICATE KEY UPDATE
-		    LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
-		    FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
+  insert="INSERT IGNORE INTO HDI_JOB_details SET id_exec=$id_exec,${finalValues}
+            ON DUPLICATE KEY UPDATE
+        LAUNCH_TIME=`$CUR_DIR/../aloja-tools/jq '.["LAUNCH_TIME"]' globals.out`,
+        FINISH_TIME=`$CUR_DIR/../aloja-tools/jq '.["SUBMIT_TIME"]' globals.out`;"
     logger "DEBUG: $insert"
 
-	$MYSQL "$insert"
+  $MYSQL "$insert"
 
     local result=`$MYSQL "select count(*) FROM aloja_logs.JOB_status JOIN aloja2.execs e USING (id_exec) where e.id_exec=$id_exec" -N`
+  if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
+    waste=()
+    reduce=()
+    map=()
+    for i in `seq 0 1 $totalTime`; do
+      waste[$i]=0
+      reduce[$i]=0
+      map[$i]=0
+    done
 
+    runnignTime=`expr $finishTimeTS - $startTimeTS`
+    read -a tasks <<< `$CUR_DIR/../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
+    for task in "${tasks[@]}" ; do
+      taskId=`echo $task | sed 's/"/\ /g'`
+      taskStatus=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out`
+      taskType=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out`
+      taskStartTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out`
+      taskFinishTime=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out`
+      taskStartTime=`expr $taskStartTime / 1000`
+      taskFinishTime=`expr $taskFinishTime / 1000`
+      values=`$CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g'`
 
-	if [ -z "$ONLY_META_DATA" ] && [ "$result" -eq 0 ]; then
-		local waste=()
-		local reduce=()
-		local map=()
-		local insert_tasks insert_status
-
-
-		for i in `seq 0 1 $totalTime`; do
-			waste[$i]=0
-			reduce[$i]=0
-			map[$i]=0
-		done
-
-		runnignTime=`expr $finishTimeTS - $startTimeTS`
-		read -a tasks <<< `$CUR_DIR/../aloja-tools/jq -r 'keys' tasks.out | sed 's/,/\ /g' | sed 's/\[/\ /g' | sed 's/\]/\ /g'`
-
-		dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
-
-		# TODO this loop is very slow, ading & and wait to parallelize a bit
-		for task in "${tasks[@]}" ; do
-
-			# try to pa
-			taskId="$(echo $task | sed 's/"/\ /g')" &
-			taskStatus="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_STATUS" tasks.out)" &
-			taskType="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_TYPE" tasks.out)" &
-			taskStartTime="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_START_TIME" tasks.out)" &
-			taskFinishTime="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task.TASK_FINISH_TIME" tasks.out)" &
-			taskStartTime="$(expr $taskStartTime / 1000)" &
-			taskFinishTime="$(expr $taskFinishTime / 1000)" &
-			values="$($CUR_DIR/../aloja-tools/jq --raw-output ".$task" tasks.out | sed 's/}/\ /g' | sed 's/{/\ /g' | sed 's/,/\ /g' | tr -d ' ' | grep -v '^$' | tr "\n" "," |sed 's/\"\([a-zA-Z_]*\)\":/\1=/g')" &
-
-      wait
-      
-          finalValues="none"
-          while IFS=',' read -ra ADDR; do
-            for i in "${ADDR[@]}"; do
-                test=$(echo $i | cut -d= -f1)
-                if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
-                  if [ "$finalValues" != "none" ]; then
-                    finalValues+=",$i"
+            dbFieldList=$($MYSQL "describe aloja_logs.HDI_JOB_tasks" | tail -n+2)
+            finalValues="none"
+            while IFS=',' read -ra ADDR; do
+              for i in "${ADDR[@]}"; do
+                  test=$(echo $i | cut -d= -f1)
+                  if [[ $(echo ${dbFieldList} | grep ${test}) ]]; then
+                    if [ "$finalValues" != "none" ]; then
+                      finalValues+=",$i"
+                    else
+                      finalValues="$i"
+                    fi
                   else
-                    finalValues="$i"
+                      logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
                   fi
-                else
-                    logger "WARNING: Field ${test} not found on table HDI_JOB_tasks"
-                fi
-            done
-          done <<< "$values"
+              done
+            done <<< "$values"
 
-			insert_tasks="$insert_tasks
-INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
-  ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
+      insert="INSERT IGNORE INTO aloja_logs.HDI_JOB_tasks SET TASK_ID=$task,JOB_ID=$jobId,id_exec=$id_exec,${finalValues}
+              ON DUPLICATE KEY UPDATE JOB_ID=JOB_ID,${finalValues};"
 
-			normalStartTime=`expr $taskStartTime - $startTimeTS`
-			normalFinishTime=`expr $taskFinishTime - $startTimeTS`
-			if [ "$taskStatus" == "FAILED" ]; then
-				waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
-				waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 1)
-			elif [ "$taskType" == "MAP" ]; then
-				map[$normalStartTime]=$(expr ${map[$normalStartTime]} + 1)
-				map[$normalFinishTime]=$(expr ${map[$normalFinishTime]} - 1)
-			elif [ "$taskType" == "REDUCE" ]; then
-				reduce[$normalStartTime]=$(expr ${reduce[$normalStartTime]} + 1)
-				reduce[$normalFinishTime]=$(expr ${reduce[$normalFinishTime]} - 1)
-			fi
-		done
+      logger "DEBUG: $insert"
+      $MYSQL "$insert"
 
-    logger "DEBUG: Inserting into HDI_JOB_tasks"
-    #create a tmp file as command it is too long sometimes
-    local tmp_file="$(mktemp)"
-    echo -e "$insert_tasks" > "$tmp_file"
-    $MYSQL "$(< "$tmp_file")"
-    rm -f "$tmp_file"
+      normalStartTime=`expr $taskStartTime - $startTimeTS`
+      normalFinishTime=`expr $taskFinishTime - $startTimeTS`
+      if [ "$taskStatus" == "FAILED" ]; then
+        waste[$normalStartTime]=$(expr ${waste[$normalStartTime]} + 1)
+        waste[$normalFinishTime]=$(expr ${waste[$normalFinishTime]} - 1)
+      elif [ "$taskType" == "MAP" ]; then
+        map[$normalStartTime]=$(expr ${map[$normalStartTime]} + 1)
+        map[$normalFinishTime]=$(expr ${map[$normalFinishTime]} - 1)
+      elif [ "$taskType" == "REDUCE" ]; then
+        reduce[$normalStartTime]=$(expr ${reduce[$normalStartTime]} + 1)
+        reduce[$normalFinishTime]=$(expr ${reduce[$normalFinishTime]} - 1)
+      fi
+    done
+    for i in `seq 0 1 $totalTime`; do
+      if [ $i -gt 0 ]; then
+        previous=$(expr ${i} - 1)
+        map[$i]=$(expr ${map[$i]} + ${map[$previous]})
+        reduce[$i]=$(expr ${reduce[$i]} + ${reduce[$previous]})
+        waste[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
+      fi
+      currentTime=`expr $startTimeTS + $i`
+      currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
+      insert="INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
+          VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
+          ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
 
-		for i in `seq 0 1 $totalTime`; do
-			if [ $i -gt 0 ]; then
-				previous=$(expr ${i} - 1)
-				map[$i]=$(expr ${map[$i]} + ${map[$previous]})
-				reduce[$i]=$(expr ${reduce[$i]} + ${reduce[$previous]})
-				waste[$i]=$(expr ${waste[$i]} + ${waste[$previous]})
-			fi
-			currentTime=`expr $startTimeTS + $i`
-			currentDate=`date -d @$currentTime +"%Y-%m-%d %H:%M:%S"`
-			insert_status="$insert_status
-INSERT IGNORE INTO aloja_logs.JOB_status(id_exec,job_name,JOBID,date,maps,shuffle,merge,reduce,waste)
-  VALUES ($id_exec,'$exec',$jobId,'$currentDate',${map[$i]},0,0,${reduce[$i]},${waste[$i]})
-	ON DUPLICATE KEY UPDATE waste=${waste[$i]},maps=${map[$i]},reduce=${reduce[$i]},date='$currentDate';"
-
-		done
-		logger "DEBUG: Inserting into JOB_status"
-		$MYSQL "$insert"
-	fi
-	#cleaning
-	rm tasks.out
-	rm globals.out
+      logger "DEBUG: $insert"
+      $MYSQL "$insert"
+    done
+  fi
+  #cleaning
+  rm tasks.out
+  rm globals.out
 }
 
 #Expects folder to contain jhist (Job History) files
@@ -1002,9 +945,6 @@ import_hadoop_jobs() {
 }
 
 import_sar_files() {
-  logger "INFO: Importing SAR files in: $(pwd)"
-#shopt -s nullglob
-logger "DEBUG: LS: $(ls -lah)"
   for sar_file in sar*.sar ; do
     if [[ $(head $sar_file |wc -l) > 1 ]] ; then
 
@@ -1048,24 +988,6 @@ logger "DEBUG: LS: $(ls -lah)"
                         \$2=\"id;id_exec;\" \$2; print \$2} \
                NR > 1  {\$1=\"NULL;${id_exec};\"\$1;  print }" > "$csv_name"
 
-        if [ "$PAT_ts" ] ; then
-          # PAT export
-          if [ "$table_name" == "SAR_cpu" ] ; then
-            local hostn="${sar_file:4:-4}"
-            logger "INFO: Exporting to PAT cpustat host: $hostn"
-            local PAT_ts="$PAT_ts"
-            local PAT_host_foler="../../$PAT_folder/instruments/$hostn"
-            #rm -rf "$PAT_host_foler" 2> /dev/null
-            mkdir -p "$PAT_host_foler"
-            #awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_foler/vmstat"
-
-            $sadf -d "$sar_file" -- $sar_command |\
-            awk -F ';' "NR == 1 {\$1=\$2=\$3=\$4=\"\"; print \"HostName TimeStamp CPU\" \$0} \
-                        NR > 1 {\$1=\$2=\$3=\$4=\"\"; print \"$hostn \" ($PAT_ts + NR-1) \" ALL\" \$0}" > "$PAT_host_foler/cpustat"
-          fi
-        fi
-
-
           if [ "$PARALLEL_INSERTS" ] ; then
             insert_DB "aloja_logs.${table_name}" "$csv_name" "" ";" &
           else
@@ -1095,16 +1017,6 @@ import_vmstats_files() {
 
       tail -n +2 "$vmstats_file" | awk '{out="";for(i=1;i<=NF;i++){out=out "," $i}}{print substr(out,2)}' | awk "NR == 1 {\$1=\"id_field,id_exec,host,time,\"\$1; print } NR > 1 {\$1=\"NULL,${id_exec},${hostn},\" (NR-2) \",\"\$1; print }" > tmp_${vmstats_file}.csv
 
-      if [ "$PAT_ts" ] ; then
-        # PAT export
-        logger "INFO: Exporting to PAT host: $hostn"
-        local PAT_ts="$PAT_ts"
-        local PAT_host_foler="../../$PAT_folder/instruments/$hostn"
-        #rm -rf "$PAT_host_foler" 2> /dev/null
-        mkdir -p "$PAT_host_foler"
-        awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_foler/vmstat"
-      fi
-
       if [ "$PARALLEL_INSERTS" ] ; then
         insert_DB "aloja_logs.${table_name}" "tmp_${vmstats_file}.csv" "" "," &
       else
@@ -1118,7 +1030,7 @@ import_vmstats_files() {
 }
 
 # Imports log generated by AOP4Hadoop (if any)
-# More info at: https://github.com/Aloja/AOP4Hadoop
+# More info at: https://github.com/Aloja/AOP4Hadoopa
 import_AOP4Hadoop_files() {
   #TODO: do not hardcode this name...
   #v1 sample: 2015-10-15 21:24:39,751,vagrant-99-00,26106,2:vagrant-99-00:2:26106:1:1444944279751:11111:tracker_vagrant-99-01-localhost_127.0.0.1-42574
@@ -1202,36 +1114,32 @@ delete_untars() {
 
 #$1 name history folder
 get_xml_exec_params() {
-	local histFolder="history/"
-	if [ ! -z $1 ]; then
-	  histFolder=$1
+  local histFolder="history/"
+  if [ ! -z $1 ]; then
+    histFolder=$1
     fi
 
-	xmlFile=$(find $histFolder -type f -name *.xml | head -n 1)
-	if [ "$xmlFile" ]; then
-      replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
-      compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
-      maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
-      blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
-      iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
-      iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
-      compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
-      if [ "$compressionEnabled" = "false" ]; then
-          compressCodec=0
-      elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
-          compressCodec=3
-      elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
-          compressCodec=1
-      elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
-          compressCodec=2
-      else
-          compressCodec=0
-      fi
+  xmlFile=$(find $histFolder -type f -name *.xml | head -n 1)
+  replication=$(xmllint --xpath "string(//property[name='dfs.replication']/value)" $xmlFile)
+  compressCodec=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress.codec']/value)" $xmlFile)
+  maps=$(xmllint --xpath "string(//property[name='mapreduce.tasktracker.map.tasks.maximum']/value)" $xmlFile)
+  blocksize=$(xmllint --xpath "string(//property[name='dfs.blocksize']/value)" $xmlFile)
+  iosf=$(xmllint --xpath "string(//property[name='mapreduce.task.io.sort.factor']/value)" $xmlFile)
+  iofilebuf=$(xmllint --xpath "string(//property[name='io.file.buffer.size']/value)" $xmlFile)
+  compressionEnabled=$(xmllint --xpath "string(//property[name='mapreduce.map.output.compress']/value)" $xmlFile)
+  if [ "$compressionEnabled" = "false" ]; then
+    compressCodec=0
+  elif [ "$compressCodec" = "org.apache.hadoop.io.compress.SnappyCodec" ]; then
+    compressCodec=3
+  elif [ "$compressCodec" = "org.apache.hadoop.io.compress.DefaultCodec" ]; then
+    compressCodec=1
+  elif [ "$compressCodec" = "org.apache.hadoop.io.compress.BZip2Codec " ]; then
+    compressCodec=2
+  else
+    compressCodec=0
+  fi
 
-      blocksize=`expr $blocksize / 1000000`
-    else
-      logger "ERROR: FAILED TO IMPORT JOB, NO HISTORY SAVED"
-    fi
+  blocksize=`expr $blocksize / 1000000`
 }
 
 
@@ -1244,8 +1152,6 @@ hit_page() {
 
 # $1 host name
 refresh_web_caches() {
-logger "WARNING: Refresh caches disabled for now... "
-return 1 #disabled for now...
   local host_name="$1"
   
   [ "$host_name" ] || die "No hostname supplied"
@@ -1283,37 +1189,3 @@ return 1 #disabled for now...
 #  hit_page "http://$host_name/dbscan"
 #  hit_page "http://$host_name/dbscanexecs"
 }
-<<<<<<< HEAD
-=======
-
-# Sends commands to MySQL every 250 lines (default)
-# $1 full text
-# $2 number of lines to split the command
-exec_by_lines() {
-  local text="$1"
-  local lines="$2"
-
-  [ ! "$lines" ] && lines=250 # Default
-
-  local group=""
-  local it=0
-  while read -r text_line ; do
-
-    group+="
-$text_line"
-
-    it_num="$((it_num+1))"
-    # Separate every 100 lines
-
-    if ((it_num % lines == 0)) ; then
-      logger "INFO: sending  $lines lines to MySQL"
-      $MYSQL "$group"
-      group=""
-    fi
-
-  done <<< "$text"
-
-  logger "INFO: sending FINAL lines to MySQL"
-  $MYSQL "$group"
-}
->>>>>>> master
