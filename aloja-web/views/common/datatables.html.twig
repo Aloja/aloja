@@ -5,6 +5,7 @@
         @import "js/datatables/extras/ColReorder/media/css/ColReorder.css";
         @import "js/datatables/extras/TableTools/media/css/TableTools.css";
         @import "js/datatables/extras/ColVis/media/css/ColVis.css";
+		@import url("https://cdn.datatables.net/responsive/1.0.7/css/responsive.dataTables.min.css");
         .scrollStyle
         {
             overflow-x:auto;
@@ -185,6 +186,7 @@
 	    <script type="text/javascript" language="javascript" src="js/datatables/extras/ColReorder/media/js/ColReorder.nightly.min.js"></script>
 	    <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/TableTools.nightly.min.js"></script>
 	    <script type="text/javascript" language="javascript" src="js/datatables/extras/TableTools/media/js/ZeroClipboard.js"></script>
+		<script type="text/javascript" language="javascript" src="https://cdn.datatables.net/responsive/1.0.7/js/dataTables.responsive.min.js"></script>
 	    <script type="text/javascript" language="javascript" src="js/datatables/extras/ColVis/media/js/ColVis.nightly.min.js"></script>
 	    <script type="text/javascript" charset="utf-8">
         //parse querystring        
@@ -306,6 +308,7 @@
 
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
+				"responsive": true,
                 "oSearch": {"bCaseInsensitive":false, "sSearch": $.urlParam('search')},
                 "bDeferRender": true,
 //                "bServerSide": true,
@@ -426,13 +429,17 @@
 							else if((new RegExp("^RL")).test(aData[7]))
 								tooltip = aData[7].substring(2) + ' remote(s) / tmp local';
 							else if((new RegExp("^SS")).test(aData[7]))
-								tooltip = aData[7].substring(2) + ' SSD drives';
+								tooltip = aData[7].substring(2) + ' SSD drive(s)';
 							else if((new RegExp("^HD")).test(aData[7]))
-								tooltip = aData[7].substring(2) + ' HDD drives';
+								tooltip = aData[7].substring(2) + ' HDD drive(s)';
 							else if((new RegExp("^RS")).test(aData[7]))
                                 tooltip = aData[7].substring(2) + ' HDFS in remote(s) / tmp to SSD'
-        					else
-        						tooltip = aData[7].substring(2) + ' HDD drives / tmp to SSD';
+							else if((new RegExp("^HS")).test(aData[7]))
+								tooltip = aData[7].substring(2) + ' HDD drive(s) / tmp to SSD';
+							else if(aData[7] == "SaaS" )
+								tooltip = 'N/A';
+							else
+        						tooltip = 'N/A';
         					$(this).html(aData[7] + ' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />');
 //                         } else if(headTitle == 'Files') {
 //         					var string = aData[15];

@@ -19,6 +19,7 @@ class HighCharts
 '        <script src="//code.highcharts.com/highcharts.js"></script>
         <script src="//code.highcharts.com/highcharts-more.js"></script>
         <script src="//code.highcharts.com/modules/exporting.js"></script>
+        <script src="//code.highcharts.com/modules/offline-exporting.js"></script>
         <script src="//code.highcharts.com/modules/no-data-to-display.js"></script>
         <script src="js/datatables/extras/export-csv/export-csv.js"></script>
         <script src="js/datatables/extras/draggable-legend/draggable-legend.js"></script>

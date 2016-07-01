@@ -23,7 +23,8 @@ install_packages() {
         logger "INFO: Updating repo for $vmOSType $vmOSTypeVersion"
         vm_execute "
 export DEBIAN_FRONTEND=noninteractive;
-sudo apt-get update -m;
+#sudo apt-get update -m;
+sudo apt-get update;
   " || return $?
       fi
 
@@ -92,12 +93,12 @@ aloja_wget() {
 
 # install the base packages for VMs
 vm_install_base_packages() {
-  local bootstrap_file="${FUNCNAME[0]}"
+  local bootstrap_file="${FUNCNAME[0]}_1"
 
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican" "update" #wamerican is for hivebench
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make" "update" #wamerican is for hivebench, gcc for tpch
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -118,7 +119,7 @@ vm_install_extra_packages() {
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing extra packages for for VM $vm_name "
 
-      install_packages "screen vim mc git iotop htop;"
+      install_packages "screen vim mc git htop;"
 
       local test_action="$(vm_execute "vim --version |grep 'VIM - Vi IMproved' && echo '$testKey'")"
       if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -559,7 +560,7 @@ install_R() {
 
   # temporarily change the bootstrap name for the vagrant VM to force update the R packages
   if inside_vagrant ; then
-    local bootstrap_file="${FUNCNAME[0]}_2"
+    local bootstrap_file="${FUNCNAME[0]}_3"
   else
     local bootstrap_file="${FUNCNAME[0]}"
   fi
@@ -581,51 +582,29 @@ install_R() {
 sudo dpkg -i ./$libtiff_file;
 sudo rm $libtiff_file"
 
-      logger "INFO: Installing R dependencies (JAVA)"
-      install_packages "libxml2-dev libcurl4-openssl-dev openjdk-7-jre-lib openjdk-7-jre-headless openjdk-7-jdk"
+      logger "INFO: Installing R dependencies"
+      install_packages "libxml2-dev libcurl4-openssl-dev gsettings-desktop-schemas"
 
       logger "INFO: Installing R core and available packages in repo"
-      local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-bitops r-cran-boot r-cran-class r-cran-cluster"
-      R_packages="$R_packages r-cran-codetools r-cran-foreign r-cran-kernsmooth r-cran-lattice r-cran-mass r-cran-matrix"
-      R_packages="$R_packages r-cran-mgcv r-cran-nlme r-cran-nnet r-cran-rpart r-cran-spatial r-cran-survival r-recommended"
-      R_packages="$R_packages r-cran-rjson r-cran-rcurl r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-evaluate"
-      R_packages="$R_packages r-cran-getopt r-cran-labeling r-cran-memoise r-cran-munsell r-cran-plyr r-cran-rcolorbrewer"
-      R_packages="$R_packages r-cran-rcpp r-cran-reshape r-cran-rjava r-cran-scales r-cran-stringr gsettings-desktop-schemas"
-      R_packages="$R_packages r-cran-rms r-cran-ggplot2"
+      local R_packages="r-base r-base-core r-base-dev r-base-html r-cran-boot r-cran-class r-cran-cluster r-doc-html"		# BASE
+      R_packages="$R_packages r-cran-codetools r-cran-foreign r-cran-kernsmooth r-cran-lattice r-cran-mass r-cran-matrix"	# BASE
+      R_packages="$R_packages r-cran-mgcv r-cran-nlme r-cran-nnet r-cran-rpart r-cran-spatial r-cran-survival r-recommended"	# BASE
+      R_packages="$R_packages r-cran-colorspace r-cran-dichromat r-cran-digest r-cran-foreach r-cran-gtable r-cran-ggplot2"	# DEPENDENCIES
+      R_packages="$R_packages r-cran-iterators r-cran-labeling r-cran-munsell r-cran-plyr r-cran-rcpp r-cran-rcolorbrewer"	# DEPENDENCIES
+      R_packages="$R_packages r-cran-reshape r-cran-rms r-cran-scales r-cran-stringr"						# DEPENDENCIES
 
       install_packages "$R_packages"
 
-      vm_execute "sudo R CMD javareconf"
-
       logger "INFO: Downloading precompiled R binary updates (to save time)"
-      local R_file="R-x86_64-3.2-packages.tar.gz"
+      local R_file="R-x86_64-3.2.2-packages.tar.gz"
       aloja_wget "$ALOJA_PUBLIC_HTTP/files/$R_file" "/tmp/$R_file"
 
-      logger "INFO: Uncompressing and copying files"
+      logger "INFO: Uncompressing and copying R files"
       vm_execute "
 sudo rm -rf /opt/R;
-tar -C /opt -xf '/tmp/$R_file';
-rm -rf '/tmp/$R_file';
+sudo tar -C /opt -xf '/tmp/$R_file';
+sudo rm -rf '/tmp/$R_file';
 "
-
-#      logger "INFO: Updating package (will take a while if changes are found)"
-#      vm_execute "
-#cat <<- EOF > /tmp/packages.r
-##!/usr/bin/env Rscript
-#
-#update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-#
-## For all Ubuntu releases until 14.04
-#install.packages(c('devtools','DiscriMiner','emoa','httr','jsonlite','optparse','pracma','rgp','rstudioapi','session','whisker',
-#'RWeka','RWekajars','snowfall','genalg','FSelector'),repos='http://cran.r-project.org',dependencies=TRUE,quiet=FALSE);
-#
-##update.packages(ask = FALSE,repos='http://cran.r-project.org',dependencies = c('Suggests'),quiet=FALSE);
-#
-#EOF
-#
-#sudo chmod a+x /tmp/packages.r
-#sudo /tmp/packages.r
-#"
 
       local test_action="$(vm_execute " [ \"\$\(which R)\" ] && echo '$testKey'")"
 
@@ -707,6 +686,38 @@ sudo pip install --upgrade rackspace-novaclient
     logger "$bootstrap_file already configured"
   fi
 }
+
+# Install Rackspace's lava python client
+# docs: http://docs.rackspace.com/cbd/api/v1.0/cbd-getting-started-2/content/CBD_sendingAPI_Requests.html
+install_rackspace_lava_cli() {
+
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    logger "Executing $bootstrap_file"
+
+    logger "INFO: Installing Rackspace lava client"
+
+    install_packages "python-dev python-pip"
+    vm_execute "
+sudo pip install --upgrade lavaclient
+"
+
+    local test_action="$(vm_execute " \[ \$(which lava) \] && echo '$testKey'")"
+
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      logger "INFO: $bootstrap_file installed succesfully"
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: at $bootstrap_file for $vm_name. Test output: $test_action"
+    fi
+
+  else
+    logger "$bootstrap_file already configured"
+  fi
+}
+
 
 # Install script for private sharelatex VM
 install_sharelatex() {

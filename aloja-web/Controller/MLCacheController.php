@@ -15,10 +15,7 @@ class MLCacheController extends AbstractController
 		$jsonLearners = '';
 		try
 		{
-			$dbml = new \PDO($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
-			$dbml->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-			$dbml->setAttribute(\PDO::ATTR_EMULATE_PREPARES, false);
-
+			$dbml = MLUtils::getMLDBConnection($this->container->get('config')['db_conn_chain'], $this->container->get('config')['mysql_user'], $this->container->get('config')['mysql_pwd']);
 
 			if (isset($_GET['ccache']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
@@ -52,19 +49,28 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.observed_trees";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing observed trees from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/*.{rds,lock,fin,dat,csv}';
+				$query = "DELETE FROM aloja_ml.pred_execs";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing predicted executions from DB');
+
+				$query = "DELETE FROM aloja_ml.variable_weights";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing variable weights from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/ml/*.{rds,lock,fin,dat,csv}';
 				$output[] = shell_exec($command);
 			}
 
 			if (isset($_GET['rml']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
  			{
+				$query = "DELETE FROM aloja_ml.pred_execs WHERE id_prediction IN (SELECT id_pred_exec FROM aloja_ml.predictions WHERE id_learner='".$_GET['rml']."')";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing learned executions from DB');
+
 				$query = "DELETE FROM aloja_ml.learners WHERE id_learner='".$_GET['rml']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a learner from DB');
 
 				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rml']."' AND type='learner'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rml'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rml'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -76,7 +82,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rmm']."' AND type='minconf'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmm'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmm'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -85,7 +91,10 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.resolutions WHERE id_resolution='".$_GET['rmr']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a resolution from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmr'].'*';
+				$query = "DELETE FROM aloja_ml.model_storage WHERE id_hash='".$_GET['rmr']."' AND type='resolution'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a model from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmr'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -94,7 +103,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.summaries WHERE id_summaries='".$_GET['rms']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a summary from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rms'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rms'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -103,7 +112,7 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.precisions WHERE id_precision='".$_GET['rmp']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing a precision from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmp'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmp'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -112,7 +121,16 @@ class MLCacheController extends AbstractController
 				$query = "DELETE FROM aloja_ml.observed_trees WHERE id_obstrees='".$_GET['rmo']."'";
 				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing an observed tree from DB');
 
-				$command = 'rm -f '.getcwd().'/cache/query/'.$_GET['rmo'].'*';
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmo'].'*';
+				$output[] = shell_exec($command);
+ 			}
+
+			if (isset($_GET['rmv']))// && isset($_SERVER['HTTP_REFERER']) && $_SERVER['HTTP_REFERER'] != $cache_allow)
+ 			{
+				$query = "DELETE FROM aloja_ml.variable_weights WHERE id_varweights='".$_GET['rmv']."'";
+				if ($dbml->query($query) === FALSE) throw new \Exception('Error when removing variable weights from DB');
+
+				$command = 'rm -f '.getcwd().'/cache/ml/'.$_GET['rmv'].'*';
 				$output[] = shell_exec($command);
  			}
 
@@ -122,7 +140,7 @@ class MLCacheController extends AbstractController
 					FROM (	SELECT j.*, COUNT(m.id_minconfigs) AS num_minconfigs
 						FROM (	SELECT DISTINCT l.id_learner AS id_learner, l.algorithm AS algorithm,
 								l.creation_time AS creation_time, l.model AS model, l.dataslice AS advanced,
-								COUNT(p.id_prediction) AS num_preds
+								COUNT(p.id_prediction) AS num_preds, l.legacy AS legacy
 							FROM aloja_ml.learners AS l LEFT JOIN aloja_ml.predictions AS p ON l.id_learner = p.id_learner
 							GROUP BY l.id_learner
 						) AS j LEFT JOIN aloja_ml.minconfigs AS m ON j.id_learner = m.id_learner
@@ -137,12 +155,12 @@ class MLCacheController extends AbstractController
 		    	foreach($rows as $row)
 			{
 				if (strpos($row['model'],'*') !== false) $umodel = 'umodel=umodel&'; else $umodel = '';
-				$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learner[]='.$row['algorithm'].'&'.$umodel);
+				$url = MLUtils::revertModelToURL($row['model'], $row['advanced'], 'presets=none&submit=&learn[]='.$row['algorithm'].'&'.$umodel);
 
-				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
+				$jsonLearners = $jsonLearners.(($jsonLearners=='[')?'':',')."['".$row['id_learner']."','".$row['algorithm']."','".$row['model']."','".$row['advanced']."','".$row['creation_time']."','".$row['num_preds']."','".$row['num_minconfigs']."','".$row['num_resolutions']."','".$row['num_trees']."','".$row['legacy']."','<a href=\'/mlprediction?".$url."\'>View</a> <a href=\'/mlclearcache?rml=".$row['id_learner']."\'>Remove</a>']";
 			}
 			$jsonLearners = $jsonLearners.']';
-			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Actions'}]";
+			$jsonLearningHeader = "[{'title':'ID'},{'title':'Algorithm'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Predictions'},{'title':'MinConfigs'},{'title':'Resolutions'},{'title':'Trees'},{'title':'Is Legacy'},{'title':'Actions'}]";
 
 			// Compilation of Minconfs on Cache
 			$query="SELECT mj.*, COUNT(mc.sid_minconfigs_centers) AS num_centers
@@ -218,6 +236,19 @@ class MLCacheController extends AbstractController
 			$jsonObstrees = $jsonObstrees.']';
 			$jsonObstreesHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
 
+			// Compilation of Variable Weights on Cache
+			$query="SELECT id_varweights, model, dataslice, creation_time
+				FROM aloja_ml.variable_weights
+				";
+			$rows = $dbml->query($query);
+			$jsonVarweights = '[';
+		    	foreach($rows as $row)
+			{
+				$jsonVarweights = $jsonVarweights.(($jsonVarweights=='[')?'':',')."['".$row['id_varweights']."','".$row['model']."','".$row['dataslice']."','".$row['creation_time']."','<a href=\'/mlclearcache?rmv=".$row['id_varweights']."\'>Remove</a>']";
+			}
+			$jsonVarweights = $jsonVarweights.']';
+			$jsonVarweightsHeader = "[{'title':'ID'},{'title':'Model'},{'title':'Advanced'},{'title':'Creation'},{'title':'Actions'}]";
+
 			$dbml = null;
 		}
 		catch(Exception $e)
@@ -239,7 +270,9 @@ class MLCacheController extends AbstractController
 				'precisions' => $jsonPrecisions,
 				'header_precisions' => $jsonPrecisionsHeader,
 				'obstrees' => $jsonObstrees,
-				'header_obstrees' => $jsonObstreesHeader
+				'header_obstrees' => $jsonObstreesHeader,
+				'varweights' => $jsonVarweights,
+				'header_varweights' => $jsonVarweightsHeader
 			)
 		);
 	}

@@ -40,17 +40,22 @@ vm_create_node() {
   if [ "$defaultProvider" == "hdinsight" ]; then
     vm_name="$clusterName"
     status=$(hdi_cluster_check_create "$clusterName")
+
     if [ $status -eq 0 ]; then
       create_hdi_cluster "$clusterName"
     fi
-    vm_provision "pw"
-    vm_final_bootstrap "$clusterName" "pw"
+    vm_provision
+    vm_final_bootstrap "$clusterName"
   elif [ "$defaultProvider" == "rackspacecbd" ]; then
     vm_name="$clusterName"
-    #vm_provision
+    create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
+  elif [ "$defaultProvider" == "amazonemr" ]; then
+    vm_name="$clusterName"
+    #create_cbd_cluster "$clusterName"
+    vm_final_bootstrap "$clusterName"  
   elif [ "$vmType" != 'windows' ] ; then
-    requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is dissabled further on
+    requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
 
     #check if machine has been already created or creates it
     vm_create_connect "$vm_name"
@@ -78,7 +83,7 @@ vm_create_node() {
 vm_create_connect() {
 
   #test first if machines are accessible via SSH to save time
-  if ! wait_vm_ssh_ready "1" ; then
+  if ! vm_exists "${1}" || ! wait_vm_ssh_ready "1" ; then
     vm_check_create "$1" "$vm_ssh_port"
     wait_vm_ready "$1"
     vm_check_attach_disks "$1"
@@ -284,6 +289,7 @@ make || exit 1
 
 mkdir -p \$HOME/share/sw/bin || exit 1
 cp sar \$HOME/share/sw/bin || exit 1
+cp sadc \$HOME/share/sw/bin || exit 1
 
 "
 
@@ -489,14 +495,42 @@ vm_local_scp() {
   fi
 }
 
-#$1 source files $2 destination $3 extra options
+# Rsync to a VM
+# $1 source files $2 destination $3 extra options
 #$vm_ssh_port must be set first
 vm_rsync() {
     set_shh_proxy
 
-    logger "RSynching: $1 To: $2"
+    logger "INFO: RSynching from Local dir: $1 To: $2"
     #eval is for parameter expansion  --progress --copy-links
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
+}
+
+# Rsync from a VM
+# $1 source path(s)
+# $2 destination host + path
+# $3 destination port
+# $4 extra SHH options (optional)
+# $5 SHH proxy (optional)
+vm_rsync_from() {
+    local source="$1"
+    local destination="$2"
+    local destination_port="$3"
+    local extra_options="$4"
+    local proxy
+
+    if [ "$5" ] ; then
+      proxy="ProxyCommand=$5"
+    else
+      proxy="ProxyCommand=none"
+    fi
+
+    logger "INFO: RSynching from $(hostname): $source To external: $destination"
+
+    #eval is for parameter expansion
+    logger "DEBUG: rsync -avur --partial --force  -e 'ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
+
+    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
 }
 
 get_master_name() {
@@ -621,7 +655,7 @@ get_share_location() {
 #    local fs_mount="$userAloja@al-1001.cloudapp.net:$homePrefixAloja/$userAloja/share/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
 #  fi
 
-  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
+  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,exec,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
 
   echo -e "$fs_mount"
 }
@@ -692,11 +726,13 @@ wait_vm_ready() {
 
     #sleep 1
   done
+
 }
 
 #"$vm_name" "$vm_ssh_port" must be set before
 #1 number of tries
 wait_vm_ssh_ready() {
+
   logger "INFO: Checking SSH status of VM $vm_name: $(get_ssh_user)@$(get_ssh_host):$(get_ssh_port)"
 
   waitStartTime="$(date +%s)"
@@ -714,6 +750,7 @@ wait_vm_ssh_ready() {
       break #just in case
     else
       logger " VM $vm_name is down. Waiting for: $waitElapsedTime s. $tries attempts. Output: $test_action"
+
       if [ "$tries" == "2" ] ; then
         vm_start "$vm_name"
       elif [ "$tries" == "100" ] ; then
@@ -857,11 +894,21 @@ vm_set_dot_files() {
 
     vm_execute "touch $homePrefixAloja/$userAloja/.hushlogin;" #avoid welcome banners
 
-    vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
+    if [ "$type" = "cluster" ]; then
+      vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'
 export PATH=\$HOME/share/sw/bin:\$PATH" ""
+
+    else
+      vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
+export HISTSIZE=50000
+alias a='dsh -g a -M -c'
+alias s='dsh -g s -M -c'
+export PATH=\$HOME/share/sw/bin:\$PATH" ""
+
+    fi
 
     vm_update_template "$homePrefixAloja/$userAloja/.screenrc" "
 defscrollback 99999
@@ -1024,8 +1071,7 @@ check_bootstraped() {
   fi
 
   if [ $result -eq 255 ]; then
-    logger "ERROR: cannot check bootstrap file status (SSH error?)"
-    exit 1
+    die "cannot check bootstrap file status (SSH error?)"
   fi
 
   #set lock
@@ -1202,7 +1248,7 @@ ln -sf $share_disk_path $homePrefixAloja/$userAloja/share;"
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/share; touch $homePrefixAloja/$userAloja/share/safe_store"
   fi
 
-  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../config ../secure/{provider_defaults.conf,*.sample.conf}"  "$homePrefixAloja/$userAloja/share"
+  vm_rsync "../shell ../aloja-deploy ../aloja-tools ../aloja-bench ../config"  "$homePrefixAloja/$userAloja/share"
   vm_rsync "../secure" "$homePrefixAloja/$userAloja/share/" "--copy-links"
   #vm_rsync "../blobs/aplic2/configs" "$homePrefixAloja/$userAloja/share/aplic2/" "--copy-links"
 

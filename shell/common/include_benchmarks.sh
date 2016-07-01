@@ -27,6 +27,8 @@ setup_traps
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
 
+logger "DEBUG: CMD ${BASH_SOURCE[0]} ${*}"
+
 # 2.) Load cluster configs
 
 # Attempt first to load local cluster config if defined

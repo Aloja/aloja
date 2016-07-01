@@ -5,6 +5,7 @@ namespace alojaweb\Controller;
 use alojaweb\inc\HighCharts;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use Monolog\Handler\Curl\Util;
 
 class ConfigEvaluationsController extends AbstractController
 {
@@ -70,7 +71,8 @@ class ConfigEvaluationsController extends AbstractController
 			 concat($concat_config) conf, e.bench as bench,
 			 avg(e.exe_time) AVG_exe_time,
 			 min(e.exe_time) MIN_exe_time,
-			 (select AVG(exe_time) FROM aloja2.execs WHERE bench = e.bench $whereClause) AVG_ALL_exe_time,
+			 max(e.exe_time) MAX_exe_time,
+			 (select AVG(exe_time) FROM aloja2.execs ea JOIN aloja2.clusters ca using (id_cluster) WHERE 1 ".str_replace('c.','ca.',str_replace('e.','ea.',$whereClause)).") AVG_ALL_exe_time,
 			 'none'
 			 from aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 			 LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
@@ -116,19 +118,23 @@ class ConfigEvaluationsController extends AbstractController
 		$count = 0;
 		$confOrders = array();
 		foreach ($rows_config as $row_config) {
-			$categories .= "'{$row_config['conf']} #{$row_config['num']}',";
+			$categories .= "'{$row_config['conf']} ({$row_config['num']})',";
 			$count += $row_config['num'];
 			$confOrders[] = $row_config['conf'];
 		}
+
 		$series = '';
 		$bench = '';
 		if ($rows) {
+			// Normal columns
 			$seriesIndex = 0;
 			foreach ($rows as $row) {
 				//close previous serie if not first one
 				if ($bench && $bench != strtolower($row['bench'])) {
-					$series .= "]
-                        }, ";
+                    $series .= "]
+                        }, $error_bars ]
+                        },
+                        ";
 				}
 				//starts a new series
 				if ($bench != strtolower($row['bench'])) {
@@ -138,28 +144,229 @@ class ConfigEvaluationsController extends AbstractController
                         {
                             name: '".strtolower($row['bench'])."',
                                 data: [";
+                    $error_bars = "
+                        {
+                            name: '".strtolower($row['bench'])."',
+                            type: 'errorbar',
+                            stemColor: '#808080',
+                            stemDashStyle: 'dot',
+                            whiskerColor: '#808080',
+                                data: [";
 				}
 				while($row['conf'] != $confOrders[$seriesIndex]) {
 					$series .= "[null],";
 					$seriesIndex++;
 				}
 				$series .= "['{$row['conf']}',".
-					//round((($row['AVG_exe_time']-$row['MIN_ALL_exe_time'])/(0.0001+$row['MAX_ALL_exe_time']-$row['MIN_ALL_exe_time'])), 3).
-					//round(($row['AVG_exe_time']), 3).
-					round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 3). //
+					round(($row['AVG_ALL_exe_time']/$row['AVG_exe_time']), 2). //For average
+					//round(($row['AVG_ALL_exe_time']/$row['MIN_exe_time']), 3). //For min
 					"],";
+
+                $error_bars .= "['{$row['conf']}',".
+                    round($row['AVG_ALL_exe_time']/$row['MAX_exe_time'], 2).
+                    ",".
+                    round($row['AVG_ALL_exe_time']/$row['MIN_exe_time'], 2).
+                    "],";
+
 				$seriesIndex++;
 			}
-			//close the last series
-			$series .= "]
-                    }, ";
+            //close the last series
+            $series .= "]
+                    },  $error_bars ]
+                        },
+                    ";
 		}
 		return $this->render ( 'configEvaluationViews/config_improvement.html.twig', array (
 				'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
 				'highcharts_js' => HighCharts::getHeader(),
 				'categories' => $categories,
 				'series' => $series,
-				'models' => $model_html
+				'models' => $model_html,
+				'count' => $count,
+			)
+		);
+	}
+	public function execTimesAction()
+	{
+		$db = $this->container->getDBUtils();
+		$this->buildFilters();
+		$this->buildGroupFilters();
+		$whereClause = $this->filters->getWhereClause();
+		$model_html = '';
+		$model_info = $db->get_rows("SELECT id_learner, model, algorithm, dataslice FROM aloja_ml.learners");
+		foreach ($model_info as $row)
+			$model_html = $model_html."<li><b>".$row['id_learner']."</b> => ".$row['algorithm']." : ".$row['model']." : ".$row['dataslice']."</li>";
+
+		$rows_config = '';
+
+		try {
+			$concat_config = Utils::getConfig($this->filters->getGroupFilters());
+
+			$filter_execs = DBUtils::getFilterExecs();
+			$order_conf = 'LENGTH(conf), conf';
+			$params = $this->filters->getFiltersSelectedChoices(array('prediction_model','upred','uobsr'));
+
+			$whereClauseML = str_replace("exe_time","pred_time",$whereClause);
+			$whereClauseML = str_replace("start_time","creation_time",$whereClauseML);
+
+			$query = "SELECT COUNT(*) AS num, CONCAT($concat_config) conf
+					FROM aloja2.execs AS e JOIN aloja2.clusters AS c USING (id_cluster)
+					LEFT JOIN aloja_ml.predictions p USING (id_exec)
+					WHERE 1 $filter_execs $whereClause
+					GROUP BY conf ORDER BY $order_conf";
+			$queryPredicted = "SELECT COUNT(*) AS num, CONCAT($concat_config) conf
+					FROM aloja_ml.predictions AS e
+					JOIN clusters c USING (id_cluster)
+					WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+					GROUP BY conf ORDER BY $order_conf";
+
+echo $query;
+			//get configs first (categories)
+			if ($params['uobsr'] == 1 && $params['upred'] == 1)
+			{
+				$query = "
+				SELECT SUM(u1.num) AS num, u1.conf as conf
+				FROM (
+					($query)
+					UNION
+					($queryPredicted)
+				) AS u1
+				GROUP BY conf ORDER BY $order_conf
+			";
+			}
+			else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+			{
+				$query = $queryPredicted;
+			}
+
+			$rows_config = $db->get_rows($query);
+
+			usort($rows_config, array('alojaweb\inc\Utils', 'cmp_conf'));
+
+			$height = 600;
+			if (count($rows_config) > 4) {
+				$num_configs = count($rows_config);
+				$height = round($height + (10*($num_configs-4)));
+			}
+
+			$query = "SELECT e.id_exec,
+			 concat($concat_config) conf, e.bench as bench,
+			 avg(e.exe_time) AVG_exe_time,
+			 min(e.exe_time) MIN_exe_time,
+			 max(e.exe_time) MAX_exe_time,
+			 'none'
+			 from aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
+			 LEFT JOIN aloja_ml.predictions AS p USING (id_exec)
+			 WHERE 1 $filter_execs $whereClause
+			 GROUP BY conf, e.bench order by e.bench, $order_conf";
+			$queryPredicted = "
+				SELECT e.id_exec, CONCAT($concat_config) conf, CONCAT('pred_',e.bench) as bench, AVG(e.pred_time) AVG_exe_time, min(e.pred_time) MIN_exe_time,
+				(
+					SELECT AVG(p.pred_time)
+					FROM aloja_ml.predictions p
+					WHERE p.bench = e.bench ".str_replace("e.","p.",$whereClauseML)." AND p.id_learner = '".$params['prediction_model']."'
+				) AVG_ALL_exe_time, 'none'
+				FROM aloja_ml.predictions AS e
+				JOIN clusters c USING (id_cluster)
+				WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
+				GROUP BY conf, e.bench ORDER BY e.bench, $order_conf
+			";
+
+			//get the result rows
+			if ($params['uobsr'] == 1 && $params['upred'] == 1)
+			{
+				$query = "SELECT j.id_exec, j.conf, j.bench, j.AVG_exe_time, j.MIN_exe_time, 'none' FROM (
+					($query) UNION ($queryPredicted)) AS j
+				GROUP BY j.conf, j.bench ORDER BY j.bench, $order_conf
+			";
+			}
+			else if ($params['uobsr'] == 0 && $params['upred'] == 1)
+			{
+				$query = $queryPredicted;
+			}
+			else if ($params['uobsr'] == 0 && $params['upred'] == 0)
+				$this->container->getTwig ()->addGlobal ( 'message', "Warning: No data selected (Predictions|Observations) from the ML Filters. Adding the Observed executions to the figure by default.\n" );
+
+			$rows = $db->get_rows($query);
+
+			usort($rows, array('alojaweb\inc\Utils', 'cmp_conf'));
+
+			if (!$rows)
+				throw new \Exception("No results for query!");
+		} catch (\Exception $e) {
+			$this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+		}
+
+		$categories = '';
+		$count = 0;
+		$confOrders = array();
+		foreach ($rows_config as $row_config) {
+			$categories .= "'{$row_config['conf']} ({$row_config['num']})',";
+			$count += $row_config['num'];
+			$confOrders[] = $row_config['conf'];
+		}
+
+		$series = '';
+		$bench = '';
+        $error_bars='';
+		if ($rows) {
+			// Normal columns
+			$seriesIndex = 0;
+			foreach ($rows as $row) {
+				//close previous series if not first one
+				if ($bench && $bench != strtolower($row['bench'])) {
+					$series .= "]
+                        }, $error_bars ]
+                        },
+                        ";
+				}
+				//starts a new series
+				if ($bench != strtolower($row['bench'])) {
+					$seriesIndex = 0;
+					$bench = strtolower($row['bench']);
+					$series .= "
+                        {
+                            name: '".strtolower($row['bench'])."',
+                                data: [";
+                    $error_bars = "
+                        {
+                            name: '".strtolower($row['bench'])."',
+                            type: 'errorbar',
+                            stemColor: '#808080',
+                            stemDashStyle: 'dot',
+                            whiskerColor: '#808080',
+                                data: [";
+				}
+				while($row['conf'] != $confOrders[$seriesIndex]) {
+					$series .= "[null],";
+					$seriesIndex++;
+				}
+				$series .= "['{$row['conf']}',".
+					round($row['AVG_exe_time'], 1). //For average
+					"],";
+
+                $error_bars .= "['{$row['conf']}',".
+					round($row['MIN_exe_time'], 1).
+					",".
+					round($row['MAX_exe_time'], 1).
+					"],";
+
+				$seriesIndex++;
+			}
+			//close the last series
+			$series .= "]
+                    },  $error_bars ]
+                        },
+                    ";
+
+		}
+		return $this->render ( 'configEvaluationViews/exec_times.html.twig', array (
+				'title'     => 'Improvement of Hadoop Execution by SW and HW Configurations',
+				'highcharts_js' => HighCharts::getHeader(),
+				'categories' => $categories,
+				'series' => $series,
+				'models' => $model_html,
+				'count' => $count,
 			)
 		);
 	}
@@ -317,7 +524,7 @@ class ConfigEvaluationsController extends AbstractController
 				'net' => 'e', 'disk' => 'e','replication' => 'e',
 				'iofilebuf' => 'e', 'blk_size' => 'e', 'iosf' => 'e', 'vm_size' => 'c',
 				'vm_cores' => 'c', 'vm_ram' => 'c', 'datanodes' => 'c', 'hadoop_version' => 'e',
-				'type' => 'c');
+				'type' => 'c', 'scale_factor' => 'e', 'run_num' => 'e');
 
 			$minExecsFilter = "";
 			if($minExecs > 0)

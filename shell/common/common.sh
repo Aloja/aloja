@@ -193,14 +193,20 @@ remove_duplicate_lines() {
   echo -e "$(echo -e "$string"|sort -u)"
 }
 
-#$1 list $2 element
+# Returns true if needle is in hay stack
+# $1 hay stack (list)
+# $2 needle (element)
 inList() {
+  local hay_stack="$1"
+  local needle="$2"
   local found="1" #error code in shell
 
-  for element in $1 ; do
-    if [ "$2" == "$element" ] ; then
+  for element in $hay_stack ; do
+    if [ "$needle" == "$element" ] ; then
       local found="0" #success
       break
+#    else
+#      logger "DEBUG: not in list $element needle $needle list $hay_stack"
     fi
   done
 
@@ -290,6 +296,12 @@ cache_get() {
   fi
 }
 
+cache_delete(){
+  local cacheFileName="$deployCacheFolderPath/${cachePrefix}${1}"
+  rm -f "$cacheFileName"
+}
+
+
 # Save env and global vars to file
 # $1 file path
 save_env() {
@@ -329,4 +341,28 @@ inside_vagrant() {
   else
     return 1
   fi
+}
+
+# Returns the id of the cluster
+# This function is here as it is needed from the start 
+# $1 cluster file name. Format cluster_al-70.conf
+get_id_cluster(){
+  local id_cluster="$1"
+  [ "$id_cluster" ] || die "No string passed to get_id_cluster()"
+  id_cluster="${id_cluster##*-}" #remove innitial part
+
+  # Check if it has the .conf extension
+  if [ "${id_cluster:(-5)}" = ".conf" ] ; then
+    id_cluster="${id_cluster:0:(-5)}" #remove extension
+  fi
+
+  [[ $id_cluster =~ ^-?[0-9]+$ ]] || logger "WARNING: Cannot retrieve numeric cluster id got $id_cluster from $1"
+
+  echo -e "$id_cluster"
+}
+
+# Return only numeric part of string
+# $1 string
+only_numbers() {
+  echo -e "$(echo -e "$1"| sed 's/[^0-9]*//g')"
 }

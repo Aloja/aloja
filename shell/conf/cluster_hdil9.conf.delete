@@ -1,0 +1,31 @@
+#load cluster defaults
+source "$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/hdinsight_defaults.conf"
+
+#Cluster config
+defaultProvider="hdinsight"
+BENCH_LOCAL_DIR="/mnt"
+
+cluster_id_tmp="$(basename $BASH_SOURCE)" #get the cluster id from the file name
+clusterID="${cluster_id_tmp:(-7):2}"
+clusterName="hdil9"
+#storageAccountName
+#storageAccount="hdil9"
+numberOfNodes="4" #starts at 0 (max 99) 0 is asigned to master
+#Node config
+headnodeSize="A4"
+vmSize='A4'
+vmType='linux'
+
+attachedVolumes="1"
+diskSize="1024"
+
+#queueJobs="true" #enable on cluster config to queue benchmarks after deploy
+
+#details
+vmCores="8"
+vmRAM="14"
+
+#costs
+clusterCostHour="4.2903"
+clusterType="PaaS"
+clusterDescription=""

@@ -28,25 +28,28 @@ source "$deploy_include_path"
 
 #All cluster nodes sequentially
 if [ "$clusterType" != "PaaS" ] && [ ! "$vm_name" ]; then
-	for vm_name in $(get_node_names) ; do #pad the sequence with 0s
-	
-	  vm_ssh_port="$(get_ssh_port)"
-	
-	  #if [ "$cloud_provider" != "azure" ] ; then #create hosts in paralell
-	  #  vm_create_node &
-	  #else
-	    vm_create_node #one by one creation, provision in parallel
-	  #fi
-	
-	done
-	
-	wait #wait for the last one in case we launch in parallel
 
-	#parallel Node config
-	cluster_parallel_config
+  cluster_do_pre
+
+  for vm_name in $(get_node_names) ; do #pad the sequence with 0s
+
+    vm_ssh_port="$(get_ssh_port)"
 	
-else #If PaaS or only one node is selected
-	vm_create_node
+    #if [ "$cloud_provider" != "azure" ] ; then #create hosts in paralell
+    #  vm_create_node &
+    #else
+      vm_create_node   #one by one creation, provision in parallel
+    #fi
+
+  done
+	
+  wait #wait for the last one in case we launch in parallel
+
+  #parallel Node config
+  cluster_parallel_config
+else
+  #If PaaS or only one node is selected
+  vm_create_node
 fi
 
 wait #for background processes

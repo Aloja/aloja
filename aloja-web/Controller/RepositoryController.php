@@ -17,6 +17,7 @@ class RepositoryController extends AbstractController
 			'maps' => 'Maps',
 			'iosf' => 'IO SFac',
 			'replication' => 'Rep',
+            'run_num' => 'Run. Num.',
 			'iofilebuf' => 'IO FBuf',
 			'comp' => 'Comp',
 			'blk_size' => 'Blk size',
@@ -36,7 +37,12 @@ class RepositoryController extends AbstractController
     public function benchExecutionsAction()
     {
         $dbUtils = $this->container->getDBUtils();
-        $this->buildFilters(array('bench' => array('type' => 'selectMultiple', 'default' => null)));
+        $this->buildFilters(array(
+            'bench_type' => array('default' => null),
+            'bench' => array('default' => null)
+            )
+        );
+
         $whereClause = $this->filters->getWhereClause();
 
 		$type = Utils::get_GET_string("pageTab");
@@ -92,6 +98,7 @@ class RepositoryController extends AbstractController
 					'maps' => 'Maps',
 					'iosf' => 'IO SFac',
 					'replication' => 'Rep',
+                    'run_num' => 'Run. Num.',
 					'iofilebuf' => 'IO FBuf',
 					'comp' => 'Comp',
 					'blk_size' => 'Blk size',

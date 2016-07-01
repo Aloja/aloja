@@ -42,27 +42,11 @@ class Filters
             'bench' => array('table' => 'execs', 'default' => array('terasort','wordcount'), 'type' => 'selectMultiple', 'label' => 'Benchmarks:',),
             'datasize' => array('database' => 'aloja2', 'table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Datasize: ',
                 'beautifier' => function($value) {
-                  $nDigits = strlen((string)$value);
-                  $return = '';
-                  if($nDigits >= 4) {
-                      if($nDigits >= 8) {
-                          if($nDigits >= 10) {
-                             if($nDigits >= 13) {
-                                 $return =  ceil(($value/1000000000000)) . ' TB';
-                             } else
-                                 $return =  ceil(($value/1000000000)) . ' GB';
-                          } else
-                              $return = ceil(($value/1000000)) . ' MB';
-                      } else
-                          $return = ceil(($value/1000)) . ' KB';
-                  } else
-                      $return = $value . ' B';
-
-                  return $return;
+                    return Utils::beautifyDatasize($value);
                 },
                 'parseFunction' => 'parseDatasize'),
             'scale_factor' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Scale factor: '),
-            'bench_type' => array('table' => 'execs', 'default' => (Utils::in_dev() ? array():array('HiBench', 'Hadoop-Examples')), 'type' => 'selectOne', 'label' => 'Bench suite:'),
+            'bench_type' => array('table' => 'execs', 'default' => array('HiBench'), 'type' => 'selectMultiple', 'label' => 'Bench suite:'),
             'net' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple', 'label' => 'Network:',
                 'beautifier' => function($value) {
                     return Utils::getNetworkName($value);
@@ -81,7 +65,7 @@ class Filters
                     return $this->filters['id_cluster']['namesClusters'][$value];
                 },
                 'generateChoices' => function() {
-                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs(' ')." ORDER BY c.name ASC");
+                    $choices = $this->dbConnection->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,3,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name  from aloja2.execs e join aloja2.clusters c using (id_cluster) WHERE 1 ".DBUtils::getFilterExecs(' ')." ORDER BY c.name ASC");
                     $returnChoices = array();
                     foreach($choices as $choice) {
                         $returnChoices[] = $choice['id_cluster'];
@@ -98,6 +82,7 @@ class Filters
                         return $value;
                 }),
             'replication' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Replication (r):'),
+            'run_num' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Run Num:'),
             'iosf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O sort factor (I):'),
             'iofilebuf' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'I/O file buffer:',
                 'beautifier' => function($value) {
@@ -122,7 +107,7 @@ class Filters
                 }),
             'type' => array('table' => 'clusters', 'default' => null, 'type' => 'selectMultiple','label' => 'Cluster type:'),
             'hadoop_version' => array('table' => 'execs', 'default' => null, 'type' => 'selectMultiple','label' => 'Hadoop version:'),
-            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => (Utils::in_dev() ? 1:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
+            'minexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => (Utils::in_dev() ? 0.001:50), 'type' => 'inputNumberge','label' => 'Min exec time:'),
             'maxexetime' => array('table' => 'execs', 'field' => 'exe_time', 'default' => null, 'type' => 'inputNumberle','label' => 'Max exec time:'),
             'datefrom' => array('table' => 'execs', 'field' => 'start_time', 'default' => null, 'type' => 'inputDatege','label' => 'Date from:'),
             'dateto' => array('table' => 'execs', 'field' => 'end_time', 'default' => null, 'type' => 'inputDatele','label' => 'Date to:'),
@@ -172,7 +157,10 @@ class Filters
                     $choice = isset($_GET['prediction_model']) ? Utils::get_GET_stringArray('prediction_model') : array("");
                     if($choice = array("")) {
                         $query = "SELECT DISTINCT id_learner FROM aloja_ml.predictions LIMIT 1";
-                        $choice = $this->dbConnection->get_rows($query)[0]['id_learner'];
+                        $choice = $this->dbConnection->get_rows($query);
+                        if($choice) {
+                            $choice = $choice[0]['id_learner'];
+                        }
                     }
                     return array('whereClause' => '', 'currentChoice' => $choice);
                 },
@@ -249,7 +237,7 @@ class Filters
                 'tabOpenDefault' => false),
             'advanced' => array(
                 'label' => 'Advanced filters',
-                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime'),
+                'filters' => array('valid','filter','prepares','perf_details','datefrom','dateto','minexetime','maxexetime','run_num'),
                 'tabOpenDefault' => false
             ),
             'MLearning' => array(
@@ -498,7 +486,7 @@ class Filters
 
         //Getting scale factors per bench
         $scaleFactors = array();
-        $benchsScaleFactors = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,scale_factor FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,datasize ORDER BY bench ASC ");
+        $benchsScaleFactors = $this->dbConnection->get_rows("SELECT DISTINCT bench_type,bench,scale_factor FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." GROUP BY bench_type,bench,scale_factor ORDER BY bench ASC ");
         foreach($benchsScaleFactors as $row) {
             $scaleFactor = $row['scale_factor'];
             $scaleFactors[$row['bench_type']][$row['bench']][] = $scaleFactor;
@@ -569,7 +557,8 @@ class Filters
             //If select one get only the first one
             if($this->filters[$filterName]['type'] == 'selectOne' &&
                 is_array($this->filters[$filterName]['currentChoice']))
-                $values[$filterName] = $values[$filterName][0];
+                if($values[$filterName])
+                    $values[$filterName] = $values[$filterName][0];
         }
 
         return $values;

@@ -1,3 +1,9 @@
+exec_times:
+    pattern: "/exec_times"
+    legacy: "/exec_times.php"
+    controller: "alojaweb\\Controller\\ConfigEvaluationsController::execTimesAction"
+    screenName: "Execution Times"
+
 configimprovement:
     pattern: "/configimprovement"
     legacy: "/config_improvement.php"
