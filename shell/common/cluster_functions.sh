@@ -295,7 +295,6 @@ cp sadc \$HOME/share/sw/bin || exit 1
 
 }
 
-
 get_node_names() {
   local node_names=''
   if [ ! -z "$nodeNames" ] ; then
@@ -339,6 +338,24 @@ get_slaves_names() {
   fi
   echo -e "$node_names"
 }
+
+# Gets the list of extra nodes to instrument if necessary
+get_extra_node_names() {
+  local node_names=''
+  if [ ! -z "$extraNodeNames" ] ; then
+    for extra_node in $extraNodeNames ; do
+      node_names+="${extra_node}\n"
+    done
+  fi
+
+  echo -e "${node_names:0:(-2)}" #remove trailing \n
+}
+
+# Gets the folder where to store files in the extra servers
+get_extra_node_folder() {
+  echo -e "$BENCH_EXTRA_LOCAL_DIR/$(get_aloja_dir "$PORT_PREFIX")"
+}
+
 
 #the default SSH host override if necessary i.e. in Azure, Openstack
 get_ssh_host() {
