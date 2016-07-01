@@ -804,8 +804,13 @@ vm_set_ssh() {
       local use_password="true" #use password
     fi
 
+    # Useful when the key is not the default "insecure key"
+    local pub_key="$(eval echo $ALOJA_SSH_COPY_KEYS |cut -d' ' -f 2|xargs cat)"
+
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
-               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;
+               echo -e '${pub_key}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;
+               " "parallel" "$use_password"
 
     # Install extra pub keys for login if defined
     [ "$extraPublicKeys" ] && vm_execute "echo -e '${extraPublicKeys}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
