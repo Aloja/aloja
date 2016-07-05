@@ -290,6 +290,8 @@ make || exit 1
 mkdir -p \$HOME/share/sw/bin || exit 1
 cp sar \$HOME/share/sw/bin || exit 1
 cp sadc \$HOME/share/sw/bin || exit 1
+cp iostat \$HOME/share/sw/bin || exit 1
+cp pidstat \$HOME/share/sw/bin || exit 1
 
 "
 
@@ -346,9 +348,11 @@ get_extra_node_names() {
     for extra_node in $extraNodeNames ; do
       node_names+="${extra_node}\n"
     done
+
+    node_names="${node_names:0:(-2)}" #remove trailing \n
   fi
 
-  echo -e "${node_names:0:(-2)}" #remove trailing \n
+  echo -e "$node_names"
 }
 
 # Gets the folder where to store files in the extra servers
