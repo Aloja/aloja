@@ -36,8 +36,11 @@ set_hadoop_requires() {
   fi
  fi
 
-  #also set the config here
+  # also set the config here
   set_hadoop_config_folder
+
+  # measure number of mappers and reducers
+  BENCH_PERF_MONITORS+=" MapRed"
 }
 
 # Helper to print a line with Hadoop requiered exports
