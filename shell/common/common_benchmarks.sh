@@ -793,20 +793,21 @@ set_monit_binaries() {
     local perf_mon_bin_path
     local perf_mon_bench_path="$HDD/aplic"
 
-    if [ "$vmType" != "windows" ]; then
+    if [ "$vmType" != "windows" ] ; then
       for perf_mon in $BENCH_PERF_MONITORS ; do
-        logger "INFO: Setting up perfomance monitor: $perf_mon"
-        perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
-        if [ "$perf_mon_bin_path" ] ; then
-          logger "INFO: Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
-          $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
+        if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
+          logger "INFO: Setting up perfomance monitor: $perf_mon"
+          perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
+          if [ -f "$perf_mon_bin_path" ] ; then
+            logger "INFO: Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
+            $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
 
-          if [ "$(get_extra_node_names)" ] ; then
-            $DSH_EXTRA "mkdir -p '$(get_extra_node_folder)/aplic'; cp '$perf_mon_bin_path' '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"
+            if [ "$(get_extra_node_names)" ] ; then
+              $DSH_EXTRA "mkdir -p '$(get_extra_node_folder)/aplic'; cp '$perf_mon_bin_path' '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"
+            fi
+          else
+            die "Cannot find $perf_mon binary on the system"
           fi
-
-        else
-          die "Cannot find $perf_mon binary on the system"
         fi
       done
     else
@@ -828,7 +829,7 @@ restart_monit(){
     local perf_mon_bin_path
     local perf_mon_bench_path="$HDD/aplic"
 
-    if [ "$vmType" != "windows" ]; then
+    if [ "$vmType" != "windows" ] ; then
       logger "INFO: Restarting perf monit"
       stop_monit #in case there is any running
 
@@ -865,9 +866,32 @@ run_monit() {
         $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $(get_extra_node_folder)/vmstat-\$(hostname).log &" &
       fi
     else
-logger "DEBUG: DSH vmstat -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &"
       $DSH "vmstat -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
     fi
+  # For iostat use PAT's syntax
+  elif [ "$perf_mon" == "iostat" ] ; then
+    if [ "$clusterType" != "PaaS" ]; then
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $HDD/iostat-\$(hostname).log &" &
+
+      if [ "$(get_extra_node_names)" ] ; then
+        $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $(get_extra_node_folder)/iostat-\$(hostname).log &"  &
+      fi
+    else
+      $DSH "iostat -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $HDD/iostat-\$(hostname).log &" &
+      #iostat -x -k -d $SAMPLING_INTERVAL
+    fi
+  # To count map and reduce processes for PAT
+  elif [ "$perf_mon" == "MapRed" ] ; then
+    $DSH "
+(
+echo MapCount ReduceCount
+while :
+do
+  echo \$[\$(ps aux | grep -v '/bin/bash' | grep _m_ | wc -l) - 1] \$[\$(ps aux | grep -v '/bin/bash' | grep _r_ | wc -l) - 1]
+  sleep $BENCH_PERF_INTERVAL
+done
+) | awk -v host=\$(hostname) '(!/^\$/){now=strftime(\"%s \");if(\$0 && !/Linux/) if (/MapCount/){print \"HostName\",\"TimeStamp\",\$0} else {print host,now \$0}}; fflush()' > $HDD/MapRed-\$(hostname).log &" &
+
   # iotop, requires sudo and interval only 1 sec supported
   elif [ "$perf_mon" == "iotop" ] ; then
     if [ -z "$noSudo" ] || [ "$BENCH_PERF_INTERVAL" == "1" ]; then
@@ -922,8 +946,13 @@ stop_monit(){
     if [ "$vmType" != "windows" ]; then
       logger "INFO: Stoping monit (in case necessary)"
       for perf_mon in $BENCH_PERF_MONITORS ; do
-        local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
-        $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
+
+        if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
+          local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
+          $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
+        elif inList "MapRed" "$perf_mon" ; then
+          $DSH "pkill -9 -f 'MapCount'" & # 2> /dev/null
+        fi
 
         if [ "$(get_extra_node_names)" ] ; then
           $DSH_EXTRA "killall -9 '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"   2> /dev/null  &
@@ -931,7 +960,7 @@ stop_monit(){
 
         # TODO this is something temporal for PaaS clusters
         if [ "$clusterType" == "PaaS" ]; then
-          $DSH "killall -9 sadc; killall -9 vmstat;"   2> /dev/null  &
+          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; pkill -9 -f 'MapCount'"   2> /dev/null  &
         fi
       done
       #logger "DEBUG: perf monitors ready"
@@ -1001,16 +1030,9 @@ save_bench() {
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
     $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
 
-extra_lines="$($DSH_EXTRA "ls $(get_extra_node_folder)")"
-logger "DEBUG: TT $(get_extra_node_folder)/\n$extra_lines"
-
     if [ "$(get_extra_node_names)" ] ; then
-      $DSH_EXTRA "find $(get_extra_node_folder)/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
+      $DSH_EXTRA "find $(get_extra_node_folder)/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; " #2> /dev/null
     fi
-extra_lines="$($DSH_EXTRA "ls $JOB_PATH/$bench_name_num/")"
-logger "DEBUG: TTA $(get_extra_node_folder)/\n$extra_lines"
-
-
   else
     logger "WARNING: Requested to leave services running, leaving local benchfiles too"
     $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$bench_name_num/ \;"
