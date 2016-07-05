@@ -199,7 +199,7 @@ import_folder() {
           local xlsm_file_path="../../../../aloja-tools/result_templatev1.xlsm"
           if [ ! -f "$xlsm_file_path" ] ; then
             logger "INFO: Downloading PAT's template file"
-            wget "$ALOJA_PUBLIC_HTTP/files/result_templatev1.xlsm" -O "$xlsm_file_path" || rm "$xlsm_file_path"
+            wget "http://aloja.bsc.es/public/files/result_templatev1.xlsm" -O "$xlsm_file_path" || rm "$xlsm_file_path"
           else
             cp "$xlsm_file_path" "$PAT_folder/PAT_${folder}_${bench_folder}.xlsm"
           fi
