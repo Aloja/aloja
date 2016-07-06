@@ -121,7 +121,7 @@ import_folder() {
   folder_time="$(date --utc --date "${folder:0:8}" +%s)"
 
   if [ "$export_to_PAT" ] ; then
-    logger "WARNING: exporting to PAT at $PAT_folder"
+    logger "WARNING: exporting system metrics to PAT"
   fi
 
   if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
@@ -1035,15 +1035,17 @@ export2PAT() {
       check_sysstat_version "$sar_file"
 
       local hostn="${sar_file:4:-4}"
-      local PAT_host_foler="$PAT_folder/instruments/$hostn"
+      local PAT_host_foler="$PAT_folder/instruments/$hostn "
+
       mkdir -p "$PAT_host_foler"
 
-      # cpustat file
-      logger "INFO: Exporting to PAT sysstat for host: $hostn"
+      logger "INFO: Exporting to PAT sysstat for host: $hostn Folder: $PAT_host_foler"
+      # cpustat file.
+      # For CPU, we filter values over 100 (sometimes present)
 
       $sadf -d -U "$sar_file" -- -u |\
       awk -F ';' "NR == 1 {s = \"\"; for (i = 5; i <= NF; i++) s = s \$i \" \"; print \"HostName TimeStamp CPU \" s} \
-                  NR > 1 {s = \"\"; for (i = 5; i <= NF; i++) s = s \$i \" \"; print \$1 \" \" \$3 \" ALL \" s}" > "$PAT_host_foler/cpustat"
+                  NR > 1 {s = \"\"; for (i = 5; i <= NF; i++) if(\$i > 101 ){s = s 0.00 \" \"} else {s = s \$i \" \"}; print \$1 \" \" \$3 \" ALL \" s}" > "$PAT_host_foler/cpustat"
 
       # memstat file
       paste -d ';' <($sadf -d -U "$sar_file" -- -B) <($sadf -d "$sar_file" -- -S|cut -d';' -f4-) <($sadf -d "$sar_file" -- -r|cut -d';' -f4-)|\
