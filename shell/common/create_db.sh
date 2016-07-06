@@ -1289,10 +1289,10 @@ having count(*) = 22 order by exec2;
 INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
 select
   c.id_cluster,
-  if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
-      (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_R',replication,'_',run_num,'/ALL'),
-           (if (exec_type='RS_manual',  CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
-                (if (exec_type='BQ_manual',  CONCAT('20160301_TPCH_BQ_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
+  if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALLc'),
+      (if (exec_type='ADLA_manual', CONCAT('20160301_TPCH_ADLA_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_R',replication,'_',run_num,'/ALLc'),
+           (if (exec_type='RS_manual',  CONCAT('20160301_TPCH_RS_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALLc'),
+                (if (exec_type='BQ_manual',  CONCAT('20160301_TPCH_BQ_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALLc'),
                 CONCAT(substring(exec, 1, locate('/',exec)-1),'_',run_num,'/ALL' ) )
                 ))
            ))
