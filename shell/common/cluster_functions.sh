@@ -290,11 +290,12 @@ make || exit 1
 mkdir -p \$HOME/share/sw/bin || exit 1
 cp sar \$HOME/share/sw/bin || exit 1
 cp sadc \$HOME/share/sw/bin || exit 1
+cp iostat \$HOME/share/sw/bin || exit 1
+cp pidstat \$HOME/share/sw/bin || exit 1
 
 "
 
 }
-
 
 get_node_names() {
   local node_names=''
@@ -339,6 +340,26 @@ get_slaves_names() {
   fi
   echo -e "$node_names"
 }
+
+# Gets the list of extra nodes to instrument if necessary
+get_extra_node_names() {
+  local node_names=''
+  if [ ! -z "$extraNodeNames" ] ; then
+    for extra_node in $extraNodeNames ; do
+      node_names+="${extra_node}\n"
+    done
+
+    node_names="${node_names:0:(-2)}" #remove trailing \n
+  fi
+
+  echo -e "$node_names"
+}
+
+# Gets the folder where to store files in the extra servers
+get_extra_node_folder() {
+  echo -e "$BENCH_EXTRA_LOCAL_DIR/$(get_aloja_dir "$PORT_PREFIX")"
+}
+
 
 #the default SSH host override if necessary i.e. in Azure, Openstack
 get_ssh_host() {
@@ -804,8 +825,13 @@ vm_set_ssh() {
       local use_password="true" #use password
     fi
 
+    # Useful when the key is not the default "insecure key"
+    local pub_key="$(eval echo $ALOJA_SSH_COPY_KEYS |cut -d' ' -f 2|xargs cat)"
+
     vm_execute "mkdir -p $homePrefixAloja/$userAloja/.ssh/;
-               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"
+               echo -e '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;
+               echo -e '${pub_key}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;
+               " "parallel" "$use_password"
 
     # Install extra pub keys for login if defined
     [ "$extraPublicKeys" ] && vm_execute "echo -e '${extraPublicKeys}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys;" "parallel" "$use_password"

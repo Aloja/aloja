@@ -14,6 +14,7 @@ else
 fi
 
 CONF_DIR="$ROOT_DIR_INCLUDE/shell/common"
+ALOJA_REPO_PATH="$ROOT_DIR_INCLUDE"
 
 #1) load common functions and global variables
 

@@ -220,7 +220,6 @@ class ConfigEvaluationsController extends AbstractController
 					WHERE 1 $filter_execs ".str_replace("p.","e.",$whereClauseML)." AND e.id_learner = '".$params['prediction_model']."'
 					GROUP BY conf ORDER BY $order_conf";
 
-echo $query;
 			//get configs first (categories)
 			if ($params['uobsr'] == 1 && $params['upred'] == 1)
 			{
