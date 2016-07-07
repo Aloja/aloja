@@ -181,7 +181,7 @@ benchmark_suite_run() {
 
     # Iterate at least one time
     while true; do
-      [ "$BENCH_NUM_RUNS" ] && logger "Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
+      [ "$BENCH_NUM_RUNS" ] && logger "INFO: Starting iteration $BENCH_CURRENT_NUM_RUN of $BENCH_NUM_RUNS"
       # Bench Run
       function_call "benchmark_$bench"
 
@@ -260,7 +260,7 @@ get_specified_disks() {
   local disk="$1"
   local dir
 
-  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ]; then
+  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ] || [ "$disk" == "NFS" ]; then
     dir="${BENCH_DISKS["$disk"]}"
   elif [[ "$disk" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -281,7 +281,7 @@ get_specified_disks() {
 get_tmp_disk() {
   local dir
 
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ]  || [ "$1" == "NFS" ]; then
     dir="${BENCH_DISKS["$DISK"]}"
   elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -295,6 +295,8 @@ get_tmp_disk() {
       dir="${BENCH_DISKS["TMP"]}"
     elif [ "$disks_type" == "SR" ] ; then
       dir="${BENCH_DISKS["TMP_RAM"]}"
+    elif [ "$disks_type" == "NFS" ] ; then # on NFS use local as /tmp
+      dir="${BENCH_DISKS["HDD"]}"
     else
       dir="${BENCH_DISKS["${disks_type}1"]}"
     fi
@@ -322,10 +324,10 @@ $(get_tmp_disk "$disk_name")"
   echo -e "$all_disks"
 }
 
-# Retuns the main benchmkar path (useful for multidisk setups)
+# Retuns the main benchmkark path (useful for multidisk setups)
 # $1 disk type
 get_initial_disk() {
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] || [ "$1" == "NFS" ] ; then
     local dir="${BENCH_DISKS["$DISK"]}"
   elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
@@ -418,15 +420,19 @@ initialize() {
 #old code moved here
 # TODO cleanup
 initialize_node_names() {
+  local extra_node_names
+
   #For infiniband tests
   if [ "$NET" == "IB" ] ; then
     [ ! "$defaultProvider" == "vagrant" ] && IFACE="ib0" #vagrant we use for testing IB config
     master_name="$(get_master_name_IB)"
     node_names="$(get_node_names_IB)"
+    extra_node_names="$(get_extra_node_names)"
   else
     #IFACE should be already setup
     master_name="$(get_master_name)"
     node_names="$(get_node_names)"
+    extra_node_names="$(get_extra_node_names)"
   fi
 
   NUMBER_OF_DATA_NODES="$numberOfNodes"
@@ -448,12 +454,26 @@ initialize_node_names() {
   fi
 
   DSH="dsh -M -c -m "
+  DSH_EXTRA="$DSH"
+
   DSH_MASTER="ssh $master_name"
 
   DSH="$DSH $(nl2char "$node_names" ",") "
+
+  # TODO deprecate this var
   DSH_C="$DSH -c " #concurrent
 
-  DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailling coma
+  DSH_SLAVES="${DSH_C/"$master_name,"/}" #remove master name and trailing coma
+
+  # Instrument additional nodes
+  DSH_ALL="$DSH"
+
+  if [ "$extra_node_names" ] ; then
+    logger "WARNING: extra nodes requested for instrumentation"
+    DSH_EXTRA+=" $(nl2char "$extra_node_names" ",") "
+    # TODO temporary to test
+    DSH_ALL="${DSH:0:(-1)},$(nl2char "$extra_node_names" ",")"
+  fi
 }
 
 # Tests cluster nodes for a defined condition
@@ -563,7 +583,7 @@ test_share_dir() {
 # TODO cleanup
 set_job_config() {
   # Output directory name
-  CONF="${NET}_${DISK}_b${BENCH_SUITE}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+  CONF="${NET}_${DISK}_b${BENCH_SUITE}_S${BENCH_SCALE_FACTOR}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
@@ -581,7 +601,7 @@ set_job_config() {
   logger "INFO: Conf: $CONF"
   logger "INFO: Benchmark Suite: $BENCH_SUITE"
   logger "INFO: Benchmarks to execute: $BENCH_LIST"
-  #logger "DEBUG: DSH: $DSH\n"
+  logger "DEBUG: DSH: $DSH\n"
   #logger "INFO: DSH_C: $DSH_C"
   #logger "INFO: DSH_SLAVES: $DSH_SLAVES"
 }
@@ -773,15 +793,21 @@ set_monit_binaries() {
     local perf_mon_bin_path
     local perf_mon_bench_path="$HDD/aplic"
 
-    if [ "$vmType" != "windows" ]; then
+    if [ "$vmType" != "windows" ] ; then
       for perf_mon in $BENCH_PERF_MONITORS ; do
-        logger "INFO: Setting up perfomance monitor: $perf_mon"
-        perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
-        if [ "$perf_mon_bin_path" ] ; then
-          logger "INFO: Copying $perf_mon binary to $perf_mon_bench_path"
-          $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
-        else
-          die "Cannot find $perf_mon binary on the system"
+        if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
+          logger "INFO: Setting up perfomance monitor: $perf_mon"
+          perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
+          if [ -f "$perf_mon_bin_path" ] ; then
+            logger "INFO: Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
+            $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
+
+            if [ "$(get_extra_node_names)" ] ; then
+              $DSH_EXTRA "mkdir -p '$(get_extra_node_folder)/aplic'; cp '$perf_mon_bin_path' '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"
+            fi
+          else
+            die "Cannot find $perf_mon binary on the system"
+          fi
         fi
       done
     else
@@ -803,7 +829,7 @@ restart_monit(){
     local perf_mon_bin_path
     local perf_mon_bench_path="$HDD/aplic"
 
-    if [ "$vmType" != "windows" ]; then
+    if [ "$vmType" != "windows" ] ; then
       logger "INFO: Restarting perf monit"
       stop_monit #in case there is any running
 
@@ -824,19 +850,89 @@ run_monit() {
 
   if [ "$perf_mon" == "sar" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
-      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null  &" & #2>&1
+
+      if [ "$(get_extra_node_names)" ] ; then
+        $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -o $(get_extra_node_folder)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null  &" & #2>&1
+      fi
     else
-      $DSH "sar -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null 2>&1 &" &
+      $DSH "sar -o $HDD/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & # 2>&1
     fi
   elif [ "$perf_mon" == "vmstat" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
       $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
+
+      if [ "$(get_extra_node_names)" ] ; then
+        $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $(get_extra_node_folder)/vmstat-\$(hostname).log &" &
+      fi
     else
       $DSH "vmstat -n $BENCH_PERF_INTERVAL >> $HDD/vmstat-\$(hostname).log &" &
     fi
+  # For iostat use PAT's syntax
+  elif [ "$perf_mon" == "iostat" ] ; then
+    if [ "$clusterType" != "PaaS" ]; then
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $HDD/iostat-\$(hostname).log &" &
+
+      if [ "$(get_extra_node_names)" ] ; then
+        $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $(get_extra_node_folder)/iostat-\$(hostname).log &"  &
+      fi
+    else
+      $DSH "iostat -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $HDD/iostat-\$(hostname).log &" &
+      #iostat -x -k -d $SAMPLING_INTERVAL
+    fi
+  # To count map and reduce processes for PAT
+  elif [ "$perf_mon" == "MapRed" ] ; then
+    $DSH "
+(
+echo MapCount ReduceCount
+while :
+do
+  echo \$[\$(ps aux | grep -v '/bin/bash' | grep _m_ | wc -l) - 1] \$[\$(ps aux | grep -v '/bin/bash' | grep _r_ | wc -l) - 1]
+  sleep $BENCH_PERF_INTERVAL
+done
+) | awk -v host=\$(hostname) '(!/^\$/){now=strftime(\"%s \");if(\$0 && !/Linux/) if (/MapCount/){print \"HostName\",\"TimeStamp\",\$0} else {print host,now \$0}}; fflush()' > $HDD/MapRed-\$(hostname).log &" &
+
+  # iotop, requires sudo and interval only 1 sec supported
+  elif [ "$perf_mon" == "iotop" ] ; then
+    if [ -z "$noSudo" ] || [ "$BENCH_PERF_INTERVAL" == "1" ]; then
+      if [ "$clusterType" != "PaaS" ]; then
+        local iotop_log="$HDD/iotop-\$(hostname).log"
+        $DSH "touch $iotop_log; sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -btoqqk >> $iotop_log &" &
+
+        if [ "$(get_extra_node_names)" ] ; then
+          $DSH_EXTRA "touch $(get_extra_node_folder)/iotop-\$(hostname).log; sudo $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -btoqqk >> $iotop_log &" &
+        fi
+      else
+        $DSH "touch $iotop_log; sudo iotop  >> $iotop_log &" &
+      fi
+    else
+      logger "WARNING: iotop requires root and sudo is disabled for cluster OR BENCH_PERF_INTERVAL != 1 (set to: $BENCH_PERF_INTERVAL), skipping..."
+    fi
+  # dstat
+  elif [ "$perf_mon" == "dstat" ] ; then
+     # Removed for ubuntu
+     # -T --cpu-adv --top-cpu-adv -l -d --aio --disk-avgqu --disk-avgrq --disk-svctm --disk-tps --disk-util --disk-wait --top-bio-adv --top-io-adv --md-status -n --net-packets  -gimprsy --cpu-use --fs --top-int --top-latency -ipc -lock --mem-adv --top-mem --raw --unix --vm-adv --bits --nocolor --noheader --profile --power --proc-count --thermal --noheaders
+     #--cpu-adv --disk-avgqu --disk-avgrq --disk-svctm --disk-wait --md-status  --cpu-use --mem-adv --vm-adv --bits --thermal
+
+    if [ "$clusterType" != "PaaS" ]; then
+      local dstat_log="$HDD/dstat-\$(hostname).log"
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+    else
+      $DSH "dstat -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+    fi
+  # perf
+  elif [ "$perf_mon" == "perf" ] ; then
+
+    # Enable CPU trace data (if we have root)
+    if [ -z "$noSudo" ] ; then
+      $DSH "sudo echo '0' > /proc/sys/kernel/perf_event_paranoid"
+    fi
+
+    # TODO: https://github.com/intel-hadoop/PAT/blob/master/PAT/WORKER_scripts/instruments/perf
   else
     die "Specified perf mon $perf_mon not implemented"
   fi
+
 
   wait #for the bg processes
 
@@ -850,8 +946,26 @@ stop_monit(){
     if [ "$vmType" != "windows" ]; then
       logger "INFO: Stoping monit (in case necessary)"
       for perf_mon in $BENCH_PERF_MONITORS ; do
-        local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
-        $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
+
+        if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
+          local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
+          $DSH "killall -9 '$perf_mon_bin' 2> /dev/null"  #&
+        elif [ "$perf_mon" == "MapRed" ] ; then
+          $DSH "pgrep -f 'MapCount'|xargs kill -9 " 2>&1 /dev/null #&
+          if ! test_nodes "pgrep -f 'MapCount'" ; then
+            logger "WARNING: MapRed process still running... Attempting to kill again"
+            $DSH "pgrep -f 'MapCount'|xargs kill -9 " #&
+          fi
+        fi
+
+        if [ "$(get_extra_node_names)" ] ; then
+          $DSH_EXTRA "killall -9 '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX' 2> /dev/null" #&
+        fi
+
+        # TODO this is something temporal for PaaS clusters
+        if [ "$clusterType" == "PaaS" ]; then
+          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; pgrep -f 'MapCount'|xargs kill -9 2> /dev/null"   #&
+        fi
       done
       #logger "DEBUG: perf monitors ready"
     fi
@@ -861,16 +975,44 @@ stop_monit(){
 }
 
 # Return the bench name with the run number on the name
+# and the concurrency number if applicable
 # $1 bench_name
-get_bench_name_num() {
+get_bench_name_with_num() {
   local bench_name="$1"
+  local new_bench_name="$bench_name" #return same if not modified
 
-  if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
-    echo -e "${bench_name}_$BENCH_CURRENT_NUM_RUN"
-  else
-    echo -e "$bench_name"
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    new_bench_name="${bench_name}_c$BENCH_CONCURRENCY"
   fi
 
+  if (( "$BENCH_CURRENT_NUM_RUN" > 1 )) ; then
+    new_bench_name="${new_bench_name}__$BENCH_CURRENT_NUM_RUN"
+  fi
+
+  echo -e "$new_bench_name"
+
+}
+
+# Returns the iteration number (if any)
+# $1 bench_name
+get_bench_iteration() {
+  local bench_name="$1"
+
+  if [[ "$bench_name" = *'__'* ]] ; then
+    local bench_postfix="${bench_name##*__}"
+    local bench_number="$(only_numbers "$bench_postfix")"
+
+    if [ "$bench_postfix" ] && [ "$bench_number" ] ; then
+      echo -e "$bench_number"
+    fi
+  fi
+}
+
+# Strips the run number ie __3 from the bench name
+# $1 bench_name
+get_bench_name() {
+  local bench_name="$1"
+  echo -e "${bench_name%%__*}"
 }
 
 # $1 bench name
@@ -878,7 +1020,7 @@ save_bench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
   local bench_name="$1"
-  local bench_name_num="$(get_bench_name_num "$bench_name")"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   logger "INFO: Saving benchmark $bench_name_num"
 
@@ -888,12 +1030,20 @@ save_bench() {
   # Save the perf mon logs
   #$DSH "mv $HDD/{bwm,vmstat}*.log $HDD/sar*.sar $JOB_PATH/$bench_name_num/ 2> /dev/null"
 
-  # Move al files, but not dirs
+  # Move all files, but not dirs
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
     $DSH "find $HDD/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
+
+    if [ "$(get_extra_node_names)" ] ; then
+      $DSH_EXTRA "find $(get_extra_node_folder)/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; " #2> /dev/null
+    fi
   else
     logger "WARNING: Requested to leave services running, leaving local benchfiles too"
     $DSH "find $HDD/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$bench_name_num/ \;"
+
+    if [ "$(get_extra_node_names)" ] ; then
+      $DSH_EXTRA "find $(get_extra_node_folder)/ -maxdepth 1 -type f -exec cp {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
+    fi
   fi
 
   logger "INFO: Compresing and deleting $bench_name_num"
@@ -908,7 +1058,15 @@ save_bench() {
 
 # Return the total number of nodes starting at one (to include the master node)
 get_num_nodes() {
-  echo -e "$(( NUMBER_OF_DATA_NODES + 1 ))"
+  local num_nodes="$(( NUMBER_OF_DATA_NODES + 1 ))"
+  local extra_name_nodes="$(get_extra_node_names)"
+
+#  if [ "$extra_name_nodes" ] ; then
+#    local num_extra_nodes="$(echo -e "$extra_name_nodes"|wc -l)"
+#    num_nodes="$(( num_nodes + num_extra_nodes))"
+#  fi
+
+  echo -e "$num_nodes"
 }
 
 # Tests if a directory is present in the system
@@ -938,13 +1096,24 @@ prepare_folder(){
 
   # Creating the main dir
   $DSH "mkdir -p $HDD/logs $HDD_TMP"
-  # Testing the main dir
 
+  # Create the main dir also on the extra machines path (if defined)
+  if [ "$(get_extra_node_names)" ] ; then
+    $DSH_EXTRA "mkdir -p $HDD/logs $HDD_TMP"
+    local test_extra="$($DSH_EXTRA "[ -d '$HDD' ] && [ -d '$HDD_TMP' ] && echo '$testKey'")"
+    if [ ! "$(echo -e "$test_extra"|grep "$testKey")" ] ; then
+      die "Cannot create base directories for extra machines: $HDD $HDD_TMP"
+    fi
+  fi
+
+  # Testing the main dir
   if ! test_nodes "[ -d '$HDD' ] && [ -d '$HDD_TMP' ] " "ERROR" ; then
-    die "Cannot create base directories: $HDD $HDD_TMP
+    local err_message="Cannot create base directories: $HDD $HDD_TMP
 DEBUG: ls -lah $HDD $HDD_TMP
 $($DSH "ls -lah '$HDD/../'; ls -lah '$HDD_TMP/../' " )
 "
+    die "$err_message"
+
   else
     logger "DEBUG: Base dirs created successfully"
   fi
@@ -967,7 +1136,7 @@ delete_bench_local_folder() {
     local all_disks_cmd
     for disk_tmp in $disks ; do
       local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
-      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path"
+      $DSH "[ -d '$disk_full_path' ] && (rm -rf $disk_full_path || lsof +D $disk_full_path)" # lsof for debugging in case it cannot be deleted
 
       #check if we had problems deleting a folder
       #test_directory_not_exists "$disk_full_path"
@@ -1009,9 +1178,10 @@ calc_exec_time() {
 # Starts the timer for measuring benchmark time
 # $1 bench name
 set_bench_start() {
-  local bench_name="$1"
+  [ ! "$1" ] && die "benchmark name not set"
+  local bench_name="$(get_bench_name_with_num "$1")"
 
-  BENCH_TIME="" #reset global variable
+  BENCH_TIME="0" #reset global variable
 
   if [ "$bench_name" ] ; then
     EXEC_START["$bench_name"]="$(timestamp)"
@@ -1024,12 +1194,14 @@ set_bench_start() {
 # Starts the timer for measuring benchmark time
 # $1 bench name
 set_bench_end() {
+  [ ! "$1" ] && die "benchmark name not set"
+
   local end_exec="$(timestamp)"
-  local bench_name="$1"
+  local bench_name="$(get_bench_name_with_num "$1")"
 
   if [ "$bench_name" ] && [ "${EXEC_START["$bench_name"]}" ] ; then
     # Test if we already have the accurate time calculated, if not calculate it
-    if [ ! "$BENCH_TIME" ] ; then
+    if [ ! "$BENCH_TIME" ] || [ "$BENCH_TIME" == "0" ] ; then
       local start_exec="${EXEC_START["$bench_name"]}"
       local total_secs="$(calc_exec_time $start_exec $end_exec)"
       EXEC_TIME["$bench_name"]="$total_secs"
@@ -1043,6 +1215,25 @@ set_bench_end() {
   fi
 }
 
+# Checks if command needs to be executed concurrently
+# $1 cmd
+concurrent_run() {
+  local cmd="$1"
+
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    local cmd_tmp
+    for (( i=0; i<$BENCH_CONCURRENCY; i++)) ; do
+      cmd_tmp+="$cmd &
+"
+    done
+
+    cmd="${cmd_tmp:0:(-1)}
+wait"
+  fi
+
+  echo -e "$cmd"
+}
+
 # Runs the given command wrapped "in time"
 # Creates a file descriptor to return output in realtime as well as keeping it
 # in a var to extract its time
@@ -1052,6 +1243,12 @@ time_cmd_master() {
   local cmd="$1"
   local set_bench_time="$2"
 
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    cmd="$(concurrent_run "$cmd")"
+    logger "INFO: executing with $BENCH_CONCURRENCY of concurrency"
+    logger "DEBUG: Concurrent cmd: $cmd"
+  fi
+
   exec 9>&2 # Create a new file descriptor
   local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd' |tee $HDD/${bench}.out" 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
@@ -1059,7 +1256,11 @@ time_cmd_master() {
   # Set the accurate time to the global var
   if [ "$set_bench_time" ] ; then
     BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
-    logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+    if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+      logger "DEBUG: BENCH_TIME=$BENCH_TIME # with $BENCH_CONCURRENCY concurrency "
+    else
+      logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+    fi
   fi
 
   # Print warning if error of the last command (TODO: implement better)
@@ -1077,6 +1278,12 @@ time_cmd_master() {
 time_cmd() {
   local cmd="$1"
   local set_bench_time="$2"
+
+  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
+    cmd="$(concurrent_run "$cmd")"
+    logger "INFO: executing with $BENCH_CONCURRENCY of concurrency"
+    logger "DEBUG: Concurrent cmd: $cmd"
+  fi
 
   exec 9>&2 # Create a new file descriptor
   local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
@@ -1101,7 +1308,7 @@ execute_cmd(){
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
-    save_disk_usage "BEFORE"
+    #save_disk_usage "BEFORE"
     restart_monit
     set_bench_start "$bench"
   fi
@@ -1115,7 +1322,7 @@ execute_cmd(){
   if [ "$time_exec" ] ; then
     set_bench_end "$bench"
     stop_monit
-    save_disk_usage "AFTER"
+    #save_disk_usage "AFTER"
     save_bench "$bench"
   fi
 }
@@ -1243,7 +1450,7 @@ rsync_extenal() {
 
 #    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
-      vm_rsync_from "$(get_repo_path)/jobs_${clusterName}${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
+      vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
 #    else
 #      logger "WARNING: path $job_folder_full_path is not a directory"
 #    fi
@@ -1252,3 +1459,4 @@ rsync_extenal() {
   fi
 
 }
+

@@ -25,7 +25,7 @@ class Utils
             'net' => 'e', 'disk' => 'e','replication' => 'e',
             'iofilebuf' => 'e', 'blk_size' => 'e', 'iosf' => 'e', 'vm_size' => 'c',
             'vm_cores' => 'c', 'vm_RAM' => 'c', 'vm_OS' => 'c', 'datanodes' => 'c', 'hadoop_version' => 'e',
-            'type' => 'c', 'datasize' => 'e');
+            'type' => 'c', 'datasize' => 'e', 'scale_factor' => 'e', 'run_num' => 'e');
 
         $concatConfig = "";
         foreach($items as $item) {
@@ -33,18 +33,31 @@ class Utils
                 if ($concatConfig) $concatConfig .= ",'_',";
 
                 if ($item == 'id_cluster') {
-                    $concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,' datanodes'))";
+                    //$concatConfig .= "CONCAT_WS(',',c.provider,c.vm_size,CONCAT(c.datanodes,'nodes'))";
+                    $concatConfig .= "c.vm_size";
                 } elseif ($item == 'iofilebuf') {
                     $confPrefix = 'I';
                 } elseif ($item == 'vm_OS') {
                     $confPrefix = 'OS';
+                } elseif ($item == 'datasize') {
+                    $confPrefix = 'S';
+                } elseif ($item == 'run_num') {
+                    $confPrefix = 'Run';
+                } elseif ($item == 'maps') {
+                    $confPrefix = 'AUs';
+                } elseif ($item == 'replication') {
+                    $confPrefix = 'Dists';
                 } else {
                     $confPrefix = $item;
                 }
 
+                $prefixes = array ('maps', 'replication');
+
                 //avoid alphanumeric fields
-                if ($item != 'id_cluster' && !in_array($item, array('net', 'disk'))) {
-                    $concatConfig .= "'".$confPrefix."', ${aliases[$item]}.$item";
+                if (!in_array($item, $prefixes) && $item != 'id_cluster' && !in_array($item, array('net', 'disk'))) {
+                    $concatConfig .= "'" . $confPrefix . "', ${aliases[$item]}.$item";
+                } else if (in_array($item, $prefixes)) {
+                    $concatConfig .= "${aliases[$item]}.$item ,'$confPrefix'";
                 } else if($item != 'id_cluster') {
                     $concatConfig .= " ${aliases[$item]}.$item";
                 }
@@ -424,7 +437,7 @@ class Utils
 
     public static function getClusterName($clusterCode, $db)
     {
-        $clusterName = $db->get_rows("SELECT CONCAT_WS('/',LPAD(id_cluster,2,0),vm_size,CONCAT(datanodes,'Dn')) as name FROM aloja2.clusters WHERE id_cluster=$clusterCode");
+        $clusterName = $db->get_rows("SELECT CONCAT_WS('/',LPAD(id_cluster,3,0),vm_size,CONCAT(datanodes,'Dn')) as name FROM aloja2.clusters WHERE id_cluster=$clusterCode");
 
         return $clusterName[0]['name'];
     }
@@ -514,9 +527,10 @@ class Utils
         $options['disk'] = $dbUtils->get_rows("SELECT DISTINCT disk FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY disk ASC");
         $options['blk_size'] = $dbUtils->get_rows("SELECT DISTINCT blk_size FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY blk_size ASC");
         $options['comp'] = $dbUtils->get_rows("SELECT DISTINCT comp FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY comp ASC");
-        $options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,2,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name from aloja2.execs e JOIN aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
+        $options['id_cluster'] = $dbUtils->get_rows("select distinct id_cluster,CONCAT_WS('/',LPAD(id_cluster,3,0),c.vm_size,CONCAT(c.datanodes,'Dn')) as name from aloja2.execs e JOIN aloja2.clusters c using (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY c.name ASC");
         $options['maps'] = $dbUtils->get_rows("SELECT DISTINCT maps FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY maps ASC");
         $options['replication'] = $dbUtils->get_rows("SELECT DISTINCT replication FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY replication ASC");
+        $options['run_num'] = $dbUtils->get_rows("SELECT DISTINCT run_num FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY run_num ASC");
         $options['iosf'] = $dbUtils->get_rows("SELECT DISTINCT iosf FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iosf ASC");
         $options['iofilebuf'] = $dbUtils->get_rows("SELECT DISTINCT iofilebuf FROM aloja2.execs e WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY iofilebuf ASC");
         $options['datanodes'] = $dbUtils->get_rows("SELECT DISTINCT datanodes FROM aloja2.execs e JOIN aloja2.clusters USING (id_cluster) WHERE 1 AND valid = 1 AND filter = 0 ".DBUtils::getFilterExecs()." ORDER BY datanodes ASC");
@@ -533,7 +547,6 @@ class Utils
     }
 
     public static function getExecutionCost($exec, $clusterCosts) {
-
         $costHour = $clusterCosts['costsHour'][$exec['id_cluster']];
         $costRemote = $clusterCosts['costsRemote'][$exec['id_cluster']];
         $costSSD = $clusterCosts['costsSSD'][$exec['id_cluster']];
@@ -577,7 +590,18 @@ class Utils
 
         //To get the cost
         //convert the cluster cost + additions from per hour to per second, then just multiply by number of seconds it took
-        $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
+
+        // ADLA tests
+        if (isset($_GET['cluster_hours'])) {
+            if(in_array($exec['id_cluster'], array(101, 102, 103))) {
+                $cost = (($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))) * $_GET['cluster_hours'];
+            } else {
+                $cost = (($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))) * 168;
+            }
+            // Normal
+        } else {
+            $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
+        }
 
         return $cost;
     }
@@ -709,5 +733,14 @@ class Utils
             $return = $value . ' B';
 
         return $return;
+    }
+
+    public static function cmp_conf($a, $b)
+    {
+//        if ($a == $b) {
+//            return 0;
+//        }
+//        return ($a < $b) ? -1 : 1;
+        return strnatcmp($a['conf'],$b['conf']);
     }
 }

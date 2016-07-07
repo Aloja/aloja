@@ -5,7 +5,9 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
 [ ! "$TPCH_SCALE_FACTOR" ] &&  TPCH_SCALE_FACTOR=1 #1 GB min size
-BENCH_DATA_SIZE="$((TPCH_SCALE_FACTOR * 1024 * 1024 * 1024))" #in bytes
+[ ! "$TPCH_USE_LOCAL_FACTOR" ] && TPCH_USE_LOCAL_FACTOR="" #set to a scale factor to use the local DBGEN instead of the M/R version
+
+BENCH_DATA_SIZE="$((TPCH_SCALE_FACTOR * 1000000000 ))" #in bytes
 
 
 TPCH_HDFS_DIR="/tmp/tpch-generate"
@@ -17,6 +19,9 @@ TPCH_DB_NAME="tpch_${BENCH_FILE_FORMAT}_${TPCH_SCALE_FACTOR}"
 [ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for $BENCH_SUITE"
 [ "$BENCH_FILE_FORMAT" != "orc" ] && die "Only orc file format is supported for now, got: $BENCH_FILE_FORMAT"
 
+# TODO: temporary patch for missing gcc on azure ubuntu
+[ ! "$(which gcc)" ] && sudo apt-get install -y -q gcc make
+[ ! "$(which gcc)" ] && die "Build tools not installed for TPC-H datagen to work"
 
 D2F_folder_name="D2F-Bench-master"
 BENCH_REQUIRED_FILES["$D2F_folder_name"]="http://github.com/Aloja/D2F-Bench/archive/master.zip"
@@ -130,7 +135,7 @@ tpc-h_validate_load() {
   logger "INFO: attempting to validate load and optimize to DB: $TPCH_DB_NAME"
   local db_stats="$(execute_hadoop_new "$bench_name" "fs -du /apps/hive/warehouse/tpch_orc_${TPCH_SCALE_FACTOR}.db" 2>1)"
 
-  #db_stats="$(echo -e "$db_stats"|grep 'warehouse'|grep -v '-du')" # remove extra lines
+  #db_stats="$(echo -e "$db_stats"|grep 'warehouse'|grep -v '-du')" # remove extra linesTPCH_USE_LOCAL_FACTOR
 
   logger "INFO: DB stats = $db_stats";
   logger "INFO: num tables = $(echo -e "$db_stats" |wc -l)";
@@ -151,6 +156,8 @@ tpc-h_datagen() {
     # Generate the data
     if [ "$TPCH_SCALE_FACTOR" == "1" ] ; then
       tpc-h_cmd_datagen "1"
+    elif [[ "$TPCH_USE_LOCAL_FACTOR" > 0 ]] ; then
+      tpc-h_cmd_datagen "$TPCH_USE_LOCAL_FACTOR"
     else
       tpc-h_hadoop_datagen
     fi

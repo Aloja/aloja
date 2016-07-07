@@ -27,10 +27,11 @@ source_file "$configFolderPath/$clusterConfigFile"
 logger "Starting ALOJA import2db tool"
 
 #4) Load the common cluster functions
-
+[ ! "$ALOJA_REPO_PATH" ] && ALOJA_REPO_PATH="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/../../"
 source_file "$ALOJA_REPO_PATH/shell/common/cluster_functions.sh"
 source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/common_benchmarks.sh"
 
 
 #Check if to use a special version of sar or the system one

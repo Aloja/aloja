@@ -1,0 +1,113 @@
+{% extends "layout.html.twig" %}
+{% block stylesheet %}
+    {{ parent() }}
+	<style type="text/css">
+        .scrollStyle
+	{
+		overflow-x:auto;
+		float: left;
+		width: 100%;
+        }
+/* 	td.highlight { */
+/* 		font-weight: italic; */
+/* 		color: red; */
+/* 	} */
+	</style>
+	<link rel="stylesheet" type="text/css" href="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.css" />
+{% endblock %}
+{% block javascript %}
+		{{ parent() }}
+		<script type="text/javascript" language="javascript" src="js/datatables.new/media/js/jquery.dataTables.min.js"></script>
+		<script type="text/javascript" language="javascript" src="//cdn.datatables.net/plug-ins/f2c75b7247b/integration/bootstrap/3/dataTables.bootstrap.js"></script>
+		{{ highcharts_js|raw }}
+	    <script>
+        $(document).ready(function() {
+        	$("#results").dataTable();
+            $("#chart").highcharts({
+                chart: {
+                    zoomType: 'xy'
+                },
+                title: {
+                    text: 'Cost and Execution time scalability by core count'
+                },
+                subtitle: {
+                    text: 'Benchmark: {{ benchs[0] }}'
+                },
+                xAxis: [{
+                    categories: {{ categories | raw }},
+                    title: {
+                        text: 'Number of cores'
+                    }
+                }],
+                yAxis: [{ // Primary yAxis
+                    title: {
+                        text: 'Run cost',
+
+                    },
+                    labels: {
+                        format: '{value} $',
+                    },
+                    min: 0,
+                    opposite: true
+                    },{ // Secondary yAxis
+                    gridLineWidth: 0,
+                    labels: {
+                        format: '{value} s',
+                        style: {
+                            color: Highcharts.getOptions().colors[0]
+                        }
+                    },
+                    title: {
+                        text: 'Execution time',
+                        style: {
+                            color: Highcharts.getOptions().colors[0]
+                        }
+                    },
+                    min: 0
+                }],
+                tooltip: {
+                    shared: false,
+                    formatter: function() {
+                        return '<b> '+this.x+'</b> '{% if scalabilityType == 'Datanodes' %}+'datanodes'{% endif %}+'<br /><span style="color: '+this.series.color+';">'+this.series.name+'</span>: <b>'+this.y+' '+this.series.options.tooltip.valueSuffix+'</b>';
+                    }
+                },
+                credits: {
+                    enabled: false
+                },
+                legend: {
+                    layout: 'horizontal'
+                },
+                plotOptions: {
+                    series: {
+                        connectNulls: true
+                    }
+                },
+                series: {{ seriesData | raw }}
+            });
+
+            $('form').submit(function() {
+                var href = location.protocol + '//' + location.host + location.pathname + '?' + $("form[name='clusterFilters'],form[name='configFilters']").serialize();
+                top.location.href = href;
+                return false;
+            });
+        });
+	    </script>
+    {% endblock %}
+    {% block content %}
+            <div id="intro_text">
+        This page compares the scalability in execution time (left Y-axis, solid line) vs. its cost (right Y-axis, dashed line)
+        as the number of nodes increase (X-axis).</br>
+        NOTE: You need to have results with different cluster sizes in your filter.
+            </div>
+
+        </br></br>
+           <div id="navigation">
+                {# include 'common/group_filters.html.twig' #}
+           		<div style="float: left; margin: 0 auto; margin-left: 5%; width: 60%;">
+	               <div id="chart" style="width: 800px; height: 800px;"></div>
+	            </div>
+                <div style="width: 30%; float: right;">
+                    {% include "common/config_filters.html.twig" %}
+                </div>
+	    </div>
+    {% endblock %}

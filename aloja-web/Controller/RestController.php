@@ -23,6 +23,7 @@ class RestController extends AbstractController
             'maps' => 'Maps',
             'iosf' => 'IO SFac',
             'replication' => 'Rep',
+            'run_num' => 'Run. Num.',
             'iofilebuf' => 'IO FBuf',
             'comp' => 'Comp',
             'blk_size' => 'Blk size',
@@ -101,6 +102,7 @@ class RestController extends AbstractController
 					'maps' => 'Maps',
 					'iosf' => 'IO SFac',
 					'replication' => 'Rep',
+                    'run_num' => 'Run. Num.',
 					'iofilebuf' => 'IO FBuf',
 					'comp' => 'Comp',
 					'blk_size' => 'Blk size',
@@ -120,7 +122,7 @@ class RestController extends AbstractController
             
             $query = "SELECT e.id_exec,e.id_cluster,e.exec,e.bench,e.exe_time,e.start_time,
                 e.end_time,e.net,e.disk,e.bench_type,
-                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,
+                e.maps,e.iosf,e.replication,e.iofilebuf,e.comp,e.blk_size,e.zabbix_link,e.hadoop_version,e.run_num,
                 e.valid,e.filter,e.outlier,e.perf_details,e.exec_type,e.datasize,e.scale_factor,
                 (e.exe_time/3600)*(c.cost_hour) as cost, c.name cluster_name, c.vm_OS, CONCAT_WS(',',c.vm_size,CONCAT(c.vm_RAM,' GB RAM'),c.provider,c.type) as cdesc, c.datanodes  FROM aloja2.execs e
        	 		join aloja2.clusters c USING (id_cluster)
@@ -152,7 +154,7 @@ class RestController extends AbstractController
 
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
-            echo json_encode(array('aaData' => $jsonData));
+            echo json_encode(array('aaData' => $jsonData, 'column_names' => array_keys($show_in_result)));
         } catch (\Exception $e) {
             exit($e->getMessage());
             echo 'No data available';

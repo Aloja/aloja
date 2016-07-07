@@ -158,6 +158,12 @@ prepare_hive_config() {
 
   if [ "$clusterType" == "PaaS" ]; then
     logger "INFO: in PaaS mode, not changing Hive system config"
+
+    #For CBD at least
+    time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+    #just in case
+    time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+
   else
     logger "INFO: Preparing Hive run specific config"
     $DSH "mkdir -p $(get_hive_conf_dir) $HDD/hive_logs; cp -r $(get_local_configs_path)/hive1_conf_template/* $(get_hive_conf_dir);"
@@ -204,7 +210,7 @@ save_hive() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
   local bench_name="$1"
-  local bench_name_num="$(get_bench_name_num "$bench_name")"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   # Create the hive logs dir
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/hive_logs;"

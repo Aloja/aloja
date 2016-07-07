@@ -13,9 +13,9 @@ get_ssh_user() {
   #check if we can change from root user
   if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
     #"WARNINIG: connecting as root"
-    echo "npoggi"
+    echo "${userAlojaPre}"
   else
-   echo "$userAloja"
+    echo "${userAloja}"
   fi
 }
 

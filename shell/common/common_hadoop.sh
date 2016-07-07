@@ -36,8 +36,11 @@ set_hadoop_requires() {
   fi
  fi
 
-  #also set the config here
+  # also set the config here
   set_hadoop_config_folder
+
+  # measure number of mappers and reducers
+  BENCH_PERF_MONITORS+=" MapRed"
 }
 
 # Helper to print a line with Hadoop requiered exports
@@ -85,11 +88,13 @@ get_hadoop_job_config() {
     #if [ ! -z "$AM_MB" ]; then
     #  job_config+=" -Dyarn.yarn.app.mapreduce.am.resource.mb='${AM_MB}'"
     #fi
-    if [ ! -z "$MAPS_MB" ]; then
-      job_config+=" -Dmapreduce.map.memory.mb='${MAPS_MB}'"
-    fi
-    if [ ! -z "$REDUCES_MB" ]; then
-      job_config+=" -Dmapreduce.reduce.memory.mb='${REDUCES_MB}'"
+    if [ "$clusterType" != "PaaS" ]; then
+      if [ ! -z "$MAPS_MB" ]; then
+        job_config+=" -Dmapreduce.map.memory.mb='${MAPS_MB}'"
+      fi
+      if [ ! -z "$REDUCES_MB" ]; then
+        job_config+=" -Dmapreduce.reduce.memory.mb='${REDUCES_MB}'"
+      fi
     fi
   else
     job_config+=" -D mapred.map.tasks='$MAX_MAPS'"
@@ -879,7 +884,7 @@ save_hadoop() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
   local bench_name="$1"
-  local bench_name_num="$(get_bench_name_num "$bench_name")"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   # Just in case make sure dir is created first
   $DSH "mkdir -p $JOB_PATH/$bench_name_num;"

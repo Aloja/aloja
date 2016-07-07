@@ -295,6 +295,7 @@ get_master_name() {
 }
 
 #$1 cluster name $2 use password
+# TODO: this funct is call on all vms, should remove vm loops
 vm_final_bootstrap() {
   logger "Configuring nodes..."
 
@@ -325,7 +326,7 @@ sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
     vm_mount_disks              # mounts ~/share on all machines
 
     if [ "$vm_name" = "master-1" ]; then
-     
+
       if ! vm_build_bwm_ng; then
         logger "WARNING: Cannot install bwm-ng on $vm_name"
       fi

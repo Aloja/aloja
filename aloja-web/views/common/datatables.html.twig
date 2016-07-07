@@ -306,6 +306,8 @@
 			} else if (type == 'DETAIL')
 				hideOffset = 1;
 
+			var columnNames;
+
             //$('#dynamic').html( '<table cellpadding="0" cellspacing="0" border="0" class="display" id="hibench"></table>' );
             oTable = $('#benchmarks').dataTable( {
 				"responsive": true,
@@ -324,7 +326,10 @@
                       {% elseif selected == 'Performance Metrics' %}
                       "data": {'pageTab': '{{ type }}'},
                       {% endif %}
-                      "success": fnCallback,
+                      "success": function (data) {
+												columnNames = data.column_names;
+												fnCallback(data);
+											},
 						"error": function( e, settings, techNote, message ) {
 							$("#loading").html('No data available within the chosen settings');
 						}
@@ -390,6 +395,10 @@
 						if (index > 0)
 							index += 1;
 
+						var clusterIdx = columnNames.indexOf("id_cluster") + 1;
+						var clusterName = aData[clusterIdx];
+						var cluster = clustersInfo[clusterName];
+
 						var headTitle = $("#benchmarks thead tr:first-child th:nth-child(" + index + ")").text();
 						{% if selected == 'Hadoop Job Counters' or selected == 'Hadoop 2 Job Counters' %}
 						if (headTitle == 'JOBID' && aData[aData.length-1] == 1)
@@ -445,17 +454,16 @@
 //         					var string = aData[15];
 //         					var value = string.substring(0, strpos(aData[15], '/'));
 //         					$(this).html('<a href="/jobs/'+value+'" target="_blank">files</a>');
-                       	} else if(headTitle == 'Cluster') {
-                           	var cluster = clustersInfo[aData[14 + offset]];
-                           	var tooltip = cluster.vm_size + ' VM,'+Math.floor(cluster.vm_RAM)+' GB RAM,'+cluster.vm_OS+','+cluster.provider+','+cluster.type;
-							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + aData[14 + offset] + '"  target="_blank">'+aData[14 + offset]+' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');         
+						} else if(headTitle == 'Cluster') {
+							var tooltip = cluster.vm_size + ' VM,'+Math.floor(cluster.vm_RAM)+' GB RAM,'+cluster.vm_OS+','+cluster.provider+','+cluster.type;
+							$(this).html('<a href="{{ path('clusters') }}?cluster_name=' + clusterName + '"  target="_blank">'+ clusterName +' <img class="tooltip2" src="img/info_small.png" style="width: 10px; height: 10px; margin-bottom: 1px; margin-left: 2px;" data-toggle="tooltip" data-placement="top" data-title="'+tooltip+'" />'+'</a>');
 						} else if(headTitle == 'Histogram') {
-							if(aData[14 + offset].indexOf("hdi") > -1) {
+							if(clusterName.indexOf("hdi") > -1) {
 								$(this).html('<a href="{{ path('histogramhdi') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
 							} else
 								$(this).html('<a href="{{ path('histogram') }}?id_exec=' + aData[0] + '"  target="_blank">Histogram</a>');
-                        } else if(headTitle == 'Counters') {
-							if(aData[14 + offset].indexOf("hdi") > -1) {
+						} else if(headTitle == 'Counters') {
+							if(clusterName.indexOf("hdi") > -1) {
 								$(this).html('<a href="{{ path('hdp2counters') }}?execs[]=' + aData[0] + '"  target="_blank">Jobs counters</a>');
 							} else
 								$(this).html('<a href="{{ path('counters') }}?execs[]=' + aData[0] + '"  target="_blank">Jobs counters</a>');
