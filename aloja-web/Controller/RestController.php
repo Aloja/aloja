@@ -154,7 +154,7 @@ class RestController extends AbstractController
 
             header('Content-Type: application/json');
             ob_start('ob_gzhandler');
-            echo json_encode(array('aaData' => $jsonData));
+            echo json_encode(array('aaData' => $jsonData, 'column_names' => array_keys($show_in_result)));
         } catch (\Exception $e) {
             exit($e->getMessage());
             echo 'No data available';
