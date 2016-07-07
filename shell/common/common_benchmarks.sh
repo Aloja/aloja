@@ -583,7 +583,7 @@ test_share_dir() {
 # TODO cleanup
 set_job_config() {
   # Output directory name
-  CONF="${NET}_${DISK}_b${BENCH_SUITE}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+  CONF="${NET}_${DISK}_b${BENCH_SUITE}_S${BENCH_SCALE_FACTOR}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
@@ -949,18 +949,18 @@ stop_monit(){
 
         if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
           local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
-          $DSH "killall -9 '$perf_mon_bin'"   2> /dev/null  &
-        elif inList "MapRed" "$perf_mon" ; then
-          $DSH "pkill -9 -f 'MapCount'" & # 2> /dev/null
+          $DSH "killall -9 '$perf_mon_bin' 2> /dev/null"  #&
+        elif [ "$perf_mon" == "MapRed" ] ; then
+          $DSH "pgrep -f 'MapCount'|xargs kill -9 2> /dev/null"  #&
         fi
 
         if [ "$(get_extra_node_names)" ] ; then
-          $DSH_EXTRA "killall -9 '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"   2> /dev/null  &
+          $DSH_EXTRA "killall -9 '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX' 2> /dev/null" #&
         fi
 
         # TODO this is something temporal for PaaS clusters
         if [ "$clusterType" == "PaaS" ]; then
-          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; pkill -9 -f 'MapCount'"   2> /dev/null  &
+          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; pgrep -f 'MapCount'|xargs kill -9 2> /dev/null"   #&
         fi
       done
       #logger "DEBUG: perf monitors ready"
@@ -1132,7 +1132,7 @@ delete_bench_local_folder() {
     local all_disks_cmd
     for disk_tmp in $disks ; do
       local  disk_full_path="$disk_tmp/$(get_aloja_dir "$PORT_PREFIX")"
-      $DSH "[ -d '$disk_full_path' ] && rm -rf $disk_full_path"
+      $DSH "[ -d '$disk_full_path' ] && (rm -rf $disk_full_path || lsof +D $disk_full_path)" # lsof for debugging in case it cannot be deleted
 
       #check if we had problems deleting a folder
       #test_directory_not_exists "$disk_full_path"

@@ -196,7 +196,7 @@ import_folder() {
           mkdir -p "$PAT_folder"
 
           # Copy the template if available
-          local xlsm_file_path="../../../../aloja-tools/result_templatev1.xlsm"
+          local xlsm_file_path="$ALOJA_REPO_PATH/aloja-tools/result_templatev1.xlsm"
           if [ ! -f "$xlsm_file_path" ] ; then
             logger "INFO: Downloading PAT's template file"
             wget "http://aloja.bsc.es/public/files/result_templatev1.xlsm" -O "$xlsm_file_path" || rm "$xlsm_file_path"
@@ -365,6 +365,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
         # Check if the export to Intel's PAT format was requested
         if [ "$export_to_PAT" ] ; then
           export2PAT
+          logger "INFO: Exported to PAT traces to $PAT_folder"
         fi
 
         cd ..; logger "INFO: Leaving folder $bench_folder\n"
@@ -1015,9 +1016,9 @@ check_sysstat_version() {
     SAR_VERSION_BENCH="$($sadf -H "$sar_file"|tail -n 1|cut -d' ' -f 8)"
 
     if [ "$SAR_VERSION_LOCAL" != "$SAR_VERSION_BENCH" ] ; then
-      if [ -f "../../../../aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf" ] ; then
+      if [ -f "$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf" ] ; then
         logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nFound version: $SAR_VERSION_BENCH in tools folder, using that one."
-        sadf="../../../../aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf"
+        sadf="$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf"
       else
         logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nContinuing any how..."
       fi
@@ -1035,27 +1036,27 @@ export2PAT() {
       check_sysstat_version "$sar_file"
 
       local hostn="${sar_file:4:-4}"
-      local PAT_host_foler="$PAT_folder/instruments/$hostn "
+      local PAT_host_folder="$PAT_folder/instruments/$hostn"
 
-      mkdir -p "$PAT_host_foler"
+      [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
 
-      logger "INFO: Exporting to PAT sysstat for host: $hostn Folder: $PAT_host_foler"
+      logger "INFO: Exporting to PAT sysstat for host: ${hostn}."
       # cpustat file.
       # For CPU, we filter values over 100 (sometimes present)
 
       $sadf -d -U "$sar_file" -- -u |\
       awk -F ';' "NR == 1 {s = \"\"; for (i = 5; i <= NF; i++) s = s \$i \" \"; print \"HostName TimeStamp CPU \" s} \
-                  NR > 1 {s = \"\"; for (i = 5; i <= NF; i++) if(\$i > 101 ){s = s 0.00 \" \"} else {s = s \$i \" \"}; print \$1 \" \" \$3 \" ALL \" s}" > "$PAT_host_foler/cpustat"
+                  NR > 1 {s = \"\"; for (i = 5; i <= NF; i++) if(\$i > 101 ){s = s 0.00 \" \"} else {s = s \$i \" \"}; print \$1 \" \" \$3 \" ALL \" s}" > "$PAT_host_folder/cpustat"
 
       # memstat file
       paste -d ';' <($sadf -d -U "$sar_file" -- -B) <($sadf -d "$sar_file" -- -S|cut -d';' -f4-) <($sadf -d "$sar_file" -- -r|cut -d';' -f4-)|\
       awk -F ';' "NR == 1 {s = \"\"; for (i = 4; i <= NF; i++) s = s \$i \" \"; print \"HostName TimeStamp \" s} \
-                  NR > 1 {s = \"\"; for (i = 3; i <= NF; i++) s = s \$i \" \"; print \$1 \" \" s}" > "$PAT_host_foler/memstat"
+                  NR > 1 {s = \"\"; for (i = 3; i <= NF; i++) s = s \$i \" \"; print \$1 \" \" s}" > "$PAT_host_folder/memstat"
 
       # netstat file
       $sadf -d -U "$sar_file" -- -n DEV |\
       awk -F ';' "NR == 1 {s = \"\"; for (i = 4; i <= NF; i++) s = s \$i \" \"; print \"HostName TimeStamp \" s} \
-                  NR > 1 {s = \"\"; for (i = 4; i <= NF; i++) s = s \$i \" \"; print \$1 \" \" \$3 \" \" s}" > "$PAT_host_foler/netstat"
+                  NR > 1 {s = \"\"; for (i = 4; i <= NF; i++) s = s \$i \" \"; print \$1 \" \" \$3 \" \" s}" > "$PAT_host_folder/netstat"
 
     else
       logger "WARNING: No valid sysstat files for exporting to PAT"
@@ -1066,11 +1067,11 @@ export2PAT() {
   for vmstats_file in vmstat-*.log ; do
     if [ -s $vmstats_file ] ; then
       local hostn="${vmstats_file:7:-4}"
-      logger "INFO: Exporting to PAT vmstat for host: $hostn"
-      local PAT_host_foler="$PAT_folder/instruments/$hostn"
-      mkdir -p "$PAT_host_foler"
+      logger "INFO: Exporting to PAT vmstat for host: ${hostn}."
+      local PAT_host_folder="$PAT_folder/instruments/$hostn"
+      [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
       # vmstat file
-      awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_start_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_foler/vmstat"
+      awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_start_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_folder/vmstat"
     else
       logger "WARNING: No valid vmstat files for exporting to PAT"
     fi
@@ -1080,11 +1081,11 @@ export2PAT() {
   for iostat_file in iostat-*.log ; do
     if [ -s $iostat_file ] ; then
       local hostn="${iostat_file:7:-4}"
-      logger "INFO: Exporting to PAT vmstat for host: $hostn"
-      local PAT_host_foler="$PAT_folder/instruments/$hostn"
-      mkdir -p "$PAT_host_foler"
+      logger "INFO: Exporting to PAT iostat for host: ${hostn}."
+      local PAT_host_folder="$PAT_folder/instruments/$hostn"
+      [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
       # vmstat file
-      cp "$iostat_file" "$PAT_host_foler/iostat"
+      cp "$iostat_file" "$PAT_host_folder/iostat"
     else
       logger "WARNING: No valid iostat files for exporting to PAT"
     fi
@@ -1094,11 +1095,11 @@ export2PAT() {
   for mapred_file in MapRed-*.log ; do
     if [ -s $mapred_file ] ; then
       local hostn="${mapred_file:7:-4}"
-      logger "INFO: Exporting to PAT vmstat for host: $hostn"
-      local PAT_host_foler="$PAT_folder/instruments/$hostn"
-      mkdir -p "$PAT_host_foler"
+      logger "INFO: Exporting to PAT MapRed for host: ${hostn}."
+      local PAT_host_folder="$PAT_folder/instruments/$hostn"
+      [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
       # vmstat file
-      cp "$mapred_file" "$PAT_host_foler/jvms"
+      cp "$mapred_file" "$PAT_host_folder/jvms"
     else
       logger "WARNING: No valid mapred files for exporting to PAT"
     fi
