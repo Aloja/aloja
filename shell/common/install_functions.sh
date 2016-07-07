@@ -98,7 +98,7 @@ vm_install_base_packages() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop" "update" #wamerican is for hivebench
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make" "update" #wamerican is for hivebench, gcc for tpch
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then
@@ -173,8 +173,6 @@ sudo apt-get autoremove -y;
 sudo mkdir -p /etc/mysql/conf.d;
   "
 
-    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}" "$@")
-datadir=${datadir}" "secured"
 
     logger "INFO: Installing Percona"
 
@@ -187,9 +185,9 @@ deb-src http://repo.percona.com/apt $ubuntu_version main" "secured_file"
 
     #here we don't use templates as template backups are also read
     vm_execute "
-sudo echo -e 'Package: *
+echo -e 'Package: *
 Pin: release o=Percona Development Team
-Pin-Priority: 1001' > /etc/apt/preferences.d/00percona.pref;
+Pin-Priority: 1001' | sudo tee /etc/apt/preferences.d/00percona.pref > /dev/null;
 sudo apt-key adv --keyserver keys.gnupg.net --recv-keys 1C4CBDCDCD2EFD2A;
 sudo apt-get update;"
 
@@ -204,6 +202,11 @@ sudo mysql -e \"GRANT ALL PRIVILEGES ON *.* TO '${userDbAloja}'@'%' IDENTIFIED B
 sudo mysql -e \"REVOKE SUPER ON *.* FROM '${userDbAloja}'@'%';\"
 
 "
+
+    vm_update_template "/etc/mysql/conf.d/overrides.cnf" "$(get_mysqld_conf "${env}" "${binlog_location}" "${relaylog_location}" "${role}" "${server_id}" "$@")
+datadir=${datadir}" "secured"
+
+    vm_execute "sudo /etc/init.d/mysql stop; sudo cp -a /var/lib/mysql/mysql ${datadir}/; sudo chown -R mysql:mysql ${datadir}; sudo /etc/init.d/mysql start; sleep 1"
 
     #test
     local test_action="$(vm_execute " [ \"\$(sudo mysql -e 'SHOW VARIABLES LIKE \"version%\";' |grep 'Percona')\" ] && echo '$testKey'")"

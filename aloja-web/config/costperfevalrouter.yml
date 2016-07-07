@@ -33,3 +33,8 @@ coreseval:
     pattern: "/coreseval"
     controller: "alojaweb\\Controller\\CostPerfEvaluationController::coresEvaluationAction"
     screenName: "Cores Scalability"
+
+rameval:
+    pattern: "/rameval"
+    controller: "alojaweb\\Controller\\CostPerfEvaluationController::RAMEvaluationAction"
+    screenName: "RAM Scalability"

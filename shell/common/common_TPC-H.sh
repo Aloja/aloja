@@ -19,6 +19,9 @@ TPCH_DB_NAME="tpch_${BENCH_FILE_FORMAT}_${TPCH_SCALE_FACTOR}"
 [ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for $BENCH_SUITE"
 [ "$BENCH_FILE_FORMAT" != "orc" ] && die "Only orc file format is supported for now, got: $BENCH_FILE_FORMAT"
 
+# TODO: temporary patch for missing gcc on azure ubuntu
+[ ! "$(which gcc)" ] && sudo apt-get install -y -q gcc make
+[ ! "$(which gcc)" ] && die "Build tools not installed for TPC-H datagen to work"
 
 D2F_folder_name="D2F-Bench-master"
 BENCH_REQUIRED_FILES["$D2F_folder_name"]="http://github.com/Aloja/D2F-Bench/archive/master.zip"
