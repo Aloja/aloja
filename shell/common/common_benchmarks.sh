@@ -951,7 +951,11 @@ stop_monit(){
           local perf_mon_bin="$HDD/aplic/${perf_mon}_$PORT_PREFIX"
           $DSH "killall -9 '$perf_mon_bin' 2> /dev/null"  #&
         elif [ "$perf_mon" == "MapRed" ] ; then
-          $DSH "pgrep -f 'MapCount'|xargs kill -9 2> /dev/null"  #&
+          $DSH "pgrep -f 'MapCount'|xargs kill -9 " 2>&1 /dev/null #&
+          if ! test_nodes "pgrep -f 'MapCount'" ; then
+            logger "WARNING: MapRed process still running... Attempting to kill again"
+            $DSH "pgrep -f 'MapCount'|xargs kill -9 " #&
+          fi
         fi
 
         if [ "$(get_extra_node_names)" ] ; then
