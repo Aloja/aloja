@@ -41,17 +41,34 @@ class AbstractController
 
     public function render($templatePath, $parameters) {
         $genericParameters = array('selected' => $this->container->getScreenName());
+        $filters = $this->filters->getFiltersArray();
+
+        $selected_filters = array();
+        foreach ($filters as $name => $filter) {
+            $key = 'currentChoice';
+            if (!array_key_exists($key, $filter)) continue;
+
+            $current_choice = $filter[$key];
+            if (is_array($current_choice) && count($current_choice) > 0) {
+                $selected_filters[$name] = $current_choice;
+            }
+            elseif (is_string($current_choice)) {
+                $selected_filters[$name] = array($current_choice);
+            }
+        }
+
         if($this->filters->getWhereClause() != "") {
             $genericParameters = array_merge($genericParameters,
                 array('additionalFilters' => $this->filters->getAdditionalFilters(),
-                    'filters' => $this->filters->getFiltersArray(),
+                    'filters' => $filters,
                     'filterGroups' => $this->filters->getFiltersGroups(),
                    ));
         }
 
         echo $this->container->getTwig()->render($templatePath,array_merge(
                 $genericParameters,
-                $parameters)
+                $parameters,
+                array('selectedFilters' => $selected_filters))
         );
     }
 

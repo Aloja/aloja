@@ -1,4 +1,12 @@
 <form id="configFilters" name="configFilters" method="GET" role="form" autocomplete="off">
+{% for name, filters in selectedFilters %}
+    <h4>{{ name }}</h4>
+    <ul>
+    {% for f in filters %}
+      <li>{{ f }}</li>
+    {% endfor %}
+    </ul>
+{% endfor %}
 {% if additionalFilters['presets']['choices'] | length > 0  %}
 <div class="row" style="margin-bottom: .5em;">
 	<div class="col-md-8">
