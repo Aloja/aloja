@@ -5,6 +5,7 @@ namespace alojaweb\Controller;
 use alojaweb\inc\HighCharts;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\Container\Container;
 
 class PerfDetailsController extends AbstractController
 {
@@ -22,6 +23,7 @@ class PerfDetailsController extends AbstractController
         $this->buildFilters(array('perf_details' => array('default' => 1)));
         $charts = array();
         $clusters = array();
+        $container = new Container();
 
         try {
             //TODO fix, initialize variables
@@ -117,7 +119,8 @@ print_r($selected_hosts) ;
         JOIN aloja2.clusters c USING (id_cluster)
         WHERE e.id_exec ='$exec'";
 
-                $exec_rows_tmp = $this->get_rows($query);
+                $db = $container->getDBUtils();
+                $exec_rows_tmp = $db->get_rows($query);
 print_r($exec_rows_tmp);
 
                 $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows_tmp,$id_exec_rows);
