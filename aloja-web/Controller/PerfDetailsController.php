@@ -128,7 +128,7 @@ print_r($selected_hosts) ;
                 $exec_details[$exec]['time']        = $dbUtil->get_exec_details($exec, 'exe_time',$exec_rows,$id_exec_rows);
                 $exec_details[$exec]['start_time']  = $dbUtil->get_exec_details($exec, 'start_time',$exec_rows,$id_exec_rows);
                 $exec_details[$exec]['end_time']    = $dbUtil->get_exec_details($exec, 'end_time',$exec_rows,$id_exec_rows);
-
+print_r($exec_details);
                 $id_cluster = $dbUtil->get_exec_details($exec, 'id_cluster',$exec_rows,$id_exec_rows);
                 if (!in_array($id_cluster, $clusters)) $clusters[] = $id_cluster;
 
@@ -654,7 +654,8 @@ echo $chart['query']. " \n\n";
 
         if(!isset($exec))
             $exec = '';
-
+print_r($execs);
+print_r($hosts);
         return $this->render('perfDetailsViews/perfcharts.html.twig',
             array(
                 'title' => 'Hadoop Job/s Execution details and System Performance Charts',
