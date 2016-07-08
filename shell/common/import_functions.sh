@@ -440,6 +440,11 @@ ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster
 ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='slave';\n"
     done
 
+    for nodeName in $(get_extra_node_names) ; do
+      sql+="insert into hosts set id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='other'
+ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster='$clusterID', host_name='$nodeName', role='other';\n"
+    done
+
     echo -e "$sql\n"
     else
        logger "ERROR: cannot find cluster file: $clusterConfigFile"
