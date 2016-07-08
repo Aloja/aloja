@@ -112,9 +112,15 @@ print_r($selected_hosts) ;
                     unset($execs[$exec]);
                     continue;
                 }
-echo "EXEC $exec\n";
-print_r($dbUtil->get_exec_details($exec, 'exec',$exec_rows,$id_exec_rows));
-                $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows,$id_exec_rows);
+
+                $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM aloja2.execs e
+        JOIN aloja2.clusters c USING (id_cluster)
+        WHERE e.id_exec ='$exec'";
+
+                $exec_rows_tmp = $this->get_rows($query);
+print_r($exec_rows_tmp);
+
+                $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows_tmp,$id_exec_rows);
 
                 $pos_name = strpos($exec_title, '/');
                 $exec_title =
