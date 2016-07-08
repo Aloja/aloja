@@ -123,7 +123,7 @@ print_r($selected_hosts) ;
                 $exec_rows_tmp = $db->get_rows($query);
 print_r($exec_rows_tmp);
 
-                $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows_tmp,$id_exec_rows);
+                $exec_title = $exec_rows_tmp[0]['exec'];
 
                 $pos_name = strpos($exec_title, '/');
                 $exec_title =
@@ -135,11 +135,11 @@ print_r($exec_rows_tmp);
                     substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
                 ;
 
-                $exec_details[$exec]['time']        = $dbUtil->get_exec_details($exec, 'exe_time',$exec_rows,$id_exec_rows);
-                $exec_details[$exec]['start_time']  = $dbUtil->get_exec_details($exec, 'start_time',$exec_rows,$id_exec_rows);
-                $exec_details[$exec]['end_time']    = $dbUtil->get_exec_details($exec, 'end_time',$exec_rows,$id_exec_rows);
+                $exec_details[$exec]['time']        = $exec_rows_tmp[0]['exe_time'];
+                $exec_details[$exec]['start_time']  = $exec_rows_tmp[0]['start_time'];
+                $exec_details[$exec]['end_time']    = $exec_rows_tmp[0]['end_time'];
 print_r($exec_details);
-                $id_cluster = $dbUtil->get_exec_details($exec, 'id_cluster',$exec_rows,$id_exec_rows);
+                $id_cluster = $exec_rows_tmp[0]['id_cluster'];
                 if (!in_array($id_cluster, $clusters)) $clusters[] = $id_cluster;
 
                 //$end_time = get_exec_details($exec, 'init_time');
