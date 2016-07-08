@@ -592,7 +592,7 @@ class PerfDetailsController extends AbstractController
                         $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                         $charts[$exec][$key_type]['chart']->setFields($chart['fields']);
                         $charts[$exec][$key_type]['chart']->setNegativeValues($chart['negative']);
-print_r($query);
+print_r($chart['query']);
                         list($rows, $max, $min) = Utils::minimize_exec_rows($dbUtil->get_rows($chart['query']), $chart['stacked']);
 
                         if (!isset($chart_details[$key_type]['max']) || $max > $chart_details[$key_type]['max'])
