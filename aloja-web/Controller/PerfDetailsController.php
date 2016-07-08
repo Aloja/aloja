@@ -5,6 +5,7 @@ namespace alojaweb\Controller;
 use alojaweb\inc\HighCharts;
 use alojaweb\inc\Utils;
 use alojaweb\inc\DBUtils;
+use alojaweb\Container\Container;
 
 class PerfDetailsController extends AbstractController
 {
@@ -22,6 +23,7 @@ class PerfDetailsController extends AbstractController
         $this->buildFilters(array('perf_details' => array('default' => 1)));
         $charts = array();
         $clusters = array();
+        $container = new Container();
 
         try {
             //TODO fix, initialize variables
@@ -110,23 +112,30 @@ class PerfDetailsController extends AbstractController
                     continue;
                 }
 
-                $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows,$id_exec_rows);
+                $query = "SELECT e.*, (exe_time/3600)*(cost_hour) cost, name cluster_name, datanodes  FROM aloja2.execs e
+        JOIN aloja2.clusters c USING (id_cluster)
+        WHERE e.id_exec ='$exec'";
 
-                $pos_name = strpos($exec_title, '/');
-                $exec_title =
-                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
-                    strtoupper(substr($exec_title, ($pos_name+1))).
-                    '&nbsp;'.
-                    ((strpos($exec_title, '_az') > 0) ? 'AZURE':'LOCAL').
-                    "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
-                    substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
-                ;
+                $db = $container->getDBUtils();
+                $exec_rows_tmp = $db->get_rows($query);
 
-                $exec_details[$exec]['time']        = $dbUtil->get_exec_details($exec, 'exe_time',$exec_rows,$id_exec_rows);
-                $exec_details[$exec]['start_time']  = $dbUtil->get_exec_details($exec, 'start_time',$exec_rows,$id_exec_rows);
-                $exec_details[$exec]['end_time']    = $dbUtil->get_exec_details($exec, 'end_time',$exec_rows,$id_exec_rows);
+                $exec_title = $exec_rows_tmp[0]['exec'];
 
-                $id_cluster = $dbUtil->get_exec_details($exec, 'id_cluster',$exec_rows,$id_exec_rows);
+//                $pos_name = strpos($exec_title, '/');
+//                $exec_title =
+//                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
+//                    strtoupper(substr($exec_title, ($pos_name+1))).
+//                    '&nbsp;'.
+//                    ((strpos($exec_title, '_az') > 0) ? 'AZURE':'LOCAL').
+//                    "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
+//                    substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
+//                ;
+
+                $exec_details[$exec]['time']        = $exec_rows_tmp[0]['exe_time'];
+                $exec_details[$exec]['start_time']  = $exec_rows_tmp[0]['start_time'];
+                $exec_details[$exec]['end_time']    = $exec_rows_tmp[0]['end_time'];
+
+                $id_cluster = $exec_rows_tmp[0]['id_cluster'];
                 if (!in_array($id_cluster, $clusters)) $clusters[] = $id_cluster;
 
                 //$end_time = get_exec_details($exec, 'init_time');
