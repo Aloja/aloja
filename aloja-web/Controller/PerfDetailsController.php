@@ -81,15 +81,12 @@ class PerfDetailsController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
-print_r("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
                 $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
 
                 $selected_hosts = array();
                 foreach($selectedHosts as $host) {
                     array_push($selected_hosts, $host['host_name']);
                 }
-echo "\n\nHosts:";
-print_r($selected_hosts) ;
             } elseif ($hosts == 'Master') {
                 $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
 
@@ -121,32 +118,30 @@ print_r($selected_hosts) ;
 
                 $db = $container->getDBUtils();
                 $exec_rows_tmp = $db->get_rows($query);
-print_r($exec_rows_tmp);
 
                 $exec_title = $exec_rows_tmp[0]['exec'];
 
-                $pos_name = strpos($exec_title, '/');
-                $exec_title =
-                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
-                    strtoupper(substr($exec_title, ($pos_name+1))).
-                    '&nbsp;'.
-                    ((strpos($exec_title, '_az') > 0) ? 'AZURE':'LOCAL').
-                    "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
-                    substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
-                ;
+//                $pos_name = strpos($exec_title, '/');
+//                $exec_title =
+//                    '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'.
+//                    strtoupper(substr($exec_title, ($pos_name+1))).
+//                    '&nbsp;'.
+//                    ((strpos($exec_title, '_az') > 0) ? 'AZURE':'LOCAL').
+//                    "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ID_$exec ".
+//                    substr($exec_title, 21, (strlen($exec_title) - $pos_name - ((strpos($exec_title, '_az') > 0) ? 21:18)))
+//                ;
 
                 $exec_details[$exec]['time']        = $exec_rows_tmp[0]['exe_time'];
                 $exec_details[$exec]['start_time']  = $exec_rows_tmp[0]['start_time'];
                 $exec_details[$exec]['end_time']    = $exec_rows_tmp[0]['end_time'];
-print_r($exec_details);
+
                 $id_cluster = $exec_rows_tmp[0]['id_cluster'];
                 if (!in_array($id_cluster, $clusters)) $clusters[] = $id_cluster;
 
                 //$end_time = get_exec_details($exec, 'init_time');
 
                 # TODO check date problems (ie. id_exec =115259 seems to have a different timezone)
-                $date_where     = "";
-                //$date_where     = " AND date BETWEEN '{$exec_details[$exec]['start_time']}' and '{$exec_details[$exec]['end_time']}' ";
+                $date_where     = " AND date BETWEEN '{$exec_details[$exec]['start_time']}' and '{$exec_details[$exec]['end_time']}' ";
 
                 $where          = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') $date_where";
                 $where_BWM      = " WHERE id_exec = '$exec' AND host IN ('".join("','", $selected_hosts)."') ";
@@ -597,7 +592,7 @@ print_r($exec_details);
                         $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                         $charts[$exec][$key_type]['chart']->setFields($chart['fields']);
                         $charts[$exec][$key_type]['chart']->setNegativeValues($chart['negative']);
-echo $chart['query']. " \n\n";
+
                         list($rows, $max, $min) = Utils::minimize_exec_rows($dbUtil->get_rows($chart['query']), $chart['stacked']);
 
                         if (!isset($chart_details[$key_type]['max']) || $max > $chart_details[$key_type]['max'])
@@ -664,8 +659,7 @@ echo $chart['query']. " \n\n";
 
         if(!isset($exec))
             $exec = '';
-print_r($clusters);
-print_r($dbUtil->get_hosts($clusters));
+
         return $this->render('perfDetailsViews/perfcharts.html.twig',
             array(
                 'title' => 'Hadoop Job/s Execution details and System Performance Charts',
