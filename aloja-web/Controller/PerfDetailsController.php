@@ -79,12 +79,15 @@ class PerfDetailsController extends AbstractController
             }
 
             if ($hosts == 'Slaves') {
+print_r("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
                 $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='slave'");
 
                 $selected_hosts = array();
                 foreach($selectedHosts as $host) {
                     array_push($selected_hosts, $host['host_name']);
                 }
+echo "\n\nHosts:";
+print_r($selected_hosts) ;
             } elseif ($hosts == 'Master') {
                 $selectedHosts = $dbUtil->get_rows("SELECT h.host_name from execs e inner join hosts h where e.id_exec IN (".implode(", ", $execs).") AND h.id_cluster = e.id_cluster AND h.role='master' AND h.host_name != ''");
 
@@ -583,7 +586,7 @@ class PerfDetailsController extends AbstractController
                         $charts[$exec][$key_type]['chart']->setStacked($chart['stacked']);
                         $charts[$exec][$key_type]['chart']->setFields($chart['fields']);
                         $charts[$exec][$key_type]['chart']->setNegativeValues($chart['negative']);
-
+echo $chart['query']. " \n\n";
                         list($rows, $max, $min) = Utils::minimize_exec_rows($dbUtil->get_rows($chart['query']), $chart['stacked']);
 
                         if (!isset($chart_details[$key_type]['max']) || $max > $chart_details[$key_type]['max'])
