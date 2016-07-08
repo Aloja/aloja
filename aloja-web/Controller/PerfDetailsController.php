@@ -112,7 +112,8 @@ print_r($selected_hosts) ;
                     unset($execs[$exec]);
                     continue;
                 }
-
+echo "EXEC $exec\n";
+print_r($dbUtil->get_exec_details($exec, 'exec',$exec_rows,$id_exec_rows));
                 $exec_title = $dbUtil->get_exec_details($exec, 'exec',$exec_rows,$id_exec_rows);
 
                 $pos_name = strpos($exec_title, '/');

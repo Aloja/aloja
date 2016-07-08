@@ -141,7 +141,8 @@ class DBUtils
                 $exec_rows = $new_rows;
                 $id_exec_rows = true;
             }
-
+echo "id EXEC: $id_exec";
+print_r($exec_rows); print_r($id_exec_rows);
             if (isset($exec_rows[$id_exec][$field]))
                 return $exec_rows[$id_exec][$field];
             else
