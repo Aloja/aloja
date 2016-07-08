@@ -654,8 +654,8 @@ echo $chart['query']. " \n\n";
 
         if(!isset($exec))
             $exec = '';
-print_r($execs);
-print_r($hosts);
+print_r($clusters);
+print_r($dbUtil->get_hosts($clusters));
         return $this->render('perfDetailsViews/perfcharts.html.twig',
             array(
                 'title' => 'Hadoop Job/s Execution details and System Performance Charts',
