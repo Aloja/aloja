@@ -41,17 +41,26 @@ class AbstractController
 
     public function render($templatePath, $parameters) {
         $genericParameters = array('selected' => $this->container->getScreenName());
+        $filters = $this->filters->getFiltersArray();
+
+        $label_lookup = array();
+        foreach ($filters as $name => $filter) {
+            $label_lookup[$name] = rtrim($filter['label'], ':');
+        }
+
         if($this->filters->getWhereClause() != "") {
             $genericParameters = array_merge($genericParameters,
                 array('additionalFilters' => $this->filters->getAdditionalFilters(),
-                    'filters' => $this->filters->getFiltersArray(),
+                    'filters' => $filters,
                     'filterGroups' => $this->filters->getFiltersGroups(),
                    ));
         }
 
-        echo $this->container->getTwig()->render($templatePath,array_merge(
+        echo $this->container->getTwig()->render($templatePath, array_merge(
                 $genericParameters,
-                $parameters)
+                $parameters,
+                array('labelLookup' => json_encode($label_lookup))
+            )
         );
     }
 
