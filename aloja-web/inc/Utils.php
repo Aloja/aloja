@@ -551,6 +551,7 @@ class Utils
         $costRemote = $clusterCosts['costsRemote'][$exec['id_cluster']];
         $costSSD = $clusterCosts['costsSSD'][$exec['id_cluster']];
         $costIB = $clusterCosts['costsIB'][$exec['id_cluster']];
+        $scaleFactor = $exec['scale_factor'];
 
     	$num_remotes = 0;
     	/** calculate remote */
@@ -593,11 +594,19 @@ class Utils
 
         // ADLA tests
         if (isset($_GET['cluster_hours'])) {
-            if(in_array($exec['id_cluster'], array(101, 102, 103))) {
+            if (in_array($exec['id_cluster'], array(101, 102, 103))) {
                 $cost = (($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))) * $_GET['cluster_hours'];
             } else {
                 $cost = (($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))) * 168;
             }
+        // Big Query tests
+        } else if (in_array($exec['id_cluster'], array(164,185))){
+            if ($scaleFactor == 1000) $cost = $costHour;
+            else if ($scaleFactor == 100) $cost = $costHour/10;
+            else if ($scaleFactor == 10) $cost = $costHour/100;
+            else if ($scaleFactor == 1) $cost = $costHour/1000;
+            else echo "Cannot determine Big Query pricing for this scale"; // ugly echo
+
         // Normal
         } else {
             $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
