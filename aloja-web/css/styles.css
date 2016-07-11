@@ -98,3 +98,11 @@ div p.bottom-align {
 label {
 	font-weight: normal;
 }
+
+.active-filters {
+    margin-bottom: 10px;
+}
+
+.remove-filter {
+    margin-bottom: 5px;
+}
