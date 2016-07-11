@@ -1227,7 +1227,7 @@ $MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and data
 and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
 
 # Delete too fast restuls for CBD 8 1-30 500GB
-$MYSQL "delete from execs where id_cluster = 126 and scale_factor =500 and start_time < '2016-06-15';;"
+$MYSQL "delete from execs where id_cluster = 126 and scale_factor =500 and start_time < '2016-06-15';"
 
 ## Delete too fast results (emr-117 and hdil8-A3-114)
 #$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS') and start_time < '2016-06-15';;"
@@ -1251,6 +1251,8 @@ $MYSQL "delete from execs where id_cluster =116 and scale_factor >= 100 and benc
 
 # Delete failed CBD results
 $MYSQL "delete from execs where id_cluster =120 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 50 and bench in ('query 1', 'query 2');"
+$MYSQL "delete from execs where id_cluster IN (167) and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 50 and bench in ('query 1', 'query 2');"
+
 
 # Delete failed a3 8nodes results
 $MYSQL "delete from execs where id_cluster =114 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 100 and bench in ('query 3', 'query 5');"
