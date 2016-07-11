@@ -60,6 +60,11 @@ if [ "$INSTRUMENTATION" ] ; then
   source_file "$ALOJA_REPO_PATH/shell/common/common_instrumentation.sh"
 fi
 
+if [ "$HADOOP_EXTRA_JARS" ] ; then
+    source_file "$ALOJA_REPO_PATH/shell/common/common_Aop.sh"
+fi
+
+
 # Load defaultProvider
 logger "DEBUG: attempting to load secured account configs if present"
 securedProviderFile="$ALOJA_REPO_PATH/secure/${defaultProvider}_settings.conf"

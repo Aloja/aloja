@@ -976,21 +976,25 @@ CREATE TABLE IF NOT EXISTS \`HDI_JOB_tasks\` (
   UNIQUE KEY \`UQ_TASKID\` (\`TASK_ID\`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
-CREATE TABLE IF NOT EXISTS AOP4Hadoopv2 (
+CREATE TABLE IF NOT EXISTS AOP4Hadoop (
   id_AOP4Hadoop int(11) NOT NULL AUTO_INCREMENT,
   id_exec int(11) NOT NULL,
-  date datetime DEFAULT NULL,
-  mili_secs int(11) DEFAULT NULL,
-  host_name varchar(127) DEFAULT NULL,
-  PID int(11) DEFAULT NULL,
-  timestamp bigint unsigned DEFAULT NULL,
-  event varchar(127) DEFAULT NULL,
-  value varchar(255) DEFAULT NULL,
   PRIMARY KEY (id_AOP4Hadoop),
-  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec,date,mili_secs,host_name,event,value),
+  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec),
   KEY index2 (id_exec)
 ) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS AOP_nodes_perf (
+  id_exec int(11) NOT NULL,
+  node1 varchar(255) NOT NULL,
+  node2 varchar(255) NOT NULL,
+  data int(11) DEFAULT NULL,
+  PRIMARY KEY (id_exec, node1, node2),
+  UNIQUE KEY avoid_duplicates_UNIQUE (id_exec, node1, node2),
+  KEY index2(id_exec)
+) ENGINE=InnoDB;
 "
+logger "INFO: AOP"
 
 # CREATE TABLE IF NOT EXISTS AOP4Hadoop (
 #   id_AOP4Hadoop int(11) NOT NULL AUTO_INCREMENT,

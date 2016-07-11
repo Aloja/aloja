@@ -834,4 +834,38 @@ class PerfDetailsController extends AbstractController
                 'exec' => $exec
             ));
     }
+    public function chordAction()
+    {
+        $idExec = '';
+        $dbConn = $this->getContainer()->getDBUtils();
+        try {
+            $idExec = Utils::get_GET_string('id_exec');
+            $idExec = 91899;
+            if(!$idExec)
+                $idExec = @$dbConn->get_rows("SELECT id_exec FROM aloja_logs.AOP4Hadoop")[rand(0,5)]['id_exec'];
+        } catch (\Exception $e) {
+            $this->container->getTwig()->addGlobal('message',$e->getMessage()."\n");
+        }
+
+        if(!$idExec) {
+            $this->container->getTwig()->addGlobal('message','No executions with AOP metrics');
+            $exec = null;
+        } else
+            $exec = $dbConn->get_rows("SELECT data FROM aloja_logs.AOP_nodes_perf  WHERE id_exec = $idExec")[0];
+            $idCluster =  $dbConn->get_rows("SELECT id_cluster FROM aloja2.execs  WHERE id_exec = $idExec")[0];
+            $idCluster = reset($idCluster);
+            $clusterName = $dbConn->get_rows("SELECT name FROM aloja2.clusters  WHERE id_cluster = $idCluster")[0];
+            $datanodes = $dbConn->get_rows("SELECT datanodes FROM aloja2.clusters  WHERE id_cluster = $idCluster")[0];
+
+            foreach ($exec as $value) {
+                print ($value);
+            }
+
+        return $this->render('perfDetailsViews/chord.html.twig',
+            array('idExec' => $idExec,
+                'exec' => $exec,
+                'clusterName' => $clusterName,
+                'datanodes' => $datanodes
+            ));
+    }
 }

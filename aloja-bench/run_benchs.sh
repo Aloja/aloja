@@ -65,6 +65,10 @@ if [ "$INSTRUMENTATION" == "1" ] ; then
   instrumentation_post_process
 fi
 
+if [ "$HADOOP_EXTRA_JARS" ] ; then
+    aop_post_process
+fi
+
 if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
   logger "INFO: Auto importing run to ALOJA-WEB"
   source_file "$ALOJA_REPO_PATH/shell/common/import_functions.sh"
@@ -75,6 +79,7 @@ if [ "$ALOJA_AUTO_IMPORT" == "1" ] ; then
   import_from_folder "$JOB_NAME" #"reload_caches"
   logger "INFO: URL of perf charts http://localhost:8080/perfcharts?execs[]=$id_exec"
 fi
+
 
 # Check if and rsync result to external source
 rsync_extenal "$JOB_NAME"

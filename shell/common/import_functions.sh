@@ -13,19 +13,19 @@ insert_DB(){
 
     #tx levels READ UNCOMMITTED READ-COMMITTED
 
-    $MYSQL "
-    SET time_zone = '+00:00';
-
-# Removed due to needing super permissions
-#    SET tx_isolation = 'READ-COMMITTED';
-#    SET GLOBAL tx_isolation = 'READ-COMMITTED';
-
-    LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
-    FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
-    IGNORE 1 LINES;"
-    logger "DEBUG: Loaded $2 into $1\n"
-  else
-    logger "WARNING: empty CSV file $csv_name $(cat $csv_name)"
+#    $MYSQL "
+#    SET time_zone = '+00:00';
+#
+## Removed due to needing super permissions
+##    SET tx_isolation = 'READ-COMMITTED';
+##    SET GLOBAL tx_isolation = 'READ-COMMITTED';
+#
+#    LOAD DATA LOCAL INFILE '$2' INTO TABLE $1
+#    FIELDS TERMINATED BY '$4' OPTIONALLY ENCLOSED BY '\"'
+#    IGNORE 1 LINES;"
+#    logger "DEBUG: Loaded $2 into $1\n"
+#  else
+#    logger "WARNING: empty CSV file $csv_name $(cat $csv_name)"
   fi
 
   # Delete the temporary file
@@ -331,13 +331,13 @@ import_folder() {
               extract_import_hadoop2_jobs
             fi
             import_AOP4Hadoop_files
-            wait
-            import_sar_files
-            wait
-            import_vmstats_files
-            wait
-            import_bwm_files
-            wait
+#            wait
+#            import_sar_files
+#            wait
+#            import_vmstats_files
+#            wait
+#            import_bwm_files
+#            wait
           fi
         fi
         cd ..; logger "INFO: Leaving folder $bench_folder\n"
@@ -1039,25 +1039,32 @@ import_AOP4Hadoop_files() {
   #v2:                    $1       $2   $3       $4          $5        $6       $7          $8            
 
   table_name="AOP4Hadoopv2"
+  job=$(pwd)
+  job="$(dirname "$job")"
   cd aloja
+  logger "INFO: Processing AOP logs if needed"
+  echo "***************************AOP**************************"
+
   for AOP_file_name in *.log ; do
-    local tmp_file="tmp_${AOP_file_name}.csv"
-    if [ -f "$AOP_file_name" ] ; then
+    if [[ $AOP_file_name = "hadoop.log" ]]  ; then
       if [[ $(head $AOP_file_name |wc -l) -gt 0 ]] ; then
-        echo "Processing AOP4Hadoop $AOP_file_name in `pwd`"
-        logger "INFO: Inserting into DB $AOP_file_name TN $table_name"
-        grep "AOPLOG" "$AOP_file_name" | awk -F ',' -v id_exec=$id_exec '{gsub(/ /, "", $3); print "NULL,"id_exec","$1","$2","$4","$5","$6","$7","$8}' > "$tmp_file"
-        cat $tmp_file
-        if [[ $(head $tmp_file |wc -l) -gt 0 ]] ; then
-          insert_DB_AOP "aloja_logs.${table_name}" "$tmp_file" "" ","
-        else
-          echo "Skipping "$tmp_file" because it is empty"
-        fi
+        logger "INFO: Processing AOP log $AOP_file_name in `pwd`"
+
+        python $ALOJA_REPO_PATH/aloja-web/Chord/data/changeLog.py `pwd` $id_exec
+
+        insert="INSERT INTO aloja_logs.AOP4Hadoop(id_exec)
+          VALUES ($id_exec)"
+
+        $MYSQL "$insert"
+
+        while read line ; do
+            echo $line
+            $MYSQL "$line"
+        done < inserts.sql
+
       else
         echo "Skipping "$AOP_file_name" because it is empty"
       fi
-    else
-      echo "Skipping "$AOP_file_name" because it doesn't exist! (??)"  
     fi
   done
   cd ..

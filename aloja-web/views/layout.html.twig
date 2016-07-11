@@ -156,6 +156,7 @@
 					{% if not PROD %}<li {% if selected is defined and selected == 'DBSCANexecs' %}class="active"{% endif %}><a class="navlink" href="{{ path('dbscanexecs', {'jobid': 'random'}) }}">DBSCANexecs</a></li>{% endif %}
 					  <li {% if selected is defined and selected == 'Histogram' %}class="active"{% endif %}><a class="navlink" href="{{ path('histogram') }}">Hadoop 1 histograms</a></li>
 					  <li {% if selected is defined and selected == 'Histogram HDP2' %}class="active"{% endif %}><a class="navlink" href="{{ path('histogramhdi') }}">Hadoop 2 histograms</a></li>
+					  <li {% if selected is defined and selected == 'Read/Writte performance' %}class="active"{% endif %}><a class="navlink" href="{{ path('chord') }}">Read/Write performance</a></li>
 				  </ul>
 			</li>
 			<li class="dropdown">

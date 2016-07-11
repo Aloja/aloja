@@ -28,3 +28,8 @@ histogramhdi:
     pattern: "/histogramhdi"
     controller: "alojaweb\\Controller\\PerfDetailsController::histogramHDIAction"
     screenName: "Histogram HDP2"
+
+chord:
+    pattern: "/chord"
+    controller: "alojaweb\\Controller\\PerfDetailsController::chordAction"
+    screenName: "Read/Writte performance"
