@@ -24,6 +24,7 @@
 				 	<button id="submit" type="submit" value="Update filters" class="btn btn-primary">Update filters</button>
                     <!-- to know if form has been submitted through GET -->
                     <input type="hidden" name="submit" />
+                    <span id="label-lookup" data-label-lookup="{{ labelLookup }}"></span>
 				</div>
 				<div class="col-md-6">
 				   <a id="filter_reset" href="?" style="color: white;" class="reset btn btn-warning">Reset</a>
@@ -31,6 +32,7 @@
 			</div>
     </div>
   <div class="row panel-group" id="accordion" role="tablist" aria-multiselectable="true">
+    <div class="active-filters col-md-10 col-md-offset-1"></div>
   {% for name,filterGroup in filterGroups %}
     <div class="panel panel-default col-md-10 col-md-offset-1" style="padding: 0;">
       <div class="panel-heading" role="tab" id="heading{{ name }}">
