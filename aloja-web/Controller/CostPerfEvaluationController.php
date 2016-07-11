@@ -561,7 +561,7 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 //					ORDER BY c.datanodes ASC,c.vm_OS,c.vm_size DESC";
 
 			// Include BQ pricing
-			$execs = "SELECT c.datanodes as 'category',e.exec_type,c.vm_OS,c.vm_size,if(id_cluster IN (164,186),c.cost_hour, (avg(e.exe_time) * (c.cost_hour/3600)) ) as cost,avg(e.exe_time) exe_time,c.*
+			$execs = "SELECT c.datanodes as 'category',e.exec_type,c.vm_OS,c.vm_size,if(e.id_cluster IN (164,186),c.cost_hour, (avg(e.exe_time) * (c.cost_hour/3600)) ) as cost,avg(e.exe_time) exe_time,c.*
 					FROM aloja2.execs e JOIN aloja2.clusters c USING (id_cluster)
 					LEFT JOIN aloja_ml.predictions p USING (id_exec)
 
