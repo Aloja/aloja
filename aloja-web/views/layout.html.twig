@@ -349,9 +349,10 @@
 				var filter = activeFilters[curr];
 
 				var button = $("<button type='button' title='remove filter' class='remove-filter btn btn-default btn-sm'>"
-				+ "<strong>" + filter.label + "</strong>"
-				+ " (" + filter.values.join(", ") + ")"
-				+ "\240\327</button>").click(removeFilter(curr));
+				+ "<span class='remove-icon'>\327</span>"
+				+ "<span class='filter-description'><strong>" + filter.label + "</strong>"
+				+ " (" + filter.values.join(", ") + ")</span>"
+				+ "</button>").click(removeFilter(curr));
 
 				return prev.concat(button);
 			}, []);
