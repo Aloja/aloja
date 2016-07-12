@@ -103,6 +103,15 @@ label {
     margin-bottom: 10px;
 }
 
+.filter-buttons {
+    margin-left: -5px;
+}
+
 .remove-filter {
+    margin-left: 5px;
     margin-bottom: 5px;
+    max-width: calc(100% - 5px);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
