@@ -1,4 +1,4 @@
-# TPC-Hive version
+ # TPC-Hive version
 [ ! "$TPCH_SCALE_FACTOR" ] &&  TPCH_SCALE_FACTOR=2 #2 GB min size
 BENCH_DATA_SIZE="((TPCH_SCALE_FACTOR * 1024 * 1024 * 1024))"
 

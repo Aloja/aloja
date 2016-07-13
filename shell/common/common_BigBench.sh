@@ -1,5 +1,7 @@
 #BIG_BENCH SPECIFIC FUNCTIONS
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
+source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
+
 set_hadoop_requires
 
 # Benchmark to test Hive installation and configurations
@@ -8,6 +10,7 @@ set_hive_requires
 
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
 BIG_BENCH_CONF_DIR="BigBench_conf_template"
+BIG_BENCH_EXECUTION_DIR="src/BigBench"
 
 # Sets the required files to download/copy
 set_BigBench_requires() {
@@ -22,22 +25,19 @@ set_BigBench_requires() {
 get_BigBench_exports() {
   local to_export
 
-  to_export="$(get_hadoop_exports)
-$(get_hive_exports)
-USER_SETTINGS='$(get_BigBench_conf_dir)/userSettings.conf';
-"
+  to_export="$(get_java_exports)
+  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/${HIVE_VERSION}/bin"
 
   echo -e "$to_export\n"
 }
 
-# Returns the the path to the hadoop binary with the proper exports
+# Returns the the path to the BigBench binary with the proper exports
 get_BigBench_cmd() {
   local BigBench_exports
   local BigBench_cmd
 
   BigBench_exports="$(get_BigBench_exports)"
-
-  BigBench_cmd="$BigBench_exports\n$(get_local_apps_path)/$BIG_BENCH_FOLDER/bin/bigBench"
+  BigBench_cmd="$BigBench_exports\n$(get_BigBench_execution_dir)/bin/bigBench"
 
   echo -e "$BigBench_cmd"
 }
@@ -52,6 +52,7 @@ execute_BigBench(){
   local time_exec="$3"
 
   local BigBench_cmd="$(get_BigBench_cmd) $cmd"
+  echo $BigBench_cmd
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
@@ -113,20 +114,39 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
+s,##HIVE##,$(get_local_apps_path)/apache-hive-1.2.1-bin/bin/hive,g;
 EOF
+}
+
+get_BigBench_execution_dir() {
+    echo -e "$(get_base_bench_path)/$BIG_BENCH_EXECUTION_DIR"
 }
 
 get_BigBench_conf_dir() {
   echo -e "$HDD/$BIG_BENCH_CONF_DIR"
 }
 
-prepare_BigBench_config() {
+prepare_BigBench() {
 
-  logger "INFO: Preparing BigBench run specific config"
-  $DSH "mkdir -p $(get_BigBench_conf_dir) && cp -r $(get_local_configs_path)/$BIG_BENCH_CONF_DIR/* $(get_BigBench_conf_dir)/;"
+  logger "INFO: Copying BigBench execution and config files to $(get_BigBench_execution_dir)"
+
+  $DSH "mkdir -p $(get_base_bench_path)/src/BigBench && cp -r $(get_local_apps_path)/$BIG_BENCH_FOLDER/* $(get_BigBench_execution_dir)"
+  $DSH "cp -r $(get_local_configs_path)/$BIG_BENCH_CONF_DIR/* $(get_BigBench_execution_dir)/;"
+
+  echo $(get_BigBench_conf_dir)
 
   # Get the values
   subs=$(get_BigBench_substitutions)
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_BigBench_conf_dir)/userSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" /scratch/local/aloja-bench_3/src/BigBench/conf/userSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" /scratch/local/aloja-bench_3/src/BigBench/engines/hive/conf/engineSettings.conf"
+}
 
+# $1 bench
+save_BigBench() {
+  [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
+
+  save_hadoop "$bench_name"
+  save_hive "$bench_name"
 }

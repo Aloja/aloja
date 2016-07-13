@@ -11,6 +11,7 @@ BENCH_ENABLED="wordcount terasort teravalidate dfsio sort grep"
 # Check supplied benchmarks
 check_bench_list
 
+
 # list of benchmarks that require a previous benchmark run
 BENCH_VALIDATES="teravalidate"
 # if a validate is specified, we add it to a different list so that we don't iterate it later
