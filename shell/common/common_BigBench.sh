@@ -115,6 +115,7 @@ s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 s,##HIVE##,$(get_local_apps_path)/apache-hive-1.2.1-bin/bin/hive,g;
+s,##HDFS_PATH##,$(get_base_bench_path),g
 EOF
 }
 
@@ -137,8 +138,8 @@ prepare_BigBench() {
 
   # Get the values
   subs=$(get_BigBench_substitutions)
-  $DSH "/usr/bin/perl -i -pe \"$subs\" /scratch/local/aloja-bench_3/src/BigBench/conf/userSettings.conf"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" /scratch/local/aloja-bench_3/src/BigBench/engines/hive/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/conf/userSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/engines/hive/conf/engineSettings.conf"
 }
 
 # $1 bench
@@ -147,6 +148,17 @@ save_BigBench() {
   local bench_name="$1"
   local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
+  # Just in case make sure dir is created first
+  $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
+
+  if [ "$BENCH_LEAVE_SERVICES" ] ; then
+    $DSH "cp $(get_base_bench_path)/src/BigBench/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
+  else
+    $DSH "mv $(get_base_bench_path)/src/BigBench/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
+  fi
+
   save_hadoop "$bench_name"
   save_hive "$bench_name"
+
+
 }
