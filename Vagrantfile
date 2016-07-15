@@ -160,7 +160,7 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   0.upto(numberOfNodes) do |num|
 
     nodeName = "vagrant-99-0" + num.to_s
-    config.vm.define nodeName, autostart: false do |node|
+    config.vm.define nodeName do |node|
       node.vm.box = "ubuntu/trusty64"
       node.vm.hostname = nodeName
       node.vm.network :private_network, ip: ipAddrPrefix + num.to_s.rjust(2, '0')

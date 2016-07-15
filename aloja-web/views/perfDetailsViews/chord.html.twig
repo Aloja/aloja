@@ -10,31 +10,46 @@
 	$(document).ready(function() {
 		$(function () {
 
-            var obj = {{ exec }};
-            for (var i = 0; i < obj.length(); i++) {
-                console.log(obj[i]);
-            }
             /*//////////////////////////////////////////////////////////
              ////////////////// Set up the Data /////////////////////////
              //////////////////////////////////////////////////////////*/
 
-            NameProvider = ["al-35-00", "al-35-01", "al-35-02", "al-35-03", "al-35-04", "al-35-05", "al-35-06", "al-35-07", "al-35-08"];
+            var nodes1 = '{{ nodes1 }}';
+            nodes1 = nodes1.split(',');
 
-            matrix = [
-                [4.112231301, 0.0, 13.7829569285, 0.0, 0.0, 0.0, 0.0, 0.0, 5.06061e-05],
-                [6.8914784642, 4.1113111894, 0.0001472179, 0.0, 0.0, 6.8915520732, 7.36089e-05, 0.0, 9.59545e-05],
-                [6.8914784642, 0.0, 6.1669247218, 0.0, 0.0, 0.0, 6.8914784642, 0.0, 4.99489e-05],
-                [0.0002168835, 0.0, 0.0001432745, 2.0554150512, 0.0001472179, 6.96656e-05, 6.96656e-05, 0.0, 0.0],
-                [2.0549957432, 0.0001393312, 0.0001393312, 7.36089e-05, 4.1119710409, 6.8915520732, 6.8916177954, 0.0, 0.0],
-                [0.0276112359, 0.0276112359, 0.0276112359, 0.0, 0.0277584538, 2.0557528636, 0.0276848449, 0.0, 0.0276112359],
-                [0.0138043035, 0.0, 0.0138043035, 13.796761232, 0.0, 0.0138043035, 6.1795880869, 0.0, 0.0138043035],
-                [7.36089e-05, 0.0, 0.0, 7.36089e-05, 0.0, 0.0, 7.36089e-05, 0.0, 0.000191909],
-                [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-            ];
+            var nodes2 = '{{ nodes2 }}';
+            nodes2 = nodes2.split(',');
 
-            /*Sums up to exactly 100*/
+            var data = '{{ exec }}';
+            data = data.split(',');
 
-            colors = ["#FF0000", "#69B40F", "#FFFF00", "#C8125C", "#008FC8", "#10218B", "orange", "#737373", "#AC33A3"];
+            NameProvider = []
+            for (var i = 0; i < nodes1.length; ++i) {
+                if (NameProvider.indexOf(nodes1[i]) == -1){
+                    NameProvider.push(nodes1[i]);
+                }
+                data[i] = parseInt(data[i]);
+            }
+
+            matrix = [];
+            for (var i = 0; i < data.length; i += NameProvider.length) {
+                matrix.push(data.slice(i,i+NameProvider.length));
+            }
+
+            colors = [];
+
+            var letters = '0123456789ABCDEF'.split('');
+            var color = '#';
+            for (var i = 0 ; i < NameProvider.length; ++i) {
+                for (var j = 0; j < 6; j++ ) {
+                    color += letters[Math.floor(Math.random() * 16)];
+                }
+                colors.push(color);
+                color = '#';
+            }
+
+
+            console.log(colors);
 
             /*Initiate the color scale*/
             fill = d3.scale.ordinal()
