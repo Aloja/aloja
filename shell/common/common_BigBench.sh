@@ -1,7 +1,5 @@
 #BIG_BENCH SPECIFIC FUNCTIONS
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
-source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
-
 set_hadoop_requires
 
 # Benchmark to test Hive installation and configurations
@@ -14,8 +12,11 @@ BIG_BENCH_EXECUTION_DIR="src/BigBench"
 
 # Sets the required files to download/copy
 set_BigBench_requires() {
+  [ ! "$MAHOUT_VERSION" ] && die "No MAHOUT_VERSION specified"
+
 
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
+  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
@@ -26,7 +27,7 @@ get_BigBench_exports() {
   local to_export
 
   to_export="$(get_java_exports)
-  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/${HIVE_VERSION}/bin"
+  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/${HIVE_VERSION}/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/"
 
   echo -e "$to_export\n"
 }
@@ -145,20 +146,17 @@ prepare_BigBench() {
 # $1 bench
 save_BigBench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
+
   local bench_name="$1"
   local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
-  # Just in case make sure dir is created first
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "cp $(get_base_bench_path)/src/BigBench/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
+    $DSH "cp $(get_base_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   else
-    $DSH "mv $(get_base_bench_path)/src/BigBench/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
+    $DSH "mv $(get_base_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   fi
 
-  save_hadoop "$bench_name"
   save_hive "$bench_name"
-
-
 }

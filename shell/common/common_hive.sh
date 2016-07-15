@@ -236,6 +236,7 @@ save_hive() {
   logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
 
   $DSH_MASTER "
+
 cd $JOB_PATH;
 if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
   tar -cjf $JOB_PATH/hadoop_host_conf.tar.bz2 conf_*;
