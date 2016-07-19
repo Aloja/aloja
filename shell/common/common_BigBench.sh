@@ -2,7 +2,7 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
-# Benchmark to test Hive installation and configurations
+# Start Hive
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
@@ -26,8 +26,9 @@ set_BigBench_requires() {
 get_BigBench_exports() {
   local to_export
 
-  to_export="$(get_java_exports)
-  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/${HIVE_VERSION}/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/"
+  to_export="
+  $(get_hive_exports)
+  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/"
 
   echo -e "$to_export\n"
 }
@@ -115,8 +116,11 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
-s,##HIVE##,$(get_local_apps_path)/apache-hive-1.2.1-bin/bin/hive,g;
-s,##HDFS_PATH##,$(get_base_bench_path),g
+s,##HIVE##,$(get_local_apps_path)/$HIVE_VERSION/bin/hive,g;
+s,##HDFS_PATH##,$(get_base_bench_path),g;
+s,##HADOOP_CONF##,$(get_base_bench_path)/hadoop_conf,g;
+s,##HADOOP_LIBS##,$(get_local_apps_path)/$HADOOP_VERSION/lib/native,g;
+s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g
 EOF
 }
 
@@ -135,12 +139,12 @@ prepare_BigBench() {
   $DSH "mkdir -p $(get_base_bench_path)/src/BigBench && cp -r $(get_local_apps_path)/$BIG_BENCH_FOLDER/* $(get_BigBench_execution_dir)"
   $DSH "cp -r $(get_local_configs_path)/$BIG_BENCH_CONF_DIR/* $(get_BigBench_execution_dir)/;"
 
-  echo $(get_BigBench_conf_dir)
-
   # Get the values
   subs=$(get_BigBench_substitutions)
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/conf/userSettings.conf"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/engines/hive/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/engines/spark/conf/engineSettings.conf"
+
 }
 
 # $1 bench
