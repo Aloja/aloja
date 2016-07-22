@@ -3,7 +3,7 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 set_BigBench_requires
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " " 5 5)"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " " 1 30)"
 
 benchmark_suite_config() {
   initialize_hadoop_vars
@@ -23,16 +23,16 @@ benchmark_suite_run() {
 
 #  benchmark_cleanQueries
 #  benchmark_cleanMetastore
-#  benchmark_dataGen
-#  benchmark_populateMetastore
+  benchmark_dataGen
+  benchmark_populateMetastore
 
   for query in $BENCH_LIST ; do
     benchmark_query "$query"
   done
 
-  for query in $BENCH_LIST ; do
-    benchmark_validateQuery "$query"
-  done
+#  for query in $BENCH_LIST ; do
+#    benchmark_validateQuery "$query"
+#  done
 
 }
 

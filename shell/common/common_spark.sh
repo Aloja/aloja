@@ -6,8 +6,15 @@ set_hadoop_requires
 set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
-  if [ "$clusterType" != "PaaS" ]; then
-    BENCH_REQUIRED_FILES["$SPARK_VERSION"]="http://apache.rediris.es/spark/spark-1.6.1/$SPARK_VERSION.tgz"
+  if [ "$BENCH_SUITE" == "BigBench" ]; then
+    BENCH_REQUIRED_FILES["$SPARK_HIVE"]="/vagrant/blobs/aplic2/tarballs/$SPARK_HIVE.tar.gz"
+    SPARK_VERSION=$SPARK_HIVE
+
+  else
+
+      if [ "$clusterType" != "PaaS" ]; then
+        BENCH_REQUIRED_FILES["$SPARK_VERSION"]="http://apache.rediris.es/spark/spark-1.6.1/$SPARK_VERSION.tgz"
+      fi
   fi
 
   #also set the config here

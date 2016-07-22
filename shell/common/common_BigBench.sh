@@ -6,6 +6,10 @@ set_hadoop_requires
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
+# Start Spark
+source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
+set_spark_requires
+
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
 BIG_BENCH_CONF_DIR="BigBench_conf_template"
 BIG_BENCH_EXECUTION_DIR="src/BigBench"
@@ -16,7 +20,7 @@ set_BigBench_requires() {
 
 
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
-  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/mahout-distribution-${MAHOUT_VERSION}.tar.gz"
+#  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
@@ -28,8 +32,10 @@ get_BigBench_exports() {
 
   to_export="
   $(get_hive_exports)
-  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/"
-
+  $(get_spark_exports)
+  PATH=$PATH:$BENCH_HADOOP_DIR/bin/
+  export _JAVA_OPTIONS="$JAVA_XMS"
+  "
   echo -e "$to_export\n"
 }
 
