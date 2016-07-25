@@ -34,7 +34,7 @@ get_BigBench_exports() {
   $(get_hive_exports)
   $(get_spark_exports)
   PATH=$PATH:$BENCH_HADOOP_DIR/bin/
-  export _JAVA_OPTIONS="$JAVA_XMS"
+  
   "
   echo -e "$to_export\n"
 }
@@ -84,14 +84,18 @@ execute_BigBench(){
 }
 
 initialize_BigBench_vars() {
-    :
-    #BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
+
+    BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
 }
 
 # Sets the substitution values for the BigBench config
 get_BigBench_substitutions() {
 
-  cat <<EOF
+  #generate the path for the hadoop config files, including support for multiple volumes
+  HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
+  HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
+
+    cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
@@ -135,7 +139,7 @@ get_BigBench_execution_dir() {
 }
 
 get_BigBench_conf_dir() {
-  echo -e "$HDD/$BIG_BENCH_CONF_DIR"
+  echo -e "$(get_base_bench_path)/$BIG_BENCH_CONF_DIR"
 }
 
 prepare_BigBench() {

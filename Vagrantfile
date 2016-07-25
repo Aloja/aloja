@@ -38,8 +38,8 @@ end
 
 # defaults for cluster
 numberOfNodes = 1   # starts at 0, really means 2
-vmRAM = 1024
-vmCPUS = 1
+vmRAM = 3096	
+vmCPUS = 2
 
 # extract relevant values from config files
 cluster_config = "shell/conf/cluster_vagrant-99.conf"

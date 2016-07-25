@@ -13,6 +13,9 @@ benchmark_suite_config() {
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
 
+  initialize_spark_vars
+  prepare_spark_config
+
   initialize_BigBench_vars
   prepare_BigBench
 }
