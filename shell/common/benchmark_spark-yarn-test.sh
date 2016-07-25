@@ -27,7 +27,6 @@ benchmark_suite_run() {
   benchmark_SparkPi
 }
 
-
 benchmark_spark-version() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
@@ -39,5 +38,5 @@ benchmark_SparkPi() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  execute_spark "$bench_name" 'run-example --master yarn --deploy-mode cluster SparkPi $SparkPiSize' "time"
+  execute_spark "$bench_name" "spark-submit --class org.apache.spark.examples.SparkPi --master yarn --deploy-mode cluster $(get_local_apps_path)/$SPARK_FOLDER/lib/spark-examples*.jar $SparkPiSize" "time"
 }

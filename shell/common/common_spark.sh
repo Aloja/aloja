@@ -7,7 +7,7 @@ set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
   if [ "$BENCH_SUITE" == "BigBench" ]; then
-    BENCH_REQUIRED_FILES["$SPARK_HIVE"]="/vagrant/blobs/aplic2/tarballs/$SPARK_HIVE.tar.gz"
+    BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/files/spark_hive_ubuntu-1.6.2.tar.gz"
     SPARK_VERSION=$SPARK_HIVE
     SPARK_FOLDER=$SPARK_HIVE
 

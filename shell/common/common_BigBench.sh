@@ -34,7 +34,7 @@ get_BigBench_exports() {
   $(get_hive_exports)
   $(get_spark_exports)
   PATH=$PATH:$BENCH_HADOOP_DIR/bin/
-  
+
   "
   echo -e "$to_export\n"
 }
