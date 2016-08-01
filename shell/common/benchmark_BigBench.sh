@@ -68,7 +68,7 @@ benchmark_populateMetastore() {
 benchmark_query(){
   local bench_name="${FUNCNAME[0]#benchmark_}-$1"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runQuery -q $1 -e spark" "time" #-f scale factor
+  execute_BigBench "$bench_name" "runQuery -q $1" "time" #-f scale factor
 }
 
 benchmark_validateQuery(){

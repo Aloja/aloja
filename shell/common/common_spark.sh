@@ -147,7 +147,7 @@ s,##SPARK##,$(get_local_apps_path)/$SPARK_FOLDER/bin/spark,g;
 s,##SPARK_CONF##,$(get_local_bench_path)/spark_conf,g;
 s,##SPARK_EXECUTOR_CORES##,$EXECUTOR_CORES,g;
 s,##SPARK_EXECUTOR_INSTANCES##,$EXECUTOR_INSTANCES,g;
-s,##SPARK_EXECUTOR_MEMORY_GB##,{$EXECUTOR_MEM}g,g
+s,##SPARK_EXECUTOR_MEMORY_GB##,$EXECUTOR_MEM g,g
 EOF
 }
 

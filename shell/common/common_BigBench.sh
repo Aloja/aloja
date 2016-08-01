@@ -30,11 +30,19 @@ set_BigBench_requires() {
 get_BigBench_exports() {
   local to_export
 
-  to_export="
-  $(get_hive_exports)
-  $(get_spark_exports)
-  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/
-  "
+  if (( "$ENGINE" == "hive" )) ; then
+    to_export="
+    $(get_hive_exports)
+    PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/
+    "
+  else
+    to_export="
+    $(get_hive_exports)
+    $(get_spark_exports)
+    PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/
+    "
+  fi
+
   echo -e "$to_export\n"
 }
 
