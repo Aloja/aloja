@@ -53,7 +53,7 @@ vm_create_node() {
   elif [ "$defaultProvider" == "amazonemr" ]; then
     vm_name="$clusterName"
     #create_cbd_cluster "$clusterName"
-    vm_final_bootstrap "$clusterName"  
+    vm_final_bootstrap "$clusterName"
   elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
 
@@ -300,7 +300,10 @@ cp pidstat \$HOME/share/sw/bin || exit 1
 get_node_names() {
   local node_names=''
   if [ ! -z "$nodeNames" ] ; then
-    local node_names="$nodeNames"
+    for node in $nodeNames ; do
+      node_names+="$node\n"
+    done
+    node_names="${node_names:0:(-2)}" # strip the last \n
   else #generate them from standard naming
     for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
       if [ ! -z "$node_names" ] ; then
