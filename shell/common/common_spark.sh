@@ -35,7 +35,6 @@ export SPARK_VERSION='$SPARK_VERSION';
 export SPARK_HOME='$(get_local_apps_path)/${SPARK_FOLDER}';
 export SPARK_CONF_DIR=$(get_spark_conf_dir);
 export SPARK_LOG_DIR=$(get_local_bench_path)/spark_logs;
-export SPARK_CLASSPATH=\$($(get_local_apps_path)/${HADOOP_VERSION}/bin/hadoop classpath);
 "
     echo -e "$to_export\n"
   fi
@@ -138,18 +137,22 @@ s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
-s,##HDD##,$(get_base_bench_path),g;
+s,##HDD##,$(get_local_bench_path),g;
 s,##HIVE##,$(get_local_apps_path)/$HIVE_VERSION/bin/hive,g;
-s,##HDFS_PATH##,$(get_base_bench_path),g;
-s,##HADOOP_CONF##,$(get_base_bench_path)/hadoop_conf,g;
+s,##SPARK_EXECUTOR_EXTRA_CLASSPATH##,$(get_local_apps_path)/$HIVE_VERSION/lib/:$(get_base_bench_path)/hive_conf/,g;
+s,##HDFS_PATH##,$(get_local_bench_path),g;
+s,##HADOOP_CONF##,$(get_local_bench_path)/hadoop_conf,g;
 s,##HADOOP_LIBS##,$(get_local_apps_path)/$HADOOP_VERSION/lib/native,g;
 s,##SPARK##,$(get_local_apps_path)/$SPARK_FOLDER/bin/spark,g;
-s,##SPARK_CONF##,$(get_spark_conf_dir),g
+s,##SPARK_CONF##,$(get_local_bench_path)/spark_conf,g;
+s,##SPARK_EXECUTOR_CORES##,$EXECUTOR_CORES,g;
+s,##SPARK_EXECUTOR_INSTANCES##,$EXECUTOR_INSTANCES,g;
+s,##SPARK_EXECUTOR_MEMORY_GB##,{$EXECUTOR_MEM}g,g
 EOF
 }
 
 get_spark_conf_dir() {
-  echo -e "$(get_base_bench_path)/spark_conf"
+  echo -e "$(get_local_bench_path)/spark_conf"
 }
 
 prepare_spark_config() {
@@ -158,7 +161,7 @@ prepare_spark_config() {
   $DSH "mkdir -p $(get_spark_conf_dir) && cp -r $(get_local_configs_path)/${SPARK_VERSION}_conf_template/* $(get_spark_conf_dir)/"
   subs=$(get_spark_substitutions)
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_spark_conf_dir)/*"
-  $DSH "cp $(get_base_bench_path)/hadoop_conf/slaves $(get_spark_conf_dir)/slaves"
+  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $(get_spark_conf_dir)/slaves"
 }
 
 # $1 bench name
@@ -171,13 +174,13 @@ save_spark() {
   # Create Spark log dir
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/spark_logs;"
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "cp $(get_base_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
+    $DSH "cp $(get_local_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
   else
-    $DSH "mv $(get_base_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
+    $DSH "mv $(get_local_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
   fi
 
   # Save spark conf
-  $DSH_MASTER "cd $(get_base_bench_path)/; tar -cjf $JOB_PATH/spark_conf.tar.bz2 spark_conf"
+  $DSH_MASTER "cd $(get_local_bench_path)/; tar -cjf $JOB_PATH/spark_conf.tar.bz2 spark_conf"
 
   save_hadoop "$bench_name"
 }

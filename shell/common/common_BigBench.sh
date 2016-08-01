@@ -20,7 +20,7 @@ set_BigBench_requires() {
 
 
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
-#  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/mahout-distribution-${MAHOUT_VERSION}.tar.gz"
+  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
@@ -33,8 +33,7 @@ get_BigBench_exports() {
   to_export="
   $(get_hive_exports)
   $(get_spark_exports)
-  PATH=$PATH:$BENCH_HADOOP_DIR/bin/
-
+  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/
   "
   echo -e "$to_export\n"
 }
@@ -128,32 +127,34 @@ s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 s,##HIVE##,$(get_local_apps_path)/$HIVE_VERSION/bin/hive,g;
 s,##HDFS_PATH##,$(get_base_bench_path),g;
-s,##HADOOP_CONF##,$(get_base_bench_path)/hadoop_conf,g;
+s,##HADOOP_CONF##,$(get_local_bench_path)/hadoop_conf,g;
 s,##HADOOP_LIBS##,$(get_local_apps_path)/$HADOOP_VERSION/lib/native,g;
-s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g
+s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g;
+s,##SCALE##,$BENCH_SCALE_FACTOR,g;
+s,##ENGINE##,$ENGINE,g
 EOF
 }
 
 get_BigBench_execution_dir() {
-    echo -e "$(get_base_bench_path)/$BIG_BENCH_EXECUTION_DIR"
+    echo -e "$(get_local_bench_path)/$BIG_BENCH_EXECUTION_DIR"
 }
 
 get_BigBench_conf_dir() {
-  echo -e "$(get_base_bench_path)/$BIG_BENCH_CONF_DIR"
+  echo -e "$(get_local_bench_path)/$BIG_BENCH_CONF_DIR"
 }
 
 prepare_BigBench() {
 
   logger "INFO: Copying BigBench execution and config files to $(get_BigBench_execution_dir)"
 
-  $DSH "mkdir -p $(get_base_bench_path)/src/BigBench && cp -r $(get_local_apps_path)/$BIG_BENCH_FOLDER/* $(get_BigBench_execution_dir)"
+  $DSH "mkdir -p $(get_local_bench_path)/src/BigBench && cp -r $(get_local_apps_path)/$BIG_BENCH_FOLDER/* $(get_BigBench_execution_dir)"
   $DSH "cp -r $(get_local_configs_path)/$BIG_BENCH_CONF_DIR/* $(get_BigBench_execution_dir)/;"
 
   # Get the values
   subs=$(get_BigBench_substitutions)
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/conf/userSettings.conf"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/engines/hive/conf/engineSettings.conf"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_base_bench_path)/src/BigBench/engines/spark/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/conf/userSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/hive/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/spark/conf/engineSettings.conf"
 
 }
 
@@ -167,9 +168,9 @@ save_BigBench() {
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    $DSH "cp $(get_base_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
+    $DSH "cp $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   else
-    $DSH "mv $(get_base_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
+    $DSH "mv $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   fi
 
   save_hive "$bench_name"

@@ -23,7 +23,6 @@
 # Options read when launching programs locally with
 # ./bin/run-example or ./bin/spark-submit
 # - HADOOP_CONF_DIR, to point Spark towards Hadoop configuration files
-export HADOOP_CONF_DIR="##HADOOP_CONF##"
 # - SPARK_LOCAL_IP, to set the IP address Spark binds to on this node
 # - SPARK_PUBLIC_DNS, to set the public dns name of the driver program
 # - SPARK_CLASSPATH, default classpath entries to append
@@ -37,14 +36,13 @@ export HADOOP_CONF_DIR="##HADOOP_CONF##"
 
 # Options read in YARN client mode
 # - HADOOP_CONF_DIR, to point Spark towards Hadoop configuration files
-export HADOOP_CONF_DIR="##HADOOP_CONF##"
 # - SPARK_EXECUTOR_INSTANCES, Number of executors to start (Default: 2)
 # - SPARK_EXECUTOR_CORES, Number of cores for the executors (Default: 1).
 #export SPARK_EXECUTOR_CORES="1"
 # - SPARK_EXECUTOR_MEMORY, Memory per Executor (e.g. 1000M, 2G) (Default: 1G)
-#export SPARK_EXECUTOR_MEMORY="1G"
+#export SPARK_EXECUTOR_MEMORY="6G"
 # - SPARK_DRIVER_MEMORY, Memory for Driver (e.g. 1000M, 2G) (Default: 1G)
-#export SPARK_DRIVER_MEMORY="1G"
+#export SPARK_DRIVER_MEMORY="4G"
 # - SPARK_YARN_APP_NAME, The name of your application (Default: Spark)
 # - SPARK_YARN_QUEUE, The hadoop queue to use for allocation requests (Default: ‘default’)
 # - SPARK_YARN_DIST_FILES, Comma separated list of files to be distributed with the job.
@@ -68,9 +66,14 @@ export HADOOP_CONF_DIR="##HADOOP_CONF##"
 
 # Generic options for the daemons used in the standalone deploy mode
 # - SPARK_CONF_DIR      Alternate conf dir. (Default: ${SPARK_HOME}/conf)
-export SPARK_CONF_DIR="##SPARK_CONF##"
 # - SPARK_LOG_DIR       Where log files are stored.  (Default: ${SPARK_HOME}/logs)
-export SPARK_LOG_DIR="##LOG_DIR##"
 # - SPARK_PID_DIR       Where the pid file is stored. (Default: /tmp)
 # - SPARK_IDENT_STRING  A string representing this instance of spark. (Default: $USER)
 # - SPARK_NICENESS      The scheduling priority for daemons. (Default: 0)
+
+export HADOOP_CONF_DIR="##HADOOP_CONF##"
+export SPARK_LOG_DIR="##LOG_DIR##"
+export SPARK_CONF_DIR="##SPARK_CONF##"
+
+
+

@@ -28,7 +28,7 @@ benchmark_suite_run() {
 #  benchmark_cleanMetastore
   benchmark_dataGen
   benchmark_populateMetastore
-
+#
   for query in $BENCH_LIST ; do
     benchmark_query "$query"
   done
@@ -56,7 +56,7 @@ benchmark_dataGen() {
   logger "INFO: Running $bench_name"
   logger "INFO: Automatically accepting EULA"
 
-  yes YES | execute_BigBench "$bench_name" "dataGen -m $MAX_MAPS -C $(get_BigBench_conf_dir)/userSettings.conf" "time" #-f scale factor
+  yes YES | execute_BigBench "$bench_name" "dataGen -m $MAX_MAPS" "time" #-f scale factor
 }
 
 benchmark_populateMetastore() {
@@ -68,11 +68,11 @@ benchmark_populateMetastore() {
 benchmark_query(){
   local bench_name="${FUNCNAME[0]#benchmark_}-$1"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runQuery -q $1 -C $(get_BigBench_conf_dir)/userSettings.conf" "time" #-f scale factor
+  execute_BigBench "$bench_name" "runQuery -q $1 -e spark" "time" #-f scale factor
 }
 
 benchmark_validateQuery(){
   local bench_name="${FUNCNAME[0]#benchmark_}-$1"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "validateQuery -q $1 -C $(get_BigBench_conf_dir)/userSettings.conf" "time" #-f scale factor
+  execute_BigBench "$bench_name" "validateQuery -q $1" "time" #-f scale factor
 }
