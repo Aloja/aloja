@@ -451,12 +451,13 @@ benchmark_suite_cleanup() {
   : #Empty
 }
 
+# TODO should not be needed
 get_node_names() {
   local -a nodes=( $nodeNames )
   printf '%s\n' "${nodes[@]}"
 }
 
-#alias
+# TODO should not be needed
 get_slaves_names() {
   local -a nodes=( $nodeNames )
   printf '%s\n' "${nodes[@]:1}"
