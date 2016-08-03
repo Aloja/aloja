@@ -1264,6 +1264,9 @@ $MYSQL "update execs set id_cluster =126 where id_cluster =166;"
 # Change id cluster for incorrect runs
 $MYSQL "update execs SET id_cluster=97 where id_cluster=96 and start_time > '2016-06-15';"
 
+# Change id cluster to see HDP version 2.3 to 2.4 changes
+$MYSQL "update execs SET id_cluster=198 where id_cluster=121 and start_time > '2016-08-01';"
+
 # Create aggregate ALL for TPC-H
 $MYSQL "
 INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
