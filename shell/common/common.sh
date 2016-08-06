@@ -362,8 +362,14 @@ get_id_cluster(){
   echo -e "$id_cluster"
 }
 
-# Return only numeric part of string
+# Returns only numeric part of string
 # $1 string
 only_numbers() {
   echo -e "$(echo -e "$1"| sed 's/[^0-9]*//g')"
+}
+
+# Returns only alpha-numeric (plus dots and hyphens)
+# $1 string
+only_alpha() {
+  echo -e "$(echo -e "$1"| tr -cd '[[:alnum:]]._-')"
 }

@@ -196,7 +196,7 @@ import_folder() {
         exec="${folder}/${bench_folder}"
 
         #insert config and get ID_exec
-        exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\b")"
+        exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\"")"
 
         if [ "$export_to_PAT" ] ; then
           PAT_folder="../../PAT_${folder}/${bench_folder}"
@@ -669,6 +669,9 @@ get_exec_params_from_log() {
     while read -r line ; do
       if [[ "$line" == *"$start_point"* ]] ; then
         bench_name="$(echo -e "$line"|cut -d' ' -f5)"
+        # clean up chars form the log file (there is an end char from the colors)
+        bench_name="$(only_alpha "$bench_name")"
+
         [ "$bench_name" ] && found="1" || found=""
 
         if ! inList "$bench_names" "$bench_name" ; then
@@ -686,6 +689,8 @@ get_exec_params_from_log() {
 
       if [[ "$found" && "$line" == *"$end_point"* ]] ; then
         bench_time="$(echo -e "$line"|cut -d'=' -f2)"
+        # clean up chars form the log file (there is an end char from the colors)
+        bench_time="$(only_alpha "$bench_time")"
         bench_end_date="${line:0:4}-${line:4:2}-${line:6:2} ${line:9:2}:${line:11:2}:${line:13:2}"
         execs+="\"$bench_name\",\"$bench_time\",DATE_SUB(\"$bench_end_date\",INTERVAL ${bench_time%.*} SECOND),\"$bench_end_date\","
         execs+="\"$net\",\"$disk\",\"$bench_type\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"Imported using recovery log\",\"$datasize\",\"$scale_factor\"\n"
