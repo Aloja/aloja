@@ -129,7 +129,19 @@ import_folder() {
     cd "$folder"
 
     #get all executions details
-    exec_params="$(get_exec_params "log_${folder}.log" "$folder")"
+    if [ -f "log_${folder}.log" ] ; then
+      logger "INFO: Found legacy stile log file"
+      local log_folder_file="log_${folder}.log"
+    elif [ -f "run_benchs.sh.log" ] ; then
+      logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
+      local log_folder_file="run_benchs.sh.log"
+    else
+      logger "ERROR: cannot find a valid run log file for exec $folder. Continuing..."
+      return 0
+    fi
+
+    exec_params="$(get_exec_params "$log_folder_file" "$folder")"
+
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
     hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
 
@@ -184,7 +196,7 @@ import_folder() {
         exec="${folder}/${bench_folder}"
 
         #insert config and get ID_exec
-        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder\"")
+        exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\b")"
 
         if [ "$export_to_PAT" ] ; then
           PAT_folder="../../PAT_${folder}/${bench_folder}"
@@ -227,6 +239,7 @@ import_folder() {
             #id_cluster="1"
           fi
         fi
+#logger "DEBUG: EV $exec_values"
 
         if [ "$exec_values" ] ; then
           folder_OK="$(( folder_OK + 1 ))"
@@ -290,7 +303,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
                     scale_factor=VALUES(scale_factor);"
           fi
 
-          #logger "DEBUG: SQL:\n $insert"
+          logger "DEBUG: SQL:\n $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_major_version" == "2" ]; then
@@ -329,10 +342,10 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
         # Get the DB id for the exec
         id_exec="$(get_id_exec "$exec")"
 
-        # Save the different id_execs to construc the URL at the end
+        # Save the different id_execs to construct the URL at the end
         id_execs+=("$id_exec")
 
-        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
+logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 
         if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 
@@ -378,7 +391,13 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
       else
         logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
       fi
+
+      if [ -d "$bench_folder" ] ; then
+        logger "INFO: deleting bench folder: $bench_folder to save space"
+        rm -rf "$bench_folder"
+      fi
     done #end for bzip file
+
     cd ..; logger "INFO: Leaving folder $folder\n"
 
     if [ "$MOVE_TO_DONE" ] ; then
@@ -567,6 +586,8 @@ update ignore aloja2.execs SET exec_type = 'default' WHERE id_exec = '$1' AND ex
 # $1 log_file path
 legacy_get_exec_params() {
   #here get the zabbix URL to parse filtering prepares and other benchmarks
+  # Format http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=${start_date}&period=${total_secs}
+  # as found in: SENDING: hibench.runs 1411718451 <a href='http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20140926082343&period=2228'>terasort conf_ETH_HDD_b_m6_i10_r1_I65536_c1_z128_al-05</a> <strong>Time:</strong> 2228 s.
   #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
   local exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
   awk -v exec=$2 ' \
@@ -600,6 +621,89 @@ legacy_get_exec_params() {
   echo -e "$exec_params"
 }
 
+# Gets the configuration for the benchmark for new format, but without config.sh file
+# $1 log_file path
+# output format:
+# "wordcount","2286","2015-03-17 20:47:41","2015-03-17 21:25:47","ETH","RL3","","4","10","1","65536","0","64","http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20150317214741&period=2286"
+# "job","exe_time","start_time","end_time","net","disk","bench","maps","iosf","replication","iofilebuf","comp","blk_size","zabbix_link"
+# bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type
+# folder format:
+# 20160802_164734_ETH_HDD_bD2F-Bench-hive_S0_D8_dataproc-8standard4-196
+get_exec_params_from_log() {
+  local log_file="$1"
+  local folder="$2"
+
+  local start_point="INFO: RUNNING"
+  local end_point="DEBUG: BENCH_TIME"
+
+  local execs
+  local net="${folder:16:3}"
+  local disk="${folder:20:3}"
+
+  local bench_type_start="25"
+  local bench_type_end="$(echo -e "${folder:bench_type_start}"|grep -b -o '_'|head -n 1|cut -d: -f1)"
+  local bench_type="${folder:bench_type_start:bench_type_end}"
+
+  local bench_names # list of names to mark the repeated ones
+  local bench_name_tmp
+  local run_num # for repeated names
+
+  local datasize scale_factor
+  local has_orc_line="$(grep -m1  -n -i "Table tpch_orc_" "$log_file")"
+
+  if [ "$has_orc_line" ] ; then
+    local start_orc end_orc
+    start_orc="$(echo -e "$has_orc_line"|grep -b -o "tpch_orc_"|cut -d: -f1)"
+    start_orc="$((start_orc + 9 ))"
+    end_orc="$(echo -e "${has_orc_line:start_orc}"|grep -b -o '\.'|cut -d: -f1)"
+
+    scale_factor="${has_orc_line:start_orc:end_orc}"
+
+    [ "$scale_factor" ] && datasize="$((scale_factor * 1000000))"
+  fi
+
+  local bench_times="$(grep "${start_point}\|${end_point}" "$log_file")"
+
+  if [ "$bench_times" ] ; then
+    local found bench_name bench_time bench_end_date
+    while read -r line ; do
+      if [[ "$line" == *"$start_point"* ]] ; then
+        bench_name="$(echo -e "$line"|cut -d' ' -f5)"
+        [ "$bench_name" ] && found="1" || found=""
+
+        if ! inList "$bench_names" "$bench_name" ; then
+          bench_names+="$bench_name "
+        else
+          for run_num in {2..100} ; do
+            bench_name_tmp="${bench_name}__$run_num"
+            if ! inList "$bench_names" "$bench_name_tmp" ; then
+              break
+            fi
+          done
+          bench_name="$bench_name_tmp"
+        fi
+      fi
+
+      if [[ "$found" && "$line" == *"$end_point"* ]] ; then
+        bench_time="$(echo -e "$line"|cut -d'=' -f2)"
+        bench_end_date="${line:0:4}-${line:4:2}-${line:6:2} ${line:9:2}:${line:11:2}:${line:13:2}"
+        execs+="\"$bench_name\",\"$bench_time\",DATE_SUB(\"$bench_end_date\",INTERVAL ${bench_time%.*} SECOND),\"$bench_end_date\","
+        execs+="\"$net\",\"$disk\",\"$bench_type\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"Imported using recovery log\",\"$datasize\",\"$scale_factor\"\n"
+
+        found=""
+        bench_name=""
+      fi
+    done <<< "$bench_times"
+  else
+    logger "DEBUG: No bench times found"
+  fi
+
+  echo -e "$execs"
+
+#  die "DEBUG: $log_file bench times $bench_times\n$execs\nfolder $folder"
+
+}
+
 # Gets the configuration for the benchmark
 # for both legacy format (from folder name)
 # and newer, from config.sh
@@ -619,8 +723,10 @@ get_exec_params() {
   # different parsers for legacy-style and new-style configs
   if [ "${name:15:6}" == "_conf_" ]; then
     exec_params="$(legacy_get_exec_params "$log_file")"
+  elif [ ! -f "config.sh" ] ; then
+     # logger "WARNING: cannot find config.sh file, resorting to legacy format"
+     exec_params="$(get_exec_params_from_log "$log_file" "$folder")"
   else
-
     local job=""
     local exe_time=""
     local start_time=""
