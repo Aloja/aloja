@@ -1049,6 +1049,9 @@ save_bench() {
   $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
 
+  # TODO save the config file after every bench, not only at the end of the suite
+  save_env "$JOB_PATH/config.sh"
+
   logger "INFO: Done saving benchmark $bench_name_num"
 }
 

@@ -196,6 +196,7 @@ remove_duplicate_lines() {
 # Returns true if needle is in hay stack
 # $1 hay stack (list)
 # $2 needle (element)
+# Usage: if ! inList "$names" "$name" ; then
 inList() {
   local hay_stack="$1"
   local needle="$2"
