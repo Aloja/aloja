@@ -659,7 +659,7 @@ get_exec_params_from_log() {
 
     scale_factor="${has_orc_line:start_orc:end_orc}"
 
-    [ "$scale_factor" ] && datasize="$((scale_factor * 1000000))"
+    [ "$scale_factor" ] && datasize="$((scale_factor * 1000000000))"
   fi
 
   local bench_times="$(grep "${start_point}\|${end_point}" "$log_file")"
