@@ -1193,6 +1193,8 @@ update ignore aloja2.execs JOIN aloja2.clusters using (id_cluster) set disk = 'R
 
 $MYSQL "delete from execs where bench_type='TPC-H' and exec_type like '%_manual';"
 
+#$MYSQL "delete from execs where exec_type='Imported using recovery log';"
+
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_D2F.sh"
 source_file "$ALOJA_REPO_PATH/shell/common/DB/create_SaaS.sh"
 
@@ -1269,7 +1271,7 @@ $MYSQL "update execs SET id_cluster=198 where id_cluster=121 and start_time > '2
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
-INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
+INSERT IGNORE INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
 select
   c.id_cluster,
   if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALL'),
@@ -1291,7 +1293,7 @@ group by run_num,exec_type,datasize, exec2
 having count(*) = 22 order by exec2;
 
 #Concurrency numbers for D2F
-INSERT INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
+INSERT IGNORE INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
 select
   c.id_cluster,
   if (exec_type='DW_manual', CONCAT('20160301_TPCH_DW_',scale_factor,'GB','_',datanodes,'P_',vm_size,'_',run_num,'/ALLc'),
