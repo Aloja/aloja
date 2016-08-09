@@ -1269,6 +1269,19 @@ $MYSQL "update execs SET id_cluster=97 where id_cluster=96 and start_time > '201
 # Change id cluster to see HDP version 2.3 to 2.4 changes
 $MYSQL "update execs SET id_cluster=198 where id_cluster=121 and start_time > '2016-08-01';"
 
+# Delete failes runs (paper selection)
+$MYSQL "delete from execs where bench_type = 'TPC-H' and exec_type IN ('D2F_manual', 'Imported using recovery log' ) and id_cluster in (97)
+and exe_time < 40 and scale_factor=1000;"
+
+$MYSQL "delete from execs where bench_type = 'TPC-H' and exec_type IN ('D2F_manual', 'Imported using recovery log' ) and id_cluster in (97)
+  and exe_time < 40 and scale_factor=1000;"
+
+$MYSQL "delete from execs where exec like '20160622_160338_ETH_HDD_bD2F-Bench-hive_D8_rb-97%';"
+$MYSQL "delete from execs where exec like '20160621_202256_ETH_HDD_bD2F-Bench-hive_D8_rb-166%';"
+$MYSQL "delete from execs where exec like '20160424_205928_ETH_HS6_bD2F-Bench-hive_D4_minerva100-05-09-123%';"
+$MYSQL "delete from execs where exec like '20160420_024607_ETH_HDD_bD2F-Bench-hive_D4_hdil4-D4-121%';"
+
+
 # Create aggregate ALL for TPC-H
 $MYSQL "
 INSERT IGNORE INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,maps,run_num,replication)
