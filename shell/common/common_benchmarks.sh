@@ -584,6 +584,7 @@ test_share_dir() {
 set_job_config() {
   # Output directory name
   CONF="${NET}_${DISK}_b${BENCH_SUITE}_S${BENCH_SCALE_FACTOR}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
@@ -1042,6 +1043,9 @@ save_bench() {
     fi
   fi
 
+  # Save globals during current bench
+  save_env "$JOB_PATH/$bench_name_num/config_$bench_name_num.sh"
+
   logger "INFO: Compresing and deleting $bench_name_num"
 
   $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num;"
@@ -1049,7 +1053,7 @@ save_bench() {
   $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
 
-  # TODO save the config file after every bench, not only at the end of the suite
+  # Save globals during current bench
   save_env "$JOB_PATH/config.sh"
 
   logger "INFO: Done saving benchmark $bench_name_num"
