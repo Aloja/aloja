@@ -74,7 +74,7 @@ import_from_folder() {
   fi
 
   # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
-  if ! inside_vagrant || [ "$(hostname)" != "aloja-web" ] ; then
+  if inside_vagrant && [ "$(hostname)" != "aloja-web" ] ; then
     MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
   fi
 
