@@ -28,6 +28,9 @@ if [ "$clusterType" != "PaaS" ]; then
  prepare_folder "$DISK"
 fi
 
+# Save globals at the beggining (for debugging purposes)
+save_env "$JOB_PATH/config.sh"
+
 # Check if needed to download files and configs
 install_files
 

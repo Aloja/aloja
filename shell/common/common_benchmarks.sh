@@ -584,6 +584,7 @@ test_share_dir() {
 set_job_config() {
   # Output directory name
   CONF="${NET}_${DISK}_b${BENCH_SUITE}_S${BENCH_SCALE_FACTOR}_D${NUMBER_OF_DATA_NODES}_${clusterName}"
+
   JOB_NAME="$(get_date_folder)_$CONF"
 
   JOB_PATH="$BENCH_SHARE_DIR/jobs_$clusterName/$JOB_NAME"
@@ -704,6 +705,35 @@ fi
   fi
 }
 
+# Installs binaries and configs
+# TODO needs merging with install packages
+install_bench_packages() {
+  if [ "$BENCH_REQUIRED_PACKAGES" ] ; then
+    if [[ "$vmOSType" == "Ubuntu" || "$vmOSType" == "Debian" ]] ; then
+      logger "INFO: Testing to see if packages: $BENCH_REQUIRED_PACKAGES are installed"
+      if ! test_nodes "dpkg -s $BENCH_REQUIRED_PACKAGES" ; then
+        if [ ! "$noSudo" ] ; then
+          logger "INFO: Attempting to install: $BENCH_REQUIRED_PACKAGES"
+          if ! test_nodes "dpkg -s $BENCH_REQUIRED_PACKAGES 2> /dev/null" ; then
+            $DSH "sudo apt-get update;
+export DEBIAN_FRONTEND=noninteractive;
+sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $BENCH_REQUIRED_PACKAGES"
+
+            logger "WARNING: failed to install one or more packages: $BENCH_REQUIRED_PACKAGES"
+          fi
+        else
+          logger "WARNING: no sudo selected, cannot install needed packages in: $BENCH_REQUIRED_PACKAGES"
+        fi
+      else
+        logger "INFO: Required packages bench: $BENCH_REQUIRED_PACKAGES are correctly installed"
+      fi
+    else
+      logger "WARNING: not a Debian based system, not checking if to install packages: $BENCH_REQUIRED_PACKAGES"
+    fi
+  fi
+}
+
+
 # Rsyncs specified config folders in aplic2/configs/
 install_configs() {
   if [ "$BENCH_CONFIG_FOLDERS" ] ; then
@@ -724,6 +754,7 @@ install_configs() {
 install_files() {
   install_requires
   install_configs
+  install_bench_packages
 }
 
 check_aplic_updates() {
@@ -1011,6 +1042,13 @@ get_bench_name() {
   echo -e "${bench_name%%__*}"
 }
 
+# Saves information about the system if the tool is installed for the whole cluster
+# $1 path where to save files
+save_hardinfo() {
+  local path="$1"
+  local output="$($DSH "which hardinfo && hardinfo -r -f text -m computer.so -m devices.so -m network.so > $path/hardinfo-\$(hostname).txt || echo 'WARNING: hardinfo tool not installed'" 2>&1 /dev/null)"
+}
+
 # $1 bench name
 save_bench() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
@@ -1042,6 +1080,13 @@ save_bench() {
     fi
   fi
 
+  # Save globals during current bench for the benchmark and the main dir
+  save_env "$JOB_PATH/$bench_name_num/config_$bench_name_num.sh"
+  cp "$JOB_PATH/$bench_name_num/config_$bench_name_num.sh" "$JOB_PATH/config.sh"
+
+  # save system info
+  save_hardinfo "$JOB_PATH/$bench_name_num"
+
   logger "INFO: Compresing and deleting $bench_name_num"
 
   $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num;"
@@ -1049,8 +1094,7 @@ save_bench() {
   $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
 
-  # TODO save the config file after every bench, not only at the end of the suite
-  save_env "$JOB_PATH/config.sh"
+
 
   logger "INFO: Done saving benchmark $bench_name_num"
 }
@@ -1285,7 +1329,7 @@ time_cmd() {
   fi
 
   exec 9>&2 # Create a new file descriptor
-  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
+  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1'" |tee $(get_local_bench_path)/${bench}.out 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
 
   # Set the accurate time to the global var
@@ -1459,3 +1503,29 @@ rsync_extenal() {
 
 }
 
+# Gets a list of the different devices and mount points in the cluster
+# returns /dev/sda1 /
+get_device_mounts(){
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  local device_mounts
+  device_mounts="$($DSH "lsblk| awk '{if (\$7 ~ /\//) print \"/dev/\"substr(\$1, 3) \" \" \$7}'")" # single quotes need to be double spaced
+  device_mounts="$(echo -e "$device_mounts"|cut -d' ' -f2-|uniq)" #removes the hostname:
+
+  echo -e "$device_mounts"
+}
+
+# Prints the list of mounted devices
+get_devices() {
+  if [ ! "$BENCH_DEVICE_MOUNTS" ] ; then
+    BENCH_DEVICE_MOUNTS="$(get_device_mounts)"
+  fi
+  echo -e "$(echo -e "$BENCH_DEVICE_MOUNTS"|cut -d' ' -f1)"
+}
+
+# Prints the list of mounted filesystem points
+get_mounts() {
+  if [ ! "$BENCH_DEVICE_MOUNTS" ] ; then
+    BENCH_DEVICE_MOUNTS="$(get_device_mounts)"
+  fi
+  echo -e "$(echo -e "$BENCH_DEVICE_MOUNTS"|cut -d' ' -f2)"
+}

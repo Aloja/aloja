@@ -112,7 +112,7 @@ get_vm_ssh_port() {
   local vagrant_cluster_prefix="$VAGRANT_sshPortPrefix"
 
   #for nodes
-  if [ "$type" == "node" ] ; then
+  if [ "$type" == "node" ] || [ "$vm_name" == 'aloja-web' ] ; then
       local node_ssh_port="$vm_ssh_port"
   #for clusters
   else

@@ -74,7 +74,7 @@ import_from_folder() {
   fi
 
   # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
-  if ! inside_vagrant || [ "$(hostname)" != "aloja-web" ] ; then
+  if inside_vagrant && [ "$(hostname)" != "aloja-web" ] ; then
     MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
   fi
 
@@ -692,7 +692,7 @@ get_exec_params_from_log() {
         # clean up chars form the log file (there is an end char from the colors)
         bench_time="$(only_alpha "$bench_time")"
         bench_end_date="${line:0:4}-${line:4:2}-${line:6:2} ${line:9:2}:${line:11:2}:${line:13:2}"
-        execs+="\"$bench_name\",\"$bench_time\",DATE_SUB(\"$bench_end_date\",INTERVAL ${bench_time%.*} SECOND),\"$bench_end_date\","
+        execs+="\"$bench_name\",\"$bench_time\",DATE_SUB(\"$bench_end_date\",INTERVAL ${bench_time} SECOND),\"$bench_end_date\","
         execs+="\"$net\",\"$disk\",\"$bench_type\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"Imported using recovery log\",\"$datasize\",\"$scale_factor\"\n"
 
         found=""
