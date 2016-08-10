@@ -106,7 +106,6 @@ get_hadoop_job_config() {
 
 
 # Get the list of slaves
-# TODO should be improved to include master node as worker node if necessary
 # $1 list of nodes
 # $2 master name
 get_hadoop_slaves() {
@@ -114,7 +113,11 @@ get_hadoop_slaves() {
   local master_name="$2"
   local only_slaves
 
-  if [ "$all_nodes" ] && [ "$master_name" ] ; then
+  # Special case for master/slave mode in one node
+  if [ "$NUMBER_OF_DATA_NODES" == "0" ] ; then
+    only_slaves="$master_name"
+  # Normal case
+  elif [ "$all_nodes" ] && [ "$master_name" ] ; then
     only_slaves="$(echo -e "$all_nodes"|grep -v "$master_name")"
   else
     die "Empty list of nodes supplied"
@@ -520,7 +523,8 @@ restart_hadoop(){
       local num="$(get_num_datanodes_OK "$report")"
       local safe_mode="$(in_safe_mode "$report")"
 
-      if [ "$num" == "$NUMBER_OF_DATA_NODES" ] ; then
+      # Check if we have all the needed datanodes ready, or if we are in the special case of 1 node cluster
+      if [ "$num" == "$NUMBER_OF_DATA_NODES" ] || [[ "$num" == "1" && "$NUMBER_OF_DATA_NODES" == "0" ]] ; then
         if [ ! "$safe_mode" ] ; then
           #everything fine continue
           break
