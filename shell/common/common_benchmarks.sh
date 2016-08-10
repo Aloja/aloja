@@ -1082,7 +1082,7 @@ save_bench() {
 
   # Save globals during current bench for the benchmark and the main dir
   save_env "$JOB_PATH/$bench_name_num/config_$bench_name_num.sh"
-  cp "$JOB_PATH/$bench_name_num/config_$bench_name_num.sh" "$JOB_PATH/"
+  cp "$JOB_PATH/$bench_name_num/config_$bench_name_num.sh" "$JOB_PATH/config.sh"
 
   # save system info
   save_hardinfo "$JOB_PATH/$bench_name_num"
@@ -1329,7 +1329,7 @@ time_cmd() {
   fi
 
   exec 9>&2 # Create a new file descriptor
-  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd'" |tee $HDD/${bench}.out 2>&1 |tee >(cat - >&9))"
+  local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$DSH '$cmd |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1'" |tee $(get_local_bench_path)/${bench}.out 2>&1 |tee >(cat - >&9))"
   9>&- # Close the file descriptor
 
   # Set the accurate time to the global var
