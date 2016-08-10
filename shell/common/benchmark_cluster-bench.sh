@@ -1,41 +1,13 @@
-# Sample, simple, benchmark of sleep for a number of seconds
-# in this case the benchmark suite has only one benchmark
+# Benchmark to gather cluster basics
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="hdparm dd"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="hardinfo hdparm dd"
 
-BENCH_REQUIRED_PACKAGES="hdparm dd"
+BENCH_REQUIRED_PACKAGES="$BENCH_REQUIRED_PACKAGES hdparm coreutils hardinfo"
 
 # Set bench global variables here (if any)
 
 # Some validations
 [ "$noSudo" ] && { logger "ERROR: SUDO not available, not running $bench_name."; return 0; }
-
-# Gets a list of the different devices and mount points in the cluster
-# returns /dev/sda1 /
-get_device_mounts(){
-  local bench_name="${FUNCNAME[0]##*benchmark_}"
-  local device_mounts
-  device_mounts="$($DSH "lsblk| awk '{if (\$7 ~ /\//) print \"/dev/\"substr(\$1, 3) \" \" \$7}'")" # single quotes need to be double spaced
-  device_mounts="$(echo -e "$device_mounts"|cut -d' ' -f2-|uniq)" #removes the hostname:
-
-  echo -e "$device_mounts"
-}
-
-# Prints the list of mounted devices
-get_devices() {
-  if [ ! "$BENCH_DEVICE_MOUNTS" ] ; then
-    BENCH_DEVICE_MOUNTS="$(get_device_mounts)"
-  fi
-  echo -e "$(echo -e "$BENCH_DEVICE_MOUNTS"|cut -d' ' -f1)"
-}
-
-# Prints the list of mounted filesystem points
-get_mounts() {
-  if [ ! "$BENCH_DEVICE_MOUNTS" ] ; then
-    BENCH_DEVICE_MOUNTS="$(get_device_mounts)"
-  fi
-  echo -e "$(echo -e "$BENCH_DEVICE_MOUNTS"|cut -d' ' -f2)"
-}
 
 benchmark_suite_config() {
   BENCH_DEVICE_MOUNTS="$(get_device_mounts)"
@@ -56,6 +28,12 @@ benchmark_hdparm(){
   done
 }
 
+benchmark_hardinfo(){
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  logger "INFO: Running $bench_name"
+
+  execute_cmd "$bench_name" "hardinfo -r -f text > $(get_local_bench_path)/hardinfo-full-\$(hostname).txt" "time"
+}
 
 benchmark_dd(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
