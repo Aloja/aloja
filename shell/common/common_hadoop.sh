@@ -155,7 +155,8 @@ initialize_hadoop_vars() {
   HADOOP_CONF_DIR="/etc/hadoop/conf"
   HADOOP_EXPORTS=""
 
-  HDD=$BENCH_LOCAL_DIR
+  # This setting should not been here... fixing it.
+  #HDD=$BENCH_LOCAL_DIR
 
   update_traps "stop_monit;" "update_logger"
  else
@@ -573,6 +574,22 @@ restart_hadoop(){
   fi
 }
 
+get_job_list() {
+  echo -e "$(execute_hadoop_new "$bench_name" "hadoop job -list|egrep 'job_[0-9_]+'|cut -d' ' -f2")"
+}
+
+hadoop_kill_jobs() {
+  local job_list="$(get_job_list)"
+  if [ "$job_list" ] ; then
+    logger "WARNING: Killing hadoop jobs: $job_list"
+    for job in $job_list ; do
+      execute_hadoop_new "$bench_name" "hadoop job -kill $job"
+    done
+  else
+    logger "INFO: no jobs to kill"
+  fi
+}
+
 # Stops Hadoop and checks for open ports
 # $1 retry (to prevent recursion)
 stop_hadoop(){
@@ -639,7 +656,8 @@ wait"
       logger "INFO: Stop Hadoop ready"
     fi
   elif [ "$clusterType=" == "PaaS" ] ; then
-    logger "INFO: In PaaS mode, not stoping Hadoop"
+    logger "INFO: In PaaS mode, not stoping Hadoop. But killing remaining jobs..."
+    hadoop_kill_jobs
   else
     logger "WARNING: Not stopping Hadoop (as requested with -N)"
   fi
