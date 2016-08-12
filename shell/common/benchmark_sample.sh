@@ -9,7 +9,7 @@ benchmark_uptime(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  execute_cmd "$bench_name" "uptime" "time"
+  execute_all "$bench_name" "uptime" "time"
 }
 
 benchmark_sleep(){
@@ -19,5 +19,5 @@ benchmark_sleep(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  execute_cmd "$bench_name" "sleep $num_seconds" "time"
+  execute_all "$bench_name" "sleep $num_seconds" "time"
 }

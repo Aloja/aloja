@@ -52,7 +52,7 @@ run_iperf(){
   if [ "$num_hosts" == "1" ] ; then
     local one_slave="${DSH_SLAVES%%,*}"
     logger "INFO: Running $IPERF_VERSION with $num_threads threads from $num_hosts client(s). $one_slave"
-    execute_cmd "$bench_name" "$iperf_cmd" "time" "$one_slave"
+    execute_all "$bench_name" "$iperf_cmd" "time" "$one_slave"
   elif [ ! "$num_hosts" ] ; then
     logger "INFO: Running $IPERF_VERSION with $num_threads threads from all SLAVES client(s)"
     execute_slaves "$bench_name" "$iperf_cmd" "time"
