@@ -727,8 +727,16 @@ sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $BENCH_
       else
         logger "INFO: Required packages bench: $BENCH_REQUIRED_PACKAGES are correctly installed"
       fi
+    elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "Redhat" || "$vmOSType" == "CentOS" ]] ; then
+      for package in $BENCH_REQUIRED_PACKAGES ; do
+        if [ ! "$($DSH "which $package; 2> /dev/null")" ] ; then
+          logger "INFO: Attempting to install: $BENCH_REQUIRED_PACKAGES"
+          $DSH "sudo yum install -y $BENCH_REQUIRED_PACKAGES"
+          break
+        fi
+      done
     else
-      logger "WARNING: not a Debian based system, not checking if to install packages: $BENCH_REQUIRED_PACKAGES"
+      logger "WARNING: not a Debian or Fedora based system, not checking if to install packages: $BENCH_REQUIRED_PACKAGES"
     fi
   fi
 }
@@ -1329,7 +1337,7 @@ time_cmd() {
 # $1 the command
 # $2 set bench time
 time_cmd_master() {
-   timc_cmd "$1" "$2" "$DSH_MASTER"
+   time_cmd "$1" "$2" "$DSH_MASTER"
 
 #  local cmd="$1"
 #  local set_bench_time="$2"
@@ -1419,8 +1427,6 @@ execute_master(){
 execute_slaves(){
   execute_cmd "$1" "$2" "$3" "$DSH_SLAVES"
 }
-
-
 
 save_disk_usage() {
   echo "# Checking disk space with df $1" >> $JOB_PATH/disk.log
