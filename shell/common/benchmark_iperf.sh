@@ -47,11 +47,16 @@ run_iperf(){
   local num_threads="$2"
   local num_hosts="$3"
 
-  local iperf_cmd="$IPERF_VERSION -c $IPERF_MASTER_NODE -p $IPERF_PORT --bytes $BENCH_DATA_SIZE --format g --parallel $num_threads --get-server-output"
+  # Get the internal host name, external IPs don't work in certain clusters ie., Dataproc
+  local master_internal="$(ssh $IPERF_MASTER_NODE 'hostname')" # Get the internal host name, external IPs don't work in certain clusters ie., Dataproc
+
+  local iperf_cmd="$IPERF_VERSION -c $master_internal -p $IPERF_PORT --bytes $BENCH_DATA_SIZE --format g --parallel $num_threads --get-server-output"
 
   if [ "$num_hosts" == "1" ] ; then
     local one_slave="${DSH_SLAVES%%,*}"
-    logger "INFO: Running $IPERF_VERSION with $num_threads threads from $num_hosts client(s). $one_slave"
+#    one_slave="$($one_slave 'hostname')"
+#    one_slave="ssh $one_slave"
+    logger "INFO: Running $IPERF_VERSION with $num_threads threads from $num_hosts client(s) $one_slave"
     execute_all "$bench_name" "$iperf_cmd" "time" "$one_slave"
   elif [ ! "$num_hosts" ] ; then
     logger "INFO: Running $IPERF_VERSION with $num_threads threads from all SLAVES client(s)"
