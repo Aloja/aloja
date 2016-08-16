@@ -3,6 +3,10 @@
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+
+vmOSType="CentOS"
+vmOSTypeVersion="7"
+
 build_dir='$HOME/share/'"${clusterName}"'/build'
 bin_dir='$HOME/share/'"${clusterName}"'/sw/bin'
 sw_dir='$HOME/share/'"${clusterName}"'/sw'
@@ -305,7 +309,7 @@ vm_final_bootstrap() {
   logger "Disabling 'requiretty' for sudo on all machines"
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
-    vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers" 
+    vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers"
   done
 
   # from here on we can use the normal vm_execute 
@@ -321,9 +325,10 @@ sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
 "    
 
     logger "Mounting disks on ${vm_name}"
-    vm_set_ssh
-    vm_set_dot_files
     vm_mount_disks              # mounts ~/share on all machines
+    vm_set_dot_files &
+
+    cluster_create_local_conf
 
     if [ "$vm_name" = "master-1" ]; then
 
@@ -336,7 +341,6 @@ sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
       fi
     fi
   done
-
   wait
 
   # restore whatever it was
