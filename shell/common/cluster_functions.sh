@@ -21,6 +21,7 @@ declare -A requireRootFirst
 # Start functions
 
 #$1 vm_name $2 ssh_port
+
 vm_check_create() {
   #create VM
   if ! vm_exists "$1"  ; then
@@ -128,7 +129,10 @@ vm_provision() {
       config_ganglia_gmond "$clusterName"
     fi
 
-    vm_initialize_disks #cluster is in parallel later
+    # On PaaS don't touch the disks... at least here
+    if [ "$clusterType" != "PaaS" ]; then
+      vm_initialize_disks #cluster is in parallel later
+    fi
     vm_mount_disks
   else
     logger "WARNING: Skipping package installation and disk mount due to sudo not being present or disabled for VM $vm_name"
@@ -976,8 +980,8 @@ vm_initialize_disks() {
         #set the lock
         check_bootstraped "vm_initialize_disks" "set"
       else
-        logger "ERROR initializing disks for $vm_name. Test output: $test_action"
-        exit 1
+        logger "ERROR: initializing disks for $vm_name. Test output: $test_action"
+        #exit 1
       fi
 
     else
