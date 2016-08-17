@@ -28,7 +28,7 @@ sysbench_cpu() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name with max prime: $max_prime and $num_threads threads"
 
-  execute_cmd "$bench_name" "sysbench --test=cpu --cpu-max-prime=$max_prime --num-threads=$num_threads run" "time"
+  execute_all "$bench_name" "sysbench --test=cpu --cpu-max-prime=$max_prime --num-threads=$num_threads run" "time"
 }
 
 benchmark_cpu_single(){
@@ -60,7 +60,7 @@ sysbench_mem() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name with max time: $max_time s. and $num_threads threads"
 
-  execute_cmd "$bench_name" "sysbench --test=memory --max-time=$max_time --num-threads=$num_threads run" "time"
+  execute_all "$bench_name" "sysbench --test=memory --max-time=$max_time --num-threads=$num_threads run" "time"
 }
 
 benchmark_mem_single(){
@@ -108,7 +108,7 @@ execute_fileio() {
     logger "INFO: Running $bench_name on mount: $mount file size: $BENCH_DATA_SIZE"
     [ "$mount" == "/" ] && mount_dir="${mount}aloja_sysbench" || mount_dir="$mount/aloja_sysbench"
 
-    execute_cmd "$bench_name" "${cmd//$search/$mount_dir}" "$time_cmd"
+    execute_all "$bench_name" "${cmd//$search/$mount_dir}" "$time_cmd"
   done
 }
 
@@ -142,5 +142,5 @@ sysbench --test=fileio --file-total-size=$BENCH_DATA_SIZE --file-test-mode=rndrd
 benchmark_suite_cleanup() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Cleaning up sysbench generated files"
-  execute_fileio "$bench_name" "sudo rm -rf MOUNT_DIR" "dont_time"
+  execute_fileio "$bench_name" "[ -d MOUNT_DIR ] && sudo rm -rf MOUNT_DIR" "dont_time"
 }

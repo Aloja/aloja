@@ -24,7 +24,7 @@ benchmark_hdparm(){
 
   for device in $devices ; do
     logger "INFO: Running $bench_name on device: $mount"
-    execute_cmd "$bench_name" "sudo hdparm -tT $device" "time"
+    execute_all "$bench_name" "sudo hdparm -tT $device" "time"
   done
 }
 
@@ -32,7 +32,7 @@ benchmark_hardinfo(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  execute_cmd "$bench_name" "hardinfo -r -f text > $(get_local_bench_path)/hardinfo-full-\$(hostname).txt" "time"
+  execute_all "$bench_name" "hardinfo -r -f text > $(get_local_bench_path)/hardinfo-full-\$(hostname).txt" "time"
 }
 
 benchmark_dd(){
@@ -49,6 +49,6 @@ benchmark_dd(){
     logger "INFO: Running $bench_name on mount: $mount file size: $BENCH_DATA_SIZE parts: $parts"
     [ "$mount" == "/" ] && tmp_file="${mount}dd_test.tmp" || tmp_file="$mount/dd_test.tmp"
 
-    execute_cmd "$bench_name" "sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc && sudo rm -f $tmp_file" "time"
+    execute_all "$bench_name" "sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc; [ -f $tmp_file ] && sudo rm -f $tmp_file" "time"
   done
 }
