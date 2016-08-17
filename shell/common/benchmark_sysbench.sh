@@ -142,5 +142,5 @@ sysbench --test=fileio --file-total-size=$BENCH_DATA_SIZE --file-test-mode=rndrd
 benchmark_suite_cleanup() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Cleaning up sysbench generated files"
-  execute_fileio "$bench_name" "sudo rm -rf MOUNT_DIR" "dont_time"
+  execute_fileio "$bench_name" "[ -d MOUNT_DIR ] && sudo rm -rf MOUNT_DIR" "dont_time"
 }
