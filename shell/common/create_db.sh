@@ -1281,6 +1281,8 @@ $MYSQL "delete from execs where exec like '20160621_202256_ETH_HDD_bD2F-Bench-hi
 $MYSQL "delete from execs where exec like '20160424_205928_ETH_HS6_bD2F-Bench-hive_D4_minerva100-05-09-123%';"
 $MYSQL "delete from execs where exec like '20160420_024607_ETH_HDD_bD2F-Bench-hive_D4_hdil4-D4-121%';"
 
+# Incorrect ADLA result
+# 70b1e7a5-c919-41a9-8907-92adbd354caf_S1TB-Q8-P50_VM_R100_C1
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
