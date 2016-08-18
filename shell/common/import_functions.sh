@@ -133,7 +133,7 @@ import_folder() {
       logger "INFO: Found legacy stile log file"
       local log_folder_file="log_${folder}.log"
     elif [ -f "run_benchs.sh.log" ] ; then
-      logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
+      #logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
       local log_folder_file="run_benchs.sh.log"
     else
       logger "ERROR: cannot find a valid run log file for exec $folder. Continuing..."
@@ -726,11 +726,15 @@ get_exec_params() {
   # "job","exe_time","start_time","end_time","net","disk","bench","maps","iosf","replication","iofilebuf","comp","blk_size","zabbix_link"
 
   # different parsers for legacy-style and new-style configs
+
+  # Old method
   if [ "${name:15:6}" == "_conf_" ]; then
     exec_params="$(legacy_get_exec_params "$log_file")"
+  # Recovery method when no config.sh file can be found
   elif [ ! -f "config.sh" ] ; then
      # logger "WARNING: cannot find config.sh file, resorting to legacy format"
      exec_params="$(get_exec_params_from_log "$log_file" "$folder")"
+  # Current and normal method
   else
     local job=""
     local exe_time=""
@@ -757,6 +761,11 @@ get_exec_params() {
     fi
 
     local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
+
+    if [[ $scale_factor == "" ]]; then
+       scale_factor="$(( datasize / 10000000000 ))" # scale factor is in GBs
+    fi
+
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
       exec_type="default"
@@ -793,10 +802,30 @@ get_exec_params() {
 
       job="$index"
       exe_time="${exec_time[$index]}"
-      start_time="${exec_start[$index]}"
-      start_time=$(date -d @$((start_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
-      end_time="${exec_end[$index]}"
-      end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      start_time_ts="${exec_start[$index]}"
+      start_time=$(date -d @$((start_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      end_time_ts="${exec_end[$index]}"
+      end_time=$(date -d @$((end_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+
+
+### Patch for nasty error not recovering times correctly between two dates where bug was introduced:
+#   from: date -d '2016-08-10 12:30' +%s%3N
+#   to: date -d '2016-08-18 12:30' +%s%3N
+if [[ "$start_time_ts" > "1470825000000" && "$start_time_ts" < "1471516200000" ]] ; then
+  #"WARNING: benchmark run during bug recovering bench times... Attempting to recover in case necessary"
+  local recovered_exe_time="$(bc <<< "scale=3; ($end_time_ts - $start_time_ts)/1000 ")" # convert ms to secs
+  # First check if current exe is numeric
+  if is_number "$exe_time" ; then
+    # If it is, then check if there is a difference of more than 2 secs to use the recovery
+    if  (( $(bc <<< "($exe_time + 2)< $recovered_exe_time") ||  $(bc <<< "($exe_time - 2)> $recovered_exe_time") )) ; then
+      exe_time="$recovered_exe_time"
+    fi
+  else
+    exe_time="$recovered_exe_time"
+  fi
+fi
+
+######
 
       exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
     done
