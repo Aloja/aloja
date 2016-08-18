@@ -38,7 +38,7 @@ end
 
 # defaults for cluster
 numberOfNodes = 1   # starts at 0, really means 2
-vmRAM = 1024
+vmRAM = 4096
 vmCPUS = 1
 
 # extract relevant values from config files
