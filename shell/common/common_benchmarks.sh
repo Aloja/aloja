@@ -1214,12 +1214,14 @@ set_omm_killer() {
   #pgrep apache2 |sudo xargs -I %PID sh -c 'echo 10 > /proc/%PID/oom_adj'
 }
 
+# Prints time stamp with milliseconds precision
 timestamp() {
-  sec=`date +%s`
-  nanosec=`date +%N`
-  tmp=`expr $sec \* 1000 `
-  msec=`expr $nanosec / 1000000 `
-  echo `expr $tmp + $msec`
+#  sec=$(date +%s)
+#  nanosec=$(date +%N)
+#  tmp=$(expr $sec \* 1000)
+#  msec=$(expr $nanosec / 1000000)
+#  echo $(expr $tmp + $msec)
+  echo -e $(date +%s%3N)
 }
 
 calc_exec_time() {
