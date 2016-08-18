@@ -1291,17 +1291,19 @@ wait"
 # $1 the command
 # $2 set bench time
 # $3 nodes SSH string ($DSH)
+# $4 bench name (optional)
 time_cmd() {
   local cmd="$1"
   local set_bench_time="$2"
   local nodes_SSH="$3"
+  local bench_name="$4"
 
   # Default to all the nodes
   [ ! "$nodes_SSH" ] && nodes_SSH="$DSH"
 
   if (( "$BENCH_CONCURRENCY" > 1 )) ; then
     cmd="$(concurrent_run "$cmd")"
-    logger "INFO: executing with $BENCH_CONCURRENCY of concurrency"
+    logger "INFO: executing $bench_name with $BENCH_CONCURRENCY of concurrency"
     logger "DEBUG: Concurrent cmd: $cmd"
   fi
 
@@ -1315,18 +1317,23 @@ time_cmd() {
   # Run the command normally, capturing the output, and creating a dump file and timing the command
   if [ ! "$in_background" ] ; then
     exec 9>&2 # Create a new file descriptor
-    local cmd_output="$(export TIMEFORMAT="Bench time ${bench} %R"; time bash -c "$nodes_SSH '$cmd |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1'" |tee $(get_local_bench_path)/${bench}.out 2>&1 |tee >(cat - >&9))"
+    local cmd_output="$($nodes_SSH "export TIMEFORMAT=\"Bench time ${bench} \$(hostname) %R\"; time bash -c '$cmd'\" |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1\"" 2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9)) "
     9>&- # Close the file descriptor
-  # Run in background
+  # Run in background (we don't capture times here)
   else
+    set_bench_time=""
     ($nodes_SSH "$cmd"|tee "$(get_local_bench_path)/${bench}_\$(hostname).out" 2>&1) &
   fi
 
-  # Set the accurate time to the global var
+  # Set the accurate time to the global var (we take the value from the last line, that should be the slowest node)
   if [ "$set_bench_time" ] ; then
-    # TODO get for slowest node
-    BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
+    BENCH_TIME="$(tail -n1 <<< "$cmd_output"|awk 'END{print $NF}')"
     logger "DEBUG: BENCH_TIME=$BENCH_TIME"
+    if ! is_number "$BENCH_TIME" ; then
+      logger "WARNING: cannot get the benchmark time correctly"
+    fi
+
+    logger "INFO: Ran $bench_name for $BENCH_TIME seconds."
   fi
 }
 
@@ -1393,7 +1400,7 @@ execute_cmd(){
   logger "DEBUG: command:\n$cmd"
 
   # Run the command and time it
-  time_cmd "$cmd" "$time_exec" "$nodes_SSH"
+  time_cmd "$cmd" "$time_exec" "$nodes_SSH" "$bench"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
