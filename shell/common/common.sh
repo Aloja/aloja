@@ -375,3 +375,9 @@ only_numbers() {
 only_alpha() {
   echo -e "$(echo -e "$1"| tr -cd '[[:alnum:]]._-')"
 }
+
+# Check if string is a valid number
+is_number() {
+  string="$1"
+  [[ $string =~ ^-?[0-9.]+$ ]] && return 0 || return 1
+}
