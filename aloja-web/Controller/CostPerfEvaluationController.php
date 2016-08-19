@@ -614,29 +614,37 @@ WHERE 1 $filter_execs $this->whereClause GROUP BY c.name,e.net,e.disk ORDER BY c
 
 
                 //Change VM names for SaaS tests
-                if (strstr($exec['vm_size'],'DWU')) {
-                    $vm_name = preg_replace('/\d+DWU/', 'DWU', $exec['vm_size']); //for DW
-                } else if (strstr($exec['vm_size'],'RS')) {
-                    $vm_name = preg_replace('/RS-+\d+/', 'RS-', $exec['vm_size']);
-//				} else if (strstr($exec['vm_size'],'EMR')){
-//					$vm_name = preg_replace('/EMR-+\d+/', 'EMR-',  $exec['vm_size']);
-//				} else if (strstr($exec['vm_size'],'CBD')){
-//					$vm_name = substr($exec['vm_size'],0, 14);
-//				} else if (strstr($exec['vm_size'],'HDI')){
-//					$vm_name = substr($exec['vm_size'],0, 6);
-                } else if (strstr($exec['vm_size'],'EMR') ||
-                    strstr($exec['vm_size'],'CBD') ||
-                    strstr($exec['vm_size'],'HDI') ||
-                    strstr($exec['vm_size'],'CDP')
-                ) {
-                    $vm_name = preg_replace('/-[0-9]+$/','', $exec['vm_size']);
-                } else if (strstr($exec['vm_size'],'AU')){
-                    $vm_name = preg_replace('/\d+AU/', 'AU',  $exec['vm_size']);
-                } else if (strstr($exec['vm_size'],'M100')){
-                    $vm_name = 'M100';
-                } else {
-                    $vm_name = $exec['vm_size'];
-                }
+				if ($scalabilityType != "Datasize") {
+					if (strstr($exec['vm_size'],'DWU')) {
+						$vm_name = preg_replace('/\d+DWU/', 'DWU', $exec['vm_size']); //for DW
+					} else if (strstr($exec['vm_size'],'RS')) {
+						$vm_name = preg_replace('/RS-+\d+/', 'RS-', $exec['vm_size']);
+	//				} else if (strstr($exec['vm_size'],'EMR')){
+	//					$vm_name = preg_replace('/EMR-+\d+/', 'EMR-',  $exec['vm_size']);
+	//				} else if (strstr($exec['vm_size'],'CBD')){
+	//					$vm_name = substr($exec['vm_size'],0, 14);
+	//				} else if (strstr($exec['vm_size'],'HDI')){
+	//					$vm_name = substr($exec['vm_size'],0, 6);
+					} else if (strstr($exec['vm_size'],'EMR') ||
+						strstr($exec['vm_size'],'CBD') ||
+						strstr($exec['vm_size'],'HDI') ||
+						strstr($exec['vm_size'],'CDP')
+					) {
+						if ($scalabilityType != "Datasize") {
+							$vm_name = preg_replace('/-[0-9]+$/', '', $exec['vm_size']);
+						} else {
+							$vm_name = $exec['vm_size'];
+						}
+					} else if (strstr($exec['vm_size'],'AU')){
+						$vm_name = preg_replace('/\d+AU/', 'AU',  $exec['vm_size']);
+					} else if (strstr($exec['vm_size'],'M100')){
+						$vm_name = 'M100';
+					} else {
+						$vm_name = $exec['vm_size'];
+					}
+				} else {
+					$vm_name = $exec['vm_size'];
+				}
 
 				$vmSizes[$vm_name][$exec['exec_type']][$exec['vm_OS']][$exec['category']] = array(round($exec['exe_time'],2), round($exec['cost'],2));
 			}
