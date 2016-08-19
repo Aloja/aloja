@@ -32,6 +32,19 @@ insert_DB(){
   rm "$2"
 }
 
+# Sets import config globals (to use the same when invoked from different locations)
+set_import_globals() {
+  [ ! "$INSERT_DB" ]         && INSERT_DB="1" #if to dump CSV into the DB
+  [ ! "$REDO_ALL" ]          && REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+  [ ! "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
+  [ ! "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+  [ ! "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
+  # if set works from /dev/shm to speedup file manipulation (you should have enough RAM to do it)
+  [ ! "$WORK_IN_MEM" ]       && WORK_IN_MEM="" || MEM_PATH="/dev/shm/aloja-import"
+}
+
+
 # Transition function to be able to import an specific folder
 # $1 folder to import
 # $2 reload caches
@@ -39,6 +52,8 @@ import_from_folder() {
   local folder="$1"
   local reload_caches="$2"
   local export_to_PAT="$3"
+
+  set_import_globals
 
   # Remove trailing slash if any
   [ "${folder:(-1)}" == "/" ] && folder="${folder:0:(-1)}"
@@ -58,6 +73,8 @@ import_from_folder() {
   [ ! -d "$BASE_DIR/$folder" ] && die "Cannot find $BASE_DIR/$folder folder. Exit..."
 
   logger "INFO: Importing data from from $BASE_DIR/$folder"
+
+
 
   INSERT_DB="1" #if to dump CSV into the DB
   REDO_ALL="1" #if to redo folders that have source files and IDs in DB
@@ -108,11 +125,11 @@ import_folder() {
   local folder="$1"
   local export_to_PAT="$2"
 
+	#[ -d "$folder" ] || die "Empty folder supplied to import_folder() or not a valid directoy. Supplied: $folder PWD: $(pwd)"
+
   #filter folders by date
   min_date="20120101"
   min_time="$(date --utc --date "$min_date" +%s)"
-
-	[ "$folder" ] || die "Empty folder supplied to import_folder()"
 
   folder_OK="0"
   cd "$BASE_DIR" #make sure we come back to the starting folder
@@ -125,6 +142,22 @@ import_folder() {
   fi
 
   if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
+
+    # Check if to work in mem to speedup the process (if enough RAM is available)
+    if [ "$WORK_IN_MEM" ] ; then
+      local original_folder_path="$folder" #save original path
+      local BASE_DIR_ORIGINAL="$BASE_DIR"
+      local mem_folder="$MEM_PATH/${folder##/*}"
+      logger "INFO: Attempting to copy to RAM disk to speedup import at: $MEM_PATH"
+      mkdir -p "$MEM_PATH" && cp -ru "$folder" "$mem_folder/" && {
+        logger "INFO: Copy OK, using RAM disk to speedup import"
+        BASE_DIR="$MEM_PATH"
+        cd "$BASE_DIR"
+      } || {
+        logger "WARNING: could not copy bench folder into ${MEM_PATH}, using current location: $folder"
+      }
+    fi
+
     logger "INFO: Entering folder\t$folder"
     cd "$folder"
 
@@ -133,7 +166,7 @@ import_folder() {
       logger "INFO: Found legacy stile log file"
       local log_folder_file="log_${folder}.log"
     elif [ -f "run_benchs.sh.log" ] ; then
-      logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
+      #logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
       local log_folder_file="run_benchs.sh.log"
     else
       logger "ERROR: cannot find a valid run log file for exec $folder. Continuing..."
@@ -169,7 +202,7 @@ import_folder() {
         bench_folder="${bzip_file%%.*}"
         if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
           logger "INFO: Untaring $bzip_file"
-          tar -xjf "$bzip_file"
+          tar -xf "$bzip_file"
         fi
       done
     else
@@ -185,7 +218,7 @@ import_folder() {
       if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
         logger "INFO: Untaring $bzip_file in $(pwd)"
         logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
-        tar -xjf "$bzip_file"
+        tar -xf "$bzip_file"
       fi
 
       if [ -d "$bench_folder" ] ; then
@@ -399,6 +432,14 @@ logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_clus
     done #end for bzip file
 
     cd ..; logger "INFO: Leaving folder $folder\n"
+
+    # Check if to work in mem to speedup the process (if enough RAM is available)
+    if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
+      logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
+      rm -rf "$mem_folder"
+      BASE_DIR="$BASE_DIR_ORIGINAL"
+      cd "$BASE_DIR"
+    fi
 
     if [ "$MOVE_TO_DONE" ] ; then
       delete_untars "$BASE_DIR/$folder"
@@ -726,11 +767,15 @@ get_exec_params() {
   # "job","exe_time","start_time","end_time","net","disk","bench","maps","iosf","replication","iofilebuf","comp","blk_size","zabbix_link"
 
   # different parsers for legacy-style and new-style configs
+
+  # Old method
   if [ "${name:15:6}" == "_conf_" ]; then
     exec_params="$(legacy_get_exec_params "$log_file")"
+  # Recovery method when no config.sh file can be found
   elif [ ! -f "config.sh" ] ; then
      # logger "WARNING: cannot find config.sh file, resorting to legacy format"
      exec_params="$(get_exec_params_from_log "$log_file" "$folder")"
+  # Current and normal method
   else
     local job=""
     local exe_time=""
@@ -757,6 +802,11 @@ get_exec_params() {
     fi
 
     local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
+
+    if [[ $scale_factor == "" ]]; then
+       scale_factor="$(( datasize / 10000000000 ))" # scale factor is in GBs
+    fi
+
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
       exec_type="default"
@@ -793,10 +843,30 @@ get_exec_params() {
 
       job="$index"
       exe_time="${exec_time[$index]}"
-      start_time="${exec_start[$index]}"
-      start_time=$(date -d @$((start_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
-      end_time="${exec_end[$index]}"
-      end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      start_time_ts="${exec_start[$index]}"
+      start_time=$(date -d @$((start_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      end_time_ts="${exec_end[$index]}"
+      end_time=$(date -d @$((end_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+
+
+### Patch for nasty error not recovering times correctly between two dates where bug was introduced:
+#   from: date -d '2016-08-10 12:30' +%s%3N
+#   to: date -d '2016-08-18 12:30' +%s%3N
+if [[ "$start_time_ts" > "1470825000000" && "$start_time_ts" < "1471516200000" ]] ; then
+  #"WARNING: benchmark run during bug recovering bench times... Attempting to recover in case necessary"
+  local recovered_exe_time="$(bc <<< "scale=3; ($end_time_ts - $start_time_ts)/1000 ")" # convert ms to secs
+  # First check if current exe is numeric
+  if is_number "$exe_time" ; then
+    # If it is, then check if there is a difference of more than 2 secs to use the recovery
+    if  (( $(bc <<< "($exe_time + 2)< $recovered_exe_time") )) || (( $(bc <<< "($exe_time - 2)> $recovered_exe_time") )) ; then
+      exe_time="$recovered_exe_time"
+    fi
+  else
+    exe_time="$recovered_exe_time"
+  fi
+fi
+
+######
 
       exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
     done

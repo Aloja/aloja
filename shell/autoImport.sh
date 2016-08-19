@@ -14,8 +14,8 @@ while true ; do
 
   logger "\nImporting jobs\n\n"
   cd "$IMPORT_DIR"
-  bash $CUR_DIR/aloja-import2db.sh "ONLY_META_DATA"
-  bash $CUR_DIR/aloja-import2db.sh
+  WORK_IN_MEM=1 bash $CUR_DIR/aloja-import2db.sh "ONLY_META_DATA"
+  WORK_IN_MEM=1 bash $CUR_DIR/aloja-import2db.sh
 
   #logger "\nRestarting MySQL and fixing permissions (just in case)\n\n"
   #sudo service mysql stop
