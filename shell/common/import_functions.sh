@@ -184,6 +184,13 @@ import_folder() {
 
       #move folder to failed dir
       if [ "$MOVE_TO_DONE" ] ; then
+        if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
+          logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
+          rm -rf "$mem_folder"
+          BASE_DIR="$BASE_DIR_ORIGINAL"
+          cd "$BASE_DIR"
+        fi
+
         delete_untars "$BASE_DIR/$folder"
         move2done "$folder" "$folder_OK"
       fi
@@ -835,6 +842,7 @@ get_exec_params() {
     declare -A exec_end
     eval $temp_array
 
+    local first_ts # for the patch below
     for index in "${!exec_time[@]}"; do
       # Add a new line if there is something before
       if [ "$exec_params" != "" ]; then
@@ -844,6 +852,8 @@ get_exec_params() {
       job="$index"
       exe_time="${exec_time[$index]}"
       start_time_ts="${exec_start[$index]}"
+      [ ! "$first_ts" ] && first_ts="$start_time_ts"
+
       start_time=$(date -d @$((start_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
       end_time_ts="${exec_end[$index]}"
       end_time=$(date -d @$((end_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
@@ -852,7 +862,7 @@ get_exec_params() {
 ### Patch for nasty error not recovering times correctly between two dates where bug was introduced:
 #   from: date -d '2016-08-10 12:30' +%s%3N
 #   to: date -d '2016-08-18 12:30' +%s%3N
-if [[ "$start_time_ts" > "1470825000000" && "$start_time_ts" < "1471516200000" ]] ; then
+if [[ "$first_ts" > "1470825000000" && "$first_ts" < "1471516200000" ]] ; then
   #"WARNING: benchmark run during bug recovering bench times... Attempting to recover in case necessary"
   local recovered_exe_time="$(bc <<< "scale=3; ($end_time_ts - $start_time_ts)/1000 ")" # convert ms to secs
   # First check if current exe is numeric
@@ -874,7 +884,6 @@ fi
   fi
 
   echo -e "$exec_params"
-
 #echo -e "$1\n$exec_params"
 
   # Time from Zabbix format
