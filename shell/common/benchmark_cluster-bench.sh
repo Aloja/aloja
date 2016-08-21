@@ -23,7 +23,7 @@ benchmark_hdparm(){
   [ ! "$devices" ] && { logger "ERROR: cannot get list of devices"; return 0; }
 
   for device in $devices ; do
-    logger "INFO: Running $bench_name on device: $mount"
+    logger "INFO: Running $bench_name on device: $device"
     execute_all "$bench_name" "sudo hdparm -tT $device" "time"
   done
 }
