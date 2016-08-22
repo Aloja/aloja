@@ -311,11 +311,82 @@
 				}
 			}
 		});
+
+		var labelLookup = $("#label-lookup").data("label-lookup");
+
 		$("form[name='configFilters'] input").change(function() {
 			if($(this).attr('name') != 'presets') {
 				$("select[name='presets']").val("none");
 			}
+
+			updateActiveFilters();
 		});
+
+		function renderFilters(activeFilters) {
+			var target = $(".active-filters");
+			var keys = Object.keys(activeFilters);
+
+			if (keys.length === 0) {
+				target.empty();
+				return;
+			}
+
+			function removeFilter(filterName) {
+				return function() {
+					var container = $(".container" + filterName);
+					if (container.length > 0) {
+						container.find("input[type='checkbox']").prop("checked", false);
+					}
+					else {
+						$("input[name='" + filterName + "']").val("");
+					}
+
+					updateActiveFilters();
+				};
+			}
+
+			var filters = keys.reduce(function (prev, curr) {
+				var filter = activeFilters[curr];
+
+				var button = $("<button type='button' title='remove filter' class='remove-filter btn btn-default btn-sm'>"
+				+ "<span class='remove-icon'>\327</span>"
+				+ "<span class='filter-description'><strong>" + filter.label + "</strong>"
+				+ " (" + filter.values.join(", ") + ")</span>"
+				+ "</button>").click(removeFilter(curr));
+
+				return prev.concat(button);
+			}, []);
+
+			var container = $("<div class='filter-buttons'></div>").append(filters);
+
+			target.empty().append([$("<h4>Active Filters</h4>"), container]);
+		}
+
+		function updateActiveFilters() {
+			var formState = $("#configFilters").serializeArray();
+			var namesToSkip = ["presets", "submit", "valid", "filter", "prepares", "uobsr", "selected-groups"];
+			var activeFilters = formState.reduce(function (prev, curr) {
+				var name = curr.name.replace(/\[]$/, "");
+				if (namesToSkip.indexOf(name) > -1) return prev;
+				if (curr.value.trim() === "") return prev;
+
+				if (!prev[name]) {
+					prev[name] = {
+						label: labelLookup[name],
+						values: [curr.value]
+					};
+				}
+				else {
+					prev[name].values.push(curr.value);
+				}
+
+				return prev;
+			}, {});
+
+			renderFilters(activeFilters);
+		}
+
+		updateActiveFilters();
 
 		$("span.selectAll").click(function() { 
 			$(this).parent().find('.panel-body').first().find('input').prop('checked',true);

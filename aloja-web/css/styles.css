@@ -98,3 +98,30 @@ div p.bottom-align {
 label {
 	font-weight: normal;
 }
+
+.active-filters {
+    margin-bottom: 10px;
+}
+
+.filter-buttons {
+    margin-left: -5px;
+}
+
+.remove-filter {
+    margin-left: 5px;
+    margin-bottom: 5px;
+    max-width: 100%;
+}
+
+.remove-icon {
+    float: right;
+    width: 1em;
+}
+
+.filter-description {
+    display: inline-block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: calc(100% - 1em);
+}
