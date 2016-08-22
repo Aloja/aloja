@@ -745,6 +745,10 @@ class Utils
     }
 
     public static function cmp_conf($a, $b) {
-        return strnatcmp($a['conf'].$a['bench'],$b['conf'].$b['bench']);
+        if (isset($a['bench'])) {
+            return strnatcmp($a['conf'] . $a['bench'], $b['conf'] . $b['bench']);
+        } else {
+            return strnatcmp($a['conf'], $b['conf']);
+        }
     }
 }
