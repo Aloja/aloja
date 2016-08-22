@@ -2,6 +2,9 @@
 
 CUR_DIR_TMP="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
+vmOSType="Fedora"
+vmOSTypeVersion="4.0"
+
 build_dir='$HOME/share/'"${clusterName}"'/build'
 bin_dir='$HOME/share/'"${clusterName}"'/sw/bin'
 sw_dir='$HOME/share/'"${clusterName}"'/sw'
@@ -451,12 +454,13 @@ benchmark_suite_cleanup() {
   : #Empty
 }
 
+# TODO should not be needed
 get_node_names() {
   local -a nodes=( $nodeNames )
   printf '%s\n' "${nodes[@]}"
 }
 
-#alias
+# TODO should not be needed
 get_slaves_names() {
   local -a nodes=( $nodeNames )
   printf '%s\n' "${nodes[@]:1}"

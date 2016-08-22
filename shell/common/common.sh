@@ -32,7 +32,7 @@ logger() {
 
   # Colorize when on interactive TERM TODO implement better
   if [[ -t 1 || "$ALOJA_FORCE_COLORS" ]] ; then
-    local reset="$(tput sgr0)"
+    local reset="\033[0m" #"$(tput sgr0)"
     local red="$(tput setaf 1)"
     local green="$(tput setaf 2)"
     local yellow="$(tput setaf 3)"
@@ -73,14 +73,16 @@ log_all_output() {
   # Restore exec in case we are updating or it has been modified before
   exec &>/dev/tty
 
+  # Remove colors if set - stdbuf is to disable buffering so streams are in order
   if [ "$ALOJA_FORCE_COLORS" ] ; then
-    local strip_colors="sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g'"
-    exec 1> >(setup_traps && tee -a >(eval $strip_colors >> "$file_name.log") ) \
-         2> >(tee -a >(eval $strip_colors >> "$file_name.log") | \
-              tee -a >(eval $strip_colors >> "$file_name.err") >&2)
+    local strip_colors="stdbuf -oL -eL sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g'"
+    exec 1> >(setup_traps && tee -a >(eval $strip_colors  >> "$file_name.log") ) \
+         2> >( tee -a >(eval $strip_colors >> "$file_name.err") | \
+               tee -a >(eval $strip_colors >> "$file_name.log") >&2)
+  # Non-interactive or colors disabled
   else
     exec 1> >(setup_traps && tee -a  "$file_name.log") \
-         2> >(tee -a "$file_name.err" | tee -a "$file_name.log" >&2)
+         2> >( tee -a "$file_name.err" | tee -a "$file_name.log" >&2)
   fi
 
   #exec > >(tee -a "$file_name.log") 2>&1
@@ -196,6 +198,7 @@ remove_duplicate_lines() {
 # Returns true if needle is in hay stack
 # $1 hay stack (list)
 # $2 needle (element)
+# Usage: if ! inList "$names" "$name" ; then
 inList() {
   local hay_stack="$1"
   local needle="$2"
@@ -361,8 +364,20 @@ get_id_cluster(){
   echo -e "$id_cluster"
 }
 
-# Return only numeric part of string
+# Returns only numeric part of string
 # $1 string
 only_numbers() {
   echo -e "$(echo -e "$1"| sed 's/[^0-9]*//g')"
+}
+
+# Returns only alpha-numeric (plus dots and hyphens)
+# $1 string
+only_alpha() {
+  echo -e "$(echo -e "$1"| tr -cd '[[:alnum:]]._-')"
+}
+
+# Check if string is a valid number
+is_number() {
+  string="$1"
+  [[ $string =~ ^-?[0-9.]+$ ]] && return 0 || return 1
 }

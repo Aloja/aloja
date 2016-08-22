@@ -142,10 +142,10 @@ tpc-h_validate_load() {
 }
 
 tpc-h_delete_dbgen(){
-  if [ ! "$BENCH_KEEP_FILES" == "1" ] && [ ! "$BENCH_LEAVE_SERVICES" "1"  ] ; then
+  #if [ ! "$BENCH_KEEP_FILES" == "1" ] && [ ! "$BENCH_LEAVE_SERVICES" "1"  ] ; then
     logger "INFO: deleting original DBGEN files to save space"
     hadoop_delete_path "$bench_name" "$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR"
-  fi
+  #fi
 }
 
 tpc-h_datagen() {
@@ -168,7 +168,7 @@ tpc-h_datagen() {
     # Optimize tables to format
     tpc-h_load-optimize
 
-    # Try to validate data creatation
+    # Try to validate data creation
     tpc-h_validate_load
 
     # Delete source files

@@ -32,6 +32,19 @@ insert_DB(){
   rm "$2"
 }
 
+# Sets import config globals (to use the same when invoked from different locations)
+set_import_globals() {
+  [ ! "$INSERT_DB" ]         && INSERT_DB="1" #if to dump CSV into the DB
+  [ ! "$REDO_ALL" ]          && REDO_ALL="1" #if to redo folders that have source files and IDs in DB
+  [ ! "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
+  [ ! "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
+  [ ! "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
+
+  # if set works from /dev/shm to speedup file manipulation (you should have enough RAM to do it)
+  [ ! "$WORK_IN_MEM" ]       && WORK_IN_MEM="" || MEM_PATH="/dev/shm/aloja-import"
+}
+
+
 # Transition function to be able to import an specific folder
 # $1 folder to import
 # $2 reload caches
@@ -39,6 +52,8 @@ import_from_folder() {
   local folder="$1"
   local reload_caches="$2"
   local export_to_PAT="$3"
+
+  set_import_globals
 
   # Remove trailing slash if any
   [ "${folder:(-1)}" == "/" ] && folder="${folder:0:(-1)}"
@@ -59,6 +74,8 @@ import_from_folder() {
 
   logger "INFO: Importing data from from $BASE_DIR/$folder"
 
+
+
   INSERT_DB="1" #if to dump CSV into the DB
   REDO_ALL="1" #if to redo folders that have source files and IDs in DB
   REDO_UNTARS="" #if to redo the untars for folders that have it
@@ -74,7 +91,7 @@ import_from_folder() {
   fi
 
   # Only when run from the vagrant cluster, but not in the vagrant aloja-web (or others)
-  if ! inside_vagrant || [ "$(hostname)" != "aloja-web" ] ; then
+  if inside_vagrant && [ "$(hostname)" != "aloja-web" ] ; then
     MYSQL_CREDENTIALS="-uvagrant -pvagrant -h aloja-web -P3306"
   fi
 
@@ -108,11 +125,11 @@ import_folder() {
   local folder="$1"
   local export_to_PAT="$2"
 
+	#[ -d "$folder" ] || die "Empty folder supplied to import_folder() or not a valid directoy. Supplied: $folder PWD: $(pwd)"
+
   #filter folders by date
   min_date="20120101"
   min_time="$(date --utc --date "$min_date" +%s)"
-
-	[ "$folder" ] || die "Empty folder supplied to import_folder()"
 
   folder_OK="0"
   cd "$BASE_DIR" #make sure we come back to the starting folder
@@ -125,11 +142,39 @@ import_folder() {
   fi
 
   if [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] ; then
+
+    # Check if to work in mem to speedup the process (if enough RAM is available)
+    if [ "$WORK_IN_MEM" ] ; then
+      local original_folder_path="$folder" #save original path
+      local BASE_DIR_ORIGINAL="$BASE_DIR"
+      local mem_folder="$MEM_PATH/${folder##/*}"
+      logger "INFO: Attempting to copy to RAM disk to speedup import at: $MEM_PATH"
+      mkdir -p "$MEM_PATH" && cp -ru "$folder" "$mem_folder/" && {
+        logger "INFO: Copy OK, using RAM disk to speedup import"
+        BASE_DIR="$MEM_PATH"
+        cd "$BASE_DIR"
+      } || {
+        logger "WARNING: could not copy bench folder into ${MEM_PATH}, using current location: $folder"
+      }
+    fi
+
     logger "INFO: Entering folder\t$folder"
     cd "$folder"
 
     #get all executions details
-    exec_params="$(get_exec_params "log_${folder}.log" "$folder")"
+    if [ -f "log_${folder}.log" ] ; then
+      logger "INFO: Found legacy stile log file"
+      local log_folder_file="log_${folder}.log"
+    elif [ -f "run_benchs.sh.log" ] ; then
+      #logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
+      local log_folder_file="run_benchs.sh.log"
+    else
+      logger "ERROR: cannot find a valid run log file for exec $folder. Continuing..."
+      return 0
+    fi
+
+    exec_params="$(get_exec_params "$log_folder_file" "$folder")"
+
     hadoop_version=$(extract_config_var "HADOOP_VERSION")
     hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
 
@@ -139,6 +184,13 @@ import_folder() {
 
       #move folder to failed dir
       if [ "$MOVE_TO_DONE" ] ; then
+        if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
+          logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
+          rm -rf "$mem_folder"
+          BASE_DIR="$BASE_DIR_ORIGINAL"
+          cd "$BASE_DIR"
+        fi
+
         delete_untars "$BASE_DIR/$folder"
         move2done "$folder" "$folder_OK"
       fi
@@ -157,7 +209,7 @@ import_folder() {
         bench_folder="${bzip_file%%.*}"
         if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
           logger "INFO: Untaring $bzip_file"
-          tar -xjf "$bzip_file"
+          tar -xf "$bzip_file"
         fi
       done
     else
@@ -173,7 +225,7 @@ import_folder() {
       if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
         logger "INFO: Untaring $bzip_file in $(pwd)"
         logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
-        tar -xjf "$bzip_file"
+        tar -xf "$bzip_file"
       fi
 
       if [ -d "$bench_folder" ] ; then
@@ -184,7 +236,7 @@ import_folder() {
         exec="${folder}/${bench_folder}"
 
         #insert config and get ID_exec
-        exec_values=$(echo "$exec_params" |egrep "^\"$bench_folder\"")
+        exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\"")"
 
         if [ "$export_to_PAT" ] ; then
           PAT_folder="../../PAT_${folder}/${bench_folder}"
@@ -227,6 +279,7 @@ import_folder() {
             #id_cluster="1"
           fi
         fi
+#logger "DEBUG: EV $exec_values"
 
         if [ "$exec_values" ] ; then
           folder_OK="$(( folder_OK + 1 ))"
@@ -290,7 +343,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
                     scale_factor=VALUES(scale_factor);"
           fi
 
-          #logger "DEBUG: SQL:\n $insert"
+          logger "DEBUG: SQL:\n $insert"
           $MYSQL "$insert"
 
           if [ "$hadoop_major_version" == "2" ]; then
@@ -329,10 +382,10 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
         # Get the DB id for the exec
         id_exec="$(get_id_exec "$exec")"
 
-        # Save the different id_execs to construc the URL at the end
+        # Save the different id_execs to construct the URL at the end
         id_execs+=("$id_exec")
 
-        logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
+logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
 
         if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
 
@@ -378,8 +431,22 @@ logger "INFO: $bench_folder RN $run_num EV $exec_values"
       else
         logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
       fi
+
+      if [ -d "$bench_folder" ] ; then
+        logger "INFO: deleting bench folder: $bench_folder to save space"
+        rm -rf "$bench_folder"
+      fi
     done #end for bzip file
+
     cd ..; logger "INFO: Leaving folder $folder\n"
+
+    # Check if to work in mem to speedup the process (if enough RAM is available)
+    if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
+      logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
+      rm -rf "$mem_folder"
+      BASE_DIR="$BASE_DIR_ORIGINAL"
+      cd "$BASE_DIR"
+    fi
 
     if [ "$MOVE_TO_DONE" ] ; then
       delete_untars "$BASE_DIR/$folder"
@@ -567,6 +634,8 @@ update ignore aloja2.execs SET exec_type = 'default' WHERE id_exec = '$1' AND ex
 # $1 log_file path
 legacy_get_exec_params() {
   #here get the zabbix URL to parse filtering prepares and other benchmarks
+  # Format http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=19&stime=${start_date}&period=${total_secs}
+  # as found in: SENDING: hibench.runs 1411718451 <a href='http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20140926082343&period=2228'>terasort conf_ETH_HDD_b_m6_i10_r1_I65536_c1_z128_al-05</a> <strong>Time:</strong> 2228 s.
   #|grep -v -e 'prep_' -e 'b_min_' -e 'b_10_'|
   local exec_params="$(grep  -e 'href'  "$1" |grep 8099 |\
   awk -v exec=$2 ' \
@@ -600,6 +669,94 @@ legacy_get_exec_params() {
   echo -e "$exec_params"
 }
 
+# Gets the configuration for the benchmark for new format, but without config.sh file
+# $1 log_file path
+# output format:
+# "wordcount","2286","2015-03-17 20:47:41","2015-03-17 21:25:47","ETH","RL3","","4","10","1","65536","0","64","http://minerva.bsc.es:8099/zabbix/screens.php?&fullscreen=0&elementid=AZ&stime=20150317214741&period=2286"
+# "job","exe_time","start_time","end_time","net","disk","bench","maps","iosf","replication","iofilebuf","comp","blk_size","zabbix_link"
+# bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type
+# folder format:
+# 20160802_164734_ETH_HDD_bD2F-Bench-hive_S0_D8_dataproc-8standard4-196
+get_exec_params_from_log() {
+  local log_file="$1"
+  local folder="$2"
+
+  local start_point="INFO: RUNNING"
+  local end_point="DEBUG: BENCH_TIME"
+
+  local execs
+  local net="${folder:16:3}"
+  local disk="${folder:20:3}"
+
+  local bench_type_start="25"
+  local bench_type_end="$(echo -e "${folder:bench_type_start}"|grep -b -o '_'|head -n 1|cut -d: -f1)"
+  local bench_type="${folder:bench_type_start:bench_type_end}"
+
+  local bench_names # list of names to mark the repeated ones
+  local bench_name_tmp
+  local run_num # for repeated names
+
+  local datasize scale_factor
+  local has_orc_line="$(grep -m1  -n -i "Table tpch_orc_" "$log_file")"
+
+  if [ "$has_orc_line" ] ; then
+    local start_orc end_orc
+    start_orc="$(echo -e "$has_orc_line"|grep -b -o "tpch_orc_"|cut -d: -f1)"
+    start_orc="$((start_orc + 9 ))"
+    end_orc="$(echo -e "${has_orc_line:start_orc}"|grep -b -o '\.'|cut -d: -f1)"
+
+    scale_factor="${has_orc_line:start_orc:end_orc}"
+
+    [ "$scale_factor" ] && datasize="$((scale_factor * 1000000000))"
+  fi
+
+  local bench_times="$(grep "${start_point}\|${end_point}" "$log_file")"
+
+  if [ "$bench_times" ] ; then
+    local found bench_name bench_time bench_end_date
+    while read -r line ; do
+      if [[ "$line" == *"$start_point"* ]] ; then
+        bench_name="$(echo -e "$line"|cut -d' ' -f5)"
+        # clean up chars form the log file (there is an end char from the colors)
+        bench_name="$(only_alpha "$bench_name")"
+
+        [ "$bench_name" ] && found="1" || found=""
+
+        if ! inList "$bench_names" "$bench_name" ; then
+          bench_names+="$bench_name "
+        else
+          for run_num in {2..100} ; do
+            bench_name_tmp="${bench_name}__$run_num"
+            if ! inList "$bench_names" "$bench_name_tmp" ; then
+              break
+            fi
+          done
+          bench_name="$bench_name_tmp"
+        fi
+      fi
+
+      if [[ "$found" && "$line" == *"$end_point"* ]] ; then
+        bench_time="$(echo -e "$line"|cut -d'=' -f2)"
+        # clean up chars form the log file (there is an end char from the colors)
+        bench_time="$(only_alpha "$bench_time")"
+        bench_end_date="${line:0:4}-${line:4:2}-${line:6:2} ${line:9:2}:${line:11:2}:${line:13:2}"
+        execs+="\"$bench_name\",\"$bench_time\",DATE_SUB(\"$bench_end_date\",INTERVAL ${bench_time} SECOND),\"$bench_end_date\","
+        execs+="\"$net\",\"$disk\",\"$bench_type\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"\",\"Imported using recovery log\",\"$datasize\",\"$scale_factor\"\n"
+
+        found=""
+        bench_name=""
+      fi
+    done <<< "$bench_times"
+  else
+    logger "DEBUG: No bench times found"
+  fi
+
+  echo -e "$execs"
+
+#  die "DEBUG: $log_file bench times $bench_times\n$execs\nfolder $folder"
+
+}
+
 # Gets the configuration for the benchmark
 # for both legacy format (from folder name)
 # and newer, from config.sh
@@ -617,10 +774,16 @@ get_exec_params() {
   # "job","exe_time","start_time","end_time","net","disk","bench","maps","iosf","replication","iofilebuf","comp","blk_size","zabbix_link"
 
   # different parsers for legacy-style and new-style configs
+
+  # Old method
   if [ "${name:15:6}" == "_conf_" ]; then
     exec_params="$(legacy_get_exec_params "$log_file")"
+  # Recovery method when no config.sh file can be found
+  elif [ ! -f "config.sh" ] ; then
+     # logger "WARNING: cannot find config.sh file, resorting to legacy format"
+     exec_params="$(get_exec_params_from_log "$log_file" "$folder")"
+  # Current and normal method
   else
-
     local job=""
     local exe_time=""
     local start_time=""
@@ -646,6 +809,11 @@ get_exec_params() {
     fi
 
     local scale_factor=$(extract_config_var "BENCH_SCALE_FACTOR")
+
+    if [[ $scale_factor == "" ]]; then
+       scale_factor="$(( datasize / 10000000000 ))" # scale factor is in GBs
+    fi
+
     #legacy, exec type didn't exist until May 18th 2015
     if [[ exec_type == "" ]]; then
       exec_type="default"
@@ -674,6 +842,7 @@ get_exec_params() {
     declare -A exec_end
     eval $temp_array
 
+    local first_ts # for the patch below
     for index in "${!exec_time[@]}"; do
       # Add a new line if there is something before
       if [ "$exec_params" != "" ]; then
@@ -682,10 +851,32 @@ get_exec_params() {
 
       job="$index"
       exe_time="${exec_time[$index]}"
-      start_time="${exec_start[$index]}"
-      start_time=$(date -d @$((start_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
-      end_time="${exec_end[$index]}"
-      end_time=$(date -d @$((end_time / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      start_time_ts="${exec_start[$index]}"
+      [ ! "$first_ts" ] && first_ts="$start_time_ts"
+
+      start_time=$(date -d @$((start_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+      end_time_ts="${exec_end[$index]}"
+      end_time=$(date -d @$((end_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+
+
+### Patch for nasty error not recovering times correctly between two dates where bug was introduced:
+#   from: date -d '2016-08-10 12:30' +%s%3N
+#   to: date -d '2016-08-18 12:30' +%s%3N
+if [[ "$first_ts" > "1470825000000" && "$first_ts" < "1471516200000" ]] ; then
+  #"WARNING: benchmark run during bug recovering bench times... Attempting to recover in case necessary"
+  local recovered_exe_time="$(bc <<< "scale=3; ($end_time_ts - $start_time_ts)/1000 ")" # convert ms to secs
+  # First check if current exe is numeric
+  if is_number "$exe_time" ; then
+    # If it is, then check if there is a difference of more than 2 secs to use the recovery
+    if  (( $(bc <<< "($exe_time + 2)< $recovered_exe_time") )) || (( $(bc <<< "($exe_time - 2)> $recovered_exe_time") )) ; then
+      exe_time="$recovered_exe_time"
+    fi
+  else
+    exe_time="$recovered_exe_time"
+  fi
+fi
+
+######
 
       exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
     done
@@ -693,7 +884,6 @@ get_exec_params() {
   fi
 
   echo -e "$exec_params"
-
 #echo -e "$1\n$exec_params"
 
   # Time from Zabbix format

@@ -24,9 +24,13 @@ initialize
 if [ "$clusterType" != "PaaS" ]; then
  # change swappiness and other basic OS configs for benchmarking
  update_OS_config
- # create the directory and copy binaries
- prepare_folder "$DISK"
 fi
+
+# create the directory and copy binaries
+prepare_folder "$DISK"
+
+# Save globals at the beginning (for debugging purposes)
+save_env "$JOB_PATH/config.sh"
 
 # Check if needed to download files and configs
 install_files
@@ -34,6 +38,9 @@ install_files
 # 3.) Run the benchmarks
 
 benchmark_suite_config
+
+# At this point, if the user presses ctrl+c or the script is killed to clean up afterwards and copy the files if remote is defined
+update_traps "benchmark_suite_cleanup; rsync_extenal '$JOB_NAME';" "update_logger"
 
 start_time=$(date '+%s')
 

@@ -30,6 +30,7 @@ if [ "$(get_hadoop_major_version)" == "2" ]; then
   examples_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-mapreduce-examples-2.7.1.jar"
   #examples_jar="\$HADOOP_HOME/share/hadoop/mapreduce/hadoop-mapreduce-examples-*.jar"
   tests_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-common-2.7.1-tests.jar"
+  mapreduce_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-mapreduce-client-jobclient-2.7.1-tests.jar"
 else
   examples_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-examples-1.2.1.jar"
   tests_jar="$(get_local_apps_path)/Hadoop-Examples/hadoop-test-1.2.1.jar"
@@ -217,8 +218,11 @@ benchmark_dfsio_write() {
 
   logger "INFO: making sure $bench_output_dir dir is empty first"
   hadoop_delete_path "$bench_name" "$bench_output_dir"
-
-  execute_hadoop_new "$bench_name" "jar $tests_jar TestDFSIO $(get_hadoop_job_config) -write -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE $bench_output_dir" "time"
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    execute_hadoop_new "$bench_name" "jar $mapreduce_jar TestDFSIO $(get_hadoop_job_config) -write -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE -resFile $(get_local_bench_path)/TestDFSIOwrite.report" "time"
+  else
+    execute_hadoop_new "$bench_name" "jar $tests_jar TestDFSIO $(get_hadoop_job_config) -write -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE $bench_output_dir" "time"
+  fi
 }
 
 # wrapper for TestDFSIO read
@@ -233,7 +237,11 @@ benchmark_dfsio_read() {
   logger "INFO: making sure $bench_output_dir dir is empty first"
   hadoop_delete_path "$bench_name" "$bench_output_dir"
 
-  execute_hadoop_new "$bench_name" "jar $tests_jar TestDFSIO $(get_hadoop_job_config) -read -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE $bench_output_dir" "time"
+  if [ "$(get_hadoop_major_version)" == "2" ]; then
+    execute_hadoop_new "$bench_name" "jar $mapreduce_jar TestDFSIO $(get_hadoop_job_config) -read -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE -resFile $(get_local_bench_path)/TestDFSIOread.report" "time"
+  else
+    execute_hadoop_new "$bench_name" "jar $tests_jar TestDFSIO $(get_hadoop_job_config) -read -nrFiles $DFSIO_NUM_FILES -fileSize $DFSIO_FILE_SIZE $bench_output_dir" "time"
+  fi
 }
 
 # wrapper for grep

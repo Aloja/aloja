@@ -11,7 +11,7 @@ install_packages() {
 
   if check_sudo ; then
 
-    if [[ "$vmOSType" == "Ubuntu" ]] ; then #&& "$vmOSTypeVersion" == "14.04"
+    if [[ "$vmOSType" == "Ubuntu" || "$vmOSType" == "Debian" ]] ; then #&& "$vmOSTypeVersion" == "14.04"
       if [ "$update_repo" ] ; then
 
         #sudo sed -i -e 's,http://[^ ]*,mirror://mirrors.ubuntu.com/mirrors.txt,' /etc/apt/sources.list;
@@ -98,7 +98,7 @@ vm_install_base_packages() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make" "update" #wamerican is for hivebench, gcc for tpch
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo" "update" #wamerican is for hivebench, gcc for tpch, hardinfo for collecting sys info
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then

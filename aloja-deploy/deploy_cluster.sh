@@ -27,7 +27,7 @@ fi
 source "$deploy_include_path"
 
 #All cluster nodes sequentially
-if [ "$clusterType" != "PaaS" ] && [ ! "$vm_name" ]; then
+if [[ "$clusterType" != "PaaS" || "$defaultProvider" == "google" ]] && [ ! "$vm_name" ]; then
 
   cluster_do_pre
 
