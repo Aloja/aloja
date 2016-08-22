@@ -25,7 +25,7 @@ IO.foreach(node_config) do |line|
 end
 
 # env overrides
-vm_mem = 2048
+vm_mem = 2560
 if ENV['WMEM']
   vm_mem = ENV['WMEM']
 end
