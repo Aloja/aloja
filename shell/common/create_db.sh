@@ -1278,7 +1278,7 @@ $MYSQL "delete from execs where bench_type = 'TPC-H' and exec_type IN ('D2F_manu
 
 $MYSQL "delete from execs where exec like '20160622_160338_ETH_HDD_bD2F-Bench-hive_D8_rb-97%';"
 $MYSQL "delete from execs where exec like '20160621_202256_ETH_HDD_bD2F-Bench-hive_D8_rb-166%';"
-#$MYSQL "delete from execs where id_cluster in (201,202) and exe_time < 35 and scale_factor IN (500, 1000);" #failed CBD runs
+$MYSQL "delete from execs where id_cluster in (201,202) and exe_time < 30 and scale_factor IN (500, 1000);" #failed CBD runs
 $MYSQL "delete from execs where exec like '20160424_205928_ETH_HS6_bD2F-Bench-hive_D4_minerva100-05-09-123%';"
 $MYSQL "delete from execs where exec like '20160420_024607_ETH_HDD_bD2F-Bench-hive_D4_hdil4-D4-121%';"
 
