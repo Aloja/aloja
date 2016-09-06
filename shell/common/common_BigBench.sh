@@ -120,7 +120,8 @@ s,##HIVE##,$(get_local_apps_path)/$HIVE_VERSION/bin/hive,g;
 s,##HDFS_PATH##,$(get_base_bench_path),g;
 s,##HADOOP_CONF##,$(get_base_bench_path)/hadoop_conf,g;
 s,##HADOOP_LIBS##,$(get_local_apps_path)/$HADOOP_VERSION/lib/native,g;
-s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g
+s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g;
+s,##BB_HDFS_ABSPATH##,${BB_HDFS_ABSPATH},g;
 EOF
 }
 
