@@ -3,7 +3,7 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 set_BigBench_requires
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " " 1 30)"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " "  25 25)"
 
 benchmark_suite_config() {
   initialize_hadoop_vars
@@ -28,7 +28,7 @@ benchmark_suite_run() {
 #  benchmark_cleanMetastore
   benchmark_dataGen
   benchmark_populateMetastore
-#
+
   for query in $BENCH_LIST ; do
     benchmark_query "$query"
   done
@@ -56,7 +56,7 @@ benchmark_dataGen() {
   logger "INFO: Running $bench_name"
   logger "INFO: Automatically accepting EULA"
 
-  yes YES | execute_BigBench "$bench_name" "dataGen -m $MAX_MAPS" "time" #-f scale factor
+  yes YES | execute_BigBench "$bench_name" "dataGen" "time" #-f scale factor
 }
 
 benchmark_populateMetastore() {

@@ -20,7 +20,7 @@ set_BigBench_requires() {
 
 
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
-  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/mahout-distribution-${MAHOUT_VERSION}.tar.gz"
+  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
@@ -28,14 +28,19 @@ set_BigBench_requires() {
 
 # Helper to print a line with requiered exports
 get_BigBench_exports() {
+
   local to_export
-
-  to_export="
-  $(get_hive_exports)
-  $(get_spark_exports)
-  PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$(get_local_apps_path)/mahout-distribution-${MAHOUT_VERSION}/bin/
-  "
-
+  if [ "$clusterType" == "PaaS" ]; then
+    to_export="
+    export JAVA_HOME=$JAVA_HOME
+    "
+  else
+    to_export="
+    $(get_hive_exports)
+    $(get_spark_exports)
+    PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME
+    "
+  fi
   echo -e "$to_export\n"
 }
 
@@ -84,8 +89,12 @@ execute_BigBench(){
 }
 
 initialize_BigBench_vars() {
-
-    BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
+  BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
+  if [ "$clusterType" == "PaaS" ]; then
+    MAHOUT_HOME="$(get_local_apps_path)/apache-mahout-distribution-${MAHOUT_VERSION}/bin/" #TODO need to change mahout usage in PaaS
+  else
+    MAHOUT_HOME="$(get_local_apps_path)/apache-mahout-distribution-${MAHOUT_VERSION}/bin/"
+  fi
 }
 
 # Sets the substitution values for the BigBench config
@@ -95,8 +104,19 @@ get_BigBench_substitutions() {
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
+  #Calculate Spark settings for BigBench
+
+#  EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes)*($NUM_EXECUTOR_NODE))" | bc))"
+  EXECUTOR_INSTANCES="1"
+  NUM_EXECUTOR_NODE="1"
+  EXECUTOR_CORES="$(printf %.$2f $(echo "($NUM_CORES)/($NUM_EXECUTOR_NODE)" | bc))"
+#  CONTAINER_MAX_MB="$(printf %.$2f $(echo "($PHYS_MEM)/($NUM_EXECUTOR_NODE)" | bc))"
+  EXECUTOR_OFFSET="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)*(0.15)" | bc))"
+  EXECUTOR_MEM="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)-($EXECUTOR_OFFSET)" | bc))"
+  EXECUTOR_MEM="$(printf %.$2f $(echo "($EXECUTOR_MEM)/1000" | bc))"
+
     cat <<EOF
-s,##JAVA_HOME##,$(get_java_home),g;
+s,##JAVA_HOME##,$(get_java_bin),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
@@ -126,12 +146,15 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
-s,##HIVE##,$(get_local_apps_path)/$HIVE_VERSION/bin/hive,g;
-s,##HDFS_PATH##,$(get_base_bench_path),g;
-s,##HADOOP_CONF##,$(get_local_bench_path)/hadoop_conf,g;
-s,##HADOOP_LIBS##,$(get_local_apps_path)/$HADOOP_VERSION/lib/native,g;
-s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g;
+s,##HIVE##,$HIVE_HOME/bin/hive,g;
+s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
+s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
+s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
+s,##SPARK##,$SPARK_HOME/bin/spark-sql,g;
 s,##SCALE##,$BENCH_SCALE_FACTOR,g;
+s,##NUM_EXECUTORS##,$EXECUTOR_INSTANCES,g;
+s,##EXECUTOR_MEMORY##,"$EXECUTOR_MEM"g,g;
+s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g;
 s,##ENGINE##,$ENGINE,g
 EOF
 }
@@ -168,6 +191,7 @@ save_BigBench() {
 
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
 
+  $DSH "cat $(get_local_bench_path)/src/BigBench/logs/times.csv >> $JOB_PATH/$bench_name_num/BigBench-results.csv"
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
     $DSH "cp $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   else

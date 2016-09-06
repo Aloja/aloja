@@ -41,6 +41,7 @@ set_hadoop_requires() {
 
   # measure number of mappers and reducers
   BENCH_PERF_MONITORS+=" MapRed"
+
 }
 
 # Helper to print a line with Hadoop requiered exports
