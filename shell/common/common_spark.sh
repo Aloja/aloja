@@ -45,8 +45,13 @@ get_spark_cmd() {
   local spark_exports
   local spark_cmd
 
-  spark_exports="$(get_spark_exports)"
-  spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/"
+  if [ "$clusterType" == "PaaS" ]; then
+    spark_exports=""
+    spark_bin="spark"
+  else
+    spark_exports="$(get_spark_exports)"
+    spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/"
+  fi
   spark_cmd="$spark_exports\n $spark_bin"
 
   echo -e "$spark_cmd"
