@@ -3,23 +3,19 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
 # Sets the required files to download/copy
-set_spark_requires() {
-  [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
+set_hbase_requires() {
+  [ ! "$HBASE_VERSION" ] && die "No HIVE_VERSION specified"
 
-  if [ "$BENCH_SUITE" == "BigBench" ]; then
-    BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/files/spark_hive_ubuntu-1.6.2.tar.gz"
-    SPARK_VERSION=$SPARK_HIVE
-    SPARK_FOLDER=$SPARK_HIVE
-
-  else
-#      if [ "$clusterType" != "PaaS" ]; then
-    SPARK_FOLDER="${SPARK_VERSION}-bin-without-hadoop"
-    BENCH_REQUIRED_FILES["$SPARK_FOLDER"]="http://apache.rediris.es/spark/$SPARK_VERSION/$SPARK_FOLDER.tgz"
-#      fi
+  if [ "$clusterType" != "PaaS" ]; then
+    if [ "$(get_hadoop_major_version)" == "2" ]; then
+      BENCH_REQUIRED_FILES["$HBASE_VERSION"]="http://www-eu.apache.org/dist/hbase/$HBASE_VERSION/hbase-$HBASE_VERSION-hadoop2.bin.tar.gz"
+    else
+      BENCH_REQUIRED_FILES["$HBASE_VERSION"]="http://www-eu.apache.org/dist/hbase/$HBASE_VERSION/hbase-$HBASE_VERSION-hadoop1.bin.tar.gz"
+      #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
+    fi
   fi
-
   #also set the config here
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${SPARK_VERSION}_conf_template"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hbase0.98_conf_template"
 }
 
 # Helper to print a line with requiered exports
@@ -39,17 +35,17 @@ export SPARK_LOG_DIR=$(get_local_bench_path)/spark_logs;
   fi
 }
 
-# Returns the the path to the spark binary with the proper exports
+# Returns the the path to the hbase binary with the proper exports
 get_spark_cmd() {
-  local spark_exports
-  local spark_cmd
+  local hbase_exports
+  local hbase_cmd
 
   if [ "$clusterType" == "PaaS" ]; then
-    spark_exports=""
-    spark_bin="spark"
+    hbase_exports=""
+    hbase_bin="hbase"
   else
-    spark_exports="$(get_spark_exports)"
-    spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/"
+    hbase_exports="$(get_hbase_exports)"
+    hbase_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/"
   fi
   spark_cmd="$spark_exports\n $spark_bin"
 
