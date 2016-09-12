@@ -33,6 +33,7 @@ get_BigBench_exports() {
   if [ "$clusterType" == "PaaS" ]; then
     to_export="
     export JAVA_HOME=$JAVA_HOME
+    export PATH=$MAHOUT_HOME:$PATH
     "
   else
     to_export="
@@ -115,6 +116,7 @@ get_BigBench_substitutions() {
   EXECUTOR_MEM="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)-($EXECUTOR_OFFSET)" | bc))"
   EXECUTOR_MEM="$(printf %.$2f $(echo "($EXECUTOR_MEM)/1000" | bc))"
 
+#TODO spacing when a @ is found
     cat <<EOF
 s,##JAVA_HOME##,$(get_java_bin),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
@@ -146,7 +148,6 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
-<<<<<<< HEAD
 s,##HIVE##,$HIVE_HOME/bin/hive,g;
 s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
 s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
@@ -156,15 +157,8 @@ s,##SCALE##,$BENCH_SCALE_FACTOR,g;
 s,##NUM_EXECUTORS##,$EXECUTOR_INSTANCES,g;
 s,##EXECUTOR_MEMORY##,"$EXECUTOR_MEM"g,g;
 s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g;
+s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
 s,##ENGINE##,$ENGINE,g
-=======
-s,##HIVE##,$(get_local_apps_path)/$HIVE_VERSION/bin/hive,g;
-s,##HDFS_PATH##,$(get_base_bench_path),g;
-s,##HADOOP_CONF##,$(get_base_bench_path)/hadoop_conf,g;
-s,##HADOOP_LIBS##,$(get_local_apps_path)/$HADOOP_VERSION/lib/native,g;
-s,##SPARK##,$(get_local_apps_path)/$SPARK_VERSION/bin/spark-sql,g;
-s,##BB_HDFS_ABSPATH##,${BB_HDFS_ABSPATH},g;
->>>>>>> 20ae50e918f5effdb12358fe46df91987e68aebf
 EOF
 }
 

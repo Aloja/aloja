@@ -3,7 +3,7 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 set_BigBench_requires
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " "  25 25)"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " "  1 30)"
 
 benchmark_suite_config() {
   initialize_hadoop_vars
