@@ -1875,11 +1875,12 @@
       This can be used to overwrite.
     </description>
   </property>
+
   <property>
     <name>hive.tez.java.opts</name>
-    <value/>
-    <description>By default Tez will use the Java options from map tasks. This can be used to overwrite.</description>
+    <value>-Xmx1024M -Xms1024M -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC</value>
   </property>
+
   <property>
     <name>hive.tez.log.level</name>
     <value>INFO</value>
