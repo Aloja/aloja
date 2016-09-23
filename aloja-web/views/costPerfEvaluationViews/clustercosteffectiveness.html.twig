@@ -85,10 +85,13 @@
                               },
                               dataLabels: {
                                   enabled: true,
+                                  allowOverlap: true,
+                                  padding: 0,
+                                  //shadow: false,
                                   style: {
-                                      textShadow: 'none',
+                                      //textShadow: 'none',
                                       color:'black',
-                                      size: '10px',
+                                      fontSize: '10px',
                                   },
                                   formatter: function() {
                                       return this.series.name;

@@ -25,7 +25,8 @@
         	$("#results").dataTable();
             $("#chart").highcharts({
                 chart: {
-                    zoomType: 'xy'
+                    type: 'line',
+                    zoomType: 'xy',
                 },
                 title: {
                     text: 'Cost and Execution time Scalability of VMs'
@@ -36,7 +37,7 @@
                 xAxis: [{
                     categories: {{ categories | raw }},
                     title: {
-                        text: {% if scalabilityType == 'Datanodes' %}'Number of datanodes'{% else %}'Datasize'{% endif %}
+                        text: {% if scalabilityType == 'Datanodes' %}'Number of datanodes'{% else %}'Data scale'{% endif %}
                     }
                 }],
                 yAxis: [{ // Primary yAxis
@@ -79,8 +80,29 @@
                 },
                 plotOptions: {
                     series: {
-                        connectNulls: true
-                    }
+                        connectNulls: true,
+                        dataLabels: {
+                            enabled: true,
+                            //allowOverlap: true,
+                            //padding: 0,
+                            shadow: false,
+                            style: {
+                                //fontWeight: 'bold',
+                                fontSize: '10px',
+                            },
+                            formatter: function() {
+                                var first = this.series.data[0],
+                                        last  = this.series.data[this.series.data.length - 1];
+                                var num = Math.round(this.point.y).toLocaleString();
+                                //(this.point.category === first.category && this.point.y === first.y) ||
+                                if (
+                                        (this.point.category === last.category  && this.point.y === last.y)) {
+                                    return this.series.name + ' (' + num + ' s.)';
+                                }
+                                return num;
+                            },
+                        },
+                    },
                 },
                 series: {{ seriesData | raw }}
             });
