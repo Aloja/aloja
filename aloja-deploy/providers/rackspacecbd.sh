@@ -260,6 +260,11 @@ get_ssh_host() {
 
   clusterId=$(get_cluster_id "${clusterName}")
 
+  # Special on metal cluster case
+  if [ "$clusterId" == "211" ] ; then
+    clusterId="Cluster-02"
+  fi
+
   if [ -z "${nodeIP[$vm_name]}" ]; then
 
     #get machine details
