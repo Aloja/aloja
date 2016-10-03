@@ -558,7 +558,7 @@ class Utils
     	if(preg_match("/^RL/", $exec['disk']) || preg_match("/^RR/", $exec['disk'])) {
     		$num_remotes = (int)$exec['disk'][2];
     	}
-    	
+$num_remotes = 1;
     	/** calculate HDD */
     	if(preg_match("/^HD[0-9]/", $exec['disk'])) {
     		$num_remotes = (int)$exec['disk'][2];
@@ -609,6 +609,7 @@ class Utils
 
         // Normal
         } else {
+#echo "cost ${exec['id_cluster']} = ${exec['exe_time']}*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600)\n\n";
             $cost = $exec['exe_time']*(($costHour + ($costRemote * $num_remotes) + ($costIB * $num_IB) + ($costSSD * $num_ssds))/3600);
         }
 
@@ -746,7 +747,7 @@ class Utils
 
     public static function cmp_conf($a, $b) {
         if (isset($a['bench'])) {
-            return strnatcmp($a['conf'] . $a['bench'], $b['conf'] . $b['bench']);
+            return strnatcmp($a['bench'] . $a['conf'], $b['bench'] . $b['conf']);
         } else {
             return strnatcmp($a['conf'], $b['conf']);
         }
