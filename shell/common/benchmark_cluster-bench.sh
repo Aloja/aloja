@@ -24,7 +24,7 @@ benchmark_hdparm(){
 
   for device in $devices ; do
     logger "INFO: Running $bench_name on device: $device"
-    execute_all "$bench_name" "sudo hdparm -tT $device" "time"
+    execute_all "$bench_name" "sudo hdparm --direct -tT $device" "time"
   done
 }
 
