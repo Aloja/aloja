@@ -41,6 +41,7 @@ set_hadoop_requires() {
 
   # measure number of mappers and reducers
   BENCH_PERF_MONITORS+=" MapRed"
+
 }
 
 # Helper to print a line with Hadoop requiered exports
@@ -816,6 +817,16 @@ hadoop_delete_path() {
 
   execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
 }
+
+# Copy file to HDFS
+# $1 Destiny folder
+# $2 Origin local folder
+hadoop_copy_hdfs() {
+  logger "INFO: Coping $2 from local to $1 in HDFS"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -mkdir $1"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -copyFromLocal $2 $1"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -ls $1"
+}
 #
 #
 #execute_hdi_hadoop() {
@@ -915,7 +926,7 @@ save_hadoop() {
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
-        sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
+        sudo su hdfs -c "hd>fs dfs -chmod -R 777 /mr-history"
         hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num"
         sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
         sudo su hdfs -c "hdfs dfs -expunge"
@@ -933,7 +944,7 @@ save_hadoop() {
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
       $DSH "cp -r $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     else
-      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
+      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/nullº
     fi
   fi
 

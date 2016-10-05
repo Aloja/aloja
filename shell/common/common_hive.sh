@@ -28,8 +28,7 @@ get_hive_exports() {
     to_export="$(get_hadoop_exports)
 export HIVE_VERSION='$HIVE_VERSION';
 export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
-export HIVE_CONF_DIR=$HIVE_CONF_DIR;
-"
+export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
 
     if [ "$EXECUTE_TPCH" ]; then
       to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
@@ -99,7 +98,7 @@ initialize_hive_vars() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
 
   if [ "$clusterType" == "PaaS" ]; then
-    HIVE_HOME="/usr/bin/hive"
+    HIVE_HOME="/usr"
     HIVE_CONF_DIR="/etc/hive/conf"
   else
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
@@ -147,6 +146,7 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
+s,##HIVE_ENGINE##,$HIVE_ENGINE,g
 EOF
 }
 
@@ -175,8 +175,7 @@ prepare_hive_config() {
     $DSH "
 $(get_perl_exports)
 /usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE;
-/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*.xml;
-/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*.properties;"
+/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*;"
 
 #    if [ ! -z "$MAPS_MB" ]; then
 #        $DSH "echo 'set mapreduce.map.memory.mb=${MAPS_MB};' >> ${HIVE_SETTINGS_FILE_PATH}"
@@ -236,6 +235,7 @@ save_hive() {
   logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
 
   $DSH_MASTER "
+
 cd $JOB_PATH;
 if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
   tar -cjf $JOB_PATH/hadoop_host_conf.tar.bz2 conf_*;

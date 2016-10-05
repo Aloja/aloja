@@ -1,0 +1,185 @@
+  <configuration>
+
+    <property>
+      <name>tez.am.am-rm.heartbeat.interval-ms.max</name>
+      <value>250</value>
+    </property>
+
+    <property>
+      <name>tez.am.container.idle.release-timeout-max.millis</name>
+      <value>20000</value>
+    </property>
+
+    <property>
+      <name>tez.am.container.idle.release-timeout-min.millis</name>
+      <value>10000</value>
+    </property>
+
+    <property>
+      <name>tez.am.container.reuse.enabled</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>tez.am.container.reuse.locality.delay-allocation-millis</name>
+      <value>250</value>
+    </property>
+
+    <property>
+      <name>tez.am.container.reuse.non-local-fallback.enabled</name>
+      <value>false</value>
+    </property>
+
+    <property>
+      <name>tez.am.container.reuse.rack-fallback.enabled</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>tez.am.java.opts</name>
+      <value>-Xmx2048M -Xms2048M -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC</value>
+    </property>
+
+    <property>
+      <name>tez.am.launch.cmd-opts</name>
+      <value>-XX:+PrintGCDetails -verbose:gc -XX:+PrintGCTimeStamps -XX:+UseNUMA -XX:+UseParallelGC</value>
+    </property>
+
+    <property>
+      <name>tez.am.launch.env</name>
+      <value>LD_LIBRARY_PATH=##HADOOP_LIBS##</value>
+    </property>
+
+    <property>
+      <name>tez.am.log.level</name>
+      <value>INFO</value>
+    </property>
+
+    <property>
+      <name>tez.am.max.app.attempts</name>
+      <value>2</value>
+    </property>
+
+    <property>
+      <name>tez.am.maxtaskfailures.per.node</name>
+      <value>10</value>
+    </property>
+
+    <property>
+      <name>tez.am.resource.memory.mb</name>
+      <value>1536</value>
+    </property>
+
+    <property>
+      <name>tez.am.view-acls</name>
+      <value>*</value>
+    </property>
+
+    <property>
+      <name>tez.counters.max</name>
+      <value>10000</value>
+    </property>
+
+    <property>
+      <name>tez.counters.max.groups</name>
+      <value>3000</value>
+    </property>
+
+    <property>
+      <name>tez.dag.recovery.enabled</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>tez.generate.debug.artifacts</name>
+      <value>false</value>
+    </property>
+
+    <property>
+      <name>tez.grouping.max-size</name>
+      <value>1073741824</value>
+    </property>
+
+    <property>
+      <name>tez.grouping.min-size</name>
+      <value>16777216</value>
+    </property>
+
+    <property>
+      <name>tez.grouping.split-waves</name>
+      <value>1.7</value>
+    </property>
+
+    <property>
+      <name>tez.history.logging.service.class</name>
+      <value>org.apache.tez.dag.history.logging.ats.ATSHistoryLoggingService</value>
+    </property>
+
+    <property>
+      <name>tez.lib.uris</name>
+      <value>##TEZ_URI##</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.compress</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.compress.codec</name>
+      <value>org.apache.hadoop.io.compress.SnappyCodec</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.convert.user-payload.to.history-text</name>
+      <value>false</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.io.sort.mb</name>
+      <value>614</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.optimize.local.fetch</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.pipelined.sorter.sort.threads</name>
+      <value>2</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.sorter.class</name>
+      <value>PIPELINED</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.unordered.output.buffer.size-mb</name>
+      <value>100</value>
+    </property>
+
+    <property>
+      <name>tez.session.am.dag.submit.timeout.secs</name>
+      <value>300</value>
+    </property>
+
+    <property>
+      <name>tez.session.client.timeout.secs</name>
+      <value>-1</value>
+    </property>
+
+    <property>
+      <name>tez.shuffle-vertex-manager.max-src-fraction</name>
+      <value>0.4</value>
+    </property>
+
+    <property>
+      <name>tez.shuffle-vertex-manager.min-src-fraction</name>
+      <value>0.2</value>
+    </property>
+
+  </configuration>
+
+                   
