@@ -29,7 +29,7 @@ get_spark_exports() {
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    to_export="$(get_hadoop_exports)
+    to_export="
 export SPARK_VERSION='$SPARK_VERSION';
 export SPARK_HOME='$(get_local_apps_path)/${SPARK_FOLDER}';
 export SPARK_CONF_DIR=$(get_spark_conf_dir);

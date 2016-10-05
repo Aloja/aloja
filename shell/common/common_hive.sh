@@ -28,8 +28,7 @@ get_hive_exports() {
     to_export="$(get_hadoop_exports)
 export HIVE_VERSION='$HIVE_VERSION';
 export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
-export HIVE_CONF_DIR=$HIVE_CONF_DIR;
-"
+export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
 
     if [ "$EXECUTE_TPCH" ]; then
       to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
@@ -147,6 +146,7 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
+s,##HIVE_ENGINE##,$HIVE_ENGINE,g
 EOF
 }
 
@@ -175,8 +175,7 @@ prepare_hive_config() {
     $DSH "
 $(get_perl_exports)
 /usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE;
-/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*.xml;
-/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*.properties;"
+/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*;"
 
 #    if [ ! -z "$MAPS_MB" ]; then
 #        $DSH "echo 'set mapreduce.map.memory.mb=${MAPS_MB};' >> ${HIVE_SETTINGS_FILE_PATH}"

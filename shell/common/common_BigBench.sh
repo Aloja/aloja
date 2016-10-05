@@ -6,9 +6,17 @@ set_hadoop_requires
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
 
-# Start Spark
-source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
-set_spark_requires
+# Start Spark if needed
+if [ "$ENGINE" == "spark" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
+  set_spark_requires
+fi
+
+# Start Tez if needed
+if [ "$HIVE_ENGINE" == "tez" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
+  set_tez_requires
+fi
 
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
 BIG_BENCH_CONF_DIR="BigBench_conf_template"
@@ -17,7 +25,6 @@ BIG_BENCH_EXECUTION_DIR="src/BigBench"
 # Sets the required files to download/copy
 set_BigBench_requires() {
   [ ! "$MAHOUT_VERSION" ] && die "No MAHOUT_VERSION specified"
-
 
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
   BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
@@ -30,6 +37,10 @@ set_BigBench_requires() {
 get_BigBench_exports() {
 
   local to_export
+  local to_export_spark
+  local to_export_tez
+
+
   if [ "$clusterType" == "PaaS" ]; then
     to_export="
     export JAVA_HOME=$JAVA_HOME
@@ -37,9 +48,17 @@ get_BigBench_exports() {
   else
     to_export="
     $(get_hive_exports)
-    $(get_spark_exports)
-    PATH=$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME
-    "
+    export PATH='$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME';"
+
+    if [ "$ENGINE" == "spark" ]; then
+      to_export_spark="$(get_spark_exports)"
+      to_export+="$to_export_spark"
+    fi
+
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+      to_export_tez="$(get_tez_exports)"
+      to_export+="$to_export_tez"
+    fi
   fi
   echo -e "$to_export\n"
 }
@@ -63,6 +82,8 @@ execute_BigBench(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
+  local BigBench_exports
+
 
   local BigBench_cmd="$(get_BigBench_cmd) $cmd"
   echo $BigBench_cmd
