@@ -1,30 +1,29 @@
-#Travis CI Web tests file
-language: php
-php:
-  - 5.5
-before_install:
-  - sudo apt-get update -qq
-  - sudo apt-get install -y -qq nodejs npm php5-gd php5-mysql #php5-fpm nginx
-  - npm install -g grunt-cli
-  - npm install -g casperjs
-before_script:
-  - mysql -e "create database aloja2;" -uroot 
-  - mysql -uroot aloja2 < aloja-web/tests/tests_db.sql
-#  - shell/create-update_DB.sh
-  - cd aloja-web && php -S localhost:8080 travis_index.php &
-  - sleep 3
-install:
-  - npm install
-  - cd aloja-web && composer update && cd ..
-script:
-  - bash aloja-web/tests/tests.sh
-  - bash aloja-web/tests/tests_phpunit.sh
-services:
-  - mysql
-notifications:
-  email:
-     recipients:
-       - aaron.call@bsc.es
-       - nicolas.poggi@bsc.es
-     on_success: change
-     on_failure: change
+##Travis CI Web tests file
+#language: php
+#php:
+#  - 5.5
+#before_install:
+#  - sudo apt-get update -qq
+#  - sudo apt-get install -y -qq nodejs npm php5-gd php5-mysql #php5-fpm nginx
+#  - npm install -g grunt-cli
+#  - npm install -g casperjs
+#before_script:
+#  - mysql -e "create database aloja2;" -uroot
+#  - mysql -uroot aloja2 < aloja-web/tests/tests_db.sql
+##  - shell/create-update_DB.sh
+#  - cd aloja-web && php -S localhost:8080 travis_index.php &
+#  - sleep 3
+#install:
+#  - npm install
+#  - cd aloja-web && composer update && cd ..
+#script:
+#  - bash aloja-web/tests/tests.sh
+#  - bash aloja-web/tests/tests_phpunit.sh
+#services:
+#  - mysql
+#notifications:
+#  email:
+#     recipients:
+#       - nicolas.poggi@bsc.es
+#     on_success: change
+#     on_failure: change
