@@ -5,7 +5,7 @@
 -- set mapreduce.map.memory.mb=##MAPS_MB##;
 -- set mapreduce.reduce.memory.mb=##REDUCES_MB##;
 
-set ambari.hive.db.schema.name=hive;
+-- set ambari.hive.db.schema.name=hive;
 set fs.file.impl.disable.cache=true;
 set fs.hdfs.impl.disable.cache=true;
 set hive.auto.convert.sortmerge.join=true;

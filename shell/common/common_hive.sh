@@ -9,6 +9,10 @@ set_hive_requires() {
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
       BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      if [ "$HIVE_ENGINE" == "tez" ]; then
+        source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
+        set_tez_requires
+      fi
     else
       BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
@@ -21,6 +25,7 @@ set_hive_requires() {
 # Helper to print a line with requiered exports
 get_hive_exports() {
   local to_export
+  local tez_exports
 
  if [ "$clusterType" == "PaaS" ]; then
   : # Empty
@@ -32,6 +37,11 @@ export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
 
     if [ "$EXECUTE_TPCH" ]; then
       to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
+    fi
+
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+      tez_exports=$(get_tez_exports)
+      to_export+="${tez_exports}"
     fi
 
     echo -e "$to_export\n"

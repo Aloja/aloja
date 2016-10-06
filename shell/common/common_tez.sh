@@ -7,7 +7,7 @@ set_tez_requires() {
   [ ! "$TEZ_VERSION" ] && die "No tez_VERSION specified"
 
   TEZ_FOLDER="apache-tez-${TEZ_VERSION}-bin"
-  BENCH_REQUIRED_FILES["$TEZ_FOLDER"]="http://www-eu.apache.org/dist/tez/$TEZ_VERSION/$TEZ_FOLDER.tar.gz"
+  BENCH_REQUIRED_FILES["$TEZ_FOLDER"]="http://aloja.bsc.es/public/aplic2/tarballs/${TEZ_FOLDER}.tar.gz"
 
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${TEZ_FOLDER}_conf_template"
