@@ -176,7 +176,7 @@ vm_final_bootstrap() {
 
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
- vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-us.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
+ vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-US.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
  vm_execute "dsh -f slaves -cM -- sudo mount -a"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
  vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
