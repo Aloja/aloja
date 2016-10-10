@@ -260,11 +260,18 @@ get_specified_disks() {
   local disk="$1"
   local dir
 
-  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ] || [ "$disk" == "NFS" ]; then
+  if [ "$disk" == "SSD" ] || [ "$disk" == "HDD" ] || [ "$disk" == "RAM" ] || [ "$disk" == "NFS" ] || [ "$disk" == "NVE" ]; then
     dir="${BENCH_DISKS["$disk"]}"
-  elif [[ "$disk" =~ .+[1-9] ]] ; then #if last char is a number
-    local disks="${1:(-1)}"
-    local disks_type="${1:0:(-1)}"
+  elif [[ "$disk" =~ .+[0-9] ]] ; then #if last char is a number
+
+    if [[ "$1" =~ [a-zA-Z]+[0-9][0-9] ]] ; then #if last 2 chars are a numbers
+      local disks="${1:(-2)}"
+      local disks_type="${1:0:(-2)}"
+    elif [[ "$1" =~ .+[0-9] ]] ; then
+      local disks="${1:(-1)}"
+      local disks_type="${1:0:(-1)}"
+    fi
+
     for disk_number in $(seq 1 $disks) ; do
       dir+="${BENCH_DISKS["${disks_type}${disk_number}"]}\n"
     done
@@ -281,11 +288,17 @@ get_specified_disks() {
 get_tmp_disk() {
   local dir
 
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ]  || [ "$1" == "NFS" ]; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ]  || [ "$1" == "NFS" ] || [ "$disk" == "NVE" ]; then
     dir="${BENCH_DISKS["$DISK"]}"
-  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
-    local disks="${1:(-1)}"
-    local disks_type="${1:0:(-1)}"
+  elif [[ "$1" =~ .+[0-9] ]] ; then #if last char is a number
+
+    if [[ "$1" =~ [a-zA-Z]+[0-9][0-9] ]] ; then #if last 2 chars are a numbers
+      local disks="${1:(-2)}"
+      local disks_type="${1:0:(-2)}"
+    elif [[ "$1" =~ .+[0-9] ]] ; then
+      local disks="${1:(-1)}"
+      local disks_type="${1:0:(-1)}"
+    fi
 
     if [ "$disks_type" == "RL" ] ; then
       dir="${BENCH_DISKS["HDD"]}"
@@ -297,6 +310,10 @@ get_tmp_disk() {
       dir="${BENCH_DISKS["TMP_RAM"]}"
     elif [ "$disks_type" == "NFS" ] ; then # on NFS use local as /tmp
       dir="${BENCH_DISKS["HDD"]}"
+    elif [ "$disks_type" == "NVE" ] ; then
+      dir="${BENCH_DISKS["NVE"]}"
+    elif [ "$disks_type" == "HN" ] ; then # HDD + NVE cache
+      dir="${BENCH_DISKS["NVE"]}"
     else
       dir="${BENCH_DISKS["${disks_type}1"]}"
     fi
@@ -324,15 +341,19 @@ $(get_tmp_disk "$disk_name")"
   echo -e "$all_disks"
 }
 
-# Retuns the main benchmkark path (useful for multidisk setups)
+# Returns the main benchmark path (useful for multidisk setups)
 # $1 disk type
 get_initial_disk() {
-  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] || [ "$1" == "NFS" ] ; then
+  if [ "$1" == "SSD" ] || [ "$1" == "HDD" ] || [ "$1" == "RAM" ] || [ "$1" == "NFS" ] || [ "$1" == "NVE" ] ; then
     local dir="${BENCH_DISKS["$DISK"]}"
-  elif [[ "$1" =~ .+[1-9] ]] ; then #if last char is a number
+  elif [[ "$1" =~ [a-zA-Z]+[0-9][0-9] ]] ; then #if last 2 chars are a numbers
+    local disks="${1:(-2)}"
+    local disks_type="${1:0:(-2)}"
+    #set the first dir
+    local dir="${BENCH_DISKS["${disks_type}1"]}"
+  elif [[ "$1" =~ .+[0-9] ]] ; then #if last char is a number
     local disks="${1:(-1)}"
     local disks_type="${1:0:(-1)}"
-
     #set the first dir
     local dir="${BENCH_DISKS["${disks_type}1"]}"
   fi
@@ -375,7 +396,7 @@ validate() {
 
     # Check that we got the dynamic disk location correctly
     if [ ! "$(get_initial_disk "$disk")" ] ; then
-      die "cannot determine $DISK path"
+      die "cannot determine $DISK path.  Output: $(get_initial_disk "$disk")"
     fi
 
     # Iterate all defined and tmp disks to see if we can write to them
