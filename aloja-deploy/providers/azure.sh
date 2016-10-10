@@ -264,7 +264,7 @@ node_connect() {
 #1 $vm_name
 node_delete() {
   logger "Deleting node $1 and its associated attached volumes"
-  azure vm delete -b -q "$1"
+  azure config mode asm && azure vm delete -b -q "$1"
 }
 
 #1 $vm_name
