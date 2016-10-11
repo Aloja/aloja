@@ -37,7 +37,7 @@
 
     <property>
       <name>tez.am.java.opts</name>
-      <value>-Xmx1024M -Xms1024M -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC</value>
+      <value>##JAVA_XMX## ##JAVA_XMS## -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC</value>
     </property>
 
     <property>
@@ -67,7 +67,7 @@
 
     <property>
       <name>tez.am.resource.memory.mb</name>
-      <value>1536</value>
+      <value>##AM_MB##</value>
     </property>
 
     <property>
@@ -121,23 +121,13 @@
     </property>
 
     <property>
-      <name>tez.runtime.compress</name>
-      <value>true</value>
-    </property>
-
-    <property>
-      <name>tez.runtime.compress.codec</name>
-      <value>org.apache.hadoop.io.compress.SnappyCodec</value>
-    </property>
-
-    <property>
       <name>tez.runtime.convert.user-payload.to.history-text</name>
       <value>false</value>
     </property>
 
     <property>
       <name>tez.runtime.io.sort.mb</name>
-      <value>614</value>
+      <value>##IO_TEZ##</value>
     </property>
 
     <property>
@@ -179,6 +169,57 @@
       <name>tez.shuffle-vertex-manager.min-src-fraction</name>
       <value>0.2</value>
     </property>
+
+     <property>
+      <name>tez.staging-dir</name>
+      <value>/tezstaging/${user}/staging</value>
+    </property>
+
+    <property>
+      <name>tez.task.am.heartbeat.counter.interval-ms.max</name>
+      <value>4000</value>
+    </property>
+
+    <property>
+      <name>tez.task.generate.counters.per.io</name>
+      <value>true</value>
+    </property>
+
+    <property>
+      <name>tez.task.get-task.sleep.interval-ms.max</name>
+      <value>200</value>
+    </property>
+
+    <property>
+      <name>tez.task.launch.cluster-default.cmd-opts</name>
+      <value>-server -Djava.net.preferIPv4Stack=true</value>
+    </property>
+
+    <property>
+      <name>tez.task.launch.cmd-opts</name>
+      <value>-XX:+PrintGCDetails -verbose:gc -XX:+PrintGCTimeStamps -XX:+UseNUMA -XX:+UseParallelGC</value>
+    </property>
+
+    <property>
+      <name>tez.task.launch.env</name>
+      <value>LD_LIBRARY_PATH=##HADOOP_LIBS##</value>
+    </property>
+
+    <property>
+      <name>tez.task.max-events-per-heartbeat</name>
+      <value>500</value>
+    </property>
+
+    <property>
+      <name>tez.task.resource.memory.mb</name>
+      <value>##MAPS_MB##</value>
+    </property>
+
+    <property>
+      <name>tez.use.cluster.hadoop-libs</name>
+      <value>false</value>
+    </property>
+
 
   </configuration>
 

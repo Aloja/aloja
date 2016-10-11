@@ -1,7 +1,3 @@
-#tez SPECIFIC FUNCTIONS
-source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
-set_hadoop_requires
-
 # Sets the required files to download/copy
 set_tez_requires() {
   [ ! "$TEZ_VERSION" ] && die "No tez_VERSION specified"
@@ -23,10 +19,10 @@ get_tez_exports() {
     : # Empty
   else
     to_export="
-export TEZ_JARS=$TEZ_JARS
-export TEZ_CONF_DIR=$TEZ_CONF_DIR
-export HADOOP_CLASSPATH=${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*:\$HADOOP_CLASSPATH;
-export CLASSPATH=$CLASSPATH:${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*"
+export TEZ_JARS='$TEZ_JARS';
+export TEZ_CONF_DIR='$TEZ_CONF_DIR';
+export HADOOP_CLASSPATH='${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*:\$HADOOP_CLASSPATH';
+export CLASSPATH='$CLASSPATH:${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*';"
     echo -e "$to_export\n"
   fi
 }
@@ -48,6 +44,9 @@ get_tez_substitutions() {
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
+  IO_TEZ=`echo "${MAPS_MB}*0.4" | bc -l`
+  IO_TEZ=`printf "%.0f" $IO_TEZ`
+
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
@@ -67,6 +66,8 @@ s,##MAX_REDS##,$MAX_REDS,g;
 s,##IFACE##,$IFACE,g;
 s,##IO_FACTOR##,$IO_FACTOR,g;
 s,##IO_MB##,$IO_MB,g;
+s,##IO_TEZ##,$IO_TEZ,g;
+s,##JOIN_TEZ##,$JOIN_TEZ,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;

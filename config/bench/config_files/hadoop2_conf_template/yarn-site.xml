@@ -15,11 +15,11 @@
     <description>Minimum limit of memory to allocate to each container request at the Resource Manager.</description>
 </property>
 
-<!--<property>-->
-    <!--<name>yarn.scheduler.maximum-allocation-mb</name>-->
-    <!--<value>##CONTAINER_MAX_MB##</value>-->
-    <!--<description>Maximum limit of memory to allocate to each container request at the Resource Manager.</description>-->
-<!--</property>-->
+<property>
+    <name>yarn.scheduler.maximum-allocation-mb</name>
+    <value>##PHYS_MEM##</value>
+    <description>Maximum limit of memory to allocate to each container request at the Resource Manager.</description>
+</property>
 
 <property>
     <name>yarn.nodemanager.resource.memory-mb</name>
@@ -61,6 +61,11 @@
  <property>
    <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
+ </property>
+
+ <property>
+   <name>yarn.nodemanager.vmem-check-enabled</name>
+   <value>false</value>
  </property>
 
 </configuration>

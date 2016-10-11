@@ -115,6 +115,11 @@ initialize_hive_vars() {
     HIVE_CONF_DIR="$HDD/hive_conf"
     # Only set a default hive.settings when not in PaaS
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+        initialize_tez_vars
+        prepare_tez_config
+    fi
+
   fi
 }
 
@@ -124,6 +129,9 @@ get_hive_substitutions() {
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
+
+  JOIN_TEZ=`echo "${MAPS_MB}*0.33" | bc -l`
+  JOIN_TEZ=`printf "%.0f" $JOIN_TEZ`
 
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
@@ -144,6 +152,7 @@ s,##MAX_REDS##,$MAX_REDS,g;
 s,##IFACE##,$IFACE,g;
 s,##IO_FACTOR##,$IO_FACTOR,g;
 s,##IO_MB##,$IO_MB,g;
+s,##JOIN_TEZ##,$JOIN_TEZ,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;

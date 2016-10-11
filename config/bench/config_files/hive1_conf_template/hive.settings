@@ -6,6 +6,9 @@
 -- set mapreduce.reduce.memory.mb=##REDUCES_MB##;
 
 -- set ambari.hive.db.schema.name=hive;
+
+set hive.execution.engine=##HIVE_ENGINE##;
+
 set fs.file.impl.disable.cache=true;
 set fs.hdfs.impl.disable.cache=true;
 set hive.auto.convert.sortmerge.join=true;
@@ -20,7 +23,6 @@ set hive.compute.query.using.stats=true;
 set hive.enforce.bucketing=true;
 set hive.enforce.sorting=true;
 set hive.enforce.sortmergebucketmapjoin=true;
-set hive.execution.engine=##HIVE_ENGINE##;
 set hive.limit.pushdown.memory.usage=0.04;
 set hive.map.aggr=true;
 set hive.mapjoin.bucket.cache.size=10000;
@@ -40,11 +42,8 @@ set hive.security.authorization.enabled=false;
 set hive.security.metastore.authorization.manager=org.apache.hadoop.hive.ql.security.authorization.StorageBasedAuthorizationProvider;
 -- set hive.semantic.analyzer.factory.impl=org.apache.hivealog.cli.HCatSemanticAnalyzerFactory;
 set hive.server2.enable.doAs=false;
--- set hive.server2.tez.default.queues=default;
--- set hive.server2.tez.initialize.default.sessions=false;
--- set hive.server2.tez.sessions.per.default.queue=1;
+
 set hive.stats.autogather=true;
--- set hive.tez.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
 set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DummyTxnManager;
 set hive.txn.max.open.batch=1000;
 set hive.txn.timeout=300;
@@ -64,6 +63,23 @@ set hive.support.sql11.reserved.keywords=false
 
 set hive.auto.convert.join.noconditionaltask=true;
 set hive.auto.convert.join=true;
+
+-- Tez settings
+
+set hive.tez.container.size=##MAPS_MB##;
+set hive.tez.cpu.vcores=-1;
+set hive.tez.java.opts=##JAVA_XMX## ##JAVA_XMS## -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC;
+set hive.tez.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
+set hive.server2.tez.default.queues=default;
+set hive.server2.tez.initialize.default.sessions=false;
+set hive.server2.tez.sessions.per.default.queue=1;
+set hive.tez.dynamic.partition.pruning=true;
+set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
+set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
+set hive.convert.join.bucket.mapjoin.tez=false;
+set hive.auto.convert.join.noconditionaltask.size=##JOIN_TEZ##;
+
+
 -- set hive.auto.convert.sortmerge.join.noconditionaltask=true;
 -- set to 1GB
 -- set hive.auto.convert.join.noconditionaltask.size=1073741824;
