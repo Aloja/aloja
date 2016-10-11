@@ -100,7 +100,7 @@ prepare_tez_config() {
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    $DSH "mkdir -p $TEZ_CONF_DIR && cp -r $(get_local_configs_path)/${TEZ_FOLDER}_conf_template/* $TEZ_CONF_DIR/"
+    $DSH "mkdir -p $TEZ_CONF_DIR; cp -r $(get_local_configs_path)/${TEZ_FOLDER}_conf_template/* $TEZ_CONF_DIR/"
     subs=$(get_tez_substitutions)
     $DSH "/usr/bin/perl -i -pe \"$subs\" $TEZ_CONF_DIR/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $tez_CONF_DIR/slaves"
@@ -111,6 +111,29 @@ prepare_tez_config() {
 
 # $1 bench name
 save_tez() {
-  #TODO: save tez
-  :
+  [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
+
+  local bench_name="$1"
+  local bench_name_num="$(get_bench_name_with_num "$bench_name")"
+
+  # Create the hive logs dir
+#  $DSH "mkdir -p $JOB_PATH/$bench_name_num/tez_logs;"
+
+  # Save hadoop logs
+  # Hadoop 2 saves job history to HDFS, get it from there
+  if [ "$clusterType" == "PaaS" ]; then
+    $DSH "cp -r /var/log/tez $JOB_PATH/$bench_name_num/tez_logs/" #2> /dev/null
+
+    # Save Hive conf
+    $DSH_MASTER "cd /etc/tez; tar -cjf $JOB_PATH/tez_conf.tar.bz2 conf"
+  else
+#    if [ "$BENCH_LEAVE_SERVICES" ] ; then
+#      $DSH "cp $HDD/tez_logs/* $JOB_PATH/$bench_name_num/tez_logs/ 2> /dev/null"
+#    else
+#      $DSH "mv $HDD/tez_logs/* $JOB_PATH/$bench_name_num/tez_logs/ 2> /dev/null"
+#    fi
+
+    # Save Tez conf
+    $DSH_MASTER "cd $HDD/; tar -cjf $JOB_PATH/tez_conf.tar.bz2 tez_conf"
+  fi
 }

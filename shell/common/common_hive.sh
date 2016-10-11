@@ -261,6 +261,10 @@ if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
   rm -rf conf_*;
 fi
 "
+  # save tez
+  if [ "$HIVE_ENGINE" == "tez" ]; then
+    save_tez "$bench_name"
+  fi
 
   # save hadoop and defaults
   save_hadoop "$bench_name"
