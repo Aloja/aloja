@@ -13,8 +13,15 @@ benchmark_suite_config() {
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
 
-  initialize_spark_vars
-  prepare_spark_config
+  if [ "$ENGINE" == "spark" ]; then
+    initialize_spark_vars
+    prepare_spark_config
+  fi
+
+  if [ "$HIVE_ENGINE" == "tez" ]; then
+    initialize_tez_vars
+    prepare_tez_config
+  fi
 
   initialize_BigBench_vars
   prepare_BigBench
@@ -25,7 +32,7 @@ benchmark_suite_run() {
   logger "INFO: Running $bench_name"
 
 #  benchmark_cleanQueries
-#  benchmark_cleanMetastore
+  benchmark_cleanMetastore
   benchmark_dataGen
   benchmark_populateMetastore
 

@@ -1,0 +1,413 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+<!--
+   Licensed to the Apache Software Foundation (ASF) under one or more
+   contributor license agreements.  See the NOTICE file distributed with
+   this work for additional information regarding copyright ownership.
+   The ASF licenses this file to You under the Apache License, Version 2.0
+   (the "License"); you may not use this file except in compliance with
+   the License.  You may obtain a copy of the License at
+
+       http://www.apache.org/licenses/LICENSE-2.0
+
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+-->
+
+<!-- WARNING: THIS IS A GENERATED TEMPLATE PURELY FOR DOCUMENTATION PURPOSES
+ AND SHOULD NOT BE USED AS A CONFIGURATION FILE FOR TEZ -->
+
+<configuration>
+
+  <property>
+    <name>tez.runtime.cleanup.files.on.interrupt</name>
+    <defaultValue>false</defaultValue>
+    <description>Used only for internal testing. Strictly not recommended to be used elsewhere. This
+ parameter could be changed/dropped later.</description>
+    <type>boolean</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.combiner.class</name>
+    <description>Specifies a combiner class (primarily for Shuffle)</description>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.combine.min.spills</name>
+    <defaultValue>3</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.compress</name>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.compress.codec</name>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.convert.user-payload.to.history-text</name>
+    <defaultValue>false</defaultValue>
+    <description>Value: Boolean
+ Whether to publish configuration information to History logger. Default false.</description>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.empty.partitions.info-via-events.enabled</name>
+    <defaultValue>true</defaultValue>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.enable.final-merge.in.output</name>
+    <defaultValue>true</defaultValue>
+    <description>Expert level setting. Enable final merge in ordered (defaultsorter/pipelinedsorter) outputs.
+ Speculative execution needs to be turned off when disabling this parameter. //TODO: TEZ-2132</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.group.comparator.class</name>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.ifile.readahead</name>
+    <defaultValue>true</defaultValue>
+    <description>Configuration key to enable/disable IFile readahead.</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.ifile.readahead.bytes</name>
+    <defaultValue>4194304</defaultValue>
+    <description>Configuration key to set the IFile readahead length in bytes.</description>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.index.cache.memory.limit.bytes</name>
+    <defaultValue>1048576</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.task.input.post-merge.buffer.percent</name>
+    <type>float</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.internal.sorter.class</name>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.io.sort.factor</name>
+    <defaultValue>100</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.io.sort.mb</name>
+    <defaultValue>100</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.key.class</name>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.key.comparator.class</name>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.key.secondary.comparator.class</name>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.optimize.local.fetch</name>
+    <defaultValue>true</defaultValue>
+    <description>If the shuffle input is on the local host bypass the http fetch and access the files directly</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.optimize.shared.fetch</name>
+    <defaultValue>false</defaultValue>
+    <description>Share data fetched between tasks running on the same host if applicable</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.partitioner.class</name>
+    <description>Specifies a partitioner class, which is used in Tez Runtime components
+ like OnFileSortedOutput</description>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.pipelined-shuffle.enabled</name>
+    <defaultValue>false</defaultValue>
+    <description>Expert level setting. Enable pipelined shuffle in ordered outputs and in unordered
+ partitioned outputs. In ordered cases, it works with PipelinedSorter.
+ set tez.runtime.sort.threads to greater than 1 to enable pipelinedsorter.
+ Ensure to set tez.runtime.enable.final-merge.in.output=false.
+ Speculative execution needs to be turned off when using this parameter. //TODO: TEZ-2132</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.pipelined.sorter.lazy-allocate.memory</name>
+    <defaultValue>false</defaultValue>
+    <description>Setting this to true would enable sorter
+ to auto-allocate memory on need basis in progressive fashion.
+
+ Setting to false would allocate all available memory during
+ initialization of sorter. In such cases,@link{#TEZ_RUNTIME_PIPELINED_SORTER_MIN_BLOCK_SIZE_IN_MB}
+ would be honored and memory specified in @link{#TEZ_RUNTIME_IO_SORT_MB}
+ would be initialized upfront.</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.pipelined.sorter.min-block.size.in.mb</name>
+    <defaultValue>2000</defaultValue>
+    <description>Tries to allocate @link{#TEZ_RUNTIME_IO_SORT_MB} in chunks specified in
+ this parameter.</description>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.pipelined.sorter.sort.threads</name>
+    <defaultValue>2</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.merge.progress.records</name>
+    <defaultValue>10000</defaultValue>
+    <type>integer</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.report.partition.stats</name>
+    <defaultValue>true</defaultValue>
+    <description>Report partition statistics (e.g better scheduling in ShuffleVertexManager). TEZ-2496
+ This can be enabled/disabled at vertex level.</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.acceptable.host-fetch.failure.fraction</name>
+    <defaultValue>0.2</defaultValue>
+    <type>float</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.buffersize</name>
+    <defaultValue>8192</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.connect.timeout</name>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.memory-to-memory.enable</name>
+    <defaultValue>false</defaultValue>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.ssl.enable</name>
+    <defaultValue>false</defaultValue>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.failed.check.since-last.completion</name>
+    <defaultValue>true</defaultValue>
+    <type>boolean</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.fetch.buffer.percent</name>
+    <defaultValue>0.9</defaultValue>
+    <type>float</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.fetch.failures.limit</name>
+    <defaultValue>5</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.fetch.max.task.output.at.once</name>
+    <defaultValue>20</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.fetch.verify-disk-checksum</name>
+    <defaultValue>true</defaultValue>
+    <description>Controls verification of data checksums when fetching data directly to
+ disk. Enabling verification allows the fetcher to detect corrupted data
+ and report the failure against the upstream task before the data reaches
+ the Processor and causes the fetching task to fail.</description>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.keep-alive.enabled</name>
+    <defaultValue>false</defaultValue>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.keep-alive.max.connections</name>
+    <defaultValue>20</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.max.allowed.failed.fetch.fraction</name>
+    <defaultValue>0.5</defaultValue>
+    <type>float</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.max.stall.time.fraction</name>
+    <defaultValue>0.5</defaultValue>
+    <type>float</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.memory.limit.percent</name>
+    <defaultValue>0.25</defaultValue>
+    <type>float</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.memory-to-memory.segments</name>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.merge.percent</name>
+    <defaultValue>0.9</defaultValue>
+    <type>float</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.min.failures.per.host</name>
+    <defaultValue>4</defaultValue>
+    <type>integer</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.min.required.progress.fraction</name>
+    <defaultValue>0.5</defaultValue>
+    <type>float</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.notify.readerror</name>
+    <defaultValue>true</defaultValue>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.parallel.copies</name>
+    <defaultValue>20</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.read.timeout</name>
+    <defaultValue>180000</defaultValue>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.src-attempt.abort.limit</name>
+    <defaultValue>-1</defaultValue>
+    <type>integer</type>
+    <unstable>true</unstable>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.shuffle.use.async.http</name>
+    <defaultValue>false</defaultValue>
+    <type>boolean</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.sorter.class</name>
+    <description>String value.
+ Which sorter implementation to use.
+ Valid values:
+    - LEGACY
+    - PIPELINED ( default )
+    {@link org.apache.tez.runtime.library.conf.OrderedPartitionedKVOutputConfig.SorterImpl}</description>
+    <type>string</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.sort.spill.percent</name>
+    <defaultValue>0.8</defaultValue>
+    <type>float</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.unordered.output.buffer.size-mb</name>
+    <defaultValue>100</defaultValue>
+    <description>Size of the buffer to use if not writing directly to disk.</description>
+    <type>integer</type>
+  </property>
+
+  <property>
+    <name>tez.runtime.unordered.output.max-per-buffer.size-bytes</name>
+    <description>Maximum size for individual buffers used in the UnsortedPartitionedOutput.
+ This is only meant to be used by unit tests for now.</description>
+    <type>integer</type>
+    <private>true</private>
+  </property>
+
+  <property>
+    <name>tez.runtime.value.class</name>
+    <type>string</type>
+  </property>
+
+</configuration>

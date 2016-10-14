@@ -817,6 +817,16 @@ hadoop_delete_path() {
 
   execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
 }
+
+# Copy file to HDFS
+# $1 Destiny folder
+# $2 Origin local folder
+hadoop_copy_hdfs() {
+  logger "INFO: Coping $2 from local to $1 in HDFS"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -mkdir $1"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -copyFromLocal $2 $1"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -ls $1"
+}
 #
 #
 #execute_hdi_hadoop() {

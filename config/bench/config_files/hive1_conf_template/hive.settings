@@ -5,7 +5,7 @@
 -- set mapreduce.map.memory.mb=##MAPS_MB##;
 -- set mapreduce.reduce.memory.mb=##REDUCES_MB##;
 
--- set ambari.hive.db.schema.name=hive;
+set ambari.hive.db.schema.name=hive;
 set fs.file.impl.disable.cache=true;
 set fs.hdfs.impl.disable.cache=true;
 set hive.auto.convert.sortmerge.join=true;
@@ -20,7 +20,7 @@ set hive.compute.query.using.stats=true;
 set hive.enforce.bucketing=true;
 set hive.enforce.sorting=true;
 set hive.enforce.sortmergebucketmapjoin=true;
-set hive.execution.engine=mr;
+set hive.execution.engine=##HIVE_ENGINE##;
 set hive.limit.pushdown.memory.usage=0.04;
 set hive.map.aggr=true;
 set hive.mapjoin.bucket.cache.size=10000;
@@ -62,8 +62,8 @@ set hive.stats.fetch.partition.stats=true;
 set hive.support.sql11.reserved.keywords=false
 ;
 
-set hive.auto.convert.join.noconditionaltask=false;
-set hive.auto.convert.join=false;
+set hive.auto.convert.join.noconditionaltask=true;
+set hive.auto.convert.join=true;
 -- set hive.auto.convert.sortmerge.join.noconditionaltask=true;
 -- set to 1GB
 -- set hive.auto.convert.join.noconditionaltask.size=1073741824;

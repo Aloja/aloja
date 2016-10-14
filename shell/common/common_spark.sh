@@ -12,7 +12,6 @@ set_spark_requires() {
     SPARK_FOLDER=$SPARK_HIVE
 
   else
-
 #      if [ "$clusterType" != "PaaS" ]; then
     SPARK_FOLDER="${SPARK_VERSION}-bin-without-hadoop"
     BENCH_REQUIRED_FILES["$SPARK_FOLDER"]="http://apache.rediris.es/spark/$SPARK_VERSION/$SPARK_FOLDER.tgz"
@@ -30,7 +29,7 @@ get_spark_exports() {
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    to_export="$(get_hadoop_exports)
+    to_export="
 export SPARK_VERSION='$SPARK_VERSION';
 export SPARK_HOME='$(get_local_apps_path)/${SPARK_FOLDER}';
 export SPARK_CONF_DIR=$(get_spark_conf_dir);
