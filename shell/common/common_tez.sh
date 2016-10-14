@@ -45,7 +45,7 @@ get_tez_substitutions() {
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
   IO_TEZ="$(echo "${MAPS_MB}*0.4" | bc -l)"
-  IO_TEZ="$(printf "%.0f" $IO_TEZ)
+  IO_TEZ="$(printf "%.0f" $IO_TEZ)"
 
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
