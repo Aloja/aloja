@@ -40,7 +40,7 @@ set_hadoop_requires() {
   set_hadoop_config_folder
 
   # measure number of mappers and reducers
-  BENCH_PERF_MONITORS+=" MapRed"
+  [ ! "$ALOJA_FAST_MODE" ] && BENCH_PERF_MONITORS+=" MapRed"
 }
 
 # Helper to print a line with Hadoop requiered exports

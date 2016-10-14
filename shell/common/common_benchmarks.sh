@@ -855,6 +855,7 @@ set_monit_binaries() {
 
     if [ "$vmType" != "windows" ] ; then
       for perf_mon in $BENCH_PERF_MONITORS ; do
+
         if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
           logger "INFO: Setting up perfomance monitor: $perf_mon"
           perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
@@ -868,6 +869,8 @@ set_monit_binaries() {
           else
             logger "ERROR: Cannot find $perf_mon binary on the system"
           fi
+        else
+          logger "INFO: Setting up script-style perfomance monitor: $perf_mon"
         fi
       done
     else
