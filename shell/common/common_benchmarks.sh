@@ -1607,7 +1607,7 @@ get_device_mounts(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   local device_mounts
   device_mounts="$($DSH "lsblk| awk '{if (\$7 ~ /\//) print \"/dev/\"substr(\$1, 3) \" \" \$7}'")" # single quotes need to be double spaced
-  device_mounts="$(echo -e "$device_mounts"|cut -d' ' -f2-|uniq)" #removes the hostname:
+  device_mounts="$(echo -e "$device_mounts"|cut -d' ' -f2-|sort|uniq)" #removes the hostname: and leaves only unique lines
 
   echo -e "$device_mounts"
 }
