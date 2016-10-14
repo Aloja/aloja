@@ -45,10 +45,15 @@ benchmark_dd(){
   local parts="$(( BENCH_DATA_SIZE / 1000000 ))"
   local tmp_file
 
-  for mount in $mounts ; do
+  for mount in $mounts "/dev/shm" ; do
     logger "INFO: Running $bench_name on mount: $mount file size: $BENCH_DATA_SIZE parts: $parts"
     [ "$mount" == "/" ] && tmp_file="${mount}dd_test.tmp" || tmp_file="$mount/dd_test.tmp"
 
-    execute_all "$bench_name" "sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc; [ -f $tmp_file ] && sudo rm -f $tmp_file" "time"
+    # For the last, the mem device only 1GB test
+        [[ "$mount" = "/dev/shm" && "$parts" > "1000" ]] && parts="1000"
+
+    execute_all "$bench_name" "echo 'WRITE:' && sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc oflag=nocache &&\
+     echo 'READ:' && sudo dd if=$tmp_file of=/dev/null bs=1M iflag=nocache,sync conv=nocreat;\
+     [ -f $tmp_file ] && sudo rm -f $tmp_file" "time"
   done
 }
