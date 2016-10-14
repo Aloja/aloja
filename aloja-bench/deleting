@@ -1,3 +1,0 @@
-tee: /tpch/tpch-generate_vagrant-99-00.out: No such file or directory
-Bench return val for Delete_previous_dir: deleting /tpch/tpch-generate: 0 PIPESTATUS: 0
-Bench time Delete_previous_dir: deleting /tpch/tpch-generate vagrant-99-00 2.639
