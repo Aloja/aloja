@@ -58,8 +58,7 @@ set hive.cbo.enable=true;
 set hive.stats.fetch.column.stats=true;
 set hive.stats.fetch.partition.stats=true;
 
-set hive.support.sql11.reserved.keywords=false
-;
+set hive.support.sql11.reserved.keywords=false;
 
 set hive.auto.convert.join.noconditionaltask=true;
 set hive.auto.convert.join=true;
