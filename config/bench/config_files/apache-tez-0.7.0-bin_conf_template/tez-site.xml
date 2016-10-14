@@ -21,21 +21,6 @@
     </property>
 
     <property>
-      <name>tez.am.container.reuse.locality.delay-allocation-millis</name>
-      <value>250</value>
-    </property>
-
-    <property>
-      <name>tez.am.container.reuse.non-local-fallback.enabled</name>
-      <value>false</value>
-    </property>
-
-    <property>
-      <name>tez.am.container.reuse.rack-fallback.enabled</name>
-      <value>true</value>
-    </property>
-
-    <property>
       <name>tez.am.java.opts</name>
       <value>##JAVA_XMX## ##JAVA_XMS## -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC</value>
     </property>
@@ -48,21 +33,6 @@
     <property>
       <name>tez.am.launch.env</name>
       <value>LD_LIBRARY_PATH=##HADOOP_LIBS##</value>
-    </property>
-
-    <property>
-      <name>tez.am.log.level</name>
-      <value>INFO</value>
-    </property>
-
-    <property>
-      <name>tez.am.max.app.attempts</name>
-      <value>2</value>
-    </property>
-
-    <property>
-      <name>tez.am.maxtaskfailures.per.node</name>
-      <value>10</value>
     </property>
 
     <property>
@@ -83,16 +53,6 @@
     <property>
       <name>tez.counters.max.groups</name>
       <value>3000</value>
-    </property>
-
-    <property>
-      <name>tez.dag.recovery.enabled</name>
-      <value>true</value>
-    </property>
-
-    <property>
-      <name>tez.generate.debug.artifacts</name>
-      <value>false</value>
     </property>
 
     <property>
@@ -121,11 +81,6 @@
     </property>
 
     <property>
-      <name>tez.runtime.convert.user-payload.to.history-text</name>
-      <value>false</value>
-    </property>
-
-    <property>
       <name>tez.runtime.io.sort.mb</name>
       <value>##IO_TEZ##</value>
     </property>
@@ -136,23 +91,8 @@
     </property>
 
     <property>
-      <name>tez.runtime.pipelined.sorter.sort.threads</name>
-      <value>2</value>
-    </property>
-
-    <property>
       <name>tez.runtime.sorter.class</name>
       <value>PIPELINED</value>
-    </property>
-
-    <property>
-      <name>tez.runtime.unordered.output.buffer.size-mb</name>
-      <value>100</value>
-    </property>
-
-    <property>
-      <name>tez.session.am.dag.submit.timeout.secs</name>
-      <value>300</value>
     </property>
 
     <property>
@@ -176,18 +116,8 @@
     </property>
 
     <property>
-      <name>tez.task.am.heartbeat.counter.interval-ms.max</name>
-      <value>4000</value>
-    </property>
-
-    <property>
       <name>tez.task.generate.counters.per.io</name>
       <value>true</value>
-    </property>
-
-    <property>
-      <name>tez.task.get-task.sleep.interval-ms.max</name>
-      <value>200</value>
     </property>
 
     <property>
@@ -203,11 +133,6 @@
     <property>
       <name>tez.task.launch.env</name>
       <value>LD_LIBRARY_PATH=##HADOOP_LIBS##</value>
-    </property>
-
-    <property>
-      <name>tez.task.max-events-per-heartbeat</name>
-      <value>500</value>
     </property>
 
     <property>
