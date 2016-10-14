@@ -52,8 +52,13 @@ benchmark_dd(){
     # For the last, the mem device only 1GB test
         [[ "$mount" = "/dev/shm" && "$parts" > "1000" ]] && parts="1000"
 
-    execute_all "$bench_name" "echo 'WRITE:' && sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc oflag=nocache &&\
-     echo 'READ:' && sudo dd if=$tmp_file of=/dev/null bs=1M iflag=nocache,sync conv=nocreat;\
-     [ -f $tmp_file ] && sudo rm -f $tmp_file" "time"
+    # Note: the direct flag doesn't work on all disk types ie., /dev/shm. That is why we add two read commands
+    # Note: the write part, the nocache seems to work fine, but not always on the read that is why we use direct too.
+    execute_all "$bench_name" "\
+echo 'WRITE_DIRECT:';  sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc oflag=direct;
+echo 'WRITE_NOCACHE:'; sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc oflag=nocache;
+echo 'READ_DIRECT:';   sudo dd if=$tmp_file of=/dev/null bs=1M conv=nocreat iflag=direct,sync;
+echo 'READ_NOCACHE:';  sudo dd if=$tmp_file of=/dev/null bs=1M conv=nocreat iflag=nocache,sync;
+[ -f $tmp_file ] && sudo rm -f $tmp_file" "time"
   done
 }
