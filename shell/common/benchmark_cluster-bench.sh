@@ -57,8 +57,8 @@ benchmark_dd(){
     execute_all "$bench_name" "\
 echo 'WRITE_DIRECT:';  sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc oflag=direct;
 echo 'WRITE_NOCACHE:'; sudo dd if=/dev/zero of=$tmp_file bs=1M count=$parts conv=fdatasync,notrunc oflag=nocache;
-echo 'READ_DIRECT:';   sudo dd if=$tmp_file of=/dev/null bs=1M conv=nocreat iflag=direct,sync;
-echo 'READ_NOCACHE:';  sudo dd if=$tmp_file of=/dev/null bs=1M conv=nocreat iflag=nocache,sync;
+echo 'READ_DIRECT:';   sudo dd if=$tmp_file of=/dev/null bs=1M conv=nocreat iflag=direct,sync oflag=nocache;
+echo 'READ_NOCACHE:';  sudo dd if=$tmp_file of=/dev/null bs=1M conv=nocreat iflag=nocache,sync oflag=nocache;
 [ -f $tmp_file ] && sudo rm -f $tmp_file" "time"
   done
 }
