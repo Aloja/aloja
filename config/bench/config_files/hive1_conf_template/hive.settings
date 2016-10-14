@@ -61,6 +61,8 @@ set hive.stats.fetch.partition.stats=true;
 set hive.support.sql11.reserved.keywords=false;
 
 set hive.auto.convert.join.noconditionaltask=true;
+set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
+
 set hive.auto.convert.join=true;
 
 -- Tez settings
