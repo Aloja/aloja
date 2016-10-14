@@ -1347,7 +1347,7 @@ time_cmd() {
   # Run the command normally, capturing the output, and creating a dump file and timing the command
   if [ ! "$in_background" ] ; then
     exec 9>&2 # Create a new file descriptor
-    local cmd_output="$($nodes_SSH "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\"; time bash -c '${cmd}'\" |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1\"" 2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9)) "
+    local cmd_output="$($nodes_SSH "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\"; time bash -c '{ ${cmd} ; }'\" |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1\"" 2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9)) "
     9>&- # Close the file descriptor
   # Run in background (we don't capture times here)
   else
