@@ -39,6 +39,7 @@ set_import_globals() {
   [ ! "$REDO_UNTARS" ]       && REDO_UNTARS="" #if to redo the untars for folders that have it
   [ ! "$PARALLEL_INSERTS" ]  && PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
   [ ! "$MOVE_TO_DONE" ]      && MOVE_TO_DONE="1" #if set moves completed folders to DONE
+  [ ! "$INSERT_ONLY" ]       && INSERT_ONLY="" #if set only inserts meta data from config.sh/log file
 
   # if set works from /dev/shm to speedup file manipulation (you should have enough RAM to do it)
   [ ! "$WORK_IN_MEM" ]       && WORK_IN_MEM="" || MEM_PATH="/dev/shm/aloja-import"
@@ -54,6 +55,8 @@ import_from_folder() {
   local export_to_PAT="$3"
 
   set_import_globals
+
+  MOVE_TO_DONE="" # for import from folder we disable move to done
 
   # Remove trailing slash if any
   [ "${folder:(-1)}" == "/" ] && folder="${folder:0:(-1)}"
@@ -73,14 +76,6 @@ import_from_folder() {
   [ ! -d "$BASE_DIR/$folder" ] && die "Cannot find $BASE_DIR/$folder folder. Exit..."
 
   logger "INFO: Importing data from from $BASE_DIR/$folder"
-
-
-
-  INSERT_DB="1" #if to dump CSV into the DB
-  REDO_ALL="1" #if to redo folders that have source files and IDs in DB
-  REDO_UNTARS="" #if to redo the untars for folders that have it
-  PARALLEL_INSERTS="" #if to fork subprocecess when inserting data
-  MOVE_TO_DONE="" #if set moves completed folders to DONE
 
   sadf="$(which sadf)" # Tipically in /usr/bin/sadf
   sar="$(which sar)"
@@ -116,6 +111,110 @@ import_from_folder() {
   fi
 }
 
+
+
+get_exec() {
+  local folder="$1"
+  local $bench_folder="$2"
+  echo -e "${folder}/${bench_folder}"
+}
+
+# Function to insert all the found benchmarks from the config file directly
+# $1 folder name from the run
+# $2 exec params
+insert_execs() {
+  local folder="$1"
+  local execs="$2"
+
+  local id_cluster="$(get_id_cluster "$folder")"
+
+  if [ "$execs" ] ; then
+    while read -r line ; do
+      local bench_folder="$(cut -d',' -f1 <<< "$line")"
+      bench_folder="${bench_folder:1:(-1)}" # Strip surrounding quotes
+      logger "DEBUG:  Attempting to insert for run $bench_folder: $line "
+      insert_exec "$(get_exec "$folder" "$bench_folder")" "$bench_folder" "$line" "$id_cluster"
+    done <<< "$execs"
+  else
+    logger "ERROR: Cannot retrieve EXEC PARAMS"
+  fi
+}
+
+# Intermediate refactor of the DB insert functionality to call it from different places
+# $1 exec $folder/$bench_folder
+# $2 bench_folder
+# $3 exec_values
+# $4 id_cluster
+insert_exec() {
+    local exec="$1"
+    local bench_folder="$2"
+    local execs="$3"
+    local id_cluster="$4"
+
+    exec_value="$(echo -e "$execs"|egrep -m1 "^\"${bench_folder}\"")"
+
+    # Here we check if the name contains the iteration number and change it before saving it to DB
+    local run_num="$(get_bench_iteration "$bench_folder")"
+    if [ "$run_num" ] ; then
+      local exec_value="${execs/$bench_folder/$(get_bench_name "$bench_folder")}"
+    else
+      run_num="1"
+    fi
+
+logger "INFO: $bench_folder RN $run_num EV $exec_value"
+    # Legacy config, taken from folder and log
+    if [ "${name:15:6}" == "_conf_" ]; then
+      insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
+            VALUES (NULL, $id_cluster, \"$exec\", $exec_value)
+            ON DUPLICATE KEY UPDATE
+              id_cluster=VALUES(id_cluster),
+              exec=VALUES(exec),
+              bench=VALUES(bench),
+              exe_time=VALUES(exe_time),
+              start_time=VALUES(start_time),
+              end_time=VALUES(end_time),
+              net=VALUES(net),
+              disk=VALUES(disk),
+              bench_type=VALUES(bench_type),
+              maps=VALUES(maps),
+              iosf=VALUES(iosf),
+              replication=VALUES(replication),
+              iofilebuf=VALUES(iofilebuf),
+              comp=VALUES(comp),
+              blk_size=VALUES(blk_size),
+              zabbix_link=VALUES(zabbix_link),
+              hadoop_version=VALUES(hadoop_version),
+              exec_type=VALUES(exec_type);"
+    # New style, with more db fields
+    else
+      insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,run_num)
+            VALUES (NULL, $id_cluster, \"$exec\", $exec_value,'$run_num')
+            ON DUPLICATE KEY UPDATE
+              id_cluster=VALUES(id_cluster),
+              exec=VALUES(exec),
+              bench=VALUES(bench),
+              exe_time=VALUES(exe_time),
+              start_time=VALUES(start_time),
+              end_time=VALUES(end_time),
+              net=VALUES(net),
+              disk=VALUES(disk),
+              bench_type=VALUES(bench_type),
+              maps=VALUES(maps),
+              iosf=VALUES(iosf),
+              replication=VALUES(replication),
+              iofilebuf=VALUES(iofilebuf),
+              comp=VALUES(comp),
+              blk_size=VALUES(blk_size),
+              zabbix_link=VALUES(zabbix_link),
+              hadoop_version=VALUES(hadoop_version),
+              exec_type=VALUES(exec_type),
+              datasize=VALUES(datasize),
+              scale_factor=VALUES(scale_factor);"
+    fi
+
+    logger "DEBUG: SQL:\n $insert"
+    $MYSQL "$insert"
+}
 
 # Imports the given folder into ALOJA-WEB
 # TODO old code moved here need refactoring
@@ -175,271 +274,217 @@ import_folder() {
 
     exec_params="$(get_exec_params "$log_folder_file" "$folder")"
 
-    hadoop_version=$(extract_config_var "HADOOP_VERSION")
-    hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
+    # First do a fast insert of the runs from the results file directly
+    insert_execs "$folder" "$exec_params"
 
-    if [[ -z $exec_params ]] ; then
-      logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
-      cd ..
+    # Iterate over the compressed folders to recover perf metrics and log files
+    if [ ! "$INSERT_ONLY" ] ; then
+      hadoop_version=$(extract_config_var "HADOOP_VERSION")
+      hadoop_major_version="$(get_hadoop_major_version "$hadoop_version")"
 
-      #move folder to failed dir
-      if [ "$MOVE_TO_DONE" ] ; then
-        if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
-          logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
-          rm -rf "$mem_folder"
-          BASE_DIR="$BASE_DIR_ORIGINAL"
-          cd "$BASE_DIR"
+      if [[ -z $exec_params ]] ; then
+        logger "ERROR: cannot find exec details in log. Exiting folder...\nTEST: $(grep  -e 'href' "log_${folder}.log" |grep 8099)"
+        cd ..
+
+        #move folder to failed dir
+        if [ "$MOVE_TO_DONE" ] ; then
+          if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
+            logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
+            rm -rf "$mem_folder"
+            BASE_DIR="$BASE_DIR_ORIGINAL"
+            cd "$BASE_DIR"
+          fi
+
+          delete_untars "$BASE_DIR/$folder"
+          move2done "$folder" "$folder_OK"
         fi
 
-        delete_untars "$BASE_DIR/$folder"
-        move2done "$folder" "$folder_OK"
+        continue
+      else
+        logger "DEBUG: Exec params:\n$exec_params"
       fi
 
-      continue
-    else
-      logger "DEBUG: Exec params:\n$exec_params"
-    fi
 
+      # First untar prep folders (if any). Needed to fill conf parameters table, excluding prep jobs
+      # NOTE: this is for legacy HiBench
+      if ls prep_*.tar.bz2 1> /dev/null 2>&1; then
+        logger "INFO: Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
+        for bzip_file in prep_*.tar.bz2 ; do
+          bench_folder="${bzip_file%%.*}"
+          if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
+            logger "INFO: Untaring $bzip_file"
+            tar -xf "$bzip_file"
+          fi
+        done
+      else
+        logger "INFO: No prep_* bench folder found (LEGACY)"
+      fi
 
-    # First untar prep folders (if any). Needed to fill conf parameters table, excluding prep jobs
-    # NOTE: this is for legacy HiBench
-    if ls prep_*.tar.bz2 1> /dev/null 2>&1; then
-      logger "INFO: Attempting to untar prep_folders (needed to fill conf parameters table, excluding prep jobs)"
-      for bzip_file in prep_*.tar.bz2 ; do
+      for bzip_file in *.tar.bz2 ; do
         bench_folder="${bzip_file%%.*}"
-        if [ ! -d "$bench_folder" ] || [ "$REDO_UNTARS" == "1" ] ; then
-          logger "INFO: Untaring $bzip_file"
+  logger "DEBUG: iterating: $bench_folder (from $bzip_file)"
+        #skip conf folders
+        [ "$bench_folder" == "host_conf" ] && continue
+
+        if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
+          logger "INFO: Untaring $bzip_file in $(pwd)"
+          logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
           tar -xf "$bzip_file"
         fi
-      done
-    else
-      logger "INFO: No prep_* bench folder found (LEGACY)"
-    fi
 
-    for bzip_file in *.tar.bz2 ; do
-      bench_folder="${bzip_file%%.*}"
+        if [ -d "$bench_folder" ] ; then
 
-      #skip conf folders
-      [ "$bench_folder" == "host_conf" ] && continue
+          logger "INFO: Entering $bench_folder"
+          cd "$bench_folder"
 
-      if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
-        logger "INFO: Untaring $bzip_file in $(pwd)"
-        logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
-        tar -xf "$bzip_file"
-      fi
+          exec="$(get_exec "$folder" "$bench_folder")"
 
-      if [ -d "$bench_folder" ] ; then
+          #insert config and get ID_exec
+          exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\"")"
 
-        logger "INFO: Entering $bench_folder"
-        cd "$bench_folder"
+          if [ "$export_to_PAT" ] ; then
+            PAT_folder="../../PAT_${folder}/${bench_folder}"
 
-        exec="${folder}/${bench_folder}"
+            local start_date="$(echo -e "$exec_values"|cut -d',' -f 3)"
+            start_date="${start_date:1:(-1)}" #strip quotes
+            PAT_start_ts="$(date -d "$start_date" +%s)"
 
-        #insert config and get ID_exec
-        exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\"")"
+            mkdir -p "$PAT_folder"
 
-        if [ "$export_to_PAT" ] ; then
-          PAT_folder="../../PAT_${folder}/${bench_folder}"
-
-          local start_date="$(echo -e "$exec_values"|cut -d',' -f 3)"
-          start_date="${start_date:1:(-1)}" #strip quotes
-          PAT_start_ts="$(date -d "$start_date" +%s)"
-
-          mkdir -p "$PAT_folder"
-
-          # Copy the template if available
-          local xlsm_file_path="$ALOJA_REPO_PATH/aloja-tools/result_templatev1.xlsm"
-          if [ ! -f "$xlsm_file_path" ] ; then
-            logger "INFO: Downloading PAT's template file"
-            wget "http://aloja.bsc.es/public/files/result_templatev1.xlsm" -O "$xlsm_file_path" || rm "$xlsm_file_path"
-          else
-            cp "$xlsm_file_path" "$PAT_folder/PAT_${folder}_${bench_folder}.xlsm"
-          fi
-        fi
-
-        if [[  $folder == *_az ]] ; then
-          id_cluster="2"
-        else
-          id_cluster="$(get_id_cluster "$folder")"
-
-          clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
-
-          logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
-
-          #TODO this check wont work for old folders with numeric values at the end, need another strategy
-          #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
-          #&& [[ $id_cluster =~ ^-?[0-9]+$ ]]
-          if [ -f "$clusterConfigFile" ]  ; then
-             source $clusterConfigFile
-             #logger "DEBUG: SQL $(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
-            $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
-          else
-            logger "WARNING: cannot find clusterConfigFile in: $clusterConfigFile"
-            break
-            #id_cluster="1"
-          fi
-        fi
-#logger "DEBUG: EV $exec_values"
-
-        if [ "$exec_values" ] ; then
-          folder_OK="$(( folder_OK + 1 ))"
-
-          # Here we check if the name contains the iteration number and change it before saving it to DB
-          local run_num="$(get_bench_iteration "$bench_folder")"
-          if [ "$run_num" ] ; then
-            exec_values="${exec_values/$bench_folder/$(get_bench_name "$bench_folder")}"
-          else
-            run_num="1"
-          fi
-
-logger "INFO: $bench_folder RN $run_num EV $exec_values"
-          # Legacy config, taken from folder and log
-          if [ "${name:15:6}" == "_conf_" ]; then
-            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type)
-                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values)
-                  ON DUPLICATE KEY UPDATE
-                    id_cluster=VALUES(id_cluster),
-                    exec=VALUES(exec),
-                    bench=VALUES(bench),
-                    exe_time=VALUES(exe_time),
-                    start_time=VALUES(start_time),
-                    end_time=VALUES(end_time),
-                    net=VALUES(net),
-                    disk=VALUES(disk),
-                    bench_type=VALUES(bench_type),
-                    maps=VALUES(maps),
-                    iosf=VALUES(iosf),
-                    replication=VALUES(replication),
-                    iofilebuf=VALUES(iofilebuf),
-                    comp=VALUES(comp),
-                    blk_size=VALUES(blk_size),
-                    zabbix_link=VALUES(zabbix_link),
-                    hadoop_version=VALUES(hadoop_version),
-                    exec_type=VALUES(exec_type);"
-          # New style, with more db fields
-          else
-            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,run_num)
-                  VALUES (NULL, $id_cluster, \"$exec\", $exec_values,'$run_num')
-                  ON DUPLICATE KEY UPDATE
-                    id_cluster=VALUES(id_cluster),
-                    exec=VALUES(exec),
-                    bench=VALUES(bench),
-                    exe_time=VALUES(exe_time),
-                    start_time=VALUES(start_time),
-                    end_time=VALUES(end_time),
-                    net=VALUES(net),
-                    disk=VALUES(disk),
-                    bench_type=VALUES(bench_type),
-                    maps=VALUES(maps),
-                    iosf=VALUES(iosf),
-                    replication=VALUES(replication),
-                    iofilebuf=VALUES(iofilebuf),
-                    comp=VALUES(comp),
-                    blk_size=VALUES(blk_size),
-                    zabbix_link=VALUES(zabbix_link),
-                    hadoop_version=VALUES(hadoop_version),
-                    exec_type=VALUES(exec_type),
-                    datasize=VALUES(datasize),
-                    scale_factor=VALUES(scale_factor);"
-          fi
-
-          logger "DEBUG: SQL:\n $insert"
-          $MYSQL "$insert"
-
-          if [ "$hadoop_major_version" == "2" ]; then
-              if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
-                get_xml_exec_params "mr-history"
-              else
-                get_xml_exec_params "history"
-              fi
-            update="UPDATE aloja2.execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
-            logger "DEBUG: updating exec params from execution conf: $update"
-            $MYSQL "$update"
-          fi
-
-        # An example of how to imput values to de DB in another way
-        elif [ "$bench_folder" == "SCWC" ] ; then
-          logger "DEBUG: Processing SCWC"
-
-          insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
-                  VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
-                  ;"
-                  #ON DUPLICATE KEY UPDATE
-                  #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
-                  #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
-          logger "INFO: $insert"
-
-          $MYSQL "$insert"
-
-        else
-          logger "ERROR: cannot find bench $bench_folder execution details in log"
-          #continue
-        fi
-
-        #get Job XML configuration if needed
-        #get_job_confs
-
-        # Get the DB id for the exec
-        id_exec="$(get_id_exec "$exec")"
-
-        # Save the different id_execs to construct the URL at the end
-        id_execs+=("$id_exec")
-
-logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
-
-        if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
-
-          #if dir does not exists or need to insert in DB
-          if [ "$hadoop_major_version" != "2" ]; then
-        if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
-        extract_hadoop_jobs
-        fi
-          fi
-
-          #DB inserting scripts
-          if [ "$INSERT_DB" == "1" ] ; then
-            #start with Hadoop's
-            if [ "$hadoop_major_version" != "2" ]; then
-             import_hadoop_jobs
+            # Copy the template if available
+            local xlsm_file_path="$ALOJA_REPO_PATH/aloja-tools/result_templatev1.xlsm"
+            if [ ! -f "$xlsm_file_path" ] ; then
+              logger "INFO: Downloading PAT's template file"
+              wget "http://aloja.bsc.es/public/files/result_templatev1.xlsm" -O "$xlsm_file_path" || rm "$xlsm_file_path"
             else
-              extract_import_hadoop2_jobs
+              cp "$xlsm_file_path" "$PAT_folder/PAT_${folder}_${bench_folder}.xlsm"
             fi
-            import_AOP4Hadoop_files
-            wait
-            import_sar_files
-            wait
-            import_vmstats_files
-            wait
-            import_bwm_files
-            wait
           fi
+
+          if [[  $folder == *_az ]] ; then
+            id_cluster="2"
+          else
+            id_cluster="$(get_id_cluster "$folder")"
+
+            clusterConfigFile="$(get_clusterConfigFile $id_cluster)"
+
+            logger "DEBUG: id_cluster=$id_cluster clusterConfigFile=$clusterConfigFile"
+
+            #TODO this check wont work for old folders with numeric values at the end, need another strategy
+            #line to fix update execs set id_cluster=1 where id_cluster IN (28,32,56,64);
+            #&& [[ $id_cluster =~ ^-?[0-9]+$ ]]
+            if [ -f "$clusterConfigFile" ]  ; then
+               source $clusterConfigFile
+               #logger "DEBUG: SQL $(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
+              $MYSQL "$(get_insert_cluster_sql "$id_cluster" "$clusterConfigFile")"
+            else
+              logger "WARNING: cannot find clusterConfigFile in: $clusterConfigFile"
+              break
+              #id_cluster="1"
+            fi
+          fi
+  #logger "DEBUG: EV $exec_values"
+
+          if [ "$exec_values" ] ; then
+            folder_OK="$(( folder_OK + 1 ))"
+
+            insert_exec "$exec" "$bench_folder" "$exec_values" "$id_cluster"
+
+            if [ "$hadoop_major_version" == "2" ]; then
+                if [ "$defaultProvider" == "hdinsight" ] || [ "$defaultProvider" == "rackspacecbd" ]; then
+                  get_xml_exec_params "mr-history"
+                else
+                  get_xml_exec_params "history"
+                fi
+              update="UPDATE aloja2.execs SET replication=\"$replication\",comp=\"$compressCodec\",maps=\"$maps\",blk_size=\"$blocksize\",iosf=\"$iosf\",iofilebuf=\"$iofilebuf\" WHERE exec=\"$exec\";"
+              logger "DEBUG: updating exec params from execution conf: $update"
+              $MYSQL "$update"
+            fi
+
+          # An example of how to imput values to de DB in another way
+          elif [ "$bench_folder" == "SCWC" ] ; then
+            logger "DEBUG: Processing SCWC"
+
+            insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link)
+                    VALUES (NULL, $id_cluster, \"$exec\", 'SCWC','10','0000-00-00','0000-00-00','ETH','HDD','SCWC','0','0','1','0','0','0','link')
+                    ;"
+                    #ON DUPLICATE KEY UPDATE
+                    #start_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 0,19)}')',
+                    #end_time='$(echo "$exec_values"|awk '{first=index($0, ",\"201")+2; part=substr($0,first); print substr(part, 23,19)}')'
+            logger "INFO: $insert"
+
+            $MYSQL "$insert"
+
+          else
+            logger "ERROR: cannot find bench $bench_folder execution details in log"
+            #continue
+          fi
+
+          #get Job XML configuration if needed
+          #get_job_confs
+
+          # Get the DB id for the exec
+          id_exec="$(get_id_exec "$exec")"
+
+          # Save the different id_execs to construct the URL at the end
+          id_execs+=("$id_exec")
+
+  logger "DEBUG: EP $exec_params \nEV $exec_values\nIDE $id_exec\nCluster $id_cluster"
+
+          if [[ ! -z "$id_exec" ]] && [ -z "$ONLY_META_DATA" ] ; then
+
+            #if dir does not exists or need to insert in DB
+            if [ "$hadoop_major_version" != "2" ]; then
+          if [[ "$REDO_ALL" == "1" || "$INSERT_DB" == "1" ]]  ; then
+          extract_hadoop_jobs
+          fi
+            fi
+
+            #DB inserting scripts
+            if [ "$INSERT_DB" == "1" ] ; then
+              #start with Hadoop's
+              if [ "$hadoop_major_version" != "2" ]; then
+               import_hadoop_jobs
+              else
+                extract_import_hadoop2_jobs
+              fi
+              import_AOP4Hadoop_files
+              wait
+              import_sar_files
+              wait
+              import_vmstats_files
+              wait
+              import_bwm_files
+              wait
+            fi
+          fi
+
+          # Check if the export to Intel's PAT format was requested
+          if [ "$export_to_PAT" ] ; then
+            export2PAT
+            logger "INFO: Exported to PAT traces to $PAT_folder"
+          fi
+
+          cd ..; logger "INFO: Leaving folder $bench_folder\n"
+
+          #update DB filters
+          logger "INFO: checking if run was valid"
+          #logger "DEBUG: $(get_filter_sql_exec "$id_exec")"
+          $MYSQL "$(get_filter_sql_exec "$id_exec")"
+
+        else
+          logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
         fi
 
-        # Check if the export to Intel's PAT format was requested
-        if [ "$export_to_PAT" ] ; then
-          export2PAT
-          logger "INFO: Exported to PAT traces to $PAT_folder"
+        if [ -d "$bench_folder" ] ; then
+          logger "INFO: deleting bench folder: $bench_folder to save space"
+          rm -rf "$bench_folder"
         fi
+      done #end for bzip file
 
-        cd ..; logger "INFO: Leaving folder $bench_folder\n"
+      cd ..; logger "INFO: Leaving folder $folder\n"
 
-        #update DB filters
-        logger "INFO: checking if run was valid"
-        #logger "DEBUG: $(get_filter_sql_exec "$id_exec")"
-        $MYSQL "$(get_filter_sql_exec "$id_exec")"
-
-      else
-        logger "ERROR: cannot find folder $bench_folder\nLS: $(ls -lah)"
-      fi
-
-      if [ -d "$bench_folder" ] ; then
-        logger "INFO: deleting bench folder: $bench_folder to save space"
-        rm -rf "$bench_folder"
-      fi
-    done #end for bzip file
-
-    cd ..; logger "INFO: Leaving folder $folder\n"
-
+    fi # INSERT ONLY
     # Check if to work in mem to speedup the process (if enough RAM is available)
     if [ "$WORK_IN_MEM" ] && [ -d "$mem_folder" ] ; then
       logger "INFO: deleting in RAM copy of folder at: $mem_folder and restoring BASE DIR"
@@ -513,6 +558,7 @@ ON DUPLICATE KEY UPDATE id_host='$clusterID$(get_vm_id "$nodeName")', id_cluster
     done
 
     echo -e "$sql\n"
+
     else
        logger "ERROR: cannot find cluster file: $clusterConfigFile"
     fi

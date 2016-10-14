@@ -260,6 +260,11 @@ get_ssh_host() {
 
   clusterId=$(get_cluster_id "${clusterName}")
 
+  # Special on metal cluster case
+  if [ "$clusterId" == "211" ] ; then
+    clusterId="Cluster-02"
+  fi
+
   if [ -z "${nodeIP[$vm_name]}" ]; then
 
     #get machine details
@@ -310,7 +315,14 @@ vm_final_bootstrap() {
   for vm_name in $(get_node_names); do
     logger "${vm_name}..."
     vm_execute_t "sudo sed -i 's/^\(Defaults[[:blank:]][[:blank:]]*requiretty\)/#\1/' /etc/sudoers"
+
+    logger "INFO: setting SSH"
+    vm_set_ssh
+    vm_set_dot_files &
+    vm_set_dsh &
   done
+
+
 
   # from here on we can use the normal vm_execute 
   logger "Installing necessary packages on all machines"
@@ -326,7 +338,6 @@ sudo mkdir -p /data1/aloja && sudo chown -R pristine: /data1/aloja;
 
     logger "Mounting disks on ${vm_name}"
     vm_mount_disks              # mounts ~/share on all machines
-    vm_set_dot_files &
 
     cluster_create_local_conf
 

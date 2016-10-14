@@ -141,7 +141,7 @@ get_hadoop_conf_dir() {
     dir="${dir:2}" #remove leading \,
     echo -e "$dir"
   else
-    die "Cannot get disk config for specified disk $1"
+    die "Cannot get disk config for specified disk $1. Disks: $disks"
   fi
 }
 

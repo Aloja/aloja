@@ -175,7 +175,7 @@ Host *
   UserKnownHostsFile=/dev/null
   LogLevel=quiet
   ControlMaster=auto
-  ControlPath=$homePrefixAloja/$userAloja/.ssh/%r@%h-%p
+  ControlPath=$homePrefixAloja/$userAloja/.ssh/%h
   GSSAPIAuthentication=no
   ServerAliveInterval=30
   ServerAliveCountMax=3
@@ -183,6 +183,7 @@ Host *
 "
 # Other possible options to test
 #  ControlPersist=600 #this one is causing problems for some reason
-
+# %r@%h-%p
+# _%C
 }
 

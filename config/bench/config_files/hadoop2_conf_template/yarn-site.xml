@@ -62,8 +62,10 @@
    <name>yarn.nodemanager.aux-services.mapreduce.shuffle.class</name>
    <value>org.apache.hadoop.mapred.ShuffleHandler</value>
  </property>
+
  <property>
-    <name>yarn.nodemanager.vmem-check-enabled</name>
-    <value>false</value>
+   <name>yarn.nodemanager.vmem-check-enabled</name>
+   <value>false</value>
  </property>
+
 </configuration>

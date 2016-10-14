@@ -9,6 +9,10 @@ set_hive_requires() {
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
       BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      if [ "$HIVE_ENGINE" == "tez" ]; then
+        source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
+        set_tez_requires
+      fi
     else
       BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
@@ -21,6 +25,7 @@ set_hive_requires() {
 # Helper to print a line with requiered exports
 get_hive_exports() {
   local to_export
+  local tez_exports
 
  if [ "$clusterType" == "PaaS" ]; then
   : # Empty
@@ -32,6 +37,11 @@ export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
 
     if [ "$EXECUTE_TPCH" ]; then
       to_export="${to_export} export TPCH_HOME='$(get_local_apps_path)/$TPCH_DIR';"
+    fi
+
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+      tez_exports=$(get_tez_exports)
+      to_export+="${tez_exports}"
     fi
 
     echo -e "$to_export\n"
@@ -105,6 +115,11 @@ initialize_hive_vars() {
     HIVE_CONF_DIR="$HDD/hive_conf"
     # Only set a default hive.settings when not in PaaS
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+        initialize_tez_vars
+        prepare_tez_config
+    fi
+
   fi
 }
 
@@ -114,6 +129,9 @@ get_hive_substitutions() {
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
+
+  JOIN_HIVE=`echo "${MAPS_MB}*0.33" | bc -l`
+  JOIN_HIVE=`printf "%.0f" $JOIN_HIVE`
 
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
@@ -134,6 +152,7 @@ s,##MAX_REDS##,$MAX_REDS,g;
 s,##IFACE##,$IFACE,g;
 s,##IO_FACTOR##,$IO_FACTOR,g;
 s,##IO_MB##,$IO_MB,g;
+s,##JOIN_HIVE##,$JOIN_HIVE,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
@@ -242,6 +261,10 @@ if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
   rm -rf conf_*;
 fi
 "
+  # save tez
+  if [ "$HIVE_ENGINE" == "tez" ]; then
+    save_tez "$bench_name"
+  fi
 
   # save hadoop and defaults
   save_hadoop "$bench_name"
