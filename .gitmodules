@@ -1,0 +1,3 @@
+[submodule "aloja-tools/src/perf-tools"]
+	path = aloja-tools/src/perf-tools
+	url = https://github.com/Aloja/perf-tools
