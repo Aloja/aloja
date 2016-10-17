@@ -1016,14 +1016,16 @@ pidstat -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat
 stop_monit(){
   if [ "$BENCH_PERF_MONITORS" ] ; then
     if [ "$vmType" != "windows" ]; then
-      logger "INFO: Stoping monit (in case necessary)"
+      logger "INFO: Stoping monit (in case necessary). Monitors: $BENCH_PERF_MONITORS"
       for perf_mon in $BENCH_PERF_MONITORS ; do
 
-        if ! inList $BENCH_PERF_NON_BINARY "$perf_mon" ; then
+        if ! inList "$BENCH_PERF_NON_BINARY" "$perf_mon" ; then
           local perf_mon_bin="$(get_local_bench_path)/aplic/${perf_mon}_$PORT_PREFIX"
           $DSH "killall -9 '$perf_mon_bin' 2> /dev/null"  #&
         elif [ "$perf_mon" == "MapRed" ] ; then
           $DSH "pkill -9 -f [M]apCount" # [] for it not to match it self in ssh
+        elif [ "$perf_mon" == "JavaStat" ] ; then
+          $DSH "pkill -9 pidstat" # TODO improve to use custom naming
         fi
 
         if [ "$(get_extra_node_names)" ] ; then
@@ -1032,7 +1034,7 @@ stop_monit(){
 
         # TODO this is something temporal for PaaS clusters
         if [ "$clusterType" == "PaaS" ]; then
-          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; killall -9 pidstat; pgrep -f 'MapCount'|xargs kill -9 2> /dev/null"  2> /dev/null
+          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; killall -9 pidstat; pkill -9 -f [M]apCount; pgrep -f 'MapCount'|xargs kill -9; 2> /dev/null"  2> /dev/null
         fi
       done
       #logger "DEBUG: perf monitors ready"
@@ -1333,7 +1335,7 @@ time_cmd() {
   local nodes_SSH="$3"
   local bench_name="$4"
 
-  # TODO remove in the future
+  #TODO remove in the future
   [[ ! "$bench_name" && "$bench" ]] && bench_name="$bench"
 
   # Default to all the nodes
