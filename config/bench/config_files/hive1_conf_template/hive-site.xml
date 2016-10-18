@@ -13,9 +13,4 @@
     <description>Local scratch space for Hive jobs</description>
   </property>
 
-  <property>
-    <name>hive.execution.engine</name>
-    <value>tez</value>
-  </property>
-
 </configuration>
