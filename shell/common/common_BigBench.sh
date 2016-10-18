@@ -127,7 +127,6 @@ get_BigBench_substitutions() {
 
   #Calculate Spark settings for BigBench
   if [ "$ENGINE" == "spark" ]; then
-      NUM_EXECUTOR_NODE="3"
       EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes-1)*($NUM_EXECUTOR_NODE))" | bc))"
       EXECUTOR_CORES="$(printf %.$2f $(echo "($NUM_CORES)/($NUM_EXECUTOR_NODE)" | bc))"
       CONTAINER_MAX_MB="$(printf %.$2f $(echo "($PHYS_MEM)/($NUM_EXECUTOR_NODE)" | bc))"
