@@ -40,8 +40,7 @@ set_hadoop_requires() {
   set_hadoop_config_folder
 
   # measure number of mappers and reducers
-  BENCH_PERF_MONITORS+=" MapRed"
-
+  [ ! "$ALOJA_FAST_MODE" ] && BENCH_PERF_MONITORS+=" MapRed"
 }
 
 # Helper to print a line with Hadoop requiered exports
@@ -926,7 +925,7 @@ save_hadoop() {
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
-        sudo su hdfs -c "hd>fs dfs -chmod -R 777 /mr-history"
+        sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
         hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num"
         sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
         sudo su hdfs -c "hdfs dfs -expunge"
@@ -944,7 +943,7 @@ save_hadoop() {
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
       $DSH "cp -r $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     else
-      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/nullº
+      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     fi
   fi
 
