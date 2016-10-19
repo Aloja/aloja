@@ -187,7 +187,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_value"
               exec_type=VALUES(exec_type);"
     # New style, with more db fields
     else
-      insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,run_num)
+      insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,valid,run_num)
             VALUES (NULL, $id_cluster, \"$exec\", $exec_value,'$run_num')
             ON DUPLICATE KEY UPDATE
               id_cluster=VALUES(id_cluster),
@@ -209,7 +209,9 @@ logger "INFO: $bench_folder RN $run_num EV $exec_value"
               hadoop_version=VALUES(hadoop_version),
               exec_type=VALUES(exec_type),
               datasize=VALUES(datasize),
-              scale_factor=VALUES(scale_factor);"
+              scale_factor=VALUES(scale_factor),
+              valid=VALUES(valid),
+              run_num=VALUES(run_num);"
     fi
 
     logger "DEBUG: SQL:\n $insert"
@@ -602,7 +604,7 @@ update ignore aloja2.execs SET perf_details = 0;
 update ignore aloja2.execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec is not null);
 
 #valid, set everything as valid, except the ones that do not match the following rules
-update ignore aloja2.execs SET valid = 1;
+update ignore aloja2.execs SET valid = 1 where (valid is null OR valid='');
 update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
     (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
@@ -657,7 +659,7 @@ update ignore aloja2.execs SET perf_details = 0 where id_exec = '$1';
 update ignore aloja2.execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec = '$1' AND id_exec is not null);
 
 #valid, set everything as valid, except the ones that do not match the following rules
-update ignore aloja2.execs SET valid = 1 where id_exec = '$1' ;
+update ignore aloja2.execs SET valid = 1 where id_exec = '$1' and (valid is null || valid='');
 update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
     (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
@@ -889,6 +891,10 @@ get_exec_params() {
     temp_array="exec_end=$temp_array"
     declare -A exec_end
     eval $temp_array
+    temp_array=$(extract_config_var "EXEC_STATUS")
+    temp_array="exec_status=$temp_array"
+    declare -A exec_status
+    eval $temp_array
 
     local first_ts # for the patch below
     for index in "${!exec_time[@]}"; do
@@ -905,6 +911,19 @@ get_exec_params() {
       start_time=$(date -d @$((start_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
       end_time_ts="${exec_end[$index]}"
       end_time=$(date -d @$((end_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+
+      exit_status="${exec_status[$index]}"
+
+      # If we don't have exit status, we assume it is valid here
+      if [[ ! "$exit_status" ]] ; then
+        valid="1"
+      # If the exit codes are all zeros, then is valid
+      elif [[ "$exit_status" =~ [0]+ ]] ; then
+        valid="1"
+      # Failed run
+      else
+        valid="0"
+      fi
 
 
 ### Patch for nasty error not recovering times correctly between two dates where bug was introduced:
@@ -926,7 +945,7 @@ fi
 
 ######
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\",\"$valid\""
     done
 
   fi
