@@ -9,11 +9,12 @@ if [ ! "$ALOJA_REPO_PATH" ] || [ -z "$testKey" ] ; then
 fi
 
 #GLOBAL ASSOCIATIVE ARRAYS declared globally here due to multi bash version issues
-# Arrays for times
+# Arrays for times and errors
 declare -g -A EXEC_TIME
 declare -g -A EXEC_START
 declare -g -A EXEC_START_DATE
 declare -g -A EXEC_END
+declare -g -A EXEC_STATUS #for exit status
 
 # Associative array for downloading apps and configs
 # Format $BENCH_REQUIRED_FILES["Folder Name after uncompress"]="URL to download tarball"

@@ -8,8 +8,8 @@ BENCH_REQUIRED_FILES["hivebench"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/hivebench.
 [ ! "$BENCH_LIST" ] && BENCH_LIST="datagen aggregation join"
 
 data_location="/hivebench/data"
-hivebench_pages="1200" #hivebench default 120000000
-hivebench_visits="10000" #hivebench default 1000000000
+hivebench_pages="120000" #hivebench default 120000000
+hivebench_visits="1000000" #hivebench default 1000000000
 
 #[ "$(get_hadoop_major_version)" != "2" ] && die "Hadoop v2 is required for TPCH-hive"
 

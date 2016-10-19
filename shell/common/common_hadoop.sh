@@ -40,7 +40,7 @@ set_hadoop_requires() {
   set_hadoop_config_folder
 
   # measure number of mappers and reducers
-  BENCH_PERF_MONITORS+=" MapRed"
+  [ ! "$ALOJA_FAST_MODE" ] && BENCH_PERF_MONITORS+=" MapRed JavaStat"
 }
 
 # Helper to print a line with Hadoop requiered exports
@@ -782,6 +782,7 @@ execute_hadoop_new(){
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
+    execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) dfsadmin -report"
     save_disk_usage "BEFORE"
     restart_monit
     set_bench_start "$bench"
@@ -797,6 +798,7 @@ execute_hadoop_new(){
     set_bench_end "$bench"
     stop_monit
     save_disk_usage "AFTER"
+    execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) dfsadmin -report"
     save_hadoop "$bench"
   fi
 }
@@ -815,6 +817,16 @@ hadoop_delete_path() {
   fi
 
   execute_hadoop_new "$bench_name: deleting $path_to_delete" "fs $delete_cmd $path_to_delete"
+}
+
+# Copy file to HDFS
+# $1 Destiny folder
+# $2 Origin local folder
+hadoop_copy_hdfs() {
+  logger "INFO: Coping $2 from local to $1 in HDFS"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -mkdir $1"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -copyFromLocal $2 $1"
+  $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -ls $1"
 }
 #
 #
@@ -924,14 +936,14 @@ save_hadoop() {
 	    hdfs dfs -rm -r "/mr-history"
 	    hdfs dfs -expunge
     fi
-    $DSH "cp -r /var/log/hadoop $JOB_PATH/$bench_name_num/ 2> /dev/null"
+    $DSH "cp -ru /var/log/hadoop $JOB_PATH/$bench_name_num/ 2> /dev/null"
   else
     #we cannot move hadoop files
     #take into account naming *.date when changing dates
     #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$bench_name_num/"
     #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$bench_name_num/ 2> /dev/null"
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp -r $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
+      $DSH "cp -ru $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     else
       $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     fi
