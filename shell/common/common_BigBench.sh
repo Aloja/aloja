@@ -2,15 +2,16 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
-# Start Hive
-source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
-set_hive_requires
-
 # Start Spark if needed
 if [ "$ENGINE" == "spark" ]; then
   source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
   set_spark_requires
+  HIVE_ENGINE="mr"
 fi
+
+# Start Hive
+source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
+set_hive_requires
 
 # Start Tez if needed
 if [ "$HIVE_ENGINE" == "tez" ]; then
