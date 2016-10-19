@@ -292,11 +292,7 @@ make || exit 1
 # we know that \$HOME/sw/bin is in our path because the deployment configures it
 
 mkdir -p \$HOME/share/sw/bin || exit 1
-cp sar \$HOME/share/sw/bin || exit 1
-cp sadc \$HOME/share/sw/bin || exit 1
-cp iostat \$HOME/share/sw/bin || exit 1
-cp pidstat \$HOME/share/sw/bin || exit 1
-
+cp sar sadc iostat pidstat \$HOME/share/sw/bin || exit 1
 "
 
 }

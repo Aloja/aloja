@@ -36,10 +36,7 @@ cd sysstat-10.0.3
 ./configure
 make
 sudo make install
-sudo mv sadf /usr/bin
-sudo mv sar /usr/bin
-sudo mv sadc /usr/bin
-sudo mv iostat /usr/bin
+sudo mv sadf sar sadc iostat pidstat /usr/bin
 cd ..
 
 #sudo yum -y -q install pdsh pssh git

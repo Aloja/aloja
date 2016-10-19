@@ -21,8 +21,8 @@ get_tez_exports() {
     to_export="
 export TEZ_JARS='$TEZ_JARS';
 export TEZ_CONF_DIR='$TEZ_CONF_DIR';
-export HADOOP_CLASSPATH='${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*:\$HADOOP_CLASSPATH';
-export CLASSPATH='$CLASSPATH:${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*';"
+export HADOOP_CLASSPATH=\"\$HADOOP_CLASSPATH:${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*\";
+export CLASSPATH=\"\$CLASSPATH:${TEZ_CONF_DIR}:${TEZ_JARS}/*:${TEZ_JARS}/lib/*\";"
     echo -e "$to_export\n"
   fi
 }
