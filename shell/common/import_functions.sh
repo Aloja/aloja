@@ -275,7 +275,9 @@ import_folder() {
     exec_params="$(get_exec_params "$log_folder_file" "$folder")"
 
     # First do a fast insert of the runs from the results file directly
-    insert_execs "$folder" "$exec_params"
+    if [ ! "$export_to_PAT" ] ; then
+      insert_execs "$folder" "$exec_params"
+    fi
 
     # Iterate over the compressed folders to recover perf metrics and log files
     if [ ! "$INSERT_ONLY" ] ; then
@@ -1254,9 +1256,15 @@ check_sysstat_version() {
   local sar_file="$1"
   if [ ! "$SAR_VERSION_BENCH" ] ; then
     SAR_VERSION_LOCAL="$($sar -V|head -n 1|cut -d' ' -f 3)"
-    SAR_VERSION_BENCH="$($sadf -H "$sar_file"|tail -n 1|cut -d' ' -f 8)"
+    SAR_VERSION_BENCH="$($sadf -H "$sar_file" 2>&1 |egrep 'version [0-9]'|rev|cut -d' ' -f1|rev)"
 
     if [ "$SAR_VERSION_LOCAL" != "$SAR_VERSION_BENCH" ] ; then
+      # Check if we need to download a different SAR version
+      if [ ! -f "$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf" ] ; then
+        logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nAttempting to automatically build sysstat version $SAR_VERSION_BENCH."
+        build_sysstat_version "$SAR_VERSION_BENCH" "$ALOJA_REPO_PATH/aloja-tools/src/sysstat"
+      fi
+
       if [ -f "$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf" ] ; then
         logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nFound version: $SAR_VERSION_BENCH in tools folder, using that one."
         sadf="$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf"
@@ -1264,6 +1272,30 @@ check_sysstat_version() {
         logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nContinuing any how..."
       fi
     fi
+  fi
+}
+
+# Compiles the specified sysstat version
+# $1 the version to build
+# $2 the path where to build it
+build_sysstat_version() {
+  local sysstat_version="$1"
+  local sysstat_base_path="$2"
+  
+  logger "INFO: attempting to download and build sysstat version $sysstat_version\n$(pwd)"
+
+  if [ "$sysstat_version" ] ; then
+    local sysstat_file="$sysstat_base_path/sysstat-${sysstat_version}.tar.bz2"
+    wget --progress=dot -O "$sysstat_file" "http://pagesperso-orange.fr/sebastien.godard/sysstat-${sysstat_version}.tar.bz2" || rm "$sysstat_file"
+    
+    if [ -f "$sysstat_file" ] ; then
+      local cur_dir="$(pwd)" # save the current working dir to go back
+      cd $sysstat_base_path;
+      tar xf $sysstat_file;
+      cd sysstat-${sysstat_version};
+      ./configure && make && make test
+      cd "$cur_dir"
+    fi   
   fi
 }
 
@@ -1311,7 +1343,6 @@ export2PAT() {
       logger "INFO: Exporting to PAT vmstat for host: ${hostn}."
       local PAT_host_folder="$PAT_folder/instruments/$hostn"
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
-      # vmstat file
       awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_start_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_folder/vmstat"
     else
       logger "WARNING: No valid vmstat files for exporting to PAT"
@@ -1325,7 +1356,6 @@ export2PAT() {
       logger "INFO: Exporting to PAT iostat for host: ${hostn}."
       local PAT_host_folder="$PAT_folder/instruments/$hostn"
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
-      # vmstat file
       cp "$iostat_file" "$PAT_host_folder/iostat"
     else
       logger "WARNING: No valid iostat files for exporting to PAT"
@@ -1339,12 +1369,24 @@ export2PAT() {
       logger "INFO: Exporting to PAT MapRed for host: ${hostn}."
       local PAT_host_folder="$PAT_folder/instruments/$hostn"
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
-      # vmstat file
       cp "$mapred_file" "$PAT_host_folder/jvms"
     else
       logger "WARNING: No valid mapred files for exporting to PAT"
     fi
   done
+  
+  # jvms
+  for javastat_file in JavaStat-*.log ; do
+    if [ -s $javastat_file ] ; then
+      local hostn="${javastat_file:9:-4}"
+      logger "INFO: Exporting to PAT JavaStat for host: ${hostn}."
+      local PAT_host_folder="$PAT_folder/instruments/$hostn"
+      [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
+      cp "$javastat_file" "$PAT_host_folder/java-stat"
+    else
+      logger "WARNING: No valid javastat files for exporting to PAT"
+    fi
+  done  
 }
 
 
