@@ -1319,6 +1319,9 @@ set_bench_end() {
     fi
 
     EXEC_END["$bench_name"]="$end_exec"
+
+    # Also save the exit status
+    EXEC_STATUS["$bench_name"]="$EXIT_STATUS"
   else
     die "Empty benchmark name supplied or empty EXEC_START[$bench_name]"
   fi
@@ -1398,7 +1401,19 @@ time_cmd() {
       logger "WARNING: cannot get the benchmark time correctly"
     fi
 
-    logger "INFO: Ran $bench_name for $BENCH_TIME seconds."
+    #Save exit status
+    local status
+    EXIT_STATUS="$(grep 'Bench return val' <<< "$cmd_output"|cut -d':' -f2-|sed 's/[^0-9 ]*//g'|tr -s ' ')" # get only the numbers
+    EXIT_STATUS="${EXIT_STATUS:1}" # remove leading space
+
+    # Check if we get something other than zeros as exit status
+    if [[ "$EXIT_STATUS" =~ [0]+ ]] ; then
+      status="OK"
+    else
+      status="FAILED"
+    fi
+
+    logger "INFO: Ran $bench_name for $BENCH_TIME seconds. With $status status."
   fi
 }
 
