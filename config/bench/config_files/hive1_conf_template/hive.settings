@@ -2,9 +2,6 @@
 -- set hive.exec.local.scratchdir=##TMP_DIR##;
 -- set hive.metastore.uris=thrift://localhost:##PORT_PREFIX##9083;
 
--- set mapreduce.map.memory.mb=##MAPS_MB##;
--- set mapreduce.reduce.memory.mb=##REDUCES_MB##;
-
 -- set ambari.hive.db.schema.name=hive;
 
 set fs.file.impl.disable.cache=true;
@@ -58,8 +55,8 @@ set hive.stats.fetch.partition.stats=true;
 
 set hive.support.sql11.reserved.keywords=false;
 
-set hive.auto.convert.join.noconditionaltask=true;
-set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
+set hive.auto.convert.join.noconditionaltask=false;
+-- set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
 set hive.auto.convert.join=true;
 
 -- Tez settings
@@ -74,6 +71,9 @@ set hive.server2.tez.sessions.per.default.queue=1;
 set hive.tez.dynamic.partition.pruning=true;
 set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
 set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
+set hive.tez.max.partition.factor=3f;
+set hive.tez.min.partition.factor=1f;
+
 set hive.convert.join.bucket.mapjoin.tez=false;
 
 
