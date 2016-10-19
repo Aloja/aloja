@@ -5,12 +5,16 @@
   <property>
     <name>hive.exec.scratchdir</name>
     <value>/tmp/hive</value>
-    <description>HDFS root scratch dir for Hive jobs which gets created with write all (733) permission. For each connecting user, an HDFS scratch dir: ${hive.exec.scratchdir}/&lt;username&gt; is created, with ${hive.scratch.dir.permission}.</description>
   </property>
+
   <property>
     <name>hive.exec.local.scratchdir</name>
     <value>##TMP_DIR##</value>
-    <description>Local scratch space for Hive jobs</description>
+  </property>
+
+  <property>
+    <name>hive.execution.engine</name>
+    <value>##HIVE_ENGINE##</value>
   </property>
 
 </configuration>
