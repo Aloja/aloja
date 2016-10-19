@@ -7,8 +7,6 @@
 
 -- set ambari.hive.db.schema.name=hive;
 
-set hive.execution.engine=##HIVE_ENGINE##;
-
 set fs.file.impl.disable.cache=true;
 set fs.hdfs.impl.disable.cache=true;
 set hive.auto.convert.sortmerge.join=true;
