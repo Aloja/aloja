@@ -131,8 +131,17 @@ get_hive_substitutions() {
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
   # Give Hive 10% of container mem for hive.auto.convert.join.noconditionaltask.size
-  JOIN_HIVE="$(echo "${MAPS_MB}*0.10" | bc -l)"
+  JOIN_HIVE="$(echo "${MAPS_MB}*0.30" | bc -l)"
   JOIN_HIVE="$(printf "%.0f" $JOIN_HIVE)"
+
+  CONTAINER_80="$(echo "${MAPS_MB}*0.80" | bc -l)"
+  CONTAINER_80="$(printf "%.0f" $CONTAINER_80)"
+
+  CONTAINER_40="$(echo "${MAPS_MB}*0.40" | bc -l)"
+  CONTAINER_40="$(printf "%.0f" $CONTAINER_40)"
+
+  CONTAINER_10="$(echo "${MAPS_MB}*0.10" | bc -l)"
+  CONTAINER_10="$(printf "%.0f" $CONTAINER_10)"
 
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
@@ -154,6 +163,9 @@ s,##IFACE##,$IFACE,g;
 s,##IO_FACTOR##,$IO_FACTOR,g;
 s,##IO_MB##,$IO_MB,g;
 s,##JOIN_HIVE##,$JOIN_HIVE,g;
+s,##CONTAINER_80##,$CONTAINER_80,g;
+s,##CONTAINER_40##,$CONTAINER_40,g;
+s,##CONTAINER_10##,$CONTAINER_10,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
