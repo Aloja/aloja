@@ -55,35 +55,25 @@ set hive.stats.fetch.partition.stats=true;
 
 set hive.support.sql11.reserved.keywords=false;
 
-set hive.auto.convert.join.noconditionaltask=false;
--- set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
+set hive.auto.convert.join.noconditionaltask=true;
+set hive.auto.convert.join.noconditionaltask.size=##CONTAINER_10##;
 set hive.auto.convert.join=true;
 
 -- Tez settings
 
 set hive.tez.container.size=##MAPS_MB##;
 set hive.tez.cpu.vcores=-1;
-set hive.tez.java.opts=##JAVA_XMX## ##JAVA_XMS## -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseParallelGC;
+set hive.tez.java.opts=-Xms##CONTAINER_80##m -Xmx##CONTAINER_80##m -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC;
+set tez.runtime.unordered.output.buffer.size-mb=##CONTAINER_10##;
+set tez.runtime.io.sort.mb=##CONTAINER_40##;
 set hive.tez.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
 set hive.server2.tez.default.queues=default;
 set hive.server2.tez.initialize.default.sessions=false;
 set hive.server2.tez.sessions.per.default.queue=1;
 set hive.tez.dynamic.partition.pruning=true;
-set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
-set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
+-- set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
+-- set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
 set hive.tez.max.partition.factor=3f;
 set hive.tez.min.partition.factor=1f;
-
 set hive.convert.join.bucket.mapjoin.tez=false;
 
-
--- set hive.auto.convert.sortmerge.join.noconditionaltask=true;
--- set to 1GB
--- set hive.auto.convert.join.noconditionaltask.size=1073741824;
-
-
--- These values need to be tuned appropriately to your cluster. These examples are for reference.
--- set hive.tez.container.size=4096;
--- set hive.tez.java.opts=-Xmx3800m;
-
--- set mapred.child.java.opts=-Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC -XX:-UseGCOverheadLimit;
