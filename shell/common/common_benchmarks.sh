@@ -862,7 +862,21 @@ set_monit_binaries() {
 
         if ! inList "$BENCH_PERF_NON_BINARY" "$perf_mon" ; then
           logger "INFO: Setting up perfomance monitor: $perf_mon"
-          perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
+
+          # Get the path of file from the aloja repo
+          if [ "$perf_mon" == "cachestat" ] ; then
+            perf_mon_bin_path="$ALOJA_REPO_PATH/aloja-tools/src/cachestat.sh"
+
+            if [ "$noSudo" ] ; then
+              logger "WARNING: $perf_mon requieres sudo, skipping setting it up."
+              continue
+            fi
+
+          # Get it from the system path (normal case)
+          else
+            perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
+          fi
+
           if [ -f "$perf_mon_bin_path" ] ; then
             logger "INFO: Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
             $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
@@ -1003,8 +1017,16 @@ pidstat -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat
     if [ -z "$noSudo" ] ; then
       $DSH "sudo echo '0' > /proc/sys/kernel/perf_event_paranoid"
     fi
-
     # TODO: https://github.com/intel-hadoop/PAT/blob/master/PAT/WORKER_scripts/instruments/perf
+
+  # cachestat
+  elif [ "$perf_mon" == "cachestat" ] ; then
+logger
+      $DSH "sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_local_bench_path)/cachestat-\$(hostname).log &" & #2>&1
+
+      if [ "$(get_extra_node_names)" ] ; then
+        $DSH_EXTRA "sudo $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_extra_node_folder)/cachestat-\$(hostname).log &" & #2>&1
+      fi
   else
     die "Specified perf mon $perf_mon not implemented"
   fi
@@ -1027,7 +1049,7 @@ stop_monit(){
           local perf_mon_bin="$(get_local_bench_path)/aplic/${perf_mon}_$PORT_PREFIX"
           $DSH "killall -9 '$perf_mon_bin' 2> /dev/null"  #&
         elif [ "$perf_mon" == "MapRed" ] ; then
-          $DSH "pkill -9 -f [M]apCount" # [] for it not to match it self in ssh
+          $DSH "pkill -9 -f [M]apCount" # [] for it not to match itself in ssh
         elif [ "$perf_mon" == "JavaStat" ] ; then
           $DSH "pkill -9 pidstat" # TODO improve to use custom naming
         fi
@@ -1064,7 +1086,6 @@ get_bench_name_with_num() {
   fi
 
   echo -e "$new_bench_name"
-
 }
 
 # Returns the iteration number (if any)
@@ -1302,6 +1323,9 @@ set_bench_end() {
     fi
 
     EXEC_END["$bench_name"]="$end_exec"
+
+    # Also save the exit status
+    EXEC_STATUS["$bench_name"]="$EXIT_STATUS"
   else
     die "Empty benchmark name supplied or empty EXEC_START[$bench_name]"
   fi
@@ -1381,7 +1405,19 @@ time_cmd() {
       logger "WARNING: cannot get the benchmark time correctly"
     fi
 
-    logger "INFO: Ran $bench_name for $BENCH_TIME seconds."
+    #Save exit status
+    local status
+    EXIT_STATUS="$(grep 'Bench return val' <<< "$cmd_output"|cut -d':' -f2-|sed 's/[^0-9 ]*//g'|tr -s ' ')" # get only the numbers
+    EXIT_STATUS="${EXIT_STATUS:1}" # remove leading space
+
+    # Check if we get something other than zeros as exit status
+    if [[ "$EXIT_STATUS" =~ [0]+ ]] ; then
+      status="OK"
+    else
+      status="FAILED"
+    fi
+
+    logger "INFO: Ran $bench_name for $BENCH_TIME seconds. With $status status."
   fi
 }
 
