@@ -1271,6 +1271,9 @@ $MYSQL "update execs SET id_cluster=198 where id_cluster=121 and start_time > '2
 $MYSQL "update execs SET id_cluster=215 where id_cluster=113 and start_time > '2016-08-23';"
 $MYSQL "update execs SET id_cluster=216 where id_cluster=114 and start_time > '2016-08-23';"
 
+# Delete failed 100GB HDI results
+$MYSQL "delete from execs WHERE id_cluster=213 and exec like '20160826_003313_ETH_HDD_bD2F-Bench-hive_S100_D8_hdil8-D3-HDP24-213%'";
+
 # Delete failes runs (paper selection)
 $MYSQL "delete from execs where bench_type = 'TPC-H' and exec_type IN ('D2F_manual', 'Imported using recovery log' ) and id_cluster in (97)
 and exe_time < 40 and scale_factor=1000;"
