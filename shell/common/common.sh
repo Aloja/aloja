@@ -17,15 +17,25 @@ DONT_RETRY_TRAP="" #prevent trap loops
 
 #common funtions
 
-#$1 message $2 severity $3 log to file
+# Main logging function
+# $1 message
+# $2 severity (optional)
+# $3 log to file (optional)
 logger() {
-  local log_file="aloja-deploy.log"
+  local message="$1"
+  local severity="$2"
+  local log_to_file="$3"  
+  local log_file="aloja-deploy.log"  
   local dateTime="$(date +%Y%m%d_%H%M%S)"
   local vm_info
   local to_stderr
 
   if [ "$vm_name" ] ; then
     local vm_info=" $vm_name"
+  fi
+
+  if [ "$severity" ] ; then
+    message="${severity}: $message"
   fi
 
   local output=""
@@ -39,27 +49,63 @@ logger() {
     local cyan="$(tput setaf 6)"
     local white="$(tput setaf 7)"
 
-    if [[ "$1 " == "DEBUG:"* ]] ; then
-      output="${cyan}$dateTime $$${vm_info}: $1${reset}"
-    elif [[ "$1 " == "INFO:"* ]] ; then
-      output="${green}$dateTime $$${vm_info}: $1${reset}"
-    elif [[ "$1 " == "WARNING:"* ]] ; then
-      output="${yellow}$dateTime $$${vm_info}: $1${reset}"
-    elif [[ "$1 " == "ERROR:"* ]] ; then
-      output="${red}$dateTime $$${vm_info}: $1${reset}"
+    if [[ "$message " == "DEBUG:"* ]] ; then
+      output="${cyan}$dateTime $$${vm_info}: $message${reset}"
+    elif [[ "$message " == "INFO:"* ]] ; then
+      output="${green}$dateTime $$${vm_info}: $message${reset}"
+    elif [[ "$message " == "WARNING:"* ]] ; then
+      output="${yellow}$dateTime $$${vm_info}: $message${reset}"
+    elif [[ "$message " == "ERROR:"* ]] ; then
+      output="${red}$dateTime $$${vm_info}: $message${reset}"
     else
-      output="${white}$dateTime $$${vm_info}: $1${reset}"
+      output="${white}$dateTime $$${vm_info}: $message${reset}"
     fi
   # non-interactive (no colors)
   else
-    output="$dateTime $$${vm_info}: $1"
+    output="$dateTime $$${vm_info}: $message"
   fi
 
-  if [ -z "$3" ] ; then
+  if [ -z "$log_to_file" ] ; then
     echo -e "$output"
   else
     echo -e "$output" >> $log_file
   fi
+}
+
+# Shortcut to the logger with severity INFO (new style)
+# $1 message
+# $2 log to file (optional)
+log_INFO() {
+  local message="$1"
+  local log_to_file="$2"
+  logger "$message" "INFO" "$log_to_file"
+}
+
+# Shortcut to the logger with severity WARNING (new style)
+# $1 message
+# $2 log to file (optional)
+log_WARN() {
+  local message="$1"
+  local log_to_file="$2"
+  logger "$message" "WARNING" "$log_to_file"
+}
+
+# Shortcut to the logger with severity DEBUG (new style)
+# $1 message
+# $2 log to file (optional)
+log_DEBUG() {
+  local message="$1"
+  local log_to_file="$2"
+  logger "$message" "DEBUG" "$log_to_file"
+}
+
+# Shortcut to the logger with severity ERROR (new style)
+# $1 message
+# $2 log to file (optional)
+log_ERR() {
+  local message="$1"
+  local log_to_file="$2"
+  logger "$message" "ERROR" "$log_to_file"
 }
 
 # [dangerous] Function that automatically logs all script output to file

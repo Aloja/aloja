@@ -187,7 +187,7 @@ logger "INFO: $bench_folder RN $run_num EV $exec_value"
               exec_type=VALUES(exec_type);"
     # New style, with more db fields
     else
-      insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,run_num)
+      insert="INSERT INTO aloja2.execs (id_exec,id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,maps,iosf,replication,iofilebuf,comp,blk_size,zabbix_link,hadoop_version,exec_type, datasize, scale_factor,valid,run_num)
             VALUES (NULL, $id_cluster, \"$exec\", $exec_value,'$run_num')
             ON DUPLICATE KEY UPDATE
               id_cluster=VALUES(id_cluster),
@@ -209,7 +209,9 @@ logger "INFO: $bench_folder RN $run_num EV $exec_value"
               hadoop_version=VALUES(hadoop_version),
               exec_type=VALUES(exec_type),
               datasize=VALUES(datasize),
-              scale_factor=VALUES(scale_factor);"
+              scale_factor=VALUES(scale_factor),
+              valid=VALUES(valid),
+              run_num=VALUES(run_num);"
     fi
 
     logger "DEBUG: SQL:\n $insert"
@@ -275,7 +277,9 @@ import_folder() {
     exec_params="$(get_exec_params "$log_folder_file" "$folder")"
 
     # First do a fast insert of the runs from the results file directly
-    insert_execs "$folder" "$exec_params"
+    if [ ! "$export_to_PAT" ] ; then
+      insert_execs "$folder" "$exec_params"
+    fi
 
     # Iterate over the compressed folders to recover perf metrics and log files
     if [ ! "$INSERT_ONLY" ] ; then
@@ -600,7 +604,7 @@ update ignore aloja2.execs SET perf_details = 0;
 update ignore aloja2.execs SET perf_details = 1 where id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec is not null);
 
 #valid, set everything as valid, except the ones that do not match the following rules
-update ignore aloja2.execs SET valid = 1;
+update ignore aloja2.execs SET valid = 1 where (valid is null OR valid='');
 update ignore aloja2.execs SET valid = 0 where bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
     (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
@@ -655,7 +659,7 @@ update ignore aloja2.execs SET perf_details = 0 where id_exec = '$1';
 update ignore aloja2.execs SET perf_details = 1 where id_exec = '$1' AND id_exec IN(select distinct (id_exec) from aloja_logs.SAR_cpu where id_exec = '$1' AND id_exec is not null);
 
 #valid, set everything as valid, except the ones that do not match the following rules
-update ignore aloja2.execs SET valid = 1 where id_exec = '$1' ;
+update ignore aloja2.execs SET valid = 1 where id_exec = '$1' and (valid is null || valid='');
 update ignore aloja2.execs SET valid = 0 where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and id_exec NOT IN (
   select distinct(id_exec) from
     (select b.id_exec from aloja2.execs b join JOB_details using (id_exec) where id_exec = '$1' AND bench_type = 'HiBench' and bench = 'terasort' and HDFS_BYTES_WRITTEN = '100000000000')
@@ -887,6 +891,10 @@ get_exec_params() {
     temp_array="exec_end=$temp_array"
     declare -A exec_end
     eval $temp_array
+    temp_array=$(extract_config_var "EXEC_STATUS")
+    temp_array="exec_status=$temp_array"
+    declare -A exec_status
+    eval $temp_array
 
     local first_ts # for the patch below
     for index in "${!exec_time[@]}"; do
@@ -903,6 +911,19 @@ get_exec_params() {
       start_time=$(date -d @$((start_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
       end_time_ts="${exec_end[$index]}"
       end_time=$(date -d @$((end_time_ts / 1000)) +"%F %H:%M:%S")  # convert to seconds and format
+
+      exit_status="${exec_status[$index]}"
+
+      # If we don't have exit status, we assume it is valid here
+      if [[ ! "$exit_status" ]] ; then
+        valid="1"
+      # If the exit codes are all zeros, then is valid
+      elif [[ "$exit_status" =~ [0]+ ]] ; then
+        valid="1"
+      # Failed run
+      else
+        valid="0"
+      fi
 
 
 ### Patch for nasty error not recovering times correctly between two dates where bug was introduced:
@@ -924,7 +945,7 @@ fi
 
 ######
 
-      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\" "
+      exec_params="$exec_params\"$job\",\"$exe_time\",\"$start_time\",\"$end_time\",\"$net\",\"$disk\",\"$bench\",\"$maps\",\"$iosf\",\"$replication\",\"$iofilebuf\",\"$comp\",\"$blk_size\",\"$zabbix_link\",\"$hadoop_version\",\"$exec_type\",\"$datasize\",\"$scale_factor\",\"$valid\""
     done
 
   fi
@@ -1254,9 +1275,15 @@ check_sysstat_version() {
   local sar_file="$1"
   if [ ! "$SAR_VERSION_BENCH" ] ; then
     SAR_VERSION_LOCAL="$($sar -V|head -n 1|cut -d' ' -f 3)"
-    SAR_VERSION_BENCH="$($sadf -H "$sar_file"|tail -n 1|cut -d' ' -f 8)"
+    SAR_VERSION_BENCH="$($sadf -H "$sar_file" 2>&1 |egrep 'version [0-9]'|rev|cut -d' ' -f1|rev)"
 
     if [ "$SAR_VERSION_LOCAL" != "$SAR_VERSION_BENCH" ] ; then
+      # Check if we need to download a different SAR version
+      if [ ! -f "$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf" ] ; then
+        logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nAttempting to automatically build sysstat version $SAR_VERSION_BENCH."
+        build_sysstat_version "$SAR_VERSION_BENCH" "$ALOJA_REPO_PATH/aloja-tools/src/sysstat"
+      fi
+
       if [ -f "$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf" ] ; then
         logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nFound version: $SAR_VERSION_BENCH in tools folder, using that one."
         sadf="$ALOJA_REPO_PATH/aloja-tools/src/sysstat/sysstat-$SAR_VERSION_BENCH/sadf"
@@ -1264,6 +1291,30 @@ check_sysstat_version() {
         logger "WARNING: sysstat versions differ.  Local version: $SAR_VERSION_LOCAL Bench version: $SAR_VERSION_BENCH\nContinuing any how..."
       fi
     fi
+  fi
+}
+
+# Compiles the specified sysstat version
+# $1 the version to build
+# $2 the path where to build it
+build_sysstat_version() {
+  local sysstat_version="$1"
+  local sysstat_base_path="$2"
+  
+  logger "INFO: attempting to download and build sysstat version $sysstat_version\n$(pwd)"
+
+  if [ "$sysstat_version" ] ; then
+    local sysstat_file="$sysstat_base_path/sysstat-${sysstat_version}.tar.bz2"
+    wget --progress=dot -O "$sysstat_file" "http://pagesperso-orange.fr/sebastien.godard/sysstat-${sysstat_version}.tar.bz2" || rm "$sysstat_file"
+    
+    if [ -f "$sysstat_file" ] ; then
+      local cur_dir="$(pwd)" # save the current working dir to go back
+      cd $sysstat_base_path;
+      tar xf $sysstat_file;
+      cd sysstat-${sysstat_version};
+      ./configure && make && make test
+      cd "$cur_dir"
+    fi   
   fi
 }
 
@@ -1311,7 +1362,6 @@ export2PAT() {
       logger "INFO: Exporting to PAT vmstat for host: ${hostn}."
       local PAT_host_folder="$PAT_folder/instruments/$hostn"
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
-      # vmstat file
       awk "NR == 2 {\$1=\"HostName TimeStamp \"\$1; print } NR > 2 {\$1=\"${hostn} \" ($PAT_start_ts + NR-2) \" \"\$1; print }" "$vmstats_file" > "$PAT_host_folder/vmstat"
     else
       logger "WARNING: No valid vmstat files for exporting to PAT"
@@ -1325,7 +1375,6 @@ export2PAT() {
       logger "INFO: Exporting to PAT iostat for host: ${hostn}."
       local PAT_host_folder="$PAT_folder/instruments/$hostn"
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
-      # vmstat file
       cp "$iostat_file" "$PAT_host_folder/iostat"
     else
       logger "WARNING: No valid iostat files for exporting to PAT"
@@ -1339,12 +1388,24 @@ export2PAT() {
       logger "INFO: Exporting to PAT MapRed for host: ${hostn}."
       local PAT_host_folder="$PAT_folder/instruments/$hostn"
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
-      # vmstat file
       cp "$mapred_file" "$PAT_host_folder/jvms"
     else
       logger "WARNING: No valid mapred files for exporting to PAT"
     fi
   done
+  
+  # jvms
+  for javastat_file in JavaStat-*.log ; do
+    if [ -s $javastat_file ] ; then
+      local hostn="${javastat_file:9:-4}"
+      logger "INFO: Exporting to PAT JavaStat for host: ${hostn}."
+      local PAT_host_folder="$PAT_folder/instruments/$hostn"
+      [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
+      cp "$javastat_file" "$PAT_host_folder/java-stat"
+    else
+      logger "WARNING: No valid javastat files for exporting to PAT"
+    fi
+  done  
 }
 
 
