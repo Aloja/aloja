@@ -1228,8 +1228,17 @@ and id_cluster IN (select id_cluster from clusters where provider='minerva100');
 $MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
 and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
 
+# Merged duplicated CBD results
+$MYSQL "update execs set id_cluster =126 where id_cluster =166;"
+
 # Delete too fast restuls for CBD 8 1-30 500GB
 $MYSQL "delete from execs where id_cluster = 126 and scale_factor =500 and start_time < '2016-06-15';"
+
+# Delete too fast restuls for CBD 8 1-30 1TB
+$MYSQL "delete from execs where id_cluster = 126 and (exec like '20160630_040636_ETH_HDD_bD2F-Bench-hive_D8_rb-166%' OR exec like '20160630_040636_ETH_HDD_bD2F-Bench-hive_D8_rb-166%');"
+
+# Delete too fast results for OnMetal 100GB
+$MYSQL "delete from execs where id_cluster = 240 and (exec like '20161012_085653_ETH_HDD_bD2F-Bench-hive_S100_D5_cbd-metal40-5-240%' OR exec like '20161012_085653_ETH_HDD_bD2F-Bench-hive_S100_D5_cbd-metal40-5-240%');"
 
 ## Delete too fast results (emr-117 and hdil8-A3-114)
 #$MYSQL "delete from execs where bench_type = 'TPC-H' and scale_factor IN (1000, 500) and bench = 'query 9' < 100 and exec_type !='RS_manual' and id_cluster not IN (select id_cluster from clusters where type= 'SaaS') and start_time < '2016-06-15';;"
@@ -1260,8 +1269,7 @@ $MYSQL "delete from execs where id_cluster IN (167) and scale_factor >= 1000 and
 $MYSQL "delete from execs where id_cluster =114 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 100 and bench in ('query 3', 'query 5');"
 
 
-# Merged duplicated CBD results
-$MYSQL "update execs set id_cluster =126 where id_cluster =166;"
+
 
 # Change id cluster for incorrect runs
 $MYSQL "update execs SET id_cluster=97 where id_cluster=96 and start_time > '2016-06-15';"
@@ -1273,6 +1281,11 @@ $MYSQL "update execs SET id_cluster=216 where id_cluster=114 and start_time > '2
 
 # Delete failed 100GB HDI results
 $MYSQL "delete from execs WHERE id_cluster=213 and exec like '20160826_003313_ETH_HDD_bD2F-Bench-hive_S100_D8_hdil8-D3-HDP24-213%'";
+
+# Delete failed 100GB HDI results
+$MYSQL "delete from execs WHERE id_cluster=233 and exec_time < 1000";
+
+
 
 # Delete failes runs (paper selection)
 $MYSQL "delete from execs where bench_type = 'TPC-H' and exec_type IN ('D2F_manual', 'Imported using recovery log' ) and id_cluster in (97)
