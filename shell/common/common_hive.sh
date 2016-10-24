@@ -131,7 +131,7 @@ get_hive_substitutions() {
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
   # Give Hive 10% of container mem for hive.auto.convert.join.noconditionaltask.size
-  JOIN_HIVE="$(echo "${MAPS_MB}*0.30" | bc -l)"
+  JOIN_HIVE="$(echo "${MAPS_MB}*0.33" | bc -l)"
   JOIN_HIVE="$(printf "%.0f" $JOIN_HIVE)"
 
   CONTAINER_80="$(echo "${MAPS_MB}*0.80" | bc -l)"

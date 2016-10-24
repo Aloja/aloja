@@ -782,7 +782,7 @@ execute_hadoop_new(){
 
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
-    execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) dfsadmin -report"
+    execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
     save_disk_usage "BEFORE"
     restart_monit
     set_bench_start "$bench"
@@ -798,7 +798,7 @@ execute_hadoop_new(){
     set_bench_end "$bench"
     stop_monit
     save_disk_usage "AFTER"
-    execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) dfsadmin -report"
+    execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) fs -df"
     save_hadoop "$bench"
   fi
 }
