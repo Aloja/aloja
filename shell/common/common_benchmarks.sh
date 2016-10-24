@@ -1153,7 +1153,14 @@ save_bench() {
 
   logger "INFO: Compresing and deleting $bench_name_num"
 
-  $DSH_MASTER "cd $JOB_PATH; tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num;"
+  # try to compress with pbzip2 if available
+  $DSH_MASTER "cd $JOB_PATH;
+if hash pbzip2 2> /dev/null ; then
+  tar -cf  $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num --use-compress-prog=pbzip2 --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+else
+  tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num ---totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+fi
+"
   #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
   $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
   #$JOB_PATH/conf_* #TODO check
