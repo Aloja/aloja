@@ -55,9 +55,20 @@ set hive.stats.fetch.partition.stats=true;
 
 set hive.support.sql11.reserved.keywords=false;
 
-set hive.auto.convert.join.noconditionaltask=true;
-set hive.auto.convert.join.noconditionaltask.size=##CONTAINER_10##;
 set hive.auto.convert.join=true;
+set hive.auto.convert.join.noconditionaltask=true;
+set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
+
+set hive.auto.convert.sortmerge.join=true;
+set hive.auto.convert.sortmerge.join.to.mapjoin=false;
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.max.created.files=100000;
+set hive.exec.max.dynamic.partitions=5000;
+set hive.exec.max.dynamic.partitions.pernode=2000;
+set hive.map.aggr=true;
+set hive.map.aggr.hash.force.flush.memory.threshold=0.9;
+set hive.stats.autogather=true;
 
 -- Tez settings
 
@@ -70,10 +81,19 @@ set hive.tez.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
 set hive.server2.tez.default.queues=default;
 set hive.server2.tez.initialize.default.sessions=false;
 set hive.server2.tez.sessions.per.default.queue=1;
+set hive.tez.auto.reducer.parallelism=false;
+
+set hive.tez.exec.print.summary=true;
+
+
 set hive.tez.dynamic.partition.pruning=true;
--- set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
--- set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
+set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
+set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
+-- set tez.grouping.min-size=67108864;
+-- set tez.grouping.max-size=1073741824;
 set hive.tez.max.partition.factor=3f;
 set hive.tez.min.partition.factor=1f;
 set hive.convert.join.bucket.mapjoin.tez=false;
+
+
 
