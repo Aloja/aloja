@@ -673,10 +673,6 @@ get_base_configs_path() {
   echo -e "$ALOJA_REPO_PATH/config/bench/config_files"
 }
 
-get_base_bench_path() {
-    echo -e "$BENCH_LOCAL_DIR/aloja-bench_3"
-}
-
 # Installs binaries and configs
 # TODO needs improvement
 install_requires() {
