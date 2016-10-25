@@ -130,7 +130,7 @@ get_BigBench_substitutions() {
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
   if [ "$clusterType" == "PaaS" ]; then
-    java_bin=$(which java)
+    java_bin="$(which java)"
   else
     java_bin="$(get_java_home)/bin/java"
   fi
