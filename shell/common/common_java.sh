@@ -14,18 +14,6 @@ get_java_home(){
   fi
 }
 
-get_java_bin() {
-  if [ "$clusterType" == "PaaS" ]; then
-    echo -e "`which java`"
-  else
-    if [ "$BENCH_JAVA_VERSION" ] ; then
-      echo -e "$(get_local_apps_path)/$BENCH_JAVA_VERSION/bin/java"
-    else
-      die "Cannot determine JAVA_HOME, BENCH_JAVA_VERSION not set"
-    fi
-  fi
-}
-
 get_java_exports() {
   if [ "$clusterType" != "PaaS" ]; then #on PaaS use the system version
     local java_path="$(get_local_apps_path)/$BENCH_JAVA_VERSION"
