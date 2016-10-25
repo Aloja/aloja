@@ -123,10 +123,17 @@ initialize_BigBench_vars() {
 
 # Sets the substitution values for the BigBench config
 get_BigBench_substitutions() {
+  local java_bin
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
+
+  if [ "$clusterType" == "PaaS" ]; then
+    java_bin=$(which java)
+  else
+    java_bin="$(get_java_home)/bin/java"
+  fi
 
   #Calculate Spark settings for BigBench
   if [ "$ENGINE" == "spark" ]; then
@@ -140,7 +147,8 @@ get_BigBench_substitutions() {
 
 #TODO spacing when a @ is found
     cat <<EOF
-s,##JAVA_HOME##,$(get_java_bin),g;
+s,##JAVA_HOME##,$(get_java_home),g;
+s,##JAVA_BIN##,$JAVA_BIN,g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
