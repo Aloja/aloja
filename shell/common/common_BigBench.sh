@@ -1,7 +1,3 @@
-#BIG_BENCH SPECIFIC FUNCTIONS
-source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
-set_hadoop_requires
-
 # Start Spark if needed
 if [ "$ENGINE" == "spark" ]; then
   source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
@@ -22,6 +18,11 @@ fi
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
 BIG_BENCH_CONF_DIR="BigBench_conf_template"
 BIG_BENCH_EXECUTION_DIR="src/BigBench"
+
+if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCLAE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
+  BENCH_SCALE_FACTOR=1
+  BENCH_DATA_SIZE="$((BENCH_SCALE_FACTOR * 1000000000 ))" #in bytes
+fi
 
 # Sets the required files to download/copy
 set_BigBench_requires() {
