@@ -259,7 +259,7 @@ import_folder() {
       }
     fi
 
-    logger "INFO: Entering folder\t$folder"
+    logger "INFO: Entering folder $folder"
     cd "$folder"
 
     #get all executions details
@@ -270,8 +270,14 @@ import_folder() {
       #logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
       local log_folder_file="run_benchs.sh.log"
     else
-      logger "ERROR: cannot find a valid run log file for exec $folder. Continuing..."
-      return 0
+      logger "ERROR: cannot find a valid run log file for exec $folder. Current dir $(pwd). Continuing... "
+
+      # Make sure we go back to the original folder in case we have changed dirs
+      if [ "$BASE_DIR_ORIGINAL" ] ; then
+        BASE_DIR="$BASE_DIR_ORIGINAL"
+      fi
+      cd "$BASE_DIR"
+      return 1
     fi
 
     exec_params="$(get_exec_params "$log_folder_file" "$folder")"
@@ -333,7 +339,11 @@ import_folder() {
         if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
           logger "INFO: Untaring $bzip_file in $(pwd)"
           logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
-          tar -xf "$bzip_file"
+          if hash pbzip2 2> /dev/null ; then
+            tar -xf  "$bzip_file" --use-compress-prog=pbzip2 --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+          else
+            tar -xf "$bzip_file" --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+          fi
         fi
 
         if [ -d "$bench_folder" ] ; then
@@ -503,10 +513,16 @@ import_folder() {
     fi
 
   else
-    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
+    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder. Current dir $(pwd). Continuing..."
     [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
   fi
 
+  # Make sure we go back to the original folder in case we have changed dirs
+  if [ "$BASE_DIR_ORIGINAL" ] ; then
+    cd "$BASE_DIR_ORIGINAL"
+  else
+    cd "$BASE_DIR"
+  fi
 }
 
 
