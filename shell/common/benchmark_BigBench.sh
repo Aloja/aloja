@@ -31,10 +31,14 @@ benchmark_suite_run() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-#  benchmark_cleanQueries
-  benchmark_cleanMetastore
-  benchmark_dataGen
-  benchmark_populateMetastore
+  # TODO: review to generate data first time when DELETE_HDFS=0
+  if [ "$DELETE_HDFS" == "1" ]; then
+    benchmark_cleanMetastore
+    benchmark_dataGen
+    benchmark_populateMetastore
+  else
+    logger "INFO: Reusing previous RUN BigBench data"
+  fi
 
   for query in $BENCH_LIST ; do
     benchmark_query "$query"

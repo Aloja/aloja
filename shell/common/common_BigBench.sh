@@ -148,7 +148,7 @@ get_BigBench_substitutions() {
 #TODO spacing when a @ is found
     cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
-s,##JAVA_BIN##,$JAVA_BIN,g;
+s,##JAVA_BIN##,$java_bin,g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;

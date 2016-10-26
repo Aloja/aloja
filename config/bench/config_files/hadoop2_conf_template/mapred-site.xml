@@ -108,27 +108,6 @@
   <value>##IO_MB##</value>
 </property>
 
-    <!-- For BigBench -->
-
-    <property>
-        <name>mapreduce.map.java.opts</name>
-        <value>-Xmx3076M -Xms1024M</value>
-    </property>
-
-    <property>
-        <name>mapreduce.reduce.java.opts</name>
-        <value>-Xmx3076M -Xms1024M</value>
-    </property>
-
-    <property>
-        <name>mapreduce.map.memory.mb</name>
-        <value>3076</value>
-    </property>
-
-    <property>
-        <name>mapreduce.reduce.memory.mb</name>
-        <value>3076</value>
-    </property>
 <!--
 <property>
   <name>mapred.child.java.opts</name>
