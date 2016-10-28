@@ -1222,11 +1222,11 @@ $MYSQL "update execs set scale_factor = round(datasize/1000000000) where (scale_
 
 # Delete too fast results (failed runs) on TPC-H where >=10GB and <= than 40secs in minerva
 $MYSQL "delete from execs where exe_time  <=40 and bench_type = 'TPC-H' and datasize >= 10000000000
-and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
+and id_cluster IN (select id_cluster from clusters where provider='minerva100') and id_cluster !=244;"
 
 # Delete too fast results (failed runs) on TPC-H where >=100GB and <= than 80secs in minerva
 $MYSQL "delete from execs where exe_time  <=80 and bench_type = 'TPC-H' and datasize >= 100000000000
-and id_cluster IN (select id_cluster from clusters where provider='minerva100');"
+and id_cluster IN (select id_cluster from clusters where provider='minerva100') and id_cluster !=244;"
 
 # Merged duplicated CBD results
 $MYSQL "update execs set id_cluster =126 where id_cluster =166;"
@@ -1283,7 +1283,7 @@ $MYSQL "update execs SET id_cluster=216 where id_cluster=114 and start_time > '2
 $MYSQL "delete from execs WHERE id_cluster=213 and exec like '20160826_003313_ETH_HDD_bD2F-Bench-hive_S100_D8_hdil8-D3-HDP24-213%'";
 
 # Delete failed 100GB HDI results
-$MYSQL "delete from execs WHERE id_cluster=233 and exec_time < 1000";
+$MYSQL "delete from execs WHERE id_cluster=233 and exe_time < 1000";
 
 
 
@@ -1304,8 +1304,14 @@ $MYSQL "delete from execs where exec like '20160420_024607_ETH_HDD_bD2F-Bench-hi
 # Failed HDI D3v2 results
 $MYSQL "delete from execs where id_cluster =205 and start_time < '2016-08-23'"
 
+# Older minerva results (with different settings)
+$MYSQL "delete from execs where id_cluster =244 and start_time < '2016-10-23 09:00:00';"
+
 # Incorrect ADLA result
 # 70b1e7a5-c919-41a9-8907-92adbd354caf_S1TB-Q8-P50_VM_R100_C1
+
+# Add a zero based result for CBD 1-7
+$MYSQL "INSERT IGNORE INTO execs(id_cluster,exec,bench,exe_time,start_time,end_time,net,disk,bench_type,exec_type,datasize,scale_factor,valid,filter,perf_details,replication,maps) values(202,'Fill_CBD202','query ALL',0.00,'2016-08-22 19:57:46','2016-08-22 20:00:16','ETH','HDD','TPC-H','D2F_manual',1000000000000,1000,1,0,1,2,2);"
 
 # Create aggregate ALL for TPC-H
 $MYSQL "
