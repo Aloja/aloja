@@ -107,6 +107,8 @@ tpc-h_load-text(){
 tpc-h_load-optimize() {
   local bench_name="${FUNCNAME[0]}"
 
+  [ ! "$BUCKETS" ] && BUCKETS=13
+
   local tables="part partsupp supplier customer orders lineitem nation region"
 
   local tables_files=""
@@ -119,12 +121,13 @@ tpc-h_load-optimize() {
   # Concatenate different table files
   cat $tables_files > "$all_path"
 
+
   local optimize_cmd="-f $all_path \
   -d DB=$TPCH_DB_NAME \
-  -d SOURCE=tpch_text_$TPCH_SCALE_FACTOR -d BUCKETS=13 \
+  -d SOURCE=tpch_text_$TPCH_SCALE_FACTOR -d BUCKETS=$BUCKETS \
   -d FILE=$BENCH_FILE_FORMAT"
 
-  logger "INFO: Optimizing tables: $TABLES"
+  logger "INFO: Optimizing tables: $TABLES using $BUCKETS buckets."
   execute_hive "$bench_name" "$optimize_cmd" "time"
 }
 
