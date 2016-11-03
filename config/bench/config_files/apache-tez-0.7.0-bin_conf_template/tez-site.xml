@@ -79,12 +79,7 @@
       <name>tez.lib.uris</name>
       <value>##TEZ_URI##</value>
     </property>
-
-    <property>
-      <name>tez.runtime.io.sort.mb</name>
-      <value>##IO_TEZ##</value>
-    </property>
-
+      
     <property>
       <name>tez.runtime.optimize.local.fetch</name>
       <value>true</value>

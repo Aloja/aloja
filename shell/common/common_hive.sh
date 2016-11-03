@@ -249,7 +249,7 @@ save_hive() {
   # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
-    $DSH "cp -r /var/log/hive $JOB_PATH/$bench_name_num/hive_logs/" #2> /dev/null
+    $DSH "mv -r /var/log/hive $JOB_PATH/$bench_name_num/hive_logs/" #2> /dev/null
 
     # Save Hive conf
     $DSH_MASTER "cd /etc/hive; tar -cjf $JOB_PATH/hive_conf.tar.bz2 conf"

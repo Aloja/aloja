@@ -29,8 +29,10 @@ fi
 set_BigBench_requires() {
   [ ! "$MAHOUT_VERSION" ] && die "No MAHOUT_VERSION specified"
 
+  MAHOUT_FOLDER="apache-mahout-distribution-${MAHOUT_VERSION}"
+
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
-  BENCH_REQUIRED_FILES["$MAHOUT_VERSION"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
+  BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
@@ -51,7 +53,7 @@ get_BigBench_exports() {
   else
     to_export="
     $(get_hive_exports)
-    export PATH='$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME';"
+    export PATH='$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME/bin';"
 
     if [ "$ENGINE" == "spark" ]; then
       to_export_spark="$(get_spark_exports)"
@@ -115,15 +117,16 @@ execute_BigBench(){
 initialize_BigBench_vars() {
   BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
   if [ "$clusterType" == "PaaS" ]; then
-    MAHOUT_HOME="$(get_local_apps_path)/apache-mahout-distribution-${MAHOUT_VERSION}/bin/" #TODO need to change mahout usage in PaaS
+    MAHOUT_HOME="$MAHOUT_FOLDER" #TODO need to change mahout usage in PaaS
   else
-    MAHOUT_HOME="$(get_local_apps_path)/apache-mahout-distribution-${MAHOUT_VERSION}/bin/"
+    MAHOUT_HOME="$MAHOUT_FOLDER"
   fi
 }
 
 # Sets the substitution values for the BigBench config
 get_BigBench_substitutions() {
   local java_bin
+  local hive_bin
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
@@ -131,13 +134,15 @@ get_BigBench_substitutions() {
 
   if [ "$clusterType" == "PaaS" ]; then
     java_bin="$(which java)"
+    hive_bin="$HIVE_HOME"
   else
     java_bin="$(get_java_home)/bin/java"
+    hive_bin="$HIVE_HOME/bin/hive"
   fi
 
   #Calculate Spark settings for BigBench
   if [ "$ENGINE" == "spark" ]; then
-      EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes-1)*($NUM_EXECUTOR_NODE))" | bc))"
+      EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes)*($NUM_EXECUTOR_NODE))" | bc))"
       EXECUTOR_CORES="$(printf %.$2f $(echo "($NUM_CORES)/($NUM_EXECUTOR_NODE)" | bc))"
       CONTAINER_MAX_MB="$(printf %.$2f $(echo "($PHYS_MEM)/($NUM_EXECUTOR_NODE)" | bc))"
       EXECUTOR_OFFSET="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)*(0.15)" | bc))"
@@ -178,7 +183,8 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
-s,##HIVE##,$HIVE_HOME/bin/hive,g;
+s,##HIVE##,$HIVE_HOME,g;
+s,##HIVE_BIN##,$hive_bin,g;
 s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
 s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
