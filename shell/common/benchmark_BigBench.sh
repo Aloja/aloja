@@ -33,7 +33,7 @@ benchmark_suite_run() {
 
   # TODO: review to generate data first time when DELETE_HDFS=0
   if [ "$DELETE_HDFS" == "1" ]; then
-    benchmark_cleanMetastore
+    benchmark_cleanAll
     benchmark_dataGen
     benchmark_populateMetastore
   else
@@ -50,7 +50,7 @@ benchmark_suite_run() {
 
 }
 
-benchmark_cleanQueries() {
+benchmark_cleanAll() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "cleanQueries" "time"
