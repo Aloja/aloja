@@ -333,7 +333,11 @@ import_folder() {
         if [[ ! -d "$bench_folder" || "$REDO_UNTARS" == "1" && "${bench_folder:0:5}" != "prep_" ]] ; then
           logger "INFO: Untaring $bzip_file in $(pwd)"
           logger "DEBUG:  LS: $(ls -lah "$bzip_file")"
-          tar -xf "$bzip_file"
+          if hash pbzip2 2> /dev/null ; then
+            tar -xf  "$bzip_file" --use-compress-prog=pbzip2 --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+          else
+            tar -xf "$bzip_file" --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+          fi
         fi
 
         if [ -d "$bench_folder" ] ; then

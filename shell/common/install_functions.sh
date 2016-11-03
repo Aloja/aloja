@@ -98,7 +98,11 @@ vm_install_base_packages() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo lsof" "update" #wamerican is for hivebench, gcc for tpch, hardinfo for collecting sys info
+    # wamerican, is for hivebench (dictionary)
+    # gcc, for tpch
+    # hardinfo, for collecting sys info
+    # pbzip2, for compressing out files faster
+    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo lsof pbzip2" "update"
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then
