@@ -6,7 +6,7 @@
 BENCH_REQUIRED_FILES["Hadoop-Examples"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/Hadoop-Examples.tar.gz"
 
 # List of allowed benchmarks (for validation)
-BENCH_ENABLED="wordcount terasort teravalidate dfsio sort grep"
+BENCH_ENABLED="wordcount terasort teravalidate dfsio grep sort"
 
 # Check supplied benchmarks
 check_bench_list
