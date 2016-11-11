@@ -35,9 +35,14 @@ benchmark_suite_run() {
   if [ "$DELETE_HDFS" == "1" ]; then
     benchmark_cleanAll
     benchmark_dataGen
-    benchmark_populateMetastore
   else
     logger "INFO: Reusing previous RUN BigBench data"
+  fi
+
+  if [ "$BIGBENCH_LOAD_METASTORE" == "1" ]; then
+    benchmark_populateMetastore
+  else
+    logger "INFO: Reusing previous Hive Metastore"
   fi
 
   for query in $BENCH_LIST ; do
