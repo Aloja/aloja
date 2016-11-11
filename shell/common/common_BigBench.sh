@@ -117,9 +117,9 @@ execute_BigBench(){
 initialize_BigBench_vars() {
   BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
   if [ "$clusterType" == "PaaS" ]; then
-    MAHOUT_HOME="$MAHOUT_FOLDER" #TODO need to change mahout usage in PaaS
+    MAHOUT_HOME="$(get_local_apps_path)/${MAHOUT_FOLDER}" #TODO need to change mahout usage in PaaS
   else
-    MAHOUT_HOME="$MAHOUT_FOLDER"
+    MAHOUT_HOME="$(get_local_apps_path)/${MAHOUT_FOLDER}"
   fi
 }
 
