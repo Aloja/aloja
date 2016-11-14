@@ -1158,7 +1158,7 @@ save_bench() {
 if hash pbzip2 2> /dev/null ; then
   tar -cf  $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num --use-compress-prog=pbzip2 --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
 else
-  tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num ---totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+  tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
 fi
 "
   #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
