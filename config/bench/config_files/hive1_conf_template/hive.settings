@@ -76,7 +76,7 @@ set hive.tez.container.size=##MAPS_MB##;
 set hive.tez.cpu.vcores=-1;
 set hive.tez.java.opts=-Xms##CONTAINER_80##m -Xmx##CONTAINER_80##m -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC;
 set tez.runtime.unordered.output.buffer.size-mb=##CONTAINER_10##;
-set tez.runtime.io.sort.mb=##CONTAINER_40##;
+-- set tez.runtime.io.sort.mb=##CONTAINER_40##;
 set hive.tez.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
 set hive.server2.tez.default.queues=default;
 set hive.server2.tez.initialize.default.sessions=false;
