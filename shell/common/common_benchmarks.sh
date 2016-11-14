@@ -1410,7 +1410,7 @@ time_cmd() {
 
     #Save exit status
     local status
-    EXIT_STATUS="$(grep 'Bench return val' <<< "$cmd_output"|cut -d':' -f2-|sed 's/[^0-9 ]*//g'|tr -s ' ')" # get only the numbers
+    EXIT_STATUS="$(grep 'Bench return val' <<< "$cmd_output"|cut -d':' -f2-|sed 's/[^0-9 ]*//g'|tr -s ' '|tr -d '\n' )" # get only the numbers
     EXIT_STATUS="${EXIT_STATUS:1}" # remove leading space
 
     # Check if we get something other than zeros as exit status
