@@ -5,7 +5,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
 #BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-[ ! "$BENCH_LIST" ] && BENCH_LIST="hadoop-mkdir"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="hadoop-version hadoop-classpath hadoop-mkdir"
 
 benchmark_suite_config() {
   initialize_hadoop_vars
@@ -45,6 +45,20 @@ benchmark_suite_save() {
 
 benchmark_suite_cleanup() {
   clean_hadoop
+}
+
+benchmark_hadoop-version() {
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  logger "INFO: Running $bench_name"
+
+  execute_hadoop_new "$bench_name" "version" "time"
+}
+
+benchmark_hadoop-classpath() {
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  logger "INFO: Running $bench_name"
+
+  execute_hadoop_new "$bench_name" "classpath" "time"
 }
 
 benchmark_hadoop-mkdir() {
