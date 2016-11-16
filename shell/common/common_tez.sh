@@ -9,7 +9,7 @@ set_tez_requires() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${TEZ_FOLDER}_conf_template"
 }
 
-# Helper to print a line with requiered exports
+# Helper to print a line with required exports
 get_tez_exports() {
   local to_export
   local TEZ_JARS=$(get_local_apps_path)/${TEZ_FOLDER}

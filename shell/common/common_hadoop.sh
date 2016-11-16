@@ -43,7 +43,7 @@ set_hadoop_requires() {
   [ ! "$ALOJA_FAST_MODE" ] && BENCH_PERF_MONITORS+=" MapRed JavaStat"
 }
 
-# Helper to print a line with Hadoop requiered exports
+# Helper to print a line with Hadoop required exports
 get_hadoop_exports() {
 
  if [ "$clusterType" == "PaaS" ]; then

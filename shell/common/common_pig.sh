@@ -12,7 +12,7 @@ set_pig_requires() {
   #BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS pig_conf_template"
 }
 
-# Helper to print a line with requiered exports
+# Helper to print a line with required exports
 get_pig_exports() {
   local to_export
 

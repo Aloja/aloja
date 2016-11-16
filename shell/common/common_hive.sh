@@ -22,7 +22,7 @@ set_hive_requires() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
 
-# Helper to print a line with requiered exports
+# Helper to print a line with required exports
 get_hive_exports() {
   local to_export
   local tez_exports
