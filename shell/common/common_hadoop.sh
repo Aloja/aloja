@@ -155,9 +155,6 @@ initialize_hadoop_vars() {
   HADOOP_CONF_DIR="/etc/hadoop/conf"
   HADOOP_EXPORTS=""
 
-  # This setting should not been here... fixing it.
-  #HDD=$BENCH_LOCAL_DIR
-
   update_traps "stop_monit;" "update_logger"
  else
   [ ! "$HDD" ] && die "HDD var not set!"
@@ -166,14 +163,6 @@ initialize_hadoop_vars() {
 
   HADOOP_CONF_DIR="$HDD/hadoop_conf"
   HADOOP_EXPORTS="$(get_hadoop_exports)"
-
-#  if [ ! "$HADOOP_VERSION" ] ; then
-#    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-#      HADOOP_VERSION="hadoop-1.0.3"
-#    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-#      HADOOP_VERSION="hadoop-2.6.0"
-#    fi
-#  fi
 
   # Use instrumented version of Hadoop
   if [ "$INSTRUMENTATION" == "1" ] ; then
@@ -740,7 +729,9 @@ $(get_hadoop_exports)"
 }
 
 # Returns the the path to the hadoop binary with the proper exports
+# $1 dont include exports
 get_hadoop_cmd() {
+  local dont_include_exports="$1"
   local hadoop_exports
   local hadoop_cmd
   local hadoop_bin
@@ -750,18 +741,24 @@ get_hadoop_cmd() {
     hadoop_exports=""
     hadoop_bin="hadoop"
   else
-    #TODO refactor
-    if [ "$EXECUTE_HIBENCH" ] ; then
-      hadoop_exports="$(get_HiBench_exports)
+    if [ ! "$dont_include_exports" ] ; then
+      #TODO refactor
+      if [ "$EXECUTE_HIBENCH" ] ; then
+        hadoop_exports="$(get_HiBench_exports)
 $(get_hadoop_exports)"
-    else
-      hadoop_exports="$(get_hadoop_exports)"
+      else
+        hadoop_exports="$(get_hadoop_exports)"
+      fi
     fi
 
     hadoop_bin="$BENCH_HADOOP_DIR/bin/hadoop"
   fi
 
-  hadoop_cmd="$hadoop_exports\n$hadoop_bin"
+  if [ "$hadoop_exports" ] ; then
+    hadoop_cmd="$hadoop_exports\n$hadoop_bin"
+  else
+    hadoop_cmd="$hadoop_bin"
+  fi
 
   echo -e "$hadoop_cmd"
 }
@@ -783,21 +780,15 @@ execute_hadoop_new(){
   # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
     execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
-    save_disk_usage "BEFORE"
-    restart_monit
-    set_bench_start "$bench"
   fi
 
   logger "DEBUG: Hadoop command:\n$hadoop_cmd"
 
   # Run the command and time it
-  time_cmd_master "$hadoop_cmd" "$time_exec"
+  execute_master "$bench" "$hadoop_cmd" "$time_exec"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
-    set_bench_end "$bench"
-    stop_monit
-    save_disk_usage "AFTER"
     execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) fs -df"
     save_hadoop "$bench"
   fi
