@@ -57,11 +57,20 @@
   <name>dfs.namenode.backup.address</name>
   <value>##NAMENODE##:##PORT_PREFIX##0105</value>
 </property>
+<property>
+  <name>dfs.client.read.shortcircuit</name>
+  <value>true</value>
+</property>
+<property>
+  <name>dfs.client.read.shortcircuit.streams.cache.size</name>
+  <value>4096</value>
+</property>
 
 <!-- For infiniBand -->
 <property>
   <name>dfs.datanode.dns.interface</name>
   <value>##IFACE##</value>
 </property>
+
 
 </configuration>
