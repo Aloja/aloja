@@ -1,4 +1,4 @@
-#!/bin/env bash
+#!/usr/bin/env bash
 #
 # cachestat - show Linux page cache hit/miss statistics.
 #             Uses Linux ftrace.
