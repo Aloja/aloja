@@ -810,15 +810,13 @@ execute_hadoop_new(){
 
   local hadoop_cmd="${chdir}$(get_hadoop_cmd) $cmd"
 
-  # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
     execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
   fi
 
   # Run the command and time it
-  execute_master "$bench" "$hadoop_cmd" "$time_exec"
+  execute_master "$bench" "$hadoop_cmd" "$time_exec" "dont_save"
 
-  # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
     execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) fs -df"
     save_hadoop "$bench"
@@ -975,12 +973,12 @@ save_hadoop() {
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
     ##Copy history logs
     logger "INFO: Getting mapreduce job history logs from HDFS"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$bench_name_num"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$bench_name_num" 2> /dev/null
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history" 2> /dev/null
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
-    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/hadoop_logs"
-    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/hadoop_logs"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/hadoop_logs" 2> /dev/null
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/hadoop_logs" 2> /dev/null
     #logger "INFO: Deleting history files after copy to local"
 
 #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"

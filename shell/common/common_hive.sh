@@ -83,7 +83,7 @@ execute_hive(){
   local hive_cmd="$(get_hive_cmd) $cmd"
 
   # Run the command and time it
-  execute_master "$bench" "$hive_cmd" "$time_exec"
+  execute_master "$bench" "$hive_cmd" "$time_exec" "dont_save"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then

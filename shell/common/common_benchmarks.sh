@@ -998,13 +998,13 @@ pidstat -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat
   elif [ "$perf_mon" == "dstat" ] ; then
      # Removed for ubuntu
      # -T --cpu-adv --top-cpu-adv -l -d --aio --disk-avgqu --disk-avgrq --disk-svctm --disk-tps --disk-util --disk-wait --top-bio-adv --top-io-adv --md-status -n --net-packets  -gimprsy --cpu-use --fs --top-int --top-latency -ipc -lock --mem-adv --top-mem --raw --unix --vm-adv --bits --nocolor --noheader --profile --power --proc-count --thermal --noheaders
-     #--cpu-adv --disk-avgqu --disk-avgrq --disk-svctm --disk-wait --md-status  --cpu-use --mem-adv --vm-adv --bits --thermal
+     #--cpu-adv --disk-avgqu --disk-avgrq --disk-svctm --disk-wait --md-status  --cpu-use --mem-adv --vm-adv --bits --thermal --top-io-adv --top-int
 
     if [ "$clusterType" != "PaaS" ]; then
       local dstat_log="$(get_local_bench_path)/dstat-\$(hostname).log"
       $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
     else
-      $DSH "dstat -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+      $DSH "dstat -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv -n --net-packets  -gimprsy --fs --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
     fi
   # perf
   elif [ "$perf_mon" == "perf" ] ; then
@@ -1017,7 +1017,6 @@ pidstat -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat
 
   # cachestat
   elif [ "$perf_mon" == "cachestat" ] ; then
-logger
       $DSH "sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_local_bench_path)/cachestat-\$(hostname).log &" & #2>&1
 
       if [ "$(get_extra_node_names)" ] ; then
@@ -1041,22 +1040,28 @@ stop_monit(){
       logger "INFO: Stoping monit (in case necessary). Monitors: $BENCH_PERF_MONITORS"
       for perf_mon in $BENCH_PERF_MONITORS ; do
 
+        local requires_sudo=""
+        if [[ "$perf_mon" == "iotop" || "$perf_mon" == "cachestat" ]] ; then
+          requires_sudo="sudo"
+        fi
+
+        local perf_mon_bin="$(get_local_bench_path)/aplic/${perf_mon}_$PORT_PREFIX"
+
         if ! inList "$BENCH_PERF_NON_BINARY" "$perf_mon" ; then
-          local perf_mon_bin="$(get_local_bench_path)/aplic/${perf_mon}_$PORT_PREFIX"
-          $DSH "killall -9 '$perf_mon_bin' 2> /dev/null"  #&
+          $DSH "$requires_sudo pkill -9 -f '[${perf_mon_bin:0:1}]${perf_mon_bin:1}' 2> /dev/null" #& # [] for it not to match itself in ssh
         elif [ "$perf_mon" == "MapRed" ] ; then
-          $DSH "pkill -9 -f [M]apCount" # [] for it not to match itself in ssh
+          $DSH "$requires_sudo pkill -9 -f [M]apCount" # [] for it not to match itself in ssh
         elif [ "$perf_mon" == "JavaStat" ] ; then
-          $DSH "pkill -9 pidstat" # TODO improve to use custom naming
+          $DSH "$requires_sudo pkill -9 pidstat" # TODO improve to use custom naming
         fi
 
         if [ "$(get_extra_node_names)" ] ; then
-          $DSH_EXTRA "killall -9 '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX' 2> /dev/null" #&
+          $DSH_EXTRA "$requires_sudo pkill -9 -f '[${perf_mon_bin:0:1}]${perf_mon_bin:1}' 2> /dev/null" #&
         fi
 
         # TODO this is something temporal for PaaS clusters
         if [ "$clusterType" == "PaaS" ]; then
-          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; killall -9 pidstat; pkill -9 -f [M]apCount; pgrep -f 'MapCount'|xargs kill -9; 2> /dev/null"  2> /dev/null
+          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; killall -9 pidstat; pkill -9 -f [M]apCount; pgrep -f 'MapCount'|xargs kill -9; $requires_sudo kill -9 iotop 2> /dev/null"  2> /dev/null
         fi
       done
       #logger "DEBUG: perf monitors ready"
@@ -1365,6 +1370,9 @@ time_cmd() {
   #TODO remove in the future
   [[ ! "$bench_name" && "$bench" ]] && bench_name="$bench"
 
+  # Clean bench name for storing into file
+  bench_name="$(safe_file_name "$bench_name")"
+
   # Default to all the nodes
   [ ! "$nodes_SSH" ] && nodes_SSH="$DSH"
 
@@ -1396,8 +1404,8 @@ $nodes_SSH -o -t -o -t --                                         `# Force a pse
 "stty -echo -onlcr;"                                              `# Avoid \n\r in tty` \
 "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\";" `# Change to seconds the bash time format` \
 "time bash -O huponexit -c '{ ${cmd}; }'\" "                      `# Time and run the command` \
-"|tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1 \""  `# Output all to tty and local file on each host` \
-2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9)  `# Capture all the combined output to file ` \
+"|tee $(get_local_bench_path)/${bench_name}_\$(hostname).out 2>&1 \""  `# Output all to tty and local file on each host` \
+2>&1 |tee $(get_local_bench_path)/${bench_name}.out |tee >(cat - >&9)  `# Capture all the combined output to file ` \
 )"
 
     9>&- # Close the file descriptor
@@ -1443,13 +1451,15 @@ time_cmd_master() {
 # Performs the actual benchmark execution
 # $1 benchmark name
 # $2 command
-# $3 if to time exec
+# $3 if to time exec (optional)
 # $4 nodes SSH string ($DSH)
+# $5 dont save benchmark internally, handled by caller (optional)
 execute_cmd(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
   local nodes_SSH="$4"
+  local dont_save="$5"
 
   # Default to all the nodes
   [ ! "$nodes_SSH" ] && nodes_SSH="$DSH"
@@ -1471,32 +1481,35 @@ execute_cmd(){
     set_bench_end "$bench"
     stop_monit
     #save_disk_usage "AFTER"
-    save_bench "$bench"
+    [ ! "$dont_save" ] && save_bench "$bench"
   fi
 }
 
 # Wrapper to set the number of nodes to ALL (including master)
 # $1 benchmark name
 # $2 command
-# $3 if to time exec
+# $3 if to time exec (optional)
+# $4 dont save benchmark internally, handled by caller (optional)
 execute_all(){
-  execute_cmd "$1" "$2" "$3"
+  execute_cmd "$1" "$2" "$3" "$4"
 }
 
 # Wrapper to set the number of nodes to MASTER only
 # $1 benchmark name
 # $2 command
-# $3 if to time exec
+# $3 if to time exec (optional)
+# $4 dont save benchmark internally, handled by caller (optional)
 execute_master(){
-  execute_cmd "$1" "$2" "$3" "$DSH_MASTER"
+  execute_cmd "$1" "$2" "$3" "$DSH_MASTER" "$4"
 }
 
 # Wrapper to set the number of nodes to SLAVES only
 # $1 benchmark name
 # $2 command
-# $3 if to time exec
+# $3 if to time exec (optional)
+# $4 dont save benchmark internally, handled by caller (optional)
 execute_slaves(){
-  execute_cmd "$1" "$2" "$3" "$DSH_SLAVES"
+  execute_cmd "$1" "$2" "$3" "$DSH_SLAVES" "$4"
 }
 
 save_disk_usage() {
