@@ -6,52 +6,54 @@ set_hadoop_requires
 set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
-  if [ "$BENCH_SUITE" == "BigBench" ]; then
+  if [ "$BENCH_SUITE" == "BigBench" ] || [[ "$BENCH_SUITE" =~ "D2F"* ]]; then
+    log_WARN "Setting Spark version to $SPARK_HIVE (for Hive compatibility)"
     BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/files/spark_hive_ubuntu-1.6.2.tar.gz"
     SPARK_VERSION=$SPARK_HIVE
     SPARK_FOLDER=$SPARK_HIVE
-
   else
-#      if [ "$clusterType" != "PaaS" ]; then
     SPARK_FOLDER="${SPARK_VERSION}-bin-without-hadoop"
-    BENCH_REQUIRED_FILES["$SPARK_FOLDER"]="http://apache.rediris.es/spark/$SPARK_VERSION/$SPARK_FOLDER.tgz"
-#      fi
+    BENCH_REQUIRED_FILES["$SPARK_FOLDER"]="http://archive.apache.org/dist/spark/$SPARK_VERSION/$SPARK_FOLDER.tgz"
   fi
 
   #also set the config here
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${SPARK_VERSION}_conf_template"
+  #BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${SPARK_VERSION}_conf_template"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-1.x_conf_template"
 }
 
-# Helper to print a line with requiered exports
+# Helper to print a line with required exports
 get_spark_exports() {
   local to_export
 
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    to_export="
+    to_export="$(get_hadoop_exports)
 export SPARK_VERSION='$SPARK_VERSION';
 export SPARK_HOME='$(get_local_apps_path)/${SPARK_FOLDER}';
-export SPARK_CONF_DIR=$(get_spark_conf_dir);
-export SPARK_LOG_DIR=$(get_local_bench_path)/spark_logs;
+export SPARK_CONF_DIR='$(get_spark_conf_dir)';
+export SPARK_LOG_DIR='$(get_local_bench_path)/spark_logs';
+export SPARK_DIST_CLASSPATH=\"\$($(get_hadoop_cmd 'no_exports') classpath)\";
 "
     echo -e "$to_export\n"
   fi
 }
 
 # Returns the the path to the spark binary with the proper exports
+# $1 spark_bin (optional)
 get_spark_cmd() {
+  local spark_bin="${1:-spark-submit}"
   local spark_exports
   local spark_cmd
 
   if [ "$clusterType" == "PaaS" ]; then
     spark_exports=""
-    spark_bin="spark"
+    spark_bin_path="$spark_bin"
   else
     spark_exports="$(get_spark_exports)"
-    spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/"
+    spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/$spark_bin"
   fi
-  spark_cmd="$spark_exports\n $spark_bin"
+  spark_cmd="$spark_exports\n$spark_bin"
 
   echo -e "$spark_cmd"
 }
@@ -60,38 +62,41 @@ get_spark_cmd() {
 # $1 benchmark name
 # $2 command
 # $3 if to time exec
+# $4 the spark bin to use ie., spark-sql (optional)
 execute_spark(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
+  local spark_bin="$4"
   local spark_cmd
 
   # if in PaaS use the bin in PATH and no exports
   if [ "$clusterType" == "PaaS" ]; then
     spark_cmd="$cmd"
   else
-    spark_cmd="$(get_spark_cmd)$cmd"
+    spark_cmd="$(get_spark_cmd "$spark_bin") $cmd"
   fi
-
-  # Start metrics monitor (if needed)
-  if [ "$time_exec" ] ; then
-    save_disk_usage "BEFORE"
-    restart_monit
-    set_bench_start "$bench"
-  fi
-
-  logger "DEBUG: Spark command:\n$spark_cmd"
 
   # Run the command and time it
-  time_cmd_master "$spark_cmd" "$time_exec"
+  execute_master "$bench" "$spark_cmd" "$time_exec"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
-    set_bench_end "$bench"
-    stop_monit
-    save_disk_usage "AFTER"
     save_spark "$bench"
   fi
+}
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_spark-sql(){
+  local bench="$1"
+  local cmd="$2"
+  local time_exec="$3"
+  local spark_cmd
+
+  execute_spark "$bench" "$cmd" "$time_exec" "spark-sql"
 }
 
 initialize_spark_vars() {
@@ -161,7 +166,7 @@ prepare_spark_config() {
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    $DSH "mkdir -p $SPARK_CONF_DIR && cp -r $(get_local_configs_path)/${SPARK_VERSION}_conf_template/* $SPARK_CONF_DIR/"
+    $DSH "mkdir -p $SPARK_CONF_DIR && cp -r $(get_local_configs_path)/spark-1.x_conf_template/* $SPARK_CONF_DIR/"
     subs=$(get_spark_substitutions)
     $DSH "/usr/bin/perl -i -pe \"$subs\" $SPARK_CONF_DIR/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $SPARK_CONF_DIR/slaves"
