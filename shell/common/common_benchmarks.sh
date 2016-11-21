@@ -1388,8 +1388,18 @@ time_cmd() {
   # Run the command normally, capturing the output, and creating a dump file and timing the command
   if [ ! "$in_background" ] ; then
     exec 9>&2 # Create a new file descriptor
-    # the '-o -t -o -t' are for forcing a pseudo-tty, so that on SIGTERM the command is propagated to the ssh command(s)
-    local cmd_output="$(shopt -s huponexit && $nodes_SSH -- "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\"; time bash -O huponexit -c '{ ${cmd} ; }'\" |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1 \"" 2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9) ) "
+
+    # Forcing a pseudo-tty, so that on SIGTERM the command is propagated to the ssh command(s)
+    local cmd_output="$(\
+shopt -s huponexit;                                               `# Make sure we HUP on exit` \
+$nodes_SSH -o -t -o -t --                                         `# Force a pseudo-tty in DSH`\
+"stty -echo -onlcr;"                                              `# Avoid \n\r in tty` \
+"export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\";" `# Change to seconds the bash time format` \
+"time bash -O huponexit -c '{ ${cmd}; }'\" "                      `# Time and run the command` \
+"|tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1 \""  `# Output all to tty and local file on each host` \
+2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9)  `# Capture all the combined output to file ` \
+)"
+
     9>&- # Close the file descriptor
   # Run in background (we don't capture times here)
   else
