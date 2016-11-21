@@ -82,23 +82,11 @@ execute_hive(){
 
   local hive_cmd="$(get_hive_cmd) $cmd"
 
-  # Start metrics monitor (if needed)
-  if [ "$time_exec" ] ; then
-    save_disk_usage "BEFORE"
-    restart_monit
-    set_bench_start "$bench"
-  fi
-
-  logger "DEBUG: Hive command:\n$hive_cmd"
-
   # Run the command and time it
-  time_cmd_master "$hive_cmd" "$time_exec"
+  execute_master "$bench" "$hive_cmd" "$time_exec"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
-    set_bench_end "$bench"
-    stop_monit
-    save_disk_usage "AFTER"
     save_hive "$bench"
   fi
 }
