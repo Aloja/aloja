@@ -477,7 +477,7 @@ initialize_node_names() {
   DSH="dsh -M -c -m "
   DSH_EXTRA="$DSH"
 
-  DSH_MASTER="ssh $master_name"
+  DSH_MASTER="dsh -H -m $master_name"
 
   DSH="$DSH $(nl2char "$node_names" ",") "
 
@@ -770,7 +770,7 @@ install_configs() {
       local full_config_folder_path="$(get_base_configs_path)/$config_folder"
       if [ -d "$full_config_folder_path" ] ; then
         logger "INFO: Synching configs from $config_folder"
-        $DSH "rsync -aur '$full_config_folder_path' '$(get_local_configs_path)' "
+        $DSH "rsync -aur --delete '$full_config_folder_path' '$(get_local_configs_path)' "
       else
         die "Cannot find config folder in $full_config_folder_path"
       fi
@@ -881,7 +881,7 @@ set_monit_binaries() {
               $DSH_EXTRA "mkdir -p '$(get_extra_node_folder)/aplic'; cp '$perf_mon_bin_path' '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"
             fi
           else
-            logger "ERROR: Cannot find $perf_mon binary on the system"
+            logger "ERROR: Cannot find $perf_mon binary on the system at: $perf_mon_bin_path"
           fi
         else
           logger "INFO: Setting up script-style perfomance monitor: $perf_mon"
@@ -1158,14 +1158,10 @@ save_bench() {
 if hash pbzip2 2> /dev/null ; then
   tar -cf  $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num --use-compress-prog=pbzip2 --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
 else
-  tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
+  tar -cjf $JOB_PATH/$bench_name_num.tar.bz2 $bench_name_num                            --totals --checkpoint=1000 --checkpoint-action=ttyout='%{%Y-%m-%d %H:%M:%S}t (%d sec): #%u, %T%*\r';
 fi
 "
-  #tar -cjf $JOB_PATH/host_conf.tar.bz2 conf_*;
   $DSH_MASTER "rm -rf $JOB_PATH/$bench_name_num"
-  #$JOB_PATH/conf_* #TODO check
-
-
 
   logger "INFO: Done saving benchmark $bench_name_num"
 }
@@ -1392,7 +1388,8 @@ time_cmd() {
   # Run the command normally, capturing the output, and creating a dump file and timing the command
   if [ ! "$in_background" ] ; then
     exec 9>&2 # Create a new file descriptor
-    local cmd_output="$($nodes_SSH "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\"; time bash -c '{ ${cmd} ; }'\" |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1\"" 2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9)) "
+    # the '-o -t -o -t' are for forcing a pseudo-tty, so that on SIGTERM the command is propagated to the ssh command(s)
+    local cmd_output="$(shopt -s huponexit && $nodes_SSH -- "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\"; time bash -O huponexit -c '{ ${cmd} ; }'\" |tee $(get_local_bench_path)/${bench}_\$(hostname).out 2>&1 \"" 2>&1 |tee $(get_local_bench_path)/${bench}.out |tee >(cat - >&9) ) "
     9>&- # Close the file descriptor
   # Run in background (we don't capture times here)
   else
@@ -1424,7 +1421,6 @@ time_cmd() {
   fi
 }
 
-# TODO Deprecated should use time_cmd specifying the node
 # Runs the given command wrapped "in time"
 # Creates a file descriptor to return output in realtime as well as keeping it
 # in a var to extract its time
@@ -1432,35 +1428,6 @@ time_cmd() {
 # $2 set bench time
 time_cmd_master() {
    time_cmd "$1" "$2" "$DSH_MASTER"
-
-#  local cmd="$1"
-#  local set_bench_time="$2"
-#
-#  if (( "$BENCH_CONCURRENCY" > 1 )) ; then
-#    cmd="$(concurrent_run "$cmd")"
-#    logger "INFO: executing with $BENCH_CONCURRENCY of concurrency"
-#    logger "DEBUG: Concurrent cmd: $cmd"
-#  fi
-#
-#  exec 9>&2 # Create a new file descriptor
-#  local cmd_output="$($DSH_MASTER "export TIMEFORMAT='Bench time ${bench} %R'; time bash -c '$cmd' |tee $(get_local_bench_path)/${bench}.out" 2>&1 |tee >(cat - >&9))"
-#  9>&- # Close the file descriptor
-#
-#  # Set the accurate time to the global var
-#  if [ "$set_bench_time" ] ; then
-#    BENCH_TIME="$(echo -e "$cmd_output"|awk 'END{print $NF}')"
-#    if (( "$BENCH_CONCURRENCY" > 1 )) ; then
-#      logger "DEBUG: BENCH_TIME=$BENCH_TIME # with $BENCH_CONCURRENCY concurrency "
-#    else
-#      logger "DEBUG: BENCH_TIME=$BENCH_TIME"
-#    fi
-#  fi
-
-  # Print warning if error of the last command (TODO: implement better)
-#  local last_cmd="$($DSH_MASTER "echo \$PIPESTATUS ")"
-#  if [[ "$last_cmd" > 0 ]] ; then
-#    logger "WARNING: last command exited with non-zero status. Please check manually"
-#  fi
 }
 
 # Performs the actual benchmark execution
@@ -1484,7 +1451,7 @@ execute_cmd(){
     set_bench_start "$bench"
   fi
 
-  logger "DEBUG: command:\n$cmd"
+  logger "DEBUG: command for $bench:\n$cmd"
 
   # Run the command and time it
   time_cmd "$cmd" "$time_exec" "$nodes_SSH" "$bench"
