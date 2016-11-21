@@ -432,3 +432,10 @@ is_number() {
   string="$1"
   [[ $string =~ ^-?[0-9.]+$ ]] && return 0 || return 1
 }
+
+# Strips invalid chars from filename strings
+# $1 string
+safe_file_name() {
+  local file_name="$1"
+  echo -e "$(sed -e 's/[^A-Za-z0-9._-]/_/g' <<< "$file_name")"
+}
