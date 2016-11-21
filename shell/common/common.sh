@@ -150,6 +150,10 @@ die() {
 # $1 extra commands to add
 setup_traps(){
   local extra_cmds="$1"
+
+# logger "Attempting to kill the whole (non-ssh) process tree now"
+# kill -9 -- -$$
+
   local trap_cmds="
 ((DONT_RETRY_TRAP++))
 if (( DONT_RETRY_TRAP > 1 )) ; then
@@ -168,6 +172,7 @@ if (( "$(echo -e "$jobs_to_kill" |wc -l)" > 1 )) ; then
 else
   logger "DEBUG: No processes left, exiting";
 fi
+
 echo -e "\n\n" #to prevent buffering
 exit 1;
 '
