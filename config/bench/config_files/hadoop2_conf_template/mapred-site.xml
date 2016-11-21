@@ -77,6 +77,25 @@
     <value>##AM_MB##</value>
 </property>
 
+<property>
+    <name>mapreduce.map.memory.mb</name>
+    <value>##MAPS_MB##</value>
+</property>
+
+<property>
+    <name>mapreduce.reduce.memory.mb</name>
+    <value>##REDUCES_MB##</value>
+</property>
+
+<property>
+    <name>mapreduce.map.java.opts</name>
+    <value>##JAVA_XMX##</value>
+</property>
+
+<property>
+    <name>mapreduce.reduce.java.opts</name>
+    <value>##JAVA_XMX##</value>
+</property>
 
 <property>
   <name>dfs.datanode.hostname</name>

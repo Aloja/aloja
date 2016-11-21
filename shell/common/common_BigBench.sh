@@ -156,6 +156,7 @@ get_BigBench_substitutions() {
 s,##JAVA_HOME##,$(get_java_home),g;
 s,##JAVA_BIN##,$java_bin,g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
+s,##HIVE_SETTINGS_FILE##,$HIVE_SETTINGS_FILE,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
