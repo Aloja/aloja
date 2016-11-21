@@ -104,6 +104,13 @@ tpc-h_load-text(){
   execute_hive "$bench_name" "-f $D2F_local_dir/tpch/ddl/alltables.sql -d DB=tpch_text_$TPCH_SCALE_FACTOR -d LOCATION=$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR" "time"
 }
 
+tpc-h_delete-text(){
+  local bench_name="${FUNCNAME[0]}"
+
+  logger "INFO: Deleting external plain tables to save space (if BENCH_KEEP_FILES is not set)"
+  clean_HDFS "$bench_name" "$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR"
+}
+
 tpc-h_load-optimize() {
   local bench_name="${FUNCNAME[0]}"
 
@@ -129,6 +136,8 @@ tpc-h_load-optimize() {
 
   logger "INFO: Optimizing tables: $TABLES using $BUCKETS buckets."
   execute_hive "$bench_name" "$optimize_cmd" "time"
+
+  tpc-h_delete-text
 }
 
 # Interrupts run if data has not been created properly
