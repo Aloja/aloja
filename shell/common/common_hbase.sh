@@ -133,6 +133,8 @@ get_hbase_substitutions() {
   local region_servers=''
   local backup_server=''
   local count=0
+  local cache=
+
   for node in $node_names ; do
     if [ "$count" == 0 ]; then
       servers+="${node}"
@@ -147,6 +149,25 @@ get_hbase_substitutions() {
     fi
     count=$((count+1))
   done
+
+  if [ "${HBASE_CACHE}" != "" ]; then
+    cache="<property>
+  <name>hbase.bucketcache.ioengine</name>
+  <value>file:${HBASE_CACHE}</value>
+</property>
+<property>
+  <name>hfile.block.cache.size</name>
+  <value>0.2</value>
+</property>
+  <property>
+  <name>hbase.bucketcache.size</name>
+  <value>${HBASE_BUCKETCACHE_SIZE}</value>
+</property>
+<property>
+  <name>hbase.bucketcache.combinedcache.enabled</name>
+  <value>true</value>
+</property>"
+  fi
 
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
@@ -182,7 +203,8 @@ s,##HDD##,$(get_local_bench_path),g;
 s~##SERVERS##~$servers~g;
 s,##REGION_SERVERS##,$region_servers,g;
 s,##BACKUP_SERVER##,$backup_server,g;
-s,##HBASE_MANAGES_ZK##,$HBASE_MANAGES_ZK,g
+s,##HBASE_MANAGES_ZK##,$HBASE_MANAGES_ZK,g;
+s,##HBASE_CACHE##,$cache,g;
 EOF
 }
 

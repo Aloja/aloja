@@ -40,4 +40,6 @@
     <name>hbase.zookeeper.property.dataDir</name>
     <value>##HDD##/zookeeper</value>
   </property>
+
+  ##HBASE_CACHE##
 </configuration>
