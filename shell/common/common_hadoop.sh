@@ -177,7 +177,11 @@ initialize_hadoop_vars() {
       update_traps "stop_hadoop; stop_monit;" "update_logger"
     fi
   else
-    update_traps "echo 'WARNING: leaving services running as requested (stop manually).';"
+    if [ "$BENCH_PERF_MONITORS" ] ; then
+      update_traps "stop_monit; logger 'WARNING: leaving services running as requested (stop manually).';" "update_logger"
+    else
+      update_traps "logger 'WARNING: leaving services running as requested (stop manually).';"
+    fi
   fi
 
  fi
@@ -320,6 +324,19 @@ prepare_hadoop_config(){
   logger "INFO: Preparing Hadoop run specific config"
   $DSH "mkdir -p $HDD/hadoop_conf; cp -r $(get_local_configs_path)/$(get_hadoop_config_folder)/* '$HDD/hadoop_conf';"
 
+  # Create datanodes socket file with required permissions
+  # see http://www.ibm.com/support/knowledgecenter/STXKQY_4.2.0/com.ibm.spectrum.scale.v4r2.adv.doc/bl1adv_ConfigureShortCircuitRead.htm
+  local short_circuit
+  if [ ! "$noSudo" ] ; then
+    local dn_socket="/var/run/aloja-run/hadoop_socket_$PORT_PREFIX"
+    local test_action="$($DSH "sudo mkdir -p '$dn_socket' && sudo chown $userAloja '$dn_socket' && sudo chmod 750 '$dn_socket' && rm -f '$dn_socket/dn_socket' && echo '$testKey';")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      short_circuit="1"
+    else
+      #log_WARN
+      die "Cannot create/set permissions for datanodes short circuit at: $dn_socket. Test output: $test_action"
+    fi
+  fi
 
   # Get the values
   subs=$(get_hadoop_substitutions)
@@ -332,8 +349,24 @@ $(get_perl_exports)
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/*.properties
 
 echo -e '$master_name' > $HADOOP_CONF_DIR/masters;
-echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;"
+echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;
 
+if [ '$short_circuit' ] ; then
+  /usr/bin/perl -0777 -i -pe 's{<!-- ##SHORT_CIRCUIT## -->}{
+<property>
+  <name>dfs.client.read.shortcircuit</name>
+  <value>true</value>
+</property>
+<property>
+  <name>dfs.domain.socket.path</name>
+  <value>$dn_socket/dn_socket</value>
+</property>
+<property>
+  <name>dfs.client.read.shortcircuit.streams.cache.size</name>
+  <value>4096</value>
+</property>}g' $HADOOP_CONF_DIR/hdfs-site.xml;
+fi
+"
 
   # Extra config for v2
   if [ "$(get_hadoop_major_version)" == "2" ]; then
@@ -781,8 +814,6 @@ execute_hadoop_new(){
   if [ "$time_exec" ] ; then
     execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
   fi
-
-  logger "DEBUG: Hadoop command:\n$hadoop_cmd"
 
   # Run the command and time it
   execute_master "$bench" "$hadoop_cmd" "$time_exec"
