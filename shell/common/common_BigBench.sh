@@ -89,16 +89,8 @@ execute_BigBench(){
   local time_exec="$3"
   local BigBench_exports
 
-
   local BigBench_cmd="$(get_BigBench_cmd) $cmd"
   echo $BigBench_cmd
-
-  # Start metrics monitor (if needed)
-  if [ "$time_exec" ] ; then
-    save_disk_usage "BEFORE"
-    restart_monit
-    set_bench_start "$bench"
-  fi
 
   logger "DEBUG: BigBench command:\n$BigBench_cmd"
 
