@@ -48,6 +48,8 @@ benchmark_prepare_hbase_ycsb_a(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
+  execute_hbase "$bench_name" "hbase shell -n <<< \"disable \\\"usertable\\\"; drop \\\"usertable\\\";\""
+
   nsplits=$(( $numberOfNodes * 10 ))  # HBase recommends (10 * number of regionservers)
 
   execute_hbase "$bench_name" "hbase shell -n <<< \"n_splits = $nsplits; create \\\"usertable\\\", \\\"family\\\", {SPLITS => (1..n_splits).map {|i| \\\"user#{1000+i*(9999-1000)/n_splits}\\\"}};\""
