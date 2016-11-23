@@ -395,7 +395,7 @@ vm_build_sar(){
 mkdir -p \"${build_dir}\" || exit 1
 cd \"${build_dir}\" || exit 1
 
-tarball=sysstat-10.2.1.tar.bz2
+tarball=sysstat-11.5.2.tar.bz2
 dir=\${tarball%.tar.bz2}
 
 wget -nv \"http://pagesperso-orange.fr/sebastien.godard/\${tarball}\" || exit 1

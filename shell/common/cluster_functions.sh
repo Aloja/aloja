@@ -134,6 +134,7 @@ vm_provision() {
       vm_initialize_disks #cluster is in parallel later
     fi
     vm_mount_disks
+    vm_build_required
   else
     logger "WARNING: Skipping package installation and disk mount due to sudo not being present or disabled for VM $vm_name"
 
@@ -267,17 +268,21 @@ chmod +x \$HOME/share/sw/bin/dsh || exit 1
 
 }
 
+# Builds specified sysstat version and copies it to bin dir
+# $1 path to copy the compiled binaries to (optional)
+# $2 sysstat version (optional)
 vm_build_sar(){
+  local bin_path="${1:-\$HOME/share/sw/bin}"
+  local sysstat_version="${2:-11.4.2}"
 
+  log_INFO "Building sysstat version $sysstat_version"
   vm_execute "
-
-# download and build sysstat for local use
 
 mkdir -p \$HOME/share/build || exit 1
 cd \$HOME/share/build || exit 1
 
-tarball=sysstat-10.2.1.tar.bz2
-dir=\${tarball%.tar.bz2}
+tarball=sysstat-$sysstat_version.tar.xz
+dir=\${tarball%.tar.xz}
 
 wget -nv \"http://pagesperso-orange.fr/sebastien.godard/\${tarball}\" || exit 1
 
@@ -286,13 +291,13 @@ rm -rf -- \"\${dir}\" || exit 1
 { tar -xf \"\${tarball}\" && rm \"\${tarball}\"; } || exit 1
 cd \"\${dir}\" || exit 1
 
-./configure || exit 1
-make || exit 1
+./configure --disable-nls || exit 1
+make clean && make || exit 1
 
-# we know that \$HOME/sw/bin is in our path because the deployment configures it
+# we know that $bin_path is in our path because the deployment configures it
 
-mkdir -p \$HOME/share/sw/bin || exit 1
-cp sar sadc iostat pidstat \$HOME/share/sw/bin || exit 1
+mkdir -p $bin_path || exit 1
+cp sar sadc iostat pidstat $bin_path || exit 1
 "
 
 }
@@ -1035,6 +1040,28 @@ vm_mount_disks() {
     fi
   else
     logger "Disks already mounted for VM $vm_name "
+  fi
+}
+
+vm_build_required() {
+  local bootstrap_file="${FUNCNAME[0]}"
+  if check_bootstraped "$bootstrap_file" ""; then
+    if [ "$vm_name" = "$(get_master_name)" ]; then
+      log_INFO "Building required packages on master node: $vm_name"
+
+      local bin_path="\$HOME/share/sw/bin"
+      vm_build_sar "$bin_path"
+
+      local test_action="$(vm_execute "ls \"$bin_path/sar\" && echo '$testKey'")"
+      if [[ "$test_action" == *"$testKey"* ]] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        log_WARN "Could not build sysstat correctly on $vm_name. Test output: $test_action"
+      fi
+    fi
+  else
+    logger "Builds already performed for $clusterName"
   fi
 }
 
