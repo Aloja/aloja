@@ -32,16 +32,19 @@ benchmark_suite_config() {
 }
 
 benchmark_suite_cleanup() {
-  clean_hbase
+  stop_hbase
   clean_hadoop
 }
 
+# $1 bench name
+# $2 workload to run
+# $3 time exec (optional)
 benchmark_hbase_ycsb_x(){
-
   local bench_name=$1
   local workload=$2
+  local time_exec=$3
 
-  execute_ycsb "$bench_name" "ycsb run hbase098 -P workloads/workload${workload} -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=1 -p table=usertable -p columnfamily=family -s"
+  execute_ycsb "$bench_name" "ycsb run hbase098 -P workloads/workload${workload} -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=1 -p table=usertable -p columnfamily=family -s" "$time_exec"
 }
 
 benchmark_prepare_hbase_ycsb_a(){
@@ -76,41 +79,41 @@ benchmark_hbase_ycsb_a() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  benchmark_hbase_ycsb_x "$bench_name" a
+  benchmark_hbase_ycsb_x "$bench_name" a "time"
 }
 
 benchmark_hbase_ycsb_b() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  benchmark_hbase_ycsb_x "$bench_name" b
+  benchmark_hbase_ycsb_x "$bench_name" b "time"
 }
 
 benchmark_hbase_ycsb_c() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  benchmark_hbase_ycsb_x "$bench_name" c
+  benchmark_hbase_ycsb_x "$bench_name" c "time"
 }
 
 benchmark_hbase_ycsb_d() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  benchmark_hbase_ycsb_x "$bench_name" d
+  benchmark_hbase_ycsb_x "$bench_name" d "time"
 }
 
 benchmark_hbase_ycsb_e() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  benchmark_hbase_ycsb_x "$bench_name" e
+  benchmark_hbase_ycsb_x "$bench_name" e "time"
 }
 
 benchmark_hbase_ycsb_f() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  benchmark_hbase_ycsb_x "$bench_name" f
+  benchmark_hbase_ycsb_x "$bench_name" f "time"
 }
 
