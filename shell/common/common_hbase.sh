@@ -72,23 +72,11 @@ execute_hbase(){
     hbase_cmd="$(get_hbase_cmd)$cmd"
   fi
 
-  # Start metrics monitor (if needed)
-  if [ "$time_exec" ] ; then
-    save_disk_usage "BEFORE"
-    restart_monit
-    set_bench_start "$bench"
-  fi
-
-  logger "DEBUG: Hbase command:\n$hbase_cmd"
-
   # Run the command and time it
-  time_cmd_master "$hbase_cmd" "$time_exec"
+  execute_master "$bench" "$hbase_cmd" "$time_exec" "dont_save"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
-    set_bench_end "$bench"
-    stop_monit
-    save_disk_usage "AFTER"
     save_hbase "$bench"
   fi
 }
