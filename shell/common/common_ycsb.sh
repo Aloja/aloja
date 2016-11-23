@@ -90,8 +90,5 @@ save_ycsb() {
   $DSH_MASTER "mv $HDD/ycsb_logs/* $JOB_PATH/$bench_name_num/ycsb_logs/ 2> /dev/null"
 
   save_hbase "$bench_name"
-
-  # save hadoop and defaults
-  save_hadoop "$bench_name"
 }
 
