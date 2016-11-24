@@ -259,7 +259,7 @@ import_folder() {
       }
     fi
 
-    logger "INFO: Entering folder\t$folder"
+    logger "INFO: Entering folder $folder"
     cd "$folder"
 
     #get all executions details
@@ -270,8 +270,14 @@ import_folder() {
       #logger "WARNING: Found new style config file, but in legacy method (missing config.sh?)"
       local log_folder_file="run_benchs.sh.log"
     else
-      logger "ERROR: cannot find a valid run log file for exec $folder. Continuing..."
-      return 0
+      logger "ERROR: cannot find a valid run log file for exec $folder. Current dir $(pwd). Continuing... "
+
+      # Make sure we go back to the original folder in case we have changed dirs
+      if [ "$BASE_DIR_ORIGINAL" ] ; then
+        BASE_DIR="$BASE_DIR_ORIGINAL"
+      fi
+      cd "$BASE_DIR"
+      return 1
     fi
 
     exec_params="$(get_exec_params "$log_folder_file" "$folder")"
@@ -507,10 +513,16 @@ import_folder() {
     fi
 
   else
-    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder, continuing."
+    [ ! -d "$folder" ] && logger "ERROR: $folder not a folder. Current dir $(pwd). Continuing..."
     [ -d "$folder" ] && [ "$folder_time" -gt "$min_time" ] && logger "ERROR: Folder time: $folder_time not greater than Min time: $min_time"
   fi
 
+  # Make sure we go back to the original folder in case we have changed dirs
+  if [ "$BASE_DIR_ORIGINAL" ] ; then
+    cd "$BASE_DIR_ORIGINAL"
+  else
+    cd "$BASE_DIR"
+  fi
 }
 
 

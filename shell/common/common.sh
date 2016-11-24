@@ -150,6 +150,10 @@ die() {
 # $1 extra commands to add
 setup_traps(){
   local extra_cmds="$1"
+
+# logger "Attempting to kill the whole (non-ssh) process tree now"
+# kill -9 -- -$$
+
   local trap_cmds="
 ((DONT_RETRY_TRAP++))
 if (( DONT_RETRY_TRAP > 1 )) ; then
@@ -168,6 +172,7 @@ if (( "$(echo -e "$jobs_to_kill" |wc -l)" > 1 )) ; then
 else
   logger "DEBUG: No processes left, exiting";
 fi
+
 echo -e "\n\n" #to prevent buffering
 exit 1;
 '
@@ -426,4 +431,11 @@ only_alpha() {
 is_number() {
   string="$1"
   [[ $string =~ ^-?[0-9.]+$ ]] && return 0 || return 1
+}
+
+# Strips invalid chars from filename strings
+# $1 string
+safe_file_name() {
+  local file_name="$1"
+  echo -e "$(sed -e 's/[^A-Za-z0-9._-]/_/g' <<< "$file_name")"
 }

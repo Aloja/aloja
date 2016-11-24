@@ -64,4 +64,6 @@
   <value>##IFACE##</value>
 </property>
 
+<!-- ##SHORT_CIRCUIT## -->
+
 </configuration>

@@ -43,7 +43,7 @@ set_hadoop_requires() {
   [ ! "$ALOJA_FAST_MODE" ] && BENCH_PERF_MONITORS+=" MapRed JavaStat"
 }
 
-# Helper to print a line with Hadoop requiered exports
+# Helper to print a line with Hadoop required exports
 get_hadoop_exports() {
 
  if [ "$clusterType" == "PaaS" ]; then
@@ -155,9 +155,6 @@ initialize_hadoop_vars() {
   HADOOP_CONF_DIR="/etc/hadoop/conf"
   HADOOP_EXPORTS=""
 
-  # This setting should not been here... fixing it.
-  #HDD=$BENCH_LOCAL_DIR
-
   update_traps "stop_monit;" "update_logger"
  else
   [ ! "$HDD" ] && die "HDD var not set!"
@@ -166,14 +163,6 @@ initialize_hadoop_vars() {
 
   HADOOP_CONF_DIR="$HDD/hadoop_conf"
   HADOOP_EXPORTS="$(get_hadoop_exports)"
-
-#  if [ ! "$HADOOP_VERSION" ] ; then
-#    if [ "$HADOOP_VERSION" == "hadoop1" ]; then
-#      HADOOP_VERSION="hadoop-1.0.3"
-#    elif [ "$HADOOP_VERSION" == "hadoop2" ] ; then
-#      HADOOP_VERSION="hadoop-2.6.0"
-#    fi
-#  fi
 
   # Use instrumented version of Hadoop
   if [ "$INSTRUMENTATION" == "1" ] ; then
@@ -188,7 +177,11 @@ initialize_hadoop_vars() {
       update_traps "stop_hadoop; stop_monit;" "update_logger"
     fi
   else
-    update_traps "echo 'WARNING: leaving services running as requested (stop manually).';"
+    if [ "$BENCH_PERF_MONITORS" ] ; then
+      update_traps "stop_monit; logger 'WARNING: leaving services running as requested (stop manually).';" "update_logger"
+    else
+      update_traps "logger 'WARNING: leaving services running as requested (stop manually).';"
+    fi
   fi
 
  fi
@@ -331,6 +324,19 @@ prepare_hadoop_config(){
   logger "INFO: Preparing Hadoop run specific config"
   $DSH "mkdir -p $HDD/hadoop_conf; cp -r $(get_local_configs_path)/$(get_hadoop_config_folder)/* '$HDD/hadoop_conf';"
 
+  # Create datanodes socket file with required permissions
+  # see http://www.ibm.com/support/knowledgecenter/STXKQY_4.2.0/com.ibm.spectrum.scale.v4r2.adv.doc/bl1adv_ConfigureShortCircuitRead.htm
+  local short_circuit
+  if [ ! "$noSudo" ] ; then
+    local dn_socket="/var/run/aloja-run/hadoop_socket_$PORT_PREFIX"
+    local test_action="$($DSH "sudo mkdir -p '$dn_socket' && sudo chown $userAloja '$dn_socket' && sudo chmod 750 '$dn_socket' && rm -f '$dn_socket/dn_socket' && echo '$testKey';")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      short_circuit="1"
+    else
+      #log_WARN
+      die "Cannot create/set permissions for datanodes short circuit at: $dn_socket. Test output: $test_action"
+    fi
+  fi
 
   # Get the values
   subs=$(get_hadoop_substitutions)
@@ -343,8 +349,24 @@ $(get_perl_exports)
 /usr/bin/perl -i -pe \"$subs\" $HADOOP_CONF_DIR/*.properties
 
 echo -e '$master_name' > $HADOOP_CONF_DIR/masters;
-echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;"
+echo -e \"$slaves\" > $HADOOP_CONF_DIR/slaves;
 
+if [ '$short_circuit' ] ; then
+  /usr/bin/perl -0777 -i -pe 's{<!-- ##SHORT_CIRCUIT## -->}{
+<property>
+  <name>dfs.client.read.shortcircuit</name>
+  <value>true</value>
+</property>
+<property>
+  <name>dfs.domain.socket.path</name>
+  <value>$dn_socket/dn_socket</value>
+</property>
+<property>
+  <name>dfs.client.read.shortcircuit.streams.cache.size</name>
+  <value>4096</value>
+</property>}g' $HADOOP_CONF_DIR/hdfs-site.xml;
+fi
+"
 
   # Extra config for v2
   if [ "$(get_hadoop_major_version)" == "2" ]; then
@@ -740,7 +762,9 @@ $(get_hadoop_exports)"
 }
 
 # Returns the the path to the hadoop binary with the proper exports
+# $1 dont include exports
 get_hadoop_cmd() {
+  local dont_include_exports="$1"
   local hadoop_exports
   local hadoop_cmd
   local hadoop_bin
@@ -750,18 +774,24 @@ get_hadoop_cmd() {
     hadoop_exports=""
     hadoop_bin="hadoop"
   else
-    #TODO refactor
-    if [ "$EXECUTE_HIBENCH" ] ; then
-      hadoop_exports="$(get_HiBench_exports)
+    if [ ! "$dont_include_exports" ] ; then
+      #TODO refactor
+      if [ "$EXECUTE_HIBENCH" ] ; then
+        hadoop_exports="$(get_HiBench_exports)
 $(get_hadoop_exports)"
-    else
-      hadoop_exports="$(get_hadoop_exports)"
+      else
+        hadoop_exports="$(get_hadoop_exports)"
+      fi
     fi
 
     hadoop_bin="$BENCH_HADOOP_DIR/bin/hadoop"
   fi
 
-  hadoop_cmd="$hadoop_exports\n$hadoop_bin"
+  if [ "$hadoop_exports" ] ; then
+    hadoop_cmd="$hadoop_exports\n$hadoop_bin"
+  else
+    hadoop_cmd="$hadoop_bin"
+  fi
 
   echo -e "$hadoop_cmd"
 }
@@ -780,24 +810,14 @@ execute_hadoop_new(){
 
   local hadoop_cmd="${chdir}$(get_hadoop_cmd) $cmd"
 
-  # Start metrics monitor (if needed)
   if [ "$time_exec" ] ; then
     execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
-    save_disk_usage "BEFORE"
-    restart_monit
-    set_bench_start "$bench"
   fi
 
-  logger "DEBUG: Hadoop command:\n$hadoop_cmd"
-
   # Run the command and time it
-  time_cmd_master "$hadoop_cmd" "$time_exec"
+  execute_master "$bench" "$hadoop_cmd" "$time_exec" "dont_save"
 
-  # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
-    set_bench_end "$bench"
-    stop_monit
-    save_disk_usage "AFTER"
     execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) fs -df"
     save_hadoop "$bench"
   fi
@@ -953,12 +973,12 @@ save_hadoop() {
   if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
     ##Copy history logs
     logger "INFO: Getting mapreduce job history logs from HDFS"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$bench_name_num"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$bench_name_num" 2> /dev/null
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history" 2> /dev/null
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
-    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/hadoop_logs"
-    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/hadoop_logs"
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/hadoop_logs" 2> /dev/null
+    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/hadoop_logs" 2> /dev/null
     #logger "INFO: Deleting history files after copy to local"
 
 #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"

@@ -38,7 +38,7 @@ set_BigBench_requires() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
 }
 
-# Helper to print a line with requiered exports
+# Helper to print a line with required exports
 get_BigBench_exports() {
 
   local to_export
