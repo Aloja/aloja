@@ -158,5 +158,6 @@ set hive.tez.dynamic.partition.pruning.max.event.size;
 !echo </settings from hiveSettings.sql>;
 !echo ============================;
 
-
-
+-- Database - DO NOT DELETE OR CHANGE
+CREATE DATABASE IF NOT EXISTS ${env:BIG_BENCH_DATABASE};
+use ${env:BIG_BENCH_DATABASE};
