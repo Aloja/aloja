@@ -125,8 +125,10 @@ vm_provision() {
     vm_install_base_packages
 
     if [ "$type" == "cluster" ] ; then
-      [ "$(must_install_ganglia)" = "1" ] && install_ganglia_gmond
-      config_ganglia_gmond "$clusterName"
+      if [ "$(must_install_ganglia)" == "1" ] ; then
+        install_ganglia_gmond
+        config_ganglia_gmond "$clusterName"
+      fi
     fi
 
     # On PaaS don't touch the disks... at least here
@@ -299,7 +301,6 @@ make clean && make || exit 1
 mkdir -p $bin_path || exit 1
 cp sar sadc iostat pidstat $bin_path || exit 1
 "
-
 }
 
 get_node_names() {
@@ -730,10 +731,10 @@ $(get_extra_fstab)"
 get_mount_disks() {
 
   local create_string="
-    mkdir -p $homePrefixAloja/$userAloja/{share,minerva};
-    sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
+    mkdir -p $homePrefixAloja/$userAloja/{share};
+    [ '$cloud_drive_letters' ] && sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     $(get_extra_mount_disks)
-    sudo chown -R $userAloja: /scratch;
+    [[ '$cloud_drive_letters' && -d /scratch ]] &&  sudo chown -R $userAloja: /scratch;
     sudo mount -a;
   "
   echo -e "$create_string"
@@ -1030,7 +1031,7 @@ vm_mount_disks() {
 
     vm_execute "$create_string"
 
-    #TODO make this test more roboust and to test all the mounts
+    #TODO make this test more robust and to test all the mounts
     local test_action="$(vm_execute "lsblk |grep '/scratch/attached' && echo '$testKey'")"
     if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
@@ -1050,14 +1051,21 @@ vm_build_required() {
       log_INFO "Building required packages on master node: $vm_name"
 
       local bin_path="\$HOME/share/sw/bin"
+
+      # Build sysstat
       vm_build_sar "$bin_path"
 
-      local test_action="$(vm_execute "ls \"$bin_path/sar\" && echo '$testKey'")"
+      local test_action="$(vm_execute "which dsh && echo '$testKey'")"
+      if [[ "$test_action" == *"$testKey"* ]] ; then
+        vm_build_dsh
+      fi
+
+      local test_action="$(vm_execute "ls \"$bin_path/sar\" && dsh --version |grep 'Junichi' && echo '$testKey'")"
       if [[ "$test_action" == *"$testKey"* ]] ; then
         #set the lock
         check_bootstraped "$bootstrap_file" "set"
       else
-        log_WARN "Could not build sysstat correctly on $vm_name. Test output: $test_action"
+        log_WARN "Could not build sysstat or DSH correctly on $vm_name. Test output: $test_action"
       fi
     fi
   else

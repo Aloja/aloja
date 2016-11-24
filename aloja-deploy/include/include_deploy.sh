@@ -80,7 +80,7 @@ fi
 logger "DEBUG: Loading $securedProviderFile"
 source "$securedProviderFile"
 
-logger " for Provider: $cloud_provider"
+logger "DEBUG: for Provider: $cloud_provider"
 
 #3) Re-load cluster config file (for overrides)
 
