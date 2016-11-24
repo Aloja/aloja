@@ -31,7 +31,7 @@ set_BigBench_requires() {
 
   MAHOUT_FOLDER="apache-mahout-distribution-${MAHOUT_VERSION}"
 
-  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
+  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/intel-hadoop/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
   BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
@@ -53,7 +53,8 @@ get_BigBench_exports() {
   else
     to_export="
     $(get_hive_exports)
-    export PATH='$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME/bin';"
+    export PATH='$PATH:$BENCH_HADOOP_DIR/bin/:$MAHOUT_HOME/bin';
+    export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR}"
 
     if [ "$ENGINE" == "spark" ]; then
       to_export_spark="$(get_spark_exports)"
@@ -232,7 +233,6 @@ save_BigBench() {
 
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
 
-  $DSH "cat $(get_local_bench_path)/src/BigBench/logs/times.csv >> $JOB_PATH/$bench_name_num/BigBench-results.csv"
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
     $DSH "cp $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   else
