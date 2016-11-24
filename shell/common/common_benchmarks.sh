@@ -868,9 +868,10 @@ set_monit_binaries() {
               continue
             fi
 
-          # Get it from the system path (normal case)
+          # Get it from the user path (normal case)
           else
-            perf_mon_bin_path="$($DSH_MASTER "which '$perf_mon'")"
+            # here we need an interactive term to source .bashrc automatically
+            perf_mon_bin_path="$($DSH_MASTER -o -t -o -t "stty -echo -onlcr; bash -i -c 'which \"$perf_mon\"'")"
           fi
 
           if [ -f "$perf_mon_bin_path" ] ; then
@@ -881,7 +882,8 @@ set_monit_binaries() {
               $DSH_EXTRA "mkdir -p '$(get_extra_node_folder)/aplic'; cp '$perf_mon_bin_path' '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"
             fi
           else
-            logger "ERROR: Cannot find $perf_mon binary on the system at: $perf_mon_bin_path"
+            log_ERR "Cannot find $perf_mon binary on the system at: $perf_mon_bin_path."
+            log_DEBUG "Perf monitor bin path: $($DSH_MASTER 'ls "$perf_mon_bin_path" 2>&1')"
           fi
         else
           logger "INFO: Setting up script-style perfomance monitor: $perf_mon"
