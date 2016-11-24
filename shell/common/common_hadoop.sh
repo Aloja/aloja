@@ -965,7 +965,7 @@ save_hadoop() {
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
       $DSH "cp -ru $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
     else
-      $DSH "mv $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
+      $DSH "mv '$HDD/hadoop_logs/*' $JOB_PATH/$bench_name_num/ " #2> /dev/null
     fi
   fi
 
