@@ -218,11 +218,13 @@ vm_build_dsh(){
 
 # download and build dsh for local use
 
-mkdir -p \$HOME/share/build || exit 1
-cd \$HOME/share/build || exit 1
+targetdir=\$HOME/share/$clusterName
+
+mkdir -p \${targetdir}/build || exit 1
+cd \${targetdir}/build || exit 1
 
 # target dir
-mkdir -p \$HOME/share/sw/bin || exit 1
+mkdir -p \${targetdir}/sw/bin || exit 1
 
 tarball1=libdshconfig-0.20.13.tar.gz
 tarball2=dsh-0.25.9.tar.gz
@@ -239,33 +241,33 @@ rm -rf -- \"\${dir1}\" \"\${dir2}\" || exit 1
 
 cd \"\${dir1}\" || exit 1
 
-./configure --prefix=\$HOME/share/sw || exit 1
+./configure --prefix=\${targetdir}/sw || exit 1
 make || exit 1
 make install || exit 1
 
 # now build dsh telling it where the library is
 
-cd \$HOME/share/build || exit 1
+cd \${targetdir}/build || exit 1
 { tar -xf \"\${tarball2}\" && rm \"\${tarball2}\"; } || exit 1
 cd \"\${dir2}\" || exit 1
 
-CFLAGS=\"-I\${HOME}/share/sw/include\" LDFLAGS=\"-L\${HOME}/share/sw/lib\" ./configure --prefix=\$HOME/share/sw || exit 1
-CFLAGS=\"-I\${HOME}/share/sw/include\" LDFLAGS=\"-L\${HOME}/share/sw/lib\" make || exit 1
+CFLAGS=\"-I\${targetdir}/sw/include\" LDFLAGS=\"-L\${targetdir}/sw/lib\" ./configure --prefix=\${targetdir}/sw || exit 1
+CFLAGS=\"-I\${targetdir}/sw/include\" LDFLAGS=\"-L\${targetdir}/sw/lib\" make || exit 1
 make install || exit 1
 
-# we know that \$HOME/sw/bin is in our path because the deployment configures it
+# we know that \${targetdir}/sw/bin is in our path because the deployment configures it
 
-mv \$HOME/share/sw/bin/{dsh,dsh.bin}
+mv \${targetdir}/sw/bin/{dsh,dsh.bin}
 
 # install wrapper to not depend on config file
 
 echo \"
 #!/bin/bash
 
-\$HOME/share/sw/bin/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
-\" > \$HOME/share/sw/bin/dsh || exit 1
+\${targetdir}/sw/bin/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
+\" > \${targetdir}/sw/bin/dsh || exit 1
 
-chmod +x \$HOME/share/sw/bin/dsh || exit 1
+chmod +x \${targetdir}/sw/bin/dsh || exit 1
 "
 
 }
@@ -280,8 +282,10 @@ vm_build_sar(){
   log_INFO "Building sysstat version $sysstat_version"
   vm_execute "
 
-mkdir -p \$HOME/share/build || exit 1
-cd \$HOME/share/build || exit 1
+targetdir=\$HOME/share/$clusterName
+
+mkdir -p \${targetdir}/build || exit 1
+cd \${targetdir}/build || exit 1
 
 tarball=sysstat-$sysstat_version.tar.xz
 dir=\${tarball%.tar.xz}
@@ -296,10 +300,10 @@ cd \"\${dir}\" || exit 1
 ./configure --disable-nls || exit 1
 make clean && make || exit 1
 
-# we know that $bin_path is in our path because the deployment configures it
+# we know that \$targetdir/sw/bin is in our path because the deployment configures it
 
-mkdir -p $bin_path || exit 1
-cp sar sadc iostat pidstat $bin_path || exit 1
+mkdir -p \${targetdir}/sw/bin || exit 1
+cp sar sadc iostat pidstat \${targetdir}/sw/bin || exit 1
 "
 }
 
