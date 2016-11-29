@@ -357,13 +357,14 @@ import_folder() {
           exec_values="$(echo -e "$exec_params"|egrep -m1 "^\"${bench_folder}\"")"
 
           if [ "$export_to_PAT" ] ; then
-            PAT_folder="../../PAT_${folder}/${bench_folder}"
+            PAT_folder="$BASE_DIR/PAT_${folder}/${bench_folder}"
+            MET_folder="$BASE_DIR/MET_${folder}/${bench_folder}"
 
             local start_date="$(echo -e "$exec_values"|cut -d',' -f 3)"
             start_date="${start_date:1:(-1)}" #strip quotes
             PAT_start_ts="$(date -d "$start_date" +%s)"
 
-            mkdir -p "$PAT_folder"
+            mkdir -p "$PAT_folder" "$MET_folder"
 
             # Copy the template if available
             local xlsm_file_path="$ALOJA_REPO_PATH/aloja-tools/result_templatev1.xlsm"
@@ -476,7 +477,9 @@ import_folder() {
           # Check if the export to Intel's PAT format was requested
           if [ "$export_to_PAT" ] ; then
             export2PAT
-            logger "INFO: Exported to PAT traces to $PAT_folder"
+            export2MET
+            logger "INFO: Exported to PAT traces to ${PAT_folder%/*}"
+            logger "INFO: Exported to MET traces to ${MET_folder%/*}"
           fi
 
           cd ..; logger "INFO: Leaving folder $bench_folder\n"
@@ -1320,24 +1323,73 @@ build_sysstat_version() {
   logger "INFO: attempting to download and build sysstat version $sysstat_version\n$(pwd)"
 
   if [ "$sysstat_version" ] ; then
-    local sysstat_file="$sysstat_base_path/sysstat-${sysstat_version}.tar.bz2"
-    wget --progress=dot -O "$sysstat_file" "http://pagesperso-orange.fr/sebastien.godard/sysstat-${sysstat_version}.tar.bz2" || rm "$sysstat_file"
+    local sysstat_file="$sysstat_base_path/sysstat-${sysstat_version}.tar.xz"
+    wget --progress=dot -O "$sysstat_file" "http://pagesperso-orange.fr/sebastien.godard/sysstat-${sysstat_version}.tar.xz" || rm "$sysstat_file"
     
     if [ -f "$sysstat_file" ] ; then
       local cur_dir="$(pwd)" # save the current working dir to go back
       cd $sysstat_base_path;
       tar xf $sysstat_file;
       cd sysstat-${sysstat_version};
-      ./configure && make && make test
+      ./configure --disable-nls && make && make test
       cd "$cur_dir"
     fi   
   fi
+}
+
+# Returns a category from the sar header
+# $1 header
+get_sysstat_filename(){
+  local header="$1"
+  local human_header
+
+  case "$header" in
+    *'CPU;%usr;%nice;'*)      human_header="CPU_util"         ;; # -u
+    *'proc/s;cswch/s'*)       human_header="switching"        ;; # -w
+    *'INTR;intr/s'*)          human_header="INTR"             ;; # undocumented
+    *'pswpin/s;pswpout/s'*)   human_header="swapping"         ;; # -W
+    *'pgpgin/s;pgpgout/s;'*)  human_header="paging"           ;; # -B
+    *'tps;rtps;wtps;'*)       human_header="IO_rate"          ;; # -b
+    *'frmpg/s;bufpg/s;'*)     human_header="mem"              ;; # -R
+    *'kbmemfree;kbmemused;'*) human_header="mem_util"         ;; # -r [ ALL ]
+    *'kbswpfree;kbswpused;'*) human_header="swap_util"        ;; # -S
+    *'kbhugfree;kbhugused;'*) human_header="huge_page_util"   ;; # -H
+    *'dentunusd;file-nr;'*)   human_header="file"             ;; # -v
+    *'DEV;tps;rd_sec/s;'*)    human_header="block_device"     ;; # -d
+    *'IFACE;rxpck/s;'*)       human_header="net"              ;; # -n DEV
+    *'IFACE;rxerr/s;'*)       human_header="net_errors"       ;; # -n EDEV
+    *'call/s;retrans/s;'*)    human_header="net_NFS"          ;; # -n NFS
+    *'scall/s;badcall/s;'*)   human_header="net_NFSD"         ;; # -n NFSD
+    *'totsck;tcpsck;'*)       human_header="net_SOCK"         ;; # -n SOCK
+    *'irec/s;fwddgm/s;'*)     human_header="net_IP"           ;; # -n IP
+    *'ihdrerr/s;iadrerr/s;'*) human_header="net_IP_errors"    ;; # -n IPE
+    *'imsg/s;omsg/s;'*)       human_header="net_ICMP"         ;; # -n ICMP
+    *'ierr/s;oerr/s;'*)       human_header="net_ICMP_errors"  ;; # -n EICMP
+    *'active/s;passive/s;'*)  human_header="net_TCP"          ;; # -n TCP
+    *'atmptf/s;estres/s;'*)   human_header="net_TCP_errors"   ;; # -n TCPE
+    *'idgm/s;odgm/s;'*)       human_header="net_UDP"          ;; # -n UDP
+    *'tcp6sck;udp6sck;'*)     human_header="net_SOCK6"        ;; # -n SOCK6
+    *'irec6/s;fwddgm6/s;'*)   human_header="net_IP6"          ;; # -n IP6
+    *'ihdrer6/s;iadrer6/s;'*) human_header="net_IP6_errors"   ;; # -n IP6E
+    *'imsg6/s;omsg6/s;'*)     human_header="net_ICMP6"        ;; # -n ICMP6
+    *'ierr6/s;idtunr6/s;'*)   human_header="net_ICMP6_errors" ;; # -n EICMP6
+    *'idgm6/s;odgm6/s;'*)     human_header="net_UDP6"         ;; # -n UDP6
+    *'CPU;MHz'*)              human_header="CPU_MHz"          ;; # -m CPU
+    *'manufact;product;'*)    human_header="USB"              ;; # -m USB
+    *'FILESYSTEM;MBfsfree;'*) human_header="mounts"           ;; # -F
+    *'runq-sz;plist-sz;'*)    human_header="CPU_load"         ;; # -q
+    #            *'1'*)       human_header=""     ;; # -
+    #*) log_WARN "Cannot get header for sysstat file with header: $header" ;;
+  esac
+
+  echo -e "$human_header"
 }
 
 # Exports data to PAT format
 export2PAT() {
   #SYSTAT
   logger "INFO: Exporting to PAT sysstat and vmstat files"
+
   for sar_file in sar*.sar ; do
     if [ -s "$sar_file" ] ; then
 
@@ -1349,9 +1401,9 @@ export2PAT() {
       [ ! -d "$PAT_host_folder" ] && mkdir -p "$PAT_host_folder"
 
       logger "INFO: Exporting to PAT sysstat for host: ${hostn}."
-      # cpustat file.
-      # For CPU, we filter values over 100 (sometimes present)
 
+      # cpustat file.
+      # For CPU %, we filter values over 100% (sometimes present)
       $sadf -d -U "$sar_file" -- -u |\
       awk -F ';' "NR == 1 {s = \"\"; for (i = 5; i <= NF; i++) s = s \$i \" \"; print \"HostName TimeStamp CPU \" s} \
                   NR > 1 {s = \"\"; for (i = 5; i <= NF; i++) if(\$i > 101 ){s = s 0.00 \" \"} else {s = s \$i \" \"}; print \$1 \" \" \$3 \" ALL \" s}" > "$PAT_host_folder/cpustat"
@@ -1365,7 +1417,6 @@ export2PAT() {
       $sadf -d -U "$sar_file" -- -n DEV |\
       awk -F ';' "NR == 1 {s = \"\"; for (i = 4; i <= NF; i++) s = s \$i \" \"; print \"HostName TimeStamp \" s} \
                   NR > 1 {s = \"\"; for (i = 4; i <= NF; i++) s = s \$i \" \"; print \$1 \" \" \$3 \" \" s}" > "$PAT_host_folder/netstat"
-
     else
       logger "WARNING: No valid sysstat files for exporting to PAT"
     fi
@@ -1383,7 +1434,7 @@ export2PAT() {
       logger "WARNING: No valid vmstat files for exporting to PAT"
     fi
   done
-  
+
   # IOSTAT
   for iostat_file in iostat-*.log ; do
     if [ -s $iostat_file ] ; then
@@ -1409,8 +1460,8 @@ export2PAT() {
       logger "WARNING: No valid mapred files for exporting to PAT"
     fi
   done
-  
-  # jvms
+
+  # java-stat
   for javastat_file in JavaStat-*.log ; do
     if [ -s $javastat_file ] ; then
       local hostn="${javastat_file:9:-4}"
@@ -1421,10 +1472,64 @@ export2PAT() {
     else
       logger "WARNING: No valid javastat files for exporting to PAT"
     fi
-  done  
+  done
 }
 
+# Copies perf metrics into individual folder
+export2MET(){
+  local MET_metrics_folder="$MET_folder/metrics"
+  [ ! -d "$MET_metrics_folder" ] && mkdir -p "$MET_metrics_folder"
 
+  log_INFO "Exporting to system metrics to MET"
+
+  cat vmstat-*.log    > "$MET_metrics_folder/vmstat.log"      2> /dev/null
+  cat iostat-*.log    > "$MET_metrics_folder/iostat.log"      2> /dev/null
+  cat MapRed-*.log    > "$MET_metrics_folder/MapRed.log"      2> /dev/null
+  cat JavaStat-*.log  > "$MET_metrics_folder/JavaStat.log"    2> /dev/null
+  cat cachestat-*     > "$MET_metrics_folder/cachestat.log"   2> /dev/null
+  cat dstat-*         > "$MET_metrics_folder/dstat.log"       2> /dev/null
+  cat iotop-*         > "$MET_metrics_folder/iotop.log"       2> /dev/null
+
+  # Extract all they sysstat files
+  for sar_file in sar*.sar ; do
+    if [ -s "$sar_file" ] ; then
+
+      check_sysstat_version "$sar_file"
+
+      local hostn="${sar_file:4:-4}"
+
+      logger "INFO: Exporting to MET sysstat for host: ${hostn}."
+
+      local sar_prefix="sar_${hostn}_"
+      # Export all metrics
+      $sadf -d -U "$sar_file" -- -A > "$MET_metrics_folder/${hostn}_sar_all" && {
+        local cur_dir="$(pwd)"
+        cd  "$MET_metrics_folder" && \
+        rm -rf "$sar_prefix"* && \
+        csplit -zq -f "$sar_prefix" "${hostn}_sar_all" "/^# hostname;/" {*} && \
+        for sar_metric in "$sar_prefix"*; do
+          local header="$(head -n +1 "$sar_metric")"
+          header=${header:30}
+          local human_header="$(get_sysstat_filename "$header")"
+
+          if [ "$human_header" ] ; then
+            header="$human_header"
+          else
+            log_WARN "Cannot get header for sysstat file with header: $header"
+            header="$(safe_file_name "$header")"
+            header="UNK_${header:0:64}"
+          fi
+
+          #mv "$sar_metric" "${sar_metric:0:(-3)}_$(safe_file_name "$header").tmp";
+          cat "$sar_metric" >> "sar_${header}.log"
+          rm "$sar_metric"
+        done
+        rm -f "${hostn}_sar_all"
+        cd "$cur_dir"
+      } || log_WARN "Could not extract perf metrics from SAR file"
+    fi
+  done
+}
 
 import_sar_files() {
   logger "INFO: Importing SAR files in: $(pwd)"
