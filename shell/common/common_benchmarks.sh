@@ -2,6 +2,7 @@
 
 #globals
 BENCH_CURRENT_NUM_RUN="0"
+BENCH_BIN_PATH="\$HOME/share/sw/bin"
 
 # Outputs a list of defined benchmark suites separated by spaces
 get_bench_suites() {
@@ -223,6 +224,19 @@ loggerb(){
 
 get_date_folder(){
   echo "$(date +%Y%m%d_%H%M%S)"
+}
+
+get_user_bin_path() {
+  echo -e "export PATH=$BENCH_BIN_PATH:\$PATH;"
+}
+
+# Wraps supplied command with DSH interactive options
+# $1 DSH connection string
+# $1 cmd
+execute_interactive() {
+ local DSH_string="$1"
+ local cmd="$2"
+ $DSH_string -o -t -o -t -- "stty -echo -onlcr; bash -i -c '$cmd'"
 }
 
 # Tests if the supplied hostname can coincides with any node in the cluster
@@ -748,7 +762,7 @@ sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $BENCH_
       else
         logger "INFO: Required packages bench: $BENCH_REQUIRED_PACKAGES are correctly installed"
       fi
-    elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "Redhat" || "$vmOSType" == "CentOS" ]] ; then
+    elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "RHEL" || "$vmOSType" == "CentOS" ]] ; then
       for package in $BENCH_REQUIRED_PACKAGES ; do
         if [ ! "$($DSH "which $package; 2> /dev/null")" ] ; then
           logger "INFO: Attempting to install: $BENCH_REQUIRED_PACKAGES"
@@ -870,19 +884,19 @@ set_monit_binaries() {
 
           # Get it from the user path (normal case)
           else
-            # here we need an interactive term to source .bashrc automatically
-            perf_mon_bin_path="$($DSH_MASTER -o -t -o -t "stty -echo -onlcr; bash -i -c 'which \"$perf_mon\"'")"
+            # we need to include our custom bin path as SSH is not interacitve
+            perf_mon_bin_path="$($DSH_MASTER "$(get_user_bin_path) which '$perf_mon'")"
           fi
 
           if [ -f "$perf_mon_bin_path" ] ; then
-            logger "INFO: Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
-            $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX'"
+            log_DEBUG "Copying $perf_mon binary from: $perf_mon_bin_path to $perf_mon_bench_path"
+            $DSH "mkdir -p '$perf_mon_bench_path'; cp '$perf_mon_bin_path' '$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX';"
 
             if [ "$(get_extra_node_names)" ] ; then
               $DSH_EXTRA "mkdir -p '$(get_extra_node_folder)/aplic'; cp '$perf_mon_bin_path' '$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX'"
             fi
           else
-            log_ERR "Cannot find $perf_mon binary on the system at: $perf_mon_bin_path."
+            log_ERR "Cannot find $perf_mon binary on the system at: $perf_mon_bin_path"
             log_DEBUG "Perf monitor bin path: $($DSH_MASTER 'ls "$perf_mon_bin_path" 2>&1')"
           fi
         else
@@ -929,13 +943,13 @@ run_monit() {
 
   if [ "$perf_mon" == "sar" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
-      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null  &" & #2>&1
+      $DSH "$(get_user_bin_path) $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & #2>&1
 
       if [ "$(get_extra_node_names)" ] ; then
-        $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -o $(get_extra_node_folder)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null  &" & #2>&1
+        $DSH_EXTRA "$(get_user_bin_path) $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -o $(get_extra_node_folder)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & #2>&1
       fi
     else
-      $DSH "sar -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & # 2>&1
+      $DSH "$(get_user_bin_path) sar -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & # 2>&1
     fi
   elif [ "$perf_mon" == "vmstat" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
@@ -1063,7 +1077,7 @@ stop_monit(){
 
         # TODO this is something temporal for PaaS clusters
         if [ "$clusterType" == "PaaS" ]; then
-          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; killall -9 pidstat; pkill -9 -f [M]apCount; pgrep -f 'MapCount'|xargs kill -9; $requires_sudo kill -9 iotop 2> /dev/null"  2> /dev/null
+          $DSH "killall -9 sadc; killall -9 vmstat; killall -9 iostat; killall -9 pidstat; pkill -9 -f [M]apCount; pgrep -f '[M]apCount'|xargs kill -9; $requires_sudo kill -9 iotop 2> /dev/null"  2> /dev/null
         fi
       done
       #logger "DEBUG: perf monitors ready"
