@@ -1261,7 +1261,7 @@ $MYSQL "delete from execs where id_cluster =117 and scale_factor > 10 and bench_
 $MYSQL "delete from execs where id_cluster =116 and scale_factor >= 100 and bench_type = 'TPC-H' and start_time < '2016-06-15' and exe_time < 250 and bench in ('query 1');"
 
 # Delete failed CBD results
-$MYSQL "delete from execs where id_cluster =120 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 50 and bench in ('query 1', 'query 2');"
+$MYSQL "delete from execs where id_cluster =120 and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 50;"
 $MYSQL "delete from execs where id_cluster IN (167) and scale_factor >= 1000 and bench_type = 'TPC-H' and exe_time < 50 and bench in ('query 1', 'query 2');"
 
 
