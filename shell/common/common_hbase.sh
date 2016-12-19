@@ -11,7 +11,7 @@ set_hadoop_requires
 set_hbase_requires() {
   [ ! "$HBASE_VERSION" ] && die "No HBASE_VERSION specified"
 
-  if [ "$clusterType" != "PaaS" ]; then
+  #if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
       HBASE_FOLDER="hbase-${HBASE_VERSION}"
       BENCH_REQUIRED_FILES["$HBASE_FOLDER"]="http://www-eu.apache.org/dist/hbase/$HBASE_VERSION/$HBASE_FOLDER-bin.tar.gz"
@@ -19,7 +19,7 @@ set_hbase_requires() {
       HBASE_FOLDER="hbase-${HBASE_VERSION}-hadoop1"
       BENCH_REQUIRED_FILES["$HBASE_FOLDER"]="http://www-eu.apache.org/dist/hbase/$HBASE_VERSION/$HBASE_FOLDER-bin.tar.gz"
     fi
-  fi
+  #fi
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${HBASE_FOLDER}_conf_template"
 }
@@ -28,14 +28,14 @@ set_hbase_requires() {
 get_hbase_exports() {
   local to_export
 
-  if [ "$clusterType" == "PaaS" ]; then
+  #if [ "$clusterType" == "PaaS" ]; then
     : # Empty
-  else
+  #else
     to_export="
     export HBASE_CONF_DIR=$HBASE_CONF_DIR
 "
     echo -e "$to_export\n"
-  fi
+  #fi
 }
 
 # Returns the the path to the hbase binary with the proper exports
@@ -43,13 +43,13 @@ get_hbase_cmd() {
   local hbase_exports
   local hbase_cmd
 
-  if [ "$clusterType" == "PaaS" ]; then
-    hbase_exports=""
-    hbase_bin="hbase"
-  else
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  hbase_exports=""
+  #  hbase_bin="hbase"
+  #else
     hbase_exports="$(get_hbase_exports)"
     hbase_bin="$HBASE_HOME/bin/"
-  fi
+  #fi
   hbase_cmd="$hbase_exports\n $hbase_bin"
 
   echo -e "$hbase_cmd"
@@ -66,11 +66,11 @@ execute_hbase(){
   local hbase_cmd
 
   # if in PaaS use the bin in PATH and no exports
-  if [ "$clusterType" == "PaaS" ]; then
-    hbase_cmd="$cmd"
-  else
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  hbase_cmd="$cmd"
+  #else
     hbase_cmd="$(get_hbase_cmd)$cmd"
-  fi
+  #fi
 
   # Run the command and time it
   execute_master "$bench" "$hbase_cmd" "$time_exec" "dont_save"
@@ -84,33 +84,40 @@ execute_hbase(){
 stop_hbase() {
   #Stop Hbase
   logger "INFO: Stopping hbase"
-  if [ "$clusterType" == "PaaS" ]; then
-    :
-  else
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  :
+  #else
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/stop-hbase.sh"
-  fi
+  #fi
 }
 
 start_hbase() {
   stop_hbase
 
+  logger "Sleeping 60 seconds to work around buggy HBase script"
+  sleep 60
+
   #Start Hbase
   logger "INFO: Starting hbase"
-  if [ "$clusterType" == "PaaS" ]; then
-    :
-  else
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  :
+  #else
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/start-hbase.sh"
-  fi
+  #fi
+
+  logger "Sleeping 15 seconds to allow HBase to fully initialize"
+  sleep 15
+
 }
 initialize_hbase_vars() {
 
-  if [ "$clusterType" == "PaaS" ]; then
-    HBASE_HOME="/usr"
-    HBASE_CONF_DIR="/etc/hbase/conf"
-  else
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  HBASE_HOME="/usr"
+  #  HBASE_CONF_DIR="/etc/hbase/conf"
+  #else
     HBASE_HOME="$(get_local_apps_path)/${HBASE_FOLDER}"
     HBASE_CONF_DIR="$(get_hbase_conf_dir)"
-  fi
+  #fi
 }
 
 # Sets the substitution values for the Hbase config
@@ -193,6 +200,7 @@ s,##REGION_SERVERS##,$region_servers,g;
 s,##BACKUP_SERVER##,$backup_server,g;
 s,##HBASE_MANAGES_ZK##,$HBASE_MANAGES_ZK,g;
 s,##HBASE_CACHE##,$cache,g;
+s,##HBASE_ROOT_DIR##,$HBASE_ROOT_DIR,g;
 EOF
 }
 
@@ -202,13 +210,13 @@ get_hbase_conf_dir() {
 
 prepare_hbase_config() {
   logger "INFO: Preparing hbase run specific config"
-  if [ "$clusterType" == "PaaS" ]; then
-    : # Empty
-  else
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  : # Empty
+  #else
     $DSH "mkdir -p $HBASE_CONF_DIR && cp -r $(get_local_configs_path)/${HBASE_FOLDER}_conf_template/* $HBASE_CONF_DIR/"
     subs=$(get_hbase_substitutions)
     $DSH "/usr/bin/perl -i -pe \"$subs\" $HBASE_CONF_DIR/*"
-  fi
+  #fi
 }
 
 # $1 bench name
@@ -223,11 +231,11 @@ save_hbase() {
   $DSH "mkdir -p $JOB_PATH/$bench_name_num/hbase_logs;"
 
   # Save hbase logs
-  if [ "$clusterType" == "PaaS" ]; then
-    : #
+  #if [ "$clusterType" == "PaaS" ]; then
+  #  : #
     # Save HBase conf
     # $DSH_MASTER "cd /etc/hive; tar -cjf $JOB_PATH/hive_conf.tar.bz2 conf"
-  else
+  #else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
       $DSH "cp $HDD/hbase_logs/* $JOB_PATH/$bench_name_num/hbase_logs/ 2> /dev/null"
     else
@@ -236,7 +244,7 @@ save_hbase() {
 
     # Save HBase conf
     $DSH_MASTER "cd $HDD/; tar -cjf $JOB_PATH/hbase_conf.tar.bz2 hbase_conf"
-  fi
+  #fi
 
   logger "INFO: Compressing and deleting hadoop configs for $bench_name_num"
 

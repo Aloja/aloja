@@ -44,7 +44,7 @@ benchmark_hbase_ycsb_x(){
   local workload=$2
   local time_exec=$3
 
-  execute_ycsb "$bench_name" "ycsb run hbase098 -P workloads/workload${workload} -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=1 -p table=usertable -p columnfamily=family -s" "$time_exec"
+  execute_ycsb "$bench_name" "ycsb run hbase098 -P workloads/workload${workload} -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s" "$time_exec"
 }
 
 benchmark_prepare_hbase_ycsb_a(){
@@ -57,7 +57,7 @@ benchmark_prepare_hbase_ycsb_a(){
 
   execute_hbase "$bench_name" "hbase shell -n <<< \"n_splits = $nsplits; create \\\"usertable\\\", \\\"family\\\", {SPLITS => (1..n_splits).map {|i| \\\"user#{1000+i*(9999-1000)/n_splits}\\\"}};\""
 
-  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloada -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=1 -p table=usertable -p columnfamily=family -s"
+  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloada -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s"
 
 }
 
@@ -71,7 +71,7 @@ benchmark_prepare_hbase_ycsb_e(){
 
   execute_hbase "$bench_name" "hbase shell -n <<< \"n_splits = $nsplits; create \\\"usertable\\\", \\\"family\\\", {SPLITS => (1..n_splits).map {|i| \\\"user#{1000+i*(9999-1000)/n_splits}\\\"}};\""
 
-  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloade -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=1 -p table=usertable -p columnfamily=family -s"
+  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloade -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s"
 
 }
 
