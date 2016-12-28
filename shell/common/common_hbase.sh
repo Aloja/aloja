@@ -99,7 +99,7 @@ stop_hbase() {
 start_hbase() {
   stop_hbase
 
-  logger "Sleeping 60 seconds to work around buggy HBase script"
+  log_WARN "Sleeping 60 seconds to work around buggy HBase script"
   sleep 60
 
   #Start Hbase

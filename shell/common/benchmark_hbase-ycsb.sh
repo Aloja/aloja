@@ -34,6 +34,8 @@ benchmark_suite_config() {
 benchmark_suite_cleanup() {
   stop_hbase
   clean_hadoop
+
+  log_WARN "Add cleanup when leaving services"
 }
 
 # $1 bench name
@@ -51,14 +53,14 @@ benchmark_prepare_hbase_ycsb_a(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  execute_hbase "$bench_name" "hbase shell -n <<< \"disable \\\"usertable\\\"; drop \\\"usertable\\\";\""
-
-  nsplits=$(( $numberOfNodes * 10 ))  # HBase recommends (10 * number of regionservers)
-
-  execute_hbase "$bench_name" "hbase shell -n <<< \"n_splits = $nsplits; create \\\"usertable\\\", \\\"family\\\", {SPLITS => (1..n_splits).map {|i| \\\"user#{1000+i*(9999-1000)/n_splits}\\\"}};\""
-
-  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloada -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s"
-
+  if [ ! "$BENCH_KEEP_FILES" ] ; then
+    execute_hbase "$bench_name" "hbase shell -n <<< \"disable \\\"usertable\\\"; drop \\\"usertable\\\";\""
+    nsplits=$(( $numberOfNodes * 10 ))  # HBase recommends (10 * number of regionservers)
+    execute_hbase "$bench_name" "hbase shell -n <<< \"n_splits = $nsplits; create \\\"usertable\\\", \\\"family\\\", {SPLITS => (1..n_splits).map {|i| \\\"user#{1000+i*(9999-1000)/n_splits}\\\"}};\""
+    execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloada -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s" "time"
+  else
+    logger "WARNING: reusing HDFS files"
+  fi
 }
 
 benchmark_prepare_hbase_ycsb_e(){
@@ -66,12 +68,9 @@ benchmark_prepare_hbase_ycsb_e(){
   logger "INFO: Running $bench_name"
 
   execute_hbase "$bench_name" "hbase shell -n <<< \"disable \\\"usertable\\\"; drop \\\"usertable\\\";\""
-
   nsplits=$(( $numberOfNodes * 10 ))  # HBase recommends (10 * number of regionservers)
-
   execute_hbase "$bench_name" "hbase shell -n <<< \"n_splits = $nsplits; create \\\"usertable\\\", \\\"family\\\", {SPLITS => (1..n_splits).map {|i| \\\"user#{1000+i*(9999-1000)/n_splits}\\\"}};\""
-
-  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloade -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s"
+  execute_ycsb "$bench_name" "ycsb load hbase098 -P workloads/workloade -cp ${HBASE_CONF_DIR} -p recordcount=${BENCH_DATA_SIZE} -p operationcount=${YCSB_OPERATIONCOUNT} -p target=${YCSB_OPERATIONCOUNT} -p threadcount=${YCSB_THREADS} -p table=usertable -p columnfamily=family -s" "time"
 
 }
 
