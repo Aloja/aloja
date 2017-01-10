@@ -735,7 +735,7 @@ $(get_extra_fstab)"
 get_mount_disks() {
 
   local create_string="
-    mkdir -p $homePrefixAloja/$userAloja/{share};
+    mkdir -p $homePrefixAloja/$userAloja/share;
     [ '$cloud_drive_letters' ] && sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     $(get_extra_mount_disks)
     [[ '$cloud_drive_letters' && -d /scratch ]] &&  sudo chown -R $userAloja: /scratch;
