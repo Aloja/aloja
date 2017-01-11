@@ -98,6 +98,7 @@ initialize_hive_vars() {
   if [ "$clusterType" == "PaaS" ]; then
     HIVE_HOME="/usr/bin/hive"
     HIVE_CONF_DIR="/etc/hive/conf"
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB_PaaS"
   else
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
     HIVE_CONF_DIR="$HDD/hive_conf"
@@ -105,7 +106,7 @@ initialize_hive_vars() {
     if [ "$BENCH_SUITE" == "BigBench" ]; then
       [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB"
     else
-      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB"
+      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
     fi
 
     if [ "$HIVE_ENGINE" == "tez" ]; then
@@ -190,6 +191,8 @@ prepare_hive_config() {
     time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
     #just in case
     time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+
+    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings.BB_PaaS $(get_hive_conf_dir);"
 
   else
     logger "INFO: Preparing Hive run specific config"
