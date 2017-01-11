@@ -101,7 +101,7 @@ execute_spark-sql(){
 
 initialize_spark_vars() {
   if [ "$clusterType" == "PaaS" ]; then
-    SPARK_HOME="/usr/hdp/current/spark-client" ## TODO ONLY WORKING IN HDI
+    SPARK_HOME="/usr" ## TODO ONLY WORKING IN HDI
     SPARK_CONF_DIR="/etc/spark/conf"
   else
     SPARK_HOME="$(get_local_apps_path)/${SPARK_FOLDER}"
