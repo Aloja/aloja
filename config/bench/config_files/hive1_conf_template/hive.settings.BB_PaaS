@@ -1,0 +1,10 @@
+-- Needed for BigBench
+
+set bigbench.hive.optimize.sampling.orderby=true;
+set bigbench.hive.optimize.sampling.orderby.number=20000;
+set bigbench.hive.optimize.sampling.orderby.percent=0.1;
+
+-- Database - DO NOT DELETE OR CHANGE
+ CREATE DATABASE IF NOT EXISTS ${env:BIG_BENCH_DATABASE};
+ use ${env:BIG_BENCH_DATABASE};
+

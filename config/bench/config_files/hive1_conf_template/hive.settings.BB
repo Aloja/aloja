@@ -161,3 +161,11 @@ set hive.tez.dynamic.partition.pruning.max.event.size;
 -- Database - DO NOT DELETE OR CHANGE
 CREATE DATABASE IF NOT EXISTS ${env:BIG_BENCH_DATABASE};
 use ${env:BIG_BENCH_DATABASE};
+
+
+
+-- NEEDED FOR BB
+set bigbench.hive.optimize.sampling.orderby=true;
+set bigbench.hive.optimize.sampling.orderby.number=20000;
+set bigbench.hive.optimize.sampling.orderby.percent=0.1;
+
