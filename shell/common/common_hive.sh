@@ -64,9 +64,7 @@ get_hive_cmd() {
     local hive_bin="$HIVE_HOME/bin/hive"
   fi
 
-  [ "$HIVE_SETTINGS_FILE" ] && hive_settings_file="-i $HIVE_SETTINGS_FILE"
-
-  hive_cmd="$hive_exports\n$hive_bin $hive_settings_file" #\ncd '$HDD_TMP';
+  hive_cmd="$hive_exports\n$hive_bin" #\ncd '$HDD_TMP'; #ELIMINATED hive_settings_file from the execution
 
   echo -e "$hive_cmd"
 }
@@ -75,7 +73,7 @@ get_hive_cmd() {
 # $1 benchmark name
 # $2 command
 # $3 if to time exec
-execute_hive(){
+execute_hive() {
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
@@ -91,6 +89,28 @@ execute_hive(){
   fi
 }
 
+start_hive_server() {
+#  stop_hive_server
+
+  #Start Hbase
+  logger "INFO: Starting hive"
+  if [ "$clusterType" == "PaaS" ]; then
+    :
+  else
+    execute_hive "Start hiveServer2" "--service hiveserver2" "time"
+  fi
+}
+
+stop_hive_server() {
+  #Stop Hbase
+  logger "INFO: Stopping hive"
+  if [ "$clusterType" == "PaaS" ]; then
+    :
+  else
+    :
+  fi
+}
+
 initialize_hive_vars() {
 
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
@@ -98,6 +118,7 @@ initialize_hive_vars() {
   if [ "$clusterType" == "PaaS" ]; then
     HIVE_HOME="/usr/bin/hive"
     HIVE_CONF_DIR="/etc/hive/conf"
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB_PaaS"
   else
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
     HIVE_CONF_DIR="$HDD/hive_conf"
@@ -105,7 +126,7 @@ initialize_hive_vars() {
     if [ "$BENCH_SUITE" == "BigBench" ]; then
       [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB"
     else
-      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB"
+      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
     fi
 
     if [ "$HIVE_ENGINE" == "tez" ]; then
@@ -190,6 +211,8 @@ prepare_hive_config() {
     time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
     #just in case
     time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+
+    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings.BB_PaaS $(get_hive_conf_dir);"
 
   else
     logger "INFO: Preparing Hive run specific config"

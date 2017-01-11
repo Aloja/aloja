@@ -17,4 +17,24 @@
     <value>##HIVE_ENGINE##</value>
   </property>
 
+  <property>
+    <name>hive.server2.thrift.port</name>
+    <value>10000</value>
+  </property>
+
+  <property>
+    <name>hive.server2.thrift.min.worker.threads</name>
+    <value>5</value>
+  </property>
+
+  <property>
+    <name>hive.server2.thrift.max.worker.threads</name>
+    <value>500</value>
+  </property>
+
+  <property>
+    <name>hive.server2.thrift.bind.host</name>
+    <value>localhost</value>
+  </property>
+
 </configuration>

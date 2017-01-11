@@ -14,6 +14,7 @@ benchmark_suite_config() {
 
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
+  start_hive_server
 }
 
 benchmark_suite_cleanup() {
