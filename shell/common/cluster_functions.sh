@@ -125,8 +125,10 @@ vm_provision() {
     vm_install_base_packages
 
     if [ "$type" == "cluster" ] ; then
-      [ "$(must_install_ganglia)" = "1" ] && install_ganglia_gmond
-      config_ganglia_gmond "$clusterName"
+      if [ "$(must_install_ganglia)" == "1" ] ; then
+        install_ganglia_gmond
+        config_ganglia_gmond "$clusterName"
+      fi
     fi
 
     # On PaaS don't touch the disks... at least here
@@ -134,6 +136,7 @@ vm_provision() {
       vm_initialize_disks #cluster is in parallel later
     fi
     vm_mount_disks
+    vm_build_required
   else
     logger "WARNING: Skipping package installation and disk mount due to sudo not being present or disabled for VM $vm_name"
 
@@ -215,11 +218,13 @@ vm_build_dsh(){
 
 # download and build dsh for local use
 
-mkdir -p \$HOME/share/build || exit 1
-cd \$HOME/share/build || exit 1
+targetdir=\$HOME/share/$clusterName
+
+mkdir -p \${targetdir}/build || exit 1
+cd \${targetdir}/build || exit 1
 
 # target dir
-mkdir -p \$HOME/share/sw/bin || exit 1
+mkdir -p \${targetdir}/sw/bin || exit 1
 
 tarball1=libdshconfig-0.20.13.tar.gz
 tarball2=dsh-0.25.9.tar.gz
@@ -236,48 +241,54 @@ rm -rf -- \"\${dir1}\" \"\${dir2}\" || exit 1
 
 cd \"\${dir1}\" || exit 1
 
-./configure --prefix=\$HOME/share/sw || exit 1
+./configure --prefix=\${targetdir}/sw || exit 1
 make || exit 1
 make install || exit 1
 
 # now build dsh telling it where the library is
 
-cd \$HOME/share/build || exit 1
+cd \${targetdir}/build || exit 1
 { tar -xf \"\${tarball2}\" && rm \"\${tarball2}\"; } || exit 1
 cd \"\${dir2}\" || exit 1
 
-CFLAGS=\"-I\${HOME}/share/sw/include\" LDFLAGS=\"-L\${HOME}/share/sw/lib\" ./configure --prefix=\$HOME/share/sw || exit 1
-CFLAGS=\"-I\${HOME}/share/sw/include\" LDFLAGS=\"-L\${HOME}/share/sw/lib\" make || exit 1
+CFLAGS=\"-I\${targetdir}/sw/include\" LDFLAGS=\"-L\${targetdir}/sw/lib\" ./configure --prefix=\${targetdir}/sw || exit 1
+CFLAGS=\"-I\${targetdir}/sw/include\" LDFLAGS=\"-L\${targetdir}/sw/lib\" make || exit 1
 make install || exit 1
 
-# we know that \$HOME/sw/bin is in our path because the deployment configures it
+# we know that \${targetdir}/sw/bin is in our path because the deployment configures it
 
-mv \$HOME/share/sw/bin/{dsh,dsh.bin}
+mv \${targetdir}/sw/bin/{dsh,dsh.bin}
 
 # install wrapper to not depend on config file
 
 echo \"
 #!/bin/bash
 
-\$HOME/share/sw/bin/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
-\" > \$HOME/share/sw/bin/dsh || exit 1
+\${targetdir}/sw/bin/dsh.bin -r ssh -F 5 \\\"\\\$@\\\"
+\" > \${targetdir}/sw/bin/dsh || exit 1
 
-chmod +x \$HOME/share/sw/bin/dsh || exit 1
+chmod +x \${targetdir}/sw/bin/dsh || exit 1
 "
 
 }
 
+# Builds specified sysstat version and copies it to bin dir
+# $1 path to copy the compiled binaries to (optional)
+# $2 sysstat version (optional)
 vm_build_sar(){
+  local bin_path="${1:-\$HOME/share/sw/bin}"
+  local sysstat_version="${2:-11.4.2}"
 
+  log_INFO "Building sysstat version $sysstat_version"
   vm_execute "
 
-# download and build sysstat for local use
+targetdir=\$HOME/share/$clusterName
 
-mkdir -p \$HOME/share/build || exit 1
-cd \$HOME/share/build || exit 1
+mkdir -p \${targetdir}/build || exit 1
+cd \${targetdir}/build || exit 1
 
-tarball=sysstat-10.2.1.tar.bz2
-dir=\${tarball%.tar.bz2}
+tarball=sysstat-$sysstat_version.tar.xz
+dir=\${tarball%.tar.xz}
 
 wget -nv \"http://pagesperso-orange.fr/sebastien.godard/\${tarball}\" || exit 1
 
@@ -286,15 +297,14 @@ rm -rf -- \"\${dir}\" || exit 1
 { tar -xf \"\${tarball}\" && rm \"\${tarball}\"; } || exit 1
 cd \"\${dir}\" || exit 1
 
-./configure || exit 1
-make || exit 1
+./configure --disable-nls || exit 1
+make clean && make || exit 1
 
-# we know that \$HOME/sw/bin is in our path because the deployment configures it
+# we know that \$targetdir/sw/bin is in our path because the deployment configures it
 
-mkdir -p \$HOME/share/sw/bin || exit 1
-cp sar sadc iostat pidstat \$HOME/share/sw/bin || exit 1
+mkdir -p \${targetdir}/sw/bin || exit 1
+cp sar sadc iostat pidstat \${targetdir}/sw/bin || exit 1
 "
-
 }
 
 get_node_names() {
@@ -725,10 +735,10 @@ $(get_extra_fstab)"
 get_mount_disks() {
 
   local create_string="
-    mkdir -p $homePrefixAloja/$userAloja/{share,minerva};
-    sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
+    mkdir -p $homePrefixAloja/$userAloja/share;
+    [ '$cloud_drive_letters' ] && sudo mkdir -p /scratch/attached/{1..$attachedVolumes} /scratch/local;
     $(get_extra_mount_disks)
-    sudo chown -R $userAloja: /scratch;
+    [[ '$cloud_drive_letters' && -d /scratch ]] &&  sudo chown -R $userAloja: /scratch;
     sudo mount -a;
   "
   echo -e "$create_string"
@@ -928,7 +938,7 @@ vm_set_dot_files() {
 export HISTSIZE=50000
 alias a='dsh -g a -M -c'
 alias s='dsh -g s -M -c'
-export PATH=\$HOME/share/sw/bin:\$PATH" ""
+export PATH=\$HOME/share/${clusterName}/sw/bin:\$PATH" ""
 
     else
       vm_update_template "$homePrefixAloja/$userAloja/.bashrc" "
@@ -1025,7 +1035,7 @@ vm_mount_disks() {
 
     vm_execute "$create_string"
 
-    #TODO make this test more roboust and to test all the mounts
+    #TODO make this test more robust and to test all the mounts
     local test_action="$(vm_execute "lsblk |grep '/scratch/attached' && echo '$testKey'")"
     if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
@@ -1035,6 +1045,35 @@ vm_mount_disks() {
     fi
   else
     logger "Disks already mounted for VM $vm_name "
+  fi
+}
+
+vm_build_required() {
+  local bootstrap_file="${FUNCNAME[0]}"
+  if check_bootstraped "$bootstrap_file" ""; then
+    if [ "$vm_name" = "$(get_master_name)" ]; then
+      log_INFO "Building required packages on master node: $vm_name"
+
+      local bin_path="\$HOME/share/sw/bin"
+
+      # Build sysstat
+      vm_build_sar "$bin_path"
+
+      local test_action="$(vm_execute "which dsh && echo '$testKey'")"
+      if [[ "$test_action" == *"$testKey"* ]] ; then
+        vm_build_dsh
+      fi
+
+      local test_action="$(vm_execute "ls \"$bin_path/sar\" && dsh --version |grep 'Junichi' && echo '$testKey'")"
+      if [[ "$test_action" == *"$testKey"* ]] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        log_WARN "Could not build sysstat or DSH correctly on $vm_name. Test output: $test_action"
+      fi
+    fi
+  else
+    logger "Builds already performed for $clusterName"
   fi
 }
 

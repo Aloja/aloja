@@ -105,10 +105,12 @@ tpc-h_load-text(){
 }
 
 tpc-h_delete-text(){
-  local bench_name="${FUNCNAME[0]}"
+  #if [ ! "$BENCH_KEEP_FILES" == "1" ] && [ ! "$BENCH_LEAVE_SERVICES" "1"  ] ; then
+    local bench_name="${FUNCNAME[0]}"
 
-  logger "INFO: Deleting external plain tables to save space (if BENCH_KEEP_FILES is not set)"
-  clean_HDFS "$bench_name" "$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR"
+    logger "INFO: Deleting external plain tables to save space (if BENCH_KEEP_FILES is not set)"
+    clean_HDFS "$bench_name" "$TPCH_HDFS_DIR/$TPCH_SCALE_FACTOR"
+  #fi
 }
 
 tpc-h_load-optimize() {

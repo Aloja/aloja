@@ -28,7 +28,7 @@
 
   <property>
     <name>hbase.rootdir</name>
-    <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020/hbase</value>
+    <value>hdfs://##NAMENODE##:##PORT_PREFIX##8020##HBASE_ROOT_DIR##</value>
   </property>
 
   <property>

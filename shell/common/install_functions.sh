@@ -37,6 +37,12 @@ sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $packag
 
   #sudo apt-get autoremove -y;
 
+    elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "RHEL" || "$vmOSType" == "CentOS" ]] ; then
+      log_WARN "Attempting to install $vmOSType packages"
+
+      vm_execute "
+sudo yum install -y $packages_list"
+
     else
       die " OS type: $vmOSType install packages not implemented yet. You have work to do!, Exiting..."
     fi
@@ -98,13 +104,22 @@ vm_install_base_packages() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Installing packages for for VM $vm_name "
 
+    # Debian/Ubunuto packages
     # wamerican, is for hivebench (dictionary)
     # gcc, for tpch
     # hardinfo, for collecting sys info
     # pbzip2, for compressing out files faster
-    install_packages "ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo lsof pbzip2" "update"
+    local package_list="ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo lsof pbzip2"
 
-    local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && dsh --version |grep 'Junichi' && echo '$testKey'")" #checks for sysstat
+    if [[ "$vmOSType" == "Ubuntu" || "$vmOSType" == "Debian" ]] ; then
+      : # the list is already ubuntu based
+    elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "RHEL" || "$vmOSType" == "CentOS" ]] ; then
+      package_list="rsync sshfs sysstat gawk ntp wget curl unzip dstat iotop gcc make bc hardinfo lsof pbzip2"
+    else
+      log_WARN "Specified OS $vmOSType not defined, trying base package list "
+    fi
+
+    local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && echo '$testKey'")" #checks for sysstat and DSH
     if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
