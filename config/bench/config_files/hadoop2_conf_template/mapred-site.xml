@@ -49,21 +49,6 @@
 </property>
 
 <property>
-  <name>mapreduce.tasktracker.map.tasks.maximum</name>
-  <value>##MAX_MAPS##</value>
-  <description>The maximum number of map tasks that will be run
-  simultaneously by a task tracker.
-  </description>
-</property>
-<property>
-  <name>mapreduce.tasktracker.reduce.tasks.maximum</name>
-  <value>##MAX_REDS##</value>
-  <description>The maximum number of reduce tasks that will be run
-  simultaneously by a task tracker.
-  </description>
-</property>
-
-<property>
     <name>mapreduce.job.maps</name>
     <value>##MAX_MAPS##</value>
 </property>
