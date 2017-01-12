@@ -5,6 +5,8 @@ set bigbench.hive.optimize.sampling.orderby.number=20000;
 set bigbench.hive.optimize.sampling.orderby.percent=0.1;
 
 -- Database - DO NOT DELETE OR CHANGE
+
+set hive.default.fileformat=${env:BIG_BENCH_hive_default_fileformat_tmp_table};
  CREATE DATABASE IF NOT EXISTS ${env:BIG_BENCH_DATABASE};
  use ${env:BIG_BENCH_DATABASE};
 

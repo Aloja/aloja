@@ -158,6 +158,8 @@ set hive.tez.dynamic.partition.pruning.max.event.size;
 !echo </settings from hiveSettings.sql>;
 !echo ============================;
 
+set hive.default.fileformat=${env:BIG_BENCH_hive_default_fileformat_tmp_table};
+
 -- Database - DO NOT DELETE OR CHANGE
 CREATE DATABASE IF NOT EXISTS ${env:BIG_BENCH_DATABASE};
 use ${env:BIG_BENCH_DATABASE};
