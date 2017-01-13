@@ -169,16 +169,16 @@ initialize_hadoop_vars() {
     HADOOP_VERSION="${HADOOP_VERSION}-instr"
   fi
 
-  if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
+#  if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
     #make sure all spawned background jobs and services are stopped or killed when done
     if [ "$INSTRUMENTATION" == "1" ] ; then
       update_traps "stop_hadoop; stop_sniffer;" "update_logger"
     else
       update_traps "stop_hadoop; " "update_logger"
     fi
-  else
-      update_traps "logger 'WARNING: leaving Hadoop services running as requested (stop manually).';"
-  fi
+#  else
+#      update_traps "logger 'WARNING: leaving Hadoop services running as requested (stop manually).';"
+#  fi
 
  fi
 }
@@ -593,7 +593,7 @@ restart_hadoop(){
 }
 
 get_job_list() {
-  echo -e "$(execute_hadoop_new "$bench_name" "hadoop job -list|egrep 'job_[0-9_]+'|cut -d' ' -f2")"
+  echo -e "$(execute_hadoop_new "$bench_name" "hadoop job -list|egrep \"job_[0-9_]+\"|cut -d\" \" -f2")"
 }
 
 hadoop_kill_jobs() {
@@ -615,9 +615,9 @@ stop_hadoop(){
 
   if [ "$clusterType=" != "PaaS" ] && [ "$DELETE_HDFS" == "1" ]; then
     if [ ! "$dont_retry" ] ; then
-      logger "INFO: Stop Hadoop"
+      logger "INFO: Stopping Hadoop"
     else
-      logger "INFO: Stop Hadoop (retry)"
+      logger "INFO: Stopping Hadoop (retry)"
     fi
 
     if [ "$(get_hadoop_major_version)" == "1" ]; then
@@ -674,10 +674,11 @@ wait"
       logger "INFO: Stop Hadoop ready"
     fi
   elif [ "$clusterType=" == "PaaS" ] ; then
-    logger "INFO: In PaaS mode, not stoping Hadoop. But killing remaining jobs..."
+    log_WARN "In PaaS mode, not stopping Hadoop. But killing remaining jobs..."
     hadoop_kill_jobs
   else
-    logger "WARNING: Not stopping Hadoop (as requested with -N)"
+    log_WARN "Not stopping Hadoop (as requested with -S or -N)."
+    #hadoop_kill_jobs
   fi
 }
 

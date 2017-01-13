@@ -32,7 +32,7 @@ get_hbase_exports() {
     : # Empty
   #else
     to_export="
-    export HBASE_CONF_DIR=$HBASE_CONF_DIR
+export HBASE_CONF_DIR=$HBASE_CONF_DIR
 "
     echo -e "$to_export\n"
   #fi
@@ -50,7 +50,7 @@ get_hbase_cmd() {
     hbase_exports="$(get_hbase_exports)"
     hbase_bin="$HBASE_HOME/bin/"
   #fi
-  hbase_cmd="$hbase_exports\n $hbase_bin"
+  hbase_cmd="$hbase_exports\n$hbase_bin"
 
   echo -e "$hbase_cmd"
 }
@@ -87,31 +87,37 @@ execute_hbase(){
 }
 
 stop_hbase() {
-  #Stop Hbase
-  logger "INFO: Stopping hbase"
-  #if [ "$clusterType" == "PaaS" ]; then
-  #  :
-  #else
+  if [[ "$clusterType=" != "PaaS" && ! "$BENCH_LEAVE_SERVICES" && ! "$BENCH_KEEP_FILES" ]] ; then
+    logger "INFO: Stopping HBase  B $BENCH_LEAVE_SERVICES D $DELETE_HDFS"
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/stop-hbase.sh"
-  #fi
+  elif [ "$clusterType=" == "PaaS" ] ; then
+    log_WARN "In PaaS mode, not stopping HBase."
+    #hadoop_kill_jobs
+  else
+    log_WARN "Not stopping HBase (as requested with -S or -N)."
+    #hadoop_kill_jobs
+  fi
 }
 
 start_hbase() {
   stop_hbase
 
-  log_WARN "Sleeping 60 seconds to work around buggy HBase script"
-  sleep 60
+  #log_WARN "Sleeping 60 seconds to work around buggy HBase script"
+  #sleep 60
 
   #Start Hbase
   logger "INFO: Starting hbase"
   #if [ "$clusterType" == "PaaS" ]; then
   #  :
   #else
+    # First, make sure we stop hbase on abnormal exit
+    update_traps "stop_hbase;" "update_logger"
+
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/start-hbase.sh"
   #fi
 
-  logger "Sleeping 15 seconds to allow HBase to fully initialize"
-  sleep 15
+  #logger "Sleeping 15 seconds to allow HBase to fully initialize"
+  #sleep 15
 
 }
 initialize_hbase_vars() {
@@ -136,6 +142,7 @@ get_hbase_substitutions() {
   local cache=
 
   for node in $node_names ; do
+
     if [ "$count" == 0 ]; then
       servers+="${node}"
     else
