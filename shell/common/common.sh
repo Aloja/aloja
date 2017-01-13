@@ -11,9 +11,10 @@ fi
 startTime="$(date +%s)"
 testKey="###OK###"
 
-[ ! "$PARENT_PID" ] && PARENT_PID=$$ #for killing the process from subshells
-EXTRA_TRAP_CMDS="" #add to this global extra commands for the trap cleanup (e.g., stop services)
-DONT_RETRY_TRAP="" #prevent trap loops
+[ ! "$PARENT_PID" ] && PARENT_PID=$$ #for killing the process from sub shells
+EXTRA_TRAP_CMDS="" # add to this global extra commands for the trap cleanup (e.g., stop services)
+DONT_RETRY_TRAP="" # prevent trap loops
+declare -A BENCH_LOGGER_PIDS # to kill previous log sub processes
 
 #common funtions
 
@@ -108,6 +109,14 @@ log_ERR() {
   logger "$message" "ERROR" "$log_to_file"
 }
 
+
+# Returns a \n separated list of of child pids if any, NOT including the parent
+# $1 parent
+get_pid_tree() {
+  local parent_pid="$1"
+  echo -e "$(pstree -p "$parent_pid" | sed 's/(/\n(/g' | grep '(' | sed 's/(\(.*\)).*/\1/' | tail -n +2)"
+}
+
 # [dangerous] Function that automatically logs all script output to file
 # and strerr also to it's own file (if any)
 # NOTE: some lines might be out of order and need to press a key to exit
@@ -116,20 +125,32 @@ log_ERR() {
 log_all_output() {
   local file_name="$1"
 
+  # First check if we already had the log opened to close it (useful when to updating the traps)
+  [ "${BENCH_LOGGER_PIDS[$file_name]}" ] && {
+    local logger_pids="${BENCH_LOGGER_PIDS["$file_name"]}"
+    kill -9 $logger_pids
+    BENCH_LOGGER_PIDS["$file_name"]="" # Clear the PIDs
+  }
+
   # Restore exec in case we are updating or it has been modified before
   exec &>/dev/tty
+  # Save my current processes
+  local sub_processes_save="$(pgrep -P $$)"
 
   # Remove colors if set - stdbuf is to disable buffering so streams are in order
   if [ "$ALOJA_FORCE_COLORS" ] ; then
     local strip_colors="stdbuf -oL -eL sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g'"
     exec 1> >(setup_traps && tee -a >(eval $strip_colors  >> "$file_name.log") ) \
-         2> >( tee -a >(eval $strip_colors >> "$file_name.err") | \
+         2> >(tee -a >(eval $strip_colors >> "$file_name.err") | \
                tee -a >(eval $strip_colors >> "$file_name.log") >&2)
   # Non-interactive or colors disabled
   else
     exec 1> >(setup_traps && tee -a  "$file_name.log") \
-         2> >( tee -a "$file_name.err" | tee -a "$file_name.log" >&2)
+         2> >(tee -a "$file_name.err" | tee -a "$file_name.log" >&2)
   fi
+
+  local sub_processes_new="$(pgrep -P $$)"
+  BENCH_LOGGER_PIDS["$file_name"]="${sub_processes_new#$sub_processess_save}"
 
   #exec > >(tee -a "$file_name.log") 2>&1
   #touch "$file_name.log" "$file_name.err"
@@ -196,17 +217,19 @@ extra_traps() {
 
 # Updates the abnormal exit cleanup process with more commands to execute
 # $1 extra commands
-# $2 update the logger's traps too (optional)
+# $2 update the logger's traps too (optional, but required usually as the logger captures the exit signals)
 update_traps(){
   local extra_cmds="$1"
   local update_logger="$2"
 
-  # Update the globals so that they are not deleted if the function is called again
-  EXTRA_TRAP_CMDS+="$extra_cmds"
-
-  # Setup the traps again
-  setup_traps
-  [ "$update_logger" ] && log_all_output "$JOB_PATH/${0##*/}"
+  # Test first if the code is new
+  if [[ "$EXTRA_TRAP_CMDS" != *"$extra_cmds"* ]] ; then
+    # Update the globals so that they are not deleted if the function is called again
+    EXTRA_TRAP_CMDS="$extra_cmds $EXTRA_TRAP_CMDS"
+    # Setup the traps again
+    setup_traps
+    [ "$update_logger" ] && log_all_output "$JOB_PATH/${0##*/}"
+  fi
 }
 
 # Sources file and prints a log message
@@ -226,7 +249,7 @@ source_file() {
 logger "DEBUG: Loading ${BASH_SOURCE##*/}"
 
 #trasposes new lines to selected string
-#$1 string to traspose $2 traspose
+#$1 string to transpose $2 transpose
 nl2char() {
   local tmp="$(echo -e "$1"|tr "\n" "$2")"
   echo -e "${tmp%?}" #remove trailing $2

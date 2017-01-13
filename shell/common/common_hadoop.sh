@@ -155,7 +155,7 @@ initialize_hadoop_vars() {
   HADOOP_CONF_DIR="/etc/hadoop/conf"
   HADOOP_EXPORTS=""
 
-  update_traps "stop_monit;" "update_logger"
+  #update_traps "stop_monit;" "update_logger"
  else
   [ ! "$HDD" ] && die "HDD var not set!"
 
@@ -170,18 +170,14 @@ initialize_hadoop_vars() {
   fi
 
   if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
-    #make sure all spawned background jobs and services are stoped or killed when done
+    #make sure all spawned background jobs and services are stopped or killed when done
     if [ "$INSTRUMENTATION" == "1" ] ; then
-      update_traps "stop_hadoop; stop_monit; stop_sniffer;" "update_logger"
+      update_traps "stop_hadoop; stop_sniffer;" "update_logger"
     else
-      update_traps "stop_hadoop; stop_monit;" "update_logger"
+      update_traps "stop_hadoop; " "update_logger"
     fi
   else
-    if [ "$BENCH_PERF_MONITORS" ] ; then
-      update_traps "stop_monit; logger 'WARNING: leaving services running as requested (stop manually).';" "update_logger"
-    else
-      update_traps "logger 'WARNING: leaving services running as requested (stop manually).';"
-    fi
+      update_traps "logger 'WARNING: leaving Hadoop services running as requested (stop manually).';"
   fi
 
  fi
@@ -640,7 +636,7 @@ wait"
     local hadoop_ports="$(get_hadoop_ports)"
     local open_port=""
 
-    # First tell all ports toguether to save time
+    # First tell all ports together to save time
     local test_all_cmd
     local all_ports
     for port in $hadoop_ports ; do

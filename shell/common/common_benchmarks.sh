@@ -926,6 +926,11 @@ restart_monit(){
       logger "INFO: Restarting perf monit"
       stop_monit #in case there is any running
 
+      # Make sure we clean monits on abnormal exit
+      if [ "$BENCH_PERF_MONITORS" ] ; then
+        update_traps "stop_monit;" "update_logger"
+      fi
+
       for perf_mon in $BENCH_PERF_MONITORS ; do
         run_monit "$perf_mon"
       done
