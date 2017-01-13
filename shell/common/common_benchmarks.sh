@@ -871,20 +871,22 @@ set_monit_binaries() {
       for perf_mon in $BENCH_PERF_MONITORS ; do
 
         if ! inList "$BENCH_PERF_NON_BINARY" "$perf_mon" ; then
-          logger "INFO: Setting up perfomance monitor: $perf_mon"
+          logger "INFO: Setting up performance monitor: $perf_mon"
 
           # Get the path of file from the aloja repo
           if [ "$perf_mon" == "cachestat" ] ; then
             perf_mon_bin_path="$ALOJA_REPO_PATH/aloja-tools/src/cachestat.sh"
 
             if [ "$noSudo" ] ; then
-              logger "WARNING: $perf_mon requieres sudo, skipping setting it up."
+              logger "WARNING: $perf_mon requires sudo, skipping setting it up."
               continue
             fi
-
+          # JavaStat actually uses pidstat
+          elif [ "$perf_mon" == "JavaStat" ] ; then
+            perf_mon_bin_path="$($DSH_MASTER "$(get_user_bin_path) which 'pidstat'")"
           # Get it from the user path (normal case)
           else
-            # we need to include our custom bin path as SSH is not interacitve
+            # we need to include our custom bin path as SSH is not interactive
             perf_mon_bin_path="$($DSH_MASTER "$(get_user_bin_path) which '$perf_mon'")"
           fi
 
@@ -995,8 +997,8 @@ done
   elif [ "$perf_mon" == "JavaStat" ] ; then
     local pidstat_cmd="java"
     $DSH "
-pidstat -rudh -p ALL -C init | awk -v host=\$(hostname) '(/Time/){\$1=\$2=\"\"; print \"HostName\",\"TimeStamp\", \$0}; fflush()' > $(get_local_bench_path)/JavaStat-\$(hostname).log
-pidstat -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat_cmd' -v host=\$(hostname) '(!/^\$/ && !/Time/ && !/CPU/){if (\$NF == cmd){now=strftime(\"%s\"); \$1=\"\"; print host, now, \$0}; fflush()}' >> $(get_local_bench_path)/JavaStat-\$(hostname).log &
+$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C init | awk -v host=\$(hostname) '(/Time/){\$1=\$2=\"\"; print \"HostName\",\"TimeStamp\", \$0}; fflush()' > $(get_local_bench_path)/JavaStat-\$(hostname).log
+$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat_cmd' -v host=\$(hostname) '(!/^\$/ && !/Time/ && !/CPU/){if (\$NF == cmd){now=strftime(\"%s\"); \$1=\"\"; print host, now, \$0}; fflush()}' >> $(get_local_bench_path)/JavaStat-\$(hostname).log &
 " &
 
   # iotop, requires sudo and interval only 1 sec supported
