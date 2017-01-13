@@ -40,11 +40,11 @@ export JAVA_HOME=##JAVA_HOME##
 # Below are what we set by default.  May only work with SUN JVM.
 # For more on why as well as other possible settings,
 # see http://wiki.apache.org/hadoop/PerformanceTuning
-export HBASE_OPTS="-XX:+UseConcMarkSweepGC"
+export HBASE_OPTS="-XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"
 
 # Configure PermSize. Only needed in JDK7. You can safely remove it for JDK8+
-export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m"
-export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m"
+export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -Djava.net.preferIPv4Stack=true"
+export HBASE_REGIONSERVER_OPTS="$HBASE_REGIONSERVER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -Djava.net.preferIPv4Stack=true"
 
 # Uncomment one of the below three options to enable java garbage collection logging for the server-side processes.
 
