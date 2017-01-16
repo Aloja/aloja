@@ -7,7 +7,7 @@
 
 set hdfsDataPath=##HDFS_DATA_ABSOLUTE_PATH##;
 set fieldDelimiter=|;
-set tableFormat=${hiveconf:bigbench.tableFormat_source}
+set tableFormat=${hiveconf:bigbench.tableFormat_source};
 set temporaryTableSuffix=_temporary;
 
 set customerTableName=customer;
