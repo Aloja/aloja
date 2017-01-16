@@ -56,7 +56,7 @@ benchmark_suite_run() {
 benchmark_cleanAll() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "cleanAll -U" "time"
+  execute_BigBench "$bench_name" "cleanAll -U -z $HIVE_SETTINGS_FILE" "time"
 }
 
 #benchmark_cleanMetastore() {
@@ -70,19 +70,19 @@ benchmark_dataGen() {
   logger "INFO: Running $bench_name"
   logger "INFO: Automatically accepting EULA"
 
-  yes YES | execute_BigBench "$bench_name" "dataGen -U" "time" #-f scale factor
+  yes YES | execute_BigBench "$bench_name" "dataGen -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
 
 benchmark_populateMetastore() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "populateMetastore -U" "time"
+  execute_BigBench "$bench_name" "populateMetastore -U -z $HIVE_SETTINGS_FILE" "time"
 }
 
 benchmark_query(){
   local bench_name="${FUNCNAME[0]#benchmark_}-$1"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runQuery -q $1 -U" "time" #-f scale factor
+  execute_BigBench "$bench_name" "runQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
 #
 #benchmark_validateQuery(){

@@ -105,13 +105,13 @@ initialize_hive_vars() {
   if [ "$clusterType" == "PaaS" ]; then
     HIVE_HOME="/usr"
     HIVE_CONF_DIR="/etc/hive/conf"
-    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB_PaaS"
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB_PaaS.sql"
   else
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
     HIVE_CONF_DIR="$HDD/hive_conf"
     # Only set a default hive.settings when not in PaaS
     if [ "$BENCH_SUITE" == "BigBench" ]; then
-      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB"
+      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB.sql"
     else
       [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
     fi
@@ -199,7 +199,7 @@ prepare_hive_config() {
     #just in case
     time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
 
-    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings.BB_PaaS $(get_hive_conf_dir);"
+    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings.BB_PaaS.sql $(get_hive_conf_dir);"
 
   else
     logger "INFO: Preparing Hive run specific config"
