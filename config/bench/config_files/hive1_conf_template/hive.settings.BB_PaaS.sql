@@ -1,6 +1,6 @@
-!echo ============================;
-!echo <Query Parameters>;
-!echo ============================;
+-- !echo ============================;
+-- !echo <Query Parameters>;
+-- !echo ============================;
 --new (dates all Mondays, dateranges complete weeks):
 --store: 2000-01-03, 2004-01-05 (1463 days, 209 weeks)
 --item: 2000-01-03, 2004-01-05 (1463 days, 209 weeks)
@@ -221,13 +221,13 @@ set q30_limit=100;
 set q30_session_timeout_inSec=3600;
 
 
-!echo ============================;
-!echo </Query Parameters.sql>;
-!echo ============================;
-
-!echo ============================;
-!echo Hive Settings;
-!echo ============================;
+-- !echo ============================;
+-- !echo </Query Parameters.sql>;
+-- !echo ============================;
+--
+-- !echo ============================;
+-- !echo Hive Settings;
+-- !echo ============================;
 
 -- Needed for BigBench
 

@@ -227,9 +227,9 @@ set q30_session_timeout_inSec=3600;
 
 
 
-!echo ============================;
-!echo Hive Settings;
-!echo ============================;
+-- !echo ============================;
+-- !echo Hive Settings;
+-- !echo ============================;
 
 -- set hive.log.dir=##LOG_DIR##;
 -- set hive.exec.local.scratchdir=##TMP_DIR##;
@@ -344,9 +344,7 @@ set hive.tez.max.partition.factor=3f;
 set hive.tez.min.partition.factor=1f;
 set hive.convert.join.bucket.mapjoin.tez=false;
 
-!echo ============================;
-!echo Print most important properties;
-!echo ============================;
+-- ec
 
 set hive.exec.parallel;
 set hive.exec.parallel.thread.number;
@@ -382,9 +380,9 @@ set tez.runtime.unordered.output.buffer.size-mb;
 set hive.tez.dynamic.partition.pruning.max.data.size;
 set hive.tez.dynamic.partition.pruning.max.event.size;
 
-!echo ============================;
-!echo </settings from hiveSettings.sql>;
-!echo ============================;
+-- !echo ============================;
+-- !echo </settings from hiveSettings.sql>;
+-- !echo ============================;
 
 -- Database - DO NOT DELETE OR CHANGE
 CREATE DATABASE IF NOT EXISTS bigbench;
