@@ -108,6 +108,8 @@ execute_BigBench(){
 
 initialize_BigBench_vars() {
   BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
+  BIG_BENCH_RESOURCE_DIR=${BIG_BENCH_HOME}/engines/hive/queries/Resources
+  HDFS_DATA_ABSOLUTE_PATH="/dfs/pristine/benchmarks/bigbench"
   if [ "$clusterType" == "PaaS" ]; then
     MAHOUT_HOME="$(get_local_apps_path)/${MAHOUT_FOLDER}" #TODO need to change mahout usage in PaaS
 
@@ -119,20 +121,30 @@ initialize_BigBench_vars() {
 # Sets the substitution values for the BigBench config
 get_BigBench_substitutions() {
   local java_bin
+  local bin
   local hive_bin
+  local hive_params
   local spark_params
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
+  if [ "$HIVE_MAJOR_VERSION" == "2" ]; then
+    bin="beeline"
+    hive_params="-n hive -p hive -u '${BB_ZOOKEEPER_QUORUM}'"
+  else
+    bin="hive"
+  fi
+
   if [ "$clusterType" == "PaaS" ]; then
     java_bin="$(which java)"
-    hive_bin="$HIVE_HOME"
+    hive_bin="$HIVE_HOME/bin/${bin}"
+    spark_params="--driver-memory 5g"
 
   else
     java_bin="$(get_java_home)/bin/java"
-    hive_bin="$HIVE_HOME/bin/hive"
+    hive_bin="$HIVE_HOME/bin/${bin}"
         #Calculate Spark settings for BigBench
       if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
           EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes-1)*($NUM_EXECUTOR_NODE))" | bc))"
@@ -185,7 +197,10 @@ s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 s,##HIVE##,$HIVE_HOME,g;
 s,##HIVE_BIN##,$hive_bin,g;
+s%##HIVE_PARAMS##%$hive_params%g;
+s,##HDFS_DATA_ABSOLUTE_PATH##,$HDFS_DATA_ABSOLUTE_PATH/data,g;
 s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
+s,##BIG_BENCH_RESOURCES_DIR##,$BIG_BENCH_RESOURCE_DIR,g;
 s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark-sql,g;
@@ -216,10 +231,13 @@ prepare_BigBench() {
 
   # Get the values
   subs=$(get_BigBench_substitutions)
+  logger "INFO: Making substitutions"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/conf/userSettings.conf"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/hive/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/hive/population/hiveCreateLoad.sql"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/spark_sql/conf/engineSettings.conf"
 
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE"
 }
 
 # $1 bench
@@ -236,11 +254,11 @@ save_BigBench() {
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
     cp $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/
-    execute_hadoop_new "$bench_name" "fs -copyToLocal /dfs/pristine/benchmarks/bigbench/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
+    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
   else
     mv $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/
-    execute_hadoop_new "$bench_name" "fs -copyToLocal /dfs/pristine/benchmarks/bigbench/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
-    execute_hadoop_new "$bench_name" "fs -rm /dfs/pristine/benchmarks/bigbench/queryResults/*"
+    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
+    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
   fi
 
   save_hive "$bench_name"

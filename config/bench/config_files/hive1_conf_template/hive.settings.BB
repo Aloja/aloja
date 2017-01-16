@@ -158,11 +158,9 @@ set hive.tez.dynamic.partition.pruning.max.event.size;
 !echo </settings from hiveSettings.sql>;
 !echo ============================;
 
-set hive.default.fileformat=${env:BIG_BENCH_hive_default_fileformat_tmp_table};
-
 -- Database - DO NOT DELETE OR CHANGE
-CREATE DATABASE IF NOT EXISTS ${env:BIG_BENCH_DATABASE};
-use ${env:BIG_BENCH_DATABASE};
+CREATE DATABASE IF NOT EXISTS bigbench;
+use bigbench;
 
 
 
@@ -170,4 +168,7 @@ use ${env:BIG_BENCH_DATABASE};
 set bigbench.hive.optimize.sampling.orderby=true;
 set bigbench.hive.optimize.sampling.orderby.number=20000;
 set bigbench.hive.optimize.sampling.orderby.percent=0.1;
+set bigbench.resources.dir=##BIG_BENCH_RESOURCES_DIR##;
+set bigbench.tableFormat_source=##HIVE_FILEFORMAT##;
+set bigbench.tableFormat=TEXTFILE;
 

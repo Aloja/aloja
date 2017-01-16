@@ -84,9 +84,9 @@ benchmark_query(){
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "runQuery -q $1 -U" "time" #-f scale factor
 }
-
-benchmark_validateQuery(){
-  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
-  logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "validateQuery -q $1 -U" "time" #-f scale factor
-}
+#
+#benchmark_validateQuery(){
+#  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
+#  logger "INFO: Running $bench_name"
+#  execute_BigBench "$bench_name" "validateQuery -q $1 -U" "time" #-f scale factor
+#}

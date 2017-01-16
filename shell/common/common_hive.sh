@@ -18,6 +18,13 @@ set_hive_requires() {
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
+
+  if [ ! "$BB_ZOOKEEPER_QUORUM" ]; then #TODO need to add on-premise support
+    HIVE_MAJOR_VERSION="1"
+  else
+    HIVE_MAJOR_VERSION="2"
+  fi
+
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
@@ -96,7 +103,7 @@ initialize_hive_vars() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
 
   if [ "$clusterType" == "PaaS" ]; then
-    HIVE_HOME="/usr/bin/hive"
+    HIVE_HOME="/usr"
     HIVE_CONF_DIR="/etc/hive/conf"
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB_PaaS"
   else
