@@ -65,12 +65,7 @@ execute_hbase(){
   local time_exec="$3"
   local hbase_cmd
 
-  # if in PaaS use the bin in PATH and no exports
-  #if [ "$clusterType" == "PaaS" ]; then
-  #  hbase_cmd="$cmd"
-  #else
-    hbase_cmd="$(get_hbase_cmd)$cmd"
-  #fi
+  hbase_cmd="$(get_hbase_cmd)$cmd"
 
   if [ "$time_exec" ] ; then
     execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
@@ -86,10 +81,35 @@ execute_hbase(){
   fi
 }
 
+# Runs hbase directly for auxiliary commands (allows to capture stderr)
+# $1 command
+execute_hbase_direct(){
+  local cmd="$1"
+  local hbase_cmd
+
+  hbase_cmd="$(get_hbase_cmd)$cmd"
+
+  # Run the command and time it
+  $DSH_MASTER "$hbase_cmd"
+}
+
+# Manages stopping HBase logic
+# $1 force stop, for use at restart (useful for -S)
 stop_hbase() {
-  if [[ "$clusterType=" != "PaaS" && ! "$BENCH_LEAVE_SERVICES" && ! "$BENCH_KEEP_FILES" ]] ; then
-    logger "INFO: Stopping HBase  B $BENCH_LEAVE_SERVICES D $DELETE_HDFS"
+  local force_stop="$1"
+
+  if [ "$clusterType=" != "PaaS" ] && [[ ! "$BENCH_LEAVE_SERVICES" || "$force_stop" ]] && [[ "$DELETE_HDFS" == "1" || "$force_stop" ]] ; then
+    logger "INFO: Stopping HBase"
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/stop-hbase.sh"
+
+    if [ "$HBASE_CACHE" ] ; then
+      log_WARN "Cleaning up the bucket cache to free space"
+      $DSH "[ -f '$HBASE_CACHE' ] && { ls -la '$HBASE_CACHE'; rm -rf '$HBASE_CACHE'; }"
+    fi
+
+    #log_WARN "Sleeping 30 seconds to work around buggy HBase script"
+    #sleep 30
+
   elif [ "$clusterType=" == "PaaS" ] ; then
     log_WARN "In PaaS mode, not stopping HBase."
     #hadoop_kill_jobs
@@ -100,13 +120,16 @@ stop_hbase() {
 }
 
 start_hbase() {
-  stop_hbase
-
-  #log_WARN "Sleeping 60 seconds to work around buggy HBase script"
-  #sleep 60
+  # In case we leave services, we don't stop it unless there is a bucket cache config
+  if [[ "true" || "$BENCH_LEAVE_SERVICES" || "$HBASE_CACHE" ]] ; then
+    stop_hbase "force"
+  # Normal case
+  else
+    stop_hbase ""
+  fi
 
   #Start Hbase
-  logger "INFO: Starting hbase"
+  logger "INFO: Starting HBase"
   #if [ "$clusterType" == "PaaS" ]; then
   #  :
   #else
@@ -116,9 +139,8 @@ start_hbase() {
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/start-hbase.sh"
   #fi
 
-  #logger "Sleeping 15 seconds to allow HBase to fully initialize"
+  #log_WARN "Sleeping 15 seconds to allow HBase (zookeper) to fully initialize"
   #sleep 15
-
 }
 initialize_hbase_vars() {
 
@@ -157,14 +179,15 @@ get_hbase_substitutions() {
     count=$((count+1))
   done
 
+#<property>
+#  <name>hfile.block.cache.size</name>
+#  <value>0.2</value>
+#</property>
+
   if [ "${HBASE_CACHE}" != "" ]; then
     cache="<property>
   <name>hbase.bucketcache.ioengine</name>
   <value>file:${HBASE_CACHE}</value>
-</property>
-<property>
-  <name>hfile.block.cache.size</name>
-  <value>0.2</value>
 </property>
   <property>
   <name>hbase.bucketcache.size</name>
@@ -272,3 +295,29 @@ fi
   save_hadoop "$bench_name"
 }
 
+# Count the number of records generated and compares them to the expected count
+# $1 table (optional)
+# $2 expected count (optional)
+# $3 exception level (ERROR will exit the run)
+test_data_size(){
+log_WARN "Testing data size DISABLED to save time"
+return
+  local table="${1:-usertable}"
+  local expected_count="$2"
+  local exception_level="${3:-WARNING}"
+
+  log_INFO "Testing data size of generated data"
+
+  local count_output="$(execute_hbase_direct "hbase shell -n <<< \"count \\\"$table\\\", INTERVAL => 1000000, CACHE => 1000000;\" 2>&1")"
+  local count="$(echo -e "$count_output"|grep 'Current count:'|awk 'END{print substr($3,1,length($3)-1)}')"
+
+  if [ "$BENCH_DATA_SIZE" != "$count" ] ; then
+    if [ "$exception_level" == "ERROR" ] ; then
+      die "Number of rows in the $table table is: $count but expected: $BENCH_DATA_SIZE. Exiting..."
+    else
+      logger "$exception_level Number of rows in the $table table is: $count but expected: $BENCH_DATA_SIZE."
+    fi
+  else
+    log_INFO "Number of rows in the $table table is: $count as expected."
+  fi
+}
