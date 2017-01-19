@@ -189,7 +189,11 @@ extra_traps;
 jobs_to_kill="$(jobs -p)";
 if (( "$(echo -e "$jobs_to_kill" |wc -l)" > 1 )) ; then
   logger "DEBUG: Attempting to kill -9 remaining process(es): $jobs_to_kill";
-  kill -9 $jobs_to_kill;
+  for pid in $jobs_to_kill; do
+    echo "PID $pid: $(ps -o cmd= -p $pid && kill -9 $pid || echo "already closed")"
+  done
+  #kill -9 $jobs_to_kill;
+  log_INFO "Done controlled exit with signal $signal."
 else
   logger "DEBUG: No processes left, exiting";
 fi
