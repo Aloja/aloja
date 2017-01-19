@@ -519,7 +519,7 @@ restart_hadoop(){
   if [ "$clusterType" != "PaaS" ]; then
     logger "INFO: Restart Hadoop"
     #just in case stop all first
-    stop_hadoop
+    stop_hadoop "" "$BENCH_LEAVE_SERVICES"
 
     if [ "$(get_hadoop_major_version)" == "1" ]; then
       $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/start-all.sh"
@@ -575,7 +575,7 @@ restart_hadoop(){
         fi
       elif [ "$i" == "180" ] && [[ -z $1 ]] ; then
         #try to restart hadoop deleting files and prepare again files
-        logger "INFO: Reseting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"
+        logger "INFO: Resetting config to retry DELETE_HDFS WAS SET TO: $DELETE_HDFS"
         DELETE_HDFS="1"
         restart_hadoop no_retry
       elif [ "$i" == "120" ] ; then
@@ -609,11 +609,14 @@ hadoop_kill_jobs() {
 }
 
 # Stops Hadoop and checks for open ports
-# $1 retry (to prevent recursion)
+# $1 dont retry, to prevent recursion (optional)
+# $2 force stop, for use at restart (useful for -S)
 stop_hadoop(){
   local dont_retry="$1"
+  local force_stop="$2"
 
-  if [ "$clusterType=" != "PaaS" ] && [ "$DELETE_HDFS" == "1" ]; then
+  #if [ "$clusterType=" != "PaaS" ] && [ "$DELETE_HDFS" == "1" ]; then
+  if [ "$clusterType=" != "PaaS" ] && [[ ! "$BENCH_LEAVE_SERVICES" || "$force_stop" ]] && [ "$DELETE_HDFS" == "1" ] ; then
     if [ ! "$dont_retry" ] ; then
       logger "INFO: Stopping Hadoop"
     else
@@ -640,7 +643,7 @@ wait"
     local test_all_cmd
     local all_ports
     for port in $hadoop_ports ; do
-      test_all_cmd+="lsof -i tcp:$port || "
+      test_all_cmd+="lsof -i tcp:$port -s tcp:LISTEN || "
       all_ports+="$port "
     done
     logger "DEBUG: Testing for open ports in: $all_ports"
@@ -669,7 +672,7 @@ wait"
       #logger "ERROR: Please manually stop running Hadoop instances"
       die "Please manually stop running Hadoop instances"
     elif [ "$open_port" ] && [ ! "$retry" ] ; then
-      stop_hadoop "dont_retry"
+      stop_hadoop "dont_retry" "$BENCH_LEAVE_SERVICES"
     else
       logger "INFO: Stop Hadoop ready"
     fi
