@@ -160,7 +160,7 @@ get_options() {
 }
 
 
-# Temple functions, reimplement in benchmark if needed
+# Temple functions, re implement in benchmark if needed
 
 benchmark_suite_config() {
   logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
@@ -874,8 +874,8 @@ set_monit_binaries() {
           logger "INFO: Setting up performance monitor: $perf_mon"
 
           # Get the path of file from the aloja repo
-          if [ "$perf_mon" == "cachestat" ] ; then
-            perf_mon_bin_path="$ALOJA_REPO_PATH/aloja-tools/src/cachestat.sh"
+          if [[ "$perf_mon" == "cachestat" || "$perf_mon" == "drop_cache" ]] ; then
+            perf_mon_bin_path="$ALOJA_REPO_PATH/aloja-tools/src/${perf_mon}.sh"
 
             if [ "$noSudo" ] ; then
               logger "WARNING: $perf_mon requires sudo, skipping setting it up."
@@ -998,7 +998,7 @@ done
     local pidstat_cmd="java"
     $DSH "
 $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C init | awk -v host=\$(hostname) '(/Time/){\$1=\$2=\"\"; print \"HostName\",\"TimeStamp\", \$0}; fflush()' > $(get_local_bench_path)/JavaStat-\$(hostname).log
-$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $BENCH_PERF_INTERVAL | awk -v cmd='$pidstat_cmd' -v host=\$(hostname) '(!/^\$/ && !/Time/ && !/CPU/){if (\$NF == cmd){now=strftime(\"%s\"); \$1=\"\"; print host, now, \$0}; fflush()}' >> $(get_local_bench_path)/JavaStat-\$(hostname).log &
+$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $BENCH_PERF_INTERVAL + 4 )) | awk -v cmd='$pidstat_cmd' -v host=\$(hostname) '(!/^\$/ && !/Time/ && !/CPU/){if (\$NF == cmd){now=strftime(\"%s\"); \$1=\"\"; print host, now, \$0}; fflush()}' >> $(get_local_bench_path)/JavaStat-\$(hostname).log &
 " &
 
   # iotop, requires sudo and interval only 1 sec supported
@@ -1045,6 +1045,13 @@ $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $BENC
       if [ "$(get_extra_node_names)" ] ; then
         $DSH_EXTRA "sudo $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_extra_node_folder)/cachestat-\$(hostname).log &" & #2>&1
       fi
+  # drop_cache
+  elif [ "$perf_mon" == "drop_cache" ] ; then
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX $BENCH_PERF_INTERVAL 3 1 > $(get_local_bench_path)/drop_cache-\$(hostname).log &" & #2>&1
+
+      if [ "$(get_extra_node_names)" ] ; then
+        : # do nothing
+      fi
   else
     die "Specified perf mon $perf_mon not implemented"
   fi
@@ -1064,7 +1071,7 @@ stop_monit(){
       for perf_mon in $BENCH_PERF_MONITORS ; do
 
         local requires_sudo=""
-        if [[ "$perf_mon" == "iotop" || "$perf_mon" == "cachestat" ]] ; then
+        if [[ "$perf_mon" == "iotop" || "$perf_mon" == "cachestat" || "$perf_mon" == "drop_cache" ]] ; then
           requires_sudo="sudo"
         fi
 
