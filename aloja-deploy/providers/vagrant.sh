@@ -158,6 +158,7 @@ vagrant_link_share(){
   logger "INFO: Making sure ~/share is linked in the vagrant VM"
   vm_execute "
 if [ ! -L '/home/vagrant/share' ] ; then
+  mv /home/vagrant/share /home/vagrant/share_backup 2> /dev/null
   sudo ln -fs /vagrant/blobs /home/vagrant/share;
   touch /home/vagrant/share/safe_store;
 fi"
