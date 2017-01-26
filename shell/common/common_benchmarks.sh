@@ -1047,7 +1047,7 @@ $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $
       fi
   # drop_cache
   elif [ "$perf_mon" == "drop_cache" ] ; then
-      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX $BENCH_PERF_INTERVAL 3 1 > $(get_local_bench_path)/drop_cache-\$(hostname).log &" & #2>&1
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX $(( $BENCH_PERF_INTERVAL + 9 )) 3 1 > $(get_local_bench_path)/drop_cache-\$(hostname).log &" & #2>&1
 
       if [ "$(get_extra_node_names)" ] ; then
         : # do nothing
