@@ -50,7 +50,7 @@ benchmark_suite_cleanup() {
     execute_hbase "$bench_name" "hbase shell -n <<< \"disable \\\"usertable\\\"; drop \\\"usertable\\\";\""
   fi
 
-  stop_hbase
+  clean_hbase
   clean_hadoop
 }
 

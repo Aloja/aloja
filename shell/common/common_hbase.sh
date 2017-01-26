@@ -107,8 +107,8 @@ stop_hbase() {
       $DSH "[ -f '$HBASE_CACHE' ] && { ls -la '$HBASE_CACHE'; rm -rf '$HBASE_CACHE'; }"
     fi
 
-    #log_WARN "Sleeping 30 seconds to work around buggy HBase script"
-    #sleep 30
+    log_WARN "Sleeping 30 seconds to work around buggy HBase script"
+    sleep 30
 
   elif [ "$clusterType=" == "PaaS" ] ; then
     log_WARN "In PaaS mode, not stopping HBase."
@@ -139,8 +139,8 @@ start_hbase() {
     $DSH_MASTER "export HBASE_CONF_DIR=$HBASE_CONF_DIR && export JAVA_HOME=$(get_java_home) && $HBASE_HOME/bin/start-hbase.sh"
   #fi
 
-  #log_WARN "Sleeping 15 seconds to allow HBase (zookeper) to fully initialize"
-  #sleep 15
+  log_WARN "Sleeping 15 seconds to allow HBase (zookeper) to fully initialize"
+  sleep 15
 }
 initialize_hbase_vars() {
 
@@ -320,4 +320,13 @@ return
   else
     log_INFO "Number of rows in the $table table is: $count as expected."
   fi
+}
+
+clean_hbase() {
+  if [ "$HBASE_CACHE" ] ; then
+    log_WARN "Cleaning up the bucket cache to free space"
+    $DSH "[ -f '$HBASE_CACHE' ] && { ls -la '$HBASE_CACHE'; rm -rf '$HBASE_CACHE'; }"
+  fi
+
+  stop_hbase
 }

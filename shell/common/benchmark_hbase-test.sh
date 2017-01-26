@@ -18,7 +18,7 @@ benchmark_suite_config() {
 }
 
 benchmark_suite_cleanup() {
-  stop_hbase
+  clean_hbase
   clean_hadoop
 }
 
