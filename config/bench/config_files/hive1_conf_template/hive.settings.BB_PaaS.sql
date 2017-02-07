@@ -240,9 +240,5 @@ set bigbench.tableFormat_source=##HIVE_FILEFORMAT##;
 set bigbench.tableFormat=TEXTFILE;
 
 -- Database - DO NOT DELETE OR CHANGE
-CREATE DATABASE IF NOT EXISTS bigbench;
+-- CREATE DATABASE IF NOT EXISTS bigbench;
 use bigbench;
-
-
-
-

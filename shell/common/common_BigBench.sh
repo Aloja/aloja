@@ -254,11 +254,11 @@ save_BigBench() {
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
     cp $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/
-    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
+#    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
   else
     mv $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/
-    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
-    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
+#    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
+#    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
   fi
 
   save_hive "$bench_name"

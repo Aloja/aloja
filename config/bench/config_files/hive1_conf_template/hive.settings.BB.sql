@@ -300,10 +300,9 @@ set mapred.min.split.size=1;
 -- ###########################
 
 set hive.auto.convert.join=true;
-set hive.auto.convert.join.noconditionaltask=false;
+set hive.auto.convert.join.noconditionaltask=true;
 set hive.auto.convert.join.noconditionaltask.size=10000000;
 set hive.mapjoin.localtask.max.memory.usage = 0.999;
-set hive.mapred.local.mem=##MAPS_MB##;
 set hive.exec.submit.local.task.via.child=true;
 
 
@@ -344,7 +343,7 @@ set hive.tez.max.partition.factor=3f;
 set hive.tez.min.partition.factor=1f;
 set hive.convert.join.bucket.mapjoin.tez=false;
 
--- ec
+-- Print Settings
 
 set hive.exec.parallel;
 set hive.exec.parallel.thread.number;
