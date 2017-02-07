@@ -39,11 +39,16 @@ execute_ycsb(){
 
   ycsb_cmd="$(get_ycsb_cmd)$cmd"
 
+  if [ "$time_exec" ] ; then
+    execute_master "$bench: HDFS capacity before" "${chdir}$(get_hadoop_cmd) fs -df"
+  fi
+
   # Run the command and time it
   execute_master "$bench" "export JAVA_HOME=${JAVA_HOME}; export PATH=\$PATH:${JAVA_HOME}/bin; $ycsb_cmd" "$time_exec" "dont_save"
 
   # Stop metrics monitors and save bench (if needed)
   if [ "$time_exec" ] ; then
+    execute_master "$bench: HDFS capacity after" "${chdir}$(get_hadoop_cmd) fs -df"
     save_ycsb "$bench"
   fi
 }
