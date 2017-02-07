@@ -393,7 +393,7 @@ use bigbench;
 set bigbench.hive.optimize.sampling.orderby=true;
 set bigbench.hive.optimize.sampling.orderby.number=20000;
 set bigbench.hive.optimize.sampling.orderby.percent=0.1;
-set bigbench.resources.dir=##BIG_BENCH_RE SOURCES_DIR##;
+set bigbench.resources.dir=##BIG_BENCH_RESOURCES_DIR##;
 set bigbench.tableFormat_source=##HIVE_FILEFORMAT##;
 set bigbench.tableFormat=TEXTFILE;
 
