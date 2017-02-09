@@ -125,12 +125,21 @@ get_BigBench_substitutions() {
   local hive_bin
   local hive_params
   local spark_params
+  local hive_joins
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
-  if [ "$HIVE_MAJOR_VERSION" == "2" ]; then
+
+  if [ "$HIVE_ENGINE" == "mr" ]; then #For MapReduce DO NOT do MapJoins, MR uses lots of memory and tends to fail anyways because of high Garbage Collection times.
+    hive_joins="true"
+  else
+    hive_joins="false"
+  fi
+
+  #TODO: Eliminate the Beeline patch when hive 2 client is available.
+  if [ "$HIVE_MAJOR_VERSION" == "2" ]; then # Temporal patch to use Hive2 in HDI until they upgrade it to use Hive client.
     bin="beeline"
     hive_params="-n hive -p hive -u '${BB_ZOOKEEPER_QUORUM}'"
   else
@@ -140,7 +149,7 @@ get_BigBench_substitutions() {
   if [ "$clusterType" == "PaaS" ]; then
     java_bin="$(which java)"
     hive_bin="$HIVE_HOME/bin/${bin}"
-    spark_params="--driver-memory 5g"
+    spark_params="--driver-memory 5g" #BB is memory intensive in the driver, 1GB (default) is not enough (override)
 
   else
     java_bin="$(get_java_home)/bin/java"
@@ -158,8 +167,6 @@ get_BigBench_substitutions() {
 #          spark_params="--driver-memory 8g --num-executors ${EXECUTOR_INSTANCES} --executor-memory ${EXECUTOR_MEM} --executor-cores ${EXECUTOR_CORES} --master yarn --deploy-mode client "
       fi
   fi
-
-
 
 #TODO spacing when a @ is found
     cat <<EOF
