@@ -64,13 +64,11 @@ set hive.support.sql11.reserved.keywords=false;
 -- optimizations for joins.
 -- ###########################
 
-set hive.auto.convert.join=true;
-set hive.auto.convert.join.noconditionaltask=true;
-set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
+set hive.auto.convert.join=##HIVE_JOINS##;
+set hive.auto.convert.join.noconditionaltask=##HIVE_JOINS##;
+set hive.auto.convert.join.noconditionaltask.size=10000000;
 set hive.mapjoin.localtask.max.memory.usage = 0.999;
-set hive.mapred.local.mem=##MAPS_MB##;
 set hive.exec.submit.local.task.via.child=true;
-
 
 set hive.auto.convert.sortmerge.join=true;
 set hive.auto.convert.sortmerge.join.to.mapjoin=false;
