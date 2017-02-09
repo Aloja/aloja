@@ -299,8 +299,8 @@ set mapred.min.split.size=1;
 -- optimizations for joins.
 -- ###########################
 
-set hive.auto.convert.join=true;
-set hive.auto.convert.join.noconditionaltask=true;
+set hive.auto.convert.join=##HIVE_JOINS##;
+set hive.auto.convert.join.noconditionaltask=##HIVE_JOINS##;
 set hive.auto.convert.join.noconditionaltask.size=10000000;
 set hive.mapjoin.localtask.max.memory.usage = 0.999;
 set hive.exec.submit.local.task.via.child=true;
