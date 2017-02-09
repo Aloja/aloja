@@ -2,6 +2,11 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
+if [ $HIVE_SERVER_DERBY == "1" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
+  set_derby_requires
+fi
+
 # Sets the required files to download/copy
 set_hive_requires() {
   [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION specified"
@@ -49,6 +54,11 @@ export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
     if [ "$HIVE_ENGINE" == "tez" ]; then
       tez_exports=$(get_tez_exports)
       to_export+="${tez_exports}"
+    fi
+
+    if [ $HIVE_SERVER_DERBY == "1" ]; then
+      server_exports=$(get_derby_exports)
+      to_export+="${server_exports}"
     fi
 
     echo -e "$to_export\n"
@@ -120,12 +130,13 @@ initialize_hive_vars() {
         initialize_tez_vars
         prepare_tez_config
     fi
-
+    start_derby
   fi
 }
 
 # Sets the substitution values for the hive config
 get_hive_substitutions() {
+  local derby_server_config
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
@@ -181,7 +192,9 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
-s,##HIVE_ENGINE##,$HIVE_ENGINE,g
+s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
+s,##HIVE_JOINS##,$HIVE_JOINS,g;
+s,##DERBY_SERVER_CONFIG##,$derby_server_config,g
 EOF
 }
 
