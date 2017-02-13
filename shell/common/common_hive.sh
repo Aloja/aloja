@@ -127,16 +127,34 @@ initialize_hive_vars() {
     fi
 
     if [ "$HIVE_ENGINE" == "tez" ]; then
-        initialize_tez_vars
-        prepare_tez_config
+      initialize_tez_vars
+      prepare_tez_config
     fi
-    start_derby
+    if [ $HIVE_SERVER_DERBY == "1" ]; then
+      logger "WARNING: Using Derby DB in client/server mode"
+      initialize_derby_vars
+      start_derby
+    else
+      logger "WARNING: Using Derby DB in embedded mode"
+    fi
   fi
 }
 
 # Sets the substitution values for the hive config
 get_hive_substitutions() {
-  local derby_server_config
+  local derby_driver
+  local derby_driver_name
+  local jdbc_url
+
+  if [ $HIVE_SERVER_DERBY == "1" ]; then
+    derby_driver="${DERBY_HOME}/lib/derbyclient.jar"
+    derby_driver_name="org.apache.derby.jdbc.ClientDriver"
+    jdbc_url="jdbc:derby://${master_name}:1527/aplic/bigbench_metastore_db;create=true"
+  else
+    derby_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
+    jdbc_url="jdbc:derby:;databaseName=${BENCH_LOCAL_DIR}/aplic/bigbench_metastore_db;create=true"
+  fi
+
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
@@ -194,7 +212,9 @@ s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
 s,##HIVE_JOINS##,$HIVE_JOINS,g;
-s,##DERBY_SERVER_CONFIG##,$derby_server_config,g
+s,##DERBY_DRIVER##,$derby_driver,g;
+s,##DERBY_DRIVER_NAME##,$derby_driver_name,g;
+s,##JDBC_URL##,$jdbc_url,g
 EOF
 }
 
@@ -224,7 +244,7 @@ prepare_hive_config() {
 
     $DSH "
 $(get_perl_exports)
-/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE;
+/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE$HIVE_SETTINGS_FILE;
 /usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*;"
 
 #    if [ ! -z "$MAPS_MB" ]; then

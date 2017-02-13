@@ -126,6 +126,9 @@ get_BigBench_substitutions() {
   local hive_params
   local spark_params
   local hive_joins
+  local derby_jars
+  local spark_derby_opts
+
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
@@ -154,18 +157,12 @@ get_BigBench_substitutions() {
   else
     java_bin="$(get_java_home)/bin/java"
     hive_bin="$HIVE_HOME/bin/${bin}"
+#    spark_params="--files $(get_local_bench_path)/hive_conf/hive-site.xml"
         #Calculate Spark settings for BigBench
-      if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
-          EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes-1)*($NUM_EXECUTOR_NODE))" | bc))"
-          EXECUTOR_INSTANCES="$(printf %.$2f $(echo "($EXECUTOR_INSTANCES + ($NUM_EXECUTOR_NODE-1))" | bc))"
-          EXECUTOR_CORES="$(printf %.$2f $(echo "($NUM_CORES)/($NUM_EXECUTOR_NODE)" | bc))"
-          CONTAINER_MAX_MB="$(printf %.$2f $(echo "($PHYS_MEM)/($NUM_EXECUTOR_NODE)" | bc))"
-          EXECUTOR_OFFSET="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)*(0.07)" | bc))"
-          EXECUTOR_MEM="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)-($EXECUTOR_OFFSET)" | bc))"
-          EXECUTOR_MEM="$(printf %.$2f $(echo "($EXECUTOR_MEM)/1000" | bc))"
-
-#          spark_params="--driver-memory 8g --num-executors ${EXECUTOR_INSTANCES} --executor-memory ${EXECUTOR_MEM} --executor-cores ${EXECUTOR_CORES} --master yarn --deploy-mode client "
-      fi
+    if [ $HIVE_SERVER_DERBY == "1" ]; then
+      derby_jars="${DERBY_HOME}/lib/derbyclient.jar,${DERBY_HOME}/lib/derby.jar,"
+      spark_derby_opts="--jars "
+    fi
   fi
 
 #TODO spacing when a @ is found
@@ -217,7 +214,9 @@ s,##SPARK_PARAMS##,$spark_params,g;
 s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
 s,##ENGINE##,$ENGINE,g;
 s,##HIVE_ML_FRAMEWORK##,$HIVE_ML_FRAMEWORK,g;
-s,##HIVE_FILEFORMAT##,$HIVE_FILEFORMAT,g
+s,##HIVE_FILEFORMAT##,$HIVE_FILEFORMAT,g;
+s%##DERBY_JARS##%$derby_jars%g;
+s%##SPARK_DERBY_OPTS##%$spark_derby_opts%g
 EOF
 }
 
@@ -244,7 +243,12 @@ prepare_BigBench() {
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/hive/population/hiveCreateLoad.sql"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/spark_sql/conf/engineSettings.conf"
 
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
+
+
+  if [ $HIVE_SERVER_DERBY == "1" ]; then
+    $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
+  fi
 }
 
 # $1 bench

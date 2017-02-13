@@ -19,14 +19,12 @@
 
   <property>
     <name>javax.jdo.option.ConnectionURL</name>
-    <value>jdbc:derby://localhost:1527/metastore_db;create=true</value>
-    <description>JDBC connect string for a JDBC metastore</description>
+    <value>##JDBC_URL##</value>
   </property>
 
   <property>
     <name>javax.jdo.option.ConnectionDriverName</name>
-    <value>org.apache.derby.jdbc.ClientDriver</value>
-    <description>Driver class name for a JDBC metastore</description>
+    <value>##DERBY_DRIVER_NAME##</value>
   </property>
 
 </configuration>
