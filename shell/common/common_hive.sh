@@ -244,7 +244,7 @@ prepare_hive_config() {
 
     $DSH "
 $(get_perl_exports)
-/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE$HIVE_SETTINGS_FILE;
+/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE;
 /usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*;"
 
 #    if [ ! -z "$MAPS_MB" ]; then
