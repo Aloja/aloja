@@ -20,9 +20,9 @@ BIG_BENCH_CONF_DIR="BigBench_conf_template"
 BIG_BENCH_EXECUTION_DIR="src/BigBench"
 
 if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
-  logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, setting BENCH_SCALE_FACTOR to 1 (1 GB) and recalculating BENCH_DATA_SIZE"
-  BENCH_SCALE_FACTOR=1
-  BENCH_DATA_SIZE="$((BENCH_SCALE_FACTOR * 1000000000 ))" #in bytes
+  logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, using BigBench minimum dataset"
+  BENCH_SCALE_FACTOR=0.170
+  BENCH_DATA_SIZE="$(printf %.$2f $(echo "$BENCH_SCALE_FACTOR * 1000000000" | bc))" #in bytes
 fi
 
 # Sets the required files to download/copy
@@ -106,10 +106,22 @@ execute_BigBench(){
   fi
 }
 
+prepare_BigBench_minimum_dataset() {
+    #Copying main data
+    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/data/"
+    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/data/"
+    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/data"
+
+    #Copying data_refresh
+    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/data_refresh/"
+    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/data_refresh/"
+    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/data_refresh"
+}
+
 initialize_BigBench_vars() {
   BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
   BIG_BENCH_RESOURCE_DIR=${BIG_BENCH_HOME}/engines/hive/queries/Resources
-  HDFS_DATA_ABSOLUTE_PATH="/dfs/pristine/benchmarks/bigbench"
+  HDFS_DATA_ABSOLUTE_PATH="/dfs/benchmarks/bigbench"
   if [ "$clusterType" == "PaaS" ]; then
     MAHOUT_HOME="$(get_local_apps_path)/${MAHOUT_FOLDER}" #TODO need to change mahout usage in PaaS
 

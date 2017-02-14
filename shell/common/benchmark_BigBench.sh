@@ -33,8 +33,14 @@ benchmark_suite_run() {
 
   # TODO: review to generate data first time when DELETE_HDFS=0
   if [ "$DELETE_HDFS" == "1" ]; then
-#    benchmark_cleanAll
-#    benchmark_dataGen
+    benchmark_cleanAll
+    if [ "$BB_MINIMUM_DATA" == "1" ]; then
+      logger "INFO: Using BigBench minimum dataset (170 MB)"
+      prepare_BigBench_minimum_dataset
+    else
+      logger "INFO: Generating BigBench data"
+      benchmark_dataGen
+    fi
     benchmark_populateMetastore
   else
     logger "INFO: Reusing previous RUN BigBench data"
