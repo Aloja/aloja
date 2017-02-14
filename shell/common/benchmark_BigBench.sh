@@ -36,6 +36,7 @@ benchmark_suite_run() {
     benchmark_cleanAll
     if [ "$BB_MINIMUM_DATA" == "1" ]; then
       logger "INFO: Using BigBench minimum dataset (170 MB)"
+      BENCH_DATA_SIZE=170000000 #170MB
       prepare_BigBench_minimum_dataset
     else
       logger "INFO: Generating BigBench data"

@@ -20,9 +20,9 @@ BIG_BENCH_CONF_DIR="BigBench_conf_template"
 BIG_BENCH_EXECUTION_DIR="src/BigBench"
 
 if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
-  logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, using BigBench minimum dataset"
-  BENCH_SCALE_FACTOR=0.170
-  BENCH_DATA_SIZE="$(printf %.$2f $(echo "$BENCH_SCALE_FACTOR * 1000000000" | bc))" #in bytes
+  logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, setting BENCH_SCALE_FACTOR to 1 (1 GB) and recalculating BENCH_DATA_SIZE"
+  BENCH_SCALE_FACTOR=1
+  BENCH_DATA_SIZE="$((BENCH_SCALE_FACTOR * 1000000000 ))" #in bytes
 fi
 
 # Sets the required files to download/copy
