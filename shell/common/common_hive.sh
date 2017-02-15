@@ -149,12 +149,11 @@ get_hive_substitutions() {
   if [ $HIVE_SERVER_DERBY == "1" ]; then
     derby_driver="${DERBY_HOME}/lib/derbyclient.jar"
     derby_driver_name="org.apache.derby.jdbc.ClientDriver"
-    jdbc_url="jdbc:derby://${master_name}:1527/aplic/bigbench_metastore_db;create=true"
+    jdbc_url="jdbc:derby://${master_name}:1527/$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
   else
     derby_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
-    jdbc_url="jdbc:derby:;databaseName=${BENCH_LOCAL_DIR}/aplic/bigbench_metastore_db;create=true"
+    jdbc_url="jdbc:derby:;databaseName=$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
   fi
-
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"

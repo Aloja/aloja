@@ -13,6 +13,7 @@ stop_derby() {
   logger "INFO: Stopping Derby database"
   cmd=("$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar" 'server' 'shutdown' '-h' "$master_name")
   $DSH_MASTER "${cmd[@]}"
+  [ -d $(get_local_bench_path)/aplic/bigbench_metastore_db ] && rm -r $(get_local_bench_path)/aplic/bigbench_metastore_db #Force deletion of metastore folder if not properly deleted previously
 }
 
 start_derby() {
@@ -26,6 +27,7 @@ initialize_derby_vars() {
   if [ "$clusterType" == "PaaS" ]; then
     :
   else
+    DB_NAME=
     DERBY_HOME="$(get_local_apps_path)/${DERBY_VERSION}"
   fi
 }

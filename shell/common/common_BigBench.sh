@@ -246,7 +246,8 @@ prepare_BigBench() {
   $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
 
 
-  if [ $HIVE_SERVER_DERBY == "1" ]; then
+  if [[ $HIVE_SERVER_DERBY == "1" ]] && [[ ENGINE == "spark_sql" || HIVE_ML_FRAMEWORK == "spark" ]]; then
+    logger "WARN: copying Hive-site.xml to spark conf folder"
     $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
   fi
 }
