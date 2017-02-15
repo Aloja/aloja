@@ -27,7 +27,6 @@ initialize_derby_vars() {
   if [ "$clusterType" == "PaaS" ]; then
     :
   else
-    DB_NAME=
     DERBY_HOME="$(get_local_apps_path)/${DERBY_VERSION}"
   fi
 }
