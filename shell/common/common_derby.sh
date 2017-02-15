@@ -17,7 +17,10 @@ stop_derby() {
 }
 
 start_derby() {
-  stop_derby
+  if [ "$DELETE_HDFS" == "1" ]; then
+    stop_derby
+  fi
+
   logger "INFO: Starting Derby database"
   cmd=(-r ssh -o -f "$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar"  'server' 'start' '-h' "$master_name")
   $DSH_MASTER "${cmd[@]}"
