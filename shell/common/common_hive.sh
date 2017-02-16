@@ -124,17 +124,17 @@ initialize_hive_vars() {
 
 # Sets the substitution values for the hive config
 get_hive_substitutions() {
-  local derby_driver
-  local derby_driver_name
-  local jdbc_url
+  local database_driver
+  local database_driver_name
+  local url
 
-  if [ "$BB_SERVER_DERBY" == "true" ]; then
-    derby_driver="${DERBY_HOME}/lib/derbyclient.jar"
-    derby_driver_name="org.apache.derby.jdbc.ClientDriver"
-    jdbc_url="jdbc:derby://${master_name}:1527/$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
+  if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+    database_driver="$(get_database_driver_path_colon)"
+    database_driver_name="$(get_database_driver_name)"
+    url=$(get_database_connection_url)
   else
-    derby_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
-    jdbc_url="jdbc:derby:;databaseName=$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
+    database_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
+    url="jdbc:derby:;databaseName=$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
   fi
 
   #generate the path for the hadoop config files, including support for multiple volumes
@@ -193,9 +193,9 @@ s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
 s,##HIVE_JOINS##,$HIVE_JOINS,g;
-s,##DERBY_DRIVER##,$derby_driver,g;
-s,##DERBY_DRIVER_NAME##,$derby_driver_name,g;
-s,##JDBC_URL##,$jdbc_url,g
+s,##DATABASE_DRIVER##,$database_driver,g;
+s,##DATABASE_DRIVER_NAME##,$database_driver_name,g;
+s,##URL##,$url,g
 EOF
 }
 

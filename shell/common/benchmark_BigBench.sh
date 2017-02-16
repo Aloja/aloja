@@ -12,7 +12,8 @@ benchmark_suite_config() {
 
   if [ "$BB_SERVER_DERBY" == "true" ]; then
     logger "WARNING: Using Derby DB in client/server mode"
-    initialize_derby_vars
+    USE_EXTERNAL_DATABASE="true"
+    initialize_derby_vars "BigBench_DB"
     start_derby
   else
     logger "WARNING: Using Derby DB in embedded mode"

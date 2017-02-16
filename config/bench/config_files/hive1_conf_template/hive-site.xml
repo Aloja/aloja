@@ -19,12 +19,12 @@
 
   <property>
     <name>javax.jdo.option.ConnectionURL</name>
-    <value>##JDBC_URL##</value>
+    <value>##URL##</value>
   </property>
 
   <property>
     <name>javax.jdo.option.ConnectionDriverName</name>
-    <value>##DERBY_DRIVER_NAME##</value>
+    <value>##DATABASE_DRIVER_NAME##</value>
   </property>
 
 </configuration>

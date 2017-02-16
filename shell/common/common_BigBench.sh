@@ -73,7 +73,7 @@ get_BigBench_exports() {
       to_export+="$to_export_tez"
     fi
 
-    if [ "$BB_SERVER_DERBY" == "true" ]; then
+    if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
       server_exports=$(get_derby_exports)
       to_export+="${server_exports}"
     fi
@@ -148,8 +148,8 @@ get_BigBench_substitutions() {
   local hive_params
   local spark_params
   local hive_joins
-  local derby_jars
-  local spark_derby_opts
+  local database_jars
+  local spark_database_opts
 
 
   #generate the path for the hadoop config files, including support for multiple volumes
@@ -180,9 +180,9 @@ get_BigBench_substitutions() {
     java_bin="$(get_java_home)/bin/java"
     hive_bin="$HIVE_HOME/bin/${bin}"
         #Calculate Spark settings for BigBench
-    if [ "$BB_SERVER_DERBY" == "true" ]; then
-      derby_jars="${DERBY_HOME}/lib/derbyclient.jar,${DERBY_HOME}/lib/derby.jar,"
-      spark_derby_opts="--jars "
+    if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+      database_jars="$(get_database_driver_path_coma),"
+      spark_database_opts="--jars "
     fi
   fi
 
@@ -236,8 +236,8 @@ s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
 s,##ENGINE##,$ENGINE,g;
 s,##HIVE_ML_FRAMEWORK##,$HIVE_ML_FRAMEWORK,g;
 s,##HIVE_FILEFORMAT##,$HIVE_FILEFORMAT,g;
-s%##DERBY_JARS##%$derby_jars%g;
-s%##SPARK_DERBY_OPTS##%$spark_derby_opts%g
+s%##DATABASE_JARS##%$database_jars%g;
+s%##SPARK_DATABASE_OPTS##%$spark_database_opts%g
 EOF
 }
 
@@ -267,7 +267,7 @@ prepare_BigBench() {
   $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
 
 
-  if [[ $BB_SERVER_DERBY == "true" ]] && [[ ENGINE == "spark_sql" || HIVE_ML_FRAMEWORK == "spark" ]]; then
+  if [[ $USE_EXTERNAL_DATABASE == "true" ]] && [[ ENGINE == "spark_sql" || HIVE_ML_FRAMEWORK == "spark" ]]; then
     logger "WARN: copying Hive-site.xml to spark conf folder"
     $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
   fi
