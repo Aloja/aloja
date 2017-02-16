@@ -84,7 +84,7 @@ s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##TEZ##,$TEZ_HOME/bin/tez,g;
 s,##TEZ_CONF##,$TEZ_CONF_DIR,g;
-s,##TEZ_URI##,/apps/tez-${TEZ_VERSION}.tar.gz,g
+s,##TEZ_URI##,/apps/tez-${TEZ_VERSION}.tar.gz,g;
 EOF
 }
 

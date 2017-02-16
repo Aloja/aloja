@@ -214,7 +214,7 @@ s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
 s,##HIVE_JOINS##,$HIVE_JOINS,g;
 s,##DERBY_DRIVER##,$derby_driver,g;
 s,##DERBY_DRIVER_NAME##,$derby_driver_name,g;
-s,##JDBC_URL##,$jdbc_url,g
+s,##JDBC_URL##,$jdbc_url,g;
 EOF
 }
 
