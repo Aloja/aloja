@@ -49,21 +49,6 @@
 </property>
 
 <property>
-  <name>mapreduce.tasktracker.map.tasks.maximum</name>
-  <value>##MAX_MAPS##</value>
-  <description>The maximum number of map tasks that will be run
-  simultaneously by a task tracker.
-  </description>
-</property>
-<property>
-  <name>mapreduce.tasktracker.reduce.tasks.maximum</name>
-  <value>##MAX_REDS##</value>
-  <description>The maximum number of reduce tasks that will be run
-  simultaneously by a task tracker.
-  </description>
-</property>
-
-<property>
     <name>mapreduce.job.maps</name>
     <value>##MAX_MAPS##</value>
 </property>
@@ -77,6 +62,25 @@
     <value>##AM_MB##</value>
 </property>
 
+<property>
+    <name>mapreduce.map.memory.mb</name>
+    <value>##MAPS_MB##</value>
+</property>
+
+<property>
+    <name>mapreduce.reduce.memory.mb</name>
+    <value>##REDUCES_MB##</value>
+</property>
+
+<property>
+    <name>mapreduce.map.java.opts</name>
+    <value>##JAVA_XMX##</value>
+</property>
+
+<property>
+    <name>mapreduce.reduce.java.opts</name>
+    <value>##JAVA_XMX##</value>
+</property>
 
 <property>
   <name>dfs.datanode.hostname</name>

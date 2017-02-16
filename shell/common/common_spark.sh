@@ -101,7 +101,7 @@ execute_spark-sql(){
 
 initialize_spark_vars() {
   if [ "$clusterType" == "PaaS" ]; then
-    SPARK_HOME="/usr/hdp/current/spark-client" ## TODO ONLY WORKING IN HDI
+    SPARK_HOME="/usr" ## TODO ONLY WORKING IN HDI
     SPARK_CONF_DIR="/etc/spark/conf"
   else
     SPARK_HOME="$(get_local_apps_path)/${SPARK_FOLDER}"
@@ -115,6 +115,11 @@ get_spark_substitutions() {
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
+
+  #Calculate spark instances
+  EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes)*($NUM_EXECUTOR_NODE))" | bc))" # default should be 1 executor per node
+
+  #EXECUTOR_INSTANCES="$(printf %.$2f $(echo "($EXECUTOR_INSTANCES + ($NUM_EXECUTOR_NODE-1))" | bc))"
 
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
@@ -153,7 +158,10 @@ s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
 s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark,g;
-s,##SPARK_CONF##,$SPARK_CONF_DIR,g
+s,##SPARK_CONF##,$SPARK_CONF_DIR,g;
+s,##SPARK_INSTANCES##,$EXECUTOR_INSTANCES,g
+s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g
+s,##EXECUTOR_MEM##,$EXECUTOR_MEM,g
 EOF
 }
 
@@ -171,6 +179,7 @@ prepare_spark_config() {
     $DSH "/usr/bin/perl -i -pe \"$subs\" $SPARK_CONF_DIR/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $SPARK_CONF_DIR/slaves"
   fi
+#    $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"  #Spark needs Hive-Site.xml in the config dir to access Hive metastore
 }
 
 # $1 bench name

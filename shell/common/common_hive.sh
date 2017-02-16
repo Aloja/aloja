@@ -2,6 +2,11 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
+if [ $HIVE_SERVER_DERBY == "1" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
+  set_derby_requires
+fi
+
 # Sets the required files to download/copy
 set_hive_requires() {
   [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION specified"
@@ -18,6 +23,13 @@ set_hive_requires() {
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
+
+  if [ ! "$BB_ZOOKEEPER_QUORUM" ]; then #TODO need to add on-premise support
+    HIVE_MAJOR_VERSION="1"
+  else
+    HIVE_MAJOR_VERSION="2"
+  fi
+
   #also set the config here
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
@@ -42,6 +54,11 @@ export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
     if [ "$HIVE_ENGINE" == "tez" ]; then
       tez_exports=$(get_tez_exports)
       to_export+="${tez_exports}"
+    fi
+
+    if [ $HIVE_SERVER_DERBY == "1" ]; then
+      server_exports=$(get_derby_exports)
+      to_export+="${server_exports}"
     fi
 
     echo -e "$to_export\n"
@@ -96,30 +113,56 @@ initialize_hive_vars() {
   BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
 
   if [ "$clusterType" == "PaaS" ]; then
-    HIVE_HOME="/usr/bin/hive"
+    HIVE_HOME="/usr"
     HIVE_CONF_DIR="/etc/hive/conf"
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB_PaaS.sql"
   else
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
     HIVE_CONF_DIR="$HDD/hive_conf"
     # Only set a default hive.settings when not in PaaS
-    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
-    if [ "$HIVE_ENGINE" == "tez" ]; then
-        initialize_tez_vars
-        prepare_tez_config
+    if [ "$BENCH_SUITE" == "BigBench" ]; then
+      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB.sql"
+    else
+      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
     fi
 
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+      initialize_tez_vars
+      prepare_tez_config
+    fi
+    if [ $HIVE_SERVER_DERBY == "1" ]; then
+      logger "WARNING: Using Derby DB in client/server mode"
+      initialize_derby_vars
+      start_derby
+    else
+      logger "WARNING: Using Derby DB in embedded mode"
+    fi
   fi
 }
 
 # Sets the substitution values for the hive config
 get_hive_substitutions() {
+  local derby_driver
+  local derby_driver_name
+  local jdbc_url
+
+  if [ $HIVE_SERVER_DERBY == "1" ]; then
+    derby_driver="${DERBY_HOME}/lib/derbyclient.jar"
+    derby_driver_name="org.apache.derby.jdbc.ClientDriver"
+    jdbc_url="jdbc:derby://${master_name}:1527/aplic/bigbench_metastore_db;create=true"
+  else
+    derby_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
+    jdbc_url="jdbc:derby:;databaseName=${BENCH_LOCAL_DIR}/aplic/bigbench_metastore_db;create=true"
+  fi
+
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
   # Give Hive 10% of container mem for hive.auto.convert.join.noconditionaltask.size
-  JOIN_HIVE="$(echo "${MAPS_MB}*0.33" | bc -l)"
+  JOIN_HIVE="$(echo "${MAPS_MB}*0.05" | bc -l)"
+  JOIN_HIVE="$(echo "${JOIN_HIVE}*1000000" | bc -l)"
   JOIN_HIVE="$(printf "%.0f" $JOIN_HIVE)"
 
   CONTAINER_80="$(echo "${MAPS_MB}*0.80" | bc -l)"
@@ -134,6 +177,7 @@ get_hive_substitutions() {
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
+s,##HIVE_CONF_DIR##,$HIVE_CONF_DIR,g;
 s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
@@ -166,7 +210,11 @@ s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
-s,##HIVE_ENGINE##,$HIVE_ENGINE,g
+s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
+s,##HIVE_JOINS##,$HIVE_JOINS,g;
+s,##DERBY_DRIVER##,$derby_driver,g;
+s,##DERBY_DRIVER_NAME##,$derby_driver_name,g;
+s,##JDBC_URL##,$jdbc_url,g
 EOF
 }
 
@@ -183,6 +231,8 @@ prepare_hive_config() {
     time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
     #just in case
     time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+
+    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings.BB_PaaS.sql $(get_hive_conf_dir);"
 
   else
     logger "INFO: Preparing Hive run specific config"
