@@ -15,6 +15,11 @@ if [ "$HIVE_ENGINE" == "tez" ]; then
   set_tez_requires
 fi
 
+if [ "$BB_SERVER_DERBY" == "true" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
+  set_derby_requires
+fi
+
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
 BIG_BENCH_CONF_DIR="BigBench_conf_template"
 BIG_BENCH_EXECUTION_DIR="src/BigBench"
@@ -66,6 +71,11 @@ get_BigBench_exports() {
     if [ "$HIVE_ENGINE" == "tez" ]; then
       to_export_tez="$(get_tez_exports)"
       to_export+="$to_export_tez"
+    fi
+
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
+      server_exports=$(get_derby_exports)
+      to_export+="${server_exports}"
     fi
   fi
   echo -e "$to_export\n"
@@ -170,19 +180,7 @@ get_BigBench_substitutions() {
     java_bin="$(get_java_home)/bin/java"
     hive_bin="$HIVE_HOME/bin/${bin}"
         #Calculate Spark settings for BigBench
-      if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
-          EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes)*($NUM_EXECUTOR_NODE))" | bc))"
-          #EXECUTOR_INSTANCES="$(printf %.$2f $(echo "($EXECUTOR_INSTANCES + ($NUM_EXECUTOR_NODE-1))" | bc))"
-          EXECUTOR_CORES="$(printf %.$2f $(echo "($NUM_CORES)/($NUM_EXECUTOR_NODE)" | bc))"
-          CONTAINER_MAX_MB="$(printf %.$2f $(echo "($PHYS_MEM)/($NUM_EXECUTOR_NODE)" | bc))"
-          EXECUTOR_OFFSET="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)*(0.07)" | bc))"
-          EXECUTOR_MEM="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)-($EXECUTOR_OFFSET)" | bc))"
-          EXECUTOR_MEM="$(printf %.$2f $(echo "($EXECUTOR_MEM)/1000" | bc))"
-
-#          spark_params="--driver-memory 8g --num-executors ${EXECUTOR_INSTANCES} --executor-memory ${EXECUTOR_MEM} --executor-cores ${EXECUTOR_CORES} --master yarn --deploy-mode client "
-      fi
-
-    if [ $HIVE_SERVER_DERBY == "1" ]; then
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
       derby_jars="${DERBY_HOME}/lib/derbyclient.jar,${DERBY_HOME}/lib/derby.jar,"
       spark_derby_opts="--jars "
     fi
@@ -269,7 +267,8 @@ prepare_BigBench() {
   $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
 
 
-  if [ $HIVE_SERVER_DERBY == "1" ]; then
+  if [[ $BB_SERVER_DERBY == "true" ]] && [[ ENGINE == "spark_sql" || HIVE_ML_FRAMEWORK == "spark" ]]; then
+    logger "WARN: copying Hive-site.xml to spark conf folder"
     $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
   fi
 }
