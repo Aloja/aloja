@@ -157,8 +157,19 @@ get_BigBench_substitutions() {
   else
     java_bin="$(get_java_home)/bin/java"
     hive_bin="$HIVE_HOME/bin/${bin}"
-#    spark_params="--files $(get_local_bench_path)/hive_conf/hive-site.xml"
         #Calculate Spark settings for BigBench
+      if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
+          EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes)*($NUM_EXECUTOR_NODE))" | bc))"
+          #EXECUTOR_INSTANCES="$(printf %.$2f $(echo "($EXECUTOR_INSTANCES + ($NUM_EXECUTOR_NODE-1))" | bc))"
+          EXECUTOR_CORES="$(printf %.$2f $(echo "($NUM_CORES)/($NUM_EXECUTOR_NODE)" | bc))"
+          CONTAINER_MAX_MB="$(printf %.$2f $(echo "($PHYS_MEM)/($NUM_EXECUTOR_NODE)" | bc))"
+          EXECUTOR_OFFSET="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)*(0.07)" | bc))"
+          EXECUTOR_MEM="$(printf %.$2f $(echo "($CONTAINER_MAX_MB)-($EXECUTOR_OFFSET)" | bc))"
+          EXECUTOR_MEM="$(printf %.$2f $(echo "($EXECUTOR_MEM)/1000" | bc))"
+
+#          spark_params="--driver-memory 8g --num-executors ${EXECUTOR_INSTANCES} --executor-memory ${EXECUTOR_MEM} --executor-cores ${EXECUTOR_CORES} --master yarn --deploy-mode client "
+      fi
+
     if [ $HIVE_SERVER_DERBY == "1" ]; then
       derby_jars="${DERBY_HOME}/lib/derbyclient.jar,${DERBY_HOME}/lib/derby.jar,"
       spark_derby_opts="--jars "
