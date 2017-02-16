@@ -63,6 +63,7 @@ start_derby() {
   logger "INFO: Starting Derby database"
   cmd=(-r ssh -o -f "$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar"  'server' 'start' '-h' "$master_name")
   $DSH_MASTER "${cmd[@]}"
+  sleep 1
 }
 
 get_database_connection_url() {
