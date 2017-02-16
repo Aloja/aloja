@@ -39,14 +39,8 @@ benchmark_suite_run() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
-  # TODO: review to generate data first time when DELETE_HDFS=0
-  if [ "$DELETE_HDFS" == "1" ]; then
-    benchmark_cleanAll
-    benchmark_dataGen
-    benchmark_populateMetastore
-  else
-    logger "INFO: Reusing previous RUN BigBench data"
-  fi
+
+  prepare_BigBench_data
 
 #  logger "INFO: Running throughput test"
 #  execute_BigBench "$bench_name" "runBenchmark" "time" #-f scale factor
@@ -58,6 +52,27 @@ benchmark_suite_run() {
 #  for query in $BENCH_LIST ; do
 #    benchmark_validateQuery "$query"
 #  done
+}
+
+prepare_BigBench_data() {
+
+  # TODO: review to generate data first time when DELETE_HDFS=0
+#  if [ "$DELETE_HDFS" == "1" ]; then
+
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
+        output_dir="/tmp/pdgf"
+        execute_master "$bench: PDGF data generation " "$(get_java_home)/bin/java -jar $BIG_BENCH_HOME/data-generator/pdgf.jar pdgf.Controller -ns -c -sp REFRESH_PHASE 0 -o $(printf '%s/'+table.getName()+'/' -s -sf 1)"
+
+#          runCmdWithErrorCheck hadoop jar "-nc HadoopClusterExec.tasks -nn HadoopClusterExec.taskNumber  ${BIG_BENCH_DATAGEN_TABLES} ${PDGF_OPTIONS} "$@" 2>&1
+    else
+        benchmark_cleanAll
+        benchmark_dataGen
+        benchmark_populateMetastore
+    fi
+#  else
+#    logger "INFO: Reusing previous RUN BigBench data"
+#  fi
+
 }
 
 benchmark_cleanAll() {
