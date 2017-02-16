@@ -15,6 +15,11 @@ if [ "$HIVE_ENGINE" == "tez" ]; then
   set_tez_requires
 fi
 
+if [ "$BB_SERVER_DERBY" == "true" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
+  set_derby_requires
+fi
+
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
 BIG_BENCH_CONF_DIR="BigBench_conf_template"
 BIG_BENCH_EXECUTION_DIR="src/BigBench"
@@ -66,6 +71,11 @@ get_BigBench_exports() {
     if [ "$HIVE_ENGINE" == "tez" ]; then
       to_export_tez="$(get_tez_exports)"
       to_export+="$to_export_tez"
+    fi
+
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
+      server_exports=$(get_derby_exports)
+      to_export+="${server_exports}"
     fi
   fi
   echo -e "$to_export\n"
@@ -159,7 +169,7 @@ get_BigBench_substitutions() {
     hive_bin="$HIVE_HOME/bin/${bin}"
 #    spark_params="--files $(get_local_bench_path)/hive_conf/hive-site.xml"
         #Calculate Spark settings for BigBench
-    if [ $HIVE_SERVER_DERBY == "1" ]; then
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
       derby_jars="${DERBY_HOME}/lib/derbyclient.jar,${DERBY_HOME}/lib/derby.jar,"
       spark_derby_opts="--jars "
     fi
