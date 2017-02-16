@@ -102,9 +102,9 @@ vm_install_base_packages() {
   local bootstrap_file="${FUNCNAME[0]}_1"
 
   if check_bootstraped "$bootstrap_file" ""; then
-    logger "Installing packages for for VM $vm_name "
+    logger "Installing packages for VM $vm_name "
 
-    # Debian/Ubunuto packages
+    # Debian/Ubunutu packages
     # wamerican, is for hivebench (dictionary)
     # gcc, for tpch
     # hardinfo, for collecting sys info
@@ -118,6 +118,8 @@ vm_install_base_packages() {
     else
       log_WARN "Specified OS $vmOSType not defined, trying base package list "
     fi
+
+    install_packages "$package_list" "update"
 
     local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && echo '$testKey'")" #checks for sysstat and DSH
     if [[ "$test_action" == *"$testKey"* ]] ; then
