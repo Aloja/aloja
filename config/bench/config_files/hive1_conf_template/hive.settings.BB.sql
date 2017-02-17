@@ -321,6 +321,7 @@ set hive.stats.autogather=true;
 -- Tez settings
 -- ###########################
 
+set hive.execution.engine=##HIVE_ENGINE##;
 set hive.tez.container.size=##MAPS_MB##;
 set hive.tez.cpu.vcores=-1;
 set hive.tez.java.opts=-Xms##CONTAINER_80##m -Xmx##CONTAINER_80##m -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC;

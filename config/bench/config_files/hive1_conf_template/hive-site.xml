@@ -13,11 +13,6 @@
   </property>
 
   <property>
-    <name>hive.execution.engine</name>
-    <value>##HIVE_ENGINE##</value>
-  </property>
-
-  <property>
     <name>javax.jdo.option.ConnectionURL</name>
     <value>##URL##</value>
   </property>
