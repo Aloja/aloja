@@ -47,12 +47,12 @@ benchmark_suite_run() {
     logger "INFO: Reusing previous RUN BigBench data"
   fi
 
-#  logger "INFO: Running throughput test"
-#  execute_BigBench "$bench_name" "runBenchmark" "time" #-f scale factor
+  benchmark_throughput
 
-  for query in $BENCH_LIST ; do
-    benchmark_query "$query"
-  done
+
+#  for query in $BENCH_LIST ; do
+#    benchmark_query "$query"
+#  done
 
 #  for query in $BENCH_LIST ; do
 #    benchmark_validateQuery "$query"
@@ -65,12 +65,6 @@ benchmark_cleanAll() {
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "cleanAll -U -z $HIVE_SETTINGS_FILE" "time"
 }
-
-#benchmark_cleanMetastore() {
-#  local bench_name="${FUNCNAME[0]#benchmark_}"
-#  logger "INFO: Running $bench_name"
-#  execute_BigBench "$bench_name" "cleanMetastore" "time"
-#}
 
 benchmark_dataGen() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
@@ -91,7 +85,12 @@ benchmark_query(){
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "runQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
-#
+
+benchmark_throughput() {
+  local bench_name="${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
+  logger "INFO: Running $bench_name"
+  execute_BigBench "$bench_name" "runBenchmark -U -b -i THROUGHPUT_TEST_1 -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
+}
 #benchmark_validateQuery(){
 #  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
 #  logger "INFO: Running $bench_name"
