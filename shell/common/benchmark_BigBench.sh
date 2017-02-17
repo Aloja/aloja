@@ -97,7 +97,7 @@ benchmark_query(){
 benchmark_throughput() {
   local bench_name="${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runBenchmark -U -b -i THROUGHPUT_TEST_1 -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
+  execute_BigBench "$bench_name" "runBenchmark -U -i THROUGHPUT_TEST_1 -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
 #benchmark_validateQuery(){
 #  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
