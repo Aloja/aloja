@@ -2,11 +2,6 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
-if [ $HIVE_SERVER_DERBY == "1" ]; then
-  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
-  set_derby_requires
-fi
-
 # Sets the required files to download/copy
 set_hive_requires() {
   [ ! "$HIVE_VERSION" ] && die "No HIVE_VERSION specified"
@@ -55,12 +50,6 @@ export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
       tez_exports=$(get_tez_exports)
       to_export+="${tez_exports}"
     fi
-
-    if [ $HIVE_SERVER_DERBY == "1" ]; then
-      server_exports=$(get_derby_exports)
-      to_export+="${server_exports}"
-    fi
-
     echo -e "$to_export\n"
   fi
 }
@@ -130,31 +119,23 @@ initialize_hive_vars() {
       initialize_tez_vars
       prepare_tez_config
     fi
-    if [ $HIVE_SERVER_DERBY == "1" ]; then
-      logger "WARNING: Using Derby DB in client/server mode"
-      initialize_derby_vars
-      start_derby
-    else
-      logger "WARNING: Using Derby DB in embedded mode"
-    fi
   fi
 }
 
 # Sets the substitution values for the hive config
 get_hive_substitutions() {
-  local derby_driver
-  local derby_driver_name
-  local jdbc_url
+  local database_driver
+  local database_driver_name
+  local url
 
-  if [ $HIVE_SERVER_DERBY == "1" ]; then
-    derby_driver="${DERBY_HOME}/lib/derbyclient.jar"
-    derby_driver_name="org.apache.derby.jdbc.ClientDriver"
-    jdbc_url="jdbc:derby://${master_name}:1527/aplic/bigbench_metastore_db;create=true"
+  if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+    database_driver="$(get_database_driver_path_colon)"
+    database_driver_name="$(get_database_driver_name)"
+    url=$(get_database_connection_url)
   else
-    derby_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
-    jdbc_url="jdbc:derby:;databaseName=${BENCH_LOCAL_DIR}/aplic/bigbench_metastore_db;create=true"
+    database_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
+    url="jdbc:derby:;databaseName=$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
   fi
-
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
@@ -212,9 +193,9 @@ s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
 s,##HDD##,$HDD,g;
 s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
 s,##HIVE_JOINS##,$HIVE_JOINS,g;
-s,##DERBY_DRIVER##,$derby_driver,g;
-s,##DERBY_DRIVER_NAME##,$derby_driver_name,g;
-s,##JDBC_URL##,$jdbc_url,g;
+s,##DATABASE_DRIVER##,$database_driver,g;
+s,##DATABASE_DRIVER_NAME##,$database_driver_name,g;
+s,##URL##,$url,g
 EOF
 }
 
