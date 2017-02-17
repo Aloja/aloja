@@ -10,6 +10,15 @@ benchmark_suite_config() {
   prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
   start_hadoop
 
+  if [ "$BB_SERVER_DERBY" == "true" ]; then
+    logger "WARNING: Using Derby DB in client/server mode"
+    USE_EXTERNAL_DATABASE="true"
+    initialize_derby_vars "BigBench_DB"
+    start_derby
+  else
+    logger "WARNING: Using Derby DB in embedded mode"
+  fi
+
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
 
@@ -21,7 +30,7 @@ benchmark_suite_config() {
   if [ "$HIVE_ENGINE" == "tez" ]; then
     initialize_tez_vars
     prepare_tez_config
-  fi
+fi
 
   initialize_BigBench_vars
   prepare_BigBench
@@ -57,7 +66,6 @@ benchmark_suite_run() {
 #  for query in $BENCH_LIST ; do
 #    benchmark_validateQuery "$query"
 #  done
-
 }
 
 benchmark_cleanAll() {
@@ -65,12 +73,6 @@ benchmark_cleanAll() {
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "cleanAll -U -z $HIVE_SETTINGS_FILE" "time"
 }
-
-#benchmark_cleanMetastore() {
-#  local bench_name="${FUNCNAME[0]#benchmark_}"
-#  logger "INFO: Running $bench_name"
-#  execute_BigBench "$bench_name" "cleanMetastore" "time"
-#}
 
 benchmark_dataGen() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
