@@ -36,6 +36,15 @@ fi
   prepare_BigBench
 }
 
+benchmark_suite_cleanup() {
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+
+  if [ "$BB_SERVER_DERBY" == "true" ]; then
+    clean_derby
+  fi
+  clean_hadoop
+}
+
 benchmark_suite_run() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
