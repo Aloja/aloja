@@ -301,3 +301,9 @@ fi
   # save hadoop and defaults
   save_hadoop "$bench_name"
 }
+
+clean_hive() {
+  if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+    stop_derby
+  fi
+}
