@@ -11,13 +11,17 @@ benchmark_suite_config() {
     start_derby
 }
 
+benchmark_suite_cleanup() {
+  clean_derby
+}
+
 benchmark_create_table(){
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Running $bench_name"
 
   query_file=$(get_local_bench_path)/query_create.sql
   url=$(get_database_connection_url)
-  echo "connect '$url';" >> $query_file
+  echo "connect '$url';" > $query_file
   echo "CREATE TABLE Persons
        (
        PersonID int,
@@ -26,6 +30,17 @@ benchmark_create_table(){
        Address varchar(255),
        City varchar(255)
        );" >> $query_file
+
+  execute_derby "$bench_name"  "$query_file" "time"
+}
+
+benchmark_validate_create_table(){
+  local bench_name="${FUNCNAME[0]##*benchmark_}"
+  logger "INFO: Running $bench_name"
+
+  query_file=$(get_local_bench_path)/show_tables.sql
+  url=$(get_database_connection_url)
+  echo "connect '$url';" > $query_file
   echo "show tables;" >> $query_file
 
   execute_derby "$bench_name"  "$query_file" "time"
@@ -37,7 +52,7 @@ benchmark_insert_table(){
 
   query_file=$(get_local_bench_path)/query_insert.sql
   url=$(get_database_connection_url)
-  echo "connect '$url';" >> $query_file
+  echo "connect '$url';" > $query_file
   echo "INSERT into Persons (PersonID, LastName, FirstName, Address, City)
         VALUES (1, 'Montero', 'Alejandro', 'C/Jordi Girona', 'Barcelona'),
         (2, 'Poggi', 'Nicolas', 'C/Jordi Girona', 'Barcelona'),
@@ -54,7 +69,7 @@ benchmark_query_table(){
 
   query_file=$(get_local_bench_path)/query_select.sql
   url=$(get_database_connection_url)
-  echo "connect '$url';" >> $query_file
+  echo "connect '$url';" > $query_file
   echo "SELECT FirstName, LastName
         FROM Persons
         WHERE City = 'Barcelona'
