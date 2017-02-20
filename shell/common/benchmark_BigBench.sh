@@ -3,7 +3,19 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 set_BigBench_requires
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " "  1 30)"
+if [ "$BENCH_LIST" ] ; then
+    user_suplied_bench_list="true"
+fi
+
+BENCH_ENABLED="$(seq -f "%g" -s " "  1 30) throughput"
+BENCH_EXTRA="throughput"
+
+# Check supplied benchmarks
+check_bench_list
+
+if [ ! $user_suplied_bench_list ]; then
+    BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_EXTRA")"
+fi
 
 benchmark_suite_config() {
   initialize_hadoop_vars
@@ -56,12 +68,13 @@ benchmark_suite_run() {
     logger "INFO: Reusing previous RUN BigBench data"
   fi
 
-  benchmark_throughput
-
-
-#  for query in $BENCH_LIST ; do
-#    benchmark_query "$query"
-#  done
+  for query in $BENCH_LIST ; do
+    if [ ! $query == "throughput" ] ; then
+      benchmark_query "$query"
+    else
+      benchmark_throughput
+    fi
+  done
 
 #  for query in $BENCH_LIST ; do
 #    benchmark_validateQuery "$query"
