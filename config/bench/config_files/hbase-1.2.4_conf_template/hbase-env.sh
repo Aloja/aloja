@@ -34,13 +34,21 @@ export JAVA_HOME=##JAVA_HOME##
 
 # Uncomment below if you intend to use off heap cache. For example, to allocate 8G of 
 # offheap, set the value to "8G".
-# export HBASE_OFFHEAPSIZE=1G
+if [ "##HBASE_MAX_DIRECT_MEMORY##" ] && [ "##HBASE_IOENGINE##" == "offheap" ] ; then
+  export HBASE_OFFHEAPSIZE="##HBASE_MAX_DIRECT_MEMORY##"
+  export HBASE_OPTS="-XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:MaxDirectMemorySize=##HBASE_MAX_DIRECT_MEMORY##"
+elif [ "##HBASE_MAX_DIRECT_MEMORY##" ] && [ "##HBASE_IOENGINE##" == "heap" ] ; then
+  export HBASE_HEAPSIZE="##HBASE_MAX_DIRECT_MEMORY##"
+  export HBASE_OPTS="-XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true -XX:MaxDirectMemorySize=##HBASE_MAX_DIRECT_MEMORY## -Xmx##HBASE_MAX_DIRECT_MEMORY##"
+else
+  export HBASE_OPTS="-XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"
+fi
 
 # Extra Java runtime options.
 # Below are what we set by default.  May only work with SUN JVM.
 # For more on why as well as other possible settings,
 # see http://wiki.apache.org/hadoop/PerformanceTuning
-export HBASE_OPTS="-XX:+UseConcMarkSweepGC -Djava.net.preferIPv4Stack=true"
+
 
 # Configure PermSize. Only needed in JDK7. You can safely remove it for JDK8+
 export HBASE_MASTER_OPTS="$HBASE_MASTER_OPTS -XX:PermSize=128m -XX:MaxPermSize=128m -Djava.net.preferIPv4Stack=true"

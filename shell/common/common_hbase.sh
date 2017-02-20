@@ -184,19 +184,42 @@ get_hbase_substitutions() {
 #  <value>0.2</value>
 #</property>
 
-  if [ "${HBASE_CACHE}" != "" ]; then
+  local HBASE_MAX_DIRECT_MEMORY # for onheap bucket cache ioengine
+
+  local HBASE_BLOCKCACHE_SIZE="0.4" #default
+
+  if [ "${HBASE_CACHE}" != "" ] || [ "$HBASE_IOENGINE" ]; then
+    local bucket_size="$HBASE_BUCKETCACHE_SIZE"
+
+    # Off heap to file (default)
+    local ioengine="file:${HBASE_CACHE}"
+
+    if [ "$HBASE_IOENGINE" ] ; then
+      ioengine="$HBASE_IOENGINE"
+      HBASE_MAX_DIRECT_MEMORY="$(( HBASE_BUCKETCACHE_SIZE + 1024 ))m"
+      if [ "$HBASE_IOENGINE" == "heap" ] ; then
+        HBASE_BLOCKCACHE_SIZE="0.2"
+        bucket_size="0.2"
+      fi
+    fi
+
     cache="<property>
   <name>hbase.bucketcache.ioengine</name>
-  <value>file:${HBASE_CACHE}</value>
+  <value>${ioengine}</value>
 </property>
   <property>
   <name>hbase.bucketcache.size</name>
-  <value>${HBASE_BUCKETCACHE_SIZE}</value>
+  <value>${bucket_size}</value>
 </property>
 <property>
   <name>hbase.bucketcache.combinedcache.enabled</name>
   <value>true</value>
-</property>"
+</property>
+<property>
+  <name>hfile.block.cache.size</name>
+  <value>${HBASE_BLOCKCACHE_SIZE}</value>
+</property>
+"
   fi
 
   cat <<EOF
@@ -236,6 +259,8 @@ s,##BACKUP_SERVER##,$backup_server,g;
 s,##HBASE_MANAGES_ZK##,$HBASE_MANAGES_ZK,g;
 s,##HBASE_CACHE##,$cache,g;
 s,##HBASE_ROOT_DIR##,$HBASE_ROOT_DIR,g;
+s,##HBASE_IOENGINE##,$HBASE_IOENGINE,g;
+s,##HBASE_MAX_DIRECT_MEMORY##,$HBASE_MAX_DIRECT_MEMORY,g;
 EOF
 }
 
