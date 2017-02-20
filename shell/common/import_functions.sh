@@ -246,17 +246,26 @@ import_folder() {
 
     # Check if to work in mem to speedup the process (if enough RAM is available)
     if [ "$WORK_IN_MEM" ] ; then
-      local original_folder_path="$folder" #save original path
-      local BASE_DIR_ORIGINAL="$BASE_DIR"
-      local mem_folder="$MEM_PATH/${folder##/*}"
-      logger "INFO: Attempting to copy to RAM disk to speedup import at: $MEM_PATH"
-      mkdir -p "$MEM_PATH" && cp -ru "$folder" "$mem_folder/" && {
-        logger "INFO: Copy OK, using RAM disk to speedup import"
-        BASE_DIR="$MEM_PATH"
-        cd "$BASE_DIR"
-      } || {
-        logger "WARNING: could not copy bench folder into ${MEM_PATH}, using current location: $folder"
-      }
+      # Check folder size (to prevent not fitting in MEM)
+      local folder_size="$(du -s "$folder"|cut -f1)"
+
+      if (( folder_size <= 2000000000 )) ; then
+
+        log_INFO "Folder below 2GB ($folder_size bytes) continuing using RAM disk"
+        local original_folder_path="$folder" #save original path
+        local BASE_DIR_ORIGINAL="$BASE_DIR"
+        local mem_folder="$MEM_PATH/${folder##/*}"
+        logger "INFO: Attempting to copy to RAM disk to speedup import at: $MEM_PATH"
+        mkdir -p "$MEM_PATH" && cp -ru "$folder" "$mem_folder/" && {
+          logger "INFO: Copy OK, using RAM disk to speedup import"
+          BASE_DIR="$MEM_PATH"
+          cd "$BASE_DIR"
+        } || {
+          logger "WARNING: could not copy bench folder into ${MEM_PATH}, using current location: $folder"
+        }
+      else
+        log_WARN "Folder is too large ($folder_size bytes) to fit in MEM, continuing using folder"
+      fi
     fi
 
     logger "INFO: Entering folder $folder"
@@ -1374,10 +1383,12 @@ get_sysstat_filename(){
     *'imsg6/s;omsg6/s;'*)     human_header="net_ICMP6"        ;; # -n ICMP6
     *'ierr6/s;idtunr6/s;'*)   human_header="net_ICMP6_errors" ;; # -n EICMP6
     *'idgm6/s;odgm6/s;'*)     human_header="net_UDP6"         ;; # -n UDP6
+    *'FCHOST;fch_rxf/s;'*)    human_header="net_fiber"        ;; # -n FC
     *'CPU;MHz'*)              human_header="CPU_MHz"          ;; # -m CPU
     *'manufact;product;'*)    human_header="USB"              ;; # -m USB
     *'FILESYSTEM;MBfsfree;'*) human_header="mounts"           ;; # -F
     *'runq-sz;plist-sz;'*)    human_header="CPU_load"         ;; # -q
+
     #            *'1'*)       human_header=""     ;; # -
     #*) log_WARN "Cannot get header for sysstat file with header: $header" ;;
   esac
@@ -1387,6 +1398,7 @@ get_sysstat_filename(){
 
 # Exports data to PAT format
 export2PAT() {
+
   #SYSTAT
   logger "INFO: Exporting to PAT sysstat and vmstat files"
 
@@ -1502,7 +1514,7 @@ export2MET(){
 
       local sar_prefix="sar_${hostn}_"
       # Export all metrics
-      $sadf -d -U "$sar_file" -- -A > "$MET_metrics_folder/${hostn}_sar_all" && {
+      $sadf -d -U "$sar_file" -- -A -p > "$MET_metrics_folder/${hostn}_sar_all" && {
         local cur_dir="$(pwd)"
         cd  "$MET_metrics_folder" && \
         rm -rf "$sar_prefix"* && \
@@ -1520,8 +1532,10 @@ export2MET(){
             header="UNK_${header:0:64}"
           fi
 
-          #mv "$sar_metric" "${sar_metric:0:(-3)}_$(safe_file_name "$header").tmp";
-          cat "$sar_metric" >> "sar_${header}.log"
+          if [ "$header" != "INTR" ] ; then # avoid copying IRQ file as is too large and not used (for now)
+            #mv "$sar_metric" "${sar_metric:0:(-3)}_$(safe_file_name "$header").tmp";
+            cat "$sar_metric" >> "sar_${header}.log"
+          fi
           rm "$sar_metric"
         done
         rm -f "${hostn}_sar_all"
