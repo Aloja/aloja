@@ -13,7 +13,7 @@ benchmark_uptime(){
 }
 
 benchmark_sleep(){
-  local num_seconds="5" # Defaults 5 seconds if not overidden
+  local num_seconds="1" # Defaults 1 second if not overridden
   [ "$BENCH_EXTRA_CONFIG" ] && num_seconds="$BENCH_EXTRA_CONFIG"
 
   local bench_name="${FUNCNAME[0]##*benchmark_}"
