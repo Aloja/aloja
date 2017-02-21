@@ -3,7 +3,19 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 set_BigBench_requires
 
-[ ! "$BENCH_LIST" ] && BENCH_LIST="$(seq -f "%g" -s " "  1 30)"
+if [ "$BENCH_LIST" ] ; then
+    user_suplied_bench_list="true"
+fi
+
+BENCH_ENABLED="$(seq -f "%g" -s " "  1 30) throughput"
+BENCH_EXTRA="throughput"
+
+# Check supplied benchmarks
+check_bench_list
+
+if [ ! $user_suplied_bench_list ]; then
+    BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_EXTRA")"
+fi
 
 benchmark_suite_config() {
   initialize_hadoop_vars
@@ -65,11 +77,12 @@ benchmark_suite_run() {
     logger "INFO: Reusing previous RUN BigBench data"
   fi
 
-#  logger "INFO: Running throughput test"
-#  execute_BigBench "$bench_name" "runBenchmark" "time" #-f scale factor
-
   for query in $BENCH_LIST ; do
-    benchmark_query "$query"
+    if [ ! $query == "throughput" ] ; then
+      benchmark_query "$query"
+    else
+      benchmark_throughput
+    fi
   done
 
 #  for query in $BENCH_LIST ; do
@@ -102,7 +115,12 @@ benchmark_query(){
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "runQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
-#
+
+benchmark_throughput() {
+  local bench_name="${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
+  logger "INFO: Running $bench_name"
+  execute_BigBench "$bench_name" "runBenchmark -U -i THROUGHPUT_TEST_1 -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
+}
 #benchmark_validateQuery(){
 #  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
 #  logger "INFO: Running $bench_name"
