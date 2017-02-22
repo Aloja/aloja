@@ -80,14 +80,11 @@ benchmark_suite_run() {
   for query in $BENCH_LIST ; do
     if [ ! $query == "throughput" ] ; then
       benchmark_query "$query"
+      benchmark_validateQuery "$query"
     else
       benchmark_throughput
     fi
   done
-
-#  for query in $BENCH_LIST ; do
-#    benchmark_validateQuery "$query"
-#  done
 }
 
 benchmark_cleanAll() {
@@ -121,8 +118,9 @@ benchmark_throughput() {
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "runBenchmark -U -i THROUGHPUT_TEST_1 -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
-#benchmark_validateQuery(){
-#  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
-#  logger "INFO: Running $bench_name"
-#  execute_BigBench "$bench_name" "validateQuery -q $1 -U" "time" #-f scale factor
-#}
+
+benchmark_validateQuery(){
+  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
+  logger "INFO: Running $bench_name"
+  execute_BigBench "$bench_name" "validateQuery -q $1 -U" "time" #-f scale factor
+}

@@ -21,8 +21,6 @@ if [ "$BB_SERVER_DERBY" == "true" ]; then
 fi
 
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
-BIG_BENCH_CONF_DIR="BigBench_conf_template"
-BIG_BENCH_EXECUTION_DIR="src/BigBench"
 
 if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
   logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, setting BENCH_SCALE_FACTOR to 1 (1 GB) and recalculating BENCH_DATA_SIZE"
@@ -41,7 +39,7 @@ set_BigBench_requires() {
   BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
   #also set the config here
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS $BIG_BENCH_CONF_DIR"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS BigBench_conf_template"
 }
 
 # Helper to print a line with required exports
@@ -60,8 +58,11 @@ get_BigBench_exports() {
   else
     to_export="
     $(get_hive_exports)
+    export BIG_BENCH_HOME='$BIG_BENCH_HOME';
+    export BIG_BENCH_CONF_DIR='$BIG_BENCH_CONF_DIR';
+    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs';
     export PATH='$PATH:$BENCH_HADOOP_DIR/bin:$MAHOUT_HOME/bin';
-    export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR}"
+    export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR};"
 
     if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
       to_export_spark="$(get_spark_exports)"
@@ -87,7 +88,8 @@ get_BigBench_cmd() {
   local BigBench_cmd
 
   BigBench_exports="$(get_BigBench_exports)"
-  BigBench_cmd="$BigBench_exports\n$(get_BigBench_execution_dir)/bin/bigBench"
+  BigBench_bin="$(get_local_apps_path)/${BIG_BENCH_FOLDER}/bin/bigBench"
+  BigBench_cmd="$BigBench_exports\n$BigBench_bin"
 
   echo -e "$BigBench_cmd"
 }
@@ -131,6 +133,7 @@ prepare_BigBench_minimum_dataset() {
 initialize_BigBench_vars() {
   BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
   BIG_BENCH_RESOURCE_DIR=${BIG_BENCH_HOME}/engines/hive/queries/Resources
+  BIG_BENCH_CONF_DIR="$(get_local_bench_path)/BigBench_conf"
   HDFS_DATA_ABSOLUTE_PATH="/dfs/benchmarks/bigbench"
   if [ "$clusterType" == "PaaS" ]; then
     MAHOUT_HOME="$(get_local_apps_path)/${MAHOUT_FOLDER}" #TODO need to change mahout usage in PaaS
@@ -242,28 +245,20 @@ s%##SPARK_DATABASE_OPTS##%$spark_database_opts%g
 EOF
 }
 
-get_BigBench_execution_dir() {
-    echo -e "$(get_local_bench_path)/$BIG_BENCH_EXECUTION_DIR"
-}
-
-get_BigBench_conf_dir() {
-  echo -e "$(get_local_bench_path)/$BIG_BENCH_CONF_DIR"
-}
 
 prepare_BigBench() {
 
-  logger "INFO: Copying BigBench execution and config files to $(get_BigBench_execution_dir)"
+  logger "INFO: Preparing BigBench"
 
-  $DSH "mkdir -p $(get_local_bench_path)/src/BigBench && cp -r $(get_local_apps_path)/$BIG_BENCH_FOLDER/* $(get_BigBench_execution_dir)"
-  $DSH "cp -r $(get_local_configs_path)/$BIG_BENCH_CONF_DIR/* $(get_BigBench_execution_dir)/"
+  $DSH "mkdir -p $BIG_BENCH_CONF_DIR && cp -r $(get_local_configs_path)/BigBench_conf_template/* $BIG_BENCH_CONF_DIR/"
 
   # Get the values
   subs=$(get_BigBench_substitutions)
   logger "INFO: Making substitutions"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/conf/userSettings.conf"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/hive/conf/engineSettings.conf"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/hive/population/hiveCreateLoad.sql"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $(get_local_bench_path)/src/BigBench/engines/spark_sql/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/conf/userSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/hive/conf/engineSettings.conf"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/hive/population/hiveCreateLoad.sql"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/spark_sql/conf/engineSettings.conf"
 
   $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
 
@@ -287,13 +282,15 @@ save_BigBench() {
   logger "INFO: Saving BigBench query results to $JOB_PATH/$bench_name_num/BigBench_results"
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    cp $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/
+    cp $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null
 #    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
   else
-    mv $(get_local_bench_path)/src/BigBench/logs/* $JOB_PATH/$bench_name_num/BigBench_logs/
+    mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null
 #    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
 #    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
   fi
 
+  # Compressing BigBench config
+  execute_master "$bench_name" "cd  $(get_local_bench_path) && tar -cjf $JOB_PATH/BigBench_conf.tar.bz2 BigBench_conf"
   save_hive "$bench_name"
 }
