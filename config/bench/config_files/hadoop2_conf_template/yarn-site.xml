@@ -17,7 +17,7 @@
 
 <property>
     <name>yarn.scheduler.maximum-allocation-mb</name>
-    <value>##PHYS_MEM##</value>
+    <value>##CONTAINER_MAX_MB##</value>
     <description>Maximum limit of memory to allocate to each container request at the Resource Manager.</description>
 </property>
 

@@ -276,16 +276,16 @@ save_BigBench() {
   local bench_name="$1"
   local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
-  $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
-  $DSH "mkdir -p $JOB_PATH/$bench_name_num/BigBench_results;"
+  execute_master "$bench_name" "mkdir -p $JOB_PATH/$bench_name_num/BigBench_logs;"
+  execute_master "$bench_name" "mkdir -p $JOB_PATH/$bench_name_num/BigBench_results;"
 
   logger "INFO: Saving BigBench query results to $JOB_PATH/$bench_name_num/BigBench_results"
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    cp $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null
+    execute_master "$bench_name" "cp $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
 #    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
   else
-    mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null
+    execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
 #    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
 #    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
   fi
