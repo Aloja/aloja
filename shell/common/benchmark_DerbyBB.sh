@@ -9,7 +9,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
 set_derby_requires
 
 #BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-[ ! "$BENCH_LIST" ] && BENCH_LIST=""
+[ ! "$BENCH_LIST" ] && BENCH_LIST="6 7 9 12 13 14"
 
 benchmark_suite_config() {
     logger "WARNING: Using Derby DB in client/server mode"
@@ -17,6 +17,7 @@ benchmark_suite_config() {
     start_derby
 
     initialize_newBigBench_vars
+    prepare_newBigBench
 }
 
 benchmark_suite_cleanup() {
@@ -40,26 +41,11 @@ benchmark_suite_run() {
   done
 }
 
-
-benchmark_cleanAll() {
-  local bench_name="${FUNCNAME[0]#benchmark_}"
-  logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "cleanAll -U -z $HIVE_SETTINGS_FILE" "time"
-}
-
-benchmark_dataGen() {
-  local bench_name="${FUNCNAME[0]#benchmark_}"
-  logger "INFO: Running $bench_name"
-  logger "INFO: Automatically accepting EULA"
-
-  yes YES | execute_BigBench "$bench_name" "dataGen -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
-}
-
 benchmark_populateDerby() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
   logger "INFO: Running $bench_name"
 
-  query_file=$(get_local_bench_path)/create_tables.sql
+  query_file=$LOCAL_QUERIES_DIR/create_tables.sql
   url=$(get_database_connection_url)
   echo "connect '$url';" > $query_file
   cat "$QUERIES_DIR/Load_Derby/createTables.sql" >> $query_file
@@ -67,31 +53,35 @@ benchmark_populateDerby() {
   execute_derby "$bench_name"  "$query_file" "time"
 
   #Load the data into the tables by a generated script
- load_file=$(get_local_bench_path)/load_tables.sql
- echo "connect '$url';" > $load_file 
+  load_file=$LOCAL_QUERIES_DIR/load_tables.sql
+  echo "connect '$url';" > $load_file
 
-#TODO define DATA_DIR
+  for f in $DATA_DIR/base/* ; do
+    #The table has the same name as the file, minus the extension and it must be in uppercase
+    tableName=$(basename "$f")
+    #Remove the extension
+    tableName="${tableName%.*}"
+    #Convert table name to uppercase
+    tableName=${tableName^^}
+#    fFull=$(realpath "$f")
+    stmt="CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE (NULL,'$tableName','$f','|','\"',NULL,0);"
+    echo $stmt >> $load_file
+  done
+  execute_derby "$bench_name"  "$load_file" "time" > $LOCAL_RESULTS_DIR/$bench_name
 
-    for f in $DATA_DIR/* ; do
-    	#The table has the same name as the file, minus the extension and it must be in uppercase
-    	tableName=$(basename "$f")
-    	#Remove the extension
-		tableName="${tableName%.*}"
-		#Convert table name to uppercase
-		tableName=${tableName^^}
-		fFull=$(realpath "$f")
-    	stmt="CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE (NULL,'$tableName','$fFull','|','\"',NULL,0);"
-		echo $stmt >> $load_file
-	done
-	
- execute_derby "$bench_name"  "$load_file" "time"
-
+  save_newBigBench "$bench_name"
 }
 
 benchmark_query(){
   local bench_name="${FUNCNAME[0]#benchmark_}-$1"
   logger "INFO: Running $bench_name"
-  execute_derby "$bench_name" "runQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
+
+  query_file=$LOCAL_QUERIES_DIR/q$1.sql
+  url=$(get_database_connection_url)
+  echo "connect '$url';" > $query_file
+  cat "$QUERIES_DIR/Queries/q$1.sql" >> $query_file
+
+  execute_derby "$bench_name" "$query_file" "time" #-f scale factor
 }
 
 # $1 Number of throughput run
@@ -107,9 +97,4 @@ benchmark_refreshMetastore() {
   execute_BigBench "$bench_name" "refreshMetastore -U -z $HIVE_SETTINGS_FILE" "time"
 }
 
-benchmark_validateQuery(){
-  local bench_name="${FUNCNAME[0]#benchmark_}-$1"
-  logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "validateQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
-}
 
