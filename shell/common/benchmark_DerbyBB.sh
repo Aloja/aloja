@@ -65,6 +65,27 @@ benchmark_populateDerby() {
   cat "$QUERIES_DIR/Load_Derby/createTables.sql" >> $query_file
 
   execute_derby "$bench_name"  "$query_file" "time"
+
+  #Load the data into the tables by a generated script
+ load_file=$(get_local_bench_path)/load_tables.sql
+ echo "connect '$url';" > $load_file 
+
+#TODO define DATA_DIR
+
+    for f in $DATA_DIR/* ; do
+    	#The table has the same name as the file, minus the extension and it must be in uppercase
+    	tableName=$(basename "$f")
+    	#Remove the extension
+		tableName="${tableName%.*}"
+		#Convert table name to uppercase
+		tableName=${tableName^^}
+		fFull=$(realpath "$f")
+    	stmt="CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE (NULL,'$tableName','$fFull','|','\"',NULL,0);"
+		echo $stmt >> $load_file
+	done
+	
+ execute_derby "$bench_name"  "$load_file" "time"
+
 }
 
 benchmark_query(){
@@ -91,3 +112,4 @@ benchmark_validateQuery(){
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "validateQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
 }
+
