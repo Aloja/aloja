@@ -67,9 +67,7 @@ benchmark_populateDerby() {
     stmt="CALL SYSCS_UTIL.SYSCS_IMPORT_TABLE (NULL,'$tableName','$f','|','\"',NULL,0);"
     echo $stmt >> $load_file
   done
-  execute_derby "$bench_name"  "$load_file" "time" > $LOCAL_RESULTS_DIR/$bench_name
-
-  save_newBigBench "$bench_name"
+  execute_derby "$bench_name"  "$load_file" "time"
 }
 
 benchmark_query(){

@@ -46,6 +46,11 @@ execute_derby(){
   # Run the command and time it
   execute_master "$bench" "$derby_cmd" "$time_exec" "dont_save"
 
+    # Stop metrics monitors and save bench (if needed)
+  if [ "$time_exec" ] ; then
+    save_derby "$bench"
+  fi
+
 }
 
 # $1 force stop, for use at restart (useful for -S)
@@ -113,4 +118,9 @@ initialize_derby_vars() {
 
 clean_derby() {
   stop_derby
+}
+
+save_derby() {
+  # save defaults
+  save_bench "$bench_name"
 }
