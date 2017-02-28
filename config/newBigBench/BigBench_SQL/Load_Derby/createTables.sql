@@ -385,7 +385,7 @@ CREATE TABLE product_reviews (
   pr_item_sk              bigint NOT NULL,
   pr_user_sk              bigint,
   pr_order_sk             bigint,
-  pr_review_content       clob NOT NULL
+  pr_review_content       clob
 );
 
 CREATE INDEX idx_product_reviews ON product_reviews (pr_review_sk);
