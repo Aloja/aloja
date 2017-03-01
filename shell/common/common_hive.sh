@@ -109,11 +109,7 @@ initialize_hive_vars() {
     HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
     HIVE_CONF_DIR="$HDD/hive_conf"
     # Only set a default hive.settings when not in PaaS
-    if [ "$BENCH_SUITE" == "BigBench" ]; then
-      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings.BB.sql"
-    else
-      [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
-    fi
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
 
     if [ "$HIVE_ENGINE" == "tez" ]; then
       initialize_tez_vars
