@@ -238,7 +238,9 @@ set bigbench.hive.optimize.sampling.orderby.percent=0.1;
 set bigbench.resources.dir=##BIG_BENCH_RESOURCES_DIR##;
 set bigbench.tableFormat_source=##HIVE_FILEFORMAT##;
 set bigbench.tableFormat=TEXTFILE;
+set bigbench.data_path=/dfs/benchmarks/bigbench/data;
+set bigbench.data_refresh_path=/dfs/benchmarks/bigbench/data_refresh;
 
 -- Database - DO NOT DELETE OR CHANGE
--- CREATE DATABASE IF NOT EXISTS bigbench;
+CREATE DATABASE IF NOT EXISTS bigbench;
 use bigbench;

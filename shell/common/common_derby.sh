@@ -52,7 +52,7 @@ execute_derby(){
 stop_derby() {
   local force_stop="$1"
 
-  if [ "$clusterType=" != "PaaS" ] && [[ ! "$BENCH_LEAVE_SERVICES" || "$force_stop" ]] && [[ "$DELETE_HDFS" == "1" || "$force_stop" ]] ; then
+  if [ "$clusterType" != "PaaS" ] && [[ ! "$BENCH_LEAVE_SERVICES" || "$force_stop" ]] && [[ "$DELETE_HDFS" == "1" || "$force_stop" ]] ; then
     logger "INFO: Stopping Derby database"
     cmd=("$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar" 'server' 'shutdown' '-h' "$master_name")
     $DSH_MASTER "${cmd[@]}"
@@ -65,17 +65,23 @@ stop_derby() {
 }
 
 start_derby() {
-  if [ "$DELETE_HDFS" == "1" ]; then
-    stop_derby "force"
+
+  if [ "$clusterType" != "PaaS" ]; then
+
+    if [ "$DELETE_HDFS" == "1" ]; then
+      stop_derby "force"
+    fi
+
+    # First, make sure we stop derby on abnormal exit
+    update_traps "stop_derby;" "update_logger"
+
+    logger "INFO: Starting Derby database"
+    cmd=(-r ssh -o -f "$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar"  'server' 'start' '-h' "$master_name")
+    $DSH_MASTER "${cmd[@]}"
+    sleep
+  else
+    log_WARN "Not starting in PaaS cluster."
   fi
-
-  # First, make sure we stop derby on abnormal exit
-  update_traps "stop_derby;" "update_logger"
-
-  logger "INFO: Starting Derby database"
-  cmd=(-r ssh -o -f "$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar"  'server' 'start' '-h' "$master_name")
-  $DSH_MASTER "${cmd[@]}"
-  sleep 1
 }
 
 get_database_connection_url() {
