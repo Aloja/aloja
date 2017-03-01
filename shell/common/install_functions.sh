@@ -109,7 +109,7 @@ vm_install_base_packages() {
     # gcc, for tpch
     # hardinfo, for collecting sys info
     # pbzip2, for compressing out files faster
-    local package_list="ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo lsof pbzip2"
+    local package_list="ssh dsh rsync sshfs sysstat gawk libxml2-utils ntp wget curl unzip wamerican bwm-ng dstat iotop gcc make bc hardinfo lsof pbzip2 at"
 
     if [[ "$vmOSType" == "Ubuntu" || "$vmOSType" == "Debian" ]] ; then
       : # the list is already ubuntu based
