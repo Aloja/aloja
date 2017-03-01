@@ -131,5 +131,5 @@ benchmark_refreshMetastore() {
 benchmark_validateQuery(){
   local bench_name="${FUNCNAME[0]#benchmark_}-$1"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "validateQuery -q $1 -U -z $HIVE_SETTINGS_FILE" "time" #-f scale factor
+  execute_BigBench "$bench_name" "validateQuery -q $1 -U -z $HIVE_SETTINGS_FILE" #-f scale factor
 }
