@@ -127,14 +127,15 @@ get_hive_substitutions() {
   local database_driver
   local database_driver_name
   local url
-
-  if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
-    database_driver="$(get_database_driver_path_colon)"
-    database_driver_name="$(get_database_driver_name)"
-    url=$(get_database_connection_url)
-  else
-    database_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
-    url="jdbc:derby:;databaseName=$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
+  if [ "$clusterType" != "PaaS" ]; then
+      if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+        database_driver="$(get_database_driver_path_colon)"
+        database_driver_name="$(get_database_driver_name)"
+        url=$(get_database_connection_url)
+      else
+        database_driver_name="org.apache.derby.jdbc.EmbeddedDriver"
+        url="jdbc:derby:;databaseName=$(get_local_bench_path)/aplic/bigbench_metastore_db;create=true"
+      fi
   fi
 
   #generate the path for the hadoop config files, including support for multiple volumes

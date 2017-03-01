@@ -49,20 +49,21 @@ get_BigBench_exports() {
   local to_export_spark
   local to_export_tez
 
-
-  if [ "$clusterType" == "PaaS" ]; then
-    to_export="
-    export JAVA_HOME=${JAVA_HOME};
-    export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR}
-    "
-  else
-    to_export="
-    $(get_hive_exports)
+  #Mandatory environment variables
+  to_export="
     export BIG_BENCH_HOME='$BIG_BENCH_HOME';
     export BIG_BENCH_CONF_DIR='$BIG_BENCH_CONF_DIR';
     export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs';
-    export PATH='$PATH:$BENCH_HADOOP_DIR/bin:$MAHOUT_HOME/bin';
     export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR};"
+
+  if [ "$clusterType" == "PaaS" ]; then
+    to_export+="
+    export JAVA_HOME=${JAVA_HOME};
+    "
+  else
+    to_export+="
+    $(get_hive_exports)
+    export PATH='$PATH:$BENCH_HADOOP_DIR/bin:$MAHOUT_HOME/bin';"
 
     if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
       to_export_spark="$(get_spark_exports)"
