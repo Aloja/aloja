@@ -104,12 +104,17 @@ SELECT
 FROM TEMP;
 
 
-SELECT ((n * psum) - ( sum1 * sum2)) / ( SQRT( (n * sum1sq) - (sum1 * sum1) ) * SQRT( (n * sum2sq) - (sum2 * sum2) ) )
-FROM QUERYSTATS;
+--Formula used to calculate the correlation coefficient for a sample
+--SELECT ((n * psum) - ( sum1 * sum2)) / ( SQRT( (n * sum1sq) - (sum1 * sum1) ) * SQRT( (n * sum2sq) - (sum2 * sum2) ) )
+--FROM QUERYSTATS;
 
 --Alternative formula, seems to be equivalent
 --SELECT ( psum - ( (sum1 * sum2) / n )) / ( SQRT( (sum1sq - ((sum1 * sum1)/n) ) * (sum2sq - ((sum2 * sum2)/n)) ) )
 --FROM QUERYSTATS;
+
+--Formula used to calculate the correlation coefficient for a population
+SELECT ( (psum/n) - ((sum1/n) * (sum2/n)) ) / ( SQRT( (sum1sq/n) - (sum1 / n) * (sum1 / n) ) * SQRT( (sum2sq/n) - (sum2 / n) * (sum2 / n) ) )
+FROM QUERYSTATS;
 
 DROP TABLE dateF;
 DROP TABLE QUERYSTATS;
