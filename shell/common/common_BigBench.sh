@@ -51,12 +51,15 @@ get_BigBench_exports() {
   local to_export_tez
 
   #Mandatory environment variables
+  #BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR Only used in the data-generation section
   to_export="
     export BIG_BENCH_HOME='$BIG_BENCH_HOME';
     export BIG_BENCH_CONF_DIR='$BIG_BENCH_CONF_DIR';
-    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs';
+    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs/bigbench_$1';
     export BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/base';
-    export BIG_BENCH_HDFS_ABSOLUTE_REFRESH_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/data_refresh'
+    export BIG_BENCH_HDFS_ABSOLUTE_REFRESH_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/data_refresh';
+    export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/query_results';
+    export BIG_BENCH_HDFS_ABSOLUTE_TEMP_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/temp';
     export BIG_BENCH_DEFAULT_DATABASE='bigbench_$1';
     export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR};"
 
@@ -113,7 +116,36 @@ execute_BigBench(){
   local BigBench_exports
   local BigBench_cmd="$(get_BigBench_cmd "$scale_factor") $cmd"
 
-  prepare_BigBench_config_file "$bench" "$scale_factor" #Before each execution prepare de config file of BB
+  logger "DEBUG: BigBench command:\n$BigBench_cmd"
+
+  # Run the command and time it
+  execute_master "$bench" "$BigBench_cmd" "$time_exec" "dont_save"
+
+  # Stop metrics monitors and save bench (if needed)
+  if [ "$time_exec" ] ; then
+    save_BigBench "$bench"
+  fi
+}
+
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_parallel_BigBench(){
+  local bench="$1"
+  local cmds="$2"
+  local time_exec="$3"
+  local BigBench_cmd
+
+  IFS=';' read -ra cmds_vectorized <<< "$cmds"; IFS=' ' read -ra scales_vectorized <<< "$BB_SCALE_FACTORS" #Vectorize cmds and scale factors to access them in a single loop
+  for i in "${!cmds_vectorized[@]}"; do
+#    BigBench_cmd+="$(get_BigBench_cmd "$scales_vectorized[$i]") $cmds_vectorized[$1]"
+     BigBench_cmd+="$(get_BigBench_cmd "${scales_vectorized[i]}") ${cmds_vectorized[i]} &
+     "
+  done
+#  BigBench_cmd+="wait"
+
 
   logger "DEBUG: BigBench command:\n$BigBench_cmd"
 
@@ -144,7 +176,7 @@ initialize_BigBench_vars() {
   BIG_BENCH_CONF_DIR="$(get_local_bench_path)/BigBench_conf"
   HDFS_DATA_ABSOLUTE_PATH="/dfs/benchmarks/bigbench/data"
   BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR="$HDFS_DATA_ABSOLUTE_PATH/data"
-  BIG_BENCH_PARAMETERS_FILE="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/BigBenchParameters.sql"
+  BIG_BENCH_PARAMETERS_FILE="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/BigBenchParameters"
   BIG_BENCH_QUERY_PARAMETERS="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/queryParameters.sql"
 
   if [ "$clusterType" == "PaaS" ]; then
@@ -256,29 +288,30 @@ EOF
 }
 
 # $1: Bench name
-# $2: Scale factor to use
-prepare_BigBench_config_file() {
-  local scale_factor="$2"
+prepare_BigBench_config_files() {
 
-  logger "INFO: Preparing BigBench config file for $1"
-  cat $BIG_BENCH_QUERY_PARAMETERS > $BIG_BENCH_PARAMETERS_FILE
+  for scale_factor in $BB_SCALE_FACTORS ; do
 
-  if [ ! "$clusterType" == "PaaS" ]; then
-    cat $HIVE_SETTINGS_FILE >> $BIG_BENCH_PARAMETERS_FILE
-  fi
+      logger "INFO: Preparing BigBench parameter files"
+      cat $BIG_BENCH_QUERY_PARAMETERS > ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
 
-  echo "set bigbench.hive.optimize.sampling.orderby=true;
-set bigbench.hive.optimize.sampling.orderby.number=20000;
-set bigbench.hive.optimize.sampling.orderby.percent=0.1;
-set bigbench.resources.dir=$BIG_BENCH_RESOURCE_DIR;
-set bigbench.tableFormat_source=$HIVE_FILEFORMAT;
-set bigbench.tableFormat=TEXTFILE;
-set bigbench.data_path=$HDFS_DATA_ABSOLUTE_PATH/bigbench_$scale_factor/base;
-set bigbench.data_refresh_path=$HDFS_DATA_ABSOLUTE_PATH/bigbench_$scale_factor/data_refresh;" >> $BIG_BENCH_PARAMETERS_FILE
+      if [ ! "$clusterType" == "PaaS" ]; then
+        cat $HIVE_SETTINGS_FILE >> ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+      fi
 
-  echo " -- Database - DO NOT DELETE OR CHANGE
-CREATE DATABASE IF NOT EXISTS bigbench_$scale_factor;
-use bigbench_$scale_factor;" >> $BIG_BENCH_PARAMETERS_FILE
+      echo "set bigbench.hive.optimize.sampling.orderby=true;
+    set bigbench.hive.optimize.sampling.orderby.number=20000;
+    set bigbench.hive.optimize.sampling.orderby.percent=0.1;
+    set bigbench.resources.dir=$BIG_BENCH_RESOURCE_DIR;
+    set bigbench.tableFormat_source=$HIVE_FILEFORMAT;
+    set bigbench.tableFormat=TEXTFILE;
+    set bigbench.data_path=$HDFS_DATA_ABSOLUTE_PATH/bigbench_$scale_factor/base;
+    set bigbench.data_refresh_path=$HDFS_DATA_ABSOLUTE_PATH/bigbench_$scale_factor/data_refresh;" >> ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+
+      echo " -- Database - DO NOT DELETE OR CHANGE
+    CREATE DATABASE IF NOT EXISTS bigbench_$scale_factor;
+    use bigbench_$scale_factor;" >> ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+  done
 }
 
 prepare_BigBench() {
@@ -299,6 +332,7 @@ prepare_BigBench() {
     logger "WARNING: copying Hive-site.xml to spark conf folder"
     $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
   fi
+  prepare_BigBench_config_files
 }
 
 # $1 bench

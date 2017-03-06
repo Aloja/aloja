@@ -43,7 +43,6 @@ benchmark_suite_config() {
     initialize_tez_vars
     prepare_tez_config
 fi
-
   initialize_BigBench_vars
   prepare_BigBench
 }
@@ -80,20 +79,30 @@ benchmark_suite_run() {
     logger "INFO: Reusing previous RUN BigBench data"
   fi
 
-  for query in $BENCH_LIST ; do
-    for scale_factor in $BB_SCALE_FACTORS ; do
-        if [ ! $query == "throughput" ] ; then
-          benchmark_query "$query" "$scale_factor"
-          if [ "$scale_factor" == 1 ] ; then
-            benchmark_validateQuery "$query" "$scale_factor"
-          fi
-        else
-          benchmark_throughput "1" "$scale_factor"
-        #      benchmark_refreshMetastore "$scale_factor"
-        #      benchmark_throughput "2" "$scale_factor"
-        fi
-    done
-  done
+  if [ "$BB_MODE" == "parallel" ]; then
+      echo $BENCH_LIST
+      if ! inList "$BENCH_LIST" "throughput" ; then
+        benchmark_parallel_power
+      else
+        benchmark_parallel_throughput "1"
+      fi
+
+  else
+      for query in $BENCH_LIST ; do
+        for scale_factor in $BB_SCALE_FACTORS ; do
+            if [ ! $query == "throughput" ] ; then
+              benchmark_query "$query" "$scale_factor"
+              if [ "$scale_factor" == 1 ] ; then
+                benchmark_validateQuery "$query" "$scale_factor"
+              fi
+            else
+              benchmark_throughput "1" "$scale_factor"
+            #      benchmark_refreshMetastore "$scale_factor"
+            #      benchmark_throughput "2" "$scale_factor"
+            fi
+        done
+      done
+  fi
 }
 
 benchmark_cleanAll() {
@@ -109,7 +118,7 @@ benchmark_dataGen() {
   logger "INFO: Running $bench_name"
   logger "INFO: Automatically accepting EULA"
 
-  execute_BigBench "$bench_name" "dataGen -U -f $scale_factor -z $BIG_BENCH_PARAMETERS_FILE" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "dataGen -U -f $scale_factor -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
 
 # $1: Scale factor to use
@@ -120,7 +129,7 @@ benchmark_populateMetastore() {
   logger "INFO: Running $bench_name"
 
   echo "$bench_name"
-  execute_BigBench "$bench_name" "populateMetastore -U -z $BIG_BENCH_PARAMETERS_FILE" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "populateMetastore -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
 
 # $1: Query to execute
@@ -130,7 +139,27 @@ benchmark_query(){
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-$1"
 
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runQuery -q $1 -U -z $BIG_BENCH_PARAMETERS_FILE" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "runQuery -q $1 -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
+}
+
+benchmark_parallel_power() {
+  local bench_name="BB__${FUNCNAME[0]#benchmark_}-$1"
+
+  for query in $BENCH_LIST ; do
+      local cmd=""
+
+      for scale_factor in $BB_SCALE_FACTORS ; do
+        cmd+="runQuery -q $query -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor;"
+      done
+      echo "CMD:
+      $cmd"
+      echo "done"
+      execute_parallel_BigBench "$bench_name" "$cmd" "time"
+  done
+
+  logger "INFO: Running $bench_name"
+#  execute_parallel_BigBench "$bench_name" "$cmd" "time"
+
 }
 
 # $1 Number of throughput run
@@ -140,7 +169,21 @@ benchmark_throughput() {
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
 
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runBenchmark -U -i THROUGHPUT_TEST_$1 -z $BIG_BENCH_PARAMETERS_FILE" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "runBenchmark -U -i THROUGHPUT_TEST_$1 -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
+}
+
+# $1 Number of throughput run
+# $2 Scale factor to use
+benchmark_parallel_throughput() {
+  local bench_name="BB__${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
+  local cmd
+
+  for scale_factor in $BB_SCALE_FACTORS ; do
+    cmd+="runBenchmark -U -i THROUGHPUT_TEST_$1 -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor;"
+  done
+
+  logger "INFO: Running $bench_name"
+  execute_parallel_BigBench "$bench_name" "$cmd" "time"
 }
 
 benchmark_refreshMetastore() {
@@ -148,7 +191,7 @@ benchmark_refreshMetastore() {
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}"
 
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "refreshMetastore -U -z $BIG_BENCH_PARAMETERS_FILE" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "refreshMetastore -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
 
 benchmark_validateQuery(){
@@ -156,5 +199,5 @@ benchmark_validateQuery(){
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-$1"
 
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "validateQuery -q $1 -U -z $BIG_BENCH_PARAMETERS_FILE" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "validateQuery -q $1 -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
