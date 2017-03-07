@@ -83,6 +83,7 @@ benchmark_suite_run() {
       echo $BENCH_LIST
       if ! inList "$BENCH_LIST" "throughput" ; then
         benchmark_parallel_power
+
       else
         benchmark_parallel_throughput "1"
       fi
