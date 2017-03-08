@@ -18,7 +18,12 @@ set_spark_requires() {
 
   #also set the config here
   #BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${SPARK_VERSION}_conf_template"
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-1.x_conf_template"
+  if [ "$(get_spark_major_version)" == "2" ]; then
+    BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-2.x_conf_template"
+  else
+    BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-1.x_conf_template"
+  fi
+
 }
 
 # Helper to print a line with required exports
@@ -109,6 +114,21 @@ initialize_spark_vars() {
   fi
 }
 
+get_spark_major_version() {
+  local spark_string="$SPARK_VERSION"
+  local major_version=""
+
+  if [[ "$spark_string" == *"k-1"* ]] ; then
+    major_version="1"
+  elif [[ "$spark_string" == *"k-2"* ]] ; then
+    major_version="2"
+  else
+    logger "WARNING: Cannot determine Spark major version."
+  fi
+
+  echo -e "$major_version"
+}
+
 # Sets the substitution values for the Spark config
 get_spark_substitutions() {
 
@@ -174,7 +194,7 @@ prepare_spark_config() {
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    $DSH "mkdir -p $SPARK_CONF_DIR && cp -r $(get_local_configs_path)/spark-1.x_conf_template/* $SPARK_CONF_DIR/"
+    $DSH "mkdir -p $SPARK_CONF_DIR && cp -r $(get_local_configs_path)/spark-$(get_spark_major_version).x_conf_template/* $SPARK_CONF_DIR/"
     subs=$(get_spark_substitutions)
     $DSH "/usr/bin/perl -i -pe \"$subs\" $SPARK_CONF_DIR/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $SPARK_CONF_DIR/slaves"

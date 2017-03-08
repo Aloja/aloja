@@ -25,22 +25,3 @@
 # spark.serializer                 org.apache.spark.serializer.KryoSerializer
 # spark.driver.memory              5g
 # spark.executor.extraJavaOptions  -XX:+PrintGCDetails -Dkey=value -Dnumbers="one two three"
-
-spark.master                yarn
-spark.deploy.mode           cluster
-
-spark.driver.memory	        ##MAPS_MB##m
-spark.executor.instances    ##SPARK_INSTANCES##
-spark.executor.memory	      ##EXECUTOR_MEM##m
-spark.executor.cores        ##EXECUTOR_CORES##
-
-spark.serializer            org.apache.spark.serializer.KryoSerializer
-spark.local.dir	            ##TMP_DIR##/tmp/spark
-
-spark.yarn.driver.memoryOverhead 384
-spark.yarn.executor.memoryOverhead 384
-
-# spark.executor.memory 3072m
-# spark.yarn.containerLauncherMaxThreads 25
-# spark.yarn.preserve.staging.files false
-
