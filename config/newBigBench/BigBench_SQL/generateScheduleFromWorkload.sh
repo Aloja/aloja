@@ -3,6 +3,7 @@
 #Declare an array containing the queries
 queries=(6 7 9 12 13 14 15 16 17 21 22 24)
 queriesLen=${#queries[@]}
+RANDOM=234
 #This function shuffles the elements of an array in-place using the 
 #Knuth-Fisher-Yates shuffle algorithm. 
 shuffle() {
