@@ -23,7 +23,7 @@
 
 <property>
     <name>yarn.nodemanager.resource.memory-mb</name>
-    <value>##PHYS_MEM##</value>
+    <value>##YARN_MAX_MEM##</value>
     <description>Physical memory, in MB, to be made available to running containers</description>
 </property>
 <property>
