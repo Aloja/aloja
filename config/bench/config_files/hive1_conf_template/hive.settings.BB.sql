@@ -384,17 +384,19 @@ set hive.tez.dynamic.partition.pruning.max.event.size;
 -- !echo </settings from hiveSettings.sql>;
 -- !echo ============================;
 
--- Database - DO NOT DELETE OR CHANGE
-CREATE DATABASE IF NOT EXISTS bigbench;
-use bigbench;
-
-
-
 -- NEEDED FOR BB
 set bigbench.hive.optimize.sampling.orderby=true;
 set bigbench.hive.optimize.sampling.orderby.number=20000;
 set bigbench.hive.optimize.sampling.orderby.percent=0.1;
+
 set bigbench.resources.dir=##BIG_BENCH_RESOURCES_DIR##;
 set bigbench.tableFormat_source=##HIVE_FILEFORMAT##;
 set bigbench.tableFormat=TEXTFILE;
+set bigbench.data_path=/dfs/benchmarks/bigbench/data;
+set bigbench.data_refresh_path=/dfs/benchmarks/bigbench/data_refresh;
+
+-- Database - DO NOT DELETE OR CHANGE
+CREATE DATABASE IF NOT EXISTS bigbench;
+use bigbench;
+
 

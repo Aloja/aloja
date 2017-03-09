@@ -258,7 +258,6 @@ prepare_BigBench() {
   logger "INFO: Making substitutions"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/conf/userSettings.conf"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/hive/conf/engineSettings.conf"
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/hive/population/hiveCreateLoad.sql"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/spark_sql/conf/engineSettings.conf"
 
   $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
