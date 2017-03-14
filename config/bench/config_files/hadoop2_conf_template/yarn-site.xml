@@ -6,7 +6,7 @@
  <name>yarn.nodemanager.local-dirs</name>
  <value>##HDFS_DDIR##</value>
  <description>Comma separated list of paths. Use the list of directories from $YARN_LOCAL_DIR.
-                For example, /grid/hadoop/hdfs/yarn,/grid1/hadoop/hdfs/yarn.</description>
+              For example, /grid/hadoop/hdfs/yarn,/grid1/hadoop/hdfs/yarn.</description>
 </property>
 
 <property>
@@ -36,6 +36,7 @@
   <name>yarn.resourcemanager.hostname</name>
   <value>##MASTER##</value>
 </property>
+
 <property>
   <name>yarn.resourcemanager.scheduler.address</name>
   <value>${yarn.resourcemanager.hostname}:##PORT_PREFIX##8030</value>

@@ -33,5 +33,9 @@ benchmark_SparkPi() {
   local pi_size="100" # Defaults 100 pis if not overidden
   [ "$BENCH_EXTRA_CONFIG" ] && pi_size="$BENCH_EXTRA_CONFIG"
 
-  execute_spark "$bench_name" "--class org.apache.spark.examples.SparkPi $SPARK_HOME/lib/spark-examples*.jar $pi_size" "time"
+  if [ "$(get_spark_major_version)" == "2" ]; then
+    execute_spark "$bench_name" "--class org.apache.spark.examples.SparkPi $SPARK_HOME/examples/jars/spark-examples*.jar $pi_size" "time"
+  else
+    execute_spark "$bench_name" "--class org.apache.spark.examples.SparkPi $SPARK_HOME/lib/spark-examples*.jar $pi_size" "time"
+  fi
 }
