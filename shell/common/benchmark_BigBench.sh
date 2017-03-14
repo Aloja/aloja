@@ -155,7 +155,7 @@ benchmark_parallel_power() {
       echo "CMD:
       $cmd"
       echo "done"
-      execute_parallel_BigBench "$bench_name" "$cmd" "time"
+      execute_parallel_BigBench "$bench_name-$query" "$cmd" "time"
   done
 
   logger "INFO: Running $bench_name"
