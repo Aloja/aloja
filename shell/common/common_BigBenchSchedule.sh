@@ -1,5 +1,5 @@
 # Source the original script and add functions
-source common_BigBench.sh
+source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 
 # Returns the the path to the BigBench binary, the proper exports are
 #assumed to be set already
