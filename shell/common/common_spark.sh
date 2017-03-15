@@ -216,12 +216,14 @@ save_spark() {
     $DSH "cp -r /var/log/spark $JOB_PATH/$bench_name_num/spark_logs/" #2> /dev/null
   else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp $(get_local_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
+      $DSH "cp $HDD/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
     else
-      $DSH "mv $(get_local_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
+      $DSH "mv $HDD/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
     fi
+
+    # Save spark conf
+    $DSH_MASTER "tar -cjf $JOB_PATH/spark_conf.tar.bz2 $SPARK_CONF_DIR"
   fi
-  # Save spark conf
-  $DSH_MASTER "tar -cjf $JOB_PATH/spark_conf.tar.bz2 $SPARK_CONF_DIR/*"
+
   save_hadoop "$bench_name"
 }
