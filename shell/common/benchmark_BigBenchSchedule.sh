@@ -97,8 +97,8 @@ benchmark_suite_run() {
       for query in $BENCH_LIST ; do
         for scale_factor in $BB_SCALE_FACTORS ; do
             if [ $query == "schedule" ] ; then
-    			#benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1"
-    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "min"
+    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1"
+    			#benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "min"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
