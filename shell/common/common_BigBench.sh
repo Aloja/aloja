@@ -58,7 +58,7 @@ get_BigBench_exports() {
     export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs/bigbench_$1';
     export BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/base';
     export BIG_BENCH_HDFS_ABSOLUTE_REFRESH_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/data_refresh';
-    export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/query_results';
+    export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/query_results/bigbench_$1';
     export BIG_BENCH_HDFS_ABSOLUTE_TEMP_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/temp';
     export BIG_BENCH_DEFAULT_DATABASE='bigbench_$1';
     export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR};"
@@ -175,7 +175,6 @@ initialize_BigBench_vars() {
   BIG_BENCH_RESOURCE_DIR=${BIG_BENCH_HOME}/engines/hive/queries/Resources
   BIG_BENCH_CONF_DIR="$(get_local_bench_path)/BigBench_conf"
   HDFS_DATA_ABSOLUTE_PATH="/dfs/benchmarks/bigbench/data"
-  BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR="$HDFS_DATA_ABSOLUTE_PATH/data"
   BIG_BENCH_PARAMETERS_FILE="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/BigBenchParameters"
   BIG_BENCH_QUERY_PARAMETERS="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/queryParameters.sql"
 
@@ -347,12 +346,12 @@ save_BigBench() {
   logger "INFO: Saving BigBench query results to $JOB_PATH/$bench_name_num/BigBench_results"
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    execute_master "$bench_name" "cp $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
+    execute_master "$bench_name" "cp -r $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
+    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results $JOB_PATH/$bench_name_num/BigBench_results"
   else
-    execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
-    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
+    execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
+    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results $JOB_PATH/$bench_name_num/BigBench_results"
+    execute_hadoop_new "$bench_name" "fs -rm $HDFS_DATA_ABSOLUTE_PATH/query_results/*"
   fi
 
   # Compressing BigBench config

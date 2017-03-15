@@ -109,7 +109,13 @@ benchmark_suite_run() {
 benchmark_cleanAll() {
   local bench_name="${FUNCNAME[0]#benchmark_}"
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "cleanAll -U -z $BIG_BENCH_PARAMETERS_FILE" "time"
+  local cmd
+
+  for scale_factor in $BB_SCALE_FACTORS ; do
+    cmd+="cleanAll -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor; "
+  done
+
+  execute_BigBench "$bench_name" "$cmd" "time"
 }
 
 # $1: Scale factor to use
