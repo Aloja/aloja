@@ -62,7 +62,8 @@ export HADOOP_OPTS='$HADOOP_OPTS';"
   if [ "$(get_hadoop_major_version)" == "2" ]; then
     to_export="$to_export
 export HADOOP_YARN_HOME='$(get_local_apps_path)/${HADOOP_VERSION}';
-export YARN_LOG_DIR='$HDD/hadoop_logs';"
+export YARN_LOG_DIR='$HDD/hadoop_logs';
+"
   fi
 
   if [ "$HADOOP_EXTRA_JARS" ] ; then
@@ -942,52 +943,47 @@ save_hadoop() {
   local bench_name_num="$(get_bench_name_with_num "$bench_name")"
 
   # Just in case make sure dir is created first
-  $DSH "mkdir -p $JOB_PATH/$bench_name_num;"
+  execute_master "$bench_name" "mkdir -p $JOB_PATH/$bench_name_num/hadoop_logs/history;"
 
   # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
         sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
-        hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num"
+        hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
         sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
         sudo su hdfs -c "hdfs dfs -expunge"
     else
-	    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num"
+	    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
 	    hdfs dfs -rm -r "/mr-history"
 	    hdfs dfs -expunge
     fi
-    $DSH "cp -ru /var/log/hadoop $JOB_PATH/$bench_name_num/ 2> /dev/null"
+     execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
   else
+
     #we cannot move hadoop files
     #take into account naming *.date when changing dates
     #$DSH "cp $HDD/logs/hadoop-*.{log,out}* $JOB_PATH/$bench_name_num/"
     #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$bench_name_num/ 2> /dev/null"
-    if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp -ru $HDD/hadoop_logs/* $JOB_PATH/$bench_name_num/ " #2> /dev/null
-    else
-      $DSH "mv '$HDD/hadoop_logs/*' $JOB_PATH/$bench_name_num/ " #2> /dev/null
-    fi
-  fi
-
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
-  if [[ "$(get_hadoop_major_version)" == "2" && "$clusterType=" != "PaaS" ]]; then
+
+  if [ "$(get_hadoop_major_version)" == "2" ] && [ "$clusterType=" != "PaaS" ]; then
     ##Copy history logs
     logger "INFO: Getting mapreduce job history logs from HDFS"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $HDD/logs/history $JOB_PATH/$bench_name_num" 2> /dev/null
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $HDD/logs/history" 2> /dev/null
+    execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $(get_local_bench_path)/hadoop_logs/history $JOB_PATH/$bench_name_num/hadoop_logs/history"
+    execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $(get_local_bench_path)/hadoop_logs/history"
+
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
-    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.out* $HDD/hadoop_logs" 2> /dev/null
-    $DSH_MASTER "mv $BENCH_HADOOP_DIR/logs/*.log $HDD/hadoop_logs" 2> /dev/null
+    execute_master "$bench_name" "mv $BENCH_HADOOP_DIR/*.log $(get_local_bench_path)/hadoop_logs/history"
     #logger "INFO: Deleting history files after copy to local"
 
 #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
   fi
 
-  if [[ "EXECUTE_HIBENCH" == "true" ]]; then
+  if [ "$EXECUTE_HIBENCH" == "true" ]; then
     #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$bench_name_num"
-    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$bench_name_num/"
+    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$bench_name_num/hadoop_logs"
   fi
 
   #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
@@ -1000,15 +996,35 @@ save_hadoop() {
     $DSH "cp $JOB_PATH/$bench_name_num/sar*.sar $JOB_PATH/traces/"
   fi
 
+  #Copy local YARN logs ALWAYS
+  if [ "$BENCH_LEAVE_SERVICES" ] ; then
+     execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
+    else
+     #Yarn logs are created only once, they cannot be eliminated as they won't pop up again. Userlogs contains application specific logs, can be eliminated
+     execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
+     execute_all "$bench_name" "rm -r $(get_local_bench_path)/hadoop_logs/userlogs"
+
+     cmd="for file in $(get_local_bench_path)/hadoop_logs/*.{log,out} ; do
+            :> \$file
+          done"
+
+     execute_all "$bench_name" "$cmd"
+
+    fi
+  fi
+
   logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
 
-  $DSH_MASTER "
-cd $JOB_PATH;
-if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
-  tar -cjf $JOB_PATH/hadoop_host_conf.tar.bz2 conf_*;
-  rm -rf conf_*;
-fi
-"
+
+  cmd="
+    cd $JOB_PATH;
+    if [ \"\$(ls conf_* 2> /dev/null)\" ] ; then
+    tar -cjf $JOB_PATH/hadoop_host_conf.tar.bz2 conf_*;
+    rm -rf conf_*;
+    fi
+  "
+
+  execute_master "$bench_name" "$cmd"
 
   # save defaults
   save_bench "$bench_name"
