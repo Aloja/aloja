@@ -1,5 +1,7 @@
 # Big Bench implementation more on: https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/
 
+# The common_BigBenchSchedule.sh script will in turn source the original
+# common_BigBench.sh script
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBenchSchedule.sh"
 set_BigBench_requires
 
