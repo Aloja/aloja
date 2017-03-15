@@ -1413,15 +1413,15 @@ time_cmd() {
     logger "DEBUG: Concurrent cmd: $cmd"
   fi
 
-  # Output the exit status of the command
-  cmd+="$(echo -e "\necho \"Bench return val for ${bench_name}: \$? PIPESTATUS: \${PIPESTATUS[@]}\"")"
-
   # Check if cmd tries to run in background
   local in_background
   if [ "${cmd:(-1)}" == "&" ] ; then
     in_background="&"
     cmd="${cmd:0:(-1)}"
   fi
+
+  # Output the exit status of the command
+  cmd+="$(echo -e "\necho \"Bench return val for ${bench_name}: \$? PIPESTATUS: \${PIPESTATUS[@]}\"")"
 
   # Run the command normally, capturing the output, and creating a dump file and timing the command
   if [ ! "$in_background" ] ; then
