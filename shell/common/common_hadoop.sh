@@ -971,11 +971,11 @@ save_hadoop() {
     ##Copy history logs
     logger "INFO: Getting mapreduce job history logs from HDFS"
     execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $(get_local_bench_path)/hadoop_logs/history $JOB_PATH/$bench_name_num/hadoop_logs/history"
-#    execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $(get_local_bench_path)/hadoop_logs/history"
+    execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $(get_local_bench_path)/hadoop_logs/history"
+
     ##Copy jobhistory daemon logs
     logger "INFO: Moving jobhistory daemon logs to logs dir"
-    execute_master "$bench_name" "mv $BENCH_HADOOP_DIR/logs/*.out* $(get_local_bench_path)/hadoop_logs"
-    execute_master "$bench_name" "mv $BENCH_HADOOP_DIR/logs/*.log $(get_local_bench_path)/hadoop_logs"
+    execute_master "$bench_name" "mv $BENCH_HADOOP_DIR/*.log $(get_local_bench_path)/hadoop_logs/history"
     #logger "INFO: Deleting history files after copy to local"
 
 #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
@@ -1003,14 +1003,13 @@ save_hadoop() {
      #Yarn logs are created only once, they cannot be eliminated as they won't pop up again. Userlogs contains application specific logs, can be eliminated
      execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
      execute_all "$bench_name" "rm -r $(get_local_bench_path)/hadoop_logs/userlogs"
-     cmd='for file in "$(get_local_bench_path)/hadoop_logs/*.log" ; do
-            echo I am $file with content:
-            cat "$file"
-            echo /dev/null "$file"
-            echo I am $file, I should be empty now...
-            cat $file
-          done'
+
+     cmd="for file in $(get_local_bench_path)/hadoop_logs/*.{log,out} ; do
+            :> \$file
+          done"
+
      execute_all "$bench_name" "$cmd"
+
     fi
   fi
 
