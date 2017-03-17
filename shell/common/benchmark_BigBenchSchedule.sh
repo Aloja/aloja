@@ -99,8 +99,9 @@ benchmark_suite_run() {
       for query in $BENCH_LIST ; do
         for scale_factor in $BB_SCALE_FACTORS ; do
             if [ $query == "schedule" ] ; then
-    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1"
-    			#benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "min"
+            	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, 
+				# $6 batch wait time, #7 batch multiplier, #8 random seed
+    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "60" "1" "2345"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
@@ -148,6 +149,9 @@ benchmark_populateMetastore() {
 # $3 Script file to be generated
 # $4 Log file to be generated
 # $5 Scale factor
+# $6 Batch wait time
+# $7 Batch multiplier
+# $8 Random seed
 benchmark_schedule() {
 	local bench_name="${FUNCNAME[0]#benchmark_}"
 	logger "INFO: Running $bench_name"
@@ -157,15 +161,16 @@ benchmark_schedule() {
 	# Delete the old generated schedule file
 	rm "$2"
 	# Generate the new schedule file
-	generateScheduleFile "$1" "$2"
+	# $1 input workload file, $2 output schedule file, $3 batch multiplier
+	generateScheduleFile "$1" "$2" "$7" "$8"
 	cat "$2"
 	echo $2
 	# Delete the old generated script file and log file
 	rm "$3"
 	rm "$4"
 	# Generate the execution script
-	# The generateExecutionScript function receives: $1 schedule file, $2 output script, $3 output log
-	generateExecutionScript "$2" "$3" "$4" "$5"
+	# $1 schedule file, $2 output script, $3 output log, $4 scale factor, $5 batch wait time
+	generateExecutionScript "$2" "$3" "$4" "$5" "$6"
 	cat "$3"
 	echo $3s
 	# Run the command and time it

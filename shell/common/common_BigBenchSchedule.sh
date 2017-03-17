@@ -10,18 +10,26 @@ get_BigBench_cmd_schedule() {
   echo -e "$BigBench_cmd"
 }
 
+# $1 input workload file
+# $2 output schedule file
+# $3 batch multiplier
+# $4 random seed (-1 to do not set the seed)
 generateScheduleFile() {
 	queries=($(seq -f "%g" -s " "  1 30))
 	queriesLen=${#queries[@]}
-	#IMPORTANT: setting the random seed guarantees the same schedule every time
-	RANDOM=2345
+	# IMPORTANT: setting the random seed guarantees the same schedule every time
+	if [ $4 -ne -1 ]; then
+		RANDOM=$4
+	fi
 	while IFS='' read -r line || [[ -n "$line" ]]; do
     	for word in $line; do 
-        	#Convert the floating point number read into an integer
-        	#IMPORTANT: the number is truncated
+        	# Convert the floating point number read into an integer
+        	# IMPORTANT: the number is truncated
         	workLoad=${word%.*}
+        	# Scale the workload by the multiplier
+        	workLoad=$((workLoad*$3))
         	printf "%s\n"  "$workLoad" >> "$2"
-        	#Generate the schedule for each workload
+        	# Generate the schedule for each workload
         	#shuffle
         	for ((i=1;i<=workLoad;i++)); do
             	#The two lines below enable to chose a query randomly,
@@ -58,12 +66,16 @@ shuffle() {
    done
 }
 
-#$1 schedule file, $2 output script, $3 output log, $4 scale factor
+# $1 schedule file generated from the workload
+# $2 name of the output script to be generated
+# $3 name of the output log that the execution of the generated script will generate
+# $4 scale factor for the BigBench data
+# $5 time to wait (in seconds) between each batch
 generateExecutionScript() {
 	local lineIdx=0
 	local nQueries=0
 	local queries=()
-	local secPerWorkload=120
+	local secPerWorkload=$5
 	printf "#!/bin/bash\n" >> "$2"
 	printf "#Script generated dynamically to execute the workload\n" >> $2
 	local bb_exports
@@ -78,6 +90,8 @@ generateExecutionScript() {
 	printf "%s\n" "initTime=\$(date +\"%s\")" >> $2 
 	printf "t=0\n" >> $2 
 	printf "echo \"EXECUTION BEGINS AT: \$(date)\" >> $3 \n" >> $2
+	printf "echo \"initTime: \$initTime\" >> $3 \n" >> $2
+	printf "tNow=0\n" >> $2 
 	local i=0
 	#Obtain the number of lines in the schedule file to add only the necessary sleeps
 	local nLines=$(cat "$1" | wc -l)
@@ -98,9 +112,11 @@ generateExecutionScript() {
        		done
        		for ((i=0;i<nQueries;i++)); do
            		query=${queries[i]}
+           		printf "%s\n" "tNow=\$(date +\"%s\") ; " >> $2
+           		printf "%s\n" "echo \"QUERY \$nQuery (Q$query) OF BATCH \$nBatch STARTED \$(((tNow-initTime))) AFTER\" >>$3 ;" >> $2
            		bb_cmd="( $bb_bin runQuery -q $query -U -z ${BIG_BENCH_PARAMETERS_FILE}_$4 ; "
 				bb_cmd+="t=\$(date +\"%s\") ; "
-				bb_cmd+="echo \"QUERY \$nQuery OF BATCH \$nBatch COMPLETED \$(((t-initTime))) AFTER\" >> $3 ) &"
+				bb_cmd+="echo \"QUERY \$nQuery (Q$query) OF BATCH \$nBatch COMPLETED \$(((t-initTime))) AFTER\" >> $3 ) &"
 				printf "%s\n" "$bb_cmd" >> $2
 				printf "nQuery=\$((nQuery+1))\n" >> $2
        		done
