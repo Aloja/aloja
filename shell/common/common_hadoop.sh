@@ -1013,6 +1013,10 @@ save_hadoop() {
     fi
   fi
 
+  logger "INFO: processing resourceManager logs"
+
+  cat $JOB_PATH/$bench_name_num/*-resourcemanager-$master.log
+
   logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
 
 
@@ -1036,3 +1040,5 @@ clean_hadoop() {
     stop_hadoop
   fi
 }
+
+
