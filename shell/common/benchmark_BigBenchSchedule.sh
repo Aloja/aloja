@@ -5,7 +5,7 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBenchSchedule.sh"
 set_BigBench_requires
 
-workloadFile="$ALOJA_REPO_PATH/config/schedule/sampleWorkloadSmall.txt"
+workloadFile="$ALOJA_REPO_PATH/config/schedule/sampleWorkloadTiny.txt"
 scheduleFile="$ALOJA_REPO_PATH/config/schedule/schedule.txt"
 generatedScript="$ALOJA_REPO_PATH/config/schedule/executeSchedule.sh"
 logFile="$ALOJA_REPO_PATH/config/schedule/scheduleLog.txt"
@@ -101,7 +101,7 @@ benchmark_suite_run() {
             if [ $query == "schedule" ] ; then
             	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, 
 				# $6 batch wait time, #7 batch multiplier, #8 random seed
-    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "120" "1" "2345"
+    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "90" "1" "2345"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
