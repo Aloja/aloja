@@ -27,11 +27,17 @@ generateScheduleFile() {
 	fi
 	while IFS='' read -r line || [[ -n "$line" ]]; do
     	for word in $line; do 
-        	# Convert the floating point number read into an integer
+        	# NOTE: the following commented lines will work only for integer values
+			# Convert the floating point number read into an integer
         	# IMPORTANT: the number is truncated
-        	workLoad=${word%.*}
+        	# workLoad=${word%.*}
         	# Scale the workload by the multiplier
-        	workLoad=$((workLoad*$3))
+        	# workLoad=$((workLoad*$3))
+			# NOTE: the following lines work for integer and floating point values
+			# Scale the workload by the multiplier
+			workLoad=$(echo $word*$3 | bc)
+			# Round the number
+			workLoad=$(echo "($workLoad+0.5)/1" | bc)
         	printf "%s\n"  "$workLoad" >> "$2"
         	# Generate the schedule for each workload
         	shuffle
