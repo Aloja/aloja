@@ -447,7 +447,12 @@ initialize() {
   # set the name for the job run
   set_job_config
   # check if all nodes are up
-  test_nodes_connection
+
+  local severity #="ERROR"
+  [ "$clusterType" == "SaaS" ] && severity="WARNING" # Continue on SaaS mode
+
+  test_nodes_connection "$severity"
+
   # check if ~/share is correctly mounted
   test_share_dir
 }
@@ -560,13 +565,20 @@ $node_output"
   fi
 }
 
-# Tests if defined nodes are accesible vis SSH
+# Tests if defined nodes are accessible vis SSH
+# $1 error severity ERROR (default) WARNING INFO
 test_nodes_connection() {
+  local severity="${1:-ERROR}"
   logger "INFO: Testing connectivity to nodes"
   if test_nodes "hostname" ; then
-    logger "INFO: All $(get_num_nodes) nodes are accesible via SSH"
+    logger "INFO: All $(get_num_nodes) nodes are accessible via SSH"
   else
-    die "Cannot connect via SSH to all nodes"
+    local err_message="Cannot connect via SSH to all nodes"
+    if [ "$severity" == "ERROR" ] ; then
+      die "$err_message"
+    else
+      logger "$severity $err_message"
+    fi
   fi
 }
 
