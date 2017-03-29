@@ -174,7 +174,7 @@ benchmark_schedule() {
 	cat "$3"
 	echo $3s
 	# Run the command and time it
-	# execute_master "$bench_name" "bash $3" "time"
+	execute_master "$bench_name" "bash $3" "time"
   	# Stop metrics monitors and save bench (if needed)
 	#if [ "$time_exec" ] ; then
     	save_BigBench "$bench_name"
