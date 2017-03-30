@@ -17,9 +17,9 @@ get_BigBench_cmd_schedule() {
 generateScheduleFile() {
 	# Set the queries to choose from
 	# This line enables all 30 queries (specified as a sequence)
-	# queries=($(seq -f "%g" -s " "  1 30))
+	queries=($(seq -f "%g" -s " "  1 30))
 	# This line enables only particular queries (e.g. only SQL queries)
-	queries=(6 7 9 11 12 13 14 15 16 17 21 22 23 24)
+	# queries=(6 7 9 11 12 13 14 15 16 17 21 22 23 24)
 	queriesLen=${#queries[@]}
 	# IMPORTANT: setting the random seed guarantees the same schedule every time
 	if [ $4 -ne -1 ]; then
