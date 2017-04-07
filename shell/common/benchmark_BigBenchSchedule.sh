@@ -5,10 +5,13 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBenchSchedule.sh"
 set_BigBench_requires
 
-workloadFile="$ALOJA_REPO_PATH/config/schedule/rscriptWorkloadSmall.txt"
+workloadFile="$ALOJA_REPO_PATH/config/schedule/sampleWorkloadTiny.txt"
 scheduleFile="$ALOJA_REPO_PATH/config/schedule/schedule.txt"
 generatedScript="$ALOJA_REPO_PATH/config/schedule/executeSchedule.sh"
 logFile="$ALOJA_REPO_PATH/config/schedule/scheduleLog.txt"
+logDir="$ALOJA_REPO_PATH/config/schedule/"
+driverJar="$ALOJA_REPO_PATH/config/schedule/alojabbdriver.jar"
+mainExportsFile="$ALOJA_REPO_PATH/config/schedule/mainExports.sh"
 
 if [ "$BENCH_LIST" ] ; then
     user_suplied_bench_list="true"
@@ -101,7 +104,8 @@ benchmark_suite_run() {
             if [ $query == "schedule" ] ; then
             	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, 
 				# $6 batch wait time, #7 batch multiplier, #8 random seed
-    			benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "90" "0.3" "2345"
+    			# benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "90" "0.3" "2345"
+    			benchmark_schedulejava "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "90" "0.3" "2345"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
@@ -170,11 +174,63 @@ benchmark_schedule() {
 	rm "$4"
 	# Generate the execution script
 	# $1 schedule file, $2 output script, $3 output log, $4 scale factor, $5 batch wait time
-	generateExecutionScript "$2" "$3" "$4" "$5" "$6"
+	# generateExecutionScript "$2" "$3" "$4" "$5" "$6"
 	cat "$3"
-	echo $3s
+	echo $3
 	# Run the command and time it
 	execute_master "$bench_name" "bash $3" "time"
+  	# Stop metrics monitors and save bench (if needed)
+	#if [ "$time_exec" ] ; then
+    	save_BigBench "$bench_name"
+	#fi
+}
+
+# $1 Supplied workload file
+# $2 Schedule file to be generated
+# $3 Script file to be generated (not used for the java version)
+# $4 Log file to be generated
+# $5 Scale factor
+# $6 Batch wait time
+# $7 Batch multiplier
+# $8 Random seed
+benchmark_schedulejava() {
+	local bench_name="${FUNCNAME[0]#benchmark_}"
+	logger "INFO: Running $bench_name"
+	echo "----------------------EXECUTING SCHEDULE--------------------------"
+	cat "$1"
+	echo $1
+	# Delete the old generated schedule file
+	rm "$2"
+	# Generate the new schedule file
+	# $1 input workload file, $2 output schedule file, $3 batch multiplier
+	generateScheduleFile "$1" "$2" "$7" "$8"
+	cat "$2"
+	echo $2
+	rm $mainExportsFile
+	mainExports="$(get_BigBench_exports  "$5")"
+	printf "%s\n" "$mainExports"  >> $mainExportsFile
+	# sourcing the script may not make available the environment variables within java
+	# if execute_master is used (more comments below)
+	source $mainExportsFile
+	echo "RUNNING JAVA ALOJABBDRIVER"
+	bbBinary="$(get_BigBench_cmd_schedule)"
+	javaCmd="$JAVA_HOME/bin/java -Dalojarepo.path=$ALOJA_REPO_PATH -Dbigbench.binary=$bbBinary "
+	javaCmd+="-Dbigbench.paramsfile=$BIG_BENCH_PARAMETERS_FILE -jar $driverJar "
+	# args[0] schedule file
+	# args[1] log file directory
+	# args[2] scale factor
+	# args[3] batch wait time in seconds
+	javaCmd+="$scheduleFile $logDir 1 90"
+	echo $javaCmd
+	# $javaCmd
+	# Delete the old generated script file and log file
+	rm "$4"
+	# Run the command and time it
+	# execute_master "$bench_name" "bash $3" "time"
+	# Apparently, from within java the environment variables exported by sourcing the mainExportsFile
+	# are not available when invoking System.getenv() if execute_master is used. Therefore in the java
+	# driver the scripts to execute individual queries must have all the exports.
+	execute_master "$bench_name" "$javaCmd" "time"
   	# Stop metrics monitors and save bench (if needed)
 	#if [ "$time_exec" ] ; then
     	save_BigBench "$bench_name"
