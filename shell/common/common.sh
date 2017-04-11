@@ -430,7 +430,7 @@ inside_vagrant() {
 get_id_cluster(){
   local id_cluster="$1"
   [ "$id_cluster" ] || die "No string passed to get_id_cluster()"
-  id_cluster="${id_cluster##*-}" #remove innitial part
+  id_cluster="${id_cluster##*-}" #remove initial part
 
   # Check if it has the .conf extension
   if [ "${id_cluster:(-5)}" = ".conf" ] ; then
@@ -440,6 +440,16 @@ get_id_cluster(){
   [[ $id_cluster =~ ^-?[0-9]+$ ]] || logger "WARNING: Cannot retrieve numeric cluster id got $id_cluster from $1"
 
   echo -e "$id_cluster"
+}
+
+# Returns the name of the cluster from a file definition
+# This function is here as it is needed from the start
+# $1 cluster file name. Format cluster_al-70.conf
+get_cluster_name(){
+  local file_name="$1"
+  [[ "$file_name" =~ cluster_*  ]] || die "No valid string passed to get_cluster_name().  Current $file_name"
+
+  echo -e "${file_name:8:(-5)}"
 }
 
 # Returns only numeric part of string
@@ -456,7 +466,7 @@ only_alpha() {
 
 # Check if string is a valid number
 is_number() {
-  string="$1"
+  local string="$1"
   [[ $string =~ ^-?[0-9.]+$ ]] && return 0 || return 1
 }
 
@@ -465,4 +475,14 @@ is_number() {
 safe_file_name() {
   local file_name="$1"
   echo -e "$(sed -e 's/[^A-Za-z0-9._-]/_/g' <<< "$file_name")"
+}
+
+# Returns the smaller version from two strings
+# $1 string1
+# $2 string2
+smaller_version(){
+  local string1="$1"
+  local string2="$2"
+
+  echo -e "${string1}\n${string2}"|sort --version-sort |head -n +1
 }
