@@ -441,7 +441,6 @@ validate() {
 
 # Groups initialization phases
 initialize() {
-
   # initialize cluster node names and connect string
   initialize_node_names
   # set the name for the job run
@@ -493,12 +492,15 @@ initialize_node_names() {
     NUMBER_OF_DATA_NODES="$LIMIT_DATA_NODES"
   fi
 
-  DSH="dsh -M -c -m "
-  DSH_EXTRA="$DSH"
-
-  DSH_MASTER="dsh -H -m $master_name"
-
-  DSH="$DSH $(nl2char "$node_names" ",") "
+  if (( numberOfNodes > 0 )) ; then
+    DSH="dsh -M -c -m "
+    DSH_EXTRA="$DSH"
+    DSH_MASTER="dsh -H -m $master_name"
+    DSH="$DSH $(nl2char "$node_names" ",") "
+  else
+    DSH="ssh $master_name "
+    DSH_MASTER="ssh $master_name "
+  fi
 
   # TODO deprecate this var
   DSH_C="$DSH -c " #concurrent
@@ -611,11 +613,11 @@ fi
 # $1 if to exit (for retries)
 test_share_dir() {
   local no_retry="$1"
-  local test_file="$homePrefixAloja/$userAloja/share/safe_store"
+  local test_file="$BENCH_SHARE_DIR/safe_store"
 
   logger "INFO: Testing if ~/share mounted correctly"
   if test_nodes "ls '$test_file'" ; then
-    logger "INFO: All $(get_num_nodes) nodes have the ~/share dir correctly mounted"
+    logger "INFO: All $(get_num_nodes) nodes have the $BENCH_SHARE_DIR dir correctly mounted"
   else
     if [ "$no_retry" ] ; then
       die "~/share dir not mounted correctly"
@@ -1436,14 +1438,14 @@ time_cmd() {
   cmd+="$(echo -e "\necho \"Bench return val for ${bench_name}: \$? PIPESTATUS: \${PIPESTATUS[@]}\"")"
 
   # Run the command normally, capturing the output, and creating a dump file and timing the command
-  if [ ! "$in_background" ] ; then
+  if [ ! "$in_background" ] && [ "$set_bench_time" ] ; then
     exec 9>&2 # Create a new file descriptor
 
     # Forcing a pseudo-tty, so that on SIGTERM the command is propagated to the ssh command(s)
     local cmd_output="$(\
 shopt -s huponexit;                                               `# Make sure we HUP on exit` \
-$nodes_SSH -o -t -o -t --                                         `# Force a pseudo-tty in DSH`\
-"stty -echo -onlcr;"                                              `# Avoid \n\r in tty` \
+$nodes_SSH  --                                                    `#  Force a pseudo-tty in DSH with -o -t -o -t`\
+"stty -echo -onlcr 2> /dev/null;"                                              `# Avoid \n\r in tty` \
 "export TIMEFORMAT=\"Bench time ${bench_name} \$(hostname) %R\";" `# Change to seconds the bash time format` \
 "time bash -O huponexit -c '{ ${cmd}; }'\" "                      `# Time and run the command` \
 "|tee $(get_local_bench_path)/${bench_name}_\$(hostname).out 2>&1 \""  `# Output all to tty and local file on each host` \
@@ -1451,7 +1453,10 @@ $nodes_SSH -o -t -o -t --                                         `# Force a pse
 )"
 
     9>&- # Close the file descriptor
-  # Run in background (we don't capture times here)
+  # Run but don't set times (or wrap the command with single quotes as when timing)
+  elif [ ! "$in_background" ] && [ ! "$set_bench_time" ] ; then
+  ($nodes_SSH "$cmd"|tee "$(get_local_bench_path)/${bench_name}_\$(hostname).out" 2>&1)
+  # Run in background or don't set times (we don't capture times here)
   else
     set_bench_time=""
     ($nodes_SSH "$cmd"|tee "$(get_local_bench_path)/${bench_name}_\$(hostname).out" 2>&1) &
@@ -1677,7 +1682,7 @@ rsync_extenal() {
 
 #    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
-      vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
+      vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs-lite_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
 #    else
 #      logger "WARNING: path $job_folder_full_path is not a directory"
 #    fi
