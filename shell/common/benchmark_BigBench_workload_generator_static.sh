@@ -79,31 +79,38 @@ benchmark_suite_run() {
     logger "INFO: Reusing previous RUN BigBench data"
   fi
 
-  if [ "$BB_MODE" == "parallel" ]; then
-      echo $BENCH_LIST
-      if ! inList "$BENCH_LIST" "throughput" ; then
-        benchmark_parallel_power
+  benchmark_query "6" $BENCH_SCALE_FACTOR "6-1" &
+  sleep 150
 
-      else
-        benchmark_parallel_throughput "1"
-      fi
+  benchmark_query "7" $BENCH_SCALE_FACTOR "7-1" &
+  sleep 30
 
-  else
-      for query in $BENCH_LIST ; do
-        for scale_factor in $BB_SCALE_FACTORS ; do
-            if [ ! $query == "throughput" ] ; then
-              benchmark_query "$query" "$scale_factor"
-              if [ "$scale_factor" == 1 ] ; then
-                benchmark_validateQuery "$query" "$scale_factor"
-              fi
-            else
-              benchmark_throughput "1" "$scale_factor"
-            #      benchmark_refreshMetastore "$scale_factor"
-            #      benchmark_throughput "2" "$scale_factor"
-            fi
-        done
-      done
-  fi
+  benchmark_query "6" $BENCH_SCALE_FACTOR "6-2" &
+  sleep 100
+
+  benchmark_query "9" $BENCH_SCALE_FACTOR "9-1" &
+  sleep 340
+
+  benchmark_query "6" $BENCH_SCALE_FACTOR "6-3" &
+  sleep 30
+
+  benchmark_query "7" $BENCH_SCALE_FACTOR "7-2" &
+  sleep 300
+
+  benchmark_query "6" $BENCH_SCALE_FACTOR "6-4" &
+  sleep 10
+
+  benchmark_query "9" $BENCH_SCALE_FACTOR "9-2" &
+  sleep 10
+
+  benchmark_query "9" $BENCH_SCALE_FACTOR "9-3" &
+  sleep 10
+
+  benchmark_query "9" $BENCH_SCALE_FACTOR "9-4" &
+  sleep 10
+
+  benchmark_query "9" $BENCH_SCALE_FACTOR "9-5" &
+
 }
 
 benchmark_cleanAll() {
@@ -141,12 +148,13 @@ benchmark_populateMetastore() {
 
 # $1: Query to execute
 # $2: Scale factor to use
+# $3: Instance of the query
 benchmark_query(){
   local scale_factor="$2"
-  local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-$1"
+  local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-$1_$3"
 
   logger "INFO: Running $bench_name"
-  execute_BigBench "$bench_name" "runQuery -q $1 -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
+  execute_BigBench "$bench_name" "runQuery -q $1 -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor" "$3"
 }
 
 benchmark_parallel_power() {

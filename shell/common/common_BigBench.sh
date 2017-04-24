@@ -44,6 +44,7 @@ set_BigBench_requires() {
 
 # Helper to print a line with required exports
 # $1 scale factor to use
+# $2 instance of the query
 get_BigBench_exports() {
 
   local to_export
@@ -55,11 +56,11 @@ get_BigBench_exports() {
   to_export="
     export BIG_BENCH_HOME='$BIG_BENCH_HOME';
     export BIG_BENCH_CONF_DIR='$BIG_BENCH_CONF_DIR';
-    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs/bigbench_$1';
+    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs/bigbench_$1_$2';
     export BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/base';
     export BIG_BENCH_HDFS_ABSOLUTE_REFRESH_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/data_refresh';
-    export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/query_results/bigbench_$1';
-    export BIG_BENCH_HDFS_ABSOLUTE_TEMP_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/temp';
+    export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/query_results/bigbench_$1_$2';
+    export BIG_BENCH_HDFS_ABSOLUTE_TEMP_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1_$2/temp';
     export BIG_BENCH_DEFAULT_DATABASE='bigbench_$1';
     export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR};"
 
@@ -92,11 +93,12 @@ get_BigBench_exports() {
 
 # Returns the the path to the BigBench binary with the proper exports
 # $1 scale factor to use
+# $2 instance of the query
 get_BigBench_cmd() {
   local BigBench_exports
   local BigBench_cmd
 
-  BigBench_exports="$(get_BigBench_exports "$1")"
+  BigBench_exports="$(get_BigBench_exports "$1" "$2")"
   BigBench_bin="$(get_local_apps_path)/${BIG_BENCH_FOLDER}/bin/bigBench"
   BigBench_cmd="$BigBench_exports\n$BigBench_bin"
 
@@ -108,13 +110,14 @@ get_BigBench_cmd() {
 # $2 command
 # $3 if to time exec
 # $4 scale factor to use
+# $5 instance of the query to use
 execute_BigBench(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
   local scale_factor="$4"
   local BigBench_exports
-  local BigBench_cmd="$(get_BigBench_cmd "$scale_factor") $cmd"
+  local BigBench_cmd="$(get_BigBench_cmd "$scale_factor" "$5") $cmd"
 
   logger "DEBUG: BigBench command:\n$BigBench_cmd"
 
@@ -122,9 +125,9 @@ execute_BigBench(){
   execute_master "$bench" "$BigBench_cmd" "$time_exec" "dont_save"
 
   # Stop metrics monitors and save bench (if needed)
-  if [ "$time_exec" ] ; then
-    save_BigBench "$bench"
-  fi
+#  if [ "$time_exec" ] ; then
+#    save_BigBench "$bench"
+#  fi
 }
 
 
