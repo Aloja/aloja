@@ -23,7 +23,6 @@ set_spark_requires() {
   else
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-1.x_conf_template"
   fi
-
 }
 
 # Helper to print a line with required exports
@@ -118,7 +117,9 @@ get_spark_major_version() {
   local spark_string="$SPARK_VERSION"
   local major_version=""
 
-  if [[ "$spark_string" == *"k-1"* ]] ; then
+  if [[ "$spark_string" == "$SPARK_HIVE" ]] ; then
+    major_version="1"
+  elif [[ "$spark_string" == *"k-1"* ]] ; then
     major_version="1"
   elif [[ "$spark_string" == *"k-2"* ]] ; then
     major_version="2"
@@ -216,12 +217,14 @@ save_spark() {
     $DSH "cp -r /var/log/spark $JOB_PATH/$bench_name_num/spark_logs/" #2> /dev/null
   else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp $(get_local_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
+      $DSH "cp $HDD/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
     else
-      $DSH "mv $(get_local_bench_path)/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
+      $DSH "mv $HDD/spark_logs/* $JOB_PATH/$bench_name_num/spark_logs/ 2> /dev/null"
     fi
+
+    # Save spark conf
+    $DSH_MASTER "tar -cjf $JOB_PATH/spark_conf.tar.bz2 $SPARK_CONF_DIR"
   fi
-  # Save spark conf
-  $DSH_MASTER "tar -cjf $JOB_PATH/spark_conf.tar.bz2 $SPARK_CONF_DIR/*"
+
   save_hadoop "$bench_name"
 }
