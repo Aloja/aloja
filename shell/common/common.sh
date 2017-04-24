@@ -41,8 +41,8 @@ logger() {
 
   local output=""
 
-  # Colorize when on interactive TERM TODO implement better
-  if [[ -t 1 || "$ALOJA_FORCE_COLORS" ]] ; then
+  # Colorize when on not in -x (xtrace/debug) or interactive TERM TODO implement better
+  if [[ ! ${-/x} != $- ]] && [[ -t 1 || "$ALOJA_FORCE_COLORS" ]]  ; then
     local reset="\033[0m" #"$(tput sgr0)"
     local red="$(tput setaf 1)"
     local green="$(tput setaf 2)"
@@ -138,7 +138,7 @@ log_all_output() {
   local sub_processes_save="$(pgrep -P $$)"
 
   # Remove colors if set - stdbuf is to disable buffering so streams are in order
-  if [ "$ALOJA_FORCE_COLORS" ] ; then
+  if [[ ! ${-/x} != $-  && "$ALOJA_FORCE_COLORS" ]] ; then
     local strip_colors="stdbuf -oL -eL sed -r 's/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g'"
     exec 1> >(setup_traps && tee -a >(eval $strip_colors  >> "$file_name.log") ) \
          2> >(tee -a >(eval $strip_colors >> "$file_name.err") | \
