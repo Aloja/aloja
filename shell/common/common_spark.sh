@@ -23,7 +23,6 @@ set_spark_requires() {
   else
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-1.x_conf_template"
   fi
-
 }
 
 # Helper to print a line with required exports
@@ -118,7 +117,9 @@ get_spark_major_version() {
   local spark_string="$SPARK_VERSION"
   local major_version=""
 
-  if [[ "$spark_string" == *"k-1"* ]] ; then
+  if [[ "$spark_string" == "$SPARK_HIVE" ]] ; then
+    major_version="1"
+  elif [[ "$spark_string" == *"k-1"* ]] ; then
     major_version="1"
   elif [[ "$spark_string" == *"k-2"* ]] ; then
     major_version="2"
