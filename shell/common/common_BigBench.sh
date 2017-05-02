@@ -43,6 +43,7 @@ set_BigBench_requires() {
 }
 
 # Helper to print a line with required exports
+# $1 scale factor to use
 get_BigBench_exports() {
 
   local to_export
@@ -50,10 +51,16 @@ get_BigBench_exports() {
   local to_export_tez
 
   #Mandatory environment variables
+  #BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR Only used in the data-generation section
   to_export="
     export BIG_BENCH_HOME='$BIG_BENCH_HOME';
     export BIG_BENCH_CONF_DIR='$BIG_BENCH_CONF_DIR';
-    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs';
+    export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs/bigbench_$1';
+    export BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/base';
+    export BIG_BENCH_HDFS_ABSOLUTE_REFRESH_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/data_refresh';
+    export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/query_results/bigbench_$1';
+    export BIG_BENCH_HDFS_ABSOLUTE_TEMP_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/temp';
+    export BIG_BENCH_DEFAULT_DATABASE='bigbench_$1';
     export BIG_BENCH_HADOOP_CONF=${HADOOP_CONF_DIR};"
 
   if [ "$clusterType" == "PaaS" ]; then
@@ -84,11 +91,12 @@ get_BigBench_exports() {
 }
 
 # Returns the the path to the BigBench binary with the proper exports
+# $1 scale factor to use
 get_BigBench_cmd() {
   local BigBench_exports
   local BigBench_cmd
 
-  BigBench_exports="$(get_BigBench_exports)"
+  BigBench_exports="$(get_BigBench_exports "$1")"
   BigBench_bin="$(get_local_apps_path)/${BIG_BENCH_FOLDER}/bin/bigBench"
   BigBench_cmd="$BigBench_exports\n$BigBench_bin"
 
@@ -99,14 +107,45 @@ get_BigBench_cmd() {
 # $1 benchmark name
 # $2 command
 # $3 if to time exec
+# $4 scale factor to use
 execute_BigBench(){
   local bench="$1"
   local cmd="$2"
   local time_exec="$3"
+  local scale_factor="$4"
   local BigBench_exports
+  local BigBench_cmd="$(get_BigBench_cmd "$scale_factor") $cmd"
 
-  local BigBench_cmd="$(get_BigBench_cmd) $cmd"
-  echo $BigBench_cmd
+  logger "DEBUG: BigBench command:\n$BigBench_cmd"
+
+  # Run the command and time it
+  execute_master "$bench" "$BigBench_cmd" "$time_exec" "dont_save"
+
+  # Stop metrics monitors and save bench (if needed)
+  if [ "$time_exec" ] ; then
+    save_BigBench "$bench"
+  fi
+}
+
+
+# Performs the actual benchmark execution
+# $1 benchmark name
+# $2 command
+# $3 if to time exec
+execute_parallel_BigBench(){
+  local bench="$1"
+  local cmds="$2"
+  local time_exec="$3"
+  local BigBench_cmd
+
+  IFS=';' read -ra cmds_vectorized <<< "$cmds"; IFS=' ' read -ra scales_vectorized <<< "$BB_SCALE_FACTORS" #Vectorize cmds and scale factors to access them in a single loop
+  for i in "${!cmds_vectorized[@]}"; do
+#    BigBench_cmd+="$(get_BigBench_cmd "$scales_vectorized[$i]") $cmds_vectorized[$1]"
+     BigBench_cmd+="$(get_BigBench_cmd "${scales_vectorized[i]}") ${cmds_vectorized[i]} &
+     "
+  done
+#  BigBench_cmd+="wait"
+
 
   logger "DEBUG: BigBench command:\n$BigBench_cmd"
 
@@ -121,21 +160,24 @@ execute_BigBench(){
 
 prepare_BigBench_minimum_dataset() {
     #Copying main data
-    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/data/"
-    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/data/"
-    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/data"
+    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base/"
+    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
+    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
 
     #Copying data_refresh
-    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/data_refresh/"
-    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/data_refresh/"
-    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/data_refresh"
+    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
+    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh/"
+    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
 }
 
 initialize_BigBench_vars() {
   BIG_BENCH_HOME="$(get_local_apps_path)/$BIG_BENCH_FOLDER"
   BIG_BENCH_RESOURCE_DIR=${BIG_BENCH_HOME}/engines/hive/queries/Resources
   BIG_BENCH_CONF_DIR="$(get_local_bench_path)/BigBench_conf"
-  HDFS_DATA_ABSOLUTE_PATH="/dfs/benchmarks/bigbench"
+  HDFS_DATA_ABSOLUTE_PATH="/dfs/benchmarks/bigbench/data"
+  BIG_BENCH_PARAMETERS_FILE="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/BigBenchParameters"
+  BIG_BENCH_QUERY_PARAMETERS="$(get_local_bench_path)/BigBench_conf/engines/hive/conf/queryParameters.sql"
+
   if [ "$clusterType" == "PaaS" ]; then
     MAHOUT_HOME="$(get_local_apps_path)/${MAHOUT_FOLDER}" #TODO need to change mahout usage in PaaS
 
@@ -229,7 +271,6 @@ s,##HIVE_BIN##,$hive_bin,g;
 s%##HIVE_PARAMS##%$hive_params%g;
 s,##HDFS_DATA_ABSOLUTE_PATH##,$HDFS_DATA_ABSOLUTE_PATH/data,g;
 s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
-s,##BIG_BENCH_RESOURCES_DIR##,$BIG_BENCH_RESOURCE_DIR,g;
 s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark-sql,g;
@@ -239,13 +280,38 @@ s,##SPARK_PARAMS##,$spark_params,g;
 s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
 s,##ENGINE##,$ENGINE,g;
 s,##HIVE_ML_FRAMEWORK##,$HIVE_ML_FRAMEWORK,g;
-s,##HIVE_FILEFORMAT##,$HIVE_FILEFORMAT,g;
 s,##BB_PARALLEL_STREAMS##,$BB_PARALLEL_STREAMS,g;
 s%##DATABASE_JARS##%$database_jars%g;
 s%##SPARK_DATABASE_OPTS##%$spark_database_opts%g
 EOF
 }
 
+# $1: Bench name
+prepare_BigBench_config_files() {
+
+  for scale_factor in $BB_SCALE_FACTORS ; do
+
+      logger "INFO: Preparing BigBench parameter files"
+      cat $BIG_BENCH_QUERY_PARAMETERS > ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+
+      if [ ! "$clusterType" == "PaaS" ]; then
+        cat $HIVE_SETTINGS_FILE >> ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+      fi
+
+      echo "set bigbench.hive.optimize.sampling.orderby=true;
+    set bigbench.hive.optimize.sampling.orderby.number=20000;
+    set bigbench.hive.optimize.sampling.orderby.percent=0.1;
+    set bigbench.resources.dir=$BIG_BENCH_RESOURCE_DIR;
+    set bigbench.tableFormat_source=$HIVE_FILEFORMAT;
+    set bigbench.tableFormat=TEXTFILE;
+    set bigbench.data_path=$HDFS_DATA_ABSOLUTE_PATH/bigbench_$scale_factor/base;
+    set bigbench.data_refresh_path=$HDFS_DATA_ABSOLUTE_PATH/bigbench_$scale_factor/data_refresh;" >> ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+
+      echo " -- Database - DO NOT DELETE OR CHANGE
+    CREATE DATABASE IF NOT EXISTS bigbench_$scale_factor;
+    use bigbench_$scale_factor;" >> ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor
+  done
+}
 
 prepare_BigBench() {
 
@@ -260,13 +326,11 @@ prepare_BigBench() {
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/hive/conf/engineSettings.conf"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/spark_sql/conf/engineSettings.conf"
 
-  $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE" #BigBench specific configs for Hive (TableFormats, dir locations...)
-
-
   if [[ "$USE_EXTERNAL_DATABASE" == "true" ]]  && [[ "$ENGINE" == "spark_sql" || "$HIVE_ML_FRAMEWORK" == "spark" ]]; then
-    logger "WARN: copying Hive-site.xml to spark conf folder"
+    logger "WARNING: copying Hive-site.xml to spark conf folder"
     $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
   fi
+  prepare_BigBench_config_files
 }
 
 # $1 bench
@@ -282,12 +346,12 @@ save_BigBench() {
   logger "INFO: Saving BigBench query results to $JOB_PATH/$bench_name_num/BigBench_results"
 
   if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    execute_master "$bench_name" "cp $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
+    execute_master "$bench_name" "cp -r $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
+    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
   else
-    execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/ 2> /dev/null"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/* $JOB_PATH/$bench_name_num/BigBench_results"
-    execute_hadoop_new "$bench_name" "fs -rm ${HDFS_DATA_ABSOLUTE_PATH}/queryResults/*"
+    execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
+    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
+    execute_hadoop_new "$bench_name" "fs -rm $HDFS_DATA_ABSOLUTE_PATH/query_results/*"
   fi
 
   # Compressing BigBench config

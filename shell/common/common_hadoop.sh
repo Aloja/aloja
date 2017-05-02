@@ -935,7 +935,6 @@ hadoop_copy_hdfs() {
 #  save_hadoop "${3}${1}"
 #}
 
-# $1 bench name
 save_hadoop() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
@@ -944,21 +943,52 @@ save_hadoop() {
 
   # Just in case make sure dir is created first
   execute_master "$bench_name" "mkdir -p $JOB_PATH/$bench_name_num/hadoop_logs/history;"
+  execute_master "$bench_name" "mkdir -p $JOB_PATH/$bench_name_num/hadoop_logs/applications;"
 
   # Save hadoop logs
   # Hadoop 2 saves job history to HDFS, get it from there
   if [ "$clusterType" == "PaaS" ]; then
     if [ "$defaultProvider" == "rackspacecbd" ]; then
+
         sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
         hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
         sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
         sudo su hdfs -c "hdfs dfs -expunge"
-    else
-	    hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
-	    hdfs dfs -rm -r "/mr-history"
-	    hdfs dfs -expunge
+
+    elif [ "$defaultProvider" == "hdinsight" ]; then
+
+        hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
+        hdfs dfs -rm -r "/mr-history"
+        hdfs dfs -expunge
+
+        headnode=$(echo $master_name | sed -r 's/[0]+/1/g') #Create the name of the second headnode (it stores the yarn-resourcemanager log)
+
+        #Copy local YARN logs
+        if [ "$BENCH_LEAVE_SERVICES" ] ; then
+
+          execute_all "$bench_name" "cp -ru /var/log/hadoop-yarn/yarn/* $JOB_PATH/$bench_name_num/hadoop_logs"
+          rsync -avur $headnode:/var/log/hadoop-yarn/yarn/* $JOB_PATH/$bench_name_num/hadoop_logs
+          execute_all "$bench_name" "sudo cp -r /mnt/resource/hadoop/yarn/log/* $JOB_PATH/$bench_name_num/hadoop_logs"
+
+        else
+
+          #Yarn logs are created only once, they cannot be eliminated as they won't pop up again. Userlogs contains application specific logs, can be eliminated
+          execute_all "$bench_name" "cp -ru /var/log/hadoop-yarn/yarn/* $JOB_PATH/$bench_name_num/hadoop_logs"
+          rsync -avur $headnode:/var/log/hadoop-yarn/yarn/* $JOB_PATH/$bench_name_num/hadoop_logs
+
+          cmd="for file in /var/log/hadoop-yarn/yarn/*.{log,out} ; do
+            sudo cp /dev/null \$file
+          done"
+
+          execute_all "$bench_name" "$cmd"
+          ssh $headnode "for file in /var/log/hadoop-yarn/yarn/*.{log,out} ; do sudo cp /dev/null \$file; done"
+
+          #copy container logs
+          execute_all "$bench_name" "sudo rsync -avu /mnt/resource/hadoop/yarn/log/* $JOB_PATH/$bench_name_num/hadoop_logs/applications --remove-source-files &&
+          sudo rm -rf /mnt/resource/hadoop/yarn/log/*"
+
+        fi
     fi
-     execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
   else
 
     #we cannot move hadoop files
@@ -967,54 +997,53 @@ save_hadoop() {
     #$DSH "cp -r ${BENCH_HADOOP_DIR}/logs/* $JOB_PATH/$bench_name_num/ 2> /dev/null"
   # Hadoop 2 saves job history to HDFS, get it from there and then delete
 
-  if [ "$(get_hadoop_major_version)" == "2" ] && [ "$clusterType=" != "PaaS" ]; then
-    ##Copy history logs
-    logger "INFO: Getting mapreduce job history logs from HDFS"
-    execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $(get_local_bench_path)/hadoop_logs/history $JOB_PATH/$bench_name_num/hadoop_logs/history"
-    execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $(get_local_bench_path)/hadoop_logs/history"
+      if [ "$(get_hadoop_major_version)" == "2" ] && [ "$clusterType=" != "PaaS" ]; then
+        ##Copy history logs
+        logger "INFO: Getting mapreduce job history logs from HDFS"
+        execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $(get_local_bench_path)/hadoop_logs/history $JOB_PATH/$bench_name_num/hadoop_logs/history"
+        execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $(get_local_bench_path)/hadoop_logs/history"
 
-    ##Copy jobhistory daemon logs
-    logger "INFO: Moving jobhistory daemon logs to logs dir"
-    execute_master "$bench_name" "mv $BENCH_HADOOP_DIR/*.log $(get_local_bench_path)/hadoop_logs/history"
-    #logger "INFO: Deleting history files after copy to local"
+        ##Copy jobhistory daemon logs
+        logger "INFO: Moving jobhistory daemon logs to logs dir"
+        execute_master "$bench_name" "mv $BENCH_HADOOP_DIR/*.log $(get_local_bench_path)/hadoop_logs/history"
+        #logger "INFO: Deleting history files after copy to local"
 
-#    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
-  fi
+    #    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/staging/history"
+      fi
 
-  if [ "$EXECUTE_HIBENCH" == "true" ]; then
-    #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$bench_name_num"
-    $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$bench_name_num/hadoop_logs"
-  fi
+      if [ "$EXECUTE_HIBENCH" == "true" ]; then
+        #$DSH "cp $HADOOP_DIR/conf/* $JOB_PATH/$bench_name_num"
+        $DSH_MASTER  "mv $BENCH_HIB_DIR/$bench/hibench.report  $JOB_PATH/$bench_name_num/hadoop_logs"
+      fi
 
-  #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
-  #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH"
-  #pending, delete
+      #logger "INFO: Copying files to master == scp -r $JOB_PATH $MASTER:$JOB_PATH"
+      #$DSH "scp -r $JOB_PATH $MASTER:$JOB_PATH"
+      #pending, delete
 
-  # Save sysstat data for instrumentation
-  if [ "$INSTRUMENTATION" == "1" ] ; then
-    $DSH "mkdir -p $JOB_PATH/traces"
-    $DSH "cp $JOB_PATH/$bench_name_num/sar*.sar $JOB_PATH/traces/"
-  fi
+      # Save sysstat data for instrumentation
+      if [ "$INSTRUMENTATION" == "1" ] ; then
+        $DSH "mkdir -p $JOB_PATH/traces"
+        $DSH "cp $JOB_PATH/$bench_name_num/sar*.sar $JOB_PATH/traces/"
+      fi
 
-  #Copy local YARN logs ALWAYS
-  if [ "$BENCH_LEAVE_SERVICES" ] ; then
-     execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
-    else
-     #Yarn logs are created only once, they cannot be eliminated as they won't pop up again. Userlogs contains application specific logs, can be eliminated
-     execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
-     execute_all "$bench_name" "rm -r $(get_local_bench_path)/hadoop_logs/userlogs"
+      #Copy local YARN logs ALWAYS
+      if [ "$BENCH_LEAVE_SERVICES" ] ; then
+         execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
+      else
 
-     cmd="for file in $(get_local_bench_path)/hadoop_logs/*.{log,out} ; do
-            :> \$file
-          done"
+         #Yarn logs are created only once, they cannot be eliminated as they won't pop up again. Userlogs contains application specific logs, can be eliminated
+         execute_all "$bench_name" "cp -ru $(get_local_bench_path)/hadoop_logs/* $JOB_PATH/$bench_name_num/hadoop_logs"
+         execute_all "$bench_name" "rm -r $(get_local_bench_path)/hadoop_logs/userlogs"
 
-     execute_all "$bench_name" "$cmd"
+         cmd="for file in $(get_local_bench_path)/hadoop_logs/*.{log,out} ; do
+                :> \$file
+              done"
 
-    fi
+         execute_all "$bench_name" "$cmd"
+      fi
   fi
 
   logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
-
 
   cmd="
     cd $JOB_PATH;
@@ -1023,12 +1052,12 @@ save_hadoop() {
     rm -rf conf_*;
     fi
   "
-
   execute_master "$bench_name" "$cmd"
 
   # save defaults
   save_bench "$bench_name"
 }
+
 
 
 clean_hadoop() {
