@@ -100,7 +100,8 @@ create_hdi_cluster() {
     storageAccount="$(echo $vm_size | awk '{print tolower($0)}')`echo $clusterName | cut -d- -f1`"
  fi
  if [ -z "$location" ]; then
-    location="South Central US"
+    location="$azureLocation"
+#    location="South Central US"
  fi
 
  [ ! "$azureStorageType" ] && die "azureStorageType is not set!"
