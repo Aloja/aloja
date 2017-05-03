@@ -483,10 +483,9 @@ import_folder() {
             fi
           fi
 
-          # Check if the export to Intel's PAT format was requested
+          # Check if the export to Intel's PAT format was requested or our internal MET format
           if [ "$export_to_PAT" ] ; then
-            export2PAT
-            export2MET
+            [ "$export_to_PAT" != "MET" ] && export2PAT || export2MET
             logger "INFO: Exported to PAT traces to ${PAT_folder%/*}"
             logger "INFO: Exported to MET traces to ${MET_folder%/*}"
           fi
