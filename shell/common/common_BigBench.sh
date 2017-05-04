@@ -125,9 +125,9 @@ execute_BigBench(){
   execute_master "$bench" "$BigBench_cmd" "$time_exec" "dont_save"
 
   # Stop metrics monitors and save bench (if needed)
-#  if [ "$time_exec" ] ; then
-#    save_BigBench "$bench"
-#  fi
+  if [ "$time_exec" ] ; then
+    save_BigBench "$bench"
+  fi
 }
 
 
