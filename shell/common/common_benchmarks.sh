@@ -492,15 +492,15 @@ initialize_node_names() {
     NUMBER_OF_DATA_NODES="$LIMIT_DATA_NODES"
   fi
 
-  if (( numberOfNodes > 0 )) ; then
+#  if (( numberOfNodes > 0 )) ; then
     DSH="dsh -M -c -m "
     DSH_EXTRA="$DSH"
     DSH_MASTER="dsh -H -m $master_name"
     DSH="$DSH $(nl2char "$node_names" ",") "
-  else
-    DSH="ssh $master_name "
-    DSH_MASTER="ssh $master_name "
-  fi
+#  else
+#    DSH="ssh $master_name "
+#    DSH_MASTER="ssh $master_name "
+#  fi
 
   # TODO deprecate this var
   DSH_C="$DSH -c " #concurrent
