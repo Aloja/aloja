@@ -1311,7 +1311,7 @@ delete_bench_local_folder() {
   else
     logger "INFO: Deleting only the log dir and stats files"
     for disk_tmp in $disks ; do
-      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*;
+      $DSH "find $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/*logs -type f -exec rm {} \; ;
             rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/*.{sar,log,out};"
     done
   fi
