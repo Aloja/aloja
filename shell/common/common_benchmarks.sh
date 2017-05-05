@@ -1177,15 +1177,16 @@ save_bench() {
   # Save the perf mon logs
   #$DSH "mv $(get_local_bench_path)/{bwm,vmstat}*.log $(get_local_bench_path)/sar*.sar $JOB_PATH/$bench_name_num/ 2> /dev/null"
 
-  # Move all files, but not dirs
-  if [ ! "$BENCH_LEAVE_SERVICES" ] ; then
+  # Move all files, but not dirs in case we are not leaving services on and it is not the last benchmark
+
+  if [[ ! "$BENCH_LEAVE_SERVICES" || "$BENCH_LIST" != *"$bench"  ]] ; then
     $DSH "find $(get_local_bench_path)/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; 2> /dev/null"
 
     if [ "$(get_extra_node_names)" ] ; then
       $DSH_EXTRA "find $(get_extra_node_folder)/ -maxdepth 1 -type f -exec mv {} $JOB_PATH/$bench_name_num/ \; " #2> /dev/null
     fi
   else
-    logger "WARNING: Requested to leave services running, leaving local benchfiles too"
+    logger "WARNING: Requested to leave services running, leaving local bench files too"
     $DSH "find $(get_local_bench_path)/ -maxdepth 1 -type f -exec cp -r {} $JOB_PATH/$bench_name_num/ \;"
 
     if [ "$(get_extra_node_names)" ] ; then
@@ -1200,7 +1201,7 @@ save_bench() {
   # save system info
   save_hardinfo "$JOB_PATH/$bench_name_num"
 
-  logger "INFO: Compresing and deleting $bench_name_num"
+  logger "INFO: Compressing and deleting $bench_name_num"
 
   # try to compress with pbzip2 if available
   $DSH_MASTER "cd $JOB_PATH;
@@ -1308,9 +1309,10 @@ delete_bench_local_folder() {
       logger "DEBUG: Previous files successfully deleted"
     fi
   else
-    logger "INFO: Deleting only the log dir"
+    logger "INFO: Deleting only the log dir and stats files"
     for disk_tmp in $disks ; do
-      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*"
+      $DSH "rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/logs/*;
+            rm -rf $disk_tmp/$(get_aloja_dir "$PORT_PREFIX")/*.{sar,log,out};"
     done
   fi
 }
