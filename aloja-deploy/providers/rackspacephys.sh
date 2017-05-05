@@ -3,12 +3,12 @@
 # Don't touch disks
 cloud_drive_letters="" # don't touch the disks
 vm_initialize_disks() {
-  log_DEBUG "No neeed to ${FUNCNAME[0]##*vm_} for $defaultProvider"
+  log_DEBUG "No need to ${FUNCNAME[0]##*vm_} for $defaultProvider"
 }
 
 ## Don't touch SSH config either
 #vm_set_ssh() {
-#  log_DEBUG "No neeed to ${FUNCNAME[0]##*vm_} for $defaultProvider"
+#  log_DEBUG "No need to ${FUNCNAME[0]##*vm_} for $defaultProvider"
 #}
 
 # Avoid installing ganglia

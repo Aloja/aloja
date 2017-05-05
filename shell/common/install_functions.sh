@@ -121,7 +121,7 @@ vm_install_base_packages() {
 
     install_packages "$package_list" "update"
 
-    local test_action="$(vm_execute "sar -V |grep 'Sebastien Godard' && echo '$testKey'")" #checks for sysstat and DSH
+    local test_action="$(vm_execute "sar -V 2>&1 |grep 'Sebastien Godard' && echo '$testKey'")" #checks for sysstat
     if [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"

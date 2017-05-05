@@ -10,18 +10,18 @@ fi
 
 #GLOBAL ASSOCIATIVE ARRAYS declared globally here due to multi bash version issues
 # Arrays for times and errors
-declare -g -A EXEC_TIME
-declare -g -A EXEC_START
-declare -g -A EXEC_START_DATE
-declare -g -A EXEC_END
-declare -g -A EXEC_STATUS #for exit status
+declare -A EXEC_TIME
+declare -A EXEC_START
+declare -A EXEC_START_DATE
+declare -A EXEC_END
+declare -A EXEC_STATUS #for exit status
 
 # Associative array for downloading apps and configs
 # Format $BENCH_REQUIRED_FILES["Folder Name after uncompress"]="URL to download tarball"
-declare -g -A BENCH_REQUIRED_FILES
+declare -A BENCH_REQUIRED_FILES
 
 # Associative array for default disk paths
-declare -g -A BENCH_DISKS
+declare -A BENCH_DISKS
 
 #make sure we cleanup subprocesses on abnormal exit (ie ctrl+c)
 setup_traps

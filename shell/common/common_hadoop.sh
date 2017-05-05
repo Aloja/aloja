@@ -520,7 +520,7 @@ in_safe_mode() {
 restart_hadoop(){
   if [ "$clusterType" != "PaaS" ]; then
     logger "INFO: Restart Hadoop"
-    #just in case stop all first
+    # just in case stop all first
     stop_hadoop "" "$BENCH_LEAVE_SERVICES"
 
     if [ "$(get_hadoop_major_version)" == "1" ]; then
@@ -764,17 +764,24 @@ $(get_hadoop_exports)"
 }
 
 # Returns the the path to the hadoop binary with the proper exports
-# $1 dont include exports
+# $1 dont include exports (optional)
+# $2 use a different bin than hadoop ie. hdfs (optional)
 get_hadoop_cmd() {
   local dont_include_exports="$1"
+  local use_bin="${2:-hadoop}"
   local hadoop_exports
   local hadoop_cmd
   local hadoop_bin
+  local chuser
+
+  if [[ "$BENCH_HADOOP_DISTRO" == "cloudera" ]] ; then
+    chuser="sudo -iu hdfs "
+  fi
 
   # if in PaaS use the bin in PATH
   if [ "$clusterType" == "PaaS" ]; then
     hadoop_exports=""
-    hadoop_bin="hadoop"
+    hadoop_bin="${chuser}${use_bin}"
   else
     if [ ! "$dont_include_exports" ] ; then
       #TODO refactor
@@ -786,7 +793,7 @@ $(get_hadoop_exports)"
       fi
     fi
 
-    hadoop_bin="$BENCH_HADOOP_DIR/bin/hadoop"
+    hadoop_bin="${chuser}$BENCH_HADOOP_DIR/bin/${use_bin}"
   fi
 
   if [ "$hadoop_exports" ] ; then
@@ -935,6 +942,7 @@ hadoop_copy_hdfs() {
 #  save_hadoop "${3}${1}"
 #}
 
+# $1 bench name
 save_hadoop() {
   [ ! "$1" ] && die "No bench supplied to ${FUNCNAME[0]}"
 
@@ -1057,8 +1065,6 @@ save_hadoop() {
   # save defaults
   save_bench "$bench_name"
 }
-
-
 
 clean_hadoop() {
   if [ ! "$BENCH_LEAVE_SERVICES" ] && [ "$clusterType" != "PaaS" ]; then

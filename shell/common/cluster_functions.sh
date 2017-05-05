@@ -212,8 +212,46 @@ vm_is_available(){
   fi
 }
 
-vm_build_dsh(){
+# Builds a current version of BASH
+vm_build_bash() {
+  log_INFO "Building an updated user version of BASH"
 
+  vm_execute "
+targetdir=\$HOME/share/$clusterName
+
+mkdir -p \${targetdir}/build || exit 1
+cd \${targetdir}/build || exit 1
+
+# target dir
+mkdir -p \${targetdir}/sw/bin || exit 1
+
+tarball1='bash-4.4.tar.gz'
+dir1=\${tarball1%.tar.gz}
+
+#wget -nv \"http://ftp.gnu.org/gnu/bash/\${tarball1}\" || exit 1
+#rm -rf -- \"\${dir1}\" || exit 1
+
+# first, build the library
+#{ tar -xf \"\${tarball1}\" && rm \"\${tarball1}\"; } || exit 1
+
+cd \"\${dir1}\" || exit 1
+
+./configure --prefix=\${targetdir}/sw || exit 1
+make -j4 || exit 1
+make install || exit 1
+
+# we know that \${targetdir}/sw/bin is in our path because the deployment configures it
+
+#mv \${targetdir}/sw/bin/{dsh,dsh.bin}
+
+# install wrapper to not depend on config file
+
+chmod +x \${targetdir}/sw/bin/bash || exit 1
+"
+}
+
+vm_build_dsh(){
+  log_INFO "Building DSH"
   vm_execute "
 
 # download and build dsh for local use
@@ -349,6 +387,30 @@ get_slaves_names() {
       else
         node_names="${clusterName}-${vm_id}"
       fi
+    done
+  fi
+  echo -e "$node_names"
+}
+
+get_first_slave() {
+  local node_names=""
+  local node_number=""
+
+  if [ "$nodeNames" ] ; then #remove the master
+    for node_name in $nodeNames ; do
+      if (( node_number > 0 )); then
+        node_names="$node_name"
+        break # only first slave
+      fi
+      ((node_number++))
+    done
+  else #generate them from standard naming
+    for vm_id in $(seq -f "%02g" 1 "$numberOfNodes") ; do #pad the sequence with 0s
+      if (( node_number > 0 )); then
+        node_names="$node_name"
+        break # only first slave
+      fi
+      ((node_number++))
     done
   fi
   echo -e "$node_names"
@@ -537,6 +599,7 @@ vm_rsync() {
 
     logger "INFO: RSynching from Local dir: $1 To: $2"
     #eval is for parameter expansion  --progress --copy-links
+log_DEBUG "rsync -avur --partial --force  -e ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails'  $(eval echo "$3") $(eval echo "$1") $(get_ssh_user)@$(get_ssh_host):$2"
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
@@ -564,7 +627,8 @@ vm_rsync_from() {
     #eval is for parameter expansion
     logger "DEBUG: rsync -avur --partial --force  -e 'ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
 
-    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
+#-i '$CONF_DIR/../../secure/keys/id_rsa'
+    rsync -avur --partial --force  -e "ssh  -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
 }
 
 get_master_name() {
@@ -694,6 +758,15 @@ get_share_location() {
   echo -e "$fs_mount"
 }
 
+# Checks if to mount the shared dir in the master node
+is_master_fileserver() {
+  if [[ "$vm_name" == "$(get_master_name)" && "$dont_mount_share_master" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 make_fstab(){
   if [[ "$attachedVolumes" -gt "12" ]] ; then
     logger "ERROR, function only supports up to 12 volumes"
@@ -704,7 +777,7 @@ make_fstab(){
 
   fs_mount="$(get_share_location)"
 
-  if [ -z "$dont_mount_share" ] ; then
+  if [ -z "$dont_mount_share" ] && ! is_master_fileserver ; then
     local create_string="$fs_mount"
   fi
 
@@ -1056,20 +1129,33 @@ vm_build_required() {
 
       local bin_path="\$HOME/share/sw/bin"
 
-      # Build sysstat
-      vm_build_sar "$bin_path"
+      # Build sysstat always to have a fix and updated version for aloja
+      local required_sysstat_version="11.4.2"
+      if [[ "$required_sysstat_version" != "$(vm_execute "sar -V|head -n +1|cut -d ' ' -f3")" ]] ; then
+        vm_build_sar "$bin_path"
+      fi
 
       local test_action="$(vm_execute "which dsh && echo '$testKey'")"
-      if [[ "$test_action" == *"$testKey"* ]] ; then
+      if [[ ! "$test_action" == *"$testKey"* ]] ; then
         vm_build_dsh
       fi
 
+      # Check if to build a more recent bash version
+      local minimum_BASH_version="4.2"
+      local current_BASH_version="$(vm_execute "bash --version|head -n +1|cut -d ' ' -f4")"
+      if [[ "$minimum_BASH_version" != "$(smaller_version "$current_BASH_version" "$minimum_BASH_version")" ]] ; then
+        log_INFO "Building DSH, found version $current_BASH_version"
+        vm_build_bash
+        # Update the version
+        current_BASH_version="$(vm_execute "bash --version|head -n +1|cut -d ' ' -f4")"
+      fi
+
       local test_action="$(vm_execute "ls \"$bin_path/sar\" && dsh --version |grep 'Junichi' && echo '$testKey'")"
-      if [[ "$test_action" == *"$testKey"* ]] ; then
+      if [[ "$test_action" == *"$testKey"* && "$minimum_BASH_version" == "$(smaller_version "$current_BASH_version" "$minimum_BASH_version")" ]] ; then
         #set the lock
         check_bootstraped "$bootstrap_file" "set"
       else
-        log_WARN "Could not build sysstat or DSH correctly on $vm_name. Test output: $test_action"
+        log_WARN "Could not build sysstat or DSH correctly on $vm_name. Test output: $test_action\nBASH_VERSION=$current_BASH_version"
       fi
     fi
   else
