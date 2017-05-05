@@ -537,6 +537,7 @@ vm_rsync() {
 
     logger "INFO: RSynching from Local dir: $1 To: $2"
     #eval is for parameter expansion  --progress --copy-links
+log_DEBUG "rsync -avur --partial --force  -e ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails'  $(eval echo "$3") $(eval echo "$1") $(get_ssh_user)@$(get_ssh_host):$2"
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 
@@ -564,7 +565,8 @@ vm_rsync_from() {
     #eval is for parameter expansion
     logger "DEBUG: rsync -avur --partial --force  -e 'ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
 
-    rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
+#-i '$CONF_DIR/../../secure/keys/id_rsa'
+    rsync -avur --partial --force  -e "ssh  -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
 }
 
 get_master_name() {
@@ -694,6 +696,15 @@ get_share_location() {
   echo -e "$fs_mount"
 }
 
+# Checks if to mount the shared dir in the master node
+is_master_fileserver() {
+  if [[ "$vm_name" == "$(get_master_name)" && "$dont_mount_share_master" ]]; then
+    return 0
+  else
+    return 1
+  fi
+}
+
 make_fstab(){
   if [[ "$attachedVolumes" -gt "12" ]] ; then
     logger "ERROR, function only supports up to 12 volumes"
@@ -704,7 +715,7 @@ make_fstab(){
 
   fs_mount="$(get_share_location)"
 
-  if [ -z "$dont_mount_share" ] ; then
+  if [ -z "$dont_mount_share" ] && ! is_master_fileserver ; then
     local create_string="$fs_mount"
   fi
 
@@ -1056,8 +1067,11 @@ vm_build_required() {
 
       local bin_path="\$HOME/share/sw/bin"
 
-      # Build sysstat
-      vm_build_sar "$bin_path"
+      # Build sysstat always to have a fix and updated version for aloja
+      local required_sysstat_version="11.4.2"
+      if [[ "$required_sysstat_version" != "$(vm_execute "sar -V|head -n +1|cut -d ' ' -f3")" ]] ; then
+        vm_build_sar "$bin_path"
+      fi
 
       local test_action="$(vm_execute "which dsh && echo '$testKey'")"
       if [[ "$test_action" == *"$testKey"* ]] ; then

@@ -583,7 +583,7 @@ restart_hadoop(){
       elif [ "$i" == "120" ] ; then
         die "$num/$NUMBER_OF_DATA_NODES Datanodes available, EXIT"
       else
-        logger "INFO: $num/$NUMBER_OF_DATA_NODES Datanodes available, wating for $i seconds"
+        logger "INFO: $num/$NUMBER_OF_DATA_NODES Datanodes available, waiting for $i seconds"
         sleep 0.5
       fi
     done
