@@ -167,20 +167,28 @@ vm_final_bootstrap() {
  vm_execute "cp /etc/hadoop/conf/slaves slaves; cp slaves machines && echo \"$(get_master_name)\" >> machines"
  install_packages "sshpass dsh pssh git"
  if [ ! -z $2 ]; then
-  vm_execute "parallel-scp -h slaves .ssh/{id_rsa,id_rsa.pub} /home/pristine/.ssh/"
+  vm_execute "parallel-scp -h slaves .ssh/{id_rsa,id_rsa.pub} /home/$userAloja/.ssh/"
  else
-  vm_execute "while read i; do echo \$i; sshpass -p '$passwordAloja' scp -o StrictHostKeyChecking=no .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key,authorized_keys} $userAloja@\$i:/home/pristine/.ssh; done</home/pristine/slaves"
+  vm_execute "while read i; do echo \$i; sshpass -p '$passwordAloja' scp -o StrictHostKeyChecking=no .ssh/{config,id_rsa,id_rsa.pub,myPrivateKey.key,authorized_keys} $userAloja@\$i:/home/$userAloja/.ssh; done</home/$userAloja/slaves"
  fi
 
- vm_execute "parallel-scp -h slaves ~/machines ~/slaves /home/pristine/"
+ vm_execute "parallel-scp -h slaves ~/machines ~/slaves /home/$userAloja/"
  vm_execute "dsh -M -f machines -Mc -- 'mkdir -p ~/.dsh/group; rm ~/.dsh/group/{a,s}; cp ~/{machines,slaves} ~/.dsh/group/; mv ~/.dsh/group/machines ~/.dsh/group/a; mv ~/.dsh/group/slaves ~/.dsh/group/s;'"
 
  vm_execute "dsh -M -f machines -Mc -- sudo DEBIAN_FRONTEND=noninteractive apt-get install bwm-ng rsync sshfs sysstat gawk libxml2-utils ntp -y -qqq"
  vm_execute "dsh -f slaves -Mc -- 'mkdir -p share'"
- vm_execute "dsh -f slaves -cM -- echo \"'\`cat /etc/fstab | grep aloja-US.cloudapp\`' | sudo tee -a /etc/fstab > /dev/null\""
- vm_execute "dsh -f slaves -cM -- sudo mount -a"
+
+  local fstab_sshfs
+  if [ ! "$dont_mount_share_master" ] ; then
+    fstab_sshfs="$(get_share_location)"
+  else
+    fstab_sshfs="$(get_share_location "$userAloja@$(get_master_name):$homePrefixAloja/$userAloja/share/")"
+  fi
+ vm_execute "dsh -f slaves -cM -- 'echo -e \"$fstab_sshfs\" | sudo tee -a /etc/fstab > /dev/null'"
+ vm_execute "dsh -f slaves -cM -- 'sudo mount -a'"
+
  vm_execute "dsh -M -f machines -Mc -- 'sudo chmod 775 /mnt'"
- vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.pristine /mnt'"
+ vm_execute "dsh -M -f machines -Mc -- 'sudo chown root.$userAloja /mnt'"
  vm_execute "dsh -M -f machines -Mc -- 'mkdir /mnt/aloja'"
 }
 
@@ -202,7 +210,7 @@ get_master_name() {
 }
 
 get_node_names() {
-  cat /home/pristine/machines
+  cat /home/$userAloja/machines
 }
 
 get_slaves_names() {
