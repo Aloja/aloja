@@ -798,7 +798,8 @@ install_configs() {
       local full_config_folder_path="$(get_base_configs_path)/$config_folder"
       if [ -d "$full_config_folder_path" ] ; then
         logger "INFO: Synching configs from $config_folder"
-        $DSH "rsync -aur --delete '$full_config_folder_path' '$(get_local_configs_path)' "
+
+        $DSH "rsync -ar --delete '$full_config_folder_path' '$(get_local_configs_path)' "
       else
         die "Cannot find config folder in $full_config_folder_path"
       fi
