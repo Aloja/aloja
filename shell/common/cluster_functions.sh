@@ -133,8 +133,10 @@ vm_provision() {
 
     # On PaaS don't touch the disks... at least here
     if [ "$clusterType" != "PaaS" ]; then
-      vm_initialize_disks #cluster is in parallel later
+      vm_initialize_disks # cluster is in parallel later
     fi
+
+    vm_create_share_master # checks if we need to setup the shared dir on the master first
     vm_mount_disks
     vm_build_required
   else
@@ -741,7 +743,12 @@ get_initizalize_disks_test() {
   echo "$create_string"
 }
 
+# $1 server name (optional)
+# $2 mount path (optional)
 get_share_location() {
+
+  local server_full_path="${1:-$fileServerFullPathAloja}"
+  local mount_path="${2:-$homePrefixAloja/$userAloja/share}"
 
 #  if [ "$cloud_provider" == "pedraforca" ] ; then
 #    local fs_mount="$userAloja@minerva.bsc.es:$homePrefixAloja/$userAloja/aloja/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all 0 0"
@@ -753,15 +760,22 @@ get_share_location() {
 #    local fs_mount="$userAloja@al-1001.cloudapp.net:$homePrefixAloja/$userAloja/share/ $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,Port=222,auto_cache,reconnect,workaround=all 0 0"
 #  fi
 
-  local fs_mount="$fileServerFullPathAloja $homePrefixAloja/$userAloja/share fuse.sshfs _netdev,users,exec,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
+  local fs_mount="$server_full_path $mount_path fuse.sshfs _netdev,users,exec,IdentityFile=$homePrefixAloja/$userAloja/.ssh/id_rsa,allow_other,nonempty,StrictHostKeyChecking=no,auto_cache,reconnect,workaround=all,Port=$fileServerPortAloja 0 0"
 
   echo -e "$fs_mount"
 }
 
+
 # Checks if to mount the shared dir in the master node
 is_master_fileserver() {
-  if [[ "$vm_name" == "$(get_master_name)" && "$dont_mount_share_master" ]]; then
-    return 0
+  if [[ "$dont_mount_share_master" ]]; then
+    if [[ "$vm_name" == "$(get_master_name)" ]]; then
+      return 0
+    elif [[ "$defaultProvider" == "hdinsight" && $(vm_execute "hostname 2> /dev/null") == "$(get_master_name)" ]]; then
+      return 0
+    else
+      return 1
+    fi
   else
     return 1
   fi
@@ -775,13 +789,26 @@ make_fstab(){
 
   local create_string=""
 
-  fs_mount="$(get_share_location)"
-
-  if [ -z "$dont_mount_share" ] && ! is_master_fileserver ; then
-    local create_string="$fs_mount"
+  # Check if should mount the shared home
+  if [ ! "$dont_mount_share" ] ; then
+    # Check if we use the general one or a one in the master node for this cluster
+    if [ ! "$dont_mount_share_master" ] ; then
+      create_string="$(get_share_location)"
+    else
+      # For the Master
+      if is_master_fileserver ; then
+        create_string="$(get_share_location "" "$homePrefixAloja/$userAloja/share/share-global")"
+      # For the rest of the cluster
+      else
+        create_string="$(get_share_location "$userAloja@$(get_master_name):$homePrefixAloja/$userAloja/share/")"
+      fi
+    fi
+  else
+    log_INFO "Not mounting ~/share as requested"
   fi
 
- if [ "$clusterType" != "PaaS" ]; then
+  # TODO this should be removed in the future (paths have changed)
+  if [ "$clusterType" != "PaaS" ]; then
   num_drives="1"
   for drive_letter in $cloud_drive_letters ; do
     local create_string="$create_string
@@ -790,7 +817,7 @@ make_fstab(){
     [[ "$num_drives" -ge "$attachedVolumes" ]] && break
     num_drives="$((num_drives+1))"
   done
- fi
+  fi
 
   local create_string="$create_string
 $(get_extra_fstab)"
@@ -800,7 +827,7 @@ $(get_extra_fstab)"
 #/dev/xvda1	/               ext4    errors=remount-ro,noatime,barrier=0 0       1
 ##/dev/xvdc1	none            swap    sw              0       0' > /etc/fstab;
 
-  logger "INFO: Updating /etc/fstab template"
+  logger "INFO: Updating /etc/fstab template $create_string"
   vm_update_template "/etc/fstab" "$create_string" "secured_file"
 }
 
@@ -1095,6 +1122,35 @@ cluster_initialize_disks() {
   fi"
 }
 
+vm_create_share_master() {
+  local bootstrap_file="${FUNCNAME[0]}"
+  if is_master_fileserver; then
+    if check_bootstraped "$bootstrap_file" ""; then
+      logger "INFO: Creating shared dir in: $vm_name"
+
+      vm_make_fs "$master_share_path";
+
+      local test_path="~/share/safe_store"
+      [ "$master_share_path" ] && test_path="$master_share_path"
+
+      # Create the global shared dir
+      vm_execute "mkdir -p ~/share/share-global"
+
+      local test_action="$(vm_execute "ls $test_path && ls ~/share/share-global && echo '$testKey'")"
+      if [[ "$test_action" == *"$testKey"* ]] ; then
+        #set the lock
+        check_bootstraped "$bootstrap_file" "set"
+      else
+        logger "ERROR creating shared dir for $vm_name. Test output: $test_action"
+      fi
+    else
+      logger "INFO: Shared dir already created or not master in node"
+    fi
+  else
+    logger "INFO: Using global shared dir (instead of cluster specific) $vm_name == $(get_master_name)"
+  fi
+}
+
 vm_mount_disks() {
   local bootstrap_file="${FUNCNAME[0]}"
   if check_bootstraped "$bootstrap_file" ""; then
@@ -1110,7 +1166,7 @@ vm_mount_disks() {
 
     #TODO make this test more robust and to test all the mounts
     local test_action="$(vm_execute "lsblk |grep '/scratch/attached' && echo '$testKey'")"
-    if [[ "$test_action" == *"$testKey"* ]] ; then
+    if (( attachedVolumes < 1 )) || [[ "$test_action" == *"$testKey"* ]] ; then
       #set the lock
       check_bootstraped "$bootstrap_file" "set"
     else
