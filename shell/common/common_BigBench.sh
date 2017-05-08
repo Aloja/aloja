@@ -26,7 +26,7 @@ if [ "$BB_SERVER_DERBY" == "true" ]; then
   set_derby_requires
 fi
 
-BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-spark2"
+BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench"
 
 if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
   logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, setting BENCH_SCALE_FACTOR to 1 (1 GB) and recalculating BENCH_DATA_SIZE"
@@ -40,7 +40,7 @@ set_BigBench_requires() {
 
   MAHOUT_FOLDER="apache-mahout-distribution-${MAHOUT_VERSION}"
 
-  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="http://aloja.bsc.es/public/files/Big-Data-Benchmark-for-Big-Bench-spark2.zip"
+  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="http://aloja.bsc.es/public/files/Big-Data-Benchmark-for-Big-Bench.tar.gz"
   #BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench_OLD/archive/master.zip" #Old BB version
   BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
