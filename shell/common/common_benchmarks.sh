@@ -1680,7 +1680,7 @@ get_local_file() {
 rsync_extenal() {
   if [ "$dont_mount_share_master" ] ; then
     log_INFO "Rsyncing results to global server (~/share is on the master of the cluster)"
-    vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "~/share/share-global/jobs_$clusterName/" "--progress"
+    vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "127.0.0.1:~/share/share-global/jobs_$clusterName/" "22" "--progress"
   fi
 
   if [ "$remoteFileServer" ] ; then
