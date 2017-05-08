@@ -106,7 +106,8 @@ run_iperf_multi(){
 
   # Send the commands in background
   for node in ${!IPERF_NODES_CMD[@]}; do
-    execute_cmd "${bench_name}_${node}" "${IPERF_NODES_CMD[$node]:0:(-1)}" "" "ssh $node" &
+    #execute_cmd "${bench_name}_${node}" "${IPERF_NODES_CMD[$node]:0:(-1)}" "" "ssh $node" &
+    ssh $node "${IPERF_NODES_CMD[$node]:0:(-1)}" &
   done
   log_INFO "Waiting for the background processes"
   wait
