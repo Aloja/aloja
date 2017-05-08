@@ -984,7 +984,7 @@ save_hadoop() {
           execute_all "$bench_name" "cp -ru /var/log/hadoop-yarn/yarn/* $JOB_PATH/$bench_name_num/hadoop_logs"
           rsync -avur $headnode:/var/log/hadoop-yarn/yarn/* $JOB_PATH/$bench_name_num/hadoop_logs
 
-          cmd="for file in /var/log/hadoop-yarn/yarn/*.{log,out} ; do
+          cmd="for file in /var/log/hadoop-yarn/yarn/* ; do
             sudo cp /dev/null \$file
           done"
 
