@@ -27,7 +27,7 @@ fi
 source "$deploy_include_path"
 
 #All cluster nodes sequentially
-if [[ "$clusterType" != "PaaS" || "$defaultProvider" == "google" ]] && [ ! "$vm_name" ]; then
+if [ "$defaultProvider" == "splicemachine" ] || [[ "$clusterType" != "PaaS" || "$defaultProvider" == "google" ]] && [ ! "$vm_name" ]; then
 
   cluster_do_pre
 
@@ -38,6 +38,7 @@ if [[ "$clusterType" != "PaaS" || "$defaultProvider" == "google" ]] && [ ! "$vm_
     #if [ "$cloud_provider" != "azure" ] ; then #create hosts in paralell
     #  vm_create_node &
     #else
+
       vm_create_node   #one by one creation, provision in parallel
     #fi
 
