@@ -6,7 +6,7 @@ set_hadoop_requires
 set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
-  if [ "$BENCH_SUITE" == "BigBench" ] || [[ "$BENCH_SUITE" =~ "D2F"* ]]; then
+  if [[ "$BENCH_SUITE" =~ "D2F"* ]]; then
     log_WARN "Setting Spark version to $SPARK_HIVE (for Hive compatibility)"
     BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/files/spark_hive_ubuntu-1.6.2.tar.gz"
     SPARK_VERSION=$SPARK_HIVE

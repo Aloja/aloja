@@ -34,7 +34,7 @@ benchmark_suite_config() {
   initialize_hive_vars
   prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
 
-  if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
+  if [ ! -z "$use_spark" ]; then
     initialize_spark_vars
     prepare_spark_config
   fi

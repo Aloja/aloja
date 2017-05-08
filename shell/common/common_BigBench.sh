@@ -1,5 +1,11 @@
 # Start Spark if needed
-if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
+if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ] || [ "$HIVE_ML_FRAMEWORK" == "spark-csv" ] || [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
+
+  if [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
+    logger "WARNING: Using spark 2 as SQL engine and Machine Learning framework"
+    SPARK_VERSION=$SPARK2_VERSION
+  fi
+  use_spark=true
   source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
   set_spark_requires
 #  HIVE_ENGINE="mr"
@@ -20,7 +26,7 @@ if [ "$BB_SERVER_DERBY" == "true" ]; then
   set_derby_requires
 fi
 
-BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-master"
+BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench-spark2"
 
 if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
   logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, setting BENCH_SCALE_FACTOR to 1 (1 GB) and recalculating BENCH_DATA_SIZE"
@@ -34,7 +40,7 @@ set_BigBench_requires() {
 
   MAHOUT_FOLDER="apache-mahout-distribution-${MAHOUT_VERSION}"
 
-  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench/archive/master.zip"
+  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="http://aloja.bsc.es/public/files/Big-Data-Benchmark-for-Big-Bench-spark2.zip"
   #BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench_OLD/archive/master.zip" #Old BB version
   BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 
@@ -72,7 +78,7 @@ get_BigBench_exports() {
     $(get_hive_exports)
     export PATH='$PATH:$BENCH_HADOOP_DIR/bin:$MAHOUT_HOME/bin';"
 
-    if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
+    if [ ! -z "$use_spark" ]; then
       to_export_spark="$(get_spark_exports)"
       to_export+="$to_export_spark"
     fi
@@ -326,7 +332,7 @@ prepare_BigBench() {
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/hive/conf/engineSettings.conf"
   $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/engines/spark_sql/conf/engineSettings.conf"
 
-  if [[ "$USE_EXTERNAL_DATABASE" == "true" ]]  && [[ "$ENGINE" == "spark_sql" || "$HIVE_ML_FRAMEWORK" == "spark" ]]; then
+  if [[ "$USE_EXTERNAL_DATABASE" == "true" ]]  && [[ ! -z "$use_spark" ]]; then
     logger "WARNING: copying Hive-site.xml to spark conf folder"
     $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"
   fi
