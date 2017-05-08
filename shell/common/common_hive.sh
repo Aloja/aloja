@@ -14,7 +14,7 @@ set_hive_requires() {
         set_tez_requires
       fi
     else
-      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://archive.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
