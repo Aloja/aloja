@@ -111,7 +111,7 @@ create_hdi_cluster() {
  logger "Creating Linux HDI cluster $1"
 
      azure hdinsight cluster create --clusterName "$1" --osType "$vmType"  --clusterType "$hdiType" \
-     `#--version "$hdiVersion"` --defaultStorageAccountName "${storageAccount}.blob.core.windows.net" \
+     --version "$hdiVersion" --defaultStorageAccountName "${storageAccount}.blob.core.windows.net" \
      --defaultStorageAccountKey "$storageAccountKey" --defaultStorageContainer "$storageAccount" \
      --workerNodeCount "$numberOfNodes" --headNodeSize "$headnodeSize" --workerNodeSize "$vmSize" \
      --location "$location" --resource-group "$resourceGroup" \
