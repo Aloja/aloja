@@ -46,7 +46,7 @@ fi
 # size of each file in MB
 if [ ! "$DFSIO_FILE_SIZE" ]; then
   #DFSIO_FILE_SIZE="$(( BENCH_DATA_SIZE / DFSIO_NUM_FILES / 1000000 ))" #in MBs
-  DFSIO_FILE_SIZE="10" # in MBs
+  DFSIO_FILE_SIZE="100" # in MBs
 fi
 
 # TestDFSIO input parameters
