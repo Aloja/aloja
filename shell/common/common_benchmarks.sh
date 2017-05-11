@@ -798,7 +798,8 @@ install_configs() {
       local full_config_folder_path="$(get_base_configs_path)/$config_folder"
       if [ -d "$full_config_folder_path" ] ; then
         logger "INFO: Synching configs from $config_folder"
-        $DSH "rsync -aur --delete '$full_config_folder_path' '$(get_local_configs_path)' "
+
+        $DSH "rsync -ar --delete '$full_config_folder_path' '$(get_local_configs_path)' "
       else
         die "Cannot find config folder in $full_config_folder_path"
       fi
@@ -1675,18 +1676,20 @@ get_local_file() {
   echo -e "$file_content"
 }
 
-# Checks if an external server is defined to rsync results inmediatelly
+# Checks if an external server is defined to rsync results immediately
 # $1 job folder name
 rsync_extenal() {
+  local job_folder="$1"
+  local job_folder_full_path="$(get_repo_path)jobs_$clusterName/$job_folder"
+
   if [ "$dont_mount_share_master" ] ; then
-    log_INFO "Rsyncing results to global server (~/share is on the master of the cluster)"
-    vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "127.0.0.1:~/share/share-global/jobs_$clusterName/" "22" "--progress"
+    #log_INFO "Rsyncing results to global server (~/share is on the master of the cluster)"
+    #vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "127.0.0.1:~/share/share-global/jobs_$clusterName/" "22" "--progress"
+    log_INFO "Copying results to global server (~/share is on the master of the cluster)"
+    execute_master "CP_global" "cp -ruv $(get_repo_path)jobs_${clusterName}/${job_folder} ~/share/share-global/jobs_$clusterName/"
   fi
 
   if [ "$remoteFileServer" ] ; then
-    local job_folder="$1"
-    local job_folder_full_path="$(get_repo_path)jobs_$clusterName/$job_folder"
-
 #    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
       vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"

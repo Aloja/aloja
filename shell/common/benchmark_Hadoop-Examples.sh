@@ -43,16 +43,20 @@ if [ ! "$GREP_REGEX" ]; then
   GREP_REGEX=".oo."
 fi
 
+# size of each file in MB
+if [ ! "$DFSIO_FILE_SIZE" ]; then
+  #DFSIO_FILE_SIZE="$(( BENCH_DATA_SIZE / DFSIO_NUM_FILES / 1000000 ))" #in MBs
+  DFSIO_FILE_SIZE="100" # in MBs
+fi
+
 # TestDFSIO input parameters
 # number of files to write/read
 if [ ! "$DFSIO_NUM_FILES" ]; then
-  DFSIO_NUM_FILES="10"
+  #DFSIO_NUM_FILES="10"
+  DFSIO_NUM_FILES="$(( BENCH_DATA_SIZE / DFSIO_FILE_SIZE / 1000000  ))"
 fi
 
-# size of each file in MB
-if [ ! "$DFSIO_FILE_SIZE" ]; then
-  DFSIO_FILE_SIZE="$(( BENCH_DATA_SIZE / DFSIO_NUM_FILES / 1000000 ))" #in MBs
-fi
+
 
 BENCH_randomtextwriter_RAN="" # Avoids running multiple times the datagen used by wordcount, grep, and sort
 
