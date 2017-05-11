@@ -109,7 +109,9 @@ benchmark_suite_run() {
   benchmark_query "9" $BENCH_SCALE_FACTOR "9-4" &
   sleep 10
 
-  benchmark_query "9" $BENCH_SCALE_FACTOR "9-5" &
+  benchmark_query "9" $BENCH_SCALE_FACTOR "9-5"
+
+  wait
 
 }
 

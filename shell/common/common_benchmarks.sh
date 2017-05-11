@@ -1682,14 +1682,26 @@ rsync_extenal() {
   local job_folder="$1"
   local job_folder_full_path="$(get_repo_path)jobs_$clusterName/$job_folder"
 
+  # If we have share on the master node, first copy to global-share, then to the remote
   if [ "$dont_mount_share_master" ] ; then
     #log_INFO "Rsyncing results to global server (~/share is on the master of the cluster)"
     #vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "127.0.0.1:~/share/share-global/jobs_$clusterName/" "22" "--progress"
     log_INFO "Copying results to global server (~/share is on the master of the cluster)"
     execute_master "CP_global" "cp -ruv $(get_repo_path)jobs_${clusterName}/${job_folder} ~/share/share-global/jobs_$clusterName/"
-  fi
 
-  if [ "$remoteFileServer" ] ; then
+    # Use remove FS to rsync the results to continue running benchmarks and not using the master node's network
+    if [ "$remoteFileServer" ] ; then
+  #    if [ ! -d "$job_folder_full_path" ] ; then
+        logger "INFO: Rsyncing results to external server"
+        vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy" "$fileServerFullPathAloja"
+  #    else
+  #      logger "WARNING: path $job_folder_full_path is not a directory"
+  #    fi
+    else
+      logger "DEBUG: No remote file server defined to send results"
+    fi
+  # Just copy to the remote
+  elif [ "$remoteFileServer" ] ; then
 #    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
       vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"

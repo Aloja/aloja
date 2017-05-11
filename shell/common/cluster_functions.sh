@@ -611,12 +611,14 @@ log_DEBUG "rsync -avur --partial --force  -e ssh -i $(get_ssh_key) -o StrictHost
 # $3 destination port
 # $4 extra SHH options (optional)
 # $5 SHH proxy (optional)
+# $6 Use a remote/global server instead of current node (optional)
 vm_rsync_from() {
     local source="$1"
     local destination="$2"
     local destination_port="$3"
     local extra_options="$4"
     local proxy
+    local global_server="$6"
 
     if [ "$5" ] ; then
       proxy="ProxyCommand=$5"
@@ -624,13 +626,20 @@ vm_rsync_from() {
       proxy="ProxyCommand=none"
     fi
 
-    logger "INFO: RSynching from $(hostname): $source To external: $destination"
+    logger "INFO: Syncing from $(hostname): $source To external: $destination"
 
     #eval is for parameter expansion
-    logger "DEBUG: rsync -avur --partial --force  -e 'ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
+    # -i $(get_ssh_key)
+    local cmd="rsync -aur --partial --force  -e 'ssh -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
+    log_DEBUG "$cmd"
 
-#-i '$CONF_DIR/../../secure/keys/id_rsa'
-    rsync -avur --partial --force  -e "ssh  -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
+    if [[ "$global_server" ]]; then
+      # Run command in background to continue execution
+      (ssh "${global_server%%:*}" "nohup $cmd &") &
+    else
+      #-i '$CONF_DIR/../../secure/keys/id_rsa'
+      rsync -avur --partial --force  -e "ssh  -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
+    fi
 }
 
 get_master_name() {
