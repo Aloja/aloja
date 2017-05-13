@@ -38,6 +38,7 @@ vm_create_node() {
 
   local needSshPw=$1
 
+  # Providers with special create "needs"
   if [ "$defaultProvider" == "hdinsight" ]; then
     vm_name="$clusterName"
     status=$(hdi_cluster_check_create "$clusterName")
@@ -55,6 +56,7 @@ vm_create_node() {
     vm_name="$clusterName"
     #create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
+  # Normal Linux case
   elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
 
@@ -67,7 +69,7 @@ vm_create_node() {
     else
       vm_provision $needSshPw
     fi
-
+  # Windows
   elif [ "$vmType" == 'windows' ] ; then
     vm_check_create "$vm_name" "$vm_ssh_port"
     wait_vm_ready "$vm_name"
@@ -470,17 +472,29 @@ get_ssh_port() {
   fi
 }
 
-#default port, override to change i.e. Openstack might need first root
 get_ssh_user() {
-  echo "${userAloja}"
+  #check if we can change from root user
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
+    #"WARNING: connecting as root"
+    echo "${userAlojaPre}"
+  else
+    echo "${userAloja}"
+  fi
 }
 
 get_ssh_pass() {
-  echo "${passwordAloja}"
+  #check if we can change from root user
+  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
+    #"WARNING: connecting as root"
+    echo "${passwordAlojaPre}"
+  else
+    echo "${passwordAloja}"
+  fi
+
 }
 
 vm_initial_bootstrap() {
-  : #not necesarry by default
+  : #not necessary by default
 }
 
 check_sudo() {
@@ -578,7 +592,7 @@ vm_local_scp() {
   local sshpass=files/sshpass.sh
   local src="$1"
 
-  logger "SCPing files"
+  log_INFO "SCPing files from: $(eval echo "${src}") to: $(get_ssh_user)@$(get_ssh_host):$2"
 
   set_shh_proxy
 
@@ -588,7 +602,6 @@ vm_local_scp() {
     scp -i "$(get_ssh_key)" -o StrictHostKeyChecking=no -o PasswordAuthentication=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   #Use password
   else
-    logger "password"
     "$sshpass" "$(get_ssh_pass)" scp -o StrictHostKeyChecking=no -o "$proxyDetails" -P  "$(get_ssh_port)" $(eval echo "$3") $(eval echo "${src}") "$(get_ssh_user)"@"$(get_ssh_host):$2"
   fi
 }
@@ -630,12 +643,12 @@ vm_rsync_from() {
 
     #eval is for parameter expansion
     # -i $(get_ssh_key)
-    local cmd="rsync -aur --partial --force  -e 'ssh -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") $destination"
+    local cmd="rsync -avur --partial --force  -e 'ssh -o StrictHostKeyChecking=no -p $destination_port -o \"$proxy\"' $(eval echo "$extra_options") $(eval echo "$source") \"$destination\""
     log_DEBUG "$cmd"
 
     if [[ "$global_server" ]]; then
       # Run command in background to continue execution
-      (ssh "${global_server%%:*}" "nohup $cmd &") &
+      (ssh "${global_server%%:*}" "nohup $cmd") &
     else
       #-i '$CONF_DIR/../../secure/keys/id_rsa'
       rsync -avur --partial --force  -e "ssh  -o StrictHostKeyChecking=no -p $destination_port -o '$proxy' " $(eval echo "$extra_options") $(eval echo "$source") "$destination"
@@ -939,7 +952,7 @@ vm_set_ssh() {
   local bootstrap_file="${FUNCNAME[0]}"
 
   if check_bootstraped "$bootstrap_file" ""; then
-    logger "Setting SSH keys to VM $vm_name "
+    log_INFO "Setting SSH keys to VM $vm_name "
 
     if [ -z "$1" ] ; then
       local use_password="" #use SSH keys
@@ -1156,7 +1169,7 @@ vm_create_share_master() {
       logger "INFO: Shared dir already created or not master in node"
     fi
   else
-    logger "INFO: Using global shared dir (instead of cluster specific) $vm_name == $(get_master_name)"
+    logger "INFO: Using global shared dir (instead of cluster specific)"
   fi
 }
 
@@ -1623,4 +1636,58 @@ clusterName='$clusterName'
 numberOfNodes='$numberOfNodes'
 "
   vm_update_host_template "$homePrefixAloja/$userAloja/aloja_cluster.conf" "$cluster_conf"
+}
+
+# Creates a user for ALOJA if needed
+vm_useradd() {
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    log_INFO "Creating user $userAloja in node $vm_name "
+
+    vm_execute "
+sudo useradd --create-home --home-dir $homePrefixAloja/$userAloja --shell /bin/bash $userAloja;
+sudo echo -n '$userAloja:$passwordAloja' |sudo chpasswd;
+sudo usermod -G sudo,adm,wheel $userAloja;
+
+sudo bash -c \"echo '$userAloja ALL=NOPASSWD:ALL' >> /etc/sudoers\";
+
+sudo mkdir -p $homePrefixAloja/$userAloja/.ssh;
+sudo bash -c \"echo '${insecureKey}' >> $homePrefixAloja/$userAloja/.ssh/authorized_keys\";
+sudo chown -R $userAloja: $homePrefixAloja/$userAloja/.ssh;
+"
+#sudo cp $homePrefixAloja/$userAloja/.profile $homePrefixAloja/$userAloja/.bashrc /root/;
+
+
+    local test_action="$(vm_execute " [ -f $homePrefixAloja/$userAloja/.ssh/authorized_keys ] && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: installing base packages for $vm_name. Test output: $test_action"
+    fi
+  else
+    logger "$bootstrap_file already initialized"
+  fi
+}
+
+# Sets sudo permissions without password for HDP/Rackspace
+vm_sudo_hdfs() {
+  local bootstrap_file="${FUNCNAME[0]}"
+
+  if check_bootstraped "$bootstrap_file" ""; then
+    log_INFO "Running $bootstrap_file in node $vm_name "
+
+    vm_execute "sudo bash -c \"echo '$userAloja ALL=(hdfs)NOPASSWD:ALL' >> /etc/sudoers\";"
+
+    local test_action="$(vm_execute " sudo grep 'ALL=(hdfs)' /etc/sudoers && echo '$testKey'")"
+    if [[ "$test_action" == *"$testKey"* ]] ; then
+      #set the lock
+      check_bootstraped "$bootstrap_file" "set"
+    else
+      logger "ERROR: running $bootstrap_file  for $vm_name. Test output: $test_action"
+    fi
+  else
+    logger "$bootstrap_file already initialized"
+  fi
 }

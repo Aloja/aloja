@@ -22,10 +22,9 @@ get_mount_disks() {
 
 #minerva needs *real* user first
 get_ssh_user() {
-
   #check if we can change from root user
   if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
-    #"WARNINIG: connecting as root"
+    #"WARNING: connecting as root"
     echo "${userAlojaPre}"
   else
     echo "${userAloja}"
@@ -33,10 +32,9 @@ get_ssh_user() {
 }
 
 get_ssh_pass() {
-
   #check if we can change from root user
   if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
-    #"WARNINIG: connecting as root"
+    #"WARNING: connecting as root"
     echo "${passwordAlojaPre}"
   else
     echo "${passwordAloja}"
