@@ -6,11 +6,6 @@ vm_initialize_disks() {
   log_DEBUG "No need to ${FUNCNAME[0]##*vm_} for $defaultProvider"
 }
 
-## Don't touch SSH config either
-vm_set_ssh() {
-  log_DEBUG "No need to ${FUNCNAME[0]##*vm_} for $defaultProvider"
-}
-
 # Avoid installing ganglia
 must_install_ganglia(){
   echo ""
@@ -23,8 +18,10 @@ vm_initial_bootstrap() {
   if check_bootstraped "$bootstrap_file" ""; then
     logger "Bootstraping $vm_name "
 
-    logger "Setting SSH keys"
-    vm_set_ssh "use_password"
+    #logger "Setting SSH keys"
+    #vm_set_ssh "use_password"
+
+    log_WARN "No special $bootstrap_file specified for node $vm_name"
 
     test_action="$(vm_execute " ls && echo '$testKey'")"
 
@@ -45,5 +42,9 @@ wait_vm_ready() {
 }
 
 wait_vm_ssh_ready() {
+  : #not needed
+}
+
+vm_exists() {
   : #not needed
 }

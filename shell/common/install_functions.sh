@@ -39,10 +39,10 @@ sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $packag
 
     elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "RHEL" || "$vmOSType" == "CentOS" ]] ; then
       log_WARN "Attempting to install $vmOSType packages"
-
-      vm_execute "
-sudo yum install -y $packages_list"
-
+      if [ "$update_repo" ] ; then
+        vm_execute "sudo yum install –y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+      fi
+      vm_execute "sudo yum install --enablerepo=epel -y $packages_list"
     else
       die " OS type: $vmOSType install packages not implemented yet. You have work to do!, Exiting..."
     fi
@@ -114,7 +114,7 @@ vm_install_base_packages() {
     if [[ "$vmOSType" == "Ubuntu" || "$vmOSType" == "Debian" ]] ; then
       : # the list is already ubuntu based
     elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "RHEL" || "$vmOSType" == "CentOS" ]] ; then
-      package_list="rsync sshfs sysstat gawk ntp wget curl unzip dstat iotop gcc make bc hardinfo lsof pbzip2"
+      package_list="rsync fuse-sshfs sysstat gawk ntp wget curl unzip dstat iotop gcc make bc hardinfo lsof pbzip2 at"
     else
       log_WARN "Specified OS $vmOSType not defined, trying base package list "
     fi

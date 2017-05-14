@@ -354,16 +354,19 @@ save_BigBench() {
 
   logger "INFO: Saving BigBench query results to $JOB_PATH/$bench_name_num/BigBench_results"
 
+  # Check if we copy or move the logs
   if [[ ! "$BENCH_LEAVE_SERVICES" || "$BENCH_LIST" != *"$bench"  ]] ; then
     execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
-    execute_hadoop_new "$bench_name" "fs -rm $HDFS_DATA_ABSOLUTE_PATH/query_results/*"
   else
     execute_master "$bench_name" "cp -r $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
   fi
 
-  # If the scale factor is >1, we want to truncate the results as the are quite large
+  # Copy to the query results to the job folder
+  execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
+  # Then ALWAYS delete from HDFS, as they take a LOT of space
+  execute_hadoop_new "$bench_name" "fs -rm $HDFS_DATA_ABSOLUTE_PATH/query_results/*"
+
+  # If the scale factor is >1, we want to truncate the results as the are quite large.  And only 1GB validates
   if (( BENCH_SCALE_FACTOR > 1 )); then
     log_INFO "Truncating results to 10K lines for scale factor $BENCH_SCALE_FACTOR"
     execute_master "find $JOB_PATH/$bench_name_num/BigBench_results -type f -exec sed -i '10001,$ d'"

@@ -774,7 +774,7 @@ get_hadoop_cmd() {
   local hadoop_bin
   local chuser
 
-  if [[ "$BENCH_HADOOP_DISTRO" == "cloudera" ]] ; then
+  if [[ "$BENCH_HADOOP_DISTRO" == "cloudera" || "$BENCH_HADOOP_DISTRO" == "HDP" ]] ; then
     chuser="sudo -iu hdfs "
   fi
 

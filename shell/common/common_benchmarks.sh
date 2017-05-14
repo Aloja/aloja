@@ -1692,8 +1692,9 @@ rsync_extenal() {
     # Use remove FS to rsync the results to continue running benchmarks and not using the master node's network
     if [ "$remoteFileServer" ] ; then
   #    if [ ! -d "$job_folder_full_path" ] ; then
-        logger "INFO: Rsyncing results to external server"
-        vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy" "$fileServerFullPathAloja"
+        logger "INFO: Syncing results to external server"
+        local relative_share="$(basename $(get_repo_path))"
+        vm_rsync_from "$relative_share/jobs_${clusterName}/${job_folder}" "$remoteFileServer:share/jobs_$clusterName/" "$remoteFileServerPort" "" "$remoteFileServerProxy" "$fileServerFullPathAloja"
   #    else
   #      logger "WARNING: path $job_folder_full_path is not a directory"
   #    fi
@@ -1704,7 +1705,7 @@ rsync_extenal() {
   elif [ "$remoteFileServer" ] ; then
 #    if [ ! -d "$job_folder_full_path" ] ; then
       logger "INFO: Rsyncing results to external server"
-      vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:~/share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
+      vm_rsync_from "$(get_repo_path)jobs_${clusterName}/${job_folder}" "$remoteFileServer:share/jobs_$clusterName/" "$remoteFileServerPort" "--progress" "$remoteFileServerProxy"
 #    else
 #      logger "WARNING: path $job_folder_full_path is not a directory"
 #    fi
