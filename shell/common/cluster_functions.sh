@@ -52,10 +52,10 @@ vm_create_node() {
     vm_name="$clusterName"
     create_cbd_cluster "$clusterName"
     vm_final_bootstrap "$clusterName"
-  elif [ "$defaultProvider" == "amazonemr" ]; then
-    vm_name="$clusterName"
-    #create_cbd_cluster "$clusterName"
-    vm_final_bootstrap "$clusterName"
+#  elif [ "$defaultProvider" == "amazonemr" ]; then
+#    vm_name="$clusterName"
+#    #create_cbd_cluster "$clusterName"
+#    vm_final_bootstrap "$clusterName"
   # Normal Linux case
   elif [ "$vmType" != 'windows' ] ; then
     requireRootFirst["$vm_name"]="true" #for some providers that need root user first it is disabled further on
@@ -95,7 +95,7 @@ vm_create_connect() {
     wait_vm_ssh_ready
 
   #make sure the correct number of disks is initialized
-  elif [ "$attachedVolumes" != "0" ] && ! vm_test_initiallize_disks ; then
+  elif (( attachedVolumes > 0 )) && ! vm_test_initiallize_disks ; then
     vm_check_attach_disks "$1"
   fi
 
@@ -474,7 +474,7 @@ get_ssh_port() {
 
 get_ssh_user() {
   #check if we can change from root user
-  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
+  if [[ "${requireRootFirst[$vm_name]}" && "${userAlojaPre}" ]] ; then
     #"WARNING: connecting as root"
     echo "${userAlojaPre}"
   else
@@ -484,7 +484,7 @@ get_ssh_user() {
 
 get_ssh_pass() {
   #check if we can change from root user
-  if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
+  if [[ "${requireRootFirst[$vm_name]}" && "${userAlojaPre}" ]] ; then
     #"WARNING: connecting as root"
     echo "${passwordAlojaPre}"
   else
