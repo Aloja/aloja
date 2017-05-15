@@ -283,6 +283,7 @@ s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark-sql,g;
 s,##SPARK_SUBMIT##,$SPARK_HOME/bin/spark-submit,g;
+s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
 s,##SCALE##,$BENCH_SCALE_FACTOR,g;
 s,##SPARK_PARAMS##,$spark_params,g;
 s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
