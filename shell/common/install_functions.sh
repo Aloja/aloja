@@ -140,7 +140,7 @@ vm_install_extra_packages() {
     if check_bootstraped "$bootstrap_file" ""; then
       logger "Installing extra packages for for VM $vm_name "
 
-      install_packages "screen vim mc git htop;"
+      install_packages "screen vim git htop"
 
       local test_action="$(vm_execute "vim --version |grep 'VIM - Vi IMproved' && echo '$testKey'")"
       if [[ "$test_action" == *"$testKey"* ]] ; then
