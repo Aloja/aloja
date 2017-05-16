@@ -168,15 +168,15 @@ execute_parallel_BigBench(){
 }
 
 prepare_BigBench_minimum_dataset() {
-    #Copying main data
-    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base/"
-    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
-    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
+  #Copying main data
+  execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base/"
+  execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
+  execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
 
-    #Copying data_refresh
-    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
-    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh/"
-    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
+  #Copying data_refresh
+  execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
+  execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh/"
+  execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
 }
 
 initialize_BigBench_vars() {
@@ -229,8 +229,7 @@ get_BigBench_substitutions() {
   if [ "$clusterType" == "PaaS" ]; then
     java_bin="$(which java)"
     hive_bin="$HIVE_HOME/bin/${bin}"
-    spark_params="--driver-memory 5g" #BB is memory intensive in the driver, 1GB (default) is not enough (override)
-
+    spark_params="--driver-memory 5g --conf spark.sql.crossJoin.enabled=true" #BB is memory intensive in the driver, 1GB (default) is not enough (override)
   else
     java_bin="$(get_java_home)/bin/java"
     hive_bin="$HIVE_HOME/bin/${bin}"
