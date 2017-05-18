@@ -240,6 +240,9 @@ get_BigBench_substitutions() {
     fi
   fi
 
+  # To prevent a syntax error in BigBench in case it is not set
+  [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
+
 #TODO spacing when a @ is found
     cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
