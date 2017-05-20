@@ -135,7 +135,7 @@ vm_get_status(){
   # New arm mode
   if (( clusterID >= 290 )); then
     local null=$(azure config mode arm)
-    echo "$(azure vm show -s "$subscriptionID" --resource-group "$clusterName" --name "$1"|grep "InstanceStatus"|head -n +1|awk '{print substr($3,2,(length($3)-2));}')"
+    echo "$(azure vm show -s "$subscriptionID" --resource-group "$clusterName" --name "$1"|grep ProvisioningState | awk '{print substr($3,2)}')"
     local null=$(azure config mode asm)
   # older asm mode
   else
@@ -145,7 +145,13 @@ vm_get_status(){
 }
 
 get_OK_status() {
-  echo "ReadyRole"
+  # New arm mode
+  if (( clusterID >= 290 )); then
+    echo "Succeeded"
+  # older asm mode
+  else
+    echo "ReadyRole"
+  fi
 }
 
 #$1 vm_name
@@ -260,20 +266,25 @@ cluster_final_boostrap() {
   log_INFO "Creating necessary dirs"
   vm_execute "sudo mkdir -p /mnt/aloja; sudo chown -R $userAloja: /mnt/aloja"
 
-  local hosts_fragment old_vm
+  log_INFO "Stopping and disabling the default ufw firewall"
+  vm_execute "sudo systemctl stop ufw; sudo systemctl disable ufw;"
 
-  logger "Getting machine/IP list for cluster ${clusterName}"
+  sudo systemctl disable ufw
 
-  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
-
-  old_vm=${vm_name}
-
-  for vm_name in $(get_node_names); do  
-    logger "Updating /etc/hosts"
-    vm_update_template "/etc/hosts" "${hosts_fragment}" "secured_file"
-  done
-
-  vm_name=${old_vm}
+#  local hosts_fragment old_vm
+#
+#  logger "Getting machine/IP list for cluster ${clusterName}"
+#
+#  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
+#
+#  old_vm=${vm_name}
+#
+#  for vm_name in $(get_node_names); do
+#    logger "Updating /etc/hosts"
+#    vm_update_template "/etc/hosts" "${hosts_fragment}" "secured_file"
+#  done
+#
+#  vm_name=${old_vm}
 }
 
 #interactive SSH
