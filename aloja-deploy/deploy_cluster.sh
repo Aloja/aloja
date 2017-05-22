@@ -27,7 +27,7 @@ fi
 source "$deploy_include_path"
 
 #All cluster nodes sequentially
-if [ "$defaultProvider" == "splicemachine" ] || [[ "$clusterType" != "PaaS" || "$defaultProvider" == "google" ]] && [ ! "$vm_name" ]; then
+if [ "$defaultProvider" == "splicemachine" ] || [[ "$clusterType" != "PaaS" || "$defaultProvider" == "google" || "$defaultProvider" == "amazonemr" ]] && [ ! "$vm_name" ]; then
 
   cluster_do_pre
 

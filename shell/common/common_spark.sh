@@ -140,6 +140,8 @@ get_spark_substitutions() {
 
   #EXECUTOR_INSTANCES="$(printf %.$2f $(echo "($EXECUTOR_INSTANCES + ($NUM_EXECUTOR_NODE-1))" | bc))"
 
+  [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
+
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
@@ -180,6 +182,7 @@ s,##SPARK##,$SPARK_HOME/bin/spark,g;
 s,##SPARK_CONF##,$SPARK_CONF_DIR,g;
 s,##SPARK_INSTANCES##,$EXECUTOR_INSTANCES,g;
 s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g;
+s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
 s,##EXECUTOR_MEM##,$EXECUTOR_MEM,g
 EOF
 }

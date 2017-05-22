@@ -123,7 +123,7 @@ get_ssh_user() {
 
   #check if we can change from root user
   if [ ! -z "${requireRootFirst[$vm_name]}" ] ; then
-    #"WARNINIG: connecting as root"
+    #"WARNING: connecting as root"
     echo "root"
   else
     echo "$userAloja"

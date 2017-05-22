@@ -168,15 +168,15 @@ execute_parallel_BigBench(){
 }
 
 prepare_BigBench_minimum_dataset() {
-    #Copying main data
-    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base/"
-    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
-    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
+  #Copying main data
+  execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base/"
+  execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
+  execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/base"
 
-    #Copying data_refresh
-    execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
-    execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh/"
-    execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
+  #Copying data_refresh
+  execute_hadoop_new "$bench_name" "fs -mkdir -p $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
+  execute_hadoop_new "$bench_name" "fs -copyFromLocal $BIG_BENCH_HOME/data-generator/minimum_dataset/BB_data_refresh/* $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh/"
+  execute_hadoop_new "$bench_name" "fs -ls $HDFS_DATA_ABSOLUTE_PATH/bigbench_min/data_refresh"
 }
 
 initialize_BigBench_vars() {
@@ -229,8 +229,7 @@ get_BigBench_substitutions() {
   if [ "$clusterType" == "PaaS" ]; then
     java_bin="$(which java)"
     hive_bin="$HIVE_HOME/bin/${bin}"
-    spark_params="--driver-memory 5g" #BB is memory intensive in the driver, 1GB (default) is not enough (override)
-
+    spark_params="--driver-memory 5g --conf spark.sql.crossJoin.enabled=true" #BB is memory intensive in the driver, 1GB (default) is not enough (override)
   else
     java_bin="$(get_java_home)/bin/java"
     hive_bin="$HIVE_HOME/bin/${bin}"
@@ -240,6 +239,9 @@ get_BigBench_substitutions() {
       spark_database_opts="--jars "
     fi
   fi
+
+  # To prevent a syntax error in BigBench in case it is not set
+  [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
 
 #TODO spacing when a @ is found
     cat <<EOF
@@ -284,6 +286,7 @@ s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark-sql,g;
 s,##SPARK_SUBMIT##,$SPARK_HOME/bin/spark-submit,g;
+s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
 s,##SCALE##,$BENCH_SCALE_FACTOR,g;
 s,##SPARK_PARAMS##,$spark_params,g;
 s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
@@ -354,14 +357,25 @@ save_BigBench() {
 
   logger "INFO: Saving BigBench query results to $JOB_PATH/$bench_name_num/BigBench_results"
 
-  if [ "$BENCH_LEAVE_SERVICES" ] ; then
-    execute_master "$bench_name" "cp -r $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
-  else
+  # Check if we copy or move the logs
+  if [[ ! "$BENCH_LEAVE_SERVICES" || "$BENCH_LIST" != *"$bench"  ]] ; then
     execute_master "$bench_name" "mv $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
-    execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
-    execute_hadoop_new "$bench_name" "fs -rm $HDFS_DATA_ABSOLUTE_PATH/query_results/*"
+  else
+    execute_master "$bench_name" "cp -r $(get_local_bench_path)/BigBench_logs/* $JOB_PATH/$bench_name_num/BigBench_logs/"
   fi
+
+  # Copy to the query results to the job folder
+  execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
+  # Then ALWAYS delete from HDFS, as they take a LOT of space
+  execute_hadoop_new "$bench_name" "fs -rm $HDFS_DATA_ABSOLUTE_PATH/query_results/*"
+
+  # If the scale factor is >1, we want to truncate the results as the are quite large.  And only 1GB validates
+  if (( BENCH_SCALE_FACTOR > 1 )); then
+    log_INFO "Truncating results to 10K lines for scale factor $BENCH_SCALE_FACTOR"
+    execute_master "find $JOB_PATH/$bench_name_num/BigBench_results -type f -exec sed -i '10001,$ d'"
+  fi
+
+
 
   # Compressing BigBench config
   execute_master "$bench_name" "cd  $(get_local_bench_path) && tar -cjf $JOB_PATH/BigBench_conf.tar.bz2 BigBench_conf"
