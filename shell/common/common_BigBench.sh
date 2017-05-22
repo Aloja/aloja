@@ -3,7 +3,7 @@ if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ] || [ "$HI
 
   if [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
     logger "WARNING: Using spark 2 as SQL engine and Machine Learning framework"
-    SPARK_VERSION=$SPARK2_VERSION
+    SPARK_HIVE="spark_hive-2.1.1"
   fi
   use_spark=true
   source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
@@ -40,7 +40,7 @@ set_BigBench_requires() {
 
   MAHOUT_FOLDER="apache-mahout-distribution-${MAHOUT_VERSION}"
 
-  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="http://aloja.bsc.es/public/files/Big-Data-Benchmark-for-Big-Bench.tar.gz"
+  BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="http://aloja.bsc.es/public/aplic2/tarballs/Big-Data-Benchmark-for-Big-Bench.tar.gz"
   #BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench_OLD/archive/master.zip" #Old BB version
   BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 

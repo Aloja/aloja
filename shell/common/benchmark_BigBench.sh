@@ -112,10 +112,8 @@ benchmark_cleanAll() {
   local cmd
 
   for scale_factor in $BB_SCALE_FACTORS ; do
-    cmd+="cleanAll -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor; "
+    execute_BigBench "$bench_name" "cleanAll -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "$cmd" "time" "$scale_factor"
   done
-
-  execute_BigBench "$bench_name" "$cmd" "time"
 }
 
 # $1: Scale factor to use

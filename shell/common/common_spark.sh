@@ -6,9 +6,9 @@ set_hadoop_requires
 set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
-  if [[ "$BENCH_SUITE" =~ "D2F"* ]]; then
+  if [[ "$BENCH_SUITE" =~ "BigBench"* || "$BENCH_SUITE" =~ "D2F"* ]]; then
     log_WARN "Setting Spark version to $SPARK_HIVE (for Hive compatibility)"
-    BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/files/spark_hive_ubuntu-1.6.2.tar.gz"
+    BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/aplic2/tarballs/$SPARK_HIVE.tar.gz"
     SPARK_VERSION=$SPARK_HIVE
     SPARK_FOLDER=$SPARK_HIVE
   else
@@ -117,11 +117,9 @@ get_spark_major_version() {
   local spark_string="$SPARK_VERSION"
   local major_version=""
 
-  if [[ "$spark_string" == "$SPARK_HIVE" ]] ; then
+  if [[ "$spark_string" == *"-1"* ]] ; then
     major_version="1"
-  elif [[ "$spark_string" == *"k-1"* ]] ; then
-    major_version="1"
-  elif [[ "$spark_string" == *"k-2"* ]] ; then
+  elif [[ "$spark_string" == *"-2"* ]] ; then
     major_version="2"
   else
     logger "WARNING: Cannot determine Spark major version."
