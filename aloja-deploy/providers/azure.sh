@@ -267,7 +267,8 @@ cluster_final_boostrap() {
   vm_execute "sudo mkdir -p /mnt/aloja; sudo chown -R $userAloja: /mnt/aloja"
 
   log_INFO "Stopping and disabling the default ufw firewall"
-  vm_execute "sudo systemctl stop ufw; sudo systemctl disable ufw;"
+  vm_execute "sudo systemctl stop ufw; sudo systemctl disable ufw;
+  sudo service ufw stop; sudo service ufw disable;"
 
   sudo systemctl disable ufw
 
