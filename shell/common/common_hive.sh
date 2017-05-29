@@ -219,10 +219,13 @@ prepare_hive_config() {
   if [ "$clusterType" == "PaaS" ]; then
     logger "INFO: in PaaS mode, not changing Hive system config"
 
-    #For CBD at least
-    time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+    #For CBD at least TODO verify
+    #log_INFO "Making sure permissions are open in hive"
+    #time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
     #just in case
-    time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+    #time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
+    log_INFO "Listing hive warehouse permissions (but not changing them)"
+    execute_hadoop_new "Hive folders" "fs -lsr /user/hive/ /hive/warehouse/"
 
     $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/hive.settings_PaaS $(get_hive_conf_dir);"
 

@@ -40,7 +40,8 @@ sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $packag
     elif [[ "$vmOSType" == "Fedora" || "$vmOSType" == "RHEL" || "$vmOSType" == "CentOS" ]] ; then
       log_WARN "Attempting to install $vmOSType packages"
       if [ "$update_repo" ] ; then
-        vm_execute "sudo yum install –y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm"
+        vm_execute "sudo yum install –y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm;
+        sudo yum-config-manager --enable epel;"
       fi
       vm_execute "sudo yum install --enablerepo=epel -y $packages_list"
     else

@@ -612,9 +612,9 @@ vm_local_scp() {
 vm_rsync() {
     set_shh_proxy
 
-    logger "INFO: RSynching from Local dir: $1 To: $2"
+    logger "INFO: Synching from Local dir: $1 To: $2"
     #eval is for parameter expansion  --progress --copy-links
-log_DEBUG "rsync -avur --partial --force  -e ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails'  $(eval echo "$3") $(eval echo "$1") $(get_ssh_user)@$(get_ssh_host):$2"
+    log_DEBUG "rsync -avur --partial --force  -e ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails'  $(eval echo "$3") $(eval echo "$1") $(get_ssh_user)@$(get_ssh_host):$2"
     rsync -avur --partial --force  -e "ssh -i $(get_ssh_key) -o StrictHostKeyChecking=no -p $(get_ssh_port) -o '$proxyDetails' " $(eval echo "$3") $(eval echo "$1") "$(get_ssh_user)"@"$(get_ssh_host):$2"
 }
 

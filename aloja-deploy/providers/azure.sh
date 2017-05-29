@@ -6,7 +6,7 @@
 vm_exists() {
   logger "Checking if VM $1 exists..."
 
-  if [ ! -z "$(azure vm list -s "$subscriptionID"|grep " $1 " | grep " $dnsName.cloudapp.net ")" ] ; then
+  if [ ! -z "$(azure vm list -s "$subscriptionID"|grep "\b$1\b" )" ] ; then
     return 0
   else
     return 1
@@ -47,43 +47,53 @@ vm_create() {
 
     logger "Creating Linux VM $1 with SSH port $ssh_port..."
 
-    #if a virtual network is specified
-    if [ "$virtualNetworkName" ] ; then
+azure config mode arm
+azure group create --name "$clusterName" --location "$azureLocation"
+azure vm create --resource-group "$clusterName" --location "$azureLocation" --name "$1"\
+  --public-ip-domain-name "$1" --public-ip-name "IP_$1"\
+  --nic-name "NIC_$1" --vnet-name "VNET_$clusterName" --vnet-address-prefix "10.0.1.0/24"\
+  --vnet-subnet-name "VSUB_$clusterName" --vnet-subnet-address-prefix "10.0.1.0/24"\
+  --os-type 'linux' --image-urn "$vmImage" -u "$userAloja" -p "$passwordAloja"\
+  --ssh-publickey-file "$sshCert" --vm-size "$vmSize"
+azure config mode asm
 
-      #uncomment to create at first deploy
-      #azure_create_group "$affinityGroup" "$azureLocation"
-      #azure_create_vnet  "$virtualNetworkName" "$affinityGroup"
-
-      azure config mode asm;
-      azure vm create \
-            -s "$subscriptionID" \
-            --connect "$dnsName" `#Deployment name` \
-            --vm-name "$1" \
-            --vm-size "$vmSize" \
-            `#--location 'West Europe'` \
-            --location "$azureLocation" \
-            --virtual-network-name "$virtualNetworkName" \
-            `#--subnet-names "$subnetNames"` \
-            --ssh "$ssh_port" \
-            --ssh-cert "$sshCert" \
-            `#-v` \
-            `#'test-11'` `#DNS name` \
-            "$vmImage" \
-            "$userAloja" "$passwordAloja"
-    #no virtual network preference
-    else
-      azure config mode asm;
-      azure vm create \
-            -s "$subscriptionID" \
-            --connect "$dnsName" `#Deployment name` \
-            --vm-name "$1" \
-            --vm-size "$vmSize" \
-            --location "$azureLocation" \
-            --ssh "$ssh_port" \
-            --ssh-cert "$sshCert" \
-            "$vmImage" \
-            "$userAloja" "$passwordAloja"
-    fi
+#    #if a virtual network is specified
+#    if [ "$virtualNetworkName" ] ; then
+#
+#      #uncomment to create at first deploy
+#      #azure_create_group "$affinityGroup" "$azureLocation"
+#      #azure_create_vnet  "$virtualNetworkName" "$affinityGroup"
+#
+#      azure config mode asm;
+#      azure vm create \
+#            -s "$subscriptionID" \
+#            --connect "$dnsName" `#Deployment name` \
+#            --vm-name "$1" \
+#            --vm-size "$vmSize" \
+#            `#--location 'West Europe'` \
+#            --location "$azureLocation" \
+#            --virtual-network-name "$virtualNetworkName" \
+#            `#--subnet-names "$subnetNames"` \
+#            --ssh "$ssh_port" \
+#            --ssh-cert "$sshCert" \
+#            `#-v` \
+#            `#'test-11'` `#DNS name` \
+#            "$vmImage" \
+#            "$userAloja" "$passwordAloja"
+#    #no virtual network preference
+#    else
+#      azure config mode asm;
+#      azure vm create \
+#            -s "$subscriptionID" \
+#            --connect "$dnsName" `#Deployment name` \
+#            --vm-name "$1" \
+#            --vm-size "$vmSize" \
+#            --location "$azureLocation" \
+#            --ssh "$ssh_port" \
+#            --ssh-cert "$sshCert" \
+#            "$vmImage" \
+#            "$userAloja" "$passwordAloja"
+#    fi
   else
     logger "Creating Windows VM $1 with RDP port $ssh_port..."
 
@@ -122,16 +132,31 @@ vm_reboot() {
 
 #$1 vm_name
 vm_get_status(){
- echo "$(azure vm show "$1" -s "$subscriptionID"|grep "InstanceStatus"|head -n +1|awk '{print substr($3,2,(length($3)-2));}')"
+  # New arm mode
+  if (( clusterID >= 290 )); then
+    local null=$(azure config mode arm)
+    echo "$(azure vm show -s "$subscriptionID" --resource-group "$clusterName" --name "$1"|grep ProvisioningState | awk '{print substr($3,2)}')"
+    local null=$(azure config mode asm)
+  # older asm mode
+  else
+    local null=$(azure config mode arm)
+    echo "$(azure vm show -s "$subscriptionID" "$1"|grep "InstanceStatus"|head -n +1|awk '{print substr($3,2,(length($3)-2));}')"
+  fi
 }
 
 get_OK_status() {
-  echo "ReadyRole"
+  # New arm mode
+  if (( clusterID >= 290 )); then
+    echo "Succeeded"
+  # older asm mode
+  else
+    echo "ReadyRole"
+  fi
 }
 
 #$1 vm_name
 number_of_attached_disks() {
-  numberOfDisks="$(azure vm disk list " $1 " |grep " $1"|wc -l)"
+  numberOfDisks="$(azure vm disk list --resource-group "$clusterName" --vm-name "$1" |grep "\b$1"|wc -l)"
   #substract the system volume
   if [ -z "$numberOfDisks" ] ; then
     numberOfDisks="$(( numberOfDisks - 1 ))"
@@ -142,7 +167,7 @@ number_of_attached_disks() {
 #$1 vm_name $2 disk size in MB $3 disk number
 vm_attach_new_disk() {
   logger " Attaching a new disk #$3 to VM $1 of size ${2}GB"
-  azure vm disk attach-new "$1" "$2" -s "$subscriptionID"
+  azure vm disk attach-new --vm-name "$1" --size-in-gb "$2" -s "$subscriptionID" --resource-group "$clusterName"
 }
 
 #Azure uses a different key
@@ -151,34 +176,46 @@ get_ssh_key() {
 }
 
 get_ssh_host() {
- echo "${dnsName}.cloudapp.net"
+  # New arm mode
+  if (( clusterID >= 290 )); then
+    echo "$vm_name.$azureLocationShort.cloudapp.azure.com"
+  # older asm mode
+  else
+    echo "${dnsName}.cloudapp.net"
+  fi
 }
 
 #azure special case for ssh ids
 get_vm_ssh_port() {
-  local node_ssh_port=''
+  # New arm mode
+  if (( clusterID >= 290 )); then
+    echo 22
+    return
+  # older asm mode
+  else
+    local node_ssh_port=''
 
-  if [ "$type" == "node" ] ; then
-      local node_ssh_port="$vm_ssh_port" #for Azure nodes
-  else #cluster auto id
-    for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
-      local vm_name_tmp="${clusterName}-${vm_id}"
-      local vm_ssh_port_tmp="2${clusterID}${vm_id}"
+    if [ "$type" == "node" ] ; then
+        local node_ssh_port="$vm_ssh_port" #for Azure nodes
+    else #cluster auto id
+      for vm_id in $(seq -f "%02g" 0 "$numberOfNodes") ; do #pad the sequence with 0s
+        local vm_name_tmp="${clusterName}-${vm_id}"
+        local vm_ssh_port_tmp="2${clusterID}${vm_id}"
 
-      if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
-        # Don't prefix with 2 ids with more than 2 digits
-        if [ "$clusterID" -gt 99 ] ; then
-          node_ssh_port="${clusterID}${vm_id}"
-        else
-          node_ssh_port="2${clusterID}${vm_id}"
+        if [ ! -z "$vm_name" ] && [ "$vm_name" == "$vm_name_tmp" ] ; then
+          # Don't prefix with 2 ids with more than 2 digits
+          if [ "$clusterID" -gt 99 ] ; then
+            node_ssh_port="${clusterID}${vm_id}"
+          else
+            node_ssh_port="2${clusterID}${vm_id}"
+          fi
+
+          break #just return one
         fi
-
-        break #just return one
-      fi
-    done
+      done
+    fi
+    echo "$node_ssh_port"
   fi
-
-  echo "$node_ssh_port"
 }
 
 #construct the port number from vm_name
@@ -226,20 +263,29 @@ vm_final_bootstratp() {
 
 cluster_final_boostrap() {
 
-  local hosts_fragment old_vm
+  log_INFO "Creating necessary dirs"
+  vm_execute "sudo mkdir -p /mnt/aloja; sudo chown -R $userAloja: /mnt/aloja"
 
-  logger "Getting machine/IP list for cluster ${clusterName}"
+  log_INFO "Stopping and disabling the default ufw firewall"
+  vm_execute "sudo systemctl stop ufw; sudo systemctl disable ufw;
+  sudo service ufw stop; sudo service ufw disable;"
 
-  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
+  sudo systemctl disable ufw
 
-  old_vm=${vm_name}
-
-  for vm_name in $(get_node_names); do  
-    logger "Updating /etc/hosts"
-    vm_update_template "/etc/hosts" "${hosts_fragment}" "secured_file"
-  done
-
-  vm_name=${old_vm}
+#  local hosts_fragment old_vm
+#
+#  logger "Getting machine/IP list for cluster ${clusterName}"
+#
+#  hosts_fragment=$(azure vm list -s "$subscriptionID" | awk -v s="^${clusterName}-" '$2 ~ s { print $6, $2 }')
+#
+#  old_vm=${vm_name}
+#
+#  for vm_name in $(get_node_names); do
+#    logger "Updating /etc/hosts"
+#    vm_update_template "/etc/hosts" "${hosts_fragment}" "secured_file"
+#  done
+#
+#  vm_name=${old_vm}
 }
 
 #interactive SSH

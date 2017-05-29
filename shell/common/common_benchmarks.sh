@@ -780,7 +780,7 @@ sudo apt-get -o Dpkg::Options::='--force-confold' install -y --force-yes $BENCH_
       for package in $BENCH_REQUIRED_PACKAGES ; do
         if [ ! "$($DSH "which $package; 2> /dev/null")" ] ; then
           logger "INFO: Attempting to install: $BENCH_REQUIRED_PACKAGES"
-          $DSH "sudo yum install -y $BENCH_REQUIRED_PACKAGES"
+          $DSH "sudo yum install --enablerepo=epel -y $BENCH_REQUIRED_PACKAGES"
           break
         fi
       done
