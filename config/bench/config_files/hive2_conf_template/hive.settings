@@ -1,0 +1,155 @@
+-- !echo ============================;
+-- !echo Hive Settings;
+-- !echo ============================;
+
+
+-- set hive.log.dir=##LOG_DIR##;
+-- set hive.exec.local.scratchdir=##TMP_DIR##;
+-- set hive.metastore.uris=thrift://localhost:##PORT_PREFIX##9083;
+
+-- set ambari.hive.db.schema.name=hive;
+
+set fs.file.impl.disable.cache=true;
+set fs.hdfs.impl.disable.cache=true;
+set hive.auto.convert.sortmerge.join=true;
+set hive.compactor.abortedtxn.threshold=1000;
+set hive.compactor.check.interval=300;
+set hive.compactor.delta.num.threshold=10;
+set hive.compactor.delta.pct.threshold=0.1f;
+set hive.compactor.initiator.on=false;
+set hive.compactor.worker.threads=0;
+set hive.compactor.worker.timeout=86400;
+set hive.compute.query.using.stats=true;
+set hive.enforce.bucketing=true;
+set hive.enforce.sorting=true;
+set hive.enforce.sortmergebucketmapjoin=true;
+set hive.limit.pushdown.memory.usage=0.04;
+set hive.map.aggr=true;
+set hive.mapjoin.bucket.cache.size=10000;
+set hive.mapred.reduce.tasks.speculative.execution=false;
+set hive.metastore.cache.pinobjtypes=Table,Database,Type,FieldSchema,Order;
+set hive.metastore.client.socket.timeout=60;
+set hive.metastore.execute.setugi=true;
+set hive.metastore.warehouse.dir=/apps/hive/warehouse;
+set hive.optimize.bucketmapjoin.sortedmerge=false;
+set hive.optimize.bucketmapjoin=true;
+set hive.optimize.index.filter=true;
+-- set hive.optimize.mapjoin.mapreduce=true;
+set hive.optimize.reducededuplication.min.reducer=4;
+set hive.optimize.reducededuplication=true;
+set hive.orc.splits.include.file.footer=false;
+set hive.security.authorization.enabled=false;
+set hive.security.metastore.authorization.manager=org.apache.hadoop.hive.ql.security.authorization.StorageBasedAuthorizationProvider;
+-- set hive.semantic.analyzer.factory.impl=org.apache.hivealog.cli.HCatSemanticAnalyzerFactory;
+set hive.server2.enable.doAs=false;
+
+set hive.stats.autogather=true;
+set hive.txn.manager=org.apache.hadoop.hive.ql.lockmgr.DummyTxnManager;
+set hive.txn.max.open.batch=1000;
+set hive.txn.timeout=300;
+
+set hive.vectorized.execution.enabled=true;
+set hive.vectorized.execution.reduce.enabled = true;
+set hive.vectorized.groupby.checkinterval=1024;
+set hive.vectorized.groupby.flush.percent=1;
+set hive.vectorized.groupby.maxentries=1024;
+
+set hive.cbo.enable=true;
+set hive.stats.fetch.column.stats=true;
+set hive.stats.fetch.partition.stats=true;
+
+set hive.support.sql11.reserved.keywords=false;
+
+-- ###########################
+-- optimizations for joins.
+-- ###########################
+
+set hive.auto.convert.join=##HIVE_JOINS##;
+set hive.auto.convert.join.noconditionaltask=##HIVE_JOINS##;
+set hive.auto.convert.join.noconditionaltask.size=##JOIN_HIVE##;
+set hive.mapjoin.localtask.max.memory.usage = 0.999;
+set hive.exec.submit.local.task.via.child=true;
+
+set hive.auto.convert.sortmerge.join=true;
+set hive.auto.convert.sortmerge.join.to.mapjoin=false;
+set hive.exec.dynamic.partition=true;
+set hive.exec.dynamic.partition.mode=nonstrict;
+set hive.exec.max.created.files=100000;
+set hive.exec.max.dynamic.partitions=5000;
+set hive.exec.max.dynamic.partitions.pernode=2000;
+set hive.map.aggr=true;
+set hive.map.aggr.hash.force.flush.memory.threshold=0.9;
+set hive.stats.autogather=true;
+
+-- ###########################
+-- Tez settings
+-- ###########################
+
+set hive.execution.engine=##HIVE_ENGINE##;
+set hive.tez.container.size=##MAPS_MB##;
+set hive.tez.cpu.vcores=-1;
+set hive.tez.java.opts=-Xms##CONTAINER_80##m -Xmx##CONTAINER_80##m -Djava.net.preferIPv4Stack=true -XX:NewRatio=8 -XX:+UseNUMA -XX:+UseParallelGC;
+set tez.runtime.unordered.output.buffer.size-mb=##CONTAINER_10##;
+-- set tez.runtime.io.sort.mb=##CONTAINER_40##;
+set hive.tez.input.format=org.apache.hadoop.hive.ql.io.HiveInputFormat;
+set hive.server2.tez.default.queues=default;
+set hive.server2.tez.initialize.default.sessions=false;
+set hive.server2.tez.sessions.per.default.queue=1;
+set hive.tez.auto.reducer.parallelism=false;
+
+set hive.tez.exec.print.summary=true;
+
+
+set hive.tez.dynamic.partition.pruning=true;
+set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
+set hive.tez.dynamic.partition.pruning.max.event.size=1048576;
+-- set tez.grouping.min-size=67108864;
+-- set tez.grouping.max-size=1073741824;
+set hive.tez.max.partition.factor=3f;
+set hive.tez.min.partition.factor=1f;
+set hive.convert.join.bucket.mapjoin.tez=false;
+
+-- !echo ============================;
+-- !echo Print most important properties;
+-- !echo ============================;
+
+set hive.exec.parallel;
+set hive.exec.parallel.thread.number;
+set hive.exec.compress.intermediate;
+set mapred.map.output.compression.codec;
+set hive.exec.compress.output;
+set mapred.output.compression.codec;
+set hive.default.fileformat;
+set mapred.max.split.size;
+set mapred.min.split.size;
+set hive.exec.reducers.bytes.per.reducer;
+set hive.exec.reducers.max;
+set hive.auto.convert.sortmerge.join;
+set hive.auto.convert.sortmerge.join.noconditionaltask;
+set hive.optimize.bucketmapjoin;
+set hive.optimize.bucketmapjoin.sortedmerge;
+set hive.optimize.ppd;
+set hive.optimize.index.filter;
+set hive.auto.convert.join.noconditionaltask.size;
+set hive.auto.convert.join;
+set hive.auto.convert.join.noconditionaltask;
+set hive.optimize.mapjoin.mapreduce;
+set hive.mapred.local.mem;
+set hive.mapjoin.smalltable.filesize;
+set hive.mapjoin.localtask.max.memory.usage;
+set hive.optimize.skewjoin;
+set hive.optimize.skewjoin.compiletime;
+set hive.groupby.skewindata;
+
+set hive.tez.container.size;
+set hive.tez.java.opts;
+set tez.runtime.unordered.output.buffer.size-mb;
+set hive.tez.dynamic.partition.pruning.max.data.size;
+set hive.tez.dynamic.partition.pruning.max.event.size;
+
+-- !echo ============================;
+-- !echo </settings from hiveSettings.sql>;
+-- !echo ============================;
+
+
+

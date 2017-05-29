@@ -8,25 +8,24 @@ set_hive_requires() {
 
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://archive.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      BENCH_REQUIRED_FILES["apache-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-$HIVE_VERSION-bin.tar.gz"
       if [ "$HIVE_ENGINE" == "tez" ]; then
         source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
         set_tez_requires
       fi
     else
-      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://archive.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      BENCH_REQUIRED_FILES["apache-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-$HIVE_VERSION-bin.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
 
-  if [ ! "$BB_ZOOKEEPER_QUORUM" ]; then #TODO need to add on-premise support
-    HIVE_MAJOR_VERSION="1"
-  else
+  if [ "$(get_hive_major_version)" == "2" ]; then
     HIVE_MAJOR_VERSION="2"
+    BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive2_conf_template"
+  else
+    HIVE_MAJOR_VERSION="1"
+    BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
   fi
-
-  #also set the config here
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
 }
 
 # Helper to print a line with required exports
@@ -39,7 +38,7 @@ get_hive_exports() {
  else
     to_export="$(get_hadoop_exports)
 export HIVE_VERSION='$HIVE_VERSION';
-export HIVE_HOME='$(get_local_apps_path)/${HIVE_VERSION}';
+export HIVE_HOME='$HIVE_HOME';
 export HIVE_CONF_DIR='$HIVE_CONF_DIR';"
 
     if [ "$EXECUTE_TPCH" ]; then
@@ -106,7 +105,7 @@ initialize_hive_vars() {
     HIVE_CONF_DIR="/etc/hive/conf"
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings_PaaS"
   else
-    HIVE_HOME="$(get_local_apps_path)/${HIVE_VERSION}"
+    HIVE_HOME="$(get_local_apps_path)/apache-${HIVE_VERSION}-bin"
     HIVE_CONF_DIR="$HDD/hive_conf"
 
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
@@ -116,6 +115,21 @@ initialize_hive_vars() {
       prepare_tez_config
     fi
   fi
+}
+
+get_hive_major_version() {
+  local hive_string="$HIVE_VERSION"
+  local major_version=""
+
+  if [[ "$hive_string" == *"-1."* ]] ; then
+    major_version="1"
+  elif [[ "$hive_string" == *"-2."* ]] ; then
+    major_version="2"
+  else
+    logger "WARNING: Cannot determine hive major version."
+  fi
+
+  echo -e "$major_version"
 }
 
 # Sets the substitution values for the hive config
@@ -210,11 +224,11 @@ prepare_hive_config() {
     #just in case
     time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
 
-    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings_PaaS $(get_hive_conf_dir);"
+    $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/hive.settings_PaaS $(get_hive_conf_dir);"
 
   else
     logger "INFO: Preparing Hive run specific config"
-    $DSH "mkdir -p $(get_hive_conf_dir) $HDD/hive_logs; cp -r $(get_local_configs_path)/hive1_conf_template/* $(get_hive_conf_dir);"
+    $DSH "mkdir -p $(get_hive_conf_dir) $HDD/hive_logs; cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/* $(get_hive_conf_dir);"
 
     # Get the values
     subs=$(get_hive_substitutions)
@@ -237,7 +251,7 @@ $(get_perl_exports)
 
     # Make sure default folders exists in Hadoop
     create_hive_folders
-
+    create_db_schema
   fi
 }
 
@@ -250,6 +264,16 @@ create_hive_folders() {
     #execute_hadoop_new "Hive folders" "fs -chmod g+w /tmp"
     #execute_hadoop_new "Hive folders" "fs -chmod g+w /user/hive/warehouse"
   fi
+}
+
+create_db_schema() {
+    #Initiate DB schema, support only for DERBY now...
+    if [ "$DELETE_HDFS" == "1" ]  && [ "$HIVE_MAJOR_VERSION" == "2" ]; then
+       cmd="$(get_hadoop_exports)
+       $(get_hive_exports)
+       $HIVE_HOME/bin/schematool -initSchema -dbType derby"
+       execute_master "Init Hive DB schema" "$cmd"
+    fi
 }
 
 # $1 bench
