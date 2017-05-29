@@ -220,8 +220,9 @@ get_BigBench_substitutions() {
 
   #TODO: Eliminate the Beeline patch when hive 2 client is available.
   if [ "$HIVE_MAJOR_VERSION" == "2" ]; then # Temporal patch to use Hive2 in HDI until they upgrade it to use Hive client.
-    bin="beeline"
-    hive_params="-n hive -p hive -u '${BB_ZOOKEEPER_QUORUM}'"
+    #bin="beeline"
+    bin="hive"
+#    hive_params="-n hive -p hive -u '${BB_ZOOKEEPER_QUORUM}'"
   else
     bin="hive"
   fi
