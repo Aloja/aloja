@@ -3,10 +3,10 @@ set_tez_requires() {
   [ ! "$TEZ_VERSION" ] && die "No tez_VERSION specified"
 
   TEZ_FOLDER="apache-tez-${TEZ_VERSION}-bin"
-  BENCH_REQUIRED_FILES["$TEZ_FOLDER"]="http://aloja.bsc.es/public/aplic2/tarballs/${TEZ_FOLDER}.tar.gz"
+  BENCH_REQUIRED_FILES["$TEZ_FOLDER"]="http://archive.apache.org/dist/tez/$TEZ_VERSION/$TEZ_FOLDER.tar.gz"
 
   #also set the config here
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${TEZ_FOLDER}_conf_template"
+  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS apache-tez-0.x-bin_conf_template"
 }
 
 # Helper to print a line with required exports
@@ -34,6 +34,7 @@ initialize_tez_vars() {
   else
     TEZ_HOME="$(get_local_apps_path)/${TEZ_FOLDER}"
     TEZ_CONF_DIR="$(get_tez_conf_dir)"
+    TEZ_TARBALL_NAME=$(ls ${TEZ_HOME}/share)
   fi
 }
 
@@ -84,7 +85,7 @@ s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##TEZ##,$TEZ_HOME/bin/tez,g;
 s,##TEZ_CONF##,$TEZ_CONF_DIR,g;
-s,##TEZ_URI##,/apps/tez-${TEZ_VERSION}.tar.gz,g;
+s,##TEZ_URI##,/apps/$TEZ_TARBALL_NAME,g;
 EOF
 }
 
@@ -97,12 +98,13 @@ prepare_tez_config() {
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    $DSH "mkdir -p $TEZ_CONF_DIR; cp -r $(get_local_configs_path)/${TEZ_FOLDER}_conf_template/* $TEZ_CONF_DIR/"
+    $DSH "mkdir -p $TEZ_CONF_DIR; cp -r $(get_local_configs_path)/apache-tez-0.x-bin_conf_template/* $TEZ_CONF_DIR/"
     subs=$(get_tez_substitutions)
     $DSH "/usr/bin/perl -i -pe \"$subs\" $TEZ_CONF_DIR/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $tez_CONF_DIR/slaves"
 
-    hadoop_copy_hdfs "/apps/" "${TEZ_HOME}/share/tez-${TEZ_VERSION}.tar.gz"
+    hadoop_copy_hdfs "/apps/" "$TEZ_HOME/share/$TEZ_TARBALL_NAME"
+    if [ -f $TEZ_HOME/lib/slf4j-log4j* ]; then rm $TEZ_HOME/lib/slf4j-log4j* ; fi
   fi
 }
 
