@@ -103,10 +103,9 @@ benchmark_suite_run() {
       for query in $BENCH_LIST ; do
         # for scale_factor in $BB_SCALE_FACTORS ; do
             if [ $query == "schedule" ] ; then
-            	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, 
-				# $6 batch wait time, #7 batch multiplier, #8 random seed, #9 batch internal delay factor, #10 degree of parallelism
-    			# benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "120" "0.3" "2345"
-    			benchmark_schedulejavagen "$workloadFile" "$javaScheduleFile" "$generatedScript" "$logFile" "1" "120" "0.3" "2345" "0" "1"
+            	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, $6 batch wait time, $7 batch multiplier,
+				# $8 random seed, $9 batch internal delay factor, ${10} degree of parallelism, ${11} spread queries, ${12} max queries
+    			benchmark_schedulejavagen "$workloadFile" "$javaScheduleFile" "$generatedScript" "$logFile" "1" "120" "0.3" "2345" "0" "1" "true" "4"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
@@ -252,15 +251,17 @@ benchmark_schedulejava() {
 # $7 Batch multiplier
 # $8 Random seed
 # $9 Batch internal delay factor
-# $10 Degree of parallelism
+# ${10} Degree of parallelism
+# ${11} Spread queries across batch
+# ${12} Maximum number of queries to execute in the batch
 benchmark_schedulejavagen() {
 	# Set the queries to choose from
 	# This line enables all 30 queries (specified as a sequence)
-	queries="\"1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30\""
+	# queries="\"1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30\""
 	# This line enables only particular queries (e.g. only SQL queries)
-	#queries="\"6 7 9 11 12 13 14 15 16 17 21 22 23 24\""
+	queries="\"6 7 9 11 12 13 14 15 16 17 21 22 23 24\""
 	scaleFactorsArray="\"1 10\""
-	probsArray="\"0.0 0.95 1.0\""
+	probsArray="\"0.0 0.99999 1.0\""
 	local bench_name="${FUNCNAME[0]#benchmark_}"
 	logger "INFO: Running $bench_name"
 	echo "----------------------EXECUTING SCHEDULE--------------------------"
@@ -307,7 +308,9 @@ benchmark_schedulejavagen() {
 	# args[3] log file directory
 	# args[4] scale factor (now unused)
 	# args[5] batch wait time in seconds
-	javaCmd+="6 AlojaHiveWrapper $scheduleFile $logDir $5 $6"
+	# args[6] degree of parallelism (used for ADLA only)
+	# args[7] spread queries (true/false) spread evenly the queries within a batch and ignore internal batch delay
+	javaCmd+="6 AlojaHiveWrapper $scheduleFile $logDir $5 $6 ${10} ${11} ${12}"
 	echo $javaCmd
 	# $javaCmd
 	# Delete the old generated script file and log file
