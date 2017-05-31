@@ -7,6 +7,7 @@ set_BigBench_requires
 
 workloadFile="$ALOJA_REPO_PATH/config/schedule/sampleWorkloadTiny.txt"
 scheduleFile="$ALOJA_REPO_PATH/config/schedule/schedule.txt"
+javaScheduleFile="schedule.txt"
 generatedScript="$ALOJA_REPO_PATH/config/schedule/executeSchedule.sh"
 logFile="$ALOJA_REPO_PATH/config/schedule/scheduleLog.txt"
 logDir="$ALOJA_REPO_PATH/config/schedule/"
@@ -100,12 +101,11 @@ benchmark_suite_run() {
 
   else
       for query in $BENCH_LIST ; do
-        for scale_factor in $BB_SCALE_FACTORS ; do
+        # for scale_factor in $BB_SCALE_FACTORS ; do
             if [ $query == "schedule" ] ; then
-            	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, 
-				# $6 batch wait time, #7 batch multiplier, #8 random seed
-    			# benchmark_schedule "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "90" "0.3" "2345"
-    			benchmark_schedulejava "$workloadFile" "$scheduleFile" "$generatedScript" "$logFile" "1" "90" "0.3" "2345"
+            	# $1 workload file, $2 schedule file, $3 output script, $4 output log, $5 scale factor, $6 batch wait time, $7 batch multiplier,
+				# $8 random seed, $9 batch internal delay factor, ${10} degree of parallelism, ${11} spread queries, ${12} max queries
+    			benchmark_schedulejavagen "$workloadFile" "$javaScheduleFile" "$generatedScript" "$logFile" "1" "120" "0.3" "2345" "0" "1" "true" "4"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
@@ -116,7 +116,7 @@ benchmark_suite_run() {
             #      benchmark_refreshMetastore "$scale_factor"
             #      benchmark_throughput "2" "$scale_factor"
             fi
-        done
+        # done
       done
   fi
 }
@@ -152,7 +152,7 @@ benchmark_populateMetastore() {
 # $2 Schedule file to be generated
 # $3 Script file to be generated
 # $4 Log file to be generated
-# $5 Scale factor
+# $5 Scale factor (no longer effective, multiple scale factors are supported and exports are now done for each query)
 # $6 Batch wait time
 # $7 Batch multiplier
 # $8 Random seed
@@ -174,7 +174,7 @@ benchmark_schedule() {
 	rm "$4"
 	# Generate the execution script
 	# $1 schedule file, $2 output script, $3 output log, $4 scale factor, $5 batch wait time
-	# generateExecutionScript "$2" "$3" "$4" "$5" "$6"
+	generateExecutionScript "$2" "$3" "$4" "$5" "$6"
 	cat "$3"
 	echo $3
 	# Run the command and time it
@@ -189,7 +189,7 @@ benchmark_schedule() {
 # $2 Schedule file to be generated
 # $3 Script file to be generated (not used for the java version)
 # $4 Log file to be generated
-# $5 Scale factor
+# $5 Scale factor (no longer effective, multiple scale factors are supported and exports are now done for each query)
 # $6 Batch wait time
 # $7 Batch multiplier
 # $8 Random seed
@@ -202,7 +202,7 @@ benchmark_schedulejava() {
 	# Delete the old generated schedule file
 	rm "$2"
 	# Generate the new schedule file
-	# $1 input workload file, $2 output schedule file, $3 batch multiplier
+	# $1 input workload file, $2 output schedule file, $3 batch multiplier, $4 random seed
 	generateScheduleFile "$1" "$2" "$7" "$8"
 	cat "$2"
 	echo $2
@@ -214,13 +214,103 @@ benchmark_schedulejava() {
 	source $mainExportsFile
 	echo "RUNNING JAVA ALOJABBDRIVER"
 	bbBinary="$(get_BigBench_cmd_schedule)"
+	localBenchPath="$(get_local_bench_path)"
 	javaCmd="$JAVA_HOME/bin/java -Dalojarepo.path=$ALOJA_REPO_PATH -Dbigbench.binary=$bbBinary "
+	javaCmd+="-Dmainexports.file=$mainExportsFile -Dhdfsdata.absolutepath=$HDFS_DATA_ABSOLUTE_PATH "
+	javaCmd+="-Dlocalbench.path=$localBenchPath "
 	javaCmd+="-Dbigbench.paramsfile=$BIG_BENCH_PARAMETERS_FILE -jar $driverJar "
-	# args[0] schedule file
-	# args[1] log file directory
-	# args[2] scale factor
-	# args[3] batch wait time in seconds
-	javaCmd+="$scheduleFile $logDir 1 90"
+	# args[0] thread pool size
+	# args[1] wrapper for the engine 
+	# args[2] schedule file
+	# args[3] log file directory
+	# args[4] scale factor (now unused)
+	# args[5] batch wait time in seconds
+	javaCmd+="6 AlojaHiveWrapper $scheduleFile $logDir $5 $6"
+	echo $javaCmd
+	# $javaCmd
+	# Delete the old generated script file and log file
+	rm "$4"
+	# Run the command and time it
+	# execute_master "$bench_name" "bash $3" "time"
+	# Apparently, from within java the environment variables exported by sourcing the mainExportsFile
+	# are not available when invoking System.getenv() if execute_master is used. Therefore in the java
+	# driver the scripts to execute individual queries must have all the exports.
+	execute_master "$bench_name" "$javaCmd" "time"
+  	# Stop metrics monitors and save bench (if needed)
+	#if [ "$time_exec" ] ; then
+    	save_BigBench "$bench_name"
+	#fi
+}
+
+# $1 Supplied workload file
+# $2 Schedule file to be generated
+# $3 Script file to be generated (not used for the java version)
+# $4 Log file to be generated
+# $5 Scale factor (no longer effective, multiple scale factors are supported and exports are now done for each query)
+# $6 Batch wait time
+# $7 Batch multiplier
+# $8 Random seed
+# $9 Batch internal delay factor
+# ${10} Degree of parallelism
+# ${11} Spread queries across batch
+# ${12} Maximum number of queries to execute in the batch
+benchmark_schedulejavagen() {
+	# Set the queries to choose from
+	# This line enables all 30 queries (specified as a sequence)
+	# queries="\"1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30\""
+	# This line enables only particular queries (e.g. only SQL queries)
+	queries="\"6 7 9 11 12 13 14 15 16 17 21 22 23 24\""
+	scaleFactorsArray="\"1 10\""
+	probsArray="\"0.0 0.99999 1.0\""
+	local bench_name="${FUNCNAME[0]#benchmark_}"
+	logger "INFO: Running $bench_name"
+	echo "----------------------EXECUTING SCHEDULE--------------------------"
+	cat "$1"
+	echo $1
+	# Delete the old generated schedule file
+	rm "$2"
+	# mainExports sets JAVA_HOME, which is needed by the schedule generator
+	rm $mainExportsFile
+	mainExports="$(get_BigBench_exports  "$5")"
+	printf "%s\n" "$mainExports"  >> $mainExportsFile
+	# sourcing the script may not make available the environment variables within java
+	# if execute_master is used (more comments below)
+	source $mainExportsFile
+	# args[0] input workload file
+	# args[1] output schedule file
+	# args[2] output directory
+	# args[3] batch multiplier
+	# args[4] random seed
+	# args[5] queries array
+	# args[6] scale factors array
+	# args[7] probabilities array
+	# args[8] batch internal delay factor
+	# args[9] deegree of parallelism
+	# Generate the new schedule file
+	# Use -cp instead of -jar in order to run a class which is not the Main-Class of the jar.
+	javaGenCmd="$JAVA_HOME/bin/java -cp $driverJar io.bigdatabenchmark.v1.driver.ScheduleGenerator "
+	javaGenCmd+="$1 $2 $logDir $7 $8 $queries $scaleFactorsArray $probsArray $9 ${10}"
+	echo $javaGenCmd
+	# Use eval because of the escaped quotes in the arrays
+	eval $javaGenCmd
+	cat "$2"
+	echo $2
+	echo "RUNNING JAVA ALOJABBDRIVER"
+	bbBinary="$(get_BigBench_cmd_schedule)"
+	localBenchPath="$(get_local_bench_path)"
+	javaCmd="$JAVA_HOME/bin/java -Dalojarepo.path=$ALOJA_REPO_PATH -Dbigbench.binary=$bbBinary "
+	javaCmd+="-Dmainexports.file=$mainExportsFile -Dhdfsdata.absolutepath=$HDFS_DATA_ABSOLUTE_PATH "
+	javaCmd+="-Dlocalbench.path=$localBenchPath "
+	javaCmd+="-Dbigbench.paramsfile=$BIG_BENCH_PARAMETERS_FILE -jar $driverJar "
+	# args[0] thread pool size
+	# args[1] wrapper for the engine 
+	# args[2] schedule file
+	# args[3] log file directory
+	# args[4] scale factor (now unused)
+	# args[5] batch wait time in seconds
+	# args[6] degree of parallelism (used for ADLA only)
+	# args[7] spread queries (true/false) spread evenly the queries within a batch and ignore internal batch delay
+	javaCmd+="6 AlojaHiveWrapper $scheduleFile $logDir $5 $6 ${10} ${11} ${12}"
 	echo $javaCmd
 	# $javaCmd
 	# Delete the old generated script file and log file
