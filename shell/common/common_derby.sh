@@ -54,8 +54,8 @@ stop_derby() {
 
   if [ "$clusterType" != "PaaS" ] && [[ ! "$BENCH_LEAVE_SERVICES" || "$force_stop" ]] && [[ "$DELETE_HDFS" == "1" || "$force_stop" ]] ; then
     logger "INFO: Stopping Derby database"
-    cmd=("$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar" 'server' 'shutdown' '-h' "$master_name")
-    $DSH_MASTER "${cmd[@]}"
+    #cmd=("$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar" 'server' 'shutdown' '-h' "$master_name")
+    $DSH_MASTER "$(get_java_home)/bin/java -jar -Dderby.system.home=$(get_local_bench_path) ${DERBY_HOME}/lib/derbyrun.jar server shutdown -h $master_name"
 
     #TODO don't execute locally use execute_master
     [ -d $(get_local_bench_path)/aplic/$DATABASE_NAME ] && rm -r $(get_local_bench_path)/aplic/$DATABASE_NAME #Force deletion of metastore folder if not properly deleted previously
@@ -76,9 +76,9 @@ start_derby() {
     update_traps "stop_derby;" "update_logger"
 
     logger "INFO: Starting Derby database"
-    cmd=(-r ssh -o -f "$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar"  'server' 'start' '-h' "$master_name")
+    cmd=(-r ssh -o -f -- "$(get_java_home)/bin/java" '-jar' "-Dderby.system.home=$(get_local_bench_path)" "${DERBY_HOME}/lib/derbyrun.jar"  'server' 'start' '-h' "$master_name")
     $DSH_MASTER "${cmd[@]}"
-    sleep
+    sleep 3
   else
     log_WARN "Not starting in PaaS cluster."
   fi

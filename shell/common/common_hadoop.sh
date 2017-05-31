@@ -316,7 +316,7 @@ prepare_hadoop_config(){
     format_HDFS "$(get_hadoop_major_version)"
   else
     logger "INFO: Deleting previous Job history files (in case necessary)"
-    $DSH_MASTER "$BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
+    $DSH_MASTER "$BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r -skipTrash /tmp/hadoop-yarn/history" 2> /dev/null
   fi
  else
   logger "INFO: Preparing Hadoop run specific config"
@@ -401,7 +401,7 @@ cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
     format_HDFS
   else
     logger "INFO: Deleting previous Job history files (in case necessary)"
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r /tmp/hadoop-yarn/history" 2> /dev/null
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r -skipTrash /tmp/hadoop-yarn/history" 2> /dev/null
   fi
 
   # Set correct permissions for instrumentation's sniffer
@@ -753,9 +753,9 @@ $(get_hadoop_exports)"
   fi
 
   if [ "$(get_hadoop_major_version)" == "1" ]; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -rmr $folder_in_HDFS"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -rmr -skipTrash $folder_in_HDFS"
   elif [ "$(get_hadoop_major_version)" == "2" ] ; then
-    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $folder_in_HDFS"
+    $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r -skipTrash $folder_in_HDFS"
   else
     die "Incorrect Hadoop version. Supplied: $(get_hadoop_major_version)"
   fi
@@ -852,7 +852,7 @@ hadoop_delete_path() {
 # $1 Destiny folder
 # $2 Origin local folder
 hadoop_copy_hdfs() {
-  logger "INFO: Coping $2 from local to $1 in HDFS"
+  logger "INFO: Copying $2 from local $1 into HDFS"
   $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -mkdir $1"
   $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -copyFromLocal $2 $1"
   $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hadoop fs -ls $1"
@@ -960,13 +960,13 @@ save_hadoop() {
 
         sudo su hdfs -c "hdfs dfs -chmod -R 777 /mr-history"
         hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
-        sudo su hdfs -c "hdfs dfs -rm -r /mr-history/*"
+        sudo su hdfs -c "hdfs dfs -rm -r -skipTrash /mr-history/*"
         sudo su hdfs -c "hdfs dfs -expunge"
 
     elif [ "$defaultProvider" == "hdinsight" ]; then
 
         hdfs dfs -copyToLocal "/mr-history" "$JOB_PATH/$bench_name_num/hadoop_logs"
-        hdfs dfs -rm -r "/mr-history"
+        hdfs dfs -rm -r -skipTrash "/mr-history"
         hdfs dfs -expunge
 
         headnode=$(echo $master_name | sed -r 's/[0]+/1/g') #Create the name of the second headnode (it stores the yarn-resourcemanager log)
@@ -1009,7 +1009,7 @@ save_hadoop() {
         ##Copy history logs
         logger "INFO: Getting mapreduce job history logs from HDFS"
         execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -copyToLocal $(get_local_bench_path)/hadoop_logs/history $JOB_PATH/$bench_name_num/hadoop_logs/history"
-        execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r $(get_local_bench_path)/hadoop_logs/history"
+        execute_master "$bench_name" "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/hdfs dfs -rm -r -skipTrash $(get_local_bench_path)/hadoop_logs/history"
 
         ##Copy jobhistory daemon logs
         logger "INFO: Moving jobhistory daemon logs to logs dir"

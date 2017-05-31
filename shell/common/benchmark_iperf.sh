@@ -43,7 +43,7 @@ iperf_stop_server() {
   local bench_name="${FUNCNAME[0]##*benchmark_}"
   logger "INFO: Stopping all running iperf servers"
   # copy and rename the binary for easy killing
-  execute_all "$bench_name" "[ -f '$IPERF_PATH' ] && pkill -9 -f '$IPERF_PATH'"
+  execute_all "$bench_name" "pkill -9 -f '[${IPERF_PATH:0:1}]${IPERF_PATH:1}'" # [ -f '$IPERF_PATH' ] &&
 }
 
 # $1 bench_name
@@ -73,6 +73,17 @@ run_iperf(){
   fi
 }
 
+# Fixes long names as longer break the key ie. wn4-hdil7.ab4b111i1p2u5icbpevyfwuync.cx.internal.cloudapp.net
+# $1 hostname
+fix_name() {
+  local hostname="$1"
+  if (( ${#hostname} > 25 )); then
+    echo "${hostname%%.*}"
+  else
+    echo -e "$hostname"
+  fi
+}
+
 # $1 bench_name
 # $1 num threads
 run_iperf_multi(){
@@ -82,21 +93,22 @@ run_iperf_multi(){
 
   # Get the internal host name, external IPs don't work in certain clusters ie., Dataproc
   for node1 in  $IPERF_NODES; do
-    # here we just keep the short name, as longer break the key ie. wn4-hdil7.ab4b111i1p2u5icbpevyfwuync.cx.internal.cloudapp.net
-    IPERF_NODES_INTERNAL["${node1%%.*}"]="$(ssh $node1 'hostname')"
+    IPERF_NODES_INTERNAL["$(fix_name "$node1")"]="$(ssh $node1 'hostname')"
   done
 
   local current_port="$IPERF_PORT"
   for node1 in  $IPERF_NODES; do
-
+    IPERF_NODES_CMD["${node1%%.*}"]=""
     for node2 in $IPERF_NODES; do
       if [[ "$node1" != "$node2" ]] ; then
-        IPERF_NODES_CMD["${node1%%.*}"]="$IPERF_VERSION -c ${IPERF_NODES_INTERNAL["${node2%%.*}"]} -p $current_port --bytes $BENCH_DATA_SIZE --format g --parallel $num_threads --get-server-output
+        IPERF_NODES_CMD["$(fix_name "$node1")"]+="$IPERF_VERSION -c ${IPERF_NODES_INTERNAL["$(fix_name "$node2")"]} -p $current_port --bytes $BENCH_DATA_SIZE --format g --parallel $num_threads --get-server-output &
 "
       fi
     done
     ((current_port++))
   done
+
+  #log_DEBUG "IN $IPERF_NODES\nINI ${IPERF_NODES_INTERNAL[*]}\nINC ${!IPERF_NODES_CMD[*]}\nINC ${IPERF_NODES_CMD[*]}"
 
   log_INFO "Executing cluster commands"
 
@@ -105,9 +117,10 @@ run_iperf_multi(){
   set_bench_start "$bench"
 
   # Send the commands in background
-  for node in ${!IPERF_NODES_CMD[@]}; do
+  for node in "${!IPERF_NODES_CMD[@]}"; do
     #execute_cmd "${bench_name}_${node}" "${IPERF_NODES_CMD[$node]:0:(-1)}" "" "ssh $node" &
-    (ssh $node "${IPERF_NODES_CMD[$node]:0:(-1)}") &
+    #log_DEBUG "(ssh $node ${IPERF_NODES_CMD[$node]}) &"
+    (ssh $node "${IPERF_NODES_CMD[$node]}") &
   done
   log_INFO "Waiting for the background processes"
   wait
