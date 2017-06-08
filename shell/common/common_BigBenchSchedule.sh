@@ -52,7 +52,24 @@ generateScheduleFile() {
             	#of a query. However, there must be sufficient queries in
             	#order to fulfill the schedule.
             	query=${queries[$((i-1))]}
-            	printf "%s "  "$query" >> "$2"
+            	# Generate a matching scale factor for the query based on the fact
+				# that a given percentage must belong to that scale factor
+				scalesArray=(1 10)
+				probsArray=(0 0.999 1.0)
+				scalesLen=${#scalesArray[@]}
+				scale=0
+				# If the random number is obtained by RANDOM within the pipelined call to bc, the predefined seed
+				# is no longer effective, so we invoke it outside the bc call and store the value in a temp variable
+				probt=$RANDOM
+				prob=$(echo "scale=4 ; $probt/32767.0" | bc)
+				echo "prob: $prob"
+				for ((j=0; j<scalesLen; j++)); do
+    				if (( $(bc <<< "$prob >= ${probsArray[j]}") && $(bc <<< "$prob < ${probsArray[j+1]}") ))
+    				then
+        				scale=${scalesArray[j]}
+    				fi
+    			done
+            	printf "%s:%s "  "$query" "$scale" >> "$2"
         	done
         	printf "\n" >> "$2"
     	done
@@ -85,16 +102,21 @@ generateExecutionScript() {
 	local lineIdx=0
 	local nQueries=0
 	local queries=()
+	local scaleFactors=()
 	local secPerWorkload=$5
 	printf "#!/bin/bash\n" >> "$2"
 	printf "#Script generated dynamically to execute the workload\n" >> $2
 	local bb_exports
 	local bb_bin
 	local bb_cmd
-	local batch_exports
+	local query_exports
 	bb_exports="$(get_BigBench_exports  "$4")"
 	bb_bin="$(get_BigBench_cmd_schedule)"
 	printf "%s\n" "$bb_exports"  >> $2
+	printf "%s\n" "export CLASSPATH=\$CLASSPATH:\$SPARK_DIST_CLASSPATH"  >> $2
+	printf "echo \"####################### echoing CLASSPATH ################################\"\n" >> $2
+	printf "%s\n" "echo \$CLASSPATH" >> $2
+	printf "echo \"####################### echoing CLASSPATH ################################\"\n" >> $2
 	printf "\n" >> $2
 	printf "nBatch=0\n" >> $2
 	printf "nQuery=0\n" >> $2
@@ -115,24 +137,30 @@ generateExecutionScript() {
        		timePerQuery=$((secPerWorkload / nQueries))
        		printf "nBatch=\$((nBatch+1))\n" >> $2
        		batchCounter=$((batchCounter+1))
-       		# Add the exports specific to the batch
-			batch_exports="$(get_BigBench_exports_batch  "$4" "$batchCounter")"
-			printf "%s\n" "$batch_exports"  >> $2
-			printf 
        		printf "echo \"---------------------WORKLOAD \$nBatch STARTED -------------------\" >> $3 \n" >> $2
        		printf "nQuery=1\n" >> $2
    		else
        		idx=0
        		#Tokenize the line read to separate the different numbers
        		for word in $line; do 
-           		queries[idx]="$word"
+       			# The queries are read in the form query:scale_factor, so these two elements need to be separated
+				# by creating a two-element array with them
+				pairArray=(${word//:/ })
+           		word1="${pairArray[0]}"
+           		word2="${pairArray[1]}"
+           		queries[idx]="$word1"
+           		scaleFactors[idx]="$word2"
            		idx=$((idx+1))
        		done
        		for ((i=0;i<nQueries;i++)); do
            		query=${queries[i]}
+           		scaleFactor=${scaleFactors[i]}
+           		# Add the exports specific to the query
+				query_exports="$(get_BigBench_exports_query  "$scaleFactor" "$batchCounter")"
+				printf "%s\n" "$query_exports"  >> $2
            		printf "%s\n" "tNow=\$(date +\"%s\") ; " >> $2
            		printf "%s\n" "echo \"QUERY \$nQuery (Q$query) OF BATCH \$nBatch STARTED \$(((tNow-initTime))) AFTER\" >>$3 ;" >> $2
-           		bb_cmd="( $bb_bin runQuery -q $query -U -z ${BIG_BENCH_PARAMETERS_FILE}_$4 -t $batchCounter ; "
+           		bb_cmd="( $bb_bin runQuery -q $query -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scaleFactor -t $batchCounter -f $scaleFactor ; "
 				bb_cmd+="t=\$(date +\"%s\") ; "
 				bb_cmd+="echo \"QUERY \$nQuery (Q$query) OF BATCH \$nBatch COMPLETED \$(((t-initTime))) AFTER\" >> $3 ) &"
 				printf "%s\n" "$bb_cmd" >> $2
@@ -148,15 +176,17 @@ generateExecutionScript() {
 	printf "wait\n" >> $2
 }
 
-# Helper to print a line with required exports for a particular batch
+# Helper to print a line with required exports for a particular query
 # $1 scale factor to use
 # $2 batch number
-get_BigBench_exports_batch() {
+get_BigBench_exports_query() {
   local to_export
   to_export="
     export BIG_BENCH_LOGS_DIR='$(get_local_bench_path)/BigBench_logs/bigbench_$1/batch_$2';
     export BIG_BENCH_HDFS_ABSOLUTE_QUERY_RESULT_DIR='$HDFS_DATA_ABSOLUTE_PATH/query_results/bigbench_$1/batch_$2';
     export BIG_BENCH_HDFS_ABSOLUTE_TEMP_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/batch_$2/temp';
+    export BIG_BENCH_HDFS_ABSOLUTE_INIT_DATA_DIR='$HDFS_DATA_ABSOLUTE_PATH/bigbench_$1/base';
+    export BIG_BENCH_DEFAULT_DATABASE='bigbench_$1';
     #################################### IMPORTANT #################################################
     export HADOOP_OPTS=' -Djava.io.tmpdir=./tmp ';"
   echo -e "$to_export\n"
