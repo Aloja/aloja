@@ -8,7 +8,8 @@ set_hive_requires() {
 
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/stable/$HIVE_VERSION.tar.gz"
+      # TODO need to fix the paths for Hive
+      BENCH_REQUIRED_FILES["$HIVE_VERSION"]="http://www-us.apache.org/dist/hive/hive-1.2.2/$HIVE_VERSION.tar.gz"
       if [ "$HIVE_ENGINE" == "tez" ]; then
         source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
         set_tez_requires
@@ -211,7 +212,7 @@ prepare_hive_config() {
     #just in case
     #time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
     log_INFO "Listing hive warehouse permissions (but not changing them)"
-    execute_hadoop_new "Hive folders" "fs -lsr /user/hive/ /hive/warehouse/"
+    execute_hadoop_new "Hive folders" "fs -ls /user/hive/ /hive/warehouse/"
 
     $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive1_conf_template/hive.settings_PaaS $(get_hive_conf_dir);"
   else
