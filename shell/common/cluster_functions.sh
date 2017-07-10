@@ -232,11 +232,11 @@ mkdir -p \${targetdir}/sw/bin || exit 1
 tarball1='bash-4.4.tar.gz'
 dir1=\${tarball1%.tar.gz}
 
-#wget -nv \"http://ftp.gnu.org/gnu/bash/\${tarball1}\" || exit 1
-#rm -rf -- \"\${dir1}\" || exit 1
+wget -nv \"http://ftp.gnu.org/gnu/bash/\${tarball1}\" || exit 1
+rm -rf -- \"\${dir1}\" || exit 1
 
 # first, build the library
-#{ tar -xf \"\${tarball1}\" && rm \"\${tarball1}\"; } || exit 1
+{ tar -xf \"\${tarball1}\" && rm \"\${tarball1}\"; } || exit 1
 
 cd \"\${dir1}\" || exit 1
 
@@ -245,8 +245,6 @@ make -j4 || exit 1
 make install || exit 1
 
 # we know that \${targetdir}/sw/bin is in our path because the deployment configures it
-
-#mv \${targetdir}/sw/bin/{dsh,dsh.bin}
 
 # install wrapper to not depend on config file
 
@@ -1222,7 +1220,7 @@ vm_build_required() {
       local minimum_BASH_version="4.2"
       local current_BASH_version="$(vm_execute "bash --version|head -n +1|cut -d ' ' -f4")"
       if [[ "$minimum_BASH_version" != "$(smaller_version "$current_BASH_version" "$minimum_BASH_version")" ]] ; then
-        log_INFO "Building DSH, found version $current_BASH_version"
+        log_INFO "Building BASH, found version $current_BASH_version"
         vm_build_bash
         # Update the version
         current_BASH_version="$(vm_execute "bash --version|head -n +1|cut -d ' ' -f4")"
@@ -1303,7 +1301,8 @@ check_bootstraped() {
   fi
 
   if [ $result -eq 255 ]; then
-    die "cannot check bootstrap file status (SSH error?)"
+    die "cannot check bootstrap file status (SSH error?)
+DEBUG: ssh -i $(get_ssh_key) $(eval echo $sshOptions) -o PasswordAuthentication=no $(get_ssh_user)@$(get_ssh_host) -p $(get_ssh_port)"
   fi
 
   #set lock
