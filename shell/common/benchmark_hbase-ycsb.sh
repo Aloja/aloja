@@ -6,7 +6,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_ycsb.sh"
 set_ycsb_requires
 
 #BENCH_REQUIRED_FILES["tpch-hive"]="$ALOJA_PUBLIC_HTTP/aplic2/tarballs/tpch-hive.tar.gz"
-[ ! "$BENCH_LIST" ] && BENCH_LIST="hbase_ycsb_a hbase_ycsb_b hbase_ycsb_c hbase_ycsb_f hbase_ycsb_d hbase_ycsb_e"
+[ ! "$BENCH_LIST" ] && BENCH_LIST="hbase_ycsb_a hbase_ycsb_b hbase_ycsb_c hbase_ycsb_f hbase_ycsb_d" # hbase_ycsb_e
 
 
 # Global to control data generation and reuse
