@@ -8,21 +8,23 @@ set_hive_requires() {
 
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      BENCH_REQUIRED_FILES["apache-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-$HIVE_VERSION-bin.tar.gz"
+      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
       if [ "$HIVE_ENGINE" == "tez" ]; then
         source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
         set_tez_requires
       fi
     else
-      BENCH_REQUIRED_FILES["apache-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-$HIVE_VERSION-bin.tar.gz"
+      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
 
   if [ "$(get_hive_major_version)" == "2" ]; then
+    logger "WARNING: Hive major version is 2, using Hive $HIVE_VERSION"
     HIVE_MAJOR_VERSION="2"
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive2_conf_template"
   else
+    logger "WARNING: Hive major version is 1, using Hive $HIVE_VERSION"
     HIVE_MAJOR_VERSION="1"
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
   fi
@@ -105,7 +107,7 @@ initialize_hive_vars() {
     HIVE_CONF_DIR="/etc/hive/conf"
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings_PaaS"
   else
-    HIVE_HOME="$(get_local_apps_path)/apache-${HIVE_VERSION}-bin"
+    HIVE_HOME="$(get_local_apps_path)/apache-hive-${HIVE_VERSION}-bin"
     HIVE_CONF_DIR="$HDD/hive_conf"
 
     [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
@@ -121,9 +123,9 @@ get_hive_major_version() {
   local hive_string="$HIVE_VERSION"
   local major_version=""
 
-  if [[ "$hive_string" == *"-1."* ]] ; then
+  if [[ "$hive_string" == "1."* ]] ; then
     major_version="1"
-  elif [[ "$hive_string" == *"-2."* ]] ; then
+  elif [[ "$hive_string" == "2."* ]] ; then
     major_version="2"
   else
     logger "WARNING: Cannot determine hive major version."
