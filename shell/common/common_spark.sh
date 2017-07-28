@@ -7,6 +7,9 @@ set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
   if [[ "$BENCH_SUITE" =~ "BigBench"* || "$BENCH_SUITE" =~ "D2F"* ]]; then
+    if [ "$(get_spark_major_version)" == "2" ]; then
+        SPARK_HIVE="$SPARK2_HIVE"
+    fi
     log_WARN "Setting Spark version to $SPARK_HIVE (for Hive compatibility)"
     BENCH_REQUIRED_FILES["$SPARK_HIVE"]="http://aloja.bsc.es/public/aplic2/tarballs/$SPARK_HIVE.tar.gz"
     SPARK_VERSION=$SPARK_HIVE
@@ -201,8 +204,9 @@ prepare_spark_config() {
     subs=$(get_spark_substitutions)
     $DSH "/usr/bin/perl -i -pe \"$subs\" $SPARK_CONF_DIR/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $SPARK_CONF_DIR/slaves"
+    #$DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"  #Spark needs Hive-Site.xml in the config dir to access Hive metastore
   fi
-#    $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"  #Spark needs Hive-Site.xml in the config dir to access Hive metastore
+
 }
 
 # $1 bench name
