@@ -15,7 +15,7 @@ driverJar="$ALOJA_REPO_PATH/config/schedule/alojabbdriver.jar"
 mainExportsFile="$ALOJA_REPO_PATH/config/schedule/mainExports.sh"
 
 if [ "$BENCH_LIST" ] ; then
-    user_suplied_bench_list="true"
+    user_supplied_bench_list="true"
 fi
 
 BENCH_ENABLED="$(seq -f "%g" -s " "  1 30) throughput schedule"
@@ -24,7 +24,7 @@ BENCH_EXTRA="throughput schedule"
 # Check supplied benchmarks
 check_bench_list
 
-if [ ! $user_suplied_bench_list ]; then
+if [ ! "$user_supplied_bench_list" ]; then
     BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_EXTRA")"
 fi
 

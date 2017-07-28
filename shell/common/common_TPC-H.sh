@@ -10,7 +10,11 @@ else
 fi
 
 
+<<<<<<< HEAD
 if [[ "$TPCH_USE_LOCAL_FACTOR" > 0 ]]; then 
+=======
+if [[ "$TPCH_USE_LOCAL_FACTOR" -gt 0 ]]; then
+>>>>>>> 9b03078... fixup! Modified new TPC-h native spark benchmark for Aloja standars
   TPCH_SCALE_FACTOR=$TPCH_USE_LOCAL_FACTOR
   BENCH_DATA_SIZE="$((TPCH_USE_LOCAL_FACTOR * 1000000000 ))" #in bytes
 else
@@ -208,7 +212,7 @@ tpc-h_datagen() {
     tpc-h_build
 
     # Generate the data
-    if [[ "$TPCH_USE_LOCAL_FACTOR" > 0 ]] ; then
+    if [[ "$TPCH_USE_LOCAL_FACTOR" -gt 0 ]] ; then
       tpc-h_cmd_datagen "$TPCH_USE_LOCAL_FACTOR"
     elif [ "$TPCH_SCALE_FACTOR" == "1" ] ; then
       tpc-h_cmd_datagen "1"
