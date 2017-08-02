@@ -9,6 +9,11 @@ else
   set_hive_requires
 fi
 
+if [ "$BB_SERVER_DERBY" == "true" ]; then
+  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
+  set_derby_requires
+fi
+
 
 <<<<<<< HEAD
 if [[ "$TPCH_USE_LOCAL_FACTOR" > 0 ]]; then 

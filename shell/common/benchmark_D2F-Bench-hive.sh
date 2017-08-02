@@ -6,10 +6,31 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_TPC-H.sh"
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
 set_hive_requires
-prepare_hive_config
-initialize_hive_vars
 
-#BENCH_LIST="tpch_query6"
+benchmark_suite_config() {
+
+    initialize_hadoop_vars
+    prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
+    start_hadoop
+
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
+      logger "WARNING: Using Derby DB in client/server mode"
+      USE_EXTERNAL_DATABASE="true"
+      initialize_derby_vars "TPCH_DB"
+      start_derby
+    else
+      logger "WARNING: Using Derby DB in embedded mode"
+    fi
+
+    initialize_hive_vars
+    prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
+
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+      initialize_tez_vars
+      prepare_tez_config
+    fi
+
+}
 
 benchmark_suite_run() {
   logger "INFO: Running $BENCH_SUITE"

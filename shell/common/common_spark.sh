@@ -58,9 +58,16 @@ get_spark_cmd() {
     spark_bin_path="$spark_bin"
   else
     spark_exports="$(get_spark_exports)"
+    if [ ! -z "$use_hive" ]; then
+        spark_exports+="$(get_hive_exports)"
+    fi
     spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/$spark_bin"
+    if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+      database_jars="$(get_database_driver_path_coma),"
+      spark_database_opts="--jars "
+    fi
   fi
-  spark_cmd="$spark_exports\n$spark_bin"
+  spark_cmd="$spark_exports\n$spark_bin $spark_database_opts $database_jars"
 
   echo -e "$spark_cmd"
 }

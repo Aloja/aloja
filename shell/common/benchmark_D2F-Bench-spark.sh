@@ -6,6 +6,35 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_TPC-H.sh"
 source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
 set_spark_requires
 
+
+benchmark_suite_config() {
+
+    initialize_hadoop_vars
+    prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
+    start_hadoop
+
+    if [ "$BB_SERVER_DERBY" == "true" ]; then
+      logger "WARNING: Using Derby DB in client/server mode"
+      USE_EXTERNAL_DATABASE="true"
+      initialize_derby_vars "TPCH_DB"
+      start_derby
+    else
+      logger "WARNING: Using Derby DB in embedded mode"
+    fi
+
+    initialize_hive_vars
+    prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
+    use_hive="true"
+
+    if [ "$HIVE_ENGINE" == "tez" ]; then
+      initialize_tez_vars
+      prepare_tez_config
+    fi
+
+    initialize_spark_vars
+    prepare_spark_config
+}
+
 benchmark_suite_run() {
   logger "INFO: Running $BENCH_SUITE"
 
@@ -13,9 +42,7 @@ benchmark_suite_run() {
 
   BENCH_CURRENT_NUM_RUN="1" #reset the global counter
 
-  mkdir /scratch/local/aloja-bench_3/spark_conf
-  cp /scratch/local/aloja-bench_3/hive_conf/hive-site.xml /scratch/local/aloja-bench_3/spark_conf
-  #prepare_config
+  prepare_config
 
   # Iterate at least one time
   while true; do
@@ -44,10 +71,9 @@ execute_query_spark() {
 }
 
 prepare_config() {
-  
+
   # Spark needs the hive-site.xml to access metastore
   # common-spark.sh seems not to work properly
-  mkdir $(get_local_bench_path)/spark_conf
   cp $(get_local_bench_path)/hive_conf/hive-site.xml $(get_local_bench_path)/spark_conf
 
 }
