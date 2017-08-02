@@ -313,7 +313,7 @@ chmod +x \${targetdir}/sw/bin/dsh || exit 1
 }
 
 # Builds specified sysstat version and copies it to bin dir
-# $1 path to copy the compiled binaries to (optional)
+# $1 DEPRECATED PARAM path to copy the compiled binaries to (optional)
 # $2 sysstat version (optional)
 vm_build_sar(){
   local bin_path="${1:-\$HOME/share/sw/bin}"
@@ -1203,12 +1203,11 @@ vm_build_required() {
     if [ "$vm_name" = "$(get_master_name)" ]; then
       log_INFO "Building required packages on master node: $vm_name"
 
-      local bin_path="\$HOME/share/sw/bin"
 
       # Build sysstat always to have a fix and updated version for aloja
       local required_sysstat_version="11.4.2"
       if [[ "$required_sysstat_version" != "$(vm_execute "sar -V|head -n +1|cut -d ' ' -f3")" ]] ; then
-        vm_build_sar "$bin_path"
+        vm_build_sar
       fi
 
       local test_action="$(vm_execute "which dsh && echo '$testKey'")"
@@ -1225,6 +1224,9 @@ vm_build_required() {
         # Update the version
         current_BASH_version="$(vm_execute "bash --version|head -n +1|cut -d ' ' -f4")"
       fi
+
+
+      local bin_path="\$HOME/share/$clusterName/sw/bin"
 
       local test_action="$(vm_execute "ls \"$bin_path/sar\" && dsh --version |grep 'Junichi' && echo '$testKey'")"
       if [[ "$test_action" == *"$testKey"* && "$minimum_BASH_version" == "$(smaller_version "$current_BASH_version" "$minimum_BASH_version")" ]] ; then
