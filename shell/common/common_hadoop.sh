@@ -526,6 +526,12 @@ restart_hadoop(){
     if [ "$(get_hadoop_major_version)" == "1" ]; then
       $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/bin/start-all.sh"
     elif [ "$(get_hadoop_major_version)" == "2" ] ; then
+
+      if [[ ! "$BENCH_LEAVE_SERVICES" && "$BENCH_KEEP_FILES" ]]; then
+        log_WARN "Restarting YARN in case container config was changed (you are running with -N)"
+        $DSH_MASTER "$HADOOP_EXPORTS $BENCH_HADOOP_DIR/sbin/stop-yarn.sh"
+      fi
+
       $DSH_MASTER "$HADOOP_EXPORTS
         $BENCH_HADOOP_DIR/sbin/start-dfs.sh &
         $BENCH_HADOOP_DIR/sbin/start-yarn.sh &
