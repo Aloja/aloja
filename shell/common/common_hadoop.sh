@@ -102,6 +102,8 @@ get_hadoop_job_config() {
     job_config+=" -D mapred.reduce.tasks='$MAX_MAPS'"
   fi
 
+  [[ $EXPERIMENT_ID ]] && job_config+=" -D mapreduce.job.tags='$EXPERIMENT_ID'"
+
   echo -e "${job_config:1}" #remove leading space
 }
 
