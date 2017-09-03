@@ -44,13 +44,14 @@ $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-i io factor <positive int>] [-p port prefix <3|4|5>]
 [-I io.file <positive int>]
 [-l list of benchmarks <space separated string>]
-[-c compression <0 (dissabled)|1|2|3>]
+[-c compression <0 (disabled)|1|2|3>]
 [-z <block size in bytes>]
 [-s save prepare]
-[-N don't delete files]
-[-S leave services running (implies -N)]
+[-N use existing files and do not restart services before starting]
+[-S leave services running and do not delete files after completion]
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
+[-E experiment ID (for use with dashboard)]
 
 ${cyan}example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b HiBench2-min -I 4096 -l wordcount -c 1
 $reset"
@@ -62,7 +63,7 @@ get_options() {
 
   OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
-  while getopts "h?:C:b:r:n:d:m:i:p:l:I:c:z:s:D:tNS" opt; do
+  while getopts "h?C:b:r:n:d:m:i:p:l:I:c:z:s:D:E:tNS" opt; do
       case "$opt" in
       h|\?)
         usage
@@ -148,8 +149,10 @@ get_options() {
         echo "LIMIT_DATA_NODES $LIMIT_DATA_NODES"
         ;;
       e)
-          INSTRUMENTATION=1
+        INSTRUMENTATION=1
         ;;
+      E)
+        EXPERIMENT_ID=$OPTARG
       esac
   done
 
