@@ -7,7 +7,7 @@ set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
 
   if [[ "$BENCH_SUITE" =~ "BigBench"* || "$BENCH_SUITE" =~ "D2F"* ]]; then
-    if [ "$(get_spark_major_version)" == "2" ]; then
+    if [[ "$(get_spark_major_version)" = "2" ]]; then
         SPARK_HIVE="$SPARK2_HIVE"
     fi
     log_WARN "Setting Spark version to $SPARK_HIVE (for Hive compatibility)"
@@ -21,7 +21,7 @@ set_spark_requires() {
 
   #also set the config here
   #BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS ${SPARK_VERSION}_conf_template"
-  if [ "$(get_spark_major_version)" == "2" ]; then
+  if [[ "$(get_spark_major_version)" = "2" ]]; then
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-2.x_conf_template"
   else
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS spark-1.x_conf_template"
@@ -53,16 +53,16 @@ get_spark_cmd() {
   local spark_exports
   local spark_cmd
 
-  if [ "$clusterType" == "PaaS" ]; then
+  if [[ "$clusterType" = "PaaS" ]]; then
     spark_exports=""
     spark_bin_path="$spark_bin"
   else
     spark_exports="$(get_spark_exports)"
-    if [ ! -z "$use_hive" ]; then
+    if [[ "$use_hive" = "true" ]]; then
         spark_exports+="$(get_hive_exports)"
     fi
     spark_bin="$(get_local_apps_path)/${SPARK_FOLDER}/bin/$spark_bin"
-    if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
+    if [[ "$USE_EXTERNAL_DATABASE" = "true" ]]; then
       database_jars="$(get_database_driver_path_coma),"
       spark_database_opts="--jars "
     fi
@@ -190,7 +190,7 @@ s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
 s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark,g;
 s,##SPARK_CONF##,$SPARK_CONF_DIR,g;
-s,##SPARK_INSTANCES##,$EXECUTOR_INSTANCES,g;
+s,##EXECUTOR_INSTANCES##,$EXECUTOR_INSTANCES,g;
 s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g;
 s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
 s,##SPARK_MEMORY_OVERHEAD##,$SPARK_MEMORY_OVERHEAD,g;

@@ -1,7 +1,7 @@
 # TPC-H benchmark from Todor Ivanov https://github.com/t-ivanov/D2F-Bench/
 # Hive version
 # Benchmark to test Hive installation and configurations
-
+HIVE_VERSION=$HIVE2_VERSION
 source_file "$ALOJA_REPO_PATH/shell/common/common_TPC-H.sh"
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
@@ -62,5 +62,9 @@ benchmark_suite_run() {
 # $1 query number
 execute_query_hive() {
   local query="$1"
-  execute_hive "$query" "-f $D2F_local_dir/tpch/queries/$query.sql --database $TPCH_DB_NAME" "time"
+  if [ -f "$D2F_local_dir/tpch/queries/tpch_query2_${query}.sql" ]; then
+    execute_hive "$query" "-f $D2F_local_dir/tpch/queries/tpch_query2_${query}.sql --database $TPCH_DB_NAME" "time"
+  else
+    execute_hive "$query" "-f $D2F_local_dir/tpch/queries/tpch_query${query}.sql --database $TPCH_DB_NAME" "time"
+  fi
 }
