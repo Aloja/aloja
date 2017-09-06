@@ -8,13 +8,13 @@ set_hive_requires() {
 
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
+      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
       if [ "$HIVE_ENGINE" == "tez" ]; then
         source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
         set_tez_requires
       fi
     else
-      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
+      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
