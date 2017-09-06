@@ -8,21 +8,23 @@ set_hive_requires() {
 
   if [ "$clusterType" != "PaaS" ]; then
     if [ "$(get_hadoop_major_version)" == "2" ]; then
-      BENCH_REQUIRED_FILES["apache-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-$HIVE_VERSION-bin.tar.gz"
+      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
       if [ "$HIVE_ENGINE" == "tez" ]; then
         source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
         set_tez_requires
       fi
     else
-      BENCH_REQUIRED_FILES["apache-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/$HIVE_VERSION/apache-$HIVE_VERSION-bin.tar.gz"
+      BENCH_REQUIRED_FILES["apache-hive-$HIVE_VERSION-bin"]="http://archive.apache.org/dist/hive/hive-$HIVE_VERSION/apache-hive-$HIVE_VERSION-bin.tar.gz"
       #BENCH_REQUIRED_FILES["apache-hive-0.13.1-bin"]="https://archive.apache.org/dist/hive/hive-0.13.1/apache-hive-0.13.1-bin.tar.gz"
     fi
   fi
 
   if [ "$(get_hive_major_version)" == "2" ]; then
+    logger "WARNING: Hive major version is 2, using Hive $HIVE_VERSION"
     HIVE_MAJOR_VERSION="2"
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive2_conf_template"
   else
+    logger "WARNING: Hive major version is 1, using Hive $HIVE_VERSION"
     HIVE_MAJOR_VERSION="1"
     BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive1_conf_template"
   fi
@@ -98,17 +100,15 @@ execute_hive(){
 
 initialize_hive_vars() {
 
-  BENCH_CONFIG_FOLDERS="$BENCH_CONFIG_FOLDERS hive_conf_template"
-
   if [ "$clusterType" == "PaaS" ]; then
     HIVE_HOME="/usr"
     HIVE_CONF_DIR="/etc/hive/conf"
-    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings_PaaS"
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$(get_local_bench_path)/hive_conf/hive.settings_PaaS"
   else
-    HIVE_HOME="$(get_local_apps_path)/apache-${HIVE_VERSION}-bin"
-    HIVE_CONF_DIR="$HDD/hive_conf"
+    HIVE_HOME="$(get_local_apps_path)/apache-hive-${HIVE_VERSION}-bin"
+    HIVE_CONF_DIR="$(get_local_bench_path)/hive_conf"
 
-    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$HDD/hive_conf/hive.settings"
+    [ ! "$HIVE_SETTINGS_FILE" ] && HIVE_SETTINGS_FILE="$(get_local_bench_path)/hive_conf/hive.settings"
 
     if [ "$HIVE_ENGINE" == "tez" ]; then
       initialize_tez_vars
@@ -121,9 +121,9 @@ get_hive_major_version() {
   local hive_string="$HIVE_VERSION"
   local major_version=""
 
-  if [[ "$hive_string" == *"-1."* ]] ; then
+  if [[ "$hive_string" == "1."* ]] ; then
     major_version="1"
-  elif [[ "$hive_string" == *"-2."* ]] ; then
+  elif [[ "$hive_string" == "2."* ]] ; then
     major_version="2"
   else
     logger "WARNING: Cannot determine hive major version."
@@ -174,7 +174,7 @@ s,##JAVA_XMS##,$JAVA_XMS,g;
 s,##JAVA_XMX##,$JAVA_XMX,g;
 s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
 s,##JAVA_AM_XMX##,$JAVA_AM_XMX,g;
-s,##LOG_DIR##,$HDD/hive_logs,g;
+s,##LOG_DIR##,$(get_local_bench_path)/hive_logs,g;
 s,##REPLICATION##,$REPLICATION,g;
 s,##MASTER##,$master_name,g;
 s,##NAMENODE##,$master_name,g;
@@ -201,7 +201,7 @@ s,##MAPS_MB##,$MAPS_MB,g;
 s,##REDUCES_MB##,$REDUCES_MB,g;
 s,##AM_MB##,$AM_MB,g;
 s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
-s,##HDD##,$HDD,g;
+s,##HDD##,$(get_local_bench_path),g;
 s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
 s,##HIVE_JOINS##,$HIVE_JOINS,g;
 s,##DATABASE_DRIVER##,$database_driver,g;
@@ -211,7 +211,7 @@ EOF
 }
 
 get_hive_conf_dir() {
-  echo -e "$HDD/hive_conf"
+  echo -e "$(get_local_bench_path)/hive_conf"
 }
 
 prepare_hive_config() {
@@ -231,7 +231,7 @@ prepare_hive_config() {
 
   else
     logger "INFO: Preparing Hive run specific config"
-    $DSH "mkdir -p $(get_hive_conf_dir) $HDD/hive_logs; cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/* $(get_hive_conf_dir);"
+    $DSH "mkdir -p $(get_hive_conf_dir) $(get_local_bench_path)/hive_logs; cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/* $(get_hive_conf_dir);"
 
     # Get the values
     subs=$(get_hive_substitutions)
@@ -298,13 +298,13 @@ save_hive() {
     $DSH_MASTER "cd /etc/hive; tar -cjf $JOB_PATH/hive_conf.tar.bz2 conf"
   else
     if [ "$BENCH_LEAVE_SERVICES" ] ; then
-      $DSH "cp $HDD/hive_logs/* $JOB_PATH/$bench_name_num/hive_logs/ 2> /dev/null"
+      $DSH "cp $(get_local_bench_path)/hive_logs/* $JOB_PATH/$bench_name_num/hive_logs/ 2> /dev/null"
     else
-      $DSH "mv $HDD/hive_logs/* $JOB_PATH/$bench_name_num/hive_logs/ 2> /dev/null"
+      $DSH "mv $(get_local_bench_path)/hive_logs/* $JOB_PATH/$bench_name_num/hive_logs/ 2> /dev/null"
     fi
 
     # Save Hive conf
-    $DSH_MASTER "cd $HDD/; tar -cjf $JOB_PATH/hive_conf.tar.bz2 hive_conf"
+    $DSH_MASTER "cd $(get_local_bench_path)/; tar -cjf $JOB_PATH/hive_conf.tar.bz2 hive_conf"
   fi
 
   logger "INFO: Compresing and deleting hadoop configs for $bench_name_num"
