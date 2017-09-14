@@ -1,31 +1,3 @@
-# Start Spark if needed
-if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ] || [ "$HIVE_ML_FRAMEWORK" == "spark-csv" ] || [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
-
-  if [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
-    logger "WARNING: Using spark 2 as SQL engine and Machine Learning framework"
-    SPARK_HIVE="spark_hive-2.1.1"
-  fi
-  use_spark=true
-  source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
-  set_spark_requires
-#  HIVE_ENGINE="mr"
-fi
-
-# Start Hive
-source_file "$ALOJA_REPO_PATH/shell/common/common_hive.sh"
-set_hive_requires
-
-# Start Tez if needed
-if [ "$HIVE_ENGINE" == "tez" ]; then
-  source_file "$ALOJA_REPO_PATH/shell/common/common_tez.sh"
-  set_tez_requires
-fi
-
-if [ "$BB_SERVER_DERBY" == "true" ]; then
-  source_file "$ALOJA_REPO_PATH/shell/common/common_derby.sh"
-  set_derby_requires
-fi
-
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench"
 
 if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB

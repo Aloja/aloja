@@ -1,7 +1,3 @@
-#SPARK SPECIFIC FUNCTIONS
-source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
-set_hadoop_requires
-
 # Sets the required files to download/copy
 set_spark_requires() {
   [ ! "$SPARK_VERSION" ] && die "No SPARK_VERSION specified"
@@ -101,6 +97,12 @@ execute_spark-sql(){
   local spark_cmd
 
   execute_spark "$bench" "$cmd" "$time_exec" "spark-sql"
+}
+
+init_spark() {
+  initialize_spark_vars
+  prepare_spark_config
+  use_spark=1 # Control variable, useful only in certain benchmarks
 }
 
 initialize_spark_vars() {

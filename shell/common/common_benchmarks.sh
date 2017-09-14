@@ -162,11 +162,39 @@ get_options() {
 
 }
 
+add_engine(){
+  bench_engines+=("$1")
+}
+
+source_engines(){
+  for engine in "${bench_engines[@]}"; do
+    source_file "$ALOJA_REPO_PATH/shell/common/common_$engine.sh"
+    function_call "set_${engine}_requires"
+  done
+}
+
+init_engines(){
+  for engine in "${bench_engines[@]}"; do
+    function_call "init_$engine"
+  done
+}
 
 # Temple functions, re implement in benchmark if needed
 
-benchmark_suite_config() {
-  logger "DEBUG: No specific ${FUNCNAME[0]} defined for $BENCH_SUITE"
+benchmark_suite_start_config() {
+  logger "INFO: preparing confiuration for $BENCH_SUITE"
+
+  # Source needed engines and mark files to download
+  source_engines
+
+  # Check if needed to download files and configs
+  install_files
+
+  # Configure the engine and start services if needed
+  init_engines
+
+  # Specify which binaries to use for monitoring
+  set_monit_binaries
 }
 
 # Iterate the specified benchmarks in the suite
@@ -1281,9 +1309,6 @@ $($DSH "ls -lah '$HDD/../'; ls -lah '$HDD_TMP/../' " )
   else
     logger "DEBUG: Base dirs created successfully"
   fi
-
-  # specify which binaries to use for monitoring
-  set_monit_binaries
 }
 
 # Cleanup after a benchmark suite run, and before starting one

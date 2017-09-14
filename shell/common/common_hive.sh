@@ -1,4 +1,3 @@
-#HIVE SPECIFIC FUNCTIONS
 source_file "$ALOJA_REPO_PATH/shell/common/common_hadoop.sh"
 set_hadoop_requires
 
@@ -115,6 +114,12 @@ initialize_hive_vars() {
       prepare_tez_config
     fi
   fi
+}
+
+init_hive() {
+  initialize_hive_vars
+  prepare_hive_config
+  use_hive=1 # Control variable, useful only in certain benchmarks
 }
 
 get_hive_major_version() {

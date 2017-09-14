@@ -21,6 +21,10 @@ get_java_exports() {
   fi
 }
 
+init_java(){
+  set_java_requires
+}
+
 # Sets the JAVA_HOME for the benchmark
 # TODO this assumes you are in the head node and only sets it there, should finish export_var_path funct
 # also that it is run from the main run_bench.sh file

@@ -18,31 +18,22 @@ if [ ! $user_suplied_bench_list ]; then
 fi
 
 benchmark_suite_config() {
-  initialize_hadoop_vars
-  prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
-  start_hadoop
+  add_engine "hadoop"
+  add_engine "hive"
 
-  if [ "$BB_SERVER_DERBY" == "true" ]; then
-    logger "WARNING: Using Derby DB in client/server mode"
-    USE_EXTERNAL_DATABASE="true"
-    initialize_derby_vars "BigBench_DB"
-    start_derby
-  else
-    logger "WARNING: Using Derby DB in embedded mode"
+  #BigBench uses Spark under specific circumstances: spark-SQL as SQL engine or spark-MLlib as Machine learning framework
+  if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ] || [ "$HIVE_ML_FRAMEWORK" == "spark-csv" ] \
+  || [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
+
+    add_engine "spark"
+
+    if [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
+      logger "WARNING: Using spark 2 as SQL engine and Machine Learning framework"
+      SPARK_HIVE="spark_hive-2.1.1"
+    fi
   fi
 
-  initialize_hive_vars
-  prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
-
-  if [ ! -z "$use_spark" ]; then
-    initialize_spark_vars
-    prepare_spark_config
-  fi
-
-  if [ "$HIVE_ENGINE" == "tez" ]; then
-    initialize_tez_vars
-    prepare_tez_config
-fi
+  benchmark_suite_start_config
   initialize_BigBench_vars
   prepare_BigBench
 }

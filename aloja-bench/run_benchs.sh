@@ -32,15 +32,13 @@ prepare_folder "$DISK"
 # Save globals at the beginning (for debugging purposes)
 save_env "$JOB_PATH/config.sh"
 
-# Check if needed to download files and configs
-install_files
+# Prepare benchmark configuration
+benchmark_suite_config
 
 # 3.) Run the benchmarks
 
 # At this point, if the user presses ctrl+c or the script is killed to clean up afterwards and copy the files if remote is defined
 update_traps "benchmark_suite_cleanup; rsync_extenal '$JOB_NAME';" "update_logger"
-
-benchmark_suite_config
 
 start_time=$(date '+%s')
 
