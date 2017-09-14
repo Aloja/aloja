@@ -965,37 +965,47 @@ restart_monit(){
 run_monit() {
   local perf_mon="$1"
   local perf_mon_bin="$(get_local_bench_path)/aplic/${perf_mon}_$PORT_PREFIX"
+  local pids=()
 
   if [ "$perf_mon" == "sar" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
-      $DSH "$(get_user_bin_path) $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & #2>&1
+      $DSH "$(get_user_bin_path) $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" &
+      pids+=( $! )
 
       if [ "$(get_extra_node_names)" ] ; then
-        $DSH_EXTRA "$(get_user_bin_path) $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -o $(get_extra_node_folder)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & #2>&1
+        $DSH_EXTRA "$(get_user_bin_path) $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -o $(get_extra_node_folder)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" &
+        pids+=( $! )
       fi
     else
-      $DSH "$(get_user_bin_path) sar -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" & # 2>&1
+      $DSH "$(get_user_bin_path) sar -o $(get_local_bench_path)/sar-\$(hostname).sar $BENCH_PERF_INTERVAL >/dev/null &" &
+      pids+=( $! )
     fi
   elif [ "$perf_mon" == "vmstat" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
       $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $(get_local_bench_path)/vmstat-\$(hostname).log &" &
+      pids+=( $! )
 
       if [ "$(get_extra_node_names)" ] ; then
         $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n $BENCH_PERF_INTERVAL >> $(get_extra_node_folder)/vmstat-\$(hostname).log &" &
+        pids+=( $! )
       fi
     else
       $DSH "vmstat -n $BENCH_PERF_INTERVAL >> $(get_local_bench_path)/vmstat-\$(hostname).log &" &
+      pids+=( $! )
     fi
   # For iostat use PAT's syntax
   elif [ "$perf_mon" == "iostat" ] ; then
     if [ "$clusterType" != "PaaS" ]; then
       $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $(get_local_bench_path)/iostat-\$(hostname).log &" &
+      pids+=( $! )
 
       if [ "$(get_extra_node_names)" ] ; then
         $DSH_EXTRA "$(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $(get_extra_node_folder)/iostat-\$(hostname).log &"  &
+        pids+=( $! )
       fi
     else
       $DSH "iostat -x -k -y -d $BENCH_PERF_INTERVAL | awk -v host=\$(hostname) '(!/^$/){now=strftime(\"%s \");if(/Device:/){print \"HostName\",\"TimeStamp\", \$0} else{ if(\$0 && !/Linux/) print host, now \$0}}; fflush()' >> $(get_local_bench_path)/iostat-\$(hostname).log &" &
+      pids+=( $! )
       #iostat -x -k -d $SAMPLING_INTERVAL
     fi
   # To count Java processes (for PAT export)
@@ -1010,6 +1020,7 @@ do
   sleep $BENCH_PERF_INTERVAL
 done
 ) | awk -v host=\$(hostname) '(!/^\$/){now=strftime(\"%s \");if(\$0 && !/Linux/) if (/MapCount/){print \"HostName\",\"TimeStamp\",\$0} else {print host,now \$0}}; fflush()' > $(get_local_bench_path)/MapRed-\$(hostname).log &" &
+    pids+=( $! )
 
   # To count Java processes (for PAT export)
   elif [ "$perf_mon" == "JavaStat" ] ; then
@@ -1018,6 +1029,7 @@ done
 $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C init | awk -v host=\$(hostname) '(/Time/){\$1=\$2=\"\"; print \"HostName\",\"TimeStamp\", \$0}; fflush()' > $(get_local_bench_path)/JavaStat-\$(hostname).log
 $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $BENCH_PERF_INTERVAL + 4 )) | awk -v cmd='$pidstat_cmd' -v host=\$(hostname) '(!/^\$/ && !/Time/ && !/CPU/){if (\$NF == cmd){now=strftime(\"%s\"); \$1=\"\"; print host, now, \$0}; fflush()}' >> $(get_local_bench_path)/JavaStat-\$(hostname).log &
 " &
+    pids+=( $! )
 
   # iotop, requires sudo and interval only 1 sec supported
   elif [ "$perf_mon" == "iotop" ] ; then
@@ -1025,12 +1037,15 @@ $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $
       if [ "$clusterType" != "PaaS" ]; then
         local iotop_log="$(get_local_bench_path)/iotop-\$(hostname).log"
         $DSH "touch $iotop_log; sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -btoqqk >> $iotop_log &" &
+        pids+=( $! )
 
         if [ "$(get_extra_node_names)" ] ; then
           $DSH_EXTRA "touch $(get_extra_node_folder)/iotop-\$(hostname).log; sudo $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -btoqqk >> $iotop_log &" &
+          pids+=( $! )
         fi
       else
         $DSH "touch $iotop_log; sudo iotop  >> $iotop_log &" &
+        pids+=( $! )
       fi
     else
       logger "WARNING: iotop requires root and sudo is disabled for cluster OR BENCH_PERF_INTERVAL != 1 (set to: $BENCH_PERF_INTERVAL), skipping..."
@@ -1044,8 +1059,10 @@ $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $
     if [ "$clusterType" != "PaaS" ]; then
       local dstat_log="$(get_local_bench_path)/dstat-\$(hostname).log"
       $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv --top-io-adv -n --net-packets  -gimprsy --fs --top-int --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+      pids+=( $! )
     else
       $DSH "dstat -T --cpu --top-cpu-adv -l -d --aio --disk-tps --disk-util --top-bio-adv -n --net-packets  -gimprsy --fs --top-latency -ipc -lock --top-mem --raw --unix --nocolor --noheader --profile --power --proc-count --noheaders  $BENCH_PERF_INTERVAL >> $dstat_log &" &
+      pids+=( $! )
     fi
   # perf
   elif [ "$perf_mon" == "perf" ] ; then
@@ -1058,14 +1075,17 @@ $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $
 
   # cachestat
   elif [ "$perf_mon" == "cachestat" ] ; then
-      $DSH "sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_local_bench_path)/cachestat-\$(hostname).log &" & #2>&1
+      $DSH "sudo $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_local_bench_path)/cachestat-\$(hostname).log &" &
+      pids+=( $! )
 
       if [ "$(get_extra_node_names)" ] ; then
-        $DSH_EXTRA "sudo $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_extra_node_folder)/cachestat-\$(hostname).log &" & #2>&1
+        $DSH_EXTRA "sudo $(get_extra_node_folder)/aplic/${perf_mon}_$PORT_PREFIX -n -t $BENCH_PERF_INTERVAL > $(get_extra_node_folder)/cachestat-\$(hostname).log &" &
+        pids+=( $! )
       fi
   # drop_cache
   elif [ "$perf_mon" == "drop_cache" ] ; then
-      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX $(( $BENCH_PERF_INTERVAL + 9 )) 3 1 > $(get_local_bench_path)/drop_cache-\$(hostname).log &" & #2>&1
+      $DSH "$perf_mon_bench_path/${perf_mon}_$PORT_PREFIX $(( $BENCH_PERF_INTERVAL + 9 )) 3 1 > $(get_local_bench_path)/drop_cache-\$(hostname).log &" &
+      pids+=( $! )
 
       if [ "$(get_extra_node_names)" ] ; then
         : # do nothing
@@ -1074,8 +1094,7 @@ $perf_mon_bench_path/${perf_mon}_$PORT_PREFIX -rudh -p ALL -C $pidstat_cmd $(( $
     die "Specified perf mon $perf_mon not implemented"
   fi
 
-
-  wait #for the bg processes
+  [[ ${#pids[@]} -gt 0 ]] && wait "${pids[@]}"
 
   # BWM not used any more
   #$DSH_C "$bwm -o csv -I bond0,eth0,eth1,eth2,eth3,ib0,ib1 -u bytes -t 1000 >> $(get_local_bench_path)/bwm-\$(hostname).log &"
