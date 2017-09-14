@@ -85,6 +85,8 @@ set hive.stats.autogather=true;
 -- Tez settings
 -- ###########################
 
+set tez.application.tags=##EXPERIMENT_ID##;
+
 set hive.execution.engine=##HIVE_ENGINE##;
 set hive.tez.container.size=##MAPS_MB##;
 set hive.tez.cpu.vcores=-1;
@@ -98,7 +100,6 @@ set hive.server2.tez.sessions.per.default.queue=1;
 set hive.tez.auto.reducer.parallelism=false;
 
 set hive.tez.exec.print.summary=true;
-
 
 set hive.tez.dynamic.partition.pruning=true;
 set hive.tez.dynamic.partition.pruning.max.data.size=104857600;
