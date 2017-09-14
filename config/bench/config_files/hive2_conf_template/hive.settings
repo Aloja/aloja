@@ -85,6 +85,8 @@ set hive.stats.autogather=true;
 -- Tez settings
 -- ###########################
 
+set tez.application.tags=##EXPERIMENT_ID##;
+
 set hive.execution.engine=##HIVE_ENGINE##;
 set hive.tez.container.size=##MAPS_MB##;
 set hive.tez.cpu.vcores=-1;
