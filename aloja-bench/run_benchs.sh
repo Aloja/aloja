@@ -10,6 +10,9 @@
 CONF_DIR="$ALOJA_REPO_PATH/shell/conf" #TODO remove when migrated to use ALOJA_REPO_PATH
 source "$ALOJA_REPO_PATH/shell/common/include_benchmarks.sh"
 
+source "$ALOJA_REPO_PATH/shell/monitor/monitor.sh"
+source "$ALOJA_REPO_PATH/shell/monitor/monitor_yarn.sh"
+
 logger  "INFO: configs loaded, ready to start"
 
 # Validate and initialize run
@@ -47,9 +50,13 @@ start_time=$(date '+%s')
 ########################################################
 logger  "INFO: Starting $BENCH_SUITE benchmark suite"
 
+_monitor_start "$EXPERIMENT_ID" "$JOB_PATH/monitor" "${UPDATE_ES:-1}" _monitor_yarn "$ALOJA_REPO_PATH"
+
 # Benchmark stages
 
 benchmark_suite_run
+
+_monitor_end
 
 #bench suite specifics
 benchmark_suite_save
