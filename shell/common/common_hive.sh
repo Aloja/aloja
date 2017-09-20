@@ -206,7 +206,8 @@ s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
 s,##HIVE_JOINS##,$HIVE_JOINS,g;
 s,##DATABASE_DRIVER##,$database_driver,g;
 s,##DATABASE_DRIVER_NAME##,$database_driver_name,g;
-s,##URL##,$url,g
+s,##URL##,$url,g;
+s{##EXPERIMENT_ID##}{\Q$EXPERIMENT_ID\E}g;
 EOF
 }
 
