@@ -8,6 +8,7 @@ declare -r _monitor_test_index=tests
 declare -r _monitor_mapping=aloja
 
 declare -a _monitor_func
+declare -a _monitor_experiment_info_func=()
 
 _monitor_start () {
   _monitor_experiment_id=$1
@@ -17,11 +18,38 @@ _monitor_start () {
 
   mkdir -p "$_monitor_log_dir"
 
+  # update/create experiment info
+  if [ ${#_monitor_experiment_info_func[@]} -gt 0 ]; then
+    _monitor_create_experiment
+  fi
+
   _monitor_update_experiment "running"
 
   # start background task
   _monitor_invoke &
   _monitor_pid=$!
+}
+
+_monitor_set_experiment_info_func(){
+  _monitor_experiment_info_func=( "$@" )
+}
+
+_monitor_create_experiment(){
+
+  local url="${_monitor_eshost}/${_monitor_experiment_index}/${_monitor_mapping}/${_monitor_experiment_id}/_update?pretty"
+  local inner_json full_json
+
+  inner_json=$( "${_monitor_experiment_info_func[@]}" )
+
+  full_json='{
+  "doc" : "'"$inner_json"'" },
+  "upsert": "'"$inner_json"'" }
+}
+'
+
+  printf '%s\n' "$full_json" > "$_monitor_log_dir/experiment_info.json"
+  [[ $_monitor_update_es -gt 0 ]] && curl -sS -X POST "$url" -H 'Content-Type: application/json' -d "$full_json" >> "$_monitor_log_dir/experiment_info.log"
+
 }
 
 _monitor_set_test_id () {

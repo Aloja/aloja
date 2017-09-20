@@ -1,0 +1,170 @@
+{
+  "degreeOfParallelism": 100,
+  "endTime": "2017-08-17T09:32:19.815358+00:00",
+  "errorMessage": null,
+  "jobId": "868f339e-832e-11e7-9231-001e67436e64",
+  "logFilePatterns": null,
+  "logFolder": null,
+  "name": "BIG_BENCH_1502962135_1000_100_q06_stream0",
+  "priority": 1000,
+  "properties": {
+    "algebraFilePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/algebra.xml",
+    "compileMode": "Semantic",
+    "debugData": null,
+    "diagnostics": null,
+    "resources": [
+      {
+        "name": "__ScopeCodeGen__.dll",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGen__.dll",
+        "type": "VertexResource"
+      },
+      {
+        "name": "__ScopeCodeGen__.pdb",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGen__.pdb",
+        "type": "VertexResource"
+      },
+      {
+        "name": "__ScopeCodeGenEngine__.dll",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGenEngine__.dll",
+        "type": "VertexResource"
+      },
+      {
+        "name": "__ScopeCodeGenEngine__.pdb",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGenEngine__.pdb",
+        "type": "VertexResource"
+      },
+      {
+        "name": "PartitionLastRows.xml",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/PartitionLastRows.xml",
+        "type": "VertexResource"
+      },
+      {
+        "name": "ScopeVertexDef.xml",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/ScopeVertexDef.xml",
+        "type": "VertexResource"
+      },
+      {
+        "name": "__SStreamInfo__.xml",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__SStreamInfo__.xml",
+        "type": "JobManagerResource"
+      },
+      {
+        "name": "__ScopeCodeGen__.dll.cs",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGen__.dll.cs",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__ScopeCodeGenEngine__.dll.cpp",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGenEngine__.dll.cpp",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__ScopeCodeGenCompileOutput__.txt",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGenCompileOutput__.txt",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__ScopeCodeGenCompileOptions__.txt",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGenCompileOptions__.txt",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__ScopeCodeGenEngine__.cppresources",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeCodeGenEngine__.cppresources",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__ScopeDiagnosisInfo__.xml",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeDiagnosisInfo__.xml",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__SystemInternalInfo__.xml",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__SystemInternalInfo__.xml",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__AST.json",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__AST.json",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "query.abr",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/query.abr",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "Profile",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/profile",
+        "type": "StatisticsResource"
+      },
+      {
+        "name": "__ScopeRuntimeStatistics__.xml",
+        "resourcePath": "adl://e2etestprod01.azuredatalakestore.net/system/jobservice/jobs/Usql/2017/08/17/09/29/868f339e-832e-11e7-9231-001e67436e64/__ScopeRuntimeStatistics__.xml",
+        "type": "StatisticsResource"
+      }
+    ],
+    "rootProcessNodeId": "4a375b9d-d042-4e65-ab0c-b7b42d9a75e8",
+    "runtimeVersion": "kobo_vnext_signed_5404076",
+    "script": "SET @@OptFlags = \"TF(16)\";\n\n\nUSE DATABASE aloja_bigbench_1000;\n\nDECLARE @q06_LIMIT int = 100;\n// web_sales and store_sales date\nDECLARE @q06_YEAR int = 2001;\n\n@store_sales_rowset =\nSELECT ss_customer_sk,\n       (long)ss_sold_date_sk AS ss_sold_date_sk,\n       ss_ext_list_price,\n       ss_ext_wholesale_cost,\n       ss_ext_discount_amt,\n       ss_ext_sales_price\nFROM store_sales;\n\n// customer store sales\n@TEMP_TABLE1 =\nSELECT (long)ss_customer_sk AS customer_sk,\n       SUM( d_year == @q06_YEAR     ? (((ss_ext_list_price - ss_ext_wholesale_cost - ss_ext_discount_amt) + ss_ext_sales_price)/2) : 0 ) AS first_year_total,\n       SUM( d_year == @q06_YEAR + 1 ? (((ss_ext_list_price - ss_ext_wholesale_cost - ss_ext_discount_amt) + ss_ext_sales_price)/2) : 0 ) AS second_year_total\nFROM  @store_sales_rowset\nINNER JOIN date_dim ON ss_sold_date_sk == d_date_sk\nWHERE d_year BETWEEN @q06_YEAR AND @q06_YEAR + 1\nGROUP BY ss_customer_sk\nHAVING SUM( d_year == @q06_YEAR     ? (((ss_ext_list_price-ss_ext_wholesale_cost-ss_ext_discount_amt)+ss_ext_sales_price)/2) : 0 ) > 0;    // required to avoid division by 0, because later we will divide by this value\n\n@web_sales_rowset =\nSELECT ws_bill_customer_sk,\n       (long)ws_sold_date_sk AS ws_sold_date_sk,\n       ws_ext_list_price,\n       ws_ext_wholesale_cost,\n       ws_ext_discount_amt,\n       ws_ext_sales_price\nFROM web_sales;\n\n// customer web sales\n@TEMP_TABLE2 =\n//SELECT (long)ws_bill_customer_sk AS customer_sk ,\nSELECT ws_bill_customer_sk.Value AS customer_sk ,\n       SUM( d_year == @q06_YEAR ?     (((ws_ext_list_price - ws_ext_wholesale_cost - ws_ext_discount_amt) + ws_ext_sales_price)/2) : 0 ) AS first_year_total,\n       SUM( d_year == @q06_YEAR + 1 ? (((ws_ext_list_price - ws_ext_wholesale_cost - ws_ext_discount_amt) + ws_ext_sales_price)/2) : 0 ) AS second_year_total\nFROM @web_sales_rowset\nINNER JOIN date_dim ON ws_sold_date_sk == d_date_sk\nWHERE d_year BETWEEN @q06_YEAR AND @q06_YEAR + 1\nGROUP BY ws_bill_customer_sk\nHAVING SUM( d_year == @q06_YEAR ?     (((ws_ext_list_price-ws_ext_wholesale_cost-ws_ext_discount_amt)+ws_ext_sales_price)/2) : 0 ) > 0;  // required to avoid division by 0, because later we will divide by this value\n\n\n@rowset =\nSELECT\n      (web.second_year_total / web.first_year_total) AS web_sales_increase_ratio,\n      c_customer_sk,\n      c_first_name,\n      c_last_name,\n      c_preferred_cust_flag,\n      c_birth_country,\n      c_login,\n      c_email_address\nFROM @TEMP_TABLE1 AS store\n     INNER JOIN @TEMP_TABLE2 AS web\n     ON store.customer_sk == web.customer_sk\n     INNER JOIN customer AS c\n     ON web.customer_sk == c_customer_sk\n// if customer has sales in first year for both store and websales, select him only if web second_year_total/first_year_total ratio is bigger then his store second_year_total/first_year_total ratio.\nWHERE (web.second_year_total / web.first_year_total)  >  (store.second_year_total / store.first_year_total)\nORDER BY\n  web_sales_increase_ratio DESC,\n  c_customer_sk,\n  c_first_name,\n  c_last_name,\n  c_preferred_cust_flag,\n  c_birth_country,\n  c_login\nFETCH @q06_LIMIT;\n\nOUTPUT @rowset TO \"/user/pristine/benchmarks/bigbench/queryResults/q06_ADLA_power_test_1502962135_1000_100_stream0_result/q06_result.csv\" USING Outputters.Text(delimiter: '|', quoting: false);\n",
+    "statistics": null,
+    "totalCompilationTime": "0:00:30.250374",
+    "totalPauseTime": null,
+    "totalQueuedTime": "0:00:00.015598",
+    "totalRunningTime": "0:02:29.757535",
+    "type": "USql",
+    "yarnApplicationId": "811683",
+    "yarnApplicationTimeStamp": 1502476114035
+  },
+  "related": null,
+  "result": "Succeeded",
+  "startTime": "2017-08-17T09:29:50.057823+00:00",
+  "state": "Ended",
+  "stateAuditRecords": [
+    {
+      "details": "userName:;submitMachine:N/A",
+      "newState": "New",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:29:13.991243+00:00"
+    },
+    {
+      "details": "CcsAttempts:1;Status:Dispatched",
+      "newState": "Compiling",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:29:14.210025+00:00"
+    },
+    {
+      "details": null,
+      "newState": "Queued",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:29:44.460399+00:00"
+    },
+    {
+      "details": "Detail:Dispatching job to cluster.;rootProcessId:4a375b9d-d042-4e65-ab0c-b7b42d9a75e8",
+      "newState": "Scheduling",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:29:44.475997+00:00"
+    },
+    {
+      "details": "runtimeVersion:kobo_vnext_signed_5404076",
+      "newState": "Starting",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:29:44.491603+00:00"
+    },
+    {
+      "details": "runAttempt:1",
+      "newState": "Running",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:29:50.057823+00:00"
+    },
+    {
+      "details": "result:Succeeded",
+      "newState": "Ended",
+      "requestedByUser": null,
+      "timeStamp": "2017-08-17T09:32:19.815358+00:00"
+    }
+  ],
+  "submitTime": "2017-08-17T09:29:13.991243+00:00",
+  "submitter": "nicolas.poggi@bsc.es",
+  "type": "USql"
+}
