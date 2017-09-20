@@ -411,6 +411,14 @@ cp $HADOOP_CONF_DIR/* $JOB_PATH/conf_$node/" &
  fi
 }
 
+
+init_hadoop() {
+  initialize_hadoop_vars
+  prepare_hadoop_config "$NET" "$DISK" "$BENCH_SUITE"
+  use_hadoop=1 # Control variable, useful only in certain benchmarks
+  start_hadoop
+}
+
 # Returns if Hadoop v1 or v2
 # $1 the hadoop string (optional, if not uses $HADOOP_VERSION)
 get_hadoop_major_version() {

@@ -1,6 +1,5 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_java.sh"
 set_java_requires
-
 # Sets the required files to download/copy
 set_derby_requires() {
   [ ! "$DERBY_VERSION" ] && die "No DERBY_VERSION specified"
@@ -115,6 +114,13 @@ initialize_derby_vars() {
     DERBY_HOME="$(get_local_apps_path)/${DERBY_VERSION}"
     DATABASE_NAME="$database_name"
   fi
+}
+
+init_derby() {
+  initialize_derby_vars "Aloja_DB"
+  logger "WARNING: Using Derby DB in client/server mode"
+  USE_EXTERNAL_DATABASE="true"
+  start_derby
 }
 
 clean_derby() {

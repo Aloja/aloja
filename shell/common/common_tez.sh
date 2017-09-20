@@ -38,6 +38,12 @@ initialize_tez_vars() {
   fi
 }
 
+init_tez() {
+  set_tez_requires
+  initialize_tez_vars
+  prepare_tez_config
+}
+
 # Sets the substitution values for the tez config
 get_tez_substitutions() {
 
