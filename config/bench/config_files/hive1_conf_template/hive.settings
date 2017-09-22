@@ -37,7 +37,6 @@ set hive.optimize.index.filter=true;
 -- set hive.optimize.mapjoin.mapreduce=true;
 set hive.optimize.reducededuplication.min.reducer=4;
 set hive.optimize.reducededuplication=true;
-set hive.orc.splits.include.file.footer=false;
 set hive.security.authorization.enabled=false;
 set hive.security.metastore.authorization.manager=org.apache.hadoop.hive.ql.security.authorization.StorageBasedAuthorizationProvider;
 -- set hive.semantic.analyzer.factory.impl=org.apache.hivealog.cli.HCatSemanticAnalyzerFactory;
@@ -59,6 +58,16 @@ set hive.stats.fetch.column.stats=true;
 set hive.stats.fetch.partition.stats=true;
 
 set hive.support.sql11.reserved.keywords=false;
+
+-- ###########################
+-- FileFormat settings.
+-- ###########################
+
+set hive.orc.splits.include.file.footer=false;
+set hive.exec.orc.default.compress=SNAPPY;
+set parquet.compression=SNAPPY;
+set parquet.block.size=256000000;
+set dfs.blocksize=256000000;
 
 -- ###########################
 -- optimizations for joins.

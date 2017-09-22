@@ -4,7 +4,7 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_BigBench.sh"
 set_BigBench_requires
 
 if [ "$BENCH_LIST" ] ; then
-    user_suplied_bench_list="true"
+    user_supplied_bench_list="true"
 fi
 
 BENCH_ENABLED="$(seq -f "%g" -s " "  1 30) throughput"
@@ -13,7 +13,7 @@ BENCH_EXTRA="throughput"
 # Check supplied benchmarks
 check_bench_list
 
-if [ ! $user_suplied_bench_list ]; then
+if [ ! "$user_supplied_bench_list" ]; then
     BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_EXTRA")"
 fi
 
@@ -42,7 +42,7 @@ benchmark_suite_config() {
   if [ "$HIVE_ENGINE" == "tez" ]; then
     initialize_tez_vars
     prepare_tez_config
-fi
+  fi
   initialize_BigBench_vars
   prepare_BigBench
 }
