@@ -17,6 +17,10 @@ get_bench_suites() {
   echo -e "${defined_benchs:0:(-1)}" #remove trailing space
 }
 
+validate_bench_data_size() {
+  [[ "$1" =~ ^[0-9]+(\.[0-9]+)?([MGT]B)?$ ]]
+}
+
 # Enabled benchmarks
 [ ! "$BENCH_SUITES" ] && BENCH_SUITES="$(get_bench_suites)"
 
@@ -52,8 +56,9 @@ $0 [-C clusterName <uses aloja_cluster.conf if present or not specified>]
 [-t execution type (e.g: default, experimental)]
 [-e extrae (instrument execution)]
 [-E experiment ID (for use with dashboard)]
+[-B benchmark data size <bytes|[0-9]+MB|[0-9]+GB|[0-9]+TB>
 
-${cyan}example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b HiBench2-min -I 4096 -l wordcount -c 1
+${cyan}example: $0 -C vagrant-99 -n ETH -d HDD -r 1 -m 12 -i 10 -p 3 -b HiBench2-min -B "100MB" -I 4096 -l wordcount -c 1
 $reset"
   exit 1;
 }
@@ -63,7 +68,7 @@ get_options() {
 
   OPTIND=1 #A POSIX variable, reset in case getopts has been used previously in the shell.
 
-  while getopts "h?C:b:r:n:d:m:i:p:l:I:c:z:s:D:E:tNS" opt; do
+  while getopts "h?C:b:r:n:d:m:i:p:l:I:c:z:s:D:E:B:tNS" opt; do
       case "$opt" in
       h|\?)
         usage
@@ -153,6 +158,15 @@ get_options() {
         ;;
       E)
         EXPERIMENT_ID=$OPTARG
+        ;;
+      B)
+        if validate_bench_data_size "$OPTARG"; then
+          set_bench_data_size_bytes "$OPTARG"
+        else
+          logger "Invalid data size $BENCH_DATA_SIZE"
+          usage
+        fi
+        ;;
       esac
   done
 
@@ -375,6 +389,37 @@ get_initial_disk() {
     local dir="${BENCH_DISKS["${disks_type}1"]}"
   fi
   echo -e "$dir"
+}
+
+get_benchmark_data_size_mb() {
+  echo $(( BENCH_DATA_SIZE / 1000000 ))
+}
+
+get_benchmark_data_size_gb() {
+  echo $(( BENCH_DATA_SIZE / 1000000000 ))
+}
+
+get_benchmark_data_size_tb() {
+  echo $(( BENCH_DATA_SIZE / 1000000000000 ))
+}
+
+set_bench_data_size_bytes() {
+    BENCH_DATA_SIZE=$(awk '
+    BEGIN{
+      s["TB"]=1000000000000
+      s["GB"]=1000000000
+      s["MB"]=1000000
+    }
+    {
+      multiplier = 1
+      if (/[MGT]B$/){
+        suffix = substr($0, length($0) - 1, 2)
+        multiplier = s[suffix]
+        sub(/..$/, "")
+      }
+      print int($0 * multiplier)
+    }
+  ' <<< "$1")
 }
 
 # Check if the supplied list of variables are not null
