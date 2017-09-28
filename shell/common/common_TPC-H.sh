@@ -97,42 +97,40 @@ tpc-h_build(){
 
 tpc-h_hadoop_datagen() {
   local bench_name="${FUNCNAME[0]}"
+  local data_size_gb=$(get_benchmark_data_size_gb)
+  local dst_dir="$TPCH_HDFS_DIR/$data_size_gb"
   logger "Running TPC-H data generator M/R job"
-  hadoop_delete_path "$bench_name" "$TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)"
-  execute_hadoop_new "$bench_name" "jar target/*.jar $(get_hadoop_job_config) -d $TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)/ -s $(get_benchmark_data_size_gb)" "time" "$D2F_local_dir/tpch/tpch-gen"
+  hadoop_delete_path "$bench_name" "$dst_dir"
+  execute_hadoop_new "$bench_name" "jar target/*.jar \"$(get_hadoop_job_config)\" -d \"$dst_dir\"/ -s \"$data_size_gb\"" "time" "$D2F_local_dir/tpch/tpch-gen"
 }
 
 # Generate the data using the command line version (non-distributed)
 # $1 scale factor
 tpc-h_cmd_datagen() {
   local scale_factor="$1"
-  local src_dir="$D2F_local_dir/tpch/tpch-gen/target/tools/"
+  local src_dir="$D2F_local_dir/tpch/tpch-gen/target/tools"
   local dst_dir="$TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)"
   local bench_name="${FUNCNAME[0]}"
   logger "Running TPC-H cmd line data generator for scale $scale_factor"
 
   # Generate the data
-  time_cmd_master "cd \"$D2F_local_dir/tpch/tpch-gen/target/tools\" ; \"$D2F_local_dir/tpch/tpch-gen/target/tools/dbgen\" -b \"$D2F_local_dir/tpch/tpch-gen/target/tools/dists.dss\" -vf -s \"$scale_factor\""
+  time_cmd_master "cd \"$src_dir\"; ./dbgen -b dists.dss -vf -s \"$scale_factor\""
 
   # Move the files to HDFS
-  hadoop_delete_path "$bench_name" "\"$TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)\""
-  execute_hadoop_new "$bench_name" "fs -mkdir -p \"$TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)\"/{customer,lineitem,nation,orders,part,partsupp,region,supplier}"
+  hadoop_delete_path "$bench_name" "$dst_dir"
+  local tables=( customer lineitem nation orders part partsupp region supplier )
+  execute_hadoop_new "$bench_name" "fs -mkdir -p $(printf '%q ' "${tables[@]/#/$dst_dir\/}")"
 
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/customer.tbl\" \"$dst_dir/customer/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/lineitem.tbl\" \"$dst_dir/lineitem/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/nation.tbl\" \"$dst_dir/nation/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/orders.tbl\" \"$dst_dir/orders/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/part.tbl\" \"$dst_dir/part/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/partsupp.tbl\" \"$dst_dir/partsupp/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/region.tbl\" \"$dst_dir/region/\""
-  execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/supplier.tbl\" \"$dst_dir/supplier/\""
+  for table in "${tables[@]}"; do
+    execute_hadoop_new "$bench_name" "fs -moveFromLocal \"$src_dir/$table.tbl\" \"$dst_dir/$table/\""
+  done
 }
 
 tpc-h_load-text(){
   local bench_name="${FUNCNAME[0]}"
 
   logger "INFO: Loading text data into external tables"
-  execute_hive "$bench_name" "-f $D2F_local_dir/tpch/ddl/alltables.sql -d DB=tpch_text_$(get_benchmark_data_size_gb) -d LOCATION=$TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)" "time"
+  execute_hive "$bench_name" "-f \"$D2F_local_dir/tpch/ddl/alltables.sql\" -d DB=tpch_text_$(get_benchmark_data_size_gb) -d LOCATION=\"$TPCH_HDFS_DIR/$(get_benchmark_data_size_gb)\"" "time"
 }
 
 tpc-h_delete-text(){
@@ -160,10 +158,11 @@ tpc-h_load-optimize() {
   cat $tables_files > "$all_path"
 
 
-  local optimize_cmd="-f $all_path \
-  -d DB=$TPCH_DB_NAME \
-  -d SOURCE=tpch_text_$(get_benchmark_data_size_gb) -d BUCKETS=$BUCKETS \
-  -d FILE=$BENCH_FILE_FORMAT"
+  local optimize_cmd="-f \"$all_path\" \
+  -d DB=\"$TPCH_DB_NAME\" \
+  -d SOURCE=\"tpch_text_$(get_benchmark_data_size_gb)\" \
+  -d BUCKETS=\"$BUCKETS\" \
+  -d FILE=\"$BENCH_FILE_FORMAT\""
 
   logger "INFO: Optimizing tables: $TABLES using $BUCKETS buckets."
   execute_hive "$bench_name" "$optimize_cmd" "time"
@@ -176,7 +175,7 @@ tpc-h_validate_load() {
   local bench_name="${FUNCNAME[0]}"
 
   logger "INFO: attempting to validate load and optimize to DB: $TPCH_DB_NAME"
-  local db_stats="$(execute_hadoop_new "$bench_name" "fs -du /apps/hive/warehouse/tpch_orc_$(get_benchmark_data_size_gb).db" 2>1)"
+  local db_stats="$(execute_hadoop_new "$bench_name" "fs -du \"/apps/hive/warehouse/tpch_orc_$(get_benchmark_data_size_gb).db\"" 2>&1)"
 
   logger "INFO: DB stats = $db_stats";
   logger "INFO: num tables = $(echo -e "$db_stats" |wc -l)";
