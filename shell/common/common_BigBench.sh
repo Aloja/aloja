@@ -28,10 +28,9 @@ fi
 
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench"
 
-if [ "$BENCH_SCALE_FACTOR" == 0 ] ; then #Should only happen when BENCH_SCALE_FACTOR is not set and BENCH_DATA_SIZE < 1GB
-  logger "WARNING: BigBench SCALE_FACTOR is set below minimum value, setting BENCH_SCALE_FACTOR to 1 (1 GB) and recalculating BENCH_DATA_SIZE"
-  BENCH_SCALE_FACTOR=1
-  BENCH_DATA_SIZE="$((BENCH_SCALE_FACTOR * 1000000000 ))" #in bytes
+if [ "$(get_benchmark_data_size_gb)" -lt 1 ] ; then #Should only happen when BENCH_DATA_SIZE < 1GB
+  logger "WARNING: BigBench data size is set below minimum value, setting data size to 1GB"
+  BENCH_DATA_SIZE=1000000000
 fi
 
 # Sets the required files to download/copy
@@ -288,7 +287,7 @@ s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##SPARK##,$SPARK_HOME/bin/spark-sql,g;
 s,##SPARK_SUBMIT##,$SPARK_HOME/bin/spark-submit,g;
 s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
-s,##SCALE##,$BENCH_SCALE_FACTOR,g;
+s,##SCALE##,$(get_benchmark_data_size_gb),g;
 s,##SPARK_PARAMS##,$spark_params,g;
 s,##BB_HDFS_ABSPATH##,$BB_HDFS_ABSPATH,g;
 s,##ENGINE##,$ENGINE,g;
@@ -366,15 +365,10 @@ save_BigBench() {
   fi
 
   # Copy to the query results to the job folder
-  if [[ "BENCH_SCALE_FACTOR" == "1" ]]; then
+  if [[ "$(get_benchmark_data_size_gb)" -eq "1" ]]; then
     log_INFO "Saving HDFS query results into bench folder"
     execute_hadoop_new "$bench_name" "fs -copyToLocal $HDFS_DATA_ABSOLUTE_PATH/query_results/* $JOB_PATH/$bench_name_num/BigBench_results"
   else
-    # If the scale factor is >1, we want to truncate the results as the are quite large.  And only 1GB validates
-    #  if (( BENCH_SCALE_FACTOR > 1 )); then
-    #    log_INFO "Truncating results to 10K lines for scale factor $BENCH_SCALE_FACTOR"
-    #    execute_master "find $JOB_PATH/$bench_name_num/BigBench_results -type f -exec sed -i '10001,$ d'"
-    #  fi
     log_WARN "Not saving BigBench results into folder as they are over 1GB"
   fi
 

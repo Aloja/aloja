@@ -40,12 +40,6 @@ BENCH_REQUIRED_FILES["$NATIVE_SPARK_FOLDER_NAME"]="https://github.com/rradowitz/
 # Local
 NATIVE_SPARK_LOCAL_DIR="$(get_local_apps_path)/$NATIVE_SPARK_FOLDER_NAME"
 
-# Set scaleFactor for data input dir
-SCALE_FACTOR="$TPCH_SCALE_FACTOR"
-if [[ "$TPCH_USE_LOCAL_FACTOR" -gt 0 ]] ; then
-  SCALE_FACTOR="$TPCH_USE_LOCAL_FACTOR"
-fi
-
 if [[ "$NATIVE_FORMAT" == "text" ]]; then
   NATIVE_INPUT_DIR="/tmp/tpch-generate/$SCALE_FACTOR"
   logger "INFO: Setting INPUT_DIR to $NATIVE_INPUT_DIR"
