@@ -1,6 +1,7 @@
 # TPC-H benchmark from Todor Ivanov https://github.com/t-ivanov/D2F-Bench/
 # Benchmark to test Spark installation and configurations
 SPARK_VERSION=$SPARK2_VERSION
+HIVE_VERSION=$HIVE2_VERSION
 use_spark="true"
 
 # Parameter native type text, orc, parquet, json; default: text
@@ -41,13 +42,13 @@ BENCH_REQUIRED_FILES["$NATIVE_SPARK_FOLDER_NAME"]="https://github.com/rradowitz/
 NATIVE_SPARK_LOCAL_DIR="$(get_local_apps_path)/$NATIVE_SPARK_FOLDER_NAME"
 
 if [[ "$NATIVE_FORMAT" == "text" ]]; then
-  NATIVE_INPUT_DIR="/tmp/tpch-generate/$SCALE_FACTOR"
+  NATIVE_INPUT_DIR="/tmp/tpch-generate/$(get_benchmark_data_size_gb)"
   logger "INFO: Setting INPUT_DIR to $NATIVE_INPUT_DIR"
 elif [[ "$NATIVE_FORMAT" == "parquet" ]] || [[ "$NATIVE_FORMAT" == "orc" ]]; then
-  NATIVE_INPUT_DIR="/apps/hive/warehouse/tpch_${NATIVE_FORMAT}_${SCALE_FACTOR}.db"
+  NATIVE_INPUT_DIR="/apps/hive/warehouse/tpch_${NATIVE_FORMAT}_$(get_benchmark_data_size_gb).db"
   logger "INFO: Setting INPUT_DIR to $NATIVE_INPUT_DIR"
 elif [[ "$NATIVE_FORMAT" == "tbl" ]]; then
-  NATIVE_DB="tpch_orc_${SCALE_FACTOR}"
+  NATIVE_DB="tpch_orc_$(get_benchmark_data_size_gb)"
   logger "INFO: Setting INPUT_DIR to read from HIVE table"
 else
   logger "WARN: NO INPUT_DIR SET"
@@ -107,12 +108,12 @@ execute_tpchquery_spark() {
   local cmd=("--class" "main.scala.TpchQuery")
   if [[ "$NATIVE_FORMAT" == "text" ]]; then
     cmd+=("$NATIVE_SPARK_LOCAL_DIR/spark-tpc-h-queries_2.11-1.0-txt.jar")
-    cmd+=("/tmp/tpch-generate/$SCALE_FACTOR")
+    cmd+=("/tmp/tpch-generate/$(get_benchmark_data_size_gb)")
   elif [[ "$NATIVE_FORMAT" == "parquet" ]] || [[ "$NATIVE_FORMAT" == "orc" ]] || [[ "$NATIVE_FORMAT" == "json" ]]; then
     cmd+=("$NATIVE_SPARK_LOCAL_DIR/spark-tpc-h-queries_2.11-1.0-orc.jar" )
-    cmd+=("/apps/hive/warehouse/tpch_${NATIVE_FORMAT}_${SCALE_FACTOR}.db")
+    cmd+=("/apps/hive/warehouse/tpch_${NATIVE_FORMAT}_$(get_benchmark_data_size_gb).db")
   elif [[ "$NATIVE_FORMAT" == "tbl" ]]; then
-    NATIVE_DB="tpch_orc_${SCALE_FACTOR}"
+    NATIVE_DB="tpch_orc_$(get_benchmark_data_size_gb)"
   fi
 
   cmd+=("$NATIVE_OUTPUT_DIR")

@@ -49,7 +49,7 @@ benchmark_suite_config() {
   if [[ ! "$NATIVE_FORMAT" == "text" ]] || [[ ! "$BENCH_SUITE" = *"native-spark"* ]]; then
     initialize_hive_vars
     prepare_hive_config "$HIVE_SETTINGS_FILE" "$HIVE_SETTINGS_FILE_PATH"
-      if [["$BB_SERVER_DERBY" == "true" ]]; then
+      if [[ "$BB_SERVER_DERBY" == "true" ]]; then
         logger "WARNING: Using Derby DB in client/server mode"
         USE_EXTERNAL_DATABASE="true"
         initialize_derby_vars "TPCH_DB"

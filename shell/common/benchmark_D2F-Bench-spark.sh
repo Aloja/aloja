@@ -1,6 +1,7 @@
 # TPC-H benchmark from Todor Ivanov https://github.com/t-ivanov/D2F-Bench/
 # Benchmark to test Spark installation and configurations
 SPARK_VERSION=$SPARK2_VERSION
+HIVE_VERSION=$HIVE2_VERSION
 use_spark="true"
 
 source_file "$ALOJA_REPO_PATH/shell/common/common_TPC-H.sh"
