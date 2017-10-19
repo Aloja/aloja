@@ -27,6 +27,7 @@ if [ "$BB_SERVER_DERBY" == "true" ]; then
 fi
 
 BIG_BENCH_FOLDER="Big-Data-Benchmark-for-Big-Bench"
+ELASTICITY_DRIVER_FOLDER="alojabbdriver"
 
 if [ "$(get_benchmark_data_size_gb)" -lt 1 ] ; then #Should only happen when BENCH_DATA_SIZE < 1GB
   logger "WARNING: BigBench data size is set below minimum value, setting data size to 1GB"
@@ -40,6 +41,7 @@ set_BigBench_requires() {
   MAHOUT_FOLDER="apache-mahout-distribution-${MAHOUT_VERSION}"
 
   BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="http://aloja.bsc.es/public/aplic2/tarballs/Big-Data-Benchmark-for-Big-Bench.tar.gz"
+  BENCH_REQUIRED_FILES["$ELASTICITY_DRIVER_FOLDER"]="http://aloja.bsc.es/public/aplic2/tarballs/alojabbdriver.tar.gz"
   #BENCH_REQUIRED_FILES["$BIG_BENCH_FOLDER"]="https://github.com/Aloja/Big-Data-Benchmark-for-Big-Bench_OLD/archive/master.zip" #Old BB version
   BENCH_REQUIRED_FILES["$MAHOUT_FOLDER"]="https://archive.apache.org/dist/mahout/$MAHOUT_VERSION/apache-mahout-distribution-${MAHOUT_VERSION}.tar.gz"
 

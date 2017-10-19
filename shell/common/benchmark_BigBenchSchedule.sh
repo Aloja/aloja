@@ -8,7 +8,8 @@ set_BigBench_requires
 workloadFile="$ALOJA_REPO_PATH/config/schedule/max8queries.txt"
 scheduleFile="$ALOJA_REPO_PATH/config/schedule/schedule.txt"
 logDir="$ALOJA_REPO_PATH/config/schedule/"
-driverJar="$ALOJA_REPO_PATH/config/schedule/alojabbdriver.jar"
+#driverJar="$ALOJA_REPO_PATH/config/schedule/alojabbdriver.jar"
+driverJar="$(get_local_apps_path)/${ELASTICITY_DRIVER_FOLDER}/alojabbdriver.jar"
 mainExportsFile="$ALOJA_REPO_PATH/config/schedule/mainExports.sh"
 
 if [ "$BENCH_LIST" ] ; then
@@ -121,7 +122,7 @@ benchmark_suite_run() {
 				# ${11} Queries degree of parallelism table file (null to use default)
 				# ${12} time (internal to aloja)
 				# ${13} enable void batches
-    			execute_BigBench_schedule "$workloadFile" "$scheduleFile" "$logDir" "1.0" "2345" "5" "28" "60" "false" "28" "null" "time" "false"
+    			execute_BigBench_schedule "$workloadFile" "$scheduleFile" "$logDir" "1.0" "2345" "5" "4" "60" "false" "4" "null" "time" "false"
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
