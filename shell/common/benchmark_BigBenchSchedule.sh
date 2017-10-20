@@ -6,8 +6,9 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_BigBenchSchedule.sh"
 set_BigBench_requires
 
 workloadFile="$ALOJA_REPO_PATH/config/schedule/max8queries.txt"
-scheduleFile="$ALOJA_REPO_PATH/config/schedule/schedule.txt"
-logDir="$ALOJA_REPO_PATH/config/schedule/"
+#logDir="$ALOJA_REPO_PATH/config/schedule/"
+logDir="$(get_local_bench_path)/BigBench_logs/"
+scheduleFile="$logDir/schedule.txt"
 #driverJar="$ALOJA_REPO_PATH/config/schedule/alojabbdriver.jar"
 driverJar="$(get_local_apps_path)/${ELASTICITY_DRIVER_FOLDER}/alojabbdriver.jar"
 mainExportsFile="$ALOJA_REPO_PATH/config/schedule/mainExports.sh"
