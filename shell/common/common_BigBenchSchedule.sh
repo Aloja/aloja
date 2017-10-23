@@ -26,6 +26,22 @@ get_BigBench_exports_query() {
   echo -e "$to_export\n"
 }
 
+get_BigBenchElasticity_substitutions() {
+  #TODO spacing when a @ is found
+    cat <<EOF
+s,##ELASTICITY_WORKLOAD_FILE##,$ELASTICITY_WORKLOAD_FILE,g
+EOF
+}
+
+prepare_BigBenchElasticity() {
+ #Assumes prepare_BigBench has been called. 
+ logger "INFO: Preparing BigBenchSchedule"
+  # Get the values
+  subs=$(get_BigBenchElasticity_substitutions)
+  logger "INFO: Making substitutions"
+  $DSH "/usr/bin/perl -i -pe \"$subs\" $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf"
+}
+
 # $1 Supplied workload file
 # $2 Schedule file to be generated
 # $3 Log directory

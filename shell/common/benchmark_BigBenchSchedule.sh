@@ -6,8 +6,8 @@ source_file "$ALOJA_REPO_PATH/shell/common/common_BigBenchSchedule.sh"
 set_BigBench_requires
 
 #workloadFile="$ALOJA_REPO_PATH/config/schedule/max8queries.txt"
-workloadFile="$(get_local_configs_path)/BigBench_conf_template/elasticity/max8queries.txt"
-logDir="$(get_local_bench_path)/BigBench_logs/"
+workloadFileDir="$(get_local_configs_path)/BigBench_conf_template/elasticity"
+logDir="$(get_local_bench_path)/BigBench_logs"
 scheduleFile="$logDir/schedule.txt"
 driverJar="$(get_local_apps_path)/${ELASTICITY_DRIVER_FOLDER}/alojabbdriver.jar"
 mainExportsFile="$logDir/mainExports.sh"
@@ -62,6 +62,7 @@ benchmark_suite_config() {
 fi
   initialize_BigBench_vars
   prepare_BigBench
+prepare_BigBenchElasticity
 }
 
 benchmark_suite_cleanup() {
@@ -109,7 +110,12 @@ benchmark_suite_run() {
       for query in $BENCH_LIST ; do
         # for scale_factor in $BB_SCALE_FACTORS ; do
             if [ $query == "schedule" ] ; then
-            	# $1 Supplied workload file
+            	#Export the substitutions
+				logger "Exporting the elasticity substitutions"
+            	cat $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf
+            	cat $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf > $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.sh
+            	source $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.sh
+				# $1 Supplied workload file
 				# $2 Schedule file to be generated
 				# $3 Log directory
 				# $4 Batch multiplier
@@ -122,7 +128,7 @@ benchmark_suite_run() {
 				# ${11} Queries degree of parallelism table file (null to use default)
 				# ${12} time (internal to aloja)
 				# ${13} enable void batches
-    			execute_BigBench_schedule "$workloadFile" "$scheduleFile" "$logDir" "1.0" "2345" "5" "4" "60" "false" "4" "null" "time" "false"
+    			execute_BigBench_schedule "$workloadFileDir/${ELASTICITY_WORKLOAD_FILE}" "$scheduleFile" "$logDir" "${ELASTICITY_BATCH_MULTIPLIER}" "${ELASTICITY_RANDOM_SEED}" "${ELASTICITY_DEG_PAR}" "${ELASTICITY_MAX_QUERIES}" "${ELASTICITY_BATCH_WAIT_TIME}" "${ELASTICITY_SPREAD_QUERIES}" "${ELASTICITY_THREAD_POOL_SIZE}" "${ELASTICITY_DEGPAR_TABLE_FILE}" "time" "${ELASTICITY_VOID_BATCHES}"       
             elif [ ! $query == "throughput" ] ; then
               benchmark_query "$query" "$scale_factor"
               if [ "$scale_factor" == 1 ] ; then
