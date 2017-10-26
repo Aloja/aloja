@@ -20,7 +20,8 @@ BENCH_ENABLED="$(seq -f "%g" -s " "  1 30) throughput schedule"
 BENCH_EXTRA="throughput schedule"
 
 if [ ! $BB_QUERIES ]; then
-    BB_QUERIES="6 7 9 11 12 13 14 15 16 17 21 22 23 24"
+    #BB_QUERIES="6 7 9 11 12 13 14 15 16 17 21 22 23 24"
+    BB_QUERIES="$(seq -f "%g" -s " "  1 30)"
 fi
 if [ ! $BB_PROBABILITIES ]; then
     BB_PROBABILITIES="0.0 1.0"
