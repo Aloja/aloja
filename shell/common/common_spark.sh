@@ -152,50 +152,60 @@ get_spark_substitutions() {
 
   [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
 
+  local java_home=$(get_java_home)
+  local hdd=$(get_local_bench_path)
+  local log_dir=$hdd/spark_logs
+  local hdfs_path=$hdd/bench_data
+
+  local hive=$HIVE_HOME/bin/hive
+  local spark_executor_extra_classpath=$HIVE_HOME/lib/:$HIVE_CONF_DIR
+  local hadoop_libs=$BENCH_HADOOP_DIR/lib/native
+  local spark=$SPARK_HOME/bin/spark
+
   cat <<EOF
-s,##JAVA_HOME##,$(get_java_home),g;
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##JAVA_XMS##,$JAVA_XMS,g;
-s,##JAVA_XMX##,$JAVA_XMX,g;
-s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
-s,##JAVA_AM_XMX##,$JAVA_AM_XMX,g;
-s,##LOG_DIR##,$HDD/spark_logs,g;
-s,##REPLICATION##,$REPLICATION,g;
-s,##MASTER##,$master_name,g;
-s,##NAMENODE##,$master_name,g;
-s,##TMP_DIR##,$HDD_TMP,g;
-s,##HDFS_NDIR##,$HDFS_NDIR,g;
-s,##HDFS_DDIR##,$HDFS_DDIR,g;
-s,##MAX_MAPS##,$MAX_MAPS,g;
-s,##MAX_REDS##,$MAX_REDS,g;
-s,##IFACE##,$IFACE,g;
-s,##IO_FACTOR##,$IO_FACTOR,g;
-s,##IO_MB##,$IO_MB,g;
-s,##PORT_PREFIX##,$PORT_PREFIX,g;
-s,##IO_FILE##,$IO_FILE,g;
-s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
-s,##PHYS_MEM##,$PHYS_MEM,g;
-s,##NUM_CORES##,$NUM_CORES,g;
-s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
-s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
-s,##MAPS_MB##,$MAPS_MB,g;
-s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$AM_MB,g;
-s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
-s,##HDD##,$(get_local_bench_path),g;
-s,##HIVE##,$HIVE_HOME/bin/hive,g;
-s,##SPARK_EXECUTOR_EXTRA_CLASSPATH##,$HIVE_HOME/lib/:$HIVE_CONF_DIR,g;
-s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
-s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
-s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
-s,##SPARK##,$SPARK_HOME/bin/spark,g;
-s,##SPARK_CONF##,$SPARK_CONF_DIR,g;
-s,##EXECUTOR_INSTANCES##,$EXECUTOR_INSTANCES,g;
-s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g;
-s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
-s,##SPARK_MEMORY_OVERHEAD##,$SPARK_MEMORY_OVERHEAD,g;
-s,##EXECUTOR_MEM##,$EXECUTOR_MEM,g;
-s{##EXPERIMENT_ID##}{\Q$EXPERIMENT_ID\E};
+\$r = q/${java_home//\//\\/}/;                     s/##JAVA_HOME##/\$r/g;
+\$r = q/${BENCH_HADOOP_DIR//\//\\/}/;              s/##HADOOP_HOME##/\$r/g;
+\$r = q/${JAVA_XMS//\//\\/}/;                      s/##JAVA_XMS##/\$r/g;
+\$r = q/${JAVA_XMX//\//\\/}/;                      s/##JAVA_XMX##/\$r/g;
+\$r = q/${JAVA_AM_XMS//\//\\/}/;                   s/##JAVA_AM_XMS##/\$r/g;
+\$r = q/${JAVA_AM_XMX//\//\\/}/;                   s/##JAVA_AM_XMX##/\$r/g;
+\$r = q/${log_dir//\//\\/}/;                       s/##LOG_DIR##/\$r/g;
+\$r = q/${REPLICATION//\//\\/}/;                   s/##REPLICATION##/\$r/g;
+\$r = q/${master_name//\//\\/}/;                   s/##MASTER##/\$r/g;
+\$r = q/${master_name//\//\\/}/;                   s/##NAMENODE##/\$r/g;
+\$r = q/${HDD_TMP//\//\\/}/;                       s/##TMP_DIR##/\$r/g;
+\$r = q/${HDFS_NDIR//\//\\/}/;                     s/##HDFS_NDIR##/\$r/g;
+\$r = q/${HDFS_DDIR//\//\\/}/;                     s/##HDFS_DDIR##/\$r/g;
+\$r = q/${MAX_MAPS//\//\\/}/;                      s/##MAX_MAPS##/\$r/g;
+\$r = q/${MAX_REDS//\//\\/}/;                      s/##MAX_REDS##/\$r/g;
+\$r = q/${IFACE//\//\\/}/;                         s/##IFACE##/\$r/g;
+\$r = q/${IO_FACTOR//\//\\/}/;                     s/##IO_FACTOR##/\$r/g;
+\$r = q/${IO_MB//\//\\/}/;                         s/##IO_MB##/\$r/g;
+\$r = q/${PORT_PREFIX//\//\\/}/;                   s/##PORT_PREFIX##/\$r/g;
+\$r = q/${IO_FILE//\//\\/}/;                       s/##IO_FILE##/\$r/g;
+\$r = q/${BLOCK_SIZE//\//\\/}/;                    s/##BLOCK_SIZE##/\$r/g;
+\$r = q/${PHYS_MEM//\//\\/}/;                      s/##PHYS_MEM##/\$r/g;
+\$r = q/${NUM_CORES//\//\\/}/;                     s/##NUM_CORES##/\$r/g;
+\$r = q/${CONTAINER_MIN_MB//\//\\/}/;              s/##CONTAINER_MIN_MB##/\$r/g;
+\$r = q/${CONTAINER_MAX_MB//\//\\/}/;              s/##CONTAINER_MAX_MB##/\$r/g;
+\$r = q/${MAPS_MB//\//\\/}/;                       s/##MAPS_MB##/\$r/g;
+\$r = q/${REDUCES_MB//\//\\/}/;                    s/##REDUCES_MB##/\$r/g;
+\$r = q/${AM_MB//\//\\/}/;                         s/##AM_MB##/\$r/g;
+\$r = q/${BENCH_LOCAL_DIR//\//\\/}/;               s/##BENCH_LOCAL_DIR##/\$r/g;
+\$r = q/${hdd//\//\\/}/;                           s/##HDD##/\$r/g;
+\$r = q/${hive//\//\/}/;                           s/##HIVE##/$hive/g
+\$r = q/${spark_executor_extra_classpath//\//\/}/; s/##SPARK_EXECUTOR_EXTRA_CLASSPATH##/\$r/g
+\$r = q/${hdfs_path//\//\/}/;                      s/##HDFS_PATH##/\$r/g
+\$r = q/${HADOOP_CONF_DIR//\//\/}/;                s/##HADOOP_CONF##/\$r/g
+\$r = q/${hadoop_libs//\//\/}/;                    s/##HADOOP_LIBS##/\$r/g
+\$r = q/${spark//\//\/}/;                          s/##SPARK##/\$r/g
+\$r = q/${SPARK_CONF_DIR//\//\/}/;                 s/##SPARK_CONF##/\$r/g
+\$r = q/${EXECUTOR_INSTANCES//\//\/}/;             s/##EXECUTOR_INSTANCES##/\$r/g
+\$r = q/${EXECUTOR_CORES//\//\/}/;                 s/##EXECUTOR_CORES##/\$r/g
+\$r = q/${SPARK_MAJOR_VERSION//\//\/}/;            s/##SPARK_MAJOR_VERSION##/\$r/g
+\$r = q/${SPARK_MEMORY_OVERHEAD//\//\/}/;          s/##SPARK_MEMORY_OVERHEAD##/\$r/g
+\$r = q/${EXECUTOR_MEM//\//\/}/;                   s/##EXECUTOR_MEM##/\$r/g
+\$r = q/${EXPERIMENT_ID//\//\\/}/;                 s/##EXPERIMENT_ID##/\$r/g;
 EOF
 }
 

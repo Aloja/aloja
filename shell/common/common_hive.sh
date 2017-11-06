@@ -166,48 +166,52 @@ get_hive_substitutions() {
   CONTAINER_10="$(echo "${MAPS_MB}*0.10" | bc -l)"
   CONTAINER_10="$(printf "%.0f" $CONTAINER_10)"
 
+  local java_home=$(get_java_home)
+  local hdd=$(get_local_bench_path)
+  local log_dir=$hdd/hive_logs
+
   cat <<EOF
-s,##JAVA_HOME##,$(get_java_home),g;
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##HIVE_CONF_DIR##,$HIVE_CONF_DIR,g;
-s,##JAVA_XMS##,$JAVA_XMS,g;
-s,##JAVA_XMX##,$JAVA_XMX,g;
-s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
-s,##JAVA_AM_XMX##,$JAVA_AM_XMX,g;
-s,##LOG_DIR##,$(get_local_bench_path)/hive_logs,g;
-s,##REPLICATION##,$REPLICATION,g;
-s,##MASTER##,$master_name,g;
-s,##NAMENODE##,$master_name,g;
-s,##TMP_DIR##,$HDD_TMP,g;
-s,##HDFS_NDIR##,$HDFS_NDIR,g;
-s,##HDFS_DDIR##,$HDFS_DDIR,g;
-s,##MAX_MAPS##,$MAX_MAPS,g;
-s,##MAX_REDS##,$MAX_REDS,g;
-s,##IFACE##,$IFACE,g;
-s,##IO_FACTOR##,$IO_FACTOR,g;
-s,##IO_MB##,$IO_MB,g;
-s,##JOIN_HIVE##,$JOIN_HIVE,g;
-s,##CONTAINER_80##,$CONTAINER_80,g;
-s,##CONTAINER_40##,$CONTAINER_40,g;
-s,##CONTAINER_10##,$CONTAINER_10,g;
-s,##PORT_PREFIX##,$PORT_PREFIX,g;
-s,##IO_FILE##,$IO_FILE,g;
-s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
-s,##PHYS_MEM##,$PHYS_MEM,g;
-s,##NUM_CORES##,$NUM_CORES,g;
-s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
-s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
-s,##MAPS_MB##,$MAPS_MB,g;
-s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$AM_MB,g;
-s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
-s,##HDD##,$(get_local_bench_path),g;
-s,##HIVE_ENGINE##,$HIVE_ENGINE,g;
-s,##HIVE_JOINS##,$HIVE_JOINS,g;
-s,##DATABASE_DRIVER##,$database_driver,g;
-s,##DATABASE_DRIVER_NAME##,$database_driver_name,g;
-s,##URL##,$url,g;
-s{##EXPERIMENT_ID##}{\Q$EXPERIMENT_ID\E}g;
+\$r = q/${java_home//\//\\/}/;            s/##JAVA_HOME##/\$r/g;
+\$r = q/${BENCH_HADOOP_DIR//\//\\/}/;     s/##HADOOP_HOME##/\$r/g;
+\$r = q/${HIVE_CONF_DIR//\//\\/}/;        s/##HIVE_CONF_DIR##/\$r/g;
+\$r = q/${JAVA_XMS//\//\\/}/;             s/##JAVA_XMS##/\$r/g;
+\$r = q/${JAVA_XMX//\//\\/}/;             s/##JAVA_XMX##/\$r/g;
+\$r = q/${JAVA_AM_XMS//\//\\/}/;          s/##JAVA_AM_XMS##/\$r/g;
+\$r = q/${JAVA_AM_XMX//\//\\/}/;          s/##JAVA_AM_XMX##/\$r/g;
+\$r = q/${log_dir//\//\\/}/;              s/##LOG_DIR##/\$r/g;
+\$r = q/${REPLICATION//\//\\/}/;          s/##REPLICATION##/\$r/g;
+\$r = q/${master_name//\//\\/}/;          s/##MASTER##/\$r/g;
+\$r = q/${master_name//\//\\/}/;          s/##NAMENODE##/\$r/g;
+\$r = q/${HDD_TMP//\//\\/}/;              s/##TMP_DIR##/\$r/g;
+\$r = q/${HDFS_NDIR//\//\\/}/;            s/##HDFS_NDIR##/\$r/g;
+\$r = q/${HDFS_DDIR//\//\\/}/;            s/##HDFS_DDIR##/\$r/g;
+\$r = q/${MAX_MAPS//\//\\/}/;             s/##MAX_MAPS##/\$r/g;
+\$r = q/${MAX_REDS//\//\\/}/;             s/##MAX_REDS##/\$r/g;
+\$r = q/${IFACE//\//\\/}/;                s/##IFACE##/\$r/g;
+\$r = q/${IO_FACTOR//\//\\/}/;            s/##IO_FACTOR##/\$r/g;
+\$r = q/${IO_MB//\//\\/}/;                s/##IO_MB##/\$r/g;
+\$r = q/${JOIN_HIVE//\//\\/}/;            s/##JOIN_HIVE##/\$r/g;
+\$r = q/${CONTAINER_80//\//\\/}/;         s/##CONTAINER_80##/\$r/g;
+\$r = q/${CONTAINER_40//\//\\/}/;         s/##CONTAINER_40##/\$r/g;
+\$r = q/${CONTAINER_10//\//\\/}/;         s/##CONTAINER_10##/\$r/g;
+\$r = q/${PORT_PREFIX//\//\\/}/;          s/##PORT_PREFIX##/\$r/g;
+\$r = q/${IO_FILE//\//\\/}/;              s/##IO_FILE##/\$r/g;
+\$r = q/${BLOCK_SIZE//\//\\/}/;           s/##BLOCK_SIZE##/\$r/g;
+\$r = q/${PHYS_MEM//\//\\/}/;             s/##PHYS_MEM##/\$r/g;
+\$r = q/${NUM_CORES//\//\\/}/;            s/##NUM_CORES##/\$r/g;
+\$r = q/${CONTAINER_MIN_MB//\//\\/}/;     s/##CONTAINER_MIN_MB##/\$r/g;
+\$r = q/${CONTAINER_MAX_MB//\//\\/}/;     s/##CONTAINER_MAX_MB##/\$r/g;
+\$r = q/${MAPS_MB//\//\\/}/;              s/##MAPS_MB##/\$r/g;
+\$r = q/${REDUCES_MB//\//\\/}/;           s/##REDUCES_MB##/\$r/g;
+\$r = q/${AM_MB//\//\\/}/;                s/##AM_MB##/\$r/g;
+\$r = q/${BENCH_LOCAL_DIR//\//\\/}/;      s/##BENCH_LOCAL_DIR##/\$r/g;
+\$r = q/${hdd//\//\\/}/;                  s/##HDD##/\$r/g;
+\$r = q/${HIVE_ENGINE//\//\\/}/;          s/##HIVE_ENGINE##/\$r/g;
+\$r = q/${HIVE_JOINS//\//\\/}/;           s/##HIVE_JOINS##/\$r/g;
+\$r = q/${database_driver//\//\\/}/;      s/##DATABASE_DRIVER##/\$r/g;
+\$r = q/${database_driver_name//\//\\/}/; s/##DATABASE_DRIVER_NAME##/\$r/g;
+\$r = q/${url//\//\\/}/;                  s/##URL##/\$r/g;
+\$r = q/${EXPERIMENT_ID//\//\\/}/;        s/##EXPERIMENT_ID##/\$r/g;
 EOF
 }
 
