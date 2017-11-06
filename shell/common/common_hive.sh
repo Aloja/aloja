@@ -166,53 +166,51 @@ get_hive_substitutions() {
   CONTAINER_10="$(echo "${MAPS_MB}*0.10" | bc -l)"
   CONTAINER_10="$(printf "%.0f" $CONTAINER_10)"
 
-  local java_home=$(get_java_home)
   local hdd=$(get_local_bench_path)
   local log_dir=$hdd/hive_logs
 
-  cat <<EOF
-\$r = q/${java_home//\//\\/}/;            s/##JAVA_HOME##/\$r/g;
-\$r = q/${BENCH_HADOOP_DIR//\//\\/}/;     s/##HADOOP_HOME##/\$r/g;
-\$r = q/${HIVE_CONF_DIR//\//\\/}/;        s/##HIVE_CONF_DIR##/\$r/g;
-\$r = q/${JAVA_XMS//\//\\/}/;             s/##JAVA_XMS##/\$r/g;
-\$r = q/${JAVA_XMX//\//\\/}/;             s/##JAVA_XMX##/\$r/g;
-\$r = q/${JAVA_AM_XMS//\//\\/}/;          s/##JAVA_AM_XMS##/\$r/g;
-\$r = q/${JAVA_AM_XMX//\//\\/}/;          s/##JAVA_AM_XMX##/\$r/g;
-\$r = q/${log_dir//\//\\/}/;              s/##LOG_DIR##/\$r/g;
-\$r = q/${REPLICATION//\//\\/}/;          s/##REPLICATION##/\$r/g;
-\$r = q/${master_name//\//\\/}/;          s/##MASTER##/\$r/g;
-\$r = q/${master_name//\//\\/}/;          s/##NAMENODE##/\$r/g;
-\$r = q/${HDD_TMP//\//\\/}/;              s/##TMP_DIR##/\$r/g;
-\$r = q/${HDFS_NDIR//\//\\/}/;            s/##HDFS_NDIR##/\$r/g;
-\$r = q/${HDFS_DDIR//\//\\/}/;            s/##HDFS_DDIR##/\$r/g;
-\$r = q/${MAX_MAPS//\//\\/}/;             s/##MAX_MAPS##/\$r/g;
-\$r = q/${MAX_REDS//\//\\/}/;             s/##MAX_REDS##/\$r/g;
-\$r = q/${IFACE//\//\\/}/;                s/##IFACE##/\$r/g;
-\$r = q/${IO_FACTOR//\//\\/}/;            s/##IO_FACTOR##/\$r/g;
-\$r = q/${IO_MB//\//\\/}/;                s/##IO_MB##/\$r/g;
-\$r = q/${JOIN_HIVE//\//\\/}/;            s/##JOIN_HIVE##/\$r/g;
-\$r = q/${CONTAINER_80//\//\\/}/;         s/##CONTAINER_80##/\$r/g;
-\$r = q/${CONTAINER_40//\//\\/}/;         s/##CONTAINER_40##/\$r/g;
-\$r = q/${CONTAINER_10//\//\\/}/;         s/##CONTAINER_10##/\$r/g;
-\$r = q/${PORT_PREFIX//\//\\/}/;          s/##PORT_PREFIX##/\$r/g;
-\$r = q/${IO_FILE//\//\\/}/;              s/##IO_FILE##/\$r/g;
-\$r = q/${BLOCK_SIZE//\//\\/}/;           s/##BLOCK_SIZE##/\$r/g;
-\$r = q/${PHYS_MEM//\//\\/}/;             s/##PHYS_MEM##/\$r/g;
-\$r = q/${NUM_CORES//\//\\/}/;            s/##NUM_CORES##/\$r/g;
-\$r = q/${CONTAINER_MIN_MB//\//\\/}/;     s/##CONTAINER_MIN_MB##/\$r/g;
-\$r = q/${CONTAINER_MAX_MB//\//\\/}/;     s/##CONTAINER_MAX_MB##/\$r/g;
-\$r = q/${MAPS_MB//\//\\/}/;              s/##MAPS_MB##/\$r/g;
-\$r = q/${REDUCES_MB//\//\\/}/;           s/##REDUCES_MB##/\$r/g;
-\$r = q/${AM_MB//\//\\/}/;                s/##AM_MB##/\$r/g;
-\$r = q/${BENCH_LOCAL_DIR//\//\\/}/;      s/##BENCH_LOCAL_DIR##/\$r/g;
-\$r = q/${hdd//\//\\/}/;                  s/##HDD##/\$r/g;
-\$r = q/${HIVE_ENGINE//\//\\/}/;          s/##HIVE_ENGINE##/\$r/g;
-\$r = q/${HIVE_JOINS//\//\\/}/;           s/##HIVE_JOINS##/\$r/g;
-\$r = q/${database_driver//\//\\/}/;      s/##DATABASE_DRIVER##/\$r/g;
-\$r = q/${database_driver_name//\//\\/}/; s/##DATABASE_DRIVER_NAME##/\$r/g;
-\$r = q/${url//\//\\/}/;                  s/##URL##/\$r/g;
-\$r = q/${EXPERIMENT_ID//\//\\/}/;        s/##EXPERIMENT_ID##/\$r/g;
-EOF
+  create_perl_template_subs \
+    JAVA_HOME "$(get_java_home)" \
+    HADOOP_HOME "$BENCH_HADOOP_DIR" \
+    HIVE_CONF_DIR "$HIVE_CONF_DIR" \
+    JAVA_XMS "$JAVA_XMS" \
+    JAVA_XMX "$JAVA_XMX" \
+    JAVA_AM_XMS "$JAVA_AM_XMS" \
+    JAVA_AM_XMX "$JAVA_AM_XMX" \
+    LOG_DIR "$log_dir" \
+    REPLICATION "$REPLICATION" \
+    MASTER "$master_name" \
+    NAMENODE "$master_name" \
+    TMP_DIR "$HDD_TMP" \
+    HDFS_NDIR "$HDFS_NDIR" \
+    HDFS_DDIR "$HDFS_DDIR" \
+    MAX_MAPS "$MAX_MAPS" \
+    MAX_REDS "$MAX_REDS" \
+    IFACE "$IFACE" \
+    IO_FACTOR "$IO_FACTOR" \
+    IO_MB "$IO_MB" \
+    JOIN_HIVE "$JOIN_HIVE" \
+    CONTAINER_80 "$CONTAINER_80" \
+    CONTAINER_40 "$CONTAINER_40" \
+    CONTAINER_10 "$CONTAINER_10" \
+    PORT_PREFIX "$PORT_PREFIX" \
+    IO_FILE "$IO_FILE" \
+    BLOCK_SIZE "$BLOCK_SIZE" \
+    PHYS_MEM "$PHYS_MEM" \
+    NUM_CORES "$NUM_CORES" \
+    CONTAINER_MIN_MB "$CONTAINER_MIN_MB" \
+    CONTAINER_MAX_MB "$CONTAINER_MAX_MB" \
+    MAPS_MB "$MAPS_MB" \
+    REDUCES_MB "$REDUCES_MB" \
+    AM_MB "$AM_MB" \
+    BENCH_LOCAL_DIR "$BENCH_LOCAL_DIR" \
+    HDD "$hdd" \
+    HIVE_ENGINE "$HIVE_ENGINE" \
+    HIVE_JOINS "$HIVE_JOINS" \
+    DATABASE_DRIVER "$database_driver" \
+    DATABASE_DRIVER_NAME "$database_driver_name" \
+    URL "$url" \
+    EXPERIMENT_ID "$EXPERIMENT_ID"
 }
 
 get_hive_conf_dir() {
