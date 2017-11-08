@@ -5,7 +5,7 @@
 source_file "$ALOJA_REPO_PATH/shell/common/common_BigBenchSchedule.sh"
 set_BigBench_requires
 
-#workloadFile="$ALOJA_REPO_PATH/config/schedule/max8queries.txt"
+# workloadFile="$ALOJA_REPO_PATH/config/schedule/max8queries.txt"
 workloadFileDir="$(get_local_configs_path)/BigBench_conf_template/elasticity"
 logDir="$(get_local_bench_path)/BigBench_logs"
 scheduleFile="$logDir/schedule.txt"
@@ -13,18 +13,18 @@ driverJar="$(get_local_apps_path)/${ELASTICITY_DRIVER_FOLDER}/alojabbdriver.jar"
 mainExportsFile="$logDir/mainExports.sh"
 
 if [ "$BENCH_LIST" ] ; then
-    user_suplied_bench_list="true"
+  user_suplied_bench_list="true"
 fi
 
 BENCH_ENABLED="$(seq -f "%g" -s " "  1 30) throughput schedule"
 BENCH_EXTRA="throughput schedule"
 
 if [ ! $BB_QUERIES ]; then
-    #BB_QUERIES="6 7 9 11 12 13 14 15 16 17 21 22 23 24"
-    BB_QUERIES="$(seq -f "%g" -s " "  1 30)"
+  # BB_QUERIES="6 7 9 11 12 13 14 15 16 17 21 22 23 24"
+  BB_QUERIES="$(seq -f "%g" -s " "  1 30)"
 fi
 if [ ! $BB_PROBABILITIES ]; then
-    BB_PROBABILITIES="0.0 1.0"
+  BB_PROBABILITIES="0.0 1.0"
 fi
 
 
@@ -32,7 +32,7 @@ fi
 check_bench_list
 
 if [ ! $user_suplied_bench_list ]; then
-    BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_EXTRA")"
+  BENCH_LIST="$(remove_bench_validates "$BENCH_LIST" "$BENCH_EXTRA")"
 fi
 
 benchmark_suite_config() {
@@ -60,10 +60,10 @@ benchmark_suite_config() {
   if [ "$HIVE_ENGINE" == "tez" ]; then
     initialize_tez_vars
     prepare_tez_config
-fi
+  fi
   initialize_BigBench_vars
   prepare_BigBench
-prepare_BigBenchElasticity
+  prepare_BigBenchElasticity
 }
 
 benchmark_suite_cleanup() {
@@ -83,40 +83,39 @@ benchmark_suite_run() {
   if [ "$DELETE_HDFS" == "1" ]; then
     benchmark_cleanAll
     for scale_factor in $BB_SCALE_FACTORS; do
-        if [ $scale_factor == "min" ]; then
-          logger "INFO: Using BigBench minimum dataset (170 MB)"
-          BENCH_DATA_SIZE=170000000 #170MB
-          prepare_BigBench_minimum_dataset
-          benchmark_populateMetastore "min"
-        else
-          logger "INFO: Generating BigBench data"
-          benchmark_dataGen $scale_factor
-          benchmark_populateMetastore $scale_factor
-        fi
+      if [ $scale_factor == "min" ]; then
+        logger "INFO: Using BigBench minimum dataset (170 MB)"
+        BENCH_DATA_SIZE=170000000 #170MB
+        prepare_BigBench_minimum_dataset
+        benchmark_populateMetastore "min"
+      else
+        logger "INFO: Generating BigBench data"
+        benchmark_dataGen $scale_factor
+        benchmark_populateMetastore $scale_factor
+      fi
     done
   else
     logger "INFO: Reusing previous RUN BigBench data"
   fi
 
   if [ "$BB_MODE" == "parallel" ]; then
-      echo $BENCH_LIST
-      if ! inList "$BENCH_LIST" "throughput" ; then
-        benchmark_parallel_power
-
-      else
-        benchmark_parallel_throughput "1"
-      fi
-
+    echo $BENCH_LIST
+    if ! inList "$BENCH_LIST" "throughput" ; then
+      benchmark_parallel_power
+    else
+      benchmark_parallel_throughput "1"
+    fi
+    
   else
-      for query in $BENCH_LIST ; do
-        # for scale_factor in $BB_SCALE_FACTORS ; do
-            if [ $query == "schedule" ] ; then
-            	#Export the substitutions
-				logger "Exporting the elasticity substitutions"
-            	cat $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf
-            	cat $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf > $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.sh
-            	source $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.sh
-				# $1 Supplied workload file
+    for query in $BENCH_LIST ; do
+      # for scale_factor in $BB_SCALE_FACTORS ; do
+      if [ $query == "schedule" ] ; then
+        #Export the substitutions
+        logger "Exporting the elasticity substitutions"
+        cat $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf
+        cat $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.conf > $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.sh
+        source $BIG_BENCH_CONF_DIR/elasticity/elasticitySettings.sh
+        # $1 Supplied workload file
 				# $2 Schedule file to be generated
 				# $3 Log directory
 				# $4 Batch multiplier
@@ -129,19 +128,18 @@ benchmark_suite_run() {
 				# ${11} Queries degree of parallelism table file (null to use default)
 				# ${12} time (internal to aloja)
 				# ${13} enable void batches
-    			execute_BigBench_schedule "$workloadFileDir/${ELASTICITY_WORKLOAD_FILE}" "$scheduleFile" "$logDir" "${ELASTICITY_BATCH_MULTIPLIER}" "${ELASTICITY_RANDOM_SEED}" "${ELASTICITY_DEG_PAR}" "${ELASTICITY_MAX_QUERIES}" "${ELASTICITY_BATCH_WAIT_TIME}" "${ELASTICITY_SPREAD_QUERIES}" "${ELASTICITY_THREAD_POOL_SIZE}" "${ELASTICITY_DEGPAR_TABLE_FILE}" "time" "${ELASTICITY_VOID_BATCHES}"       
-            elif [ ! $query == "throughput" ] ; then
-              benchmark_query "$query" "$scale_factor"
-              if [ "$scale_factor" == 1 ] ; then
-                benchmark_validateQuery "$query" "$scale_factor"
-              fi
-            else
-              benchmark_throughput "1" "$scale_factor"
-            #      benchmark_refreshMetastore "$scale_factor"
-            #      benchmark_throughput "2" "$scale_factor"
-            fi
-        # done
-      done
+        execute_BigBench_schedule "$workloadFileDir/${ELASTICITY_WORKLOAD_FILE}" "$scheduleFile" "$logDir" "${ELASTICITY_BATCH_MULTIPLIER}" "${ELASTICITY_RANDOM_SEED}" "${ELASTICITY_DEG_PAR}" "${ELASTICITY_MAX_QUERIES}" "${ELASTICITY_BATCH_WAIT_TIME}" "${ELASTICITY_SPREAD_QUERIES}" "${ELASTICITY_THREAD_POOL_SIZE}" "${ELASTICITY_DEGPAR_TABLE_FILE}" "time" "${ELASTICITY_VOID_BATCHES}"       
+      elif [ ! $query == "throughput" ] ; then
+        benchmark_query "$query" "$scale_factor"
+        if [ "$scale_factor" == 1 ] ; then
+          benchmark_validateQuery "$query" "$scale_factor"
+        fi
+        else
+          benchmark_throughput "1" "$scale_factor"
+          # benchmark_refreshMetastore "$scale_factor"
+          # benchmark_throughput "2" "$scale_factor"
+        fi
+    done
   fi
 }
 
@@ -157,7 +155,6 @@ benchmark_dataGen() {
   local bench_name="BB_$scale_factor_${FUNCNAME[0]#benchmark_}"
   logger "INFO: Running $bench_name"
   logger "INFO: Automatically accepting EULA"
-
   execute_BigBench "$bench_name" "dataGen -U -f $scale_factor -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
 
@@ -165,9 +162,7 @@ benchmark_dataGen() {
 benchmark_populateMetastore() {
   local scale_factor="$1"
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}"
-
   logger "INFO: Running $bench_name"
-
   echo "$bench_name"
   execute_BigBench "$bench_name" "populateMetastore -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
@@ -178,29 +173,24 @@ benchmark_populateMetastore() {
 benchmark_query(){
   local scale_factor="$2"
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-$1"
-
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "runQuery -q $1 -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
 
 benchmark_parallel_power() {
   local bench_name="BB__${FUNCNAME[0]#benchmark_}-$1"
-
   for query in $BENCH_LIST ; do
-      local cmd=""
-
-      for scale_factor in $BB_SCALE_FACTORS ; do
-        cmd+="runQuery -q $query -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor;"
-      done
-      echo "CMD:
-      $cmd"
-      echo "done"
-      execute_parallel_BigBench "$bench_name-$query" "$cmd" "time"
+    local cmd=""
+    for scale_factor in $BB_SCALE_FACTORS ; do
+      cmd+="runQuery -q $query -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor;"
+    done
+    echo "CMD:
+    $cmd"
+    echo "done"
+    execute_parallel_BigBench "$bench_name-$query" "$cmd" "time"
   done
-
   logger "INFO: Running $bench_name"
-#  execute_parallel_BigBench "$bench_name" "$cmd" "time"
-
+  #  execute_parallel_BigBench "$bench_name" "$cmd" "time"
 }
 
 # $1 Number of throughput run
@@ -208,7 +198,6 @@ benchmark_parallel_power() {
 benchmark_throughput() {
   local scale_factor="$2"
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
-
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "runBenchmark -U -i THROUGHPUT_TEST_$1 -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
@@ -218,11 +207,9 @@ benchmark_throughput() {
 benchmark_parallel_throughput() {
   local bench_name="BB__${FUNCNAME[0]#benchmark_}-${BB_PARALLEL_STREAMS}"
   local cmd
-
   for scale_factor in $BB_SCALE_FACTORS ; do
     cmd+="runBenchmark -U -i THROUGHPUT_TEST_$1 -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor;"
   done
-
   logger "INFO: Running $bench_name"
   execute_parallel_BigBench "$bench_name" "$cmd" "time"
 }
@@ -230,7 +217,6 @@ benchmark_parallel_throughput() {
 benchmark_refreshMetastore() {
   local scale_factor="$1"
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}"
-
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "refreshMetastore -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
@@ -238,7 +224,6 @@ benchmark_refreshMetastore() {
 benchmark_validateQuery(){
   local scale_factor="$2"
   local bench_name="BB_${scale_factor}_${FUNCNAME[0]#benchmark_}-$1"
-
   logger "INFO: Running $bench_name"
   execute_BigBench "$bench_name" "validateQuery -q $1 -U -z ${BIG_BENCH_PARAMETERS_FILE}_$scale_factor" "time" "$scale_factor"
 }
