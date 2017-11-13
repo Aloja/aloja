@@ -1808,3 +1808,16 @@ get_mounts() {
   fi
   echo -e "$(echo -e "$BENCH_DEVICE_MOUNTS"|cut -d' ' -f2)"
 }
+
+# Creates a perl substitution for a ##TEMPLATE## config variable
+# Usage: create_perl_sub TEMPLATE value [TEMPLATE] [value] ...
+create_perl_template_subs() {
+  if (( $# % 2 != 0 )); then
+    die "${FUNCNAME[0]}: expected an even number of arguments"
+  fi
+
+  while [[ $# -gt  0 ]]; do
+    printf '$r = q/%s/; s/##%s##/$r/g;\n' "${2//\//\\/}" "$1"
+    shift; shift
+  done
+}

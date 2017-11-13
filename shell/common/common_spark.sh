@@ -152,51 +152,53 @@ get_spark_substitutions() {
 
   [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
 
-  cat <<EOF
-s,##JAVA_HOME##,$(get_java_home),g;
-s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
-s,##JAVA_XMS##,$JAVA_XMS,g;
-s,##JAVA_XMX##,$JAVA_XMX,g;
-s,##JAVA_AM_XMS##,$JAVA_AM_XMS,g;
-s,##JAVA_AM_XMX##,$JAVA_AM_XMX,g;
-s,##LOG_DIR##,$HDD/spark_logs,g;
-s,##REPLICATION##,$REPLICATION,g;
-s,##MASTER##,$master_name,g;
-s,##NAMENODE##,$master_name,g;
-s,##TMP_DIR##,$HDD_TMP,g;
-s,##HDFS_NDIR##,$HDFS_NDIR,g;
-s,##HDFS_DDIR##,$HDFS_DDIR,g;
-s,##MAX_MAPS##,$MAX_MAPS,g;
-s,##MAX_REDS##,$MAX_REDS,g;
-s,##IFACE##,$IFACE,g;
-s,##IO_FACTOR##,$IO_FACTOR,g;
-s,##IO_MB##,$IO_MB,g;
-s,##PORT_PREFIX##,$PORT_PREFIX,g;
-s,##IO_FILE##,$IO_FILE,g;
-s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
-s,##PHYS_MEM##,$PHYS_MEM,g;
-s,##NUM_CORES##,$NUM_CORES,g;
-s,##CONTAINER_MIN_MB##,$CONTAINER_MIN_MB,g;
-s,##CONTAINER_MAX_MB##,$CONTAINER_MAX_MB,g;
-s,##MAPS_MB##,$MAPS_MB,g;
-s,##REDUCES_MB##,$REDUCES_MB,g;
-s,##AM_MB##,$AM_MB,g;
-s,##BENCH_LOCAL_DIR##,$BENCH_LOCAL_DIR,g;
-s,##HDD##,$(get_local_bench_path),g;
-s,##HIVE##,$HIVE_HOME/bin/hive,g;
-s,##SPARK_EXECUTOR_EXTRA_CLASSPATH##,$HIVE_HOME/lib/:$HIVE_CONF_DIR,g;
-s,##HDFS_PATH##,$(get_local_bench_path)/bench_data,g;
-s,##HADOOP_CONF##,$HADOOP_CONF_DIR,g;
-s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
-s,##SPARK##,$SPARK_HOME/bin/spark,g;
-s,##SPARK_CONF##,$SPARK_CONF_DIR,g;
-s,##EXECUTOR_INSTANCES##,$EXECUTOR_INSTANCES,g;
-s,##EXECUTOR_CORES##,$EXECUTOR_CORES,g;
-s,##SPARK_MAJOR_VERSION##,$SPARK_MAJOR_VERSION,g;
-s,##SPARK_MEMORY_OVERHEAD##,$SPARK_MEMORY_OVERHEAD,g;
-s,##EXECUTOR_MEM##,$EXECUTOR_MEM,g;
-s{##EXPERIMENT_ID##}{\Q$EXPERIMENT_ID\E};
-EOF
+  local java_home=$(get_java_home)
+  local hdd=$(get_local_bench_path)
+
+  create_perl_template_subs \
+    JAVA_HOME "$java_home" \
+    HADOOP_HOME "$BENCH_HADOOP_DIR" \
+    JAVA_XMS "$JAVA_XMS" \
+    JAVA_XMX "$JAVA_XMX" \
+    JAVA_AM_XMS "$JAVA_AM_XMS" \
+    JAVA_AM_XMX "$JAVA_AM_XMX" \
+    LOG_DIR "$hdd/spark_logs" \
+    REPLICATION "$REPLICATION" \
+    MASTER "$master_name" \
+    NAMENODE "$master_name" \
+    TMP_DIR "$HDD_TMP" \
+    HDFS_NDIR "$HDFS_NDIR" \
+    HDFS_DDIR "$HDFS_DDIR" \
+    MAX_MAPS "$MAX_MAPS" \
+    MAX_REDS "$MAX_REDS" \
+    IFACE "$IFACE" \
+    IO_FACTOR "$IO_FACTOR" \
+    IO_MB "$IO_MB" \
+    PORT_PREFIX "$PORT_PREFIX" \
+    IO_FILE "$IO_FILE" \
+    BLOCK_SIZE "$BLOCK_SIZE" \
+    PHYS_MEM "$PHYS_MEM" \
+    NUM_CORES "$NUM_CORES" \
+    CONTAINER_MIN_MB "$CONTAINER_MIN_MB" \
+    CONTAINER_MAX_MB "$CONTAINER_MAX_MB" \
+    MAPS_MB "$MAPS_MB" \
+    REDUCES_MB "$REDUCES_MB" \
+    AM_MB "$AM_MB" \
+    BENCH_LOCAL_DIR "$BENCH_LOCAL_DIR" \
+    HDD "$hdd" \
+    HIVE "$HIVE_HOME/bin/hive" \
+    SPARK_EXECUTOR_EXTRA_CLASSPATH "$HIVE_HOME/lib/:$HIVE_CONF_DIR" \
+    HDFS_PATH "$hdd/bench_data" \
+    HADOOP_CONF "$HADOOP_CONF_DIR" \
+    HADOOP_LIBS "$BENCH_HADOOP_DIR/lib/native" \
+    SPARK "$SPARK_HOME/bin/spark" \
+    SPARK_CONF "$SPARK_CONF_DIR" \
+    EXECUTOR_INSTANCES "$EXECUTOR_INSTANCES" \
+    EXECUTOR_CORES "$EXECUTOR_CORES" \
+    SPARK_MAJOR_VERSION "$SPARK_MAJOR_VERSION" \
+    SPARK_MEMORY_OVERHEAD "$SPARK_MEMORY_OVERHEAD" \
+    EXECUTOR_MEM "$EXECUTOR_MEM" \
+    EXPERIMENT_ID "$EXPERIMENT_ID"
 }
 
 get_spark_conf_dir() {
