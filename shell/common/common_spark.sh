@@ -145,11 +145,6 @@ get_spark_substitutions() {
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
-  #Calculate spark instances
-  EXECUTOR_INSTANCES="$(printf %.$2f $(echo "(($numberOfNodes)*($NUM_EXECUTOR_NODE))" | bc))" # default should be 1 executor per node
-
-  #EXECUTOR_INSTANCES="$(printf %.$2f $(echo "($EXECUTOR_INSTANCES + ($NUM_EXECUTOR_NODE-1))" | bc))"
-
   [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
 
   local java_home=$(get_java_home)

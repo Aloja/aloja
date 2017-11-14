@@ -66,6 +66,16 @@
     </property>
 
     <property>
+      <name>tez.runtime.io.sort.mb</name>
+      <value>##CONTAINER_40##</value>
+    </property>
+
+    <property>
+      <name>tez.runtime.unordered.output.buffer.size-mb</name>
+      <value>##CONTAINER_10##</value>
+    </property>
+
+    <property>
       <name>tez.grouping.split-waves</name>
       <value>1.7</value>
     </property>

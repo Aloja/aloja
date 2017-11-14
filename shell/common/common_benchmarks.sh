@@ -232,6 +232,31 @@ benchmark_suite_cleanup() {
 
 ########## END TEMPLATE FUNCTIONS
 
+#$1: first number
+#$2: second number
+get_max_int(){
+   if [ "$#" -ne 2 ]; then
+        die "get_max_int expect 2 parameters, got: "$#""
+   elif (( $1 > $2 )); then
+        echo "$1"
+   else
+        echo "$2"
+   fi
+}
+
+
+#$1: first number
+#$2: second number
+get_min_int(){
+   if [ "$#" -ne 2 ]; then
+        die "get_min_int expect 2 parameters, got: "$#""
+   elif (( $1 < $2 )); then
+        echo "$1"
+   else
+        echo "$2"
+   fi
+}
+
 loggerb(){
   stamp=$(date '+%s')
   echo "${stamp} : $1"

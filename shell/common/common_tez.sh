@@ -45,6 +45,15 @@ get_tez_substitutions() {
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
+  CONTAINER_80="$(echo "${MAPS_MB}*0.80" | bc -l)"
+  CONTAINER_80="$(printf "%.0f" $CONTAINER_80)"
+
+  CONTAINER_40="$(echo "${MAPS_MB}*0.40" | bc -l)"
+  CONTAINER_40="$(printf "%.0f" $CONTAINER_40)"
+
+  CONTAINER_10="$(echo "${MAPS_MB}*0.10" | bc -l)"
+  CONTAINER_10="$(printf "%.0f" $CONTAINER_10)"
+
   cat <<EOF
 s,##JAVA_HOME##,$(get_java_home),g;
 s,##HADOOP_HOME##,$BENCH_HADOOP_DIR,g;
@@ -66,6 +75,9 @@ s,##IO_FACTOR##,$IO_FACTOR,g;
 s,##IO_MB##,$IO_MB,g;
 s,##IO_TEZ##,$IO_TEZ,g;
 s,##JOIN_TEZ##,$JOIN_TEZ,g;
+s,##CONTAINER_80##,$CONTAINER_80,g;
+s,##CONTAINER_40##,$CONTAINER_40,g;
+s,##CONTAINER_10##,$CONTAINER_10,g;
 s,##PORT_PREFIX##,$PORT_PREFIX,g;
 s,##IO_FILE##,$IO_FILE,g;
 s,##BLOCK_SIZE##,$BLOCK_SIZE,g;
@@ -86,6 +98,7 @@ s,##HADOOP_LIBS##,$BENCH_HADOOP_DIR/lib/native,g;
 s,##TEZ##,$TEZ_HOME/bin/tez,g;
 s,##TEZ_CONF##,$TEZ_CONF_DIR,g;
 s,##TEZ_URI##,/apps/$TEZ_TARBALL_NAME,g;
+s{##TEZ_SHUFFLE_VERTEX_MAX##}{\Q$TEZ_SHUFFLE_VERTEX_MAX\E}g;
 EOF
 }
 
