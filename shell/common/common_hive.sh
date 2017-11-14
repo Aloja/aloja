@@ -210,6 +210,9 @@ get_hive_substitutions() {
     DATABASE_DRIVER "$database_driver" \
     DATABASE_DRIVER_NAME "$database_driver_name" \
     URL "$url" \
+    HIVE_BYTES_PER_REDUCER "$HIVE_BYTES_PER_REDUCER" \
+    PARQUET_COMPRESSION "$PARQUET_COMPRESSION" \
+    ORC_COMPRESSION "$ORC_COMPRESSION" \
     EXPERIMENT_ID "$EXPERIMENT_ID"
 }
 

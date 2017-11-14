@@ -4,7 +4,10 @@ if [ "$ENGINE" == "spark_sql" ] || [ "$HIVE_ML_FRAMEWORK" == "spark" ] || [ "$HI
   if [ "$HIVE_ML_FRAMEWORK" == "spark-2" ]; then
     logger "WARNING: Using spark 2 as SQL engine and Machine Learning framework"
     SPARK_HIVE="spark_hive-2.1.1"
+  elif [ "$HIVE_ML_FRAMEWORK" == "spark" ]; then
+    HIVE_ML_FRAMEWORK="spark-csv"
   fi
+
   use_spark=true
   source_file "$ALOJA_REPO_PATH/shell/common/common_spark.sh"
   set_spark_requires
