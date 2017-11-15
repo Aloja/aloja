@@ -210,9 +210,7 @@ prepare_spark_config() {
 
     $DSH "$(get_perl_exports)
     /usr/bin/perl -i -pe '$(get_spark_substitutions)' '$SPARK_CONF_DIR'/*"
-  #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $SPARK_CONF_DIR/slaves"
   fi
-#    $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"  #Spark needs Hive-Site.xml in the config dir to access Hive metastore
 }
 
 # $1 bench name

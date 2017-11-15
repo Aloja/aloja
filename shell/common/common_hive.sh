@@ -221,20 +221,12 @@ get_hive_conf_dir() {
 }
 
 prepare_hive_config() {
-
   if [ "$clusterType" == "PaaS" ]; then
     logger "INFO: in PaaS mode, not changing Hive system config"
-
-    #For CBD at least TODO verify
-    #log_INFO "Making sure permissions are open in hive"
-    #time_cmd_master "sudo -u hive hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
-    #just in case
-    #time_cmd_master "sudo hadoop fs -chmod -R 777 /user/hive/ /hive/warehouse/"
     log_INFO "Listing hive warehouse permissions (but not changing them)"
     execute_hadoop_new "Hive folders" "fs -ls /user/hive/ /hive/warehouse/"
 
     $DSH "mkdir -p $(get_hive_conf_dir); cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/hive.settings_PaaS $(get_hive_conf_dir);"
-
   else
     logger "INFO: Preparing Hive run specific config"
 
@@ -243,17 +235,7 @@ prepare_hive_config() {
     $DSH "$(get_perl_exports)
     /usr/bin/perl -i -pe '$(get_hive_substitutions)' '$HIVE_SETTINGS_FILE' '$(get_hive_conf_dir)'/*"
 
-#    if [ ! -z "$MAPS_MB" ]; then
-#        $DSH "echo 'set mapreduce.map.memory.mb=${MAPS_MB};' >> ${HIVE_SETTINGS_FILE_PATH}"
-#    fi
-#    if [ ! -z "$REDUCES_MB" ]; then
-#        $DSH "echo 'set mapreduce.reduce.memory.mb=${REDUCES_MB};' >> ${HIVE_SETTINGS_FILE_PATH}"
-#    fi
-#    if  [[ "$defaultProvider" == "rackspacecbd" ]]; then
-#      $DSH "echo 'set hive.metastore.warehouse.dir=/user/${userAloja}/warehouse;' >> ${HIVE_SETTINGS_FILE_PATH}"
-#    fi
-
-    # Make sure default folders exists in Hadoop
+    # Make sure default folders exist in Hadoop
     create_hive_folders
     create_db_schema
   fi
