@@ -201,13 +201,15 @@ get_spark_conf_dir() {
 }
 
 prepare_spark_config() {
-  logger "INFO: Preparing spark run specific config"
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
-    $DSH "mkdir -p $SPARK_CONF_DIR && cp -r $(get_local_configs_path)/spark-$(get_spark_major_version).x_conf_template/* $SPARK_CONF_DIR/"
-    subs=$(get_spark_substitutions)
-    $DSH "/usr/bin/perl -i -pe \"$subs\" $SPARK_CONF_DIR/*"
+    logger "INFO: Preparing spark run specific config"
+
+    $DSH "mkdir -p '$SPARK_CONF_DIR' && cp -r '$(get_local_configs_path)/spark-$(get_spark_major_version).x_conf_template'/* '$SPARK_CONF_DIR'/"
+
+    $DSH "$(get_perl_exports)
+    /usr/bin/perl -i -pe '$(get_spark_substitutions)' '$SPARK_CONF_DIR'/*"
   #  $DSH "cp $(get_local_bench_path)/hadoop_conf/slaves $SPARK_CONF_DIR/slaves"
   fi
 #    $DSH "cp $(get_local_bench_path)/hive_conf/hive-site.xml $SPARK_CONF_DIR/"  #Spark needs Hive-Site.xml in the config dir to access Hive metastore

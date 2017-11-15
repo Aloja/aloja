@@ -237,16 +237,11 @@ prepare_hive_config() {
 
   else
     logger "INFO: Preparing Hive run specific config"
-    $DSH "mkdir -p $(get_hive_conf_dir) $(get_local_bench_path)/hive_logs; cp -r $(get_local_configs_path)/hive$(get_hive_major_version)_conf_template/* $(get_hive_conf_dir);"
 
-    # Get the values
-    subs=$(get_hive_substitutions)
-    $DSH "/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE"
+    $DSH "mkdir -p '$(get_hive_conf_dir)' '$(get_local_bench_path)/hive_logs'; cp -r '$(get_local_configs_path)/hive$(get_hive_major_version)_conf_template'/* '$(get_hive_conf_dir)'"
 
-    $DSH "
-$(get_perl_exports)
-/usr/bin/perl -i -pe \"$subs\" $HIVE_SETTINGS_FILE;
-/usr/bin/perl -i -pe \"$subs\" $(get_hive_conf_dir)/*;"
+    $DSH "$(get_perl_exports)
+    /usr/bin/perl -i -pe '$(get_hive_substitutions)' '$HIVE_SETTINGS_FILE' '$(get_hive_conf_dir)'/*"
 
 #    if [ ! -z "$MAPS_MB" ]; then
 #        $DSH "echo 'set mapreduce.map.memory.mb=${MAPS_MB};' >> ${HIVE_SETTINGS_FILE_PATH}"
