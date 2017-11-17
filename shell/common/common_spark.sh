@@ -140,15 +140,16 @@ get_spark_major_version() {
 
 # Sets the substitution values for the Spark config
 get_spark_substitutions() {
+  local java_home=$(get_java_home)
+  local hdd=$(get_local_bench_path)
+  local display_name="$1"
+  local application_tags="$EXPERIMENT_ID,$display_name"
 
   #generate the path for the hadoop config files, including support for multiple volumes
   HDFS_NDIR="$(get_hadoop_conf_dir "$DISK" "dfs/name" "$PORT_PREFIX")"
   HDFS_DDIR="$(get_hadoop_conf_dir "$DISK" "dfs/data" "$PORT_PREFIX")"
 
   [ ! "$SPARK_MAJOR_VERSION" ] && SPARK_MAJOR_VERSION="0"
-
-  local java_home=$(get_java_home)
-  local hdd=$(get_local_bench_path)
 
   create_perl_template_subs \
     JAVA_HOME "$java_home" \
@@ -193,7 +194,7 @@ get_spark_substitutions() {
     SPARK_MAJOR_VERSION "$SPARK_MAJOR_VERSION" \
     SPARK_MEMORY_OVERHEAD "$SPARK_MEMORY_OVERHEAD" \
     EXECUTOR_MEM "$EXECUTOR_MEM" \
-    EXPERIMENT_ID "$EXPERIMENT_ID"
+    APPLICATION_TAGS "$application_tags"
 }
 
 get_spark_conf_dir() {
@@ -201,6 +202,8 @@ get_spark_conf_dir() {
 }
 
 prepare_spark_config() {
+  local display_name="$1"
+
   if [ "$clusterType" == "PaaS" ]; then
     : # Empty
   else
@@ -209,7 +212,7 @@ prepare_spark_config() {
     $DSH "mkdir -p '$SPARK_CONF_DIR' && cp -r '$(get_local_configs_path)/spark-$(get_spark_major_version).x_conf_template'/* '$SPARK_CONF_DIR'/"
 
     $DSH "$(get_perl_exports)
-    /usr/bin/perl -i -pe '$(get_spark_substitutions)' '$SPARK_CONF_DIR'/*"
+    /usr/bin/perl -i -pe '$(get_spark_substitutions "$display_name")' '$SPARK_CONF_DIR'/*"
   fi
 }
 
