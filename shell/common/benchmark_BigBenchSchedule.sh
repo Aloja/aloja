@@ -9,7 +9,7 @@ set_BigBench_requires
 workloadFileDir="$(get_local_configs_path)/BigBench_conf_template/elasticity"
 logDir="$(get_local_bench_path)/BigBench_logs"
 scheduleFile="$logDir/schedule.txt"
-scheduleFileForced="$(get_local_configs_path)/BigBench_conf_template/elasticity/scheduleModified.txt"
+#scheduleFileForced="$(get_local_configs_path)/BigBench_conf_template/elasticity/scheduleModified.txt"
 driverJar="$(get_local_apps_path)/${ELASTICITY_DRIVER_FOLDER}/alojabbdriver.jar"
 mainExportsFile="$logDir/mainExports.sh"
 

@@ -109,8 +109,8 @@ execute_BigBench_schedule() {
   # args[4] batch wait time in seconds
   # args[5] spread queries (true/false) spread evenly the queries within a batch and ignore internal batch delay
   # args[6] maximum number of queries to execute for the run
-  #javaCmd+="${10} AlojaHiveWrapper $2 $3 $8 $9 $7"
-  javaCmd+="${10} AlojaHiveWrapper $scheduleFileForced $3 $8 $9 $7"
+  javaCmd+="${10} AlojaHiveWrapper $2 $3 $8 $9 $7"
+  #javaCmd+="${10} AlojaHiveWrapper $scheduleFileForced $3 $8 $9 $7"
   echo "$javaCmd"
 	# The following line executes the java command as a simple shell command
   # $javaCmd
