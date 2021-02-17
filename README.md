@@ -1,6 +1,6 @@
-# ALOJA Big Data benchmarking platform 
-
-###Quick start
+# [DEPRECATED] ALOJA Big Data benchmarking platform (for read-only reference)
+ 
+### Quick start
 
 1. Get familiar with the Web app, browse data and views at: [**http://aloja.bsc.es**](http://aloja.bsc.es)
 2. Checkout some slides or publications as background and documentation: [http://aloja.bsc.es/publications](http://aloja.bsc.es/publications)
