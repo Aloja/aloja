@@ -137,6 +137,9 @@ get_hive_substitutions() {
   local database_driver
   local database_driver_name
   local url
+  local display_name="$1"
+  local application_tags="$EXPERIMENT_ID,$display_name"
+
   if [ "$clusterType" != "PaaS" ]; then
       if [ "$USE_EXTERNAL_DATABASE" == "true" ]; then
         database_driver="$(get_database_driver_path_colon)"
@@ -213,7 +216,7 @@ get_hive_substitutions() {
     HIVE_BYTES_PER_REDUCER "$HIVE_BYTES_PER_REDUCER" \
     PARQUET_COMPRESSION "$PARQUET_COMPRESSION" \
     ORC_COMPRESSION "$ORC_COMPRESSION" \
-    EXPERIMENT_ID "$EXPERIMENT_ID"
+    APPLICATION_TAGS "$application_tags"
 }
 
 get_hive_conf_dir() {
@@ -221,6 +224,8 @@ get_hive_conf_dir() {
 }
 
 prepare_hive_config() {
+  local display_name="$1"
+
   if [ "$clusterType" == "PaaS" ]; then
     logger "INFO: in PaaS mode, not changing Hive system config"
     log_INFO "Listing hive warehouse permissions (but not changing them)"
@@ -233,7 +238,7 @@ prepare_hive_config() {
     $DSH "mkdir -p '$(get_hive_conf_dir)' '$(get_local_bench_path)/hive_logs'; cp -r '$(get_local_configs_path)/hive$(get_hive_major_version)_conf_template'/* '$(get_hive_conf_dir)'"
 
     $DSH "$(get_perl_exports)
-    /usr/bin/perl -i -pe '$(get_hive_substitutions)' '$HIVE_SETTINGS_FILE' '$(get_hive_conf_dir)'/*"
+    /usr/bin/perl -i -pe '$(get_hive_substitutions "$display_name")' '$HIVE_SETTINGS_FILE' '$(get_hive_conf_dir)'/*"
 
     # Make sure default folders exist in Hadoop
     create_hive_folders
